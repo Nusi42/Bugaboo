@@ -7,7 +7,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
@@ -135,6 +135,8 @@ pub struct RoleSays<L> {
 pub struct LevelAnswer<K, L> {
     /// The field or kind.
     pub subject: K,
+    /// The name of an own field; none for a field of the catalogue or a kind.
+    pub name: Option<String>,
     /// The level the person has.
     pub level: L,
     /// What each role that counts says.
@@ -153,7 +155,7 @@ pub struct AccessAnswer {
     /// Every permission.
     pub permissions: Vec<PermissionAnswer>,
     /// Every field.
-    pub fields: Vec<LevelAnswer<Field, FieldLevel>>,
+    pub fields: Vec<LevelAnswer<FieldKey, FieldLevel>>,
     /// Every kind of people information.
     pub kinds: Vec<LevelAnswer<PeopleKind, PeopleLevel>>,
 }
@@ -258,6 +260,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(LevelAnswer {
             subject: decision.subject,
+            name: None,
             level: decision.level,
             roles,
             capped_by_key: decision.capped_by_key,
@@ -283,9 +286,22 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         let mut named = Vec::new();
+        let own_names: std::collections::HashMap<FieldKey, String> = self
+            .field_catalogue()
+            .await?
+            .iter()
+            .map(|definition| {
+                (
+                    FieldKey::Own(definition.field.id),
+                    definition.field.name.clone(),
+                )
+            })
+            .collect();
         let mut fields = Vec::with_capacity(report.fields.len());
         for decision in &report.fields {
-            fields.push(self.level_answer(checker, decision, &mut named).await?);
+            let mut answer = self.level_answer(checker, decision, &mut named).await?;
+            answer.name = own_names.get(&answer.subject).cloned();
+            fields.push(answer);
         }
         let mut kinds = Vec::with_capacity(report.kinds.len());
         for decision in &report.kinds {

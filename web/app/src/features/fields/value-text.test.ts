@@ -1,0 +1,47 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  durationSeconds,
+  durationText,
+  isDecimalText,
+  decimalToMillionths,
+  isWholeNumberText,
+  millionthsToDecimal,
+  wordsOfLines,
+} from "./value-text.ts";
+
+describe("value-text", () => {
+  it("cf_01_a_length_of_time_is_written_in_hours_and_minutes_and_read_back", () => {
+    expect(durationText(5400)).toBe("1h 30m");
+    expect(durationText(7200)).toBe("2h");
+    expect(durationText(2700)).toBe("45m");
+    expect(durationSeconds("1h 30m")).toBe(5400);
+    expect(durationSeconds("90m")).toBe(5400);
+    expect(durationSeconds("2h")).toBe(7200);
+    expect(durationSeconds("45")).toBe(2700);
+    expect(durationSeconds("soon")).toBeUndefined();
+    expect(durationSeconds("")).toBeUndefined();
+  });
+
+  it("cf_01_numbers_are_checked_before_they_are_sent", () => {
+    expect(isWholeNumberText("-12")).toBe(true);
+    expect(isWholeNumberText("1.5")).toBe(false);
+    expect(isDecimalText("1.5")).toBe(true);
+    expect(isDecimalText("1.1234567")).toBe(false);
+    expect(isDecimalText("12")).toBe(true);
+  });
+
+  it("cf_01_a_decimal_is_kept_in_millionths_and_comes_back_the_same", () => {
+    expect(decimalToMillionths("12.5")).toBe(12_500_000);
+    expect(decimalToMillionths("-0.25")).toBe(-250_000);
+    expect(decimalToMillionths("7")).toBe(7_000_000);
+    expect(decimalToMillionths("x")).toBeUndefined();
+    expect(millionthsToDecimal(12_500_000)).toBe("12.5");
+    expect(millionthsToDecimal(-250_000)).toBe("-0.25");
+    expect(millionthsToDecimal(7_000_000)).toBe("7");
+  });
+
+  it("cf_04_choices_are_typed_one_to_a_line", () => {
+    expect(wordsOfLines("Minor\n\n  Major \nCritical")).toEqual(["Minor", "Major", "Critical"]);
+  });
+});

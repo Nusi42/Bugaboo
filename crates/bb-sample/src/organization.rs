@@ -527,7 +527,8 @@ impl Making<'_, '_> {
                 session_token: self.next(),
                 role,
                 project,
-                field,
+                issue_type: None,
+                field: field.into(),
                 level: Some(level),
             },
         )

@@ -109,6 +109,7 @@ pub(super) async fn change(
                 version: project.version,
                 name: name.map(str::to_owned),
                 short_name: short_name.map(str::to_owned),
+                fields: std::collections::BTreeMap::new(),
             },
         )
         .await?

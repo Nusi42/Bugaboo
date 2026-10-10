@@ -15,9 +15,12 @@ use bb_app::issues::{
     IssuesQuery, MakeIssue, RestoreIssue,
 };
 use bb_core::ErrorCode;
-use bb_core::fields::Field;
+use std::collections::BTreeMap;
+
+use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, UserId};
 use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
+use bb_core::own_fields_value::OwnValues;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -34,7 +37,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-const ISSUE_FIELDS: [FieldSpec; 15] = [
+const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("key"),
     FieldSpec::on_request("project"),
@@ -49,6 +52,7 @@ const ISSUE_FIELDS: [FieldSpec; 15] = [
     FieldSpec::on_request("created_at"),
     FieldSpec::on_request("updated_at"),
     FieldSpec::on_request("closed_at"),
+    FieldSpec::on_request("own_fields"),
     FieldSpec::on_request("version"),
 ];
 /// The name of the list, so its cursors are its own.
@@ -99,9 +103,9 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(nested)]
     project: Option<ProjectRef>,
-    /// Its issue type.
+    /// Its issue type. The levels set for it count for the fields of this issue.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[masked(nested)]
+    #[masked(nested, item_type)]
     issue_type: Option<IssueTypeRef>,
     /// What it is about.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -143,6 +147,11 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "status")]
     closed_at: Option<String>,
+    /// The values of its own fields, by the key of the field. Only the fields the person may see
+    /// on an issue of this type.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(own_fields)]
+    own_fields: Option<OwnValues>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
@@ -166,6 +175,7 @@ impl From<&IssueView> for IssueItem {
             created_at: Some(issue.created_at.to_string()),
             updated_at: Some(issue.updated_at.to_string()),
             closed_at: issue.closed_at.map(|at| at.to_string()),
+            own_fields: Some(issue.own_fields.clone()),
             version: Some(issue.version),
         }
     }
@@ -183,9 +193,10 @@ pub(crate) struct IssueDetailBody {
     /// Whether the person may delete the issue into the trash.
     #[masked(open)]
     may_delete: bool,
-    /// The fields the person may change in this issue; empty when they may not change it.
+    /// The fields the person may change in this issue, built-in or own (by their keys); empty
+    /// when they may not change it.
     #[masked(open)]
-    changeable: Vec<Field>,
+    changeable: Vec<FieldKey>,
 }
 
 impl From<IssueDetail> for IssueDetailBody {
@@ -214,6 +225,9 @@ pub(crate) struct NewIssueBody {
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to. Nobody when left out.
     assigned_to: Option<Vec<String>>,
+    /// The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.
+    #[serde(default)]
+    fields: BTreeMap<String, serde_json::Value>,
 }
 
 /// What to change about an issue: what is left out stays as it is.
@@ -233,6 +247,10 @@ pub(crate) struct ChangeIssueBody {
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to from now on: all of them, not the ones to add.
     assigned_to: Option<Vec<String>>,
+    /// The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
+    /// A long text is saved on its own route, under its edit lock.
+    #[serde(default)]
+    fields: BTreeMap<String, serde_json::Value>,
 }
 
 /// The ID in a request body; a text that is no ID is not a valid request.
@@ -335,6 +353,7 @@ async fn make_issue(
                 status: body.status,
                 priority: body.priority,
                 assigned_to,
+                fields: body.fields,
             },
         )
         .await?;
@@ -413,6 +432,7 @@ async fn change_issue(
                 status: body.status,
                 priority: body.priority,
                 assigned_to,
+                fields: body.fields,
             },
         )
         .await?;
@@ -528,6 +548,7 @@ mod tests {
             created_at: Some(String::new()),
             updated_at: Some(String::new()),
             closed_at: Some(String::new()),
+            own_fields: Some(OwnValues::default()),
             version: Some(1),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_FIELDS, &item);

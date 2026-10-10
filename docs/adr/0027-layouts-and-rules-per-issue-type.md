@@ -21,6 +21,14 @@ M3 brings issue types (ISS-02), layouts for the issue page and the new-issue for
 - The settings registry stays a registry of single values; structures have their own tables and migrations.
 - M4 replaces the starting workflow without a data migration of issues.
 
+## Amendment, M3 WP-05: field levels per issue type
+
+The lookup of decision 2 is `bb_core::lookup::nearest_row`: the one function that finds the row for a place and an issue type. The levels of fields per issue type use it today (`bb_policy::nearest_typed_rule`, which `nearest_rule` for the plain levels also calls); layouts (WP-09) use the same function.
+
+- **Storage.** A level for one issue type is a row in `role_type_field_level` (the role's own) or `project_type_field_level` (set for a project), next to the tables of the levels for all types. The rows join the evaluation as `LevelRules::typed`; they are read together with the other levels of the roles at a place.
+- **Reading.** `Evaluation::field_level_for(issue_type, field)` is the level of a field on an item of that type, `field_mask_for` the mask. A view that holds its issue type (`#[masked(item_type)]`) is masked with the mask of that type; a view that does not say its type gets, for each field, the lowest level the field has in any type, so a field that is hidden for some type is never shown by a view that does not say which type it is for.
+- **Setting.** The route of the field permissions takes `?issue_type=`; taking a level for a type away is allowed at the organization too (the role's own level for all types always exists).
+
 ## Alternatives considered
 
 - **Layouts as settings values (JSON in the registry):** no issue-type dimension, no typed validation, and every reader would parse JSON. Rejected.

@@ -63,3 +63,8 @@ reason = "Counts only the people named by rows in the whole organization and in 
 route = "GET /api/v1/roles/{role_id}"
 property = "groups"
 reason = "Counts only the groups named by rows in the whole organization and in projects the viewer can see (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/fields/{field}/used-by"
+property = "project_count"
+reason = "Counts only the projects the viewer may see: every project is checked for the viewer before it is counted, and the answer needs Manage fields (CF-03, M3 WP-05)."

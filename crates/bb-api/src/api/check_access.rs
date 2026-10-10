@@ -15,7 +15,7 @@ use bb_app::roles::{
 };
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::UserId;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Masked, Permission, PersonRef, Topic};
@@ -240,6 +240,8 @@ pub(crate) struct RoleSaysBody<L> {
 pub(crate) struct LevelAnswerBody<K, L> {
     /// The field or the kind.
     subject: K,
+    /// The name of an own field; none for a field of the catalogue or a kind.
+    name: Option<String>,
     /// The level the person has.
     level: L,
     /// What each role that counts says.
@@ -251,6 +253,7 @@ pub(crate) struct LevelAnswerBody<K, L> {
 fn level_body<K: Copy, L: Copy>(decision: &LevelAnswer<K, L>) -> LevelAnswerBody<K, L> {
     LevelAnswerBody {
         subject: decision.subject,
+        name: decision.name.clone(),
         level: decision.level,
         roles: decision.roles.iter().map(says).collect(),
         capped_by_key: decision.capped_by_key,
@@ -275,7 +278,7 @@ pub(crate) struct CheckAccessBody {
     /// Every permission that counts here.
     permissions: Vec<PermissionAnswerBody>,
     /// Every field of the catalogue.
-    fields: Vec<LevelAnswerBody<Field, FieldLevel>>,
+    fields: Vec<LevelAnswerBody<FieldKey, FieldLevel>>,
     /// Every kind of people information.
     kinds: Vec<LevelAnswerBody<PeopleKind, PeopleLevel>>,
 }

@@ -291,6 +291,27 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listFieldTypes", &[Quirk::KeysActAsThePerson]),
+    Example::with("listFields", &[Quirk::KeysActAsThePerson]),
+    Example::with(
+        "getField",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::with("getFieldUsedBy", &[Quirk::NamesAMissingThing]),
+    Example::route("makeField"),
+    Example::route("changeField"),
+    Example::route("addChoice"),
+    Example::route("changeChoice"),
+    Example::route("reorderChoices"),
+    Example::route("combineChoices"),
+    Example::with(
+        "saveIssueFieldText",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            Quirk::OnTheTargetProject(Permission::ChangeIssues),
+            Quirk::SessionOnly,
+        ],
+    ),
 ];
 
 /// A route that judges the record it names, as the example names the target project.
@@ -662,6 +683,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_fields::field_request(fixture, operation).await? {
         return Ok(found);
     }
     if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {

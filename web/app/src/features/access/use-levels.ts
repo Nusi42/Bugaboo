@@ -6,7 +6,7 @@ import {
   applied,
   isLevelTable,
   type Change,
-  type FieldKey,
+  type FieldKeyCode,
   type FieldLevelCode,
   type LevelTable,
   type PeopleKindKey,
@@ -28,14 +28,19 @@ function placeQuery(project: string | undefined): { readonly project?: string } 
 /** The field permissions of the whole organization or of a project, and the changes of its cells. */
 export function useFieldPermissions(
   project: string | undefined,
-): LevelsOf<FieldKey, FieldLevelCode> {
+  issueType?: string,
+): LevelsOf<FieldKeyCode, FieldLevelCode> {
+  const place = {
+    ...placeQuery(project),
+    ...(issueType === undefined ? {} : { issue_type: issueType }),
+  };
   const options = api.query.queryOptions("get", "/api/v1/field-permissions", {
-    params: { query: placeQuery(project) },
+    params: { query: place },
   });
   const query = useQuery(options);
   const edits = useOptimisticMutation<
-    Change<FieldKey, FieldLevelCode>,
-    LevelTable<FieldKey, FieldLevelCode>,
+    Change<FieldKeyCode, FieldLevelCode>,
+    LevelTable<FieldKeyCode, FieldLevelCode>,
     void
   >({
     queryKey: options.queryKey,
@@ -45,7 +50,7 @@ export function useFieldPermissions(
       await api.client.PUT("/api/v1/field-permissions/{role}/{field}", {
         params: {
           path: { role: change.role, field: change.subject },
-          query: placeQuery(project),
+          query: place,
         },
         body: { level: change.level },
       });

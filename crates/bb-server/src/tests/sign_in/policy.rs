@@ -435,7 +435,7 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
         let bea = org.person().await?;
         let viewer = org.role("Reader", &VIEW).await?;
         let member = org.role("Looker", &VIEW).await?;
-        let set = |role, project, field, level| {
+        let set = |role, project, field: Field, level| {
             let rig = org.rig;
             let session = org.admin.session.clone();
             async move {
@@ -446,7 +446,8 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
                             session_token: session,
                             role,
                             project,
-                            field,
+                            issue_type: None,
+                            field: field.into(),
                             level,
                         },
                     )
@@ -460,7 +461,7 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
             answer
                 .fields
                 .iter()
-                .find(|field| field.subject == Field::CostCenter)
+                .find(|field| field.subject == Field::CostCenter.into())
                 .map(|field| field.level)
         };
         let answer = org.check(&org.admin, bea.id, Some(projects.web)).await?;
@@ -525,7 +526,7 @@ async fn sec_04_the_highest_field_level_of_the_roles_wins_and_projects_inherit_t
         let own = answer
             .fields
             .iter()
-            .find(|field| field.subject == Field::CostCenter)
+            .find(|field| field.subject == Field::CostCenter.into())
             .ok_or("the field is there")?;
         assert!(own.roles.iter().all(|says| says.set == LevelPlace::RoleOwn));
         Ok(())
@@ -558,7 +559,8 @@ async fn sec_04_nobody_sets_a_level_above_their_own() -> TestResult {
                             session_token: session,
                             role,
                             project: Some(projects.acme),
-                            field: Field::Title,
+                            issue_type: None,
+                            field: Field::Title.into(),
                             level: Some(level),
                         },
                     )
@@ -581,7 +583,8 @@ async fn sec_04_nobody_sets_a_level_above_their_own() -> TestResult {
                     session_token: mia.session.clone(),
                     role: target.id,
                     project: None,
-                    field: Field::Title,
+                    issue_type: None,
+                    field: Field::Title.into(),
                     level: Some(FieldLevel::Hidden),
                 },
             )

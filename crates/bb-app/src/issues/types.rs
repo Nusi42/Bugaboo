@@ -7,12 +7,16 @@
 //! is not declared does not compile and a hidden field of a nested view never leaves). No answer
 //! holds a number that counts issues (PRIV-13): a list has pages and a cursor, never a total.
 
-use bb_core::fields::Field;
+use std::collections::BTreeMap;
+
+use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, IssueTypeId, UserId};
 use bb_core::issue::{IssueIcon, IssueType, Priority, Status, StatusGroup};
+use bb_core::own_fields_value::OwnValues;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::projects::ProjectRef;
 
@@ -34,6 +38,8 @@ pub struct MakeIssue {
     pub priority: Option<Priority>,
     /// The people it is assigned to; nobody when left out.
     pub assigned_to: Option<Vec<UserId>>,
+    /// The values of its own fields, by the key of the field; the defaults fill in the rest.
+    pub fields: BTreeMap<String, Value>,
 }
 
 /// Change the fields of an issue: what is `Some` is changed.
@@ -56,6 +62,9 @@ pub struct ChangeIssue {
     pub priority: Option<Priority>,
     /// The people it is assigned to from now on (all of them, not the ones to add).
     pub assigned_to: Option<Vec<UserId>>,
+    /// The values of own fields to set, by the key of the field; `null` takes a value away. A
+    /// long text is saved on its own route, under its edit lock.
+    pub fields: BTreeMap<String, Value>,
 }
 
 /// Put an issue into the trash, or take it out again (*Undo*).
@@ -138,8 +147,8 @@ pub struct IssueView {
     /// The project it is in.
     #[masked(nested)]
     pub project: ProjectRef,
-    /// Its issue type.
-    #[masked(nested)]
+    /// Its issue type. The levels set for it count for the fields of this issue (ADR-0027).
+    #[masked(nested, item_type)]
     pub issue_type: IssueTypeRef,
     /// What it is about.
     #[masked(field = "title")]
@@ -171,6 +180,10 @@ pub struct IssueView {
     /// When it entered the group *Done*, while it is in it. Hidden with the status.
     #[masked(field = "status")]
     pub closed_at: Option<Timestamp>,
+    /// The values of its own fields, by the key of the field, as JSON of the type. Only the
+    /// fields the viewer may see on an issue of this type.
+    #[masked(own_fields)]
+    pub own_fields: OwnValues,
     /// Counts up with every change; a change is made on the version that was looked at.
     #[masked(open)]
     pub version: i64,
@@ -190,7 +203,7 @@ pub struct IssueDetail {
     pub may_delete: bool,
     /// The fields the person may change in this issue: empty when they may not change it.
     #[masked(open)]
-    pub changeable: Vec<Field>,
+    pub changeable: Vec<FieldKey>,
 }
 
 /// A page of issues.

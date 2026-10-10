@@ -17,7 +17,7 @@ fn editing_what(target: &str) -> Value {
 const AN_EDITOR: &str = "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5";
 
 /// An ID that holds no lock, for the routes that ask for the token of one.
-const NO_LOCK_TOKEN: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
+pub(super) const NO_LOCK_TOKEN: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
 
 /// The request of an editing route, if the operation is one.
 pub(super) fn editing_request(fixture: &Fixture<'_>, operation: &str) -> Option<Request> {

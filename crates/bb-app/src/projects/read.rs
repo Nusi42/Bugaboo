@@ -2,6 +2,7 @@
 //! sees, as a tree (the projects inside one) or as a search.
 
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
 use bb_core::id::ProjectId;
 use bb_core::paging::{Cut, page_len, read_count};
 use bb_core::project::ShortName;
@@ -15,6 +16,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
+use crate::fields::Item;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The project an address names: an ID, or a short name (also an old one). An address that is
@@ -103,7 +105,32 @@ pub async fn project<S: AuthStore>(
     } else {
         MoveRight::IntoProjects
     };
+    let chain = ctx.chain_of(project.id).await?;
+    let item = Item {
+        kind: RecordKind::Project,
+        id: Some(project.id.into()),
+        chain,
+        issue_type: None,
+    };
+    let values = ctx
+        .load_values(RecordKind::Project, &[project.id.into()])
+        .await?;
+    let changeable_fields = if held.allows(Permission::ChangeProjectSettings) {
+        ctx.changeable_own_fields(&held.field_mask(), &item).await?
+    } else {
+        Vec::new()
+    };
+    let mut own_fields = values.shown(&held, None, project.id.into());
+    for (key, value) in &mut own_fields.0 {
+        if let Some(kind) = values.kind_of(key) {
+            *value = ctx
+                .display_value(&actor, &held, kind, std::mem::take(value))
+                .await?;
+        }
+    }
     Ok(held.authorize(ProjectDetail {
+        own_fields,
+        changeable_fields,
         trail,
         truncated,
         permissions: held.permissions().iter().copied().collect(),

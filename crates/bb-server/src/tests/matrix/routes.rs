@@ -340,7 +340,8 @@ async fn hold(
                                 session_token: org.admin.session.clone(),
                                 role: only.id,
                                 project: None,
-                                field: *field,
+                                issue_type: None,
+                                field: (*field).into(),
                                 level: Some(FieldLevel::CanChange),
                             },
                         )

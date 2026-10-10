@@ -10,11 +10,11 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{ProjectId, RoleId};
+use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_core::sign_in::SecurityAction;
 use bb_core::words::Word as _;
 use bb_policy::guards::Refusal;
-use bb_policy::{Authorized, LevelKind, LevelSubject, Permission, Place, level_of_role};
+use bb_policy::{Authorized, LevelKind, LevelSubject, Permission, Place};
 use serde_json::json;
 
 use super::types::{FieldLevelView, LevelRequest, Levels, LevelsQuery, PeopleLevelView};
@@ -38,6 +38,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         role: RoleId,
         project: ProjectId,
+        issue_type: Option<IssueTypeId>,
         subject: K,
     ) -> Result<K::Level, AppError> {
         let found = self
@@ -51,8 +52,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .chain
             .split_last()
             .map_or(&[][..], |(_, parents)| parents);
-        Ok(level_of_role(parents, found.rules.of::<K>(), role, subject)
-            .map_or(K::CLOSED, |(_, level)| level))
+        Ok(
+            K::level_for(&found.rules, parents, role, subject, issue_type)
+                .map_or(K::CLOSED, |(_, _, level)| level),
+        )
     }
 
     /// The level a role has set for a subject in one place, if it has set one there.
@@ -60,16 +63,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
         subject: K,
     ) -> Result<Option<K::Level>, AppError> {
         Ok(self
             .store()
-            .levels::<K>(role, project)
+            .levels::<K>(role, project, issue_type)
             .await
             .map_err(|error| internal::<S>(&error))?
             .into_iter()
             .find(|(known, _)| *known == subject)
             .map(|(_, level)| level))
+    }
+}
+
+/// The name of the member of the event of a changed level: `field.title`, `people.followers`, and
+/// for a field on one issue type `field.<key>.<issue type>`.
+fn level_member<K: LevelSubject>(subject: K, issue_type: Option<IssueTypeId>) -> String {
+    match issue_type {
+        Some(issue_type) => format!("{}.{}.{issue_type}", K::KIND, subject.subject_code()),
+        None => format!("{}.{}", K::KIND, subject.subject_code()),
     }
 }
 
@@ -96,26 +109,28 @@ pub async fn set_level<S: AuthStore, R: LevelRequest>(
     )
     .await?;
     let role = ctx.role_or_missing(input.role).await?.role.id;
-    if input.project.is_none() && input.level.is_none() {
+    // A role's own level for all issue types always exists; one for an issue type is optional.
+    if input.project.is_none() && input.issue_type.is_none() && input.level.is_none() {
         return Err(ErrorCode::InvalidRequest.into());
     }
     let level_then = match (input.level, input.project) {
         (Some(level), _) => Some(level),
         (None, Some(project)) => Some(
-            ctx.level_without_override(role, project, input.subject)
+            ctx.level_without_override(role, project, input.issue_type, input.subject)
                 .await?,
         ),
         (None, None) => None,
     };
-    let (project, subject, level) = (input.project, input.subject, input.level);
+    let (project, issue_type, subject, level) =
+        (input.project, input.issue_type, input.subject, input.level);
     let editor = actor.person.id;
     // What was there before, so the history can tell what a change did.
-    let before = ctx.level_set(role, project, subject).await?;
+    let before = ctx.level_set(role, project, issue_type, subject).await?;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Role, role),
         vec![FieldChange {
-            field: format!("{}.{}", <R::Subject as LevelSubject>::KIND, subject.code()),
+            field: level_member::<R::Subject>(subject, issue_type),
             before: before.map(|level| json!(level.code())),
             after: level.map(|level| json!(level.code())),
         }],
@@ -140,12 +155,12 @@ pub async fn set_level<S: AuthStore, R: LevelRequest>(
                     }
                     for place in places {
                         let held = held_in::<S>(transaction, editor, place).await?;
-                        if held.level(subject) < wanted {
+                        if R::Subject::held_level(&held, subject, issue_type) < wanted {
                             return Err(S::refused(Refusal::TooMuch));
                         }
                     }
                 }
-                S::put_level(transaction, role, project, subject, level).await
+                S::put_level(transaction, role, project, issue_type, subject, level).await
             })
         })
         .await
@@ -179,12 +194,12 @@ pub async fn role_levels<S: AuthStore>(
     let role = ctx.role_or_missing(input.role).await?.role.id;
     let fields = ctx
         .store()
-        .levels(role, input.project)
+        .levels(role, input.project, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let people = ctx
         .store()
-        .levels(role, input.project)
+        .levels(role, input.project, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
     Ok(access.authorize(Levels {

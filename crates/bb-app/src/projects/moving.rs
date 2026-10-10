@@ -182,6 +182,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .flatten()
         };
         let mut people: Vec<PersonChange> = Vec::new();
+        let field_names: std::collections::HashMap<bb_core::id::FieldId, String> = self
+            .field_catalogue()
+            .await?
+            .iter()
+            .map(|definition| (definition.field.id, definition.field.name.clone()))
+            .collect();
         let mut truncated = false;
         let mut listed = 0_usize;
         let mut at = 0;
@@ -194,7 +200,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             let mut rows = Vec::new();
             for change in &judged.preview.changes[at..end] {
                 if let Some(named) = shown_ref(change.project) {
-                    rows.push(project_change(named, change));
+                    rows.push(project_change(named, change, &field_names));
                 }
             }
             at = end;
@@ -261,7 +267,11 @@ fn standing(access: &Access) -> Standing {
 }
 
 /// What one change of the engine says, as a line of the preview.
-fn project_change(project: ProjectRef, change: &Change) -> ProjectChange {
+fn project_change(
+    project: ProjectRef,
+    change: &Change,
+    field_names: &std::collections::HashMap<bb_core::id::FieldId, String>,
+) -> ProjectChange {
     let (before, after) = (&change.before, &change.after);
     ProjectChange {
         project,
@@ -284,6 +294,7 @@ fn project_change(project: ProjectRef, change: &Change) -> ProjectChange {
                 let now = after.fields.get(field)?;
                 (now != level).then_some(FieldLevelChange {
                     field: *field,
+                    name: field.own().and_then(|id| field_names.get(&id).cloned()),
                     before: *level,
                     after: *now,
                 })

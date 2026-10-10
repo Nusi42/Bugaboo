@@ -8,8 +8,8 @@
 
 use jiff::Timestamp;
 
-use crate::fields::Field;
-use crate::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use crate::fields::FieldKey;
+use crate::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use crate::people_kinds::PeopleKind;
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
@@ -168,9 +168,26 @@ pub struct RoleFieldLevel {
     /// The role.
     #[not_personal]
     pub role: RoleId,
-    /// The field.
+    /// The field, built-in or own.
     #[not_personal]
-    pub field: Field,
+    pub field: FieldKey,
+    /// Its level.
+    #[not_personal]
+    pub level: FieldLevel,
+}
+
+/// The level of a field for a role and one issue type, in the whole organization (ADR-0027).
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct RoleTypeFieldLevel {
+    /// The role.
+    #[not_personal]
+    pub role: RoleId,
+    /// The issue type the level is for.
+    #[not_personal]
+    pub issue_type: IssueTypeId,
+    /// The field, built-in or own.
+    #[not_personal]
+    pub field: FieldKey,
     /// Its level.
     #[not_personal]
     pub level: FieldLevel,
@@ -186,9 +203,30 @@ pub struct ProjectFieldLevel {
     /// The role.
     #[not_personal]
     pub role: RoleId,
-    /// The field.
+    /// The field, built-in or own.
     #[not_personal]
-    pub field: Field,
+    pub field: FieldKey,
+    /// Its level.
+    #[not_personal]
+    pub level: FieldLevel,
+}
+
+/// The level of a field for a role and one issue type in one project and its sub-projects
+/// (ADR-0027).
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct ProjectTypeFieldLevel {
+    /// The project.
+    #[not_personal]
+    pub project: ProjectId,
+    /// The role.
+    #[not_personal]
+    pub role: RoleId,
+    /// The issue type the level is for.
+    #[not_personal]
+    pub issue_type: IssueTypeId,
+    /// The field, built-in or own.
+    #[not_personal]
+    pub field: FieldKey,
     /// Its level.
     #[not_personal]
     pub level: FieldLevel,

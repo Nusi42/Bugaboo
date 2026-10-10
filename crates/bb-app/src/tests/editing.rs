@@ -79,7 +79,8 @@ async fn iss_17_the_conflict_leaves_out_what_the_reader_may_not_see() -> Outcome
                 session_token: world.admin.session_token.clone(),
                 role,
                 project: None,
-                field,
+                issue_type: None,
+                field: field.into(),
                 level: Some(if field == Field::Status {
                     FieldLevel::CanSee
                 } else {

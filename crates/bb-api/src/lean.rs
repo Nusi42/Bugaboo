@@ -374,7 +374,7 @@ mod tests {
                     .map(|field| FieldRule {
                         project: None,
                         role,
-                        subject: *field,
+                        subject: (*field).into(),
                         level: if Some(*field) == hidden {
                             FieldLevel::Hidden
                         } else {
@@ -383,6 +383,7 @@ mod tests {
                     })
                     .collect(),
                 people: Vec::new(),
+                ..LevelRules::default()
             },
         })
     }

@@ -19,6 +19,8 @@ export interface CellControlProps<Level extends string> {
   readonly yours: Level;
   /** The table is the one of a project, which can set its own levels and take them away. */
   readonly inProject: boolean;
+  /** The table is the one of an issue type: only a level set for that type can be taken away. */
+  readonly typed: boolean;
   /** A level to set, or `null` to take away what the project set. */
   readonly onChange: (level: Level | null) => void;
 }
@@ -34,9 +36,14 @@ export function CellControl<Level extends string>({
   cell,
   yours,
   inProject,
+  typed,
   onChange,
 }: CellControlProps<Level>) {
   const origin = originText(cell.origin);
+  const resettable = typed
+    ? cell.for_type === true &&
+      (inProject ? cell.origin.kind === "set_here" : cell.origin.kind === "role_own")
+    : inProject && cell.origin.kind === "set_here";
   return (
     <div {...partOf(part.accessCell)}>
       <SelectField
@@ -51,7 +58,7 @@ export function CellControl<Level extends string>({
         value={cell.level}
         onChange={onChange}
       />
-      {inProject && cell.origin.kind === "set_here" ? (
+      {resettable ? (
         <Button
           look={buttonLook.quiet}
           aria-label={t("access.reset-label", { subject: subjectName, role: roleName })}

@@ -17,6 +17,7 @@ use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
 use bb_core::issue_key::IdMode;
 use bb_core::message::MessageKey;
+use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Permission, StartingRole, Topic};
 
@@ -130,6 +131,18 @@ fn made_keys() -> Vec<Made> {
     }
     for level in FieldLevel::ALL {
         keys.push(made("the field level", level.code(), level.name()));
+    }
+    for kind in FieldType::ALL {
+        keys.push(made("the kind of an own field", kind.code(), kind.name()));
+    }
+    for what in FieldFor::ALL {
+        keys.push(made("what an own field is for", what.code(), what.name()));
+    }
+    for color in ChoiceColor::ALL {
+        keys.push(made("the color of a choice", color.code(), color.name()));
+    }
+    for look in Look::ALL {
+        keys.push(made("the look of an own field", look.code(), look.name()));
     }
     for level in PeopleLevel::ALL {
         keys.push(made("the people level", level.code(), level.name()));

@@ -11,7 +11,8 @@
 use std::collections::BTreeMap;
 
 use bb_core::access::FieldLevel;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
+use bb_core::id::IssueTypeId;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
@@ -20,41 +21,97 @@ pub type MaskedValue = Value;
 
 use crate::evaluate::Evaluation;
 
-/// What the person who asked may do with each field of the catalogue (the highest level of their
-/// roles, step 7 of the evaluation).
+/// What the person who asked may do with each field, built-in or own (the highest level of their
+/// roles, step 7 of the evaluation), and, where some role set levels for an issue type, what they
+/// may do with the fields of an item of that type (ADR-0027).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FieldMask {
-    levels: BTreeMap<Field, FieldLevel>,
+    levels: BTreeMap<FieldKey, FieldLevel>,
+    /// The levels for each issue type that has levels of its own; empty when no role set a level
+    /// for an issue type.
+    types: BTreeMap<IssueTypeId, BTreeMap<FieldKey, FieldLevel>>,
 }
 
 impl FieldMask {
-    /// The level of a field.
+    /// The level of a field; *Hidden* for a field that is not known.
     #[must_use]
-    pub fn level(&self, field: Field) -> FieldLevel {
+    pub fn level(&self, field: impl Into<FieldKey>) -> FieldLevel {
         self.levels
-            .get(&field)
+            .get(&field.into())
             .copied()
             .unwrap_or(FieldLevel::Hidden)
     }
 
     /// Whether the field may be shown.
     #[must_use]
-    pub fn can_see(&self, field: Field) -> bool {
+    pub fn can_see(&self, field: impl Into<FieldKey>) -> bool {
         self.level(field) >= FieldLevel::CanSee
     }
 
     /// Whether the field may be changed (where the person can change the item at all).
     #[must_use]
-    pub fn can_change(&self, field: Field) -> bool {
+    pub fn can_change(&self, field: impl Into<FieldKey>) -> bool {
         self.level(field) >= FieldLevel::CanChange
     }
 
-    /// The fields that may be shown, in the order of the catalogue.
-    pub fn readable(&self) -> impl Iterator<Item = Field> + '_ {
-        Field::ALL
+    /// Whether the field may be shown on an item of some issue type: in general, or in a type
+    /// that has a level of its own.
+    #[must_use]
+    pub fn can_see_somewhere(&self, field: impl Into<FieldKey>) -> bool {
+        let field = field.into();
+        self.can_see(field)
+            || self.types.values().any(|levels| {
+                levels
+                    .get(&field)
+                    .is_some_and(|level| *level >= FieldLevel::CanSee)
+            })
+    }
+
+    /// The fields that may be shown: the catalogue in its order, then the own fields.
+    pub fn readable(&self) -> impl Iterator<Item = FieldKey> + '_ {
+        self.levels
             .iter()
-            .copied()
-            .filter(|field| self.can_see(*field))
+            .filter(|(_, level)| **level >= FieldLevel::CanSee)
+            .map(|(field, _)| *field)
+    }
+
+    /// The mask for an item of this issue type. An issue type with levels of its own has its own
+    /// mask; one without has the general one. An item whose type is not known gets, for each field,
+    /// the lowest level it has in any type, so a field that is hidden for some type is never shown
+    /// by a view that does not say its type.
+    #[must_use]
+    pub fn for_type(&self, issue_type: Option<IssueTypeId>) -> std::borrow::Cow<'_, Self> {
+        use std::borrow::Cow;
+        if self.types.is_empty() {
+            return Cow::Borrowed(self);
+        }
+        if let Some(known) = issue_type {
+            return self
+                .types
+                .get(&known)
+                .map_or(Cow::Borrowed(self), |levels| {
+                    Cow::Owned(Self {
+                        levels: levels.clone(),
+                        types: BTreeMap::new(),
+                    })
+                });
+        }
+        let lowest = self
+            .levels
+            .iter()
+            .map(|(field, level)| {
+                let floor = self
+                    .types
+                    .values()
+                    .filter_map(|levels| levels.get(field))
+                    .fold(*level, |floor, other| floor.min(*other));
+                (*field, floor)
+            })
+            .collect();
+        Cow::Owned(Self {
+            levels: lowest,
+            types: BTreeMap::new(),
+        })
     }
 }
 
@@ -62,12 +119,34 @@ impl Evaluation {
     /// The mask of this evaluation.
     #[must_use]
     pub fn field_mask(&self) -> FieldMask {
-        FieldMask {
-            levels: self.fields.all().clone(),
-        }
+        let levels = self.fields.all().clone();
+        let types: std::collections::BTreeSet<IssueTypeId> = self
+            .type_rules
+            .typed
+            .iter()
+            .map(|rule| rule.issue_type)
+            .collect();
+        let types = types
+            .into_iter()
+            .map(|issue_type| {
+                let levels = levels
+                    .keys()
+                    .map(|field| (*field, self.field_level_for(Some(issue_type), *field)))
+                    .collect();
+                (issue_type, levels)
+            })
+            .collect();
+        FieldMask { levels, types }
     }
 
-    /// Wraps `value` for leaving a use case, with the mask of this evaluation.
+    /// The mask on an item of one issue type (ADR-0027): the levels set for the type count.
+    #[must_use]
+    pub fn field_mask_for(&self, issue_type: Option<IssueTypeId>) -> FieldMask {
+        self.field_mask().for_type(issue_type).into_owned()
+    }
+
+    /// Wraps `value` for leaving a use case, with the mask of this evaluation. A view that holds
+    /// its issue type (`#[masked(item_type)]`) is masked with the mask of that type.
     #[must_use]
     pub fn authorize<T>(&self, value: T) -> Authorized<T> {
         Authorized {
@@ -114,6 +193,35 @@ pub fn drop_hidden(value: &mut Value, fields: &[(&str, Field)], mask: &FieldMask
             }
         }
     }
+}
+
+/// Removes the values of own fields that the mask hides from the member `name` of an object, which
+/// maps the key of a field to its value (`#[masked(own_fields)]`). A key that names no own field
+/// is removed too: a value that cannot be placed is not shown. The view builder has judged the
+/// issue type already; this is the net under it (CF-06).
+pub fn drop_hidden_own_fields(value: &mut Value, name: &str, mask: &FieldMask) {
+    if let Some(Value::Object(values)) = value.get_mut(name) {
+        values.retain(|key, _| {
+            FieldKey::from_code(key)
+                .is_some_and(|field| field.own().is_some() && mask.can_see(field))
+        });
+    }
+}
+
+/// The mask for the item `value`, whose member `name` is its issue type (an object with an `id`):
+/// the levels set for that type count (ADR-0027). Without a readable type the lowest levels count.
+#[must_use]
+pub fn mask_of_item<'m>(
+    value: &Value,
+    name: &str,
+    mask: &'m FieldMask,
+) -> std::borrow::Cow<'m, FieldMask> {
+    let issue_type = value
+        .get(name)
+        .and_then(|member| member.get("id"))
+        .and_then(Value::as_str)
+        .and_then(|text| text.parse::<IssueTypeId>().ok());
+    mask.for_type(issue_type)
 }
 
 /// Masks the member `name` of an object as a `T`.

@@ -42,6 +42,19 @@ async fn an_issue_in_example(ada: &mut Browser) -> Result<String, Failure> {
     Ok(issue.body["key"].as_str().ok_or("no issue")?.to_owned())
 }
 
+/// An own field, for the route that names one: its ID.
+async fn a_field(ada: &mut Browser) -> Result<String, Failure> {
+    let field = ada
+        .send(
+            "POST",
+            "/api/v1/fields",
+            Some(json!({"name": "Customer", "kind": "text", "applies_to": "issues"})),
+        )
+        .await?;
+    assert_eq!(field.status, StatusCode::OK, "{}", field.body);
+    Ok(field.body["id"].as_str().ok_or("no field")?.to_owned())
+}
+
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
@@ -86,6 +99,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .to_owned(),
         );
         let issue_key = an_issue_in_example(&mut ada).await?;
+        // An own field, for the routes that name one.
+        let field_id = a_field(&mut ada).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -104,6 +119,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
                 .replace("{issue}", &issue_key)
+                .replace("{field}", &field_id)
                 .replace("{project}", project);
             // The draft route is about a record named in the query: the example project.
             let filled = if template == "/api/v1/drafts" {

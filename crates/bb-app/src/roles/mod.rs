@@ -18,7 +18,7 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel, Role};
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::RoleId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
@@ -372,7 +372,7 @@ pub async fn delete_role<S: AuthStore>(
 }
 
 /// The level of each field.
-type FieldLevels = Vec<(Field, FieldLevel)>;
+type FieldLevels = Vec<(FieldKey, FieldLevel)>;
 
 /// The levels of a kind of people information, for each kind.
 type PeopleLevels = Vec<(PeopleKind, PeopleLevel)>;
@@ -381,7 +381,7 @@ type PeopleLevels = Vec<(PeopleKind, PeopleLevel)>;
 fn starting_levels(starting: StartingRole) -> (FieldLevels, PeopleLevels) {
     let fields = Field::ALL
         .iter()
-        .map(|field| (*field, starting.field_level(*field)))
+        .map(|field| ((*field).into(), starting.field_level(*field)))
         .collect();
     let people = PeopleKind::ALL
         .iter()

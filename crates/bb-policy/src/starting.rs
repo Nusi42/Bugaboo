@@ -7,6 +7,8 @@
 //! (*Starting roles*) and are written into the page from this code by `cargo xtask gen roles`
 //! (DOC-GENERATED fails when the page differs), so there is no second copy to keep in step.
 
+use std::collections::BTreeSet;
+
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
 use bb_core::people_kinds::PeopleKind;
@@ -119,6 +121,25 @@ const fn people_levels(kind: PeopleKind) -> [PeopleLevel; 6] {
     }
 }
 
+/// The level a new own field starts with for a role (architecture section 7, *The field
+/// catalogue*): *Can see* for every role that sees projects, *Can change* for the roles that also
+/// hold `changes_with` (*Change issues* for a field of issues). Whoever makes the field can change
+/// it at once. The same rule gives a custom role its level when the field is made, and a starting
+/// role its level again when it is reset.
+#[must_use]
+pub fn starting_own_field_level(
+    permissions: &BTreeSet<Permission>,
+    changes_with: Permission,
+) -> FieldLevel {
+    if !permissions.contains(&Permission::SeeProjects) {
+        FieldLevel::Hidden
+    } else if permissions.contains(&changes_with) {
+        FieldLevel::CanChange
+    } else {
+        FieldLevel::CanSee
+    }
+}
+
 impl StartingRole {
     /// The place of the role in the starting order, counting from 0.
     #[must_use]
@@ -181,6 +202,34 @@ mod tests {
             );
         }
         assert_eq!(StartingRole::from_code("owner"), None);
+    }
+
+    #[test]
+    fn cf_06_a_new_own_field_starts_can_see_for_all_and_can_change_from_team_member_up() {
+        let level = |role: StartingRole| {
+            starting_own_field_level(
+                &role.permissions().into_iter().collect(),
+                Permission::ChangeIssues,
+            )
+        };
+        for role in [
+            StartingRole::Administrator,
+            StartingRole::ProjectLead,
+            StartingRole::TeamMember,
+        ] {
+            assert_eq!(level(role), FieldLevel::CanChange, "{role:?}");
+        }
+        for role in [
+            StartingRole::Contributor,
+            StartingRole::Viewer,
+            StartingRole::Guest,
+        ] {
+            assert_eq!(level(role), FieldLevel::CanSee, "{role:?}");
+        }
+        assert_eq!(
+            starting_own_field_level(&BTreeSet::new(), Permission::ChangeIssues),
+            FieldLevel::Hidden
+        );
     }
 
     #[test]

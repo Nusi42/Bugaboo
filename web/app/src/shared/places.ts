@@ -4,6 +4,7 @@ import { iconName } from "@bugaboo/ui/icons";
 import { paths, type Path } from "./paths.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Place } from "./place.ts";
+import { fieldPlaces } from "./field-places.ts";
 import { projectPlaces } from "./project-places.ts";
 
 export type { Place } from "./place.ts";
@@ -186,6 +187,7 @@ const organizationTopics: readonly Place[] = [
     group: "nav.group.work",
     listed: true,
   },
+  ...fieldPlaces,
   {
     path: paths.organizationSecurity,
     name: "nav.organization-security",

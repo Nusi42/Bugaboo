@@ -21,6 +21,21 @@ struct Member<'a> {
     nested: bool,
     /// The member says it holds nothing that needs a mask.
     open: bool,
+    /// What else the member is for, if anything.
+    special: Special,
+}
+
+/// A member with a job beyond holding a field or a nested view (CF-06).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Special {
+    /// Nothing more.
+    None,
+    /// The member holds the values of own fields, by the key of the field: the mask drops the
+    /// ones whose field the person may not see in any issue type.
+    OwnFields,
+    /// The member holds the issue type of the item (an object with an `id`): the view is masked
+    /// with the mask of that type.
+    ItemType,
 }
 
 pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
@@ -49,13 +64,14 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
         let Some(ident) = &field.ident else {
             return Err(syn::Error::new(field.span(), "a member needs a name"));
         };
-        let (field_word, nested, open) = read_member(ident, &field.attrs)?;
+        let (field_word, nested, open, special) = read_member(ident, &field.attrs)?;
         members.push(Member {
             name: ident.to_string(),
             ty: &field.ty,
             field: field_word,
             nested,
             open,
+            special,
         });
     }
     let view = &input.ident;
@@ -68,6 +84,23 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
     let nested = members.iter().filter(|member| member.nested).map(|member| {
         let (name, ty) = (&member.name, &member.ty);
         quote! { ::bb_policy::mask_member::<#ty>(value, #name, mask); }
+    });
+    let own = members
+        .iter()
+        .filter(|member| member.special == Special::OwnFields)
+        .map(|member| {
+            let name = &member.name;
+            quote! { ::bb_policy::drop_hidden_own_fields(value, #name, mask); }
+        });
+    let item_type = members
+        .iter()
+        .find(|member| member.special == Special::ItemType)
+        .map(|member| member.name.clone());
+    let pick_mask = item_type.as_ref().map(|name| {
+        quote! {
+            let item_mask = ::bb_policy::mask_of_item(value, #name, mask);
+            let mask: &::bb_policy::FieldMask = &item_mask;
+        }
     });
     // An open member is a plain value: a type that is itself a view with a mask would leak.
     let plain = members.iter().filter(|member| member.open).map(|member| {
@@ -84,8 +117,10 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             const FIELDS: &'static [(&'static str, ::bb_core::fields::Field)] = &[#(#entries),*];
 
             fn mask(value: &mut ::bb_policy::MaskedValue, mask: &::bb_policy::FieldMask) {
+                #pick_mask
                 ::bb_policy::drop_hidden(value, <Self as ::bb_policy::Masked>::FIELDS, mask);
                 #(#nested)*
+                #(#own)*
             }
         }
     })
@@ -109,9 +144,11 @@ fn refuse_serde(attrs: &[Attribute]) -> syn::Result<()> {
     Ok(())
 }
 
-fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr>, bool, bool)> {
+type MemberKind = (Option<LitStr>, bool, bool, Special);
+
+fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<MemberKind> {
     let mut said = false;
-    let (mut field, mut nested, mut open) = (None, false, false);
+    let (mut field, mut nested, mut open, mut special) = (None, false, false, Special::None);
     for attr in attrs.iter().filter(|attr| attr.path().is_ident("masked")) {
         said = true;
         attr.parse_nested_meta(|meta| {
@@ -121,22 +158,26 @@ fn read_member(ident: &Ident, attrs: &[Attribute]) -> syn::Result<(Option<LitStr
                 nested = true;
             } else if meta.path.is_ident("open") {
                 open = true;
+            } else if meta.path.is_ident("own_fields") {
+                special = Special::OwnFields;
+            } else if meta.path.is_ident("item_type") {
+                special = Special::ItemType;
             } else {
-                return Err(
-                    meta.error("expected `field = \"...\"`, `nested` or `open` (SEC-04, M2-F21)")
-                );
+                return Err(meta.error(
+                    "expected `field = \"...\"`, `nested`, `open`, `own_fields` or `item_type` (SEC-04, M2-F21, CF-06)",
+                ));
             }
             Ok(())
         })?;
     }
-    if open && (field.is_some() || nested) {
+    if open && (field.is_some() || nested || special != Special::None) {
         return Err(syn::Error::new(
             ident.span(),
             format!("member `{ident}` is `open`, so it is neither a `field` nor `nested`"),
         ));
     }
     if said {
-        Ok((field, nested, open))
+        Ok((field, nested, open, special))
     } else {
         Err(syn::Error::new(
             ident.span(),

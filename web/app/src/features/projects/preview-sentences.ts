@@ -18,6 +18,11 @@ function wordOf(word: Word): string {
   return say(word.message_key, word.code);
 }
 
+/** What a field of the preview is called: a field of the catalogue by its message, an own field by its name. */
+function fieldNameOf(field: Schema<"FieldKeyBody">): string {
+  return field.name ?? say(field.message_key ?? "", field.code);
+}
+
 /** The names of roles in a sentence; *no role* when there are none. */
 function rolesOf(roles: readonly string[]): string {
   return roles.length === 0 ? t("projects.no-role") : roles.join(", ");
@@ -94,7 +99,7 @@ function levelLines(who: string, change: Change): string[] {
       t("projects.line-field", {
         person: who,
         project,
-        field: wordOf(level.field),
+        field: fieldNameOf(level.field),
         before: wordOf(level.before),
         after: wordOf(level.after),
       }),

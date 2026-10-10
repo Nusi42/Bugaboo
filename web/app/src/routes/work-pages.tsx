@@ -1,6 +1,7 @@
 import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
 
-import { paths } from "../shared/paths.ts";
+import { paths, routeParam } from "../shared/paths.ts";
+import { useAddressPart } from "./address-part.ts";
 import { organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
 
@@ -11,6 +12,34 @@ const IssueTypesScreen = lazyRouteComponent(
   () => import("../features/issue-types/index.ts"),
   "IssueTypesPage",
 );
+
+const FieldsScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldsPage");
+const FieldScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldPage");
+
+/** *Organization settings › Fields*: the own fields, and the form that makes one. */
+export const fieldsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.fields,
+  component: function Fields() {
+    return (
+      <OnlyWith path={paths.fields}>
+        <FieldsScreen />
+      </OnlyWith>
+    );
+  },
+});
+
+/** The page of one own field, `/settings/fields/<ID>`. */
+export const fieldRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.field,
+  component: function FieldOfTheAddress() {
+    const id = useAddressPart(routeParam.field);
+    return (
+      <OnlyWith path={paths.field}>{id === undefined ? null : <FieldScreen field={id} />}</OnlyWith>
+    );
+  },
+});
 
 /** *Organization settings › Issue types*: the address says which type is open in the side panel. */
 export const issueTypesRoute = createRoute({

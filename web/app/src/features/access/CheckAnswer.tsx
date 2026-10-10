@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { personName } from "../../shared/person.ts";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
+import { fieldNameOf } from "./field-names.ts";
 import { groupLevels, type LevelEntry } from "./group-levels.ts";
 import { projectText } from "./origin-text.ts";
 import type { CheckAnswerBody } from "./use-check.ts";
@@ -179,7 +180,7 @@ export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
         answer={answer}
         heading={t("check-access.fields-heading")}
         entries={answer.fields.map((field) => ({
-          name: t(`issue-field.${field.subject}`),
+          name: field.name ?? fieldNameOf(field.subject),
           level: field.level,
           sentences: [],
           says: field.roles,

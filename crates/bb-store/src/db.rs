@@ -12,8 +12,9 @@ use std::time::Duration;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, EditorId, EntityId, EventId, GroupId, IdError, InvitationId,
-    IssueId, IssueTypeId, JobId, LockToken, PasskeyId, ProjectId, RoleId, SessionId, UserId,
+    AccessKeyId, AssignmentId, ChoiceId, EditorId, EntityId, EventId, FieldId, GroupId, IdError,
+    InvitationId, IssueId, IssueTypeId, JobId, LockToken, PasskeyId, ProjectId, RoleId, SessionId,
+    UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -616,6 +617,8 @@ stored_ids!(
     EditorId => "an editor ID",
     EntityId => "a record ID",
     EventId => "an event ID",
+    FieldId => "a field ID",
+    ChoiceId => "a choice ID",
     GroupId => "a group ID",
     InvitationId => "an invitation ID",
     IssueId => "an issue ID",

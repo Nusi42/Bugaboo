@@ -16,8 +16,8 @@ mod roles;
 
 use bb_app::access::{PlaceLevels, PolicyStore, RoleRecord};
 use bb_core::access::{Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
-use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::guards::OrganizationState;
@@ -206,8 +206,9 @@ impl PolicyStore for AuthStorage {
         &self,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
     ) -> Result<Vec<(K, K::Level)>, StoreError> {
-        levels::read_levels(&mut self.database(), role, project).await
+        levels::read_levels(&mut self.database(), role, project, issue_type).await
     }
 
     async fn lock_policy(transaction: &mut Transaction) -> Result<(), StoreError> {
@@ -245,7 +246,7 @@ impl PolicyStore for AuthStorage {
         transaction: &mut Transaction,
         role: &Role,
         permissions: &[Permission],
-        fields: &[(Field, FieldLevel)],
+        fields: &[(FieldKey, FieldLevel)],
         people: &[(PeopleKind, PeopleLevel)],
     ) -> Result<(), StoreError> {
         roles::insert_role(transaction, role, permissions, fields, people).await
@@ -272,7 +273,7 @@ impl PolicyStore for AuthStorage {
     async fn replace_role_levels(
         transaction: &mut Transaction,
         id: RoleId,
-        fields: &[(Field, FieldLevel)],
+        fields: &[(FieldKey, FieldLevel)],
         people: &[(PeopleKind, PeopleLevel)],
     ) -> Result<(), StoreError> {
         roles::replace_role_levels(transaction, id, fields, people).await
@@ -332,10 +333,11 @@ impl PolicyStore for AuthStorage {
         transaction: &mut Transaction,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
         subject: K,
         level: Option<K::Level>,
     ) -> Result<(), StoreError> {
-        levels::put_level(transaction, role, project, subject, level).await
+        levels::put_level(transaction, role, project, issue_type, subject, level).await
     }
 
     async fn insert_project(

@@ -5084,6 +5084,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of an issue type: the levels that count for issues of this type (ADR-0027).\nWithout it the answer is about all issue types.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -5100,7 +5109,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LevelTableBody_Field_FieldLevel"
+                  "$ref": "#/components/schemas/LevelTableBody_FieldKey_FieldLevel"
                 }
               }
             }
@@ -5207,16 +5216,25 @@
           {
             "name": "field",
             "in": "path",
-            "description": "The key of the field.",
+            "description": "The key of the field: its word, or the ID of an own field.",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/Field"
+              "$ref": "#/components/schemas/FieldKey"
             }
           },
           {
             "name": "project",
             "in": "query",
             "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of an issue type: the levels that count for issues of this type (ADR-0027).\nWithout it the answer is about all issue types.",
             "required": false,
             "schema": {
               "type": "string"
@@ -5317,6 +5335,1212 @@
           }
         },
         "x-permission": "decide-what-roles-see"
+      }
+    },
+    "/api/v1/field-types": {
+      "get": {
+        "tags": ["fields"],
+        "summary": "The kinds of information a field can hold, with what each kind allows.",
+        "operationId": "listFieldTypes",
+        "responses": {
+          "200": {
+            "description": "The kinds of information.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldTypeListBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/fields": {
+      "get": {
+        "tags": ["fields"],
+        "summary": "The own fields the person sees, for the organization or for one project.",
+        "operationId": "listFields",
+        "parameters": [
+          {
+            "name": "applies_to",
+            "in": "query",
+            "description": "Only fields for this kind of item.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/FieldFor"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "Only the fields used in this project (its ID or short name).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "retired",
+            "in": "query",
+            "description": "Also the retired fields.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The fields.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldListBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "post": {
+        "tags": ["fields"],
+        "summary": "Makes an own field. Needs the permission *Manage fields*.",
+        "operationId": "makeField",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewFieldBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The field.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
+      }
+    },
+    "/api/v1/fields/{field}": {
+      "get": {
+        "tags": ["fields"],
+        "summary": "One own field the person sees.",
+        "operationId": "getField",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The field.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "patch": {
+        "tags": ["fields"],
+        "summary": "Changes an own field, or retires it (or offers it again). Needs the permission *Manage\nfields*.",
+        "operationId": "changeField",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeFieldBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The field as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
+      }
+    },
+    "/api/v1/fields/{field}/choices": {
+      "post": {
+        "tags": ["fields"],
+        "summary": "Adds a choice to a *Pick one* or *Pick several* field. Needs the permission *Manage fields*.",
+        "operationId": "addChoice",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddChoiceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The field as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
+      }
+    },
+    "/api/v1/fields/{field}/choices/order": {
+      "put": {
+        "tags": ["fields"],
+        "summary": "Puts the choices of a field in a new order. Needs the permission *Manage fields*.",
+        "operationId": "reorderChoices",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderChoicesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The field as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
+      }
+    },
+    "/api/v1/fields/{field}/choices/{choice}": {
+      "patch": {
+        "tags": ["fields"],
+        "summary": "Changes the name, color or icon of a choice, or retires it. Needs the permission *Manage\nfields*.",
+        "operationId": "changeChoice",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "choice",
+            "in": "path",
+            "description": "The ID of the choice.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeChoiceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The field as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
+      }
+    },
+    "/api/v1/fields/{field}/choices/{choice}/combine": {
+      "post": {
+        "tags": ["fields"],
+        "summary": "Moves every value of a choice to another choice and retires the first (*Combine with another\nchoice*). Every item it touches gets a record in its history. Needs the permission *Manage\nfields*.",
+        "operationId": "combineChoices",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "choice",
+            "in": "path",
+            "description": "The ID of the choice that goes away.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CombineChoicesBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The field as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
+      }
+    },
+    "/api/v1/fields/{field}/used-by": {
+      "get": {
+        "tags": ["fields"],
+        "summary": "Where an own field is used now. Needs the permission *Manage fields*.",
+        "operationId": "getFieldUsedBy",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where the field is used.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldUsedByBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-fields"
       }
     },
     "/api/v1/groups": {
@@ -7092,6 +8316,145 @@
           }
         },
         "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/fields/{field}/text": {
+      "put": {
+        "tags": ["fields"],
+        "summary": "Saves the long text of an own field of an issue, under the edit lock of the person. Needs the\nright to change the issue and the field; a lock that ran out, a take-over or a change made\nmeanwhile keeps the text as the person's draft.",
+        "operationId": "saveIssueFieldText",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The ID of the long text field.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFieldTextBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issue as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-long-text": true,
+        "x-permission": "by-record"
       }
     },
     "/api/v1/issues/{issue}/restore": {
@@ -12176,6 +13539,44 @@
           }
         }
       },
+      "AddChoiceBody": {
+        "type": "object",
+        "description": "A choice to add.",
+        "required": ["version", "name"],
+        "properties": {
+          "color": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChoiceColor",
+                "description": "Its color; the next in turn when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "icon": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueIcon",
+                "description": "Its icon."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the field the person looked at."
+          }
+        }
+      },
       "AddPasskeyBody": {
         "type": "object",
         "description": "A passkey the device made, with the name the person gives it.",
@@ -12358,6 +13759,113 @@
           }
         }
       },
+      "ChangeChoiceBody": {
+        "type": "object",
+        "description": "What to change about a choice: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "color": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChoiceColor",
+                "description": "A new color."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "icon": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueIcon",
+                "description": "A new icon; `null` takes it away."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "A new name."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "`true` retires the choice, `false` offers it again."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the field the person looked at."
+          }
+        }
+      },
+      "ChangeFieldBody": {
+        "type": "object",
+        "description": "What to change about an own field: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "default_value": {
+            "type": ["object", "null"],
+            "description": "A new default value; `null` takes it away."
+          },
+          "help": {
+            "type": ["string", "null"],
+            "description": "New help text; an empty text takes it away."
+          },
+          "look": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Look",
+                "description": "A new look."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "A new name."
+          },
+          "never_to_assistant": {
+            "type": ["boolean", "null"],
+            "description": "Whether the assistant is never sent the value."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "`true` retires the field (no new values; old ones stay), `false` offers it again."
+          },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Rules",
+                "description": "New rules."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ScopeInput",
+                "description": "A new scope."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
       "ChangeIssueBody": {
         "type": "object",
         "description": "What to change about an issue: what is left out stays as it is.",
@@ -12373,6 +13881,14 @@
           "description": {
             "type": ["string", "null"],
             "description": "A new description."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The values of own fields to set, by the key (ID) of the field; `null` takes a value away.\nA long text is saved on its own route, under its edit lock.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "issue_type": {
             "type": ["string", "null"],
@@ -12447,6 +13963,14 @@
         "description": "What to change about a project: what is left out stays as it is.",
         "required": ["version"],
         "properties": {
+          "fields": {
+            "type": "object",
+            "description": "The values of own fields to set, by the key (ID) of the field; `null` takes a value away.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
           "name": {
             "type": ["string", "null"],
             "description": "A new name."
@@ -12497,7 +14021,7 @@
           "fields": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/LevelAnswerBody_Field_FieldLevel"
+              "$ref": "#/components/schemas/LevelAnswerBody_FieldKey_FieldLevel"
             },
             "description": "Every field of the catalogue."
           },
@@ -12561,6 +14085,24 @@
           }
         }
       },
+      "ChoiceColor": {
+        "type": "string",
+        "description": "The color of a choice, as a category token.",
+        "enum": [
+          "cat1",
+          "cat2",
+          "cat3",
+          "cat4",
+          "cat5",
+          "cat6",
+          "cat7",
+          "cat8",
+          "cat9",
+          "cat10",
+          "cat11",
+          "cat12"
+        ]
+      },
       "ChoiceItem": {
         "type": "object",
         "description": "A person that can be put into a group: the fields that can be asked for.",
@@ -12606,6 +14148,22 @@
           "code": {
             "type": "string",
             "description": "A code from the code app (six digits) or a backup code."
+          }
+        }
+      },
+      "CombineChoicesBody": {
+        "type": "object",
+        "description": "The choice that takes the values of another.",
+        "required": ["version", "into"],
+        "properties": {
+          "into": {
+            "type": "string",
+            "description": "The ID of the choice that takes the values."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the field the person looked at."
           }
         }
       },
@@ -12924,6 +14482,15 @@
           "project.too_deep",
           "project.preview_changed",
           "issue.type_retired",
+          "field.required",
+          "field.too_short",
+          "field.too_long",
+          "field.too_small",
+          "field.too_big",
+          "field.no_match",
+          "field.wrong_value",
+          "field.unknown_choice",
+          "field.not_here",
           "name.taken",
           "resource.not_found",
           "request.invalid",
@@ -12942,27 +14509,148 @@
           "server.internal"
         ]
       },
-      "Field": {
+      "FieldBody": {
+        "type": "object",
+        "description": "An own field.",
+        "required": [
+          "id",
+          "name",
+          "help",
+          "kind",
+          "applies_to",
+          "rules",
+          "look",
+          "never_to_assistant",
+          "retired",
+          "scope",
+          "choices",
+          "may_manage",
+          "version"
+        ],
+        "properties": {
+          "applies_to": {
+            "$ref": "#/components/schemas/FieldFor",
+            "description": "What it is added to."
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChoiceBody"
+            },
+            "description": "The choices of a *Pick one* or *Pick several* field, in order."
+          },
+          "default_value": {
+            "type": ["object", "null"],
+            "description": "The value a new item starts with, in the form of the type; `null` for none."
+          },
+          "help": {
+            "type": "string",
+            "description": "Words that help people fill it in."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the field, which is its key in levels, values and history."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FieldType",
+            "description": "What kind of information it holds."
+          },
+          "look": {
+            "$ref": "#/components/schemas/Look",
+            "description": "How the value is shown."
+          },
+          "may_manage": {
+            "type": "boolean",
+            "description": "Whether the person may change the definition (*Manage fields*)."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "never_to_assistant": {
+            "type": "boolean",
+            "description": "The assistant is never sent the value."
+          },
+          "retired": {
+            "type": "boolean",
+            "description": "Whether the field is retired: no new values, old ones stay."
+          },
+          "rules": {
+            "$ref": "#/components/schemas/Rules",
+            "description": "The rules. The browser checks them for instant feedback; the server decides."
+          },
+          "scope": {
+            "$ref": "#/components/schemas/FieldScopeBody",
+            "description": "Where it is used."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "FieldChoiceBody": {
+        "type": "object",
+        "description": "A choice of a field.",
+        "required": ["id", "name", "color", "retired"],
+        "properties": {
+          "color": {
+            "$ref": "#/components/schemas/ChoiceColor",
+            "description": "Its color, as a category token of the theme."
+          },
+          "icon": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueIcon",
+                "description": "Its icon, if it has one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the choice."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "retired": {
+            "type": "boolean",
+            "description": "Whether it is retired: not offered for new values, kept on old ones."
+          }
+        }
+      },
+      "FieldFor": {
         "type": "string",
-        "description": "A built-in field of the field catalogue, by its key.",
-        "enum": [
-          "title",
-          "description",
-          "status",
-          "priority",
-          "assigned-to",
-          "reported-by",
-          "due-date",
-          "labels",
-          "tags",
-          "planned-for-release",
-          "found-in-release",
-          "estimated-time",
-          "time-left",
-          "time-spent",
-          "activity",
-          "cost-center"
-        ]
+        "description": "What an own field is added to.",
+        "enum": ["issues", "projects"]
+      },
+      "FieldKey": {
+        "type": "string",
+        "description": "The key of a field: the word of a built-in field, or the ID of an own field."
+      },
+      "FieldKeyBody": {
+        "type": "object",
+        "description": "A field of the move preview: a field of the catalogue is named by a message, an own field by\nits name.",
+        "required": ["code"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The key of the field: its word, or the ID of an own field."
+          },
+          "message_key": {
+            "type": ["string", "null"],
+            "description": "The key of the message that names a field of the catalogue."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field."
+          }
+        }
       },
       "FieldLevel": {
         "type": "string",
@@ -12983,8 +14671,139 @@
             "description": "The level now."
           },
           "field": {
-            "$ref": "#/components/schemas/WordBody",
+            "$ref": "#/components/schemas/FieldKeyBody",
             "description": "The field."
+          }
+        }
+      },
+      "FieldListBody": {
+        "type": "object",
+        "description": "The fields a person sees.",
+        "required": ["fields"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldBody"
+            },
+            "description": "The fields, in the order they are offered in."
+          }
+        }
+      },
+      "FieldScopeBody": {
+        "type": "object",
+        "description": "Where a field is used, as the person may know it.",
+        "required": ["whole_organization", "projects", "issue_types"],
+        "properties": {
+          "issue_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueTypeRef"
+            },
+            "description": "The issue types the field is limited to; empty for all."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectRef"
+            },
+            "description": "The projects the field is limited to that the person sees."
+          },
+          "whole_organization": {
+            "type": "boolean",
+            "description": "The field is not limited to projects."
+          }
+        }
+      },
+      "FieldType": {
+        "type": "string",
+        "description": "What kind of information an own field holds.",
+        "enum": [
+          "text",
+          "long-text",
+          "whole-number",
+          "decimal",
+          "yes-no",
+          "web-address",
+          "date",
+          "date-time",
+          "duration",
+          "pick-one",
+          "pick-several",
+          "person",
+          "people",
+          "group",
+          "issue"
+        ]
+      },
+      "FieldTypeBody": {
+        "type": "object",
+        "description": "One kind of information a field can hold, with what the screens need to know about it.",
+        "required": ["kind", "traits", "looks", "starting_look"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/FieldType",
+            "description": "The kind."
+          },
+          "looks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Look"
+            },
+            "description": "The looks that can show it."
+          },
+          "starting_look": {
+            "$ref": "#/components/schemas/Look",
+            "description": "The look a new field of this kind starts with."
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KindTrait"
+            },
+            "description": "What is true of it."
+          }
+        }
+      },
+      "FieldTypeListBody": {
+        "type": "object",
+        "description": "The kinds of information a field can hold.",
+        "required": ["kinds"],
+        "properties": {
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldTypeBody"
+            },
+            "description": "The kinds, in the order they are offered in."
+          }
+        }
+      },
+      "FieldUsedByBody": {
+        "type": "object",
+        "description": "Where an own field is used now.",
+        "required": ["whole_organization", "project_count", "projects", "truncated"],
+        "properties": {
+          "project_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many projects the person sees that use the field.",
+            "minimum": 0
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectRef"
+            },
+            "description": "The first of them."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "The list of projects was cut."
+          },
+          "whole_organization": {
+            "type": "boolean",
+            "description": "The field is not limited to projects."
           }
         }
       },
@@ -13257,9 +15076,9 @@
           "changeable": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Field"
+              "$ref": "#/components/schemas/FieldKey"
             },
-            "description": "The fields the person may change in this issue; empty when they may not change it."
+            "description": "The fields the person may change in this issue, built-in or own (by their keys); empty\nwhen they may not change it."
           },
           "issue": {
             "$ref": "#/components/schemas/IssueItem",
@@ -13328,7 +15147,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/IssueTypeRef",
-                "description": "Its issue type."
+                "description": "Its issue type. The levels set for it count for the fields of this issue."
               },
               {
                 "type": "null"
@@ -13338,6 +15157,17 @@
           "key": {
             "type": ["string", "null"],
             "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
+          },
+          "own_fields": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OwnValues",
+                "description": "The values of its own fields, by the key of the field. Only the fields the person may see\non an issue of this type."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "priority": {
             "oneOf": [
@@ -13499,7 +15329,12 @@
         "description": "The type of a setting.",
         "enum": ["bool", "integer", "text"]
       },
-      "LevelAnswerBody_Field_FieldLevel": {
+      "KindTrait": {
+        "type": "string",
+        "description": "What is true of a kind of information.",
+        "enum": ["has-choices", "many", "text", "range", "long-text", "holds-people"]
+      },
+      "LevelAnswerBody_FieldKey_FieldLevel": {
         "type": "object",
         "description": "A field or a kind with its level and what each role says.",
         "required": ["subject", "level", "roles", "capped_by_key"],
@@ -13513,6 +15348,10 @@
             "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
             "enum": ["hidden", "can-see", "can-change"]
           },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
+          },
           "roles": {
             "type": "array",
             "items": {
@@ -13522,25 +15361,7 @@
           },
           "subject": {
             "type": "string",
-            "description": "A built-in field of the field catalogue, by its key.",
-            "enum": [
-              "title",
-              "description",
-              "status",
-              "priority",
-              "assigned-to",
-              "reported-by",
-              "due-date",
-              "labels",
-              "tags",
-              "planned-for-release",
-              "found-in-release",
-              "estimated-time",
-              "time-left",
-              "time-spent",
-              "activity",
-              "cost-center"
-            ]
+            "description": "The key of a field: the word of a built-in field, or the ID of an own field."
           }
         }
       },
@@ -13557,6 +15378,10 @@
             "type": "string",
             "description": "How people of one kind are shown: by name, by their role only, or hidden.",
             "enum": ["hidden", "role-only", "names"]
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
           },
           "roles": {
             "type": "array",
@@ -13591,8 +15416,12 @@
       "LevelCellBody_FieldLevel": {
         "type": "object",
         "description": "The level of one role.",
-        "required": ["role", "level", "origin"],
+        "required": ["role", "level", "for_type", "origin"],
         "properties": {
+          "for_type": {
+            "type": "boolean",
+            "description": "The level was set for the issue type of the table, not for all issue types."
+          },
           "level": {
             "type": "string",
             "description": "What a role may do with a field: it is hidden, it can be seen, or it can be changed.",
@@ -13611,8 +15440,12 @@
       "LevelCellBody_PeopleLevel": {
         "type": "object",
         "description": "The level of one role.",
-        "required": ["role", "level", "origin"],
+        "required": ["role", "level", "for_type", "origin"],
         "properties": {
+          "for_type": {
+            "type": "boolean",
+            "description": "The level was set for the issue type of the table, not for all issue types."
+          },
           "level": {
             "type": "string",
             "description": "How people of one kind are shown: by name, by their role only, or hidden.",
@@ -13723,7 +15556,7 @@
         ],
         "description": "Where the level a role says was set."
       },
-      "LevelRowBody_Field_FieldLevel": {
+      "LevelRowBody_FieldKey_FieldLevel": {
         "type": "object",
         "description": "A field or a kind of people information with the level of every role.",
         "required": ["subject", "yours", "cells"],
@@ -13735,27 +15568,13 @@
             },
             "description": "One cell for each role, in the order of `roles`."
           },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
+          },
           "subject": {
             "type": "string",
-            "description": "A built-in field of the field catalogue, by its key.",
-            "enum": [
-              "title",
-              "description",
-              "status",
-              "priority",
-              "assigned-to",
-              "reported-by",
-              "due-date",
-              "labels",
-              "tags",
-              "planned-for-release",
-              "found-in-release",
-              "estimated-time",
-              "time-left",
-              "time-spent",
-              "activity",
-              "cost-center"
-            ]
+            "description": "The key of a field: the word of a built-in field, or the ID of an own field."
           },
           "yours": {
             "type": "string",
@@ -13775,6 +15594,10 @@
               "$ref": "#/components/schemas/LevelCellBody_PeopleLevel"
             },
             "description": "One cell for each role, in the order of `roles`."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; none for a field of the catalogue or a kind."
           },
           "subject": {
             "type": "string",
@@ -13799,11 +15622,15 @@
           }
         }
       },
-      "LevelTableBody_Field_FieldLevel": {
+      "LevelTableBody_FieldKey_FieldLevel": {
         "type": "object",
         "description": "What each role sees, for one place.",
         "required": ["roles", "truncated", "levels", "rows"],
         "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The ID of the issue type the levels are for, or `null` for all issue types."
+          },
           "levels": {
             "type": "array",
             "items": {
@@ -13834,7 +15661,7 @@
           "rows": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/LevelRowBody_Field_FieldLevel"
+              "$ref": "#/components/schemas/LevelRowBody_FieldKey_FieldLevel"
             },
             "description": "The fields or kinds, in the order of their catalogue: the rows."
           },
@@ -13849,6 +15676,10 @@
         "description": "What each role sees, for one place.",
         "required": ["roles", "truncated", "levels", "rows"],
         "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The ID of the issue type the levels are for, or `null` for all issue types."
+          },
           "levels": {
             "type": "array",
             "items": {
@@ -14030,6 +15861,11 @@
         "description": "The result of checking the security log.",
         "enum": ["valid", "broken", "unreadable"]
       },
+      "Look": {
+        "type": "string",
+        "description": "How the value of an own field is shown.",
+        "enum": ["badge", "pill", "plain-text", "progress-bar", "avatar"]
+      },
       "MakeKeyBody": {
         "type": "object",
         "description": "An access key to make.",
@@ -14198,6 +16034,110 @@
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
       },
+      "NewFieldBody": {
+        "type": "object",
+        "description": "An own field to make.",
+        "required": ["name", "kind", "applies_to"],
+        "properties": {
+          "applies_to": {
+            "$ref": "#/components/schemas/FieldFor",
+            "description": "What it is added to."
+          },
+          "choices": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/NewFieldChoiceBody"
+            },
+            "description": "The choices of a *Pick one* or *Pick several* field."
+          },
+          "default_value": {
+            "type": ["object", "null"],
+            "description": "The value a new item starts with, in the form of the type. A *Pick one* or *Pick several*\nfield gets its default after its choices exist."
+          },
+          "help": {
+            "type": ["string", "null"],
+            "description": "Words that help people fill it in."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FieldType",
+            "description": "What kind of information it holds."
+          },
+          "look": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Look",
+                "description": "How the value is shown; the starting look of the type when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "never_to_assistant": {
+            "type": ["boolean", "null"],
+            "description": "The assistant is never sent the value."
+          },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Rules",
+                "description": "The rules; none when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ScopeInput",
+                "description": "Where it is used; the whole organization and all issue types when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "NewFieldChoiceBody": {
+        "type": "object",
+        "description": "A choice to make with a new field.",
+        "required": ["name"],
+        "properties": {
+          "color": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChoiceColor",
+                "description": "Its color; the next in turn when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "icon": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueIcon",
+                "description": "Its icon."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          }
+        }
+      },
       "NewFieldLevelBody": {
         "type": "object",
         "description": "The level to set, or `null` to take away what the project set for the role, so the level\nfrom above counts again.",
@@ -14230,6 +16170,14 @@
           "description": {
             "type": ["string", "null"],
             "description": "The long text, in Markdown. Empty when left out."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "issue_type": {
             "type": "string",
@@ -14528,6 +16476,11 @@
             "description": "The permissions that manage roles and who has which role, held now and not after the\nchange; empty when the change takes nothing from the person."
           }
         }
+      },
+      "OwnValues": {
+        "type": "object",
+        "description": "The values of the own fields, by the key (ID) of the field. A value has the form of its field's type.",
+        "additionalProperties": true
       },
       "Page_AccessKeyItem": {
         "type": "object",
@@ -14833,7 +16786,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/IssueTypeRef",
-                      "description": "Its issue type."
+                      "description": "Its issue type. The levels set for it count for the fields of this issue."
                     },
                     {
                       "type": "null"
@@ -14843,6 +16796,17 @@
                 "key": {
                   "type": ["string", "null"],
                   "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
+                },
+                "own_fields": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OwnValues",
+                      "description": "The values of its own fields, by the key of the field. Only the fields the person may see\non an issue of this type."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "priority": {
                   "oneOf": [
@@ -15831,9 +17795,18 @@
           "truncated",
           "permissions",
           "may_change_short_name",
-          "may_move"
+          "may_move",
+          "own_fields",
+          "changeable_fields"
         ],
         "properties": {
+          "changeable_fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldKey"
+            },
+            "description": "The own fields the person may change in this project, by their keys."
+          },
           "may_change_short_name": {
             "type": "boolean",
             "description": "Whether the person may change the short name."
@@ -15841,6 +17814,10 @@
           "may_move": {
             "$ref": "#/components/schemas/MoveRightBody",
             "description": "Where the person may move the project to."
+          },
+          "own_fields": {
+            "$ref": "#/components/schemas/OwnValues",
+            "description": "The values of the own fields of the project, by the key (ID) of the field: only the fields\nthe person may see."
           },
           "permissions": {
             "type": "array",
@@ -16191,6 +18168,25 @@
           }
         }
       },
+      "ReorderChoicesBody": {
+        "type": "object",
+        "description": "The new order of the choices.",
+        "required": ["version", "order"],
+        "properties": {
+          "order": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of every choice of the field, in the new order."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the field the person looked at."
+          }
+        }
+      },
       "ResetRoleBody": {
         "type": "object",
         "description": "Which role to give its starting permissions back, made on the version that was looked at.",
@@ -16426,6 +18422,42 @@
           }
         }
       },
+      "Rules": {
+        "type": "object",
+        "description": "The rules a value has to keep (CF-03). Which rules a type can have is decided by\n[`FieldType`]; [`Rules::check_definition`] refuses a rule the type cannot have.",
+        "properties": {
+          "max": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The highest one."
+          },
+          "max_length": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The most.",
+            "minimum": 0
+          },
+          "min": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The lowest number, day, moment or length of time, in the unit the value is stored in\n(millionths for a decimal, days for a date, microseconds for a moment, seconds for a\nduration)."
+          },
+          "min_length": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "The fewest characters of a text, or values of a *Pick several* and *People* field.",
+            "minimum": 0
+          },
+          "pattern": {
+            "type": ["string", "null"],
+            "description": "A pattern the whole text has to match (a regular expression without look-around)."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "The value has to be there."
+          }
+        }
+      },
       "SaveDraftBody": {
         "type": "object",
         "description": "A draft to keep.",
@@ -16438,6 +18470,46 @@
           "target": {
             "$ref": "#/components/schemas/DraftTargetBody",
             "description": "What the draft is for."
+          }
+        }
+      },
+      "SaveFieldTextBody": {
+        "type": "object",
+        "description": "The long text of an own field, saved under the edit lock of the person.",
+        "required": ["version", "lock_token", "text"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The token the edit lock was taken with."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text, in Markdown."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue the person started from."
+          }
+        }
+      },
+      "ScopeInput": {
+        "type": "object",
+        "description": "Where a field is used, in a request.",
+        "properties": {
+          "issue_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the issue types the field is limited to; empty for all."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the projects the field is limited to, with their sub-projects; empty for the\nwhole organization."
           }
         }
       },
@@ -17068,7 +19140,7 @@
       },
       "WordBody": {
         "type": "object",
-        "description": "A word of the vocabulary with the message that names it: a field, a kind of people information\nor a level.",
+        "description": "A word of the vocabulary with the message that names it: a kind of people information\nor a level.",
         "required": ["code", "message_key"],
         "properties": {
           "code": {

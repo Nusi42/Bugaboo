@@ -7,6 +7,8 @@
 //! has a cursor, never a total.
 
 use bb_core::ErrorCode;
+use bb_core::event::RecordKind;
+use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue_key::IssueKey;
 use bb_core::paging::{Cut, page_len, read_len};
@@ -17,6 +19,7 @@ use super::fields::CHANGEABLE;
 use super::store::IssueFound;
 use super::types::{IssueDetail, IssuePage, IssueQuery, IssuesQuery};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::fields::Item;
 use crate::input::cursor_or_invalid;
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -87,22 +90,32 @@ pub async fn issue<S: AuthStore>(
         .into_iter()
         .map(|assignee| assignee.person)
         .collect();
-    let mut views = ctx.issue_views(held.clone(), project).await?;
+    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
-    let mask = held.field_mask();
+    let mask = held.field_mask_for(Some(issue.issue_type));
+    let changeable = if may_change {
+        let mut keys: Vec<FieldKey> = CHANGEABLE
+            .into_iter()
+            .filter(|field| mask.can_change(*field))
+            .map(FieldKey::from)
+            .collect();
+        let item = Item {
+            kind: RecordKind::Issue,
+            id: Some(issue.id.into()),
+            chain: ctx.chain_of(issue.project).await?,
+            issue_type: Some(issue.issue_type),
+        };
+        keys.extend(ctx.changeable_own_fields(&mask, &item).await?);
+        keys
+    } else {
+        Vec::new()
+    };
     Ok(held.authorize(IssueDetail {
         issue: view,
         may_change,
         may_delete: held.may_delete_issue(issue.reported_by),
-        changeable: if may_change {
-            CHANGEABLE
-                .into_iter()
-                .filter(|field| mask.can_change(*field))
-                .collect()
-        } else {
-            Vec::new()
-        },
+        changeable,
     }))
 }
 
@@ -152,7 +165,9 @@ pub async fn issues<S: AuthStore>(
     } else {
         Vec::new()
     };
-    let mut views = ctx.issue_views(held.clone(), project).await?;
+    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
+    let shown: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
+    ctx.preload_values(&mut views, &shown).await?;
     let mut items = Vec::with_capacity(page.items.len());
     for issue in &page.items {
         let people: Vec<UserId> = assignees

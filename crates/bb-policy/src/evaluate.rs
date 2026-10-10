@@ -20,8 +20,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::{Counts, Permission};
@@ -176,25 +176,21 @@ pub struct Evaluation {
     /// *Decide who has which role* that came only from a row that a *No access* below it removed.
     pub(crate) kept_decide_roles: bool,
     pub(crate) roles: Vec<HeldRole>,
-    pub(crate) fields: Levels<Field>,
+    pub(crate) fields: Levels<FieldKey>,
     pub(crate) people: Levels<PeopleKind>,
+    /// The field levels set for one issue type, and the levels for all types they are found
+    /// together with (ADR-0027). Empty when no role set a level for an issue type.
+    pub(crate) type_rules: LevelRules,
+    /// The highest field level an access key leaves (step 6).
+    pub(crate) field_limit: FieldLevel,
     pub(crate) trace: Vec<RowTrace>,
     /// The permissions of every role the rows name, for *Check access*.
     pub(crate) all_role_permissions: BTreeMap<RoleId, BTreeSet<Permission>>,
     pub(crate) narrowing: Option<crate::narrowing::Narrowed>,
 }
 
-/// Works out what the person may do at the place of `inputs`.
-#[must_use]
-pub fn evaluate(inputs: &Inputs) -> Evaluation {
-    let mut traced: Vec<(Rank, RowTrace)> = inputs
-        .rows
-        .iter()
-        .filter_map(|row| applicable(inputs, row))
-        .collect();
-    traced.sort_by_key(|(rank, trace)| (std::cmp::Reverse(*rank), trace.row.id));
-
-    // Step 4: the highest-ranked *No access* removes every role row of equal or lower rank.
+/// Step 4: the highest-ranked *No access* removes every role row of equal or lower rank.
+fn mark_no_access(traced: &mut [(Rank, RowTrace)]) {
     let top_no_access = traced
         .iter()
         .find(|(_, trace)| trace.row.role.is_none())
@@ -204,7 +200,7 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
         .filter(|(_, trace)| trace.row.role.is_none())
         .map(|(rank, _)| *rank)
         .collect();
-    for (rank, trace) in &mut traced {
+    for (rank, trace) in traced.iter_mut() {
         match (trace.row.role, top_no_access) {
             (None, Some((_, decides))) => {
                 trace.status = if trace.row.id == decides {
@@ -230,6 +226,19 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
             _ => {}
         }
     }
+}
+
+/// Works out what the person may do at the place of `inputs`.
+#[must_use]
+pub fn evaluate(inputs: &Inputs) -> Evaluation {
+    let mut traced: Vec<(Rank, RowTrace)> = inputs
+        .rows
+        .iter()
+        .filter_map(|row| applicable(inputs, row))
+        .collect();
+    traced.sort_by_key(|(rank, trace)| (std::cmp::Reverse(*rank), trace.row.id));
+
+    mark_no_access(&mut traced);
 
     let roles: BTreeMap<RoleId, &RoleData> =
         inputs.roles.iter().map(|role| (role.id, role)).collect();
@@ -273,8 +282,17 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
         .iter()
         .map(|role| (role.id, role.permissions.clone()))
         .collect();
-    let fields = Levels::of_roles(&inputs.chain, inputs.rules.of(), &held);
-    let people = Levels::of_roles(&inputs.chain, inputs.rules.of(), &held);
+    let fields = Levels::of_roles(&inputs.chain, &inputs.rules, &held);
+    let people = Levels::of_roles(&inputs.chain, &inputs.rules, &held);
+    let type_rules = if inputs.rules.typed.is_empty() {
+        LevelRules::default()
+    } else {
+        LevelRules {
+            fields: inputs.rules.fields.clone(),
+            typed: inputs.rules.typed.clone(),
+            ..LevelRules::default()
+        }
+    };
     Evaluation {
         person: Some(inputs.person),
         place: inputs.place,
@@ -291,6 +309,8 @@ pub fn evaluate(inputs: &Inputs) -> Evaluation {
             .collect(),
         fields,
         people,
+        type_rules,
+        field_limit: FieldLevel::CanChange,
         trace: traced.into_iter().map(|(_, trace)| trace).collect(),
         all_role_permissions,
         narrowing: None,
@@ -435,10 +455,38 @@ impl Evaluation {
 
     /// The level of a field (see [`Self::level`]).
     #[must_use]
-    pub fn field_level(&self, field: Field) -> FieldLevel {
-        self.level(field)
+    pub fn field_level(&self, field: impl Into<FieldKey>) -> FieldLevel {
+        self.level(field.into())
     }
 
+    /// The level of a field on an item of one issue type (ADR-0027): for each role that counts, the
+    /// nearest place with a level wins, and at one place a level for the issue type wins over a
+    /// level for all types; the level is the highest of the roles. Without an issue type, or while
+    /// no role set a level for one, it is [`Self::field_level`].
+    #[must_use]
+    pub fn field_level_for(
+        &self,
+        issue_type: Option<IssueTypeId>,
+        field: impl Into<FieldKey>,
+    ) -> FieldLevel {
+        let key = field.into();
+        let Some(issue_type) = issue_type.filter(|_| !self.type_rules.typed.is_empty()) else {
+            return self.field_level(key);
+        };
+        let mut top = FieldLevel::Hidden;
+        for role in &self.roles {
+            if let Some((_, _, level)) = FieldKey::level_for(
+                &self.type_rules,
+                &self.chain,
+                role.id,
+                key,
+                Some(issue_type),
+            ) {
+                top = top.max(level);
+            }
+        }
+        top.min(self.field_limit)
+    }
     /// The raw level for a kind of people information (see [`Self::level`]).
     #[must_use]
     pub fn kind_level(&self, kind: PeopleKind) -> PeopleLevel {

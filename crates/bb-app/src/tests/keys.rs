@@ -117,7 +117,7 @@ fn owner_inputs(
                 Field::ALL.iter().map(|field| FieldRule {
                     project: None,
                     role: *role,
-                    subject: *field,
+                    subject: (*field).into(),
                     level: FieldLevel::CanChange,
                 })
             })
@@ -134,6 +134,7 @@ fn owner_inputs(
                 })
             })
             .collect(),
+        ..LevelRules::default()
     };
     Inputs {
         person: world.person,

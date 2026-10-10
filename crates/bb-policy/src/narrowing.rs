@@ -145,8 +145,10 @@ impl Evaluation {
             // A key outside its projects is not here at all: nothing is shown either.
             narrowed.fields.close();
             narrowed.people.close();
+            narrowed.field_limit = FieldLevel::Hidden;
         } else if !key.may_change() {
             narrowed.fields.cap(FieldLevel::CanSee);
+            narrowed.field_limit = narrowed.field_limit.min(FieldLevel::CanSee);
         }
         narrowed.narrowing = Some(Narrowed {
             removed,

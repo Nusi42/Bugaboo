@@ -24,6 +24,8 @@ export const paths = {
   person: "/settings/people/$person",
   groups: "/settings/groups",
   issueTypes: "/settings/issue-types",
+  fields: "/settings/fields",
+  field: "/settings/fields/$field",
   roles: "/settings/roles",
   role: "/settings/roles/$role",
   signInRules: "/settings/sign-in-rules",
@@ -47,7 +49,12 @@ export const paths = {
 export type Path = (typeof paths)[keyof typeof paths];
 
 /** The parts of an address that change from page to page, by the name the route gives them. */
-export const routeParam = { project: "project", person: "person", role: "role" } as const;
+export const routeParam = {
+  project: "project",
+  person: "person",
+  role: "role",
+  field: "field",
+} as const;
 
 /** The name of a part of an address that changes. */
 export type RouteParam = (typeof routeParam)[keyof typeof routeParam];
@@ -80,6 +87,11 @@ export function groupAddress(id: string): string {
 /** The address of *Issue types* with one type open, `/settings/issue-types?open=<ID>`. */
 export function issueTypeAddress(id: string): string {
   return `${paths.issueTypes}?open=${encodeURIComponent(id)}`;
+}
+
+/** The address of the page of an own field, `/settings/fields/<ID>`. */
+export function fieldAddress(id: string): string {
+  return filled(paths.field, routeParam.field, id);
 }
 
 /** The address of the page of a role, `/settings/roles/<ID>`. */

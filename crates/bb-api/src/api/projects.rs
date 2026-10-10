@@ -14,7 +14,9 @@ use bb_app::projects::{
     ProjectQuery, ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
 };
 use bb_core::ErrorCode;
+use bb_core::fields::FieldKey;
 use bb_core::id::ProjectId;
+use bb_core::own_fields_value::OwnValues;
 use bb_policy::{Masked, Permission};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -183,9 +185,18 @@ pub(crate) struct ProjectDetailBody {
     may_change_short_name: bool,
     /// Where the person may move the project to.
     may_move: MoveRightBody,
+    /// The values of the own fields of the project, by the key (ID) of the field: only the fields
+    /// the person may see.
+    own_fields: OwnValues,
+    /// The own fields the person may change in this project, by their keys.
+    changeable_fields: Vec<FieldKey>,
 }
 
-impl Masked for ProjectDetailBody {}
+impl Masked for ProjectDetailBody {
+    fn mask(value: &mut bb_policy::MaskedValue, mask: &bb_policy::FieldMask) {
+        bb_policy::drop_hidden_own_fields(value, "own_fields", mask);
+    }
+}
 
 impl From<ProjectDetail> for ProjectDetailBody {
     fn from(detail: ProjectDetail) -> Self {
@@ -196,6 +207,8 @@ impl From<ProjectDetail> for ProjectDetailBody {
             permissions: detail.permissions,
             may_change_short_name: detail.may_change_short_name,
             may_move: detail.may_move.into(),
+            own_fields: detail.own_fields,
+            changeable_fields: detail.changeable_fields,
         }
     }
 }
@@ -219,6 +232,9 @@ pub(crate) struct ChangeProjectBody {
     name: Option<String>,
     /// A new short name. The old one stays with the project.
     short_name: Option<String>,
+    /// The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
+    #[serde(default)]
+    fields: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
 /// The ID in an address of the API; a text that is no ID names no project.
@@ -431,6 +447,7 @@ async fn change_project(
                 version: body.version,
                 name: body.name,
                 short_name: body.short_name,
+                fields: body.fields,
             },
         )
         .await?;

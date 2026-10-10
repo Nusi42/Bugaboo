@@ -33,9 +33,12 @@ pub use evaluate::{
 pub use explain::{AccessReport, LevelDecision, PermissionDecision, Reason, ReasonRow};
 pub use levels::{
     FieldRule, LevelKind, LevelRule, LevelRules, LevelSource, LevelSubject, Levels, PeopleRule,
-    RoleLevel, level_of_role, nearest_rule,
+    RoleLevel, TypedFieldRule, level_of_role, nearest_rule, nearest_typed_rule,
 };
-pub use mask::{Authorized, FieldMask, Masked, MaskedValue, drop_hidden, mask_member};
+pub use mask::{
+    Authorized, FieldMask, Masked, MaskedValue, drop_hidden, drop_hidden_own_fields, mask_member,
+    mask_of_item,
+};
 pub use moves::{
     Access, Change, Lift, MoveRefusal, MoveRequest, Preview, check_move, preview_move,
 };
@@ -43,7 +46,7 @@ pub use narrowing::{Choice, Narrowing};
 pub use people::{
     FormerUser, PeopleContext, PersonRef, Target, former_user_label, resolve, taken_in,
 };
-pub use starting::StartingRole;
+pub use starting::{StartingRole, starting_own_field_level};
 pub use tree::{Policy, Tree};
 
 // Used by the integration tests in tests/engine only (`unused_crate_dependencies`).

@@ -86,6 +86,7 @@ async fn iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers()
                             status: None,
                             priority: None,
                             assigned_to: None,
+                            fields: std::collections::BTreeMap::new(),
                         },
                     )
                     .await

@@ -439,6 +439,45 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::DecideRoles),
         Answer::NeverStored,
     ),
+    route("listFieldTypes", Declared::SignedIn, Answer::Ordinary),
+    route("listFields", Declared::SignedIn, Answer::Ordinary),
+    route("getField", Declared::SignedIn, Answer::Ordinary),
+    route("saveIssueFieldText", Declared::ByRecord, Answer::Ordinary),
+    route(
+        "getFieldUsedBy",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "makeField",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeField",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "addChoice",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeChoice",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "reorderChoices",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "combineChoices",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
     route(
         "getFieldPermissions",
         Declared::Permission(Permission::DecideWhatRolesSee),
@@ -475,7 +514,7 @@ pub const ROUTES: &[Route] = &[
 /// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`.
 /// The routes that save the description of an issue and the text of a comment are added here by the
 /// packages that make them.
-pub const LONG_TEXT_ROUTES: &[&str] = &[];
+pub const LONG_TEXT_ROUTES: &[&str] = &["saveIssueFieldText"];
 
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]

@@ -19,6 +19,7 @@ mod access_screens_review;
 mod assignments_http;
 mod caching;
 mod editing;
+mod fields_http;
 pub(crate) mod http;
 mod invitations;
 mod issues_fields;

@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::{FieldChange, RecordKind};
+use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::project::{Project, ProjectAlias, ShortName};
 use bb_core::sign_in::SecurityAction;
 use bb_core::version::{counted_up, next};
@@ -15,6 +15,7 @@ use super::Why;
 use super::types::{ChangeProject, ProjectView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::fields::{Item, PlannedValues};
 use crate::input::clean_name;
 use crate::member;
 
@@ -26,6 +27,8 @@ struct Plan {
     name: String,
     /// The short name it will have.
     short_name: ShortName,
+    /// The values of own fields the request sets.
+    own: PlannedValues,
 }
 
 impl Plan {
@@ -54,6 +57,7 @@ impl Plan {
                 after: Some(json!(self.short_name.as_str())),
             });
         }
+        fields.extend(self.own.changes());
         fields
     }
 }
@@ -74,7 +78,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !access.sees_project() {
             return Err(AppError::Refused(ErrorCode::NotFound));
         }
-        if input.name.is_none() && input.short_name.is_none() {
+        if input.name.is_none() && input.short_name.is_none() && input.fields.is_empty() {
             return Err(ErrorCode::InvalidRequest.into());
         }
         let name = input.name.as_deref().map(clean_name).transpose()?;
@@ -96,10 +100,21 @@ impl<S: AuthStore> Ctx<'_, S> {
                 actor.person.id,
             ));
         }
+        let item = Item {
+            kind: RecordKind::Project,
+            id: Some(id.into()),
+            chain: self.chain_of(id).await?,
+            issue_type: None,
+        };
+        let stored = self.load_values(RecordKind::Project, &[id.into()]).await?;
+        let own = self
+            .plan_values(actor, &access, &item, &input.fields, &stored, false)
+            .await?;
         let plan = Plan {
             name: name.unwrap_or_else(|| current.name.clone()),
             short_name: short_name.unwrap_or_else(|| current.short_name.clone()),
             current,
+            own,
         };
         if plan.changes_short_name()
             && !self
@@ -157,6 +172,8 @@ pub async fn change_project<S: AuthStore>(
         plan.current.version,
     );
     let retired_at = ctx.now();
+    let own_writes = plan.own.writes();
+    let kind = EntityKind::from(RecordKind::Project);
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -185,11 +202,13 @@ pub async fn change_project<S: AuthStore>(
                     };
                     S::insert_project_alias(transaction, &alias).await?;
                 }
-                if S::update_project(transaction, id, &name, &short_name, version).await? {
-                    Ok(())
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
+                if !S::update_project(transaction, id, &name, &short_name, version).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
+                for (field, cells) in &own_writes {
+                    S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
+                }
+                Ok(())
             })
         })
         .await

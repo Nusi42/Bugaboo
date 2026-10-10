@@ -37,7 +37,8 @@ async fn title_only_reader(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failur
                 session_token: site.org.admin.session.clone(),
                 role: role.id,
                 project: None,
-                field: Field::Title,
+                issue_type: None,
+                field: Field::Title.into(),
                 level: Some(FieldLevel::CanSee),
             },
         )
@@ -230,7 +231,8 @@ async fn changer(
                     session_token: site.org.admin.session.clone(),
                     role: role.id,
                     project: None,
-                    field,
+                    issue_type: None,
+                    field: field.into(),
                     level: Some(level),
                 },
             )

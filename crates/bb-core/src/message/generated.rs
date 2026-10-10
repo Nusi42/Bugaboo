@@ -408,6 +408,42 @@ pub const CHECK_ACCESS_SHOW_EVERY_KIND: MessageKey =
 /// The message `check-access.yes`.
 pub const CHECK_ACCESS_YES: MessageKey = MessageKey::new("check-access.yes");
 
+/// The message `choice-color.cat1`.
+pub const CHOICE_COLOR_CAT1: MessageKey = MessageKey::new("choice-color.cat1");
+
+/// The message `choice-color.cat10`.
+pub const CHOICE_COLOR_CAT10: MessageKey = MessageKey::new("choice-color.cat10");
+
+/// The message `choice-color.cat11`.
+pub const CHOICE_COLOR_CAT11: MessageKey = MessageKey::new("choice-color.cat11");
+
+/// The message `choice-color.cat12`.
+pub const CHOICE_COLOR_CAT12: MessageKey = MessageKey::new("choice-color.cat12");
+
+/// The message `choice-color.cat2`.
+pub const CHOICE_COLOR_CAT2: MessageKey = MessageKey::new("choice-color.cat2");
+
+/// The message `choice-color.cat3`.
+pub const CHOICE_COLOR_CAT3: MessageKey = MessageKey::new("choice-color.cat3");
+
+/// The message `choice-color.cat4`.
+pub const CHOICE_COLOR_CAT4: MessageKey = MessageKey::new("choice-color.cat4");
+
+/// The message `choice-color.cat5`.
+pub const CHOICE_COLOR_CAT5: MessageKey = MessageKey::new("choice-color.cat5");
+
+/// The message `choice-color.cat6`.
+pub const CHOICE_COLOR_CAT6: MessageKey = MessageKey::new("choice-color.cat6");
+
+/// The message `choice-color.cat7`.
+pub const CHOICE_COLOR_CAT7: MessageKey = MessageKey::new("choice-color.cat7");
+
+/// The message `choice-color.cat8`.
+pub const CHOICE_COLOR_CAT8: MessageKey = MessageKey::new("choice-color.cat8");
+
+/// The message `choice-color.cat9`.
+pub const CHOICE_COLOR_CAT9: MessageKey = MessageKey::new("choice-color.cat9");
+
 /// The message `cli.about.keys`.
 pub const CLI_ABOUT_KEYS: MessageKey = MessageKey::new("cli.about.keys");
 
@@ -679,6 +715,33 @@ pub const ERROR_EDIT_TAKEN_OVER: MessageKey = MessageKey::new("error.edit.taken-
 /// The message `error.edit.version-changed`.
 pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.version-changed");
 
+/// The message `error.field.no-match`.
+pub const ERROR_FIELD_NO_MATCH: MessageKey = MessageKey::new("error.field.no-match");
+
+/// The message `error.field.not-here`.
+pub const ERROR_FIELD_NOT_HERE: MessageKey = MessageKey::new("error.field.not-here");
+
+/// The message `error.field.required`.
+pub const ERROR_FIELD_REQUIRED: MessageKey = MessageKey::new("error.field.required");
+
+/// The message `error.field.too-big`.
+pub const ERROR_FIELD_TOO_BIG: MessageKey = MessageKey::new("error.field.too-big");
+
+/// The message `error.field.too-long`.
+pub const ERROR_FIELD_TOO_LONG: MessageKey = MessageKey::new("error.field.too-long");
+
+/// The message `error.field.too-short`.
+pub const ERROR_FIELD_TOO_SHORT: MessageKey = MessageKey::new("error.field.too-short");
+
+/// The message `error.field.too-small`.
+pub const ERROR_FIELD_TOO_SMALL: MessageKey = MessageKey::new("error.field.too-small");
+
+/// The message `error.field.unknown-choice`.
+pub const ERROR_FIELD_UNKNOWN_CHOICE: MessageKey = MessageKey::new("error.field.unknown-choice");
+
+/// The message `error.field.wrong-value`.
+pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
+
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
 
@@ -747,6 +810,57 @@ pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
 /// The message `error.setting.locked`.
 pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.locked");
 
+/// The message `field-example.date`.
+pub const FIELD_EXAMPLE_DATE: MessageKey = MessageKey::new("field-example.date");
+
+/// The message `field-example.date-time`.
+pub const FIELD_EXAMPLE_DATE_TIME: MessageKey = MessageKey::new("field-example.date-time");
+
+/// The message `field-example.decimal`.
+pub const FIELD_EXAMPLE_DECIMAL: MessageKey = MessageKey::new("field-example.decimal");
+
+/// The message `field-example.duration`.
+pub const FIELD_EXAMPLE_DURATION: MessageKey = MessageKey::new("field-example.duration");
+
+/// The message `field-example.group`.
+pub const FIELD_EXAMPLE_GROUP: MessageKey = MessageKey::new("field-example.group");
+
+/// The message `field-example.issue`.
+pub const FIELD_EXAMPLE_ISSUE: MessageKey = MessageKey::new("field-example.issue");
+
+/// The message `field-example.long-text`.
+pub const FIELD_EXAMPLE_LONG_TEXT: MessageKey = MessageKey::new("field-example.long-text");
+
+/// The message `field-example.people`.
+pub const FIELD_EXAMPLE_PEOPLE: MessageKey = MessageKey::new("field-example.people");
+
+/// The message `field-example.person`.
+pub const FIELD_EXAMPLE_PERSON: MessageKey = MessageKey::new("field-example.person");
+
+/// The message `field-example.pick-one`.
+pub const FIELD_EXAMPLE_PICK_ONE: MessageKey = MessageKey::new("field-example.pick-one");
+
+/// The message `field-example.pick-several`.
+pub const FIELD_EXAMPLE_PICK_SEVERAL: MessageKey = MessageKey::new("field-example.pick-several");
+
+/// The message `field-example.text`.
+pub const FIELD_EXAMPLE_TEXT: MessageKey = MessageKey::new("field-example.text");
+
+/// The message `field-example.web-address`.
+pub const FIELD_EXAMPLE_WEB_ADDRESS: MessageKey = MessageKey::new("field-example.web-address");
+
+/// The message `field-example.whole-number`.
+pub const FIELD_EXAMPLE_WHOLE_NUMBER: MessageKey = MessageKey::new("field-example.whole-number");
+
+/// The message `field-example.yes-no`.
+pub const FIELD_EXAMPLE_YES_NO: MessageKey = MessageKey::new("field-example.yes-no");
+
+/// The message `field-for.issues`.
+pub const FIELD_FOR_ISSUES: MessageKey = MessageKey::new("field-for.issues");
+
+/// The message `field-for.projects`.
+pub const FIELD_FOR_PROJECTS: MessageKey = MessageKey::new("field-for.projects");
+
 /// The message `field-level.can-change`.
 pub const FIELD_LEVEL_CAN_CHANGE: MessageKey = MessageKey::new("field-level.can-change");
 
@@ -756,12 +870,94 @@ pub const FIELD_LEVEL_CAN_SEE: MessageKey = MessageKey::new("field-level.can-see
 /// The message `field-level.hidden`.
 pub const FIELD_LEVEL_HIDDEN: MessageKey = MessageKey::new("field-level.hidden");
 
+/// The message `field-look.avatar`.
+pub const FIELD_LOOK_AVATAR: MessageKey = MessageKey::new("field-look.avatar");
+
+/// The message `field-look.badge`.
+pub const FIELD_LOOK_BADGE: MessageKey = MessageKey::new("field-look.badge");
+
+/// The message `field-look.pill`.
+pub const FIELD_LOOK_PILL: MessageKey = MessageKey::new("field-look.pill");
+
+/// The message `field-look.plain-text`.
+pub const FIELD_LOOK_PLAIN_TEXT: MessageKey = MessageKey::new("field-look.plain-text");
+
+/// The message `field-look.progress-bar`.
+pub const FIELD_LOOK_PROGRESS_BAR: MessageKey = MessageKey::new("field-look.progress-bar");
+
+/// The message `field-permissions.all-types`.
+pub const FIELD_PERMISSIONS_ALL_TYPES: MessageKey = MessageKey::new("field-permissions.all-types");
+
+/// The message `field-permissions.fewer-options`.
+pub const FIELD_PERMISSIONS_FEWER_OPTIONS: MessageKey =
+    MessageKey::new("field-permissions.fewer-options");
+
 /// The message `field-permissions.intro`.
 pub const FIELD_PERMISSIONS_INTRO: MessageKey = MessageKey::new("field-permissions.intro");
+
+/// The message `field-permissions.more-options`.
+pub const FIELD_PERMISSIONS_MORE_OPTIONS: MessageKey =
+    MessageKey::new("field-permissions.more-options");
 
 /// The message `field-permissions.table-name`.
 pub const FIELD_PERMISSIONS_TABLE_NAME: MessageKey =
     MessageKey::new("field-permissions.table-name");
+
+/// The message `field-permissions.type-chooser`.
+pub const FIELD_PERMISSIONS_TYPE_CHOOSER: MessageKey =
+    MessageKey::new("field-permissions.type-chooser");
+
+/// The message `field-permissions.type-help`.
+pub const FIELD_PERMISSIONS_TYPE_HELP: MessageKey = MessageKey::new("field-permissions.type-help");
+
+/// The message `field-permissions.type-help-chosen`.
+pub const FIELD_PERMISSIONS_TYPE_HELP_CHOSEN: MessageKey =
+    MessageKey::new("field-permissions.type-help-chosen");
+
+/// The message `field-type.date`.
+pub const FIELD_TYPE_DATE: MessageKey = MessageKey::new("field-type.date");
+
+/// The message `field-type.date-time`.
+pub const FIELD_TYPE_DATE_TIME: MessageKey = MessageKey::new("field-type.date-time");
+
+/// The message `field-type.decimal`.
+pub const FIELD_TYPE_DECIMAL: MessageKey = MessageKey::new("field-type.decimal");
+
+/// The message `field-type.duration`.
+pub const FIELD_TYPE_DURATION: MessageKey = MessageKey::new("field-type.duration");
+
+/// The message `field-type.group`.
+pub const FIELD_TYPE_GROUP: MessageKey = MessageKey::new("field-type.group");
+
+/// The message `field-type.issue`.
+pub const FIELD_TYPE_ISSUE: MessageKey = MessageKey::new("field-type.issue");
+
+/// The message `field-type.long-text`.
+pub const FIELD_TYPE_LONG_TEXT: MessageKey = MessageKey::new("field-type.long-text");
+
+/// The message `field-type.people`.
+pub const FIELD_TYPE_PEOPLE: MessageKey = MessageKey::new("field-type.people");
+
+/// The message `field-type.person`.
+pub const FIELD_TYPE_PERSON: MessageKey = MessageKey::new("field-type.person");
+
+/// The message `field-type.pick-one`.
+pub const FIELD_TYPE_PICK_ONE: MessageKey = MessageKey::new("field-type.pick-one");
+
+/// The message `field-type.pick-several`.
+pub const FIELD_TYPE_PICK_SEVERAL: MessageKey = MessageKey::new("field-type.pick-several");
+
+/// The message `field-type.text`.
+pub const FIELD_TYPE_TEXT: MessageKey = MessageKey::new("field-type.text");
+
+/// The message `field-type.web-address`.
+pub const FIELD_TYPE_WEB_ADDRESS: MessageKey = MessageKey::new("field-type.web-address");
+
+/// The message `field-type.whole-number`.
+pub const FIELD_TYPE_WHOLE_NUMBER: MessageKey = MessageKey::new("field-type.whole-number");
+
+/// The message `field-type.yes-no`.
+pub const FIELD_TYPE_YES_NO: MessageKey = MessageKey::new("field-type.yes-no");
 
 /// The message `field.confirm-password`.
 pub const FIELD_CONFIRM_PASSWORD: MessageKey = MessageKey::new("field.confirm-password");
@@ -783,6 +979,226 @@ pub const FIELD_PASSWORD: MessageKey = MessageKey::new("field.password");
 
 /// The message `field.password-help`.
 pub const FIELD_PASSWORD_HELP: MessageKey = MessageKey::new("field.password-help");
+
+/// The message `fields.add-choice`.
+pub const FIELDS_ADD_CHOICE: MessageKey = MessageKey::new("fields.add-choice");
+
+/// The message `fields.add-choice-button`.
+pub const FIELDS_ADD_CHOICE_BUTTON: MessageKey = MessageKey::new("fields.add-choice-button");
+
+/// The message `fields.back`.
+pub const FIELDS_BACK: MessageKey = MessageKey::new("fields.back");
+
+/// The message `fields.basics`.
+pub const FIELDS_BASICS: MessageKey = MessageKey::new("fields.basics");
+
+/// The message `fields.choice-name`.
+pub const FIELDS_CHOICE_NAME: MessageKey = MessageKey::new("fields.choice-name");
+
+/// The message `fields.choice-offer-again`.
+pub const FIELDS_CHOICE_OFFER_AGAIN: MessageKey = MessageKey::new("fields.choice-offer-again");
+
+/// The message `fields.choice-retire`.
+pub const FIELDS_CHOICE_RETIRE: MessageKey = MessageKey::new("fields.choice-retire");
+
+/// The message `fields.choices`.
+pub const FIELDS_CHOICES: MessageKey = MessageKey::new("fields.choices");
+
+/// The message `fields.choices-help`.
+pub const FIELDS_CHOICES_HELP: MessageKey = MessageKey::new("fields.choices-help");
+
+/// The message `fields.color-sample`.
+pub const FIELDS_COLOR_SAMPLE: MessageKey = MessageKey::new("fields.color-sample");
+
+/// The message `fields.combine`.
+pub const FIELDS_COMBINE: MessageKey = MessageKey::new("fields.combine");
+
+/// The message `fields.combine-into`.
+pub const FIELDS_COMBINE_INTO: MessageKey = MessageKey::new("fields.combine-into");
+
+/// The message `fields.default-help`.
+pub const FIELDS_DEFAULT_HELP: MessageKey = MessageKey::new("fields.default-help");
+
+/// The message `fields.field-choices`.
+pub const FIELDS_FIELD_CHOICES: MessageKey = MessageKey::new("fields.field-choices");
+
+/// The message `fields.field-choices-help`.
+pub const FIELDS_FIELD_CHOICES_HELP: MessageKey = MessageKey::new("fields.field-choices-help");
+
+/// The message `fields.field-help`.
+pub const FIELDS_FIELD_HELP: MessageKey = MessageKey::new("fields.field-help");
+
+/// The message `fields.field-name`.
+pub const FIELDS_FIELD_NAME: MessageKey = MessageKey::new("fields.field-name");
+
+/// The message `fields.field-required`.
+pub const FIELDS_FIELD_REQUIRED: MessageKey = MessageKey::new("fields.field-required");
+
+/// The message `fields.for-question`.
+pub const FIELDS_FOR_QUESTION: MessageKey = MessageKey::new("fields.for-question");
+
+/// The message `fields.hidden-reference`.
+pub const FIELDS_HIDDEN_REFERENCE: MessageKey = MessageKey::new("fields.hidden-reference");
+
+/// The message `fields.intro`.
+pub const FIELDS_INTRO: MessageKey = MessageKey::new("fields.intro");
+
+/// The message `fields.kind-question`.
+pub const FIELDS_KIND_QUESTION: MessageKey = MessageKey::new("fields.kind-question");
+
+/// The message `fields.list`.
+pub const FIELDS_LIST: MessageKey = MessageKey::new("fields.list");
+
+/// The message `fields.look`.
+pub const FIELDS_LOOK: MessageKey = MessageKey::new("fields.look");
+
+/// The message `fields.look-label`.
+pub const FIELDS_LOOK_LABEL: MessageKey = MessageKey::new("fields.look-label");
+
+/// The message `fields.look-preview`.
+pub const FIELDS_LOOK_PREVIEW: MessageKey = MessageKey::new("fields.look-preview");
+
+/// The message `fields.look-sample`.
+pub const FIELDS_LOOK_SAMPLE: MessageKey = MessageKey::new("fields.look-sample");
+
+/// The message `fields.make`.
+pub const FIELDS_MAKE: MessageKey = MessageKey::new("fields.make");
+
+/// The message `fields.make-intro`.
+pub const FIELDS_MAKE_INTRO: MessageKey = MessageKey::new("fields.make-intro");
+
+/// The message `fields.make-title`.
+pub const FIELDS_MAKE_TITLE: MessageKey = MessageKey::new("fields.make-title");
+
+/// The message `fields.never-to-assistant`.
+pub const FIELDS_NEVER_TO_ASSISTANT: MessageKey = MessageKey::new("fields.never-to-assistant");
+
+/// The message `fields.no`.
+pub const FIELDS_NO: MessageKey = MessageKey::new("fields.no");
+
+/// The message `fields.no-icon`.
+pub const FIELDS_NO_ICON: MessageKey = MessageKey::new("fields.no-icon");
+
+/// The message `fields.not-a-decimal`.
+pub const FIELDS_NOT_A_DECIMAL: MessageKey = MessageKey::new("fields.not-a-decimal");
+
+/// The message `fields.not-a-duration`.
+pub const FIELDS_NOT_A_DURATION: MessageKey = MessageKey::new("fields.not-a-duration");
+
+/// The message `fields.not-a-whole-number`.
+pub const FIELDS_NOT_A_WHOLE_NUMBER: MessageKey = MessageKey::new("fields.not-a-whole-number");
+
+/// The message `fields.not-found`.
+pub const FIELDS_NOT_FOUND: MessageKey = MessageKey::new("fields.not-found");
+
+/// The message `fields.nothing`.
+pub const FIELDS_NOTHING: MessageKey = MessageKey::new("fields.nothing");
+
+/// The message `fields.nothing-picked`.
+pub const FIELDS_NOTHING_PICKED: MessageKey = MessageKey::new("fields.nothing-picked");
+
+/// The message `fields.offer-again`.
+pub const FIELDS_OFFER_AGAIN: MessageKey = MessageKey::new("fields.offer-again");
+
+/// The message `fields.project-heading`.
+pub const FIELDS_PROJECT_HEADING: MessageKey = MessageKey::new("fields.project-heading");
+
+/// The message `fields.projects-legend`.
+pub const FIELDS_PROJECTS_LEGEND: MessageKey = MessageKey::new("fields.projects-legend");
+
+/// The message `fields.projects-list`.
+pub const FIELDS_PROJECTS_LIST: MessageKey = MessageKey::new("fields.projects-list");
+
+/// The message `fields.projects-more`.
+pub const FIELDS_PROJECTS_MORE: MessageKey = MessageKey::new("fields.projects-more");
+
+/// The message `fields.projects-nothing`.
+pub const FIELDS_PROJECTS_NOTHING: MessageKey = MessageKey::new("fields.projects-nothing");
+
+/// The message `fields.projects-search`.
+pub const FIELDS_PROJECTS_SEARCH: MessageKey = MessageKey::new("fields.projects-search");
+
+/// The message `fields.retire`.
+pub const FIELDS_RETIRE: MessageKey = MessageKey::new("fields.retire");
+
+/// The message `fields.retire-help`.
+pub const FIELDS_RETIRE_HELP: MessageKey = MessageKey::new("fields.retire-help");
+
+/// The message `fields.retire-title`.
+pub const FIELDS_RETIRE_TITLE: MessageKey = MessageKey::new("fields.retire-title");
+
+/// The message `fields.retired`.
+pub const FIELDS_RETIRED: MessageKey = MessageKey::new("fields.retired");
+
+/// The message `fields.rule-max`.
+pub const FIELDS_RULE_MAX: MessageKey = MessageKey::new("fields.rule-max");
+
+/// The message `fields.rule-max-length`.
+pub const FIELDS_RULE_MAX_LENGTH: MessageKey = MessageKey::new("fields.rule-max-length");
+
+/// The message `fields.rule-min`.
+pub const FIELDS_RULE_MIN: MessageKey = MessageKey::new("fields.rule-min");
+
+/// The message `fields.rule-min-length`.
+pub const FIELDS_RULE_MIN_LENGTH: MessageKey = MessageKey::new("fields.rule-min-length");
+
+/// The message `fields.rule-pattern`.
+pub const FIELDS_RULE_PATTERN: MessageKey = MessageKey::new("fields.rule-pattern");
+
+/// The message `fields.rule-pattern-help`.
+pub const FIELDS_RULE_PATTERN_HELP: MessageKey = MessageKey::new("fields.rule-pattern-help");
+
+/// The message `fields.rules`.
+pub const FIELDS_RULES: MessageKey = MessageKey::new("fields.rules");
+
+/// The message `fields.rules-not-a-number`.
+pub const FIELDS_RULES_NOT_A_NUMBER: MessageKey = MessageKey::new("fields.rules-not-a-number");
+
+/// The message `fields.scope-everywhere`.
+pub const FIELDS_SCOPE_EVERYWHERE: MessageKey = MessageKey::new("fields.scope-everywhere");
+
+/// The message `fields.scope-everywhere-switch`.
+pub const FIELDS_SCOPE_EVERYWHERE_SWITCH: MessageKey =
+    MessageKey::new("fields.scope-everywhere-switch");
+
+/// The message `fields.scope-projects-list`.
+pub const FIELDS_SCOPE_PROJECTS_LIST: MessageKey = MessageKey::new("fields.scope-projects-list");
+
+/// The message `fields.scope-remove-button`.
+pub const FIELDS_SCOPE_REMOVE_BUTTON: MessageKey = MessageKey::new("fields.scope-remove-button");
+
+/// The message `fields.scope-types`.
+pub const FIELDS_SCOPE_TYPES: MessageKey = MessageKey::new("fields.scope-types");
+
+/// The message `fields.scope-types-help`.
+pub const FIELDS_SCOPE_TYPES_HELP: MessageKey = MessageKey::new("fields.scope-types-help");
+
+/// The message `fields.see-help`.
+pub const FIELDS_SEE_HELP: MessageKey = MessageKey::new("fields.see-help");
+
+/// The message `fields.see-link`.
+pub const FIELDS_SEE_LINK: MessageKey = MessageKey::new("fields.see-link");
+
+/// The message `fields.see-title`.
+pub const FIELDS_SEE_TITLE: MessageKey = MessageKey::new("fields.see-title");
+
+/// The message `fields.take-away`.
+pub const FIELDS_TAKE_AWAY: MessageKey = MessageKey::new("fields.take-away");
+
+/// The message `fields.time-of-day`.
+pub const FIELDS_TIME_OF_DAY: MessageKey = MessageKey::new("fields.time-of-day");
+
+/// The message `fields.unknown-choice`.
+pub const FIELDS_UNKNOWN_CHOICE: MessageKey = MessageKey::new("fields.unknown-choice");
+
+/// The message `fields.usage`.
+pub const FIELDS_USAGE: MessageKey = MessageKey::new("fields.usage");
+
+/// The message `fields.used-list`.
+pub const FIELDS_USED_LIST: MessageKey = MessageKey::new("fields.used-list");
+
+/// The message `fields.yes`.
+pub const FIELDS_YES: MessageKey = MessageKey::new("fields.yes");
 
 /// The message `first-run.account.intro`.
 pub const FIRST_RUN_ACCOUNT_INTRO: MessageKey = MessageKey::new("first-run.account.intro");
@@ -1241,6 +1657,9 @@ pub const NAV_CHECK_ACCESS: MessageKey = MessageKey::new("nav.check-access");
 
 /// The message `nav.field-permissions`.
 pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permissions");
+
+/// The message `nav.fields`.
+pub const NAV_FIELDS: MessageKey = MessageKey::new("nav.fields");
 
 /// The message `nav.frames`.
 pub const NAV_FRAMES: MessageKey = MessageKey::new("nav.frames");
@@ -3464,6 +3883,126 @@ pub fn field_permissions_project_title(project: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The message `fields.choice-color`.
+#[must_use]
+pub fn fields_choice_color(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-color"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.choice-down`.
+#[must_use]
+pub fn fields_choice_down(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-down"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.choice-icon`.
+#[must_use]
+pub fn fields_choice_icon(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-icon"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.choice-up`.
+#[must_use]
+pub fn fields_choice_up(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-up"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.combine-name`.
+#[must_use]
+pub fn fields_combine_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.combine-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.combine-text`.
+#[must_use]
+pub fn fields_combine_text(into: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.combine-text"),
+        vec![
+            ("into", Value::Text(into.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `fields.combine-title`.
+#[must_use]
+pub fn fields_combine_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.combine-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.scope-projects`.
+#[must_use]
+pub fn fields_scope_projects(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.scope-projects"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `fields.scope-remove`.
+#[must_use]
+pub fn fields_scope_remove(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.scope-remove"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.used-everywhere`.
+#[must_use]
+pub fn fields_used_everywhere(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.used-everywhere"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `fields.used-in-projects`.
+#[must_use]
+pub fn fields_used_in_projects(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.used-in-projects"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `fields.used-more`.
+#[must_use]
+pub fn fields_used_more(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.used-more"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `fields.used-types`.
+#[must_use]
+pub fn fields_used_types(names: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.used-types"),
+        vec![("names", Value::Text(names.to_string()))],
+    )
+}
+
 /// The message `first-run.step-of`.
 #[must_use]
 pub fn first_run_step_of(
@@ -5337,6 +5876,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("check-access.show-every-field", "Show every field"),
     ("check-access.show-every-kind", "Show every kind"),
     ("check-access.yes", "Yes."),
+    ("choice-color.cat1", "Color 1"),
+    ("choice-color.cat10", "Color 10"),
+    ("choice-color.cat11", "Color 11"),
+    ("choice-color.cat12", "Color 12"),
+    ("choice-color.cat2", "Color 2"),
+    ("choice-color.cat3", "Color 3"),
+    ("choice-color.cat4", "Color 4"),
+    ("choice-color.cat5", "Color 5"),
+    ("choice-color.cat6", "Color 6"),
+    ("choice-color.cat7", "Color 7"),
+    ("choice-color.cat8", "Color 8"),
+    ("choice-color.cat9", "Color 9"),
     ("cli.about.keys", "Look after the key files"),
     (
         "cli.about.keys-export",
@@ -5675,6 +6226,36 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Someone changed this while you were working. Use Compare and save to keep your changes.",
     ),
     (
+        "error.field.no-match",
+        "That does not have the form this field asks for.",
+    ),
+    ("error.field.not-here", "This field is not used here."),
+    ("error.field.required", "This field has to be filled in."),
+    (
+        "error.field.too-big",
+        "That is higher than this field allows.",
+    ),
+    (
+        "error.field.too-long",
+        "That is longer than this field allows.",
+    ),
+    (
+        "error.field.too-short",
+        "That is shorter than this field allows.",
+    ),
+    (
+        "error.field.too-small",
+        "That is lower than this field allows.",
+    ),
+    (
+        "error.field.unknown-choice",
+        "That choice is not offered by this field.",
+    ),
+    (
+        "error.field.wrong-value",
+        "That is not a value this field can hold.",
+    ),
+    (
         "error.issue.type-retired",
         "That issue type is retired, so no new issues can be made with it. Choose another type.",
     ),
@@ -5752,9 +6333,33 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.setting.locked",
         "An administrator locked this setting, so it can't be changed here.",
     ),
+    ("field-example.date", "For example: Promised by"),
+    ("field-example.date-time", "For example: Seen at"),
+    ("field-example.decimal", "For example: Budget"),
+    ("field-example.duration", "For example: Time to fix"),
+    ("field-example.group", "For example: Responsible team"),
+    ("field-example.issue", "For example: Duplicate of"),
+    ("field-example.long-text", "For example: Notes"),
+    ("field-example.people", "For example: Reviewers"),
+    ("field-example.person", "For example: Tester"),
+    ("field-example.pick-one", "For example: Severity"),
+    ("field-example.pick-several", "For example: Platforms"),
+    ("field-example.text", "For example: Customer name"),
+    ("field-example.web-address", "For example: Customer page"),
+    ("field-example.whole-number", "For example: Affected users"),
+    ("field-example.yes-no", "For example: Needs a refund"),
+    ("field-for.issues", "Issues"),
+    ("field-for.projects", "Projects"),
     ("field-level.can-change", "Can change"),
     ("field-level.can-see", "Can see"),
     ("field-level.hidden", "Hidden"),
+    ("field-look.avatar", "Avatar"),
+    ("field-look.badge", "Badge"),
+    ("field-look.pill", "Pill"),
+    ("field-look.plain-text", "Plain text"),
+    ("field-look.progress-bar", "Progress bar"),
+    ("field-permissions.all-types", "All issue types"),
+    ("field-permissions.fewer-options", "Fewer options"),
     (
         "field-permissions.intro",
         "For each role, choose whether a field is hidden, can be seen or can be changed. Hidden means the field does not exist for that role: not in issues, searches, e-mails, maps or the assistant.",
@@ -5763,6 +6368,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "field-permissions.intro-project",
         "These levels count in {project} and in its sub-projects, until one of them sets its own. Change a level that comes from higher up to set one for this project, and reset it to take that back.",
     ),
+    ("field-permissions.more-options", "More options"),
     (
         "field-permissions.project-title",
         "Field permissions in {project}",
@@ -5771,6 +6377,30 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "field-permissions.table-name",
         "Which level each role has for each field",
     ),
+    ("field-permissions.type-chooser", "Levels for"),
+    (
+        "field-permissions.type-help",
+        "These levels count for issues of every type, unless a level is set for one type below.",
+    ),
+    (
+        "field-permissions.type-help-chosen",
+        "A level set here counts for issues of this type only, and wins over the level for all types. Where nothing is set for this type, the level for all types counts.",
+    ),
+    ("field-type.date", "Date"),
+    ("field-type.date-time", "Date and time"),
+    ("field-type.decimal", "Decimal number"),
+    ("field-type.duration", "Duration"),
+    ("field-type.group", "Group"),
+    ("field-type.issue", "Issue"),
+    ("field-type.long-text", "Long text"),
+    ("field-type.people", "People"),
+    ("field-type.person", "Person"),
+    ("field-type.pick-one", "Pick one"),
+    ("field-type.pick-several", "Pick several"),
+    ("field-type.text", "Text"),
+    ("field-type.web-address", "Web address"),
+    ("field-type.whole-number", "Whole number"),
+    ("field-type.yes-no", "Yes / No"),
     ("field.confirm-password", "Your password"),
     (
         "field.confirm-password-help",
@@ -5784,6 +6414,155 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "field.password-help",
         "At least 12 characters. A few words in a row make a good password.",
     ),
+    ("fields.add-choice", "New choice"),
+    ("fields.add-choice-button", "Add the choice"),
+    ("fields.back", "Back to all fields"),
+    ("fields.basics", "Basics"),
+    ("fields.choice-color", "Color of {name}"),
+    ("fields.choice-down", "Move {name} down"),
+    ("fields.choice-icon", "Icon of {name}"),
+    ("fields.choice-name", "Name of the choice"),
+    ("fields.choice-offer-again", "Offer this choice again"),
+    ("fields.choice-retire", "Retire this choice"),
+    ("fields.choice-up", "Move {name} up"),
+    ("fields.choices", "Choices"),
+    (
+        "fields.choices-help",
+        "Use the arrows to change the order. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
+    ),
+    ("fields.color-sample", "Aa"),
+    ("fields.combine", "Combine"),
+    ("fields.combine-into", "Combine with another choice"),
+    ("fields.combine-name", "Combine {name} with another choice"),
+    (
+        "fields.combine-text",
+        "Every value of {name} becomes {into}, in every issue and project that has it, and {name} is retired. Each of those issues gets a record in its history. This cannot be taken back.",
+    ),
+    (
+        "fields.combine-title",
+        "Combine {name} with another choice?",
+    ),
+    (
+        "fields.default-help",
+        "The value a new issue or project starts with. Leave it empty for none.",
+    ),
+    ("fields.field-choices", "Choices"),
+    (
+        "fields.field-choices-help",
+        "One choice on each line. You can change names, colors and icons on the field page.",
+    ),
+    ("fields.field-help", "Help text"),
+    ("fields.field-name", "Name"),
+    ("fields.field-required", "It has to be filled in"),
+    ("fields.for-question", "What is it for?"),
+    ("fields.hidden-reference", "Not shown"),
+    (
+        "fields.intro",
+        "Fields are the pieces of information on an issue or a project. Add the fields your organization needs, and decide who sees and fills in each one under Field permissions.",
+    ),
+    ("fields.kind-question", "What kind of information?"),
+    ("fields.list", "Fields"),
+    ("fields.look", "Look"),
+    ("fields.look-label", "How values are shown"),
+    ("fields.look-preview", "The look in all four themes"),
+    ("fields.look-sample", "Sample"),
+    ("fields.make", "Make the field"),
+    (
+        "fields.make-intro",
+        "Start with what kind of information the field holds. You can change everything else later, except the kind.",
+    ),
+    ("fields.make-title", "Make a field"),
+    (
+        "fields.never-to-assistant",
+        "Never send this field to the assistant",
+    ),
+    ("fields.no", "No"),
+    ("fields.no-icon", "No icon"),
+    (
+        "fields.not-a-decimal",
+        "Type a number, with a point for the decimal part.",
+    ),
+    (
+        "fields.not-a-duration",
+        "Type a length of time like 1h 30m.",
+    ),
+    ("fields.not-a-whole-number", "Type a whole number."),
+    ("fields.not-found", "This field is not here."),
+    (
+        "fields.nothing",
+        "There are no fields of your own yet. Make one below.",
+    ),
+    ("fields.nothing-picked", "Nothing picked"),
+    ("fields.offer-again", "Offer this field again"),
+    ("fields.project-heading", "Project fields"),
+    ("fields.projects-legend", "Add a project"),
+    ("fields.projects-list", "Projects"),
+    ("fields.projects-more", "Show more projects"),
+    ("fields.projects-nothing", "No project found."),
+    ("fields.projects-search", "Find a project"),
+    ("fields.retire", "Retire this field"),
+    (
+        "fields.retire-help",
+        "A retired field is no longer offered for new values. The values already set stay on the issues and projects.",
+    ),
+    ("fields.retire-title", "Retire the field"),
+    ("fields.retired", "Retired"),
+    ("fields.rule-max", "Highest value"),
+    ("fields.rule-max-length", "Most characters or values"),
+    ("fields.rule-min", "Lowest value"),
+    ("fields.rule-min-length", "Fewest characters or values"),
+    ("fields.rule-pattern", "Pattern"),
+    (
+        "fields.rule-pattern-help",
+        "The whole text has to match. For example, [A-Z]+-[0-9]+ matches CAB-12.",
+    ),
+    ("fields.rules", "Rules"),
+    (
+        "fields.rules-not-a-number",
+        "One of the rules is not a number in the form this field uses.",
+    ),
+    ("fields.scope-everywhere", "Everywhere"),
+    ("fields.scope-everywhere-switch", "Use it in every project"),
+    (
+        "fields.scope-projects",
+        "{count, plural, one {In 1 project} other {In # projects}}",
+    ),
+    (
+        "fields.scope-projects-list",
+        "Projects the field is limited to",
+    ),
+    ("fields.scope-remove", "Take {name} out"),
+    ("fields.scope-remove-button", "Take out"),
+    ("fields.scope-types", "Issue types"),
+    (
+        "fields.scope-types-help",
+        "Tick the issue types that have the field. With none ticked, every issue type has it.",
+    ),
+    (
+        "fields.see-help",
+        "Each role sees a field as Hidden, Can see or Can change. A new field starts with Can see for everyone who sees the project, and Can change from Team member up.",
+    ),
+    ("fields.see-link", "Open the field permissions"),
+    ("fields.see-title", "Who can see it"),
+    ("fields.take-away", "Take away"),
+    ("fields.time-of-day", "Time (hours and minutes, like 14:30)"),
+    ("fields.unknown-choice", "A choice that is gone"),
+    ("fields.usage", "Where it is used"),
+    (
+        "fields.used-everywhere",
+        "{count, plural, =0 {No project has a value yet.} one {1 project has a value.} other {# projects have a value.}}",
+    ),
+    (
+        "fields.used-in-projects",
+        "{count, plural, =0 {Limited to no project you can see.} one {Used in 1 project.} other {Used in # projects.}}",
+    ),
+    ("fields.used-list", "Projects that use the field"),
+    (
+        "fields.used-more",
+        "{count, plural, one {And # more project.} other {And # more projects.}}",
+    ),
+    ("fields.used-types", "Issue types: {names}"),
+    ("fields.yes", "Yes"),
     (
         "first-run.account.intro",
         "An administrator can invite people and look after the server. This account is the first one.",
@@ -6084,6 +6863,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
     ("nav.field-permissions", "Field permissions"),
+    ("nav.fields", "Fields"),
     ("nav.frames", "Page frames"),
     ("nav.group.look", "Look and feel"),
     ("nav.group.look-org", "Look"),

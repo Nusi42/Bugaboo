@@ -124,3 +124,32 @@ route = "GET /api/v1/check-access/people/{person}"
 property = "kinds"
 whole_value = true
 reason = "The answer holds one entry for each kind of people information (10 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/field-types"
+property = "kinds"
+whole_value = true
+reason = "The kinds of information a field can hold are as many as the code declares (15 in M3): a list bounded by the code, not one that grows with data, and the screen that makes a field needs all of them at once (M3-F48)."
+
+[[exempt]]
+route = "GET /api/v1/fields"
+property = "fields"
+whole_value = true
+reason = "A field is refused when the organization already has 200 (FIELDS_MAX), so the list is bounded when it is written, and the screens that show or fill in fields need all of them at once; the items hold the choices and rules of a field, which the value editors need (M3-F48)."
+
+[[exempt]]
+route = "GET /api/v1/fields/{field}"
+property = "choices"
+whole_value = true
+reason = "A choice is refused when the field already has 200 (CHOICES_MAX), so the list is bounded when it is written, and the page of the field needs all of them at once (M3-F48)."
+
+[[exempt]]
+route = "GET /api/v1/fields/{field}/used-by"
+property = "projects"
+reason = "The projects named under 'Used in N projects' are cut at 100 (USAGE_PROJECTS_MAX); the answer holds the number of all of them and says when the list was cut (M3-F48)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}"
+property = "changeable_fields"
+whole_value = true
+reason = "The fields a person may change in one project are at most as many as the field catalogue and the own fields have (at most 200 own fields, FIELDS_MAX): a list bounded when it is written, and the project page needs all of them at once (M3-F48)."

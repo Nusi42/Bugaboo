@@ -1,0 +1,213 @@
+import { t } from "@bugaboo/messages";
+import { Alert, alertTone, Card, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
+import { useState } from "react";
+
+import { messageOf } from "../../shared/errors.ts";
+import { QueryGate } from "../shell/index.ts";
+import { useFieldTypes, type Field } from "./fields.ts";
+import { fieldChange, useChangeField } from "./use-change-field.ts";
+import {
+  decimalToMillionths,
+  durationSeconds,
+  durationText,
+  isWholeNumberText,
+  millionthsToDecimal,
+} from "./value-text.ts";
+
+/** The lowest or highest value in a box, as people write it for this kind. */
+function boxOf(field: Field, stored: number | null | undefined): string {
+  if (stored === undefined || stored === null) {
+    return "";
+  }
+  if (field.kind === "decimal") {
+    return millionthsToDecimal(stored);
+  }
+  return field.kind === "duration" ? durationText(stored) : String(stored);
+}
+
+/** What a box means in the unit the API stores; `null` for an empty box, `undefined` for text that is none. */
+function storedOf(field: Field, text: string): number | null | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return null;
+  }
+  if (field.kind === "decimal") {
+    return decimalToMillionths(trimmed);
+  }
+  if (field.kind === "duration") {
+    return durationSeconds(trimmed);
+  }
+  return isWholeNumberText(trimmed) ? Number(trimmed) : undefined;
+}
+
+/** A count of characters or values in a box: a whole number, or nothing. */
+function countOf(text: string): number | null | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return null;
+  }
+  return /^\d+$/u.test(trimmed) ? Number(trimmed) : undefined;
+}
+
+interface Shape {
+  /** The kind has a range of values. */
+  readonly ranged: boolean;
+  /** The kind has a length or a count of values. */
+  readonly counted: boolean;
+  /** The kind has a pattern. */
+  readonly pattern: boolean;
+}
+
+/** *Rules* of the field page (CF-03): the allowed range, length and pattern, for the kinds that have them. */
+export function RulesSection({ field }: { readonly field: Field }) {
+  const types = useFieldTypes();
+  return (
+    <QueryGate error={types.error} data={types.data}>
+      {(known) => {
+        const traits = known.kinds.find((each) => each.kind === field.kind)?.traits ?? [];
+        const ranged =
+          traits.includes("range") && field.kind !== "date" && field.kind !== "date-time";
+        const pattern = traits.includes("text");
+        const counted = pattern || traits.includes("many");
+        return ranged || counted ? (
+          <RulesForm field={field} shape={{ ranged, counted, pattern }} />
+        ) : null;
+      }}
+    </QueryGate>
+  );
+}
+
+/** What is typed in the boxes of the rules. */
+interface Boxes {
+  readonly min: string;
+  readonly max: string;
+  readonly shortest: string;
+  readonly longest: string;
+  readonly text: string;
+}
+
+function boxesOf(field: Field): Boxes {
+  const { rules } = field;
+  return {
+    min: boxOf(field, rules.min),
+    max: boxOf(field, rules.max),
+    shortest:
+      rules.min_length === undefined || rules.min_length === null ? "" : String(rules.min_length),
+    longest:
+      rules.max_length === undefined || rules.max_length === null ? "" : String(rules.max_length),
+    text: rules.pattern ?? "",
+  };
+}
+
+/** The rules the boxes say, or `undefined` when one box holds text that is no number. */
+function rulesOf(field: Field, boxes: Boxes, shape: Shape): Record<string, unknown> | undefined {
+  const lowest = shape.ranged ? storedOf(field, boxes.min) : null;
+  const highest = shape.ranged ? storedOf(field, boxes.max) : null;
+  const fewest = shape.counted ? countOf(boxes.shortest) : null;
+  const most = shape.counted ? countOf(boxes.longest) : null;
+  if (lowest === undefined || highest === undefined || fewest === undefined || most === undefined) {
+    return undefined;
+  }
+  return {
+    required: field.rules.required === true,
+    ...(lowest === null ? {} : { min: lowest }),
+    ...(highest === null ? {} : { max: highest }),
+    ...(fewest === null ? {} : { min_length: fewest }),
+    ...(most === null ? {} : { max_length: most }),
+    ...(shape.pattern && boxes.text.trim() !== "" ? { pattern: boxes.text.trim() } : {}),
+  };
+}
+
+interface BoxesProps {
+  readonly boxes: Boxes;
+  readonly onChange: (boxes: Boxes) => void;
+}
+
+/** The lowest and highest value. */
+function RangeBoxes({ boxes, onChange }: BoxesProps) {
+  return (
+    <>
+      <TextField
+        label={t("fields.rule-min")}
+        value={boxes.min}
+        onChange={(min) => {
+          onChange({ ...boxes, min });
+        }}
+      />
+      <TextField
+        label={t("fields.rule-max")}
+        value={boxes.max}
+        onChange={(max) => {
+          onChange({ ...boxes, max });
+        }}
+      />
+    </>
+  );
+}
+
+/** The fewest and most characters or values. */
+function CountBoxes({ boxes, onChange }: BoxesProps) {
+  return (
+    <>
+      <TextField
+        label={t("fields.rule-min-length")}
+        value={boxes.shortest}
+        onChange={(shortest) => {
+          onChange({ ...boxes, shortest });
+        }}
+      />
+      <TextField
+        label={t("fields.rule-max-length")}
+        value={boxes.longest}
+        onChange={(longest) => {
+          onChange({ ...boxes, longest });
+        }}
+      />
+    </>
+  );
+}
+
+/** The boxes of the rules that a kind has. */
+function RuleBoxes({ shape, ...rest }: BoxesProps & { readonly shape: Shape }) {
+  return (
+    <>
+      {shape.ranged ? <RangeBoxes {...rest} /> : null}
+      {shape.counted ? <CountBoxes {...rest} /> : null}
+      {shape.pattern ? (
+        <TextField
+          label={t("fields.rule-pattern")}
+          description={t("fields.rule-pattern-help")}
+          value={rest.boxes.text}
+          onChange={(text) => {
+            rest.onChange({ ...rest.boxes, text });
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function RulesForm({ field, shape }: { readonly field: Field; readonly shape: Shape }) {
+  const [boxes, setBoxes] = useState(boxesOf(field));
+  const [problem, setProblem] = useState<string | undefined>();
+  const change = useChangeField();
+  const submit = () => {
+    const rules = rulesOf(field, boxes, shape);
+    setProblem(rules === undefined ? t("fields.rules-not-a-number") : undefined);
+    if (rules !== undefined) {
+      change.mutate(fieldChange(field, { rules }));
+    }
+  };
+  return (
+    <Card heading={t("fields.rules")}>
+      <Form onSubmit={submit}>
+        <RuleBoxes shape={shape} boxes={boxes} onChange={setBoxes} />
+        {problem === undefined ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
+        {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
+        <div {...partOf(part.row)}>
+          <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
+        </div>
+      </Form>
+    </Card>
+  );
+}

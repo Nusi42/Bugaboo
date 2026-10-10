@@ -3,8 +3,8 @@
 //! wrapped in `Authorized<T>` by the use case.
 
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{LevelSubject, Masked, Permission, PersonRef};
 use jiff::Timestamp;
@@ -113,8 +113,10 @@ pub struct SetFieldLevel {
     pub role: RoleId,
     /// The project, or `None` for the role's own level.
     pub project: Option<ProjectId>,
-    /// The field.
-    pub field: Field,
+    /// The issue type the level is for, or `None` for all issue types (ADR-0027).
+    pub issue_type: Option<IssueTypeId>,
+    /// The field, built-in or own.
+    pub field: FieldKey,
     /// The level.
     pub level: Option<FieldLevel>,
 }
@@ -142,6 +144,8 @@ pub struct SetLevel<K: LevelSubject> {
     pub role: RoleId,
     /// The project, or `None` for the role's own level.
     pub project: Option<ProjectId>,
+    /// The issue type the level is for (fields only), or `None` for all issue types.
+    pub issue_type: Option<IssueTypeId>,
     /// The field or the kind of people information.
     pub subject: K,
     /// The level.
@@ -159,13 +163,14 @@ pub trait LevelRequest {
 }
 
 impl LevelRequest for SetFieldLevel {
-    type Subject = Field;
+    type Subject = FieldKey;
 
-    fn into_change(self) -> SetLevel<Field> {
+    fn into_change(self) -> SetLevel<FieldKey> {
         SetLevel {
             session_token: self.session_token,
             role: self.role,
             project: self.project,
+            issue_type: self.issue_type,
             subject: self.field,
             level: self.level,
         }
@@ -180,6 +185,7 @@ impl LevelRequest for SetPeopleLevel {
             session_token: self.session_token,
             role: self.role,
             project: self.project,
+            issue_type: None,
             subject: self.kind,
             level: self.level,
         }
@@ -278,7 +284,7 @@ pub struct RoleRef {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct FieldLevelView {
     /// The field.
-    pub field: Field,
+    pub field: FieldKey,
     /// Its level.
     pub level: FieldLevel,
 }

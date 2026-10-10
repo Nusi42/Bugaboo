@@ -105,6 +105,8 @@ words! {
     pub enum RecordKind {
         /// An access key.
         AccessKey => "access_key",
+        /// An own field (CF-01).
+        Field => "field",
         /// One row of *Who has which role*.
         Assignment => "assignment",
         /// A group of people.

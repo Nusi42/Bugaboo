@@ -146,7 +146,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// The vocabularies the browser lists at run time (a drop-down of icons), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 1] = ["IssueIcon"];
+const WORD_LISTS: [&str; 5] = ["IssueIcon", "FieldType", "FieldFor", "Look", "ChoiceColor"];
 
 /// `IssueIcon` as `issueIconWords`.
 fn words_name(schema: &str) -> String {
@@ -436,13 +436,19 @@ pub const VERSIONS_MAX: u32 = 50;
 
     #[test]
     fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
-        let spec =
-            r#"{"components":{"schemas":{"IssueIcon":{"type":"string","enum":["bug","flag"]}}}}"#;
+        let spec = r#"{"components":{"schemas":{
+            "IssueIcon":{"type":"string","enum":["bug","flag"]},
+            "FieldType":{"type":"string","enum":["text"]},
+            "FieldFor":{"type":"string","enum":["issues"]},
+            "Look":{"type":"string","enum":["badge"]},
+            "ChoiceColor":{"type":"string","enum":["cat1"]}
+        }}}"#;
         let text = words(spec).unwrap();
         assert!(
             text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),
             "{text}"
         );
+        assert!(text.contains("export const choiceColorWords = [\"cat1\"] as const;"));
         assert!(words("{}").is_err());
         assert!(words("not json").is_err());
     }
