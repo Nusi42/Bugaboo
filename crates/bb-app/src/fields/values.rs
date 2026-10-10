@@ -31,6 +31,7 @@ use super::pattern::Linear;
 use super::types::Definition;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::issues::{IssueView, OwnHtml};
 
 /// The values of a set of items, as stored, with the definitions they are read with.
 #[derive(Clone, Debug, Default)]
@@ -154,6 +155,8 @@ pub(crate) struct Item {
     pub(crate) chain: Vec<ProjectId>,
     /// The issue type, for an issue.
     pub(crate) issue_type: Option<IssueTypeId>,
+    /// Who reported it, for an issue: a person named in a field has to be able to see the issue.
+    pub(crate) reported_by: Option<UserId>,
 }
 
 impl Item {
@@ -280,6 +283,39 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
+    /// The long-text own fields of an issue as safe HTML, one for each the viewer may see on an
+    /// issue of this type and that has a text.
+    pub(crate) async fn long_texts_html(
+        &self,
+        viewer: &Evaluation,
+        issue_type: IssueTypeId,
+        view: &IssueView,
+        image_hosts: &[String],
+    ) -> Result<Vec<OwnHtml>, AppError> {
+        let mut shown = Vec::new();
+        for definition in self.field_catalogue().await?.iter() {
+            let field = &definition.field;
+            let key = FieldKey::Own(field.id);
+            if !field.kind.is_long_text()
+                || viewer.field_level_for(Some(issue_type), key) < FieldLevel::CanSee
+            {
+                continue;
+            }
+            let Some(Value::String(text)) = view.own_fields.0.get(&key.code().into_owned()) else {
+                continue;
+            };
+            let html = bb_markdown::render(
+                text.as_str(),
+                &bb_markdown::Options {
+                    image_hosts: image_hosts.to_vec(),
+                },
+            )
+            .html;
+            shown.push(OwnHtml { field: key, html });
+        }
+        Ok(shown)
+    }
+
     /// The readable ID of an issue, when the actor sees the issue.
     async fn issue_key_for(
         &self,
@@ -365,20 +401,40 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether a person, group or issue a value names exists and may be named by this viewer.
-    async fn reference_exists(
+    /// A person has to be one the viewer is shown by name and, in an issue, one who may see the
+    /// issue (the rule of *Assigned to*); a group one whose name the viewer may read.
+    async fn reference_may_be_named(
         &self,
         actor: &Actor,
+        viewer: &Evaluation,
+        item: &Item,
         kind: FieldType,
         bytes: [u8; 16],
     ) -> Result<bool, AppError> {
         let failed = |error| internal::<S>(&error);
         Ok(match kind {
-            FieldType::Person | FieldType::People => match UserId::from_bytes(bytes) {
-                Ok(person) => self.store().person(person).await.map_err(failed)?.is_some(),
-                Err(_) => false,
-            },
+            FieldType::Person | FieldType::People => {
+                let Ok(person) = UserId::from_bytes(bytes) else {
+                    return Ok(false);
+                };
+                if viewer.people_level(PeopleKind::AssignedTo, PeopleContext::Ordinary)
+                    != PeopleLevel::Names
+                    || self.store().person(person).await.map_err(failed)?.is_none()
+                {
+                    return Ok(false);
+                }
+                match (item.kind, item.chain.last(), item.reported_by) {
+                    (RecordKind::Issue, Some(project), Some(reported_by)) => {
+                        self.may_be_assigned(person, *project, reported_by).await?
+                    }
+                    _ => true,
+                }
+            }
             FieldType::Group => match GroupId::from_bytes(bytes) {
-                Ok(group) => self.store().group(group).await.map_err(failed)?.is_some(),
+                Ok(group) => {
+                    viewer.kind_level(PeopleKind::Mentions) == PeopleLevel::Names
+                        && self.store().group(group).await.map_err(failed)?.is_some()
+                }
                 Err(_) => false,
             },
             FieldType::Issue => match IssueId::from_bytes(bytes) {
@@ -452,7 +508,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             let old = item.id.and_then(|id| current.value(id, field.id)).cloned();
             let new = FieldValue::from_json(field.kind, json).map_err(Violation::error)?;
-            self.check_value(actor, definition, new.as_ref(), old.as_ref())
+            self.check_value(actor, viewer, item, definition, new.as_ref(), old.as_ref())
                 .await?;
             sets.push(Set {
                 field: field.id,
@@ -471,6 +527,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn check_value(
         &self,
         actor: &Actor,
+        viewer: &Evaluation,
+        item: &Item,
         definition: &Definition,
         new: Option<&FieldValue>,
         old: Option<&FieldValue>,
@@ -494,7 +552,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                     })
                 })
             } else {
-                self.reference_exists(actor, field.kind, *bytes).await?
+                // What the field already holds is not asked again, so a person who went away or
+                // an issue that moved stays where it is until it is changed.
+                old.is_some_and(|old| old.ids().contains(bytes))
+                    || self
+                        .reference_may_be_named(actor, viewer, item, field.kind, *bytes)
+                        .await?
             };
             if !fine {
                 return Err(ErrorCode::FieldUnknownChoice.into());

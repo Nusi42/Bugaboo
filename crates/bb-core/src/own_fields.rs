@@ -75,8 +75,11 @@ pub const DECIMAL_PARTS: i64 = 1_000_000;
 /// Never in practice: the ID is 36 characters of hex digits and hyphens, so the name is a valid
 /// technical name.
 pub fn edit_part(field: FieldId) -> Result<TechnicalName, InvalidTechnicalName> {
-    TechnicalName::new(&format!("field-{field}"))
+    TechnicalName::new(&format!("{EDIT_PART_PREFIX}{field}"))
 }
+
+/// What the name of the edit part of a long-text field starts with, before the ID of the field.
+pub const EDIT_PART_PREFIX: &str = "field-";
 
 words! {
     /// What kind of information a field holds (CF-01). The word is stored. *Release* and *Pick

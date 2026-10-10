@@ -363,6 +363,21 @@ export const versionsMax = {};
     ))
 }
 
+/// The text of `const NAME: &str = "…";` in a Rust source.
+fn text_const(source: &str, name: &str) -> Option<String> {
+    let file = syn::parse_file(source).ok()?;
+    file.items.iter().find_map(|item| match item {
+        syn::Item::Const(item) if item.ident == name => match &*item.expr {
+            syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(text),
+                ..
+            }) => Some(text.value()),
+            _ => None,
+        },
+        _ => None,
+    })
+}
+
 /// The scale of the decimal numbers of own fields as constants for the browser client: how many
 /// parts a whole has, and how many digits that is after the point.
 pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
@@ -372,8 +387,13 @@ pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
     let file = syn::parse_file(text).with_context(|| format!("{FIELDS_SOURCE} is not Rust"))?;
     let parts = number_const(&file, FIELDS_SOURCE, "DECIMAL_PARTS")?;
     let digits = parts.len().saturating_sub(1);
+    let prefix = text_const(text, "EDIT_PART_PREFIX")
+        .with_context(|| format!("{FIELDS_SOURCE} has no `const EDIT_PART_PREFIX` that is text"))?;
     Ok(format!(
-        "{TS_HEADER}/** How many parts a whole has in a decimal number of an own field (it is stored in these parts). */
+        "{TS_HEADER}/** What the name of the edit part of a long-text own field starts with, before the ID of the field. */
+export const ownFieldPartPrefix = {prefix:?};
+
+/** How many parts a whole has in a decimal number of an own field (it is stored in these parts). */
 export const decimalParts = {parts};
 
 /** How many digits a decimal number of an own field has after the point. */

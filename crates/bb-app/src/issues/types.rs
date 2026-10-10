@@ -201,6 +201,18 @@ pub struct IssueView {
     pub version: i64,
 }
 
+/// A long text of an own field, rendered for the page: the field and the safe HTML.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Masked)]
+pub struct OwnHtml {
+    /// The field.
+    #[masked(open)]
+    pub field: FieldKey,
+    /// The text as safe HTML, rendered by `bb-markdown` with the image hosts of the organization.
+    /// Only for a field the viewer may see on an issue of this type.
+    #[masked(open)]
+    pub html: String,
+}
+
 /// One issue with what the person may do with it.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Masked)]
 pub struct IssueDetail {
@@ -212,6 +224,9 @@ pub struct IssueDetail {
     /// description.
     #[masked(field = "description")]
     pub description_html: String,
+    /// The long-text own fields as safe HTML, one for each the viewer may see.
+    #[masked(nested)]
+    pub own_fields_html: Vec<OwnHtml>,
     /// Whether the person may change the issue at all (in the fields they may change).
     #[masked(open)]
     pub may_change: bool,

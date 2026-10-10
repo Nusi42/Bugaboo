@@ -107,6 +107,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: Some(id.into()),
             chain: self.chain_of(project.id).await?,
             issue_type: Some(issue_type.id),
+            reported_by: Some(actor.person.id),
         };
         let nothing_yet = self.load_values(RecordKind::Issue, &[]).await?;
         let own = self

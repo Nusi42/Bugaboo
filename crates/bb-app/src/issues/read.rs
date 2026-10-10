@@ -105,6 +105,7 @@ pub async fn issue<S: AuthStore>(
             id: Some(issue.id.into()),
             chain: ctx.chain_of(issue.project).await?,
             issue_type: Some(issue.issue_type),
+            reported_by: Some(issue.reported_by),
         };
         keys.extend(ctx.changeable_own_fields(&mask, &item).await?);
         keys
@@ -112,11 +113,20 @@ pub async fn issue<S: AuthStore>(
         Vec::new()
     };
     let image_hosts = ctx.image_hosts().await?;
-    let description_html =
-        bb_markdown::render(&issue.description, &bb_markdown::Options { image_hosts }).html;
+    let description_html = bb_markdown::render(
+        &issue.description,
+        &bb_markdown::Options {
+            image_hosts: image_hosts.clone(),
+        },
+    )
+    .html;
+    let own_fields_html = ctx
+        .long_texts_html(&held, issue.issue_type, &view, &image_hosts)
+        .await?;
     Ok(held.authorize(IssueDetail {
         issue: view,
         description_html,
+        own_fields_html,
         may_change,
         may_delete: held.may_delete_issue(issue.reported_by),
         changeable,

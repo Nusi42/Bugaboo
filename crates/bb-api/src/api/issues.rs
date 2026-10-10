@@ -186,6 +186,18 @@ impl From<&IssueView> for IssueItem {
     }
 }
 
+/// A long-text own field of an issue as safe HTML.
+#[derive(Serialize, ToSchema, Masked)]
+pub(crate) struct OwnHtmlBody {
+    /// The key of the field.
+    #[masked(open)]
+    field: FieldKey,
+    /// The text as safe HTML, made by the server with the renderer of the editor's preview (the
+    /// mark `x-safe-html`).
+    #[masked(open)]
+    html: String,
+}
+
 /// One issue with what the person may do with it.
 #[derive(Serialize, ToSchema, Masked)]
 pub(crate) struct IssueDetailBody {
@@ -197,6 +209,9 @@ pub(crate) struct IssueDetailBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "description")]
     description_html: Option<String>,
+    /// The long-text own fields as safe HTML, one for each the person may see.
+    #[masked(nested)]
+    own_fields_html: Vec<OwnHtmlBody>,
     /// Whether the person may change the issue at all, in the fields they may change.
     #[masked(open)]
     may_change: bool,
@@ -214,6 +229,14 @@ impl From<IssueDetail> for IssueDetailBody {
         Self {
             issue: IssueItem::from(&detail.issue),
             description_html: Some(detail.description_html),
+            own_fields_html: detail
+                .own_fields_html
+                .into_iter()
+                .map(|each| OwnHtmlBody {
+                    field: each.field,
+                    html: each.html,
+                })
+                .collect(),
             may_change: detail.may_change,
             may_delete: detail.may_delete,
             changeable: detail.changeable,

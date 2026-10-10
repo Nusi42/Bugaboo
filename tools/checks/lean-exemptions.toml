@@ -159,3 +159,9 @@ route = "GET /api/v1/content/image-hosts"
 property = "hosts"
 whole_value = true
 reason = "The hosts are the value of one setting (content.image-hosts), read as a whole; the setting allows at most 50 and the preview needs all of them at once (M3-F11)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}"
+property = "own_fields_html"
+whole_value = true
+reason = "One entry for each long-text own field of the issue the person may see: at most as many as the 200 own fields (FIELDS_MAX), a list bounded when the fields are made, and the issue page draws all of them at once (M3-F48)."

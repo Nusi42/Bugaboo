@@ -802,6 +802,62 @@ async fn reference_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
     Ok(keys)
 }
 
+/// The ways a person in a field is refused: the ID of another kind of thing, a person who is not
+/// there, and a person who cannot see the issue.
+async fn person_refusals(
+    ada: &mut Browser,
+    rig: &Rig,
+    site: &Site<'_>,
+    path: &str,
+    tester: &str,
+    version: &Value,
+    (other, me): (&Value, &str),
+) -> TestResult {
+    // The ID of another kind of thing is no person, and a person who is not there is no choice.
+    let wrong_kind = ada
+        .send(
+            "PATCH",
+            path,
+            Some(json!({"version": version, "fields": { tester: other }})),
+        )
+        .await?;
+    assert_eq!(
+        wrong_kind.code(),
+        "field.wrong_value",
+        "{}",
+        wrong_kind.body
+    );
+    let gone = format!(
+        "{}{}",
+        &me[..me.len() - 1],
+        if me.ends_with('a') { 'b' } else { 'a' }
+    );
+    let nobody = ada
+        .send(
+            "PATCH",
+            path,
+            Some(json!({"version": version, "fields": { tester: gone }})),
+        )
+        .await?;
+    assert_eq!(nobody.code(), "field.unknown_choice", "{}", nobody.body);
+    // A person who has no role anywhere cannot see the issue, so they cannot be named in it.
+    let outsider = rig
+        .person(&site.org.admin.session, "otto@example.test")
+        .await?
+        .person
+        .id
+        .to_string();
+    let unseen = ada
+        .send(
+            "PATCH",
+            path,
+            Some(json!({"version": version, "fields": { tester: outsider }})),
+        )
+        .await?;
+    assert_eq!(unseen.code(), "field.unknown_choice", "{}", unseen.body);
+    Ok(())
+}
+
 #[tokio::test]
 async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text_waits_for_its_lock()
 -> TestResult {
@@ -843,34 +899,17 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         let seen = guest.send("GET", &path, None).await?;
         let theirs = &ok(&seen)?["issue"]["own_fields"];
         assert!(theirs.get(duplicate).is_none(), "{theirs}");
-        // The ID of another kind of thing is no person, and a person who is not there is no choice.
         let version = ok(&set)?["version"].clone();
-        let wrong_kind = ada
-            .send(
-                "PATCH",
-                &path,
-                Some(json!({"version": version, "fields": { tester: first["id"] }})),
-            )
-            .await?;
-        assert_eq!(
-            wrong_kind.code(),
-            "field.wrong_value",
-            "{}",
-            wrong_kind.body
-        );
-        let gone = format!(
-            "{}{}",
-            &me[..me.len() - 1],
-            if me.ends_with('a') { 'b' } else { 'a' }
-        );
-        let nobody = ada
-            .send(
-                "PATCH",
-                &path,
-                Some(json!({"version": version, "fields": { tester: gone }})),
-            )
-            .await?;
-        assert_eq!(nobody.code(), "field.unknown_choice", "{}", nobody.body);
+        person_refusals(
+            &mut ada,
+            &rig,
+            &site,
+            &path,
+            tester,
+            &version,
+            (&first["id"], &me),
+        )
+        .await?;
         // A long text is saved only under its lock: the change of the issue refuses it.
         let long = ada
             .send(
@@ -896,6 +935,71 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
             "{}",
             on_project.body
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn cf_01_a_long_text_own_field_is_saved_under_its_lock_and_comes_back_as_html() -> TestResult
+{
+    each_database("cf_01_long_text", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let notes = make_field(
+            &mut ada,
+            json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
+        )
+        .await?;
+        let field = id_of(&notes)?;
+        let made = ok(&site.make(&mut ada, "Has notes").await?)?.clone();
+        let (id, key) = (id_of(&made)?, made["key"].as_str().ok_or("no key")?.to_owned());
+        let taken = ada
+            .send(
+                "POST",
+                "/api/v1/edit-locks",
+                Some(json!({
+                    "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
+                    "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
+                })),
+            )
+            .await?;
+        assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+        let saved = ada
+            .send(
+                "PUT",
+                &format!("{ISSUES}/{key}/fields/{field}/text"),
+                Some(json!({
+                    "version": made["version"],
+                    "lock_token": taken.body["lock_token"],
+                    "text": "Steps: **bold**",
+                })),
+            )
+            .await?;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+        // The page gets the text and the HTML the server made of it, for a viewer who may see it.
+        let seen = ada.send("GET", &format!("{ISSUES}/{key}"), None).await?;
+        let detail = ok(&seen)?;
+        assert_eq!(detail["issue"]["own_fields"][&field], "Steps: **bold**");
+        assert!(
+            detail["own_fields_html"][0]["html"]
+                .as_str()
+                .is_some_and(|html| html.contains("<strong>bold</strong>")),
+            "{detail}"
+        );
+        assert_eq!(detail["own_fields_html"][0]["field"], json!(field));
+        // A role that may not see the field gets neither.
+        let mut reader = reader_of(
+            &site,
+            &rig,
+            "rae@example.test",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+            &[(&field, None, FieldLevel::Hidden), ("title", None, FieldLevel::CanSee)],
+        )
+        .await?;
+        let theirs = reader.send("GET", &format!("{ISSUES}/{key}"), None).await?;
+        assert!(!ok(&theirs)?.to_string().contains("bold"), "{}", theirs.body);
+        assert!(ok(&theirs)?["own_fields_html"].as_array().is_some_and(Vec::is_empty));
         Ok(())
     })
     .await

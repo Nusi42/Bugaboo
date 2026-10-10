@@ -111,6 +111,7 @@ pub async fn project<S: AuthStore>(
         id: Some(project.id.into()),
         chain,
         issue_type: None,
+        reported_by: None,
     };
     let values = ctx
         .load_values(RecordKind::Project, &[project.id.into()])

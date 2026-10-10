@@ -2817,6 +2817,8 @@ export interface components {
       may_change: boolean;
       /** @description Whether the person may delete the issue into the trash. */
       may_delete: boolean;
+      /** @description The long-text own fields as safe HTML, one for each the person may see. */
+      own_fields_html: components["schemas"]["OwnHtmlBody"][];
     };
     /**
      * @description The icon of an issue type, by its name in Lucide.
@@ -3450,6 +3452,16 @@ export interface components {
           /** @description The ID of the role. */
           role: string;
         };
+    /** @description A long-text own field of an issue as safe HTML. */
+    OwnHtmlBody: {
+      /** @description The key of the field. */
+      field: components["schemas"]["FieldKey"];
+      /**
+       * @description The text as safe HTML, made by the server with the renderer of the editor's preview (the
+       *     mark `x-safe-html`).
+       */
+      html: SafeHtml;
+    };
     /** @description What the person would lose. */
     OwnLossBody: {
       /**

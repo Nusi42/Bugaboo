@@ -68,6 +68,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: Some(current.id.into()),
             chain: self.chain_of(current.project).await?,
             issue_type: Some(current.issue_type),
+            reported_by: Some(current.reported_by),
         };
         if !field.kind.is_long_text() {
             return Err(ErrorCode::InvalidRequest.into());

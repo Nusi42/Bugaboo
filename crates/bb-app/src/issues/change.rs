@@ -172,6 +172,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: Some(current.id.into()),
             chain: self.chain_of(current.project).await?,
             issue_type: Some(next.issue_type),
+            reported_by: Some(current.reported_by),
         };
         let stored = self
             .load_values(RecordKind::Issue, &[current.id.into()])

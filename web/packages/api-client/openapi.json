@@ -15623,7 +15623,7 @@
       "IssueDetailBody": {
         "type": "object",
         "description": "One issue with what the person may do with it.",
-        "required": ["issue", "may_change", "may_delete", "changeable"],
+        "required": ["issue", "own_fields_html", "may_change", "may_delete", "changeable"],
         "properties": {
           "changeable": {
             "type": "array",
@@ -15648,6 +15648,13 @@
           "may_delete": {
             "type": "boolean",
             "description": "Whether the person may delete the issue into the trash."
+          },
+          "own_fields_html": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnHtmlBody"
+            },
+            "description": "The long-text own fields as safe HTML, one for each the person may see."
           }
         }
       },
@@ -17045,6 +17052,22 @@
           }
         ],
         "description": "The change that is about to be made."
+      },
+      "OwnHtmlBody": {
+        "type": "object",
+        "description": "A long-text own field of an issue as safe HTML.",
+        "required": ["field", "html"],
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/FieldKey",
+            "description": "The key of the field."
+          },
+          "html": {
+            "type": "string",
+            "description": "The text as safe HTML, made by the server with the renderer of the editor's preview (the\nmark `x-safe-html`).",
+            "x-safe-html": true
+          }
+        }
       },
       "OwnLossBody": {
         "type": "object",

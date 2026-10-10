@@ -1013,6 +1013,9 @@ pub const FIELDS_CHOICES: MessageKey = MessageKey::new("fields.choices");
 /// The message `fields.choices-help`.
 pub const FIELDS_CHOICES_HELP: MessageKey = MessageKey::new("fields.choices-help");
 
+/// The message `fields.choose`.
+pub const FIELDS_CHOOSE: MessageKey = MessageKey::new("fields.choose");
+
 /// The message `fields.combine`.
 pub const FIELDS_COMBINE: MessageKey = MessageKey::new("fields.combine");
 
@@ -1051,6 +1054,9 @@ pub const FIELDS_KIND_QUESTION: MessageKey = MessageKey::new("fields.kind-questi
 
 /// The message `fields.list`.
 pub const FIELDS_LIST: MessageKey = MessageKey::new("fields.list");
+
+/// The message `fields.long-empty`.
+pub const FIELDS_LONG_EMPTY: MessageKey = MessageKey::new("fields.long-empty");
 
 /// The message `fields.look`.
 pub const FIELDS_LOOK: MessageKey = MessageKey::new("fields.look");
@@ -1102,6 +1108,39 @@ pub const FIELDS_NOTHING_PICKED: MessageKey = MessageKey::new("fields.nothing-pi
 
 /// The message `fields.offer-again`.
 pub const FIELDS_OFFER_AGAIN: MessageKey = MessageKey::new("fields.offer-again");
+
+/// The message `fields.pick-chosen`.
+pub const FIELDS_PICK_CHOSEN: MessageKey = MessageKey::new("fields.pick-chosen");
+
+/// The message `fields.pick-groups-list`.
+pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-groups-list");
+
+/// The message `fields.pick-issue-find`.
+pub const FIELDS_PICK_ISSUE_FIND: MessageKey = MessageKey::new("fields.pick-issue-find");
+
+/// The message `fields.pick-issue-key`.
+pub const FIELDS_PICK_ISSUE_KEY: MessageKey = MessageKey::new("fields.pick-issue-key");
+
+/// The message `fields.pick-more`.
+pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
+
+/// The message `fields.pick-no-groups`.
+pub const FIELDS_PICK_NO_GROUPS: MessageKey = MessageKey::new("fields.pick-no-groups");
+
+/// The message `fields.pick-no-issue`.
+pub const FIELDS_PICK_NO_ISSUE: MessageKey = MessageKey::new("fields.pick-no-issue");
+
+/// The message `fields.pick-nothing`.
+pub const FIELDS_PICK_NOTHING: MessageKey = MessageKey::new("fields.pick-nothing");
+
+/// The message `fields.pick-people-list`.
+pub const FIELDS_PICK_PEOPLE_LIST: MessageKey = MessageKey::new("fields.pick-people-list");
+
+/// The message `fields.pick-search`.
+pub const FIELDS_PICK_SEARCH: MessageKey = MessageKey::new("fields.pick-search");
+
+/// The message `fields.pick-take-out`.
+pub const FIELDS_PICK_TAKE_OUT: MessageKey = MessageKey::new("fields.pick-take-out");
 
 /// The message `fields.project-heading`.
 pub const FIELDS_PROJECT_HEADING: MessageKey = MessageKey::new("fields.project-heading");
@@ -4128,6 +4167,15 @@ pub fn fields_choice_up(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `fields.choose-title`.
+#[must_use]
+pub fn fields_choose_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choose-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `fields.combine-name`.
 #[must_use]
 pub fn fields_combine_name(name: impl std::fmt::Display) -> Message {
@@ -4154,6 +4202,24 @@ pub fn fields_combine_text(into: impl std::fmt::Display, name: impl std::fmt::Di
 pub fn fields_combine_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.combine-title"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.pick-choose-name`.
+#[must_use]
+pub fn fields_pick_choose_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.pick-choose-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.pick-take-out-name`.
+#[must_use]
+pub fn fields_pick_take_out_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.pick-take-out-name"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -4442,6 +4508,15 @@ pub fn issues_changed(field: impl std::fmt::Display, value: impl std::fmt::Displ
             ("field", Value::Text(field.to_string())),
             ("value", Value::Text(value.to_string())),
         ],
+    )
+}
+
+/// The message `issues.changed-own`.
+#[must_use]
+pub fn issues_changed_own(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.changed-own"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -6842,6 +6917,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "fields.choices-help",
         "Use the arrows to change the order. Retire a choice to stop offering it for new values; the values already set stay. Combine a choice with another one to move every value over.",
     ),
+    ("fields.choose", "Choose"),
+    ("fields.choose-title", "Choose for {name}"),
     ("fields.combine", "Combine"),
     ("fields.combine-into", "Combine with another choice"),
     ("fields.combine-name", "Combine {name} with another choice"),
@@ -6873,6 +6950,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.kind-question", "What kind of information?"),
     ("fields.list", "Fields"),
+    ("fields.long-empty", "Nothing is written here yet."),
     ("fields.look", "Look"),
     ("fields.look-label", "How values are shown"),
     ("fields.look-preview", "The look in all four themes"),
@@ -6905,6 +6983,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.nothing-picked", "Nothing picked"),
     ("fields.offer-again", "Offer this field again"),
+    ("fields.pick-choose-name", "Choose {name}"),
+    ("fields.pick-chosen", "Chosen"),
+    ("fields.pick-groups-list", "Groups you can choose"),
+    ("fields.pick-issue-find", "Find the issue"),
+    ("fields.pick-issue-key", "ID of the issue, like WEB-12"),
+    ("fields.pick-more", "Show more"),
+    (
+        "fields.pick-no-groups",
+        "There are no groups you can choose.",
+    ),
+    ("fields.pick-no-issue", "No issue has that ID."),
+    ("fields.pick-nothing", "Nobody found."),
+    ("fields.pick-people-list", "People you can choose"),
+    ("fields.pick-search", "Search by name"),
+    ("fields.pick-take-out", "Take out"),
+    ("fields.pick-take-out-name", "Take out {name}"),
     ("fields.project-heading", "Project fields"),
     ("fields.projects-legend", "Add a project"),
     ("fields.projects-list", "Projects"),
@@ -7214,6 +7308,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "issues.changed-after-you",
         "The description changed after you started.",
+    ),
+    (
+        "issues.changed-own",
+        "{count, plural, one {# field changed.} other {# fields changed.}}",
     ),
     (
         "issues.changed-people",
