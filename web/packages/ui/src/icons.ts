@@ -1,8 +1,10 @@
 import {
   Activity,
   Building2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Ellipsis,
   EyeOff,
   Globe,
@@ -41,6 +43,7 @@ export const iconName = {
   back: "back",
   "check-access": "check-access",
   close: "close",
+  down: "down",
   "field-permissions": "field-permissions",
   fields: "fields",
   frames: "frames",
@@ -67,6 +70,7 @@ export const iconName = {
   "sign-out": "sign-out",
   status: "status",
   undo: "undo",
+  up: "up",
   widen: "widen",
 } as const;
 
@@ -78,6 +82,7 @@ export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   back: ChevronLeft,
   "check-access": UserSearch,
   close: X,
+  down: ChevronDown,
   "field-permissions": EyeOff,
   fields: SlidersHorizontal,
   frames: LayoutPanelLeft,
@@ -104,5 +109,6 @@ export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   "sign-out": LogOut,
   status: Activity,
   undo: Undo2,
+  up: ChevronUp,
   widen: PanelLeftOpen,
 };

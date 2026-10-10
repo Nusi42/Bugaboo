@@ -67,21 +67,19 @@ function ChoiceTitle({
         icon={choice.icon ?? undefined}
       />
       <IconButton
-        icon={iconName.back}
+        icon={iconName.up}
         label={t("fields.choice-up", { name: choice.name })}
+        isDisabled={first}
         onPress={() => {
-          if (!first) {
-            onMove(-1);
-          }
+          onMove(-1);
         }}
       />
       <IconButton
-        icon={iconName.next}
+        icon={iconName.down}
         label={t("fields.choice-down", { name: choice.name })}
+        isDisabled={last}
         onPress={() => {
-          if (!last) {
-            onMove(1);
-          }
+          onMove(1);
         }}
       />
     </>
