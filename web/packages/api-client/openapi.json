@@ -7776,7 +7776,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "see-issues"
+        "x-permission": "by-record"
       },
       "put": {
         "tags": ["follow"],
@@ -7856,7 +7856,7 @@
             }
           }
         },
-        "x-permission": "see-issues"
+        "x-permission": "by-record"
       },
       "delete": {
         "tags": ["follow"],
@@ -7936,7 +7936,7 @@
             }
           }
         },
-        "x-permission": "see-issues"
+        "x-permission": "by-record"
       }
     },
     "/api/v1/issues/{issue}/followers": {
@@ -15614,6 +15614,7 @@
           "issue.type_retired",
           "issue.parent_circle",
           "relation.exists",
+          "limit.reached",
           "name.taken",
           "resource.not_found",
           "request.invalid",

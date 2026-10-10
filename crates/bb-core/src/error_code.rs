@@ -97,6 +97,9 @@ error_codes! {
     ParentCircle => ("issue.parent_circle", 409),
     /// Those two issues are related in that way already (ISS-04).
     RelationExists => ("relation.exists", 409),
+    /// An issue holds as many relations or sub-issues as it may. The count includes what the
+    /// person may not see, as it is a limit of storage, so the answer names no issue.
+    LimitReached => ("limit.reached", 409),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.

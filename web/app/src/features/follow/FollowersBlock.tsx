@@ -67,9 +67,6 @@ function FollowButton({ issue }: { readonly issue: string }) {
 
 /** The followers by name as the kind *Followers* says for the reader; shown on request. */
 function FollowerNames({ people }: { readonly people: readonly Schema<"PersonRef">[] }) {
-  if (people.length === 0) {
-    return <p {...partOf(part.muted)}>{t("followers.none")}</p>;
-  }
   return <p {...partOf(part.text)}>{people.map((person) => personName(person)).join(", ")}</p>;
 }
 
@@ -80,7 +77,7 @@ function countOf(loaded: number, more: boolean): string {
 
 /**
  * *Followers 3 · Follow* in the fields panel (ISS-07): the number of followers, the button, and the
- * names when asked for. People who report, are assigned or comment follow by themselves.
+ * names when asked for. A reader who may not see followers gets neither names nor a number. People who report, are assigned or comment follow by themselves.
  */
 export function FollowersBlock({ issueKey }: { readonly issueKey: string }) {
   const list = useFollowers(issueKey);
@@ -89,14 +86,16 @@ export function FollowersBlock({ issueKey }: { readonly issueKey: string }) {
   return (
     <div {...partOf(part.stack)}>
       <div {...partOf(part.row)}>
-        <Button
-          look={buttonLook.quiet}
-          onPress={() => {
-            setShown(!shown);
-          }}
-        >
-          {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
-        </Button>
+        {people.length === 0 ? null : (
+          <Button
+            look={buttonLook.quiet}
+            onPress={() => {
+              setShown(!shown);
+            }}
+          >
+            {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
+          </Button>
+        )}
         <FollowButton issue={issueKey} />
       </div>
       {shown ? <FollowerNames people={people} /> : null}

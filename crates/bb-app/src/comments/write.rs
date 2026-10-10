@@ -243,7 +243,7 @@ pub async fn save_comment<S: AuthStore>(
     )
     .await?;
     let saved = Comment {
-        text: input.text.clone(),
+        text: save.text.clone(),
         edited_at: Some(now),
         version: next(version),
         ..comment

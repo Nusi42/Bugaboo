@@ -8,7 +8,7 @@ mod use_cases;
 
 pub use store::FollowStore;
 pub use types::*;
-pub use use_cases::{follow_issue, followers, unfollow_issue};
+pub use use_cases::{follow_issue, followers, following, unfollow_issue};
 
 use bb_core::follow::{Follower, who_starts_following};
 use bb_core::id::{IssueId, UserId};

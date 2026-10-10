@@ -12,6 +12,7 @@ use jiff::Timestamp;
 
 use super::map::rows_of;
 use super::store::HistoryStore;
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// Reads at most `batch` events the history has not finished and makes their rows. Returns how
 /// many events it read: 0 when it has caught up.
@@ -47,5 +48,19 @@ pub async fn catch_up<S: HistoryStore>(store: &S, now: Timestamp) -> Result<u64,
         if events < BATCH {
             return Ok(read);
         }
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Catches the history up with every event not yet read: the server does it when it starts
+    /// and once a day after that, and a reader of a history does it first (M3-F61). Returns how
+    /// many events it read.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub async fn catch_up_history(&self) -> Result<u64, AppError> {
+        catch_up(self.store(), self.now())
+            .await
+            .map_err(|error| internal::<S>(&error))
     }
 }

@@ -310,13 +310,37 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("readMentions"),
     Example::with("listIssueHistory", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listFollowers", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("getFollowing", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("followIssue", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("unfollowIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "getFollowing",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with(
+        "followIssue",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with(
+        "unfollowIssue",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
 ];
 
 /// A route that judges the record it names, as the example names the target project.
 const ON_THE_TARGET: Quirk = Quirk::OnTheTargetProject(Permission::ChangeProjectSettings);
+
+/// A route of the person's own state about an issue: the issue must be one they may see.
+const SEES_THE_ISSUE: Quirk = Quirk::OnTheTargetProject(Permission::SeeIssues);
 
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
 /// one would not be an ID of these, and the route would say "not found" before it looked at

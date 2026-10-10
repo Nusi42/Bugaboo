@@ -48,9 +48,9 @@ pub(crate) struct Wired {
     pub(crate) housekeeping: Housekeeping,
 }
 
-/// The clearing of what outlived its keep period: drafts, notes for people who were editing and
-/// lock rows that ran out. It stands in for the job `editing.purge_drafts` until the job runner
-/// exists (M3-F30).
+/// The clearing of what outlived its keep period (drafts, notes for people who were editing and
+/// lock rows that ran out) and the catching up of the history with the events. It stands in for
+/// the jobs `editing.purge_drafts` and `history` until the job runner exists (M3-F30, M3-F61).
 #[derive(Clone)]
 pub(crate) struct Housekeeping(Arc<AuthServices<AuthStorage>>);
 
@@ -58,6 +58,11 @@ impl Housekeeping {
     /// One round of clearing; returns how many drafts went.
     pub(crate) async fn clear_old(&self) -> Result<u64, bb_app::auth::AppError> {
         purge_drafts(&self.0.ctx(RequestInfo::default()), PurgeDraftsQuery).await
+    }
+
+    /// One round of catching the history up; returns how many events it read.
+    pub(crate) async fn catch_up_history(&self) -> Result<u64, bb_app::auth::AppError> {
+        self.0.ctx(RequestInfo::default()).catch_up_history().await
     }
 }
 

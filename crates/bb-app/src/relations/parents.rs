@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::IssueId;
-use bb_core::relation::{IssueParent, SUB_ISSUE_DEPTH_MAX, check_parent};
+use bb_core::relation::{IssueParent, SUB_ISSUE_DEPTH_MAX, SUB_ISSUES_MAX, check_parent};
 use bb_core::version::counted_up;
 use bb_policy::{Authorized, Place};
 use serde_json::json;
@@ -107,6 +107,10 @@ pub async fn set_parent<S: AuthStore>(
             Box::pin(async move {
                 S::lock_issue_parents(transaction).await?;
                 if let Some(parent) = wanted {
+                    // An issue holds only so many sub-issues, counted on what is stored now.
+                    if S::sub_issues_of_in(transaction, parent).await?.len() >= SUB_ISSUES_MAX {
+                        return Err(stopped.stop::<S>(ErrorCode::LimitReached));
+                    }
                     let chain = chain_above::<S>(transaction, parent).await?;
                     if check_parent(child_id, parent, |issue| chain.get(&issue).copied()).is_err() {
                         return Err(stopped.stop::<S>(ErrorCode::ParentCircle));

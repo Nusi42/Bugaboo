@@ -48,7 +48,7 @@ pub(crate) mod relation {
 pub(crate) mod comment {
     pub(crate) const ISSUE: &str = "issue";
     pub(crate) const TEXT: &str = "text";
-    pub(crate) const DELETED_AT: &str = "deleted-at";
+    pub(crate) const DELETED_AT: &str = crate::issues::member::DELETED_AT;
 }
 
 /// The member of the event of someone following an issue or leaving it.

@@ -42,7 +42,8 @@ use crate::editing::{
     throw_away_draft,
 };
 use crate::follow::{
-    FollowIssue, Followers, FollowersQuery, UnfollowIssue, follow_issue, followers, unfollow_issue,
+    FollowIssue, Followers, FollowersQuery, FollowingQuery, FollowingState, UnfollowIssue,
+    follow_issue, followers, following, unfollow_issue,
 };
 use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
@@ -420,4 +421,6 @@ use_cases! {
     unfollow_issue(UnfollowIssue) -> Done;
     /// Lists who follows an issue.
     followers(FollowersQuery) -> Authorized<Followers>;
+    /// Whether the person follows an issue.
+    following(FollowingQuery) -> Authorized<FollowingState>;
 }

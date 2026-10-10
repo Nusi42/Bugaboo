@@ -2,6 +2,7 @@
 //! names of the followers are shown as the kind of people information *Followers* says.
 
 use bb_core::ErrorCode;
+use bb_core::access::PeopleLevel;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::follow::{FollowReason, Follower};
 use bb_core::paging::window;
@@ -9,7 +10,9 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, PeopleContext};
 use serde_json::json;
 
-use super::types::{FollowIssue, Followers, FollowersQuery, UnfollowIssue};
+use super::types::{
+    FollowIssue, Followers, FollowersQuery, FollowingQuery, FollowingState, UnfollowIssue,
+};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::member::follower as member;
 use crate::projects::Why;
@@ -24,7 +27,7 @@ pub async fn follow_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: FollowIssue,
 ) -> Result<Done, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.inbox_owner(&input.session_token).await?;
     let (issue, _) = ctx.visible_issue(&actor, &input.issue).await?;
     let person = actor.person.id;
     if ctx
@@ -78,7 +81,7 @@ pub async fn unfollow_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: UnfollowIssue,
 ) -> Result<Done, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.inbox_owner(&input.session_token).await?;
     let (issue, _) = ctx.visible_issue(&actor, &input.issue).await?;
     let person = actor.person.id;
     if !ctx
@@ -115,7 +118,33 @@ pub async fn unfollow_issue<S: AuthStore>(
     Ok(Done)
 }
 
-/// Who follows the issue, a page at a time, each as the kind *Followers* says for the viewer.
+/// Whether the person follows the issue, and why. It is the person's own state, so only a session
+/// reaches it (an access key is turned away, ADR-0025, decision 8).
+///
+/// # Errors
+/// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
+/// not see.
+pub async fn following<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: FollowingQuery,
+) -> Result<Authorized<FollowingState>, AppError> {
+    let actor = ctx.inbox_owner(&input.session_token).await?;
+    let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
+    let mine = ctx
+        .store()
+        .followers_of(issue.id)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .into_iter()
+        .find(|follower| follower.person == actor.person.id);
+    Ok(held.authorize(FollowingState {
+        following: mine.is_some(),
+        reason: mine.map(|follower| follower.reason),
+    }))
+}
+
+/// Who follows the issue, a page at a time, each as the kind *Followers* says for the viewer. When
+/// the kind is hidden for the viewer the list is left out with its length: no items, no cursor.
 ///
 /// # Errors
 /// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
@@ -126,15 +155,16 @@ pub async fn followers<S: AuthStore>(
 ) -> Result<Authorized<Followers>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    let all = ctx
-        .store()
-        .followers_of(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let mine = all
-        .iter()
-        .find(|follower| follower.person == actor.person.id);
-    let (following, reason) = (mine.is_some(), mine.map(|follower| follower.reason));
+    let hidden =
+        held.people_level(PeopleKind::Followers, PeopleContext::Ordinary) == PeopleLevel::Hidden;
+    let all = if hidden {
+        Vec::new()
+    } else {
+        ctx.store()
+            .followers_of(issue.id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+    };
     let page = window(all.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     let mut items = Vec::with_capacity(page.end - page.start);
@@ -150,8 +180,6 @@ pub async fn followers<S: AuthStore>(
         );
     }
     Ok(held.authorize(Followers {
-        following,
-        reason,
         items,
         next_cursor: page.next,
     }))

@@ -730,6 +730,9 @@ pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.p
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
 
+/// The message `error.limit.reached`.
+pub const ERROR_LIMIT_REACHED: MessageKey = MessageKey::new("error.limit.reached");
+
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
 
@@ -906,9 +909,6 @@ pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following
 
 /// The message `followers.more`.
 pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
-
-/// The message `followers.none`.
-pub const FOLLOWERS_NONE: MessageKey = MessageKey::new("followers.none");
 
 /// The message `followers.reason-assigned`.
 pub const FOLLOWERS_REASON_ASSIGNED: MessageKey = MessageKey::new("followers.reason-assigned");
@@ -6219,11 +6219,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.issue.parent-circle",
-        "An issue cannot sit under itself or under one of its own sub-issues, and sub-issues cannot go that deep. Choose another issue.",
+        "That would make a circle of issues or a chain that is too long. Choose another issue.",
     ),
     (
         "error.issue.type-retired",
         "That issue type is retired, so no new issues can be made with it. Choose another type.",
+    ),
+    (
+        "error.limit.reached",
+        "That is as many as one issue can hold. Take some away first.",
     ),
     (
         "error.name.taken",
@@ -6379,7 +6383,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("followers.follow", "Follow"),
     ("followers.following", "Following"),
     ("followers.more", "Show more followers"),
-    ("followers.none", "Nobody follows this issue yet."),
     ("followers.reason-assigned", "It is assigned to you"),
     ("followers.reason-chose", "You chose to follow it"),
     ("followers.reason-commented", "You commented on it"),

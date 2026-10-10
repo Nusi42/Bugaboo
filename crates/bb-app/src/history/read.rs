@@ -12,17 +12,16 @@
 use std::collections::BTreeMap;
 
 use bb_core::ErrorCode;
-use bb_core::event::FieldChange;
+use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::history::{HistoryEntry, HistoryKind, HistoryTab};
 use bb_core::id::{CommentId, IssueId, IssueTypeId, UserId};
 use bb_core::paging::page_len;
 use bb_core::people_kinds::PeopleKind;
-use bb_core::relation::Direction;
-use bb_policy::{Authorized, Evaluation, PeopleContext, Place};
+use bb_core::relation::{Direction, RelationKind};
+use bb_policy::{Authorized, Evaluation, PeopleContext};
 use serde_json::Value;
 
-use super::build::catch_up;
 use super::types::{
     ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
@@ -86,6 +85,43 @@ pub(crate) fn visible_changes<'a>(
         .collect()
 }
 
+/// Most rows read for one request, as a multiple of the page size: a reader who may see few of
+/// them still gets a cursor back and asks again, so one request never reads a whole long history.
+const ROWS_PER_ITEM_MAX: usize = 10;
+
+/// What the rows of one batch need to be shaped, read once for the whole batch.
+struct Batch<'a> {
+    comments: BTreeMap<CommentId, Comment>,
+    issues: BTreeMap<IssueId, Issue>,
+    kinds: &'a [RelationKind],
+}
+
+/// The issues that the rows of a batch name: the parent and the sub-issues of a change, and the
+/// two ends of a relation.
+fn issues_named_by(rows: &[HistoryEntry]) -> Vec<IssueId> {
+    let mut ids = Vec::new();
+    for row in rows.iter().filter(|row| row.kind == HistoryKind::Change) {
+        for change in &row.changes {
+            let names_issues = if row.record_kind.as_str() == RecordKind::Relation.code() {
+                change.field == relation_member::FROM || change.field == relation_member::TO
+            } else {
+                Member::of(&change.field) == Member::Issue
+            };
+            if names_issues {
+                ids.extend(
+                    [&change.before, &change.after]
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|value| value.as_str()?.parse::<IssueId>().ok()),
+                );
+            }
+        }
+    }
+    ids.sort();
+    ids.dedup();
+    ids
+}
+
 /// The words of a JSON value as a change shows it.
 fn plain_text(value: &Value) -> String {
     match value {
@@ -127,6 +163,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         held: &Evaluation,
         maker: &mut LineMaker,
+        batch: &Batch<'_>,
         member: Member,
         value: Option<&Value>,
     ) -> Result<Option<ChangeValue>, AppError> {
@@ -152,7 +189,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let Some(id) = value.as_str().and_then(|text| text.parse::<IssueId>().ok()) else {
                     return Ok(None);
                 };
-                match self.issues_named(&[id]).await?.first() {
+                match batch.issues.get(&id) {
                     Some(issue) => self
                         .line_of(actor, maker, issue)
                         .await?
@@ -169,6 +206,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         held: &Evaluation,
         maker: &mut LineMaker,
+        batch: &Batch<'_>,
         row: &HistoryEntry,
     ) -> Result<Option<HistoryWhat>, AppError> {
         let mask = held.field_mask();
@@ -176,10 +214,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         for change in visible_changes(&|field| mask.can_see(field), &row.changes) {
             let member = Member::of(&change.field);
             let before = self
-                .change_value(actor, held, maker, member, change.before.as_ref())
+                .change_value(actor, held, maker, batch, member, change.before.as_ref())
                 .await?;
             let after = self
-                .change_value(actor, held, maker, member, change.after.as_ref())
+                .change_value(actor, held, maker, batch, member, change.after.as_ref())
                 .await?;
             // A change of an issue that the reader may not see leaves nothing to show.
             if member == Member::Issue && before.is_none() && after.is_none() {
@@ -201,6 +239,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         maker: &mut LineMaker,
         issue: IssueId,
+        batch: &Batch<'_>,
         row: &HistoryEntry,
     ) -> Result<Option<HistoryWhat>, AppError> {
         let id_in = |field: &str| -> Option<(String, bool)> {
@@ -226,20 +265,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(other) = other.parse::<IssueId>().ok() else {
             return Ok(None);
         };
-        let Some(kind) = self
-            .store()
-            .relation_kinds()
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
+        let Some(kind) = batch
+            .kinds
+            .iter()
             .find(|found| found.id.to_string() == kind)
         else {
             return Ok(None);
         };
-        let Some(other) = self.issues_named(&[other]).await?.into_iter().next() else {
+        let Some(other) = batch.issues.get(&other) else {
             return Ok(None);
         };
-        let Some(line) = self.line_of(actor, maker, &other).await? else {
+        let Some(line) = self.line_of(actor, maker, other).await? else {
             return Ok(None);
         };
         Ok(Some(HistoryWhat::Relation {
@@ -250,6 +286,38 @@ impl<S: AuthStore> Ctx<'_, S> {
         }))
     }
 
+    /// The comments and the issues that the rows of a batch name, read once for the batch.
+    async fn batch_of<'k>(
+        &self,
+        rows: &[HistoryEntry],
+        kinds: &'k [RelationKind],
+    ) -> Result<Batch<'k>, AppError> {
+        let comment_ids: Vec<CommentId> = rows
+            .iter()
+            .filter(|row| row.kind == HistoryKind::Comment)
+            .filter_map(|row| CommentId::from_bytes(row.record.to_bytes()).ok())
+            .collect();
+        let comments = self
+            .store()
+            .comments_by_ids(&comment_ids)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|comment| (comment.id, comment))
+            .collect();
+        let issues = self
+            .issues_named(&issues_named_by(rows))
+            .await?
+            .into_iter()
+            .map(|issue| (issue.id, issue))
+            .collect();
+        Ok(Batch {
+            comments,
+            issues,
+            kinds,
+        })
+    }
+
     /// One row of the history as the reader sees it; `None` when there is nothing in it for them.
     async fn history_item(
         &self,
@@ -257,14 +325,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         held: &Evaluation,
         issue: &Issue,
         maker: &mut LineMaker,
-        comments: &BTreeMap<CommentId, Comment>,
+        batch: &Batch<'_>,
         row: &HistoryEntry,
     ) -> Result<Option<HistoryItem>, AppError> {
         let what = match row.kind {
             HistoryKind::Comment => {
                 let Some(comment) = CommentId::from_bytes(row.record.to_bytes())
                     .ok()
-                    .and_then(|id| comments.get(&id))
+                    .and_then(|id| batch.comments.get(&id))
                     .filter(|comment| comment.deleted_at.is_none())
                 else {
                     return Ok(None);
@@ -275,10 +343,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Some(HistoryWhat::Comment { comment: view })
             }
             HistoryKind::Change => {
-                if row.record_kind.as_str() == "relation" {
-                    self.relation_change(actor, maker, issue.id, row).await?
+                if row.record_kind.as_str() == RecordKind::Relation.code() {
+                    self.relation_change(actor, maker, issue.id, batch, row)
+                        .await?
                 } else {
-                    self.field_changes(actor, held, maker, row).await?
+                    self.field_changes(actor, held, maker, batch, row).await?
                 }
             }
         };
@@ -314,9 +383,7 @@ pub async fn history<S: AuthStore>(
 ) -> Result<Authorized<HistoryPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    catch_up(ctx.store(), ctx.now())
-        .await
-        .map_err(|error| internal::<S>(&error))?;
+    ctx.catch_up_history().await?;
     let before = match input.cursor.as_deref() {
         Some(text) => Some(
             text.parse::<i64>()
@@ -332,11 +399,17 @@ pub async fn history<S: AuthStore>(
     let limit = page_len(Some(input.limit));
     let read = u64::try_from(limit).unwrap_or(u64::MAX).saturating_add(1);
     let mut maker = ctx.line_maker().await?;
+    let kinds = ctx
+        .store()
+        .relation_kinds()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
     let mut items: Vec<(i64, HistoryItem)> = Vec::new();
+    let mut resume = None;
     let mut before = before;
-    let mut more = false;
-    // Rows the reader may not see are skipped, so more rows are read until the page is full or the
-    // history ends.
+    let mut rows_read = 0_usize;
+    // Rows the reader may not see are skipped, so more rows are read until the page is full, the
+    // history ends or the most rows of one request are read; then the cursor says where to go on.
     'pages: loop {
         let rows = ctx
             .store()
@@ -344,33 +417,22 @@ pub async fn history<S: AuthStore>(
             .await
             .map_err(|error| internal::<S>(&error))?;
         let exhausted = rows.len() < usize::try_from(read).unwrap_or(usize::MAX);
-        let comment_ids: Vec<CommentId> = rows
-            .iter()
-            .filter(|row| row.kind == HistoryKind::Comment)
-            .filter_map(|row| CommentId::from_bytes(row.record.to_bytes()).ok())
-            .collect();
-        let comments: BTreeMap<CommentId, Comment> = ctx
-            .store()
-            .comments_by_ids(&comment_ids)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .map(|comment| (comment.id, comment))
-            .collect();
-        let count = rows.len();
-        for (at, row) in rows.iter().enumerate() {
+        let batch = ctx.batch_of(&rows, &kinds).await?;
+        for row in &rows {
             if let Some(item) = ctx
-                .history_item(&actor, &held, &issue, &mut maker, &comments, row)
+                .history_item(&actor, &held, &issue, &mut maker, &batch, row)
                 .await?
             {
                 if items.len() == limit {
-                    more = true;
+                    resume = items.last().map(|(position, _)| *position);
                     break 'pages;
                 }
                 items.push((row.position, item));
             }
             before = Some(row.position);
-            if at + 1 == count && exhausted {
+            rows_read += 1;
+            if rows_read >= limit.saturating_mul(ROWS_PER_ITEM_MAX) {
+                resume = before;
                 break 'pages;
             }
         }
@@ -378,15 +440,9 @@ pub async fn history<S: AuthStore>(
             break;
         }
     }
-    let next_cursor = more
-        .then(|| items.last().map(|(position, _)| position.to_string()))
-        .flatten();
-    let place_ok = ctx
-        .evaluation_of(&actor, Place::Project(issue.project))
-        .await?;
-    Ok(place_ok.authorize(HistoryPage {
+    Ok(held.authorize(HistoryPage {
         items: items.into_iter().map(|(_, item)| item).collect(),
-        next_cursor,
+        next_cursor: resume.map(|position| position.to_string()),
     }))
 }
 

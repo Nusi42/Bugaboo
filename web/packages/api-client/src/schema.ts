@@ -2545,6 +2545,7 @@ export interface components {
       | "issue.type_retired"
       | "issue.parent_circle"
       | "relation.exists"
+      | "limit.reached"
       | "name.taken"
       | "resource.not_found"
       | "request.invalid"

@@ -381,21 +381,9 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),
-    route(
-        "getFollowing",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::NeverStored,
-    ),
-    route(
-        "followIssue",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::Ordinary,
-    ),
-    route(
-        "unfollowIssue",
-        Declared::Permission(Permission::SeeIssues),
-        Answer::Ordinary,
-    ),
+    route("getFollowing", Declared::ByRecord, Answer::NeverStored),
+    route("followIssue", Declared::ByRecord, Answer::Ordinary),
+    route("unfollowIssue", Declared::ByRecord, Answer::Ordinary),
     route("listIssueTypes", Declared::SignedIn, Answer::Ordinary),
     route(
         "makeIssueType",

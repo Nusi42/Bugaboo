@@ -516,3 +516,57 @@ async fn iss_07_reporting_assigning_and_commenting_start_following() -> TestResu
     })
     .await
 }
+
+#[tokio::test]
+async fn iss_07_a_followers_list_hidden_for_the_reader_is_left_out_with_its_length() -> TestResult {
+    each_database("iss_07_followers_hidden", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        let issue = key_of(&site.make(&mut gus, "Gus cannot print").await?)?;
+        // Ada comments, so two people follow the issue.
+        ok(&comment(&mut ada, &issue, "On it.").await?)?;
+        let for_ada = ada
+            .send("GET", &format!("{ISSUES}/{issue}/followers"), None)
+            .await?;
+        assert_eq!(items(&for_ada).len(), 2);
+        // A guest sees no names of followers, and not how many there are either.
+        let for_gus = gus
+            .send("GET", &format!("{ISSUES}/{issue}/followers"), None)
+            .await?;
+        assert!(items(&for_gus).is_empty(), "{:?}", for_gus.body);
+        assert!(for_gus.body["next_cursor"].is_null(), "{:?}", for_gus.body);
+        // Their own choice is still theirs.
+        let own = gus
+            .send("GET", &format!("{ISSUES}/{issue}/follow"), None)
+            .await?;
+        assert_eq!(ok(&own)?["following"], true);
+        // Bob sees nothing of an issue he may not see.
+        let hidden = bob
+            .send("GET", &format!("{ISSUES}/{issue}/followers"), None)
+            .await?;
+        assert_eq!(hidden.status, StatusCode::OK);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> TestResult {
+    each_database("iss_05_mention_unseen", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut gus, _) = site
+            .person_called(StartingRole::Guest, "gus", "Gus Guest")
+            .await?;
+        // Gus reported nothing here, so he cannot see Ada's issue; Ada names him all the same.
+        let issue = key_of(&site.make(&mut ada, "Budget plan").await?)?;
+        let written = comment(&mut ada, &issue, "Please ask @gus.guest about it.").await?;
+        ok(&written)?;
+        let theirs = gus.send("GET", "/api/v1/me/mentions", None).await?;
+        assert!(items(&theirs).is_empty(), "{:?}", theirs.body);
+        Ok(())
+    })
+    .await
+}

@@ -24,7 +24,7 @@ use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
 
 /// The most people a search for the person behind a handle reads: names that share the first word
 /// beyond this many are not told apart.
-const PEOPLE_LOOK_AT: u64 = 50;
+pub(super) const PEOPLE_LOOK_AT: u64 = 100;
 
 /// What a handle names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -209,16 +209,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         named: &[Named],
     ) -> Result<Vec<Mention>, AppError> {
         let failed = |error| internal::<S>(&error);
-        let mut mentions: Vec<Mention> = Vec::new();
+        // Everyone the comment reaches, each once with the first thing that reached them.
+        let mut reached: Vec<(UserId, MentionTarget)> = Vec::new();
         let mut add = |person: UserId, via: MentionTarget| {
-            let there = mentions.iter().any(|mention| mention.recipient == person);
-            if person != author && !there && mentions.len() < MENTION_RECIPIENTS_MAX {
-                mentions.push(Mention {
-                    comment,
-                    recipient: person,
-                    via,
-                    read_at: None,
-                });
+            if person != author && !reached.iter().any(|(there, _)| *there == person) {
+                reached.push((person, via));
             }
         };
         let chain = self
@@ -256,6 +251,23 @@ impl<S: AuthStore> Ctx<'_, S> {
                         }
                     }
                 }
+            }
+        }
+        // Only people who may see the issue get a mention: a name in a comment never puts the
+        // comment, or the issue, into the *Mentions* of somebody who cannot see it. (Delivery by
+        // e-mail in M4 checks again at the moment of sending, as access may change.)
+        let mut mentions: Vec<Mention> = Vec::new();
+        for (person, via) in reached {
+            if mentions.len() >= MENTION_RECIPIENTS_MAX {
+                break;
+            }
+            if self.person_sees_issue(person, issue).await? {
+                mentions.push(Mention {
+                    comment,
+                    recipient: person,
+                    via,
+                    read_at: None,
+                });
             }
         }
         Ok(mentions)

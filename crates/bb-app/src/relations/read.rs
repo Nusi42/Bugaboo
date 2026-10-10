@@ -5,7 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::paging::window;
-use bb_core::relation::{Relation, SUB_ISSUES_MAX};
+use bb_core::relation::Relation;
 use bb_policy::{Authorized, Evaluation};
 
 use super::types::{
@@ -44,11 +44,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         // The issues under it, only those the viewer may see, in the order they were put there.
         let below = store.sub_issues_of(issue.id).await.map_err(failed)?;
-        let ids: Vec<_> = below
-            .iter()
-            .take(SUB_ISSUES_MAX)
-            .map(|child| child.child)
-            .collect();
+        let ids: Vec<_> = below.iter().map(|child| child.child).collect();
         let found = self.issues_named(&ids).await?;
         let mut sub_issues = Vec::new();
         for id in &ids {

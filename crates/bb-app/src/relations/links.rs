@@ -86,16 +86,6 @@ pub async fn add_relation<S: AuthStore>(
         Direction::Forward => (first.id, second.id),
         Direction::Backward => (second.id, first.id),
     };
-    for issue in [first.id, second.id] {
-        let known = ctx
-            .store()
-            .relations_of(issue)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        if known.len() >= RELATIONS_MAX {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
-    }
     let relation = Relation {
         id: RelationId::generate(&mut ctx.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?,
@@ -133,6 +123,14 @@ pub async fn add_relation<S: AuthStore>(
                             .is_some());
                 if there {
                     return Err(stopped.stop::<S>(ErrorCode::RelationExists));
+                }
+                // An issue holds only so many relations, counted on what is stored now and with
+                // every relation, also those to issues the person may not see: it is a limit of
+                // storage, and the refusal names no issue.
+                for issue in [stored.from, stored.to] {
+                    if S::relations_of_in(transaction, issue).await?.len() >= RELATIONS_MAX {
+                        return Err(stopped.stop::<S>(ErrorCode::LimitReached));
+                    }
                 }
                 S::insert_relation(transaction, &stored).await
             })

@@ -15,6 +15,7 @@ import { useState } from "react";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
+import { pageSize } from "../../shared/paged.ts";
 import { refreshHistory } from "../../shared/query-keys.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
 
@@ -35,7 +36,7 @@ function MentionChoices({
   readonly onChoose: (handle: string) => void;
 }) {
   const choices = api.query.useQuery("get", "/api/v1/issues/{issue}/mention-choices", {
-    params: { path: { issue }, query: { search: typed, limit: 8 } },
+    params: { path: { issue }, query: { search: typed, limit: pageSize.short } },
   });
   const items = choices.data?.items ?? [];
   if (items.length === 0) {

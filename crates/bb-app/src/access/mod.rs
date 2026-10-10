@@ -153,6 +153,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(owners.narrowed_by(actor.key_scope()))
     }
 
+    /// Whether `person` may see `issue` in the project it is in: the question of who may be told
+    /// about it (a mention, a notice), judged on the person and not on the actor of the request.
+    ///
+    /// # Errors
+    /// An internal error when the engine fails.
+    pub(crate) async fn person_sees_issue(
+        &self,
+        person: UserId,
+        issue: &bb_core::issue::Issue,
+    ) -> Result<bool, AppError> {
+        let held = self.evaluate(person, Place::Project(issue.project)).await?;
+        Ok(held.sees_issue(issue.reported_by))
+    }
+
     /// What `person` may do at `place`, from the policy engine. The result is kept for the rest
     /// of the request, so asking again costs nothing; the next request asks again.
     ///

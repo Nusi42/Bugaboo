@@ -12,6 +12,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, PeopleContext, Permission, Place};
 use serde_json::json;
 
+use super::resolve::PEOPLE_LOOK_AT;
 use super::types::{
     CommentTextView, CommentVersions, CommentVersionsQuery, MentionChoice, MentionChoices,
     MentionChoicesQuery, MentionItem, Mentions, MentionsQuery, ReadMentions,
@@ -23,16 +24,13 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The person whose *Mentions* are asked for. They are the person's own inbox, so only a
     /// session reaches them: an access key is turned away like it is from the rest of the person's
     /// own data (ADR-0025, decision 8).
-    async fn inbox_owner(&self, token: &str) -> Result<crate::access::Actor, AppError> {
+    pub(crate) async fn inbox_owner(&self, token: &str) -> Result<crate::access::Actor, AppError> {
         if looks_like_access_key(token) {
             return Err(self.key_on_sign_in_data(token).await);
         }
         self.session_actor(token).await
     }
 }
-
-/// The most people a search for choices reads.
-const PEOPLE_READ: u64 = 100;
 
 /// Every text a comment had, the current one last. The people who may see the comment may see its
 /// earlier texts.
@@ -94,23 +92,33 @@ pub async fn mention_choices<S: AuthStore>(
         .as_deref()
         .map(str::trim)
         .filter(|text| !text.is_empty());
-    let wanted = search.map(str::to_lowercase);
+    // What was typed after the `@` is the start of a handle (`ana.si`), so a name is offered when
+    // its handle starts with it.
+    let wanted = search.map(|text| text.trim_start_matches('@').to_lowercase());
     let matches = |name: &str| {
-        wanted
-            .as_deref()
-            .is_none_or(|start| name.to_lowercase().contains(start))
+        handle_of(name).is_some_and(|handle| {
+            wanted
+                .as_deref()
+                .is_none_or(|start| handle.starts_with(start))
+        })
     };
+    // People are looked for by the first word typed, as the store searches names, not handles.
+    let first_word = wanted
+        .as_deref()
+        .and_then(|start| start.split('.').next())
+        .filter(|word| !word.is_empty());
     let failed = |error| internal::<S>(&error);
     // (target, handle, name), in the order they are offered.
     let mut offered: Vec<MentionChoice> = Vec::new();
     if level == PeopleLevel::Names {
         let people = ctx
             .store()
-            .people_page(search, SearchIn::Names, None, PEOPLE_READ)
+            .people_page(first_word, SearchIn::Names, None, PEOPLE_LOOK_AT)
             .await
             .map_err(failed)?;
         for person in people {
             if person.id != actor.person.id
+                && matches(&person.display_name)
                 && ctx
                     .has_a_role_at(person.id, Place::Project(issue.project))
                     .await?

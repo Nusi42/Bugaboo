@@ -120,11 +120,27 @@ pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
     ("CommentTextItem", "html"),
     ("HistoryEntryItem", "html"),
     ("MentionedComment", "html"),
-    // A page holds its own copy of the item: the path goes into the items of the list.
-    ("Page_CommentTextItem", "items/html"),
-    ("Page_HistoryEntryItem", "items/html"),
-    ("Page_MentionedComment", "items/html"),
 ];
+
+/// The schema of a page of `item` and the path to the property inside its items: a page holds its
+/// own copy of the item, so it gets the mark too, wherever such a page exists.
+fn page_entry(schema: &str, property: &str) -> (String, String) {
+    (format!("Page_{schema}"), format!("items/{property}"))
+}
+
+/// Every schema and path that gets the mark: the table, and the pages of its items that exist in
+/// `components`.
+fn marked_paths(components: &Components) -> Vec<(String, String)> {
+    let mut paths = Vec::new();
+    for (schema, property) in SAFE_HTML_PROPERTIES {
+        paths.push(((*schema).to_owned(), (*property).to_owned()));
+        let (page, path) = page_entry(schema, property);
+        if components.schemas.contains_key(&page) {
+            paths.push((page, path));
+        }
+    }
+    paths
+}
 
 /// The property at `path` of a schema: names separated by `/`, where a name that is a list goes into
 /// the items of the list.
@@ -152,12 +168,12 @@ fn property_at<'a>(object: &'a mut Object, path: &str) -> Option<&'a mut Object>
 
 /// Puts `x-safe-html` on the properties of [`SAFE_HTML_PROPERTIES`]. Returns the ones that were
 /// not found (a test says there are none).
-fn mark_safe_html(openapi: &mut utoipa::openapi::OpenApi) -> Vec<(&'static str, &'static str)> {
+fn mark_safe_html(openapi: &mut utoipa::openapi::OpenApi) -> Vec<(String, String)> {
     let mut missing = Vec::new();
     let components = openapi.components.get_or_insert_with(Default::default);
-    for (schema, property) in SAFE_HTML_PROPERTIES {
-        let object = match components.schemas.get_mut(*schema) {
-            Some(RefOr::T(Schema::Object(object))) => property_at(object, property),
+    for (schema, property) in marked_paths(components) {
+        let object = match components.schemas.get_mut(&schema) {
+            Some(RefOr::T(Schema::Object(object))) => property_at(object, &property),
             _ => None,
         };
         match object {
@@ -171,7 +187,7 @@ fn mark_safe_html(openapi: &mut utoipa::openapi::OpenApi) -> Vec<(&'static str, 
                             .build(),
                     );
             }
-            _ => missing.push((*schema, *property)),
+            _ => missing.push((schema, property)),
         }
     }
     missing
@@ -577,9 +593,10 @@ mod tests {
     fn m3_f12_every_server_rendered_property_has_the_mark_and_no_other_has() {
         let value = serde_json::to_value(document()).unwrap();
         let schemas = &value["components"]["schemas"];
-        for (schema, path) in SAFE_HTML_PROPERTIES {
+        let paths = marked_paths(document().components.as_ref().unwrap());
+        for (schema, path) in &paths {
             // A name that is a list goes into the items of the list.
-            let mut at = &schemas[*schema];
+            let mut at = &schemas[schema.as_str()];
             for name in path.split('/') {
                 at = &at["properties"][name];
                 if at["type"] == "array" {
@@ -602,7 +619,7 @@ mod tests {
             .to_string()
             .matches(&format!("\"{}\":true", marks::SAFE_HTML))
             .count();
-        assert_eq!(marked, SAFE_HTML_PROPERTIES.len());
+        assert_eq!(marked, paths.len());
     }
 
     #[test]

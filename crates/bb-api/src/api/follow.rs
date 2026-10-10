@@ -6,7 +6,7 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::follow::{FollowIssue, FollowersQuery, UnfollowIssue};
+use bb_app::follow::{FollowIssue, FollowersQuery, FollowingQuery, UnfollowIssue};
 use bb_core::follow::FollowReason;
 use bb_policy::{Masked, PersonRef};
 use serde::Serialize;
@@ -102,19 +102,17 @@ async fn get_following(
 ) -> Result<Response, ApiError> {
     let state = auth
         .api()?
-        .followers(
+        .following(
             info,
-            FollowersQuery {
+            FollowingQuery {
                 session_token,
                 issue,
-                cursor: None,
-                limit: 1,
             },
         )
         .await?;
-    answer_authorized(&state.map(|followers| FollowingBody {
-        following: followers.following,
-        reason: followers.reason,
+    answer_authorized(&state.map(|state| FollowingBody {
+        following: state.following,
+        reason: state.reason,
     }))
 }
 
