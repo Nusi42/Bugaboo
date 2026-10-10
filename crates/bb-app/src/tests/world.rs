@@ -17,6 +17,7 @@ use crate::auth::{
 };
 use crate::context::Clock;
 use crate::editing::EditableRecords;
+use crate::issues::{MakeStartingIssueTypes, make_starting_issue_types};
 
 pub(crate) use bb_dev_words::accounts::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
@@ -87,8 +88,17 @@ impl World {
         })
     }
 
-    /// The first start and the first administrator, Ada.
+    /// The first start, the issue types of the first start, and the first administrator, Ada.
     pub(crate) async fn new() -> Result<Self, String> {
+        let world = Self::new_without_issue_types().await?;
+        make_starting_issue_types(&world.ctx(), MakeStartingIssueTypes)
+            .await
+            .map_err(text)?;
+        Ok(world)
+    }
+
+    /// The first start and the first administrator, before the issue types are made.
+    pub(crate) async fn new_without_issue_types() -> Result<Self, String> {
         let mut world = Self::bare()?;
         let ctx = world.ctx();
         make_starting_roles(&ctx, MakeStartingRoles)

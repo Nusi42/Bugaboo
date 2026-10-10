@@ -1,0 +1,5 @@
+error: member `inside` does not say how it is masked; add `#[masked(field = "...")]` for a field of the catalogue, `#[masked(nested)]` for a view inside the view, or `#[masked(open)]` for a member everybody who sees the view may see (SEC-04)
+  --> tests/ui/masked_member_not_declared.rs:16:5
+   |
+16 |     inside: Inner,
+   |     ^^^^^^

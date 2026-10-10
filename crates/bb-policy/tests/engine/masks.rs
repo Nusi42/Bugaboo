@@ -334,3 +334,89 @@ fn auth_07_a_key_follows_its_owner_the_evaluation_is_made_again_for_every_reques
 fn the_kinds_of_a_choice_are_all_three() {
     assert_eq!(Kind::ALL.len(), 3);
 }
+
+/// A person as a view inside another view: no field of its own.
+#[derive(Serialize, bb_policy::Masked)]
+struct PersonInside {
+    #[masked(open)]
+    name: String,
+}
+
+/// An issue inside an issue (a parent, a sub-issue), made with the derive: every member says how
+/// it is masked, and the issues inside it are masked by their own fields (M2-F21).
+#[derive(Serialize, bb_policy::Masked)]
+struct NestedIssue {
+    #[masked(open)]
+    id: u32,
+    #[masked(field = "title")]
+    title: String,
+    #[masked(field = "cost-center")]
+    cost_center: String,
+    #[masked(field = "assigned-to", nested)]
+    assigned_to: Vec<PersonInside>,
+    #[masked(nested)]
+    parent: Option<Box<NestedIssue>>,
+    #[masked(nested)]
+    sub_issues: Vec<NestedIssue>,
+}
+
+fn nested_issue(id: u32, parent: Option<NestedIssue>, sub_issues: Vec<NestedIssue>) -> NestedIssue {
+    NestedIssue {
+        id,
+        title: format!("Issue {id}"),
+        cost_center: "K-4711".to_owned(),
+        assigned_to: vec![PersonInside {
+            name: "Ada".to_owned(),
+        }],
+        parent: parent.map(Box::new),
+        sub_issues,
+    }
+}
+
+#[test]
+fn sec_04_a_nested_view_never_carries_a_hidden_field() {
+    let hidden = masked_world(FieldLevel::Hidden);
+    let issue = nested_issue(
+        1,
+        Some(nested_issue(2, None, Vec::new())),
+        vec![nested_issue(
+            3,
+            None,
+            vec![nested_issue(4, None, Vec::new())],
+        )],
+    );
+    let shown = hidden
+        .at(hidden.web)
+        .authorize(issue)
+        .masked_value()
+        .unwrap();
+    let text = shown.to_string();
+    assert!(
+        !text.contains("cost_center") && !text.contains("K-4711"),
+        "{text}"
+    );
+    // The members that may be seen stay, at every depth.
+    assert_eq!(shown["title"], "Issue 1");
+    assert_eq!(shown["parent"]["title"], "Issue 2");
+    assert_eq!(shown["sub_issues"][0]["sub_issues"][0]["title"], "Issue 4");
+    // A field the viewer may not see is dropped, and so is the list of people inside it.
+    assert!(shown.get("assigned_to").is_none(), "{text}");
+    assert!(shown["parent"].get("assigned_to").is_none(), "{text}");
+}
+
+#[test]
+fn sec_04_the_derive_lists_the_fields_a_view_holds_and_nothing_else() {
+    assert_eq!(
+        <NestedIssue as Masked>::FIELDS,
+        [
+            ("title", Field::Title),
+            ("cost_center", Field::CostCenter),
+            ("assigned_to", Field::AssignedTo)
+        ]
+    );
+    assert!(<PersonInside as Masked>::FIELDS.is_empty());
+    let world = masked_world(FieldLevel::Hidden);
+    let evaluation = world.at(world.web);
+    let shown = evaluation.authorize(nested_issue(1, None, Vec::new()));
+    assert_eq!(shown.hidden_properties(), ["cost_center", "assigned_to"]);
+}

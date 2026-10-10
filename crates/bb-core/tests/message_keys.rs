@@ -6,6 +6,7 @@
 use bb_core as _;
 use bb_macros as _;
 use jiff as _;
+use proptest as _;
 use serde as _;
 use serde_json as _;
 #[cfg(feature = "openapi")]

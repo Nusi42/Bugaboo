@@ -116,6 +116,9 @@ fn check(uuid: Uuid, version: usize) -> Result<Uuid, IdError> {
 /// The methods every ID has, whatever its UUID version.
 macro_rules! id_common {
     ($name:ident, $version:expr) => {
+        impl crate::plain::sealed::Sealed for $name {}
+        impl crate::plain::Plain for $name {}
+
         impl $name {
             /// The ID with these 16 bytes, as stored.
             ///
@@ -267,6 +270,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of an issue type (ISS-02).
+    IssueTypeId
+}
+
+define_ordered_id! {
     /// The ID of a domain event (ADR-0007).
     EventId
 }
@@ -350,6 +358,7 @@ into_entity_id!(
     RoleId,
     AssignmentId,
     IssueId,
+    IssueTypeId,
     EventId,
     JobId,
     SessionId,

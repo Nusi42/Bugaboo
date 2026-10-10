@@ -14,6 +14,7 @@ use bb_app::auth::{
 use bb_app::context::Clock;
 use bb_app::context::SystemIds;
 use bb_app::editing::EditableRecords;
+use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
@@ -217,6 +218,12 @@ impl Rig {
             make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
                 .await
                 .map_err(|error| error.to_string())?;
+            make_starting_issue_types(
+                &services.ctx(RequestInfo::default()),
+                MakeStartingIssueTypes,
+            )
+            .await
+            .map_err(|error| error.to_string())?;
             issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
                 .await
                 .map_err(|error| error.to_string())?

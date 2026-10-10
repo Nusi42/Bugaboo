@@ -45,6 +45,12 @@ whole_value = true
 reason = "The settings of one level are at most as many as the registry declares (ADR-0018): a list bounded by the code, not one that grows with data, and a form needs all of a topic at once; the same reason as the permissions of one person (M2-F20)."
 
 [[exempt]]
+route = "GET /api/v1/issues/{issue}"
+property = "changeable"
+whole_value = true
+reason = "The fields a person may change in one issue are at most as many as the field catalogue has (16): a list bounded by the code, not one that grows with data, and the issue page needs all of them at once (M2-F20)."
+
+[[exempt]]
 route = "GET /api/v1/projects/{project}"
 property = "trail"
 reason = "The way down to one project is as long as the tree is deep and at most 16 steps; the list has a hard cap and says when it was cut (M2-F25)."

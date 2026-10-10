@@ -21,6 +21,10 @@ mod caching;
 mod editing;
 pub(crate) mod http;
 mod invitations;
+mod issues_fields;
+mod issues_http;
+mod issues_ids;
+mod issues_site;
 mod lists;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.

@@ -281,6 +281,70 @@ pub(crate) enum ProjectAliasRow {
     RetiredAt,
 }
 
+/// Issue types (ISS-02).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueTypeRow {
+    #[iden = "issue_type"]
+    Table,
+    Id,
+    Name,
+    Icon,
+    Position,
+    RetiredAt,
+    Version,
+}
+
+/// Issues (ISS-01). The code is the part of the readable ID after the project's short name.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueRow {
+    #[iden = "issue"]
+    Table,
+    Id,
+    Project,
+    IssueType,
+    Code,
+    Title,
+    Description,
+    Status,
+    Priority,
+    ReportedBy,
+    CreatedAt,
+    UpdatedAt,
+    ClosedAt,
+    DeletedAt,
+    Version,
+}
+
+/// The people an issue is assigned to.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueAssigneeRow {
+    #[iden = "issue_assignee"]
+    Table,
+    Issue,
+    Person,
+    AddedAt,
+}
+
+/// The old codes of issues, which keep opening them (ISS-01a, ADR-0021).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueAliasRow {
+    #[iden = "issue_alias"]
+    Table,
+    Project,
+    Code,
+    Issue,
+    RetiredAt,
+}
+
+/// The last counting code each project gave out (ISS-01a, ADR-0021).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueCounterRow {
+    #[iden = "issue_counter"]
+    Table,
+    Project,
+    Last,
+}
+
 /// Groups of people. The table is called `person_group`: `group` is a word of SQL.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum GroupRow {
@@ -610,6 +674,45 @@ stored_tables! {
         ShortName => short_name,
         Project => project,
         RetiredAt => retired_at,
+    },
+    IssueTypeRow => bb_core::issue::IssueType {
+        Id => id,
+        Name => name,
+        Icon => icon,
+        Position => position,
+        RetiredAt => retired_at,
+        Version => version,
+    },
+    IssueRow => bb_core::issue::Issue {
+        Id => id,
+        Project => project,
+        IssueType => issue_type,
+        Code => code,
+        Title => title,
+        Description => description,
+        Status => status,
+        Priority => priority,
+        ReportedBy => reported_by,
+        CreatedAt => created_at,
+        UpdatedAt => updated_at,
+        ClosedAt => closed_at,
+        DeletedAt => deleted_at,
+        Version => version,
+    },
+    IssueAssigneeRow => bb_core::issue::IssueAssignee {
+        Issue => issue,
+        Person => person,
+        AddedAt => added_at,
+    },
+    IssueAliasRow => bb_core::issue::IssueAlias {
+        Project => project,
+        Code => code,
+        Issue => issue,
+        RetiredAt => retired_at,
+    },
+    IssueCounterRow => bb_core::issue::IssueCounter {
+        Project => project,
+        Last => last,
     },
     GroupRow => bb_core::access::Group {
         Id => id,

@@ -14,6 +14,7 @@ mod catalogue;
 mod evaluate;
 mod explain;
 pub mod guards;
+mod issues;
 mod levels;
 mod mask;
 mod moves;
@@ -23,6 +24,7 @@ mod people;
 mod starting;
 mod tree;
 
+pub use bb_macros::Masked;
 pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, PermissionBits, Topic};
 pub use evaluate::{
     Evaluation, HeldRole, Inputs, Place, RoleData, Row, RowStatus, RowTrace, Who, evaluate,
@@ -33,7 +35,7 @@ pub use levels::{
     FieldRule, LevelKind, LevelRule, LevelRules, LevelSource, LevelSubject, Levels, PeopleRule,
     RoleLevel, level_of_role, nearest_rule,
 };
-pub use mask::{Authorized, FieldMask, Masked, drop_hidden, mask_member};
+pub use mask::{Authorized, FieldMask, Masked, MaskedValue, drop_hidden, mask_member};
 pub use moves::{
     Access, Change, Lift, MoveRefusal, MoveRequest, Preview, check_move, preview_move,
 };

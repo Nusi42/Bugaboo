@@ -561,12 +561,12 @@ pub(crate) fn resolved_list(
 }
 
 impl SettingsStore for AuthStorage {
-    async fn setting_layers(
-        &self,
+    async fn setting_layers_in(
+        transaction: &mut Transaction,
         project: Option<ProjectId>,
         person: Option<UserId>,
     ) -> Result<Layers, StoreError> {
-        Database::setting_layers(self.database(), &Scopes { project, person }).await
+        layers_in(transaction, &Scopes { project, person }).await
     }
 
     async fn put_setting_value(

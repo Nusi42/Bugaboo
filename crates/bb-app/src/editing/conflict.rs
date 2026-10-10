@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use bb_core::ErrorCode;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::Field;
-use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
+use bb_core::id::{GroupId, IssueId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 use jiff::Timestamp;
@@ -29,6 +29,7 @@ use super::records::Shown;
 use crate::auth::{AppError, AuthStore, Ctx, fixed_entity, internal};
 use bb_core::settings::SIGN_UP_POLICY;
 
+use crate::issues::member as issue_member;
 use crate::member;
 
 /// A record that a change found at another version than the one the person looked at. It holds
@@ -93,6 +94,16 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
             member::role::PERMISSIONS,
             member::role::TWO_STEP,
         ]
+    } else if *kind == EntityKind::from(RecordKind::Issue) {
+        // What a change of an issue holds and is no list of people: who is assigned stays out
+        // until the conflict can show a list of people (M3-F32).
+        &[
+            issue_member::ISSUE_TYPE,
+            issue_member::TITLE,
+            issue_member::DESCRIPTION,
+            issue_member::STATUS,
+            issue_member::PRIORITY,
+        ]
     } else if *kind == EntityKind::from(RecordKind::Setting) {
         &[
             member::sign_up_policy::ENABLED,
@@ -139,6 +150,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                         .map_err(failed)?,
                 ));
             }
+        }
+        if ours(RecordKind::Issue) {
+            let found = match IssueId::from_bytes(record.id.to_bytes()) {
+                Ok(id) => self.store().issue(id).await.map_err(failed)?,
+                Err(_) => None,
+            };
+            return Ok(found
+                .filter(|issue| issue.deleted_at.is_none())
+                .map(|issue| issue.version));
         }
         if ours(RecordKind::Role) {
             let found = match RoleId::from_bytes(record.id.to_bytes()) {

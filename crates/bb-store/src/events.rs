@@ -43,6 +43,11 @@ impl Database {
         let mut transaction = self.begin().await?;
         let result = change(&mut transaction).await?;
         append_event(&mut transaction, event).await?;
+        // The events the change added besides its own come last, so the lock on the outbox is
+        // the last lock of the transaction and no writer waits on it while holding a row.
+        for follow_up in std::mem::take(&mut transaction.follow_ups) {
+            append_event(&mut transaction, &follow_up).await?;
+        }
         transaction.commit().await?;
         Ok(result)
     }
@@ -260,7 +265,7 @@ async fn transaction_has_no_row(
 }
 
 /// Appends the event and its outbox entry inside the transaction of the change.
-async fn append_event(
+pub(crate) async fn append_event(
     transaction: &mut Transaction,
     event: &DomainEvent,
 ) -> Result<(), StoreError> {

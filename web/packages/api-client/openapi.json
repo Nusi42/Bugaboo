@@ -6415,6 +6415,784 @@
         "x-permission": "manage-groups"
       }
     },
+    "/api/v1/issue-types": {
+      "get": {
+        "tags": ["issue-types"],
+        "summary": "The issue types in the order they are offered in, a page at a time, retired ones too. Open to\neverybody who is signed in.",
+        "operationId": "listIssueTypes",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issue types.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_IssueTypeItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "post": {
+        "tags": ["issue-types"],
+        "summary": "Makes an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "makeIssueType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewIssueTypeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issue type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueTypeItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/issue-types/{issue_type}": {
+      "patch": {
+        "tags": ["issue-types"],
+        "summary": "Changes the name or the icon of an issue type, or retires it (or offers it again). Needs the\npermission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "changeIssueType",
+        "parameters": [
+          {
+            "name": "issue_type",
+            "in": "path",
+            "description": "The ID of the issue type.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeIssueTypeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issue type as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueTypeItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/issues/{issue}": {
+      "get": {
+        "tags": ["issues"],
+        "summary": "One issue by its readable ID (an old one too; the answer holds the current one) or its\ninternal ID, with what the person may do with it. Needs the permission *See every issue of the\nproject*, or the issue is one the person reported.",
+        "operationId": "getIssue",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issue.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueDetailBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      },
+      "delete": {
+        "tags": ["issues"],
+        "summary": "Puts an issue into the trash. Needs the permission *Delete issues into the trash*. *Undo*\ntakes it out again.",
+        "operationId": "deleteIssue",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The issue is in the trash."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "delete-issues"
+      },
+      "patch": {
+        "tags": ["issues"],
+        "summary": "Changes the fields of an issue. Needs the permission *Change anybody's issues*, or *Change the\nissues they reported* on an issue the person reported; each field must be one the person may\nchange.",
+        "operationId": "changeIssue",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeIssueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issue as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/restore": {
+      "post": {
+        "tags": ["issues"],
+        "summary": "Takes an issue out of the trash (*Undo*). Needs the permission *Delete issues into the\ntrash*.",
+        "operationId": "restoreIssue",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issue, out of the trash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "delete-issues"
+      }
+    },
     "/api/v1/me/settings": {
       "get": {
         "tags": ["settings"],
@@ -8486,6 +9264,271 @@
           }
         },
         "x-permission": "decide-roles"
+      }
+    },
+    "/api/v1/projects/{project}/issues": {
+      "get": {
+        "tags": ["issues"],
+        "summary": "The issues of a project the person sees, newest first, a page at a time. Without *See every\nissue of the project* the person sees the issues they reported.",
+        "operationId": "listIssues",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issues, newest first.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_IssueItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      },
+      "post": {
+        "tags": ["issues"],
+        "summary": "Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones\nthe person may change (the title always).",
+        "operationId": "makeIssue",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewIssueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "make-issues"
       }
     },
     "/api/v1/projects/{project}/move": {
@@ -11315,6 +12358,90 @@
           }
         }
       },
+      "ChangeIssueBody": {
+        "type": "object",
+        "description": "What to change about an issue: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "assigned_to": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the people it is assigned to from now on: all of them, not the ones to add."
+          },
+          "description": {
+            "type": ["string", "null"],
+            "description": "A new description."
+          },
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "A new issue type; a retired type is refused."
+          },
+          "priority": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Priority",
+                "description": "A new priority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Status",
+                "description": "A new status. Entering the group *Done* sets the closed date; leaving it clears it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "A new title."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
+      "ChangeIssueTypeBody": {
+        "type": "object",
+        "description": "What to change about an issue type: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "icon": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueIcon",
+                "description": "A new icon."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "A new name."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "`true` retires the type (no new issues of it), `false` offers it again."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
       "ChangeProjectBody": {
         "type": "object",
         "description": "What to change about a project: what is left out stays as it is.",
@@ -11796,6 +12923,7 @@
           "project.move_into_itself",
           "project.too_deep",
           "project.preview_changed",
+          "issue.type_retired",
           "name.taken",
           "resource.not_found",
           "request.invalid",
@@ -12118,6 +13246,223 @@
           "email": {
             "type": "string",
             "description": "The e-mail address to invite."
+          }
+        }
+      },
+      "IssueDetailBody": {
+        "type": "object",
+        "description": "One issue with what the person may do with it.",
+        "required": ["issue", "may_change", "may_delete", "changeable"],
+        "properties": {
+          "changeable": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Field"
+            },
+            "description": "The fields the person may change in this issue; empty when they may not change it."
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueItem",
+            "description": "The issue, with every field the person may see."
+          },
+          "may_change": {
+            "type": "boolean",
+            "description": "Whether the person may change the issue at all, in the fields they may change."
+          },
+          "may_delete": {
+            "type": "boolean",
+            "description": "Whether the person may delete the issue into the trash."
+          }
+        }
+      },
+      "IssueIcon": {
+        "type": "string",
+        "description": "The icon of an issue type, by its name in Lucide.",
+        "enum": [
+          "bug",
+          "square-check",
+          "sparkles",
+          "flag",
+          "target",
+          "lightbulb",
+          "rocket",
+          "wrench",
+          "book-open",
+          "shield",
+          "zap",
+          "circle-help",
+          "star",
+          "bookmark",
+          "hammer",
+          "flame"
+        ]
+      },
+      "IssueItem": {
+        "type": "object",
+        "description": "An issue: the fields that can be asked for. An answer holds only those that were asked for (a\nlist holds a few by default; one issue holds all) and that the person may see: a field that is\nhidden from them is left out, and asking for it fails like asking for one that does not exist.",
+        "properties": {
+          "assigned_to": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PersonRef"
+            },
+            "description": "Who works on it, as the viewer may see people of this kind."
+          },
+          "closed_at": {
+            "type": ["string", "null"],
+            "description": "When it entered the group *Done*, while it is in it. Hidden with the status."
+          },
+          "created_at": {
+            "type": ["string", "null"],
+            "description": "When it was made."
+          },
+          "description": {
+            "type": ["string", "null"],
+            "description": "The long text, in Markdown."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The internal ID, which never changes."
+          },
+          "issue_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueTypeRef",
+                "description": "Its issue type."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "type": ["string", "null"],
+            "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
+          },
+          "priority": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Priority",
+                "description": "How important it is."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project it is in."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reported_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who made it, as the viewer may see people of this kind."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Status",
+                "description": "Where it stands in the workflow."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status_group": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StatusGroup",
+                "description": "The group of its status."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "What it is about."
+          },
+          "updated_at": {
+            "type": ["string", "null"],
+            "description": "When it was last changed."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "IssueTypeItem": {
+        "type": "object",
+        "description": "An issue type: the fields that can be asked for.",
+        "properties": {
+          "icon": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueIcon",
+                "description": "Its icon."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the type."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is retired: old issues keep it, new ones cannot have it."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "IssueTypeRef": {
+        "type": "object",
+        "description": "An issue type as a small reference: what the line of an issue needs.",
+        "required": ["id", "name", "icon", "retired"],
+        "properties": {
+          "icon": {
+            "$ref": "#/components/schemas/IssueIcon",
+            "description": "Its icon."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the type."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "retired": {
+            "type": "boolean",
+            "description": "Whether it is retired: old issues keep it, new ones cannot have it."
           }
         }
       },
@@ -12870,6 +14215,69 @@
           }
         }
       },
+      "NewIssueBody": {
+        "type": "object",
+        "description": "An issue to make.",
+        "required": ["issue_type", "title"],
+        "properties": {
+          "assigned_to": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the people it is assigned to. Nobody when left out."
+          },
+          "description": {
+            "type": ["string", "null"],
+            "description": "The long text, in Markdown. Empty when left out."
+          },
+          "issue_type": {
+            "type": "string",
+            "description": "The ID of its issue type; a retired type takes no new issues."
+          },
+          "priority": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Priority",
+                "description": "How important it is. *Normal* when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Status",
+                "description": "Where it starts. The first status of the starting workflow when left out."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "What it is about."
+          }
+        }
+      },
+      "NewIssueTypeBody": {
+        "type": "object",
+        "description": "An issue type to make.",
+        "required": ["name", "icon"],
+        "properties": {
+          "icon": {
+            "$ref": "#/components/schemas/IssueIcon",
+            "description": "Its icon."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          }
+        }
+      },
       "NewOrganizationRowBody": {
         "type": "object",
         "description": "A row for the whole organization to give: to a person or to a group, and the role.",
@@ -13376,6 +14784,182 @@
                 "id": {
                   "type": ["string", "null"],
                   "description": "The ID of the invitation."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_IssueItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An issue: the fields that can be asked for. An answer holds only those that were asked for (a\nlist holds a few by default; one issue holds all) and that the person may see: a field that is\nhidden from them is left out, and asking for it fails like asking for one that does not exist.",
+              "properties": {
+                "assigned_to": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRef"
+                  },
+                  "description": "Who works on it, as the viewer may see people of this kind."
+                },
+                "closed_at": {
+                  "type": ["string", "null"],
+                  "description": "When it entered the group *Done*, while it is in it. Hidden with the status."
+                },
+                "created_at": {
+                  "type": ["string", "null"],
+                  "description": "When it was made."
+                },
+                "description": {
+                  "type": ["string", "null"],
+                  "description": "The long text, in Markdown."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The internal ID, which never changes."
+                },
+                "issue_type": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueTypeRef",
+                      "description": "Its issue type."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "key": {
+                  "type": ["string", "null"],
+                  "description": "The readable ID now (`WEB-142`, `WEB-K7Q2X`)."
+                },
+                "priority": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Priority",
+                      "description": "How important it is."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "project": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectRef",
+                      "description": "The project it is in."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "reported_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PersonRef",
+                      "description": "Who made it, as the viewer may see people of this kind."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Status",
+                      "description": "Where it stands in the workflow."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status_group": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/StatusGroup",
+                      "description": "The group of its status."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "title": {
+                  "type": ["string", "null"],
+                  "description": "What it is about."
+                },
+                "updated_at": {
+                  "type": ["string", "null"],
+                  "description": "When it was last changed."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_IssueTypeItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An issue type: the fields that can be asked for.",
+              "properties": {
+                "icon": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueIcon",
+                      "description": "Its icon."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the type."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it is retired: old issues keep it, new ones cannot have it."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
                 }
               }
             },
@@ -14098,6 +15682,11 @@
           }
         ],
         "description": "Where a row of *Who has which role* is: the whole organization, a project, or a project the\nperson cannot see (which is not named)."
+      },
+      "Priority": {
+        "type": "string",
+        "description": "How important an issue is.",
+        "enum": ["low", "normal", "high", "critical"]
       },
       "Problem": {
         "type": "object",
@@ -15333,6 +16922,16 @@
             "description": "The person sees the project."
           }
         }
+      },
+      "Status": {
+        "type": "string",
+        "description": "A status of the starting workflow.",
+        "enum": ["open", "in-progress", "done"]
+      },
+      "StatusGroup": {
+        "type": "string",
+        "description": "The group of a status.",
+        "enum": ["not-started", "in-progress", "done"]
       },
       "StatusValue": {
         "type": "string",

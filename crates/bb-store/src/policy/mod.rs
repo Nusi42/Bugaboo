@@ -28,14 +28,10 @@ use sea_query::{Expr, ExprTrait as _, Order, Query};
 use self::levels::Which;
 pub(crate) use self::loading::{Wanted, load_policy};
 use crate::auth::AuthStorage;
-use crate::db::{Reader, StoredId, Transaction, to_micros};
+use crate::db::{LockClass, Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::projects::{chain_of, insert_project, project_by_short_name, project_in};
 use crate::schema::{LegacyAdministratorRow, StartingRolesMadeRow};
-
-/// The lock that changes of roles and rows take on PostgreSQL, so two of them cannot both leave
-/// the last administrator in place and together leave none.
-const POLICY_LOCK: i64 = 0x4242_504F_4C49_0001;
 
 /// The IDs as a list of values to bind to a query.
 pub(crate) fn in_list<T: StoredId>(ids: &[T]) -> Vec<Vec<u8>> {
@@ -215,7 +211,7 @@ impl PolicyStore for AuthStorage {
     }
 
     async fn lock_policy(transaction: &mut Transaction) -> Result<(), StoreError> {
-        transaction.advisory_lock(POLICY_LOCK).await
+        transaction.advisory_lock(LockClass::Policy, 0).await
     }
 
     async fn mark_starting_roles_made(

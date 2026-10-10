@@ -20,7 +20,7 @@ use sea_query::{
 };
 use sha2::{Digest as _, Sha256};
 
-use crate::db::{Database, Row, Transaction, from_micros, to_micros};
+use crate::db::{Database, LockClass, Row, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
 use crate::schema::Migration;
 
@@ -30,10 +30,8 @@ mod m0003_policy;
 mod m0004_settings;
 mod m0005_projects;
 mod m0006_access_keys;
+mod m0007_issues;
 mod m0008_editing;
-
-/// The advisory lock PostgreSQL processes take while they migrate.
-const MIGRATION_LOCK: i64 = 0x4242_4D49_4752_0001;
 
 /// One step of a migration.
 pub(crate) enum Step {
@@ -132,6 +130,11 @@ const ALL: &[Definition] = &[
         steps: || Ok(m0006_access_keys::steps()),
     },
     Definition {
+        version: 7,
+        name: "issues",
+        steps: || Ok(m0007_issues::steps()),
+    },
+    Definition {
         version: 8,
         name: "editing",
         steps: || Ok(m0008_editing::steps()),
@@ -220,7 +223,7 @@ impl Database {
         let mut done = Vec::new();
         loop {
             let mut transaction = self.begin().await?;
-            transaction.advisory_lock(MIGRATION_LOCK).await?;
+            transaction.advisory_lock(LockClass::Migration, 0).await?;
             transaction.execute_schema(&record_table()).await?;
             let applied = read_applied(&mut transaction).await?;
             check(&applied)?;
@@ -375,6 +378,7 @@ mod tests {
             assert_eq!(applied[3].name.as_str(), "settings");
             assert_eq!(applied[4].name.as_str(), "projects");
             assert_eq!(applied[5].name.as_str(), "access_keys");
+            assert_eq!(applied[6].name.as_str(), "issues");
             for (record, definition) in applied.iter().zip(ALL) {
                 assert_eq!(record.name.as_str(), definition.name);
                 assert_eq!(record.applied_at, at(0));

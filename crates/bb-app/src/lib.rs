@@ -7,6 +7,7 @@ pub mod auth;
 pub mod context;
 pub mod editing;
 mod input;
+pub mod issues;
 mod member;
 pub mod people;
 pub mod ports;

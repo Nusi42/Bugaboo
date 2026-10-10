@@ -197,17 +197,40 @@ pub(super) fn held_exactly(permission: Permission) -> Vec<Permission> {
 }
 
 /// Like [`held_exactly`] for several permissions: *See projects* joins them when any of them
-/// counts in projects.
+/// counts in projects, and *See issues* when any of them acts on an issue the person sees.
 pub(super) fn held_exactly_all(permissions: &[Permission]) -> Vec<Permission> {
     let mut held = permissions.to_vec();
-    let in_projects = permissions
+    let in_projects = permissions.iter().any(|permission| {
+        !ORGANIZATION_ONLY.contains(permission) && *permission != Permission::SeeProjects
+    });
+    let acts_on_issues = permissions
         .iter()
-        .any(|permission| !ORGANIZATION_ONLY.contains(permission));
+        .any(|permission| ACTS_ON_ISSUES_SEEN.contains(permission));
     if in_projects && !held.contains(&Permission::SeeProjects) {
         held.push(Permission::SeeProjects);
     }
+    if acts_on_issues && !held.contains(&Permission::SeeIssues) {
+        held.push(Permission::SeeIssues);
+    }
     held
 }
+
+/// The permissions that act on an issue the person sees: the person of `Actor::Exactly` holds
+/// *See issues* beside them, as they hold *See projects* beside a permission of a project.
+const ACTS_ON_ISSUES_SEEN: [Permission; 3] = [
+    Permission::ChangeIssues,
+    Permission::ChangeOwnIssues,
+    Permission::DeleteIssues,
+];
+
+/// The permissions whose route sets fields of an issue: a role that is new has no level for any
+/// field (everything is hidden), so the person of `Actor::Exactly` gets the level *Can change* for
+/// every field, and the route is let in for the permission alone.
+pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
+    Permission::MakeIssues,
+    Permission::ChangeIssues,
+    Permission::ChangeOwnIssues,
+];
 
 /// The permissions of a starting role, from the table of architecture §7.
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {

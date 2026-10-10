@@ -52,14 +52,16 @@ const SQL_COUNTERS: [&str; 8] = [
     "AS IDENTITY",
     "NEXTVAL(",
 ];
-/// What in code makes a number count up (matched in the code with its white space gone).
-const CODE_COUNTERS: [&str; 6] = [
+/// What in code makes a number count up (matched in the code with its white space gone). The last
+/// one is the stored counter of the counting issue IDs, which is read and raised by name.
+const CODE_COUNTERS: [&str; 7] = [
     "count+1",
     "counter+1",
     ".count()+1",
     "next_number",
     ".auto_increment(",
     "last_insert_rowid",
+    "IssueCounterRow::Last",
 ];
 
 pub(crate) struct ArchNoCounters;
@@ -461,6 +463,7 @@ mod tests {
             "const SQL: &str = \"id BIGSERIAL PRIMARY KEY\";\n",
             "const SQL: &str = \"SELECT nextval('labels')\";\n",
             "fn c() { ColumnDef::new(Id).big_integer().auto_increment(); }\n",
+            "fn c() { Expr::col(IssueCounterRow::Last).add(1); }\n",
         ] {
             let found = evaluate_code(&source("crates/bb-store/src/x.rs", text), &[]);
             assert!(!found.is_empty(), "{text}");
@@ -507,6 +510,19 @@ mod tests {
                 .iter()
                 .any(|f| f.message.contains("nothing that counts"))
         );
+    }
+
+    #[test]
+    fn good_example_the_stored_counter_of_the_counting_issue_ids_is_named_with_its_files() {
+        let counting = [Counting {
+            folder: "crates/bb-store/src/issues.rs".to_owned(),
+            reason: "The counter of the counting issue IDs (ADR-0021).".to_owned(),
+        }];
+        let text = "fn n() { Expr::col(IssueCounterRow::Last).add(1); }\n";
+        assert!(
+            evaluate_code(&source("crates/bb-store/src/issues.rs", text), &counting).is_empty()
+        );
+        assert!(!evaluate_code(&source("crates/bb-store/src/x.rs", text), &counting).is_empty());
     }
 
     #[test]

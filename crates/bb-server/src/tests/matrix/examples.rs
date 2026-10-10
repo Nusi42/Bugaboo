@@ -49,6 +49,15 @@ pub(super) enum Quirk {
     /// refusal that the matrix does not expect fails, so a permitted actor cannot be refused for
     /// another reason without anybody noticing.
     AlsoAnswers(&'static str),
+    /// The route is about an issue in the target project that somebody else reported (M3 WP-03): a
+    /// person who does not see the project, or lacks *See issues* there, is told
+    /// `resource.not_found`, as for an issue that is not there; a person who sees the issue and
+    /// lacks the permission of the route is refused.
+    AnIssueOfTheTarget,
+    /// The route lists the issues of the target project: anybody who sees the project gets a list
+    /// (without *See issues*, of the issues they reported), and anybody else
+    /// `resource.not_found`.
+    ListsTheIssuesSeen,
     /// A route of *My settings*: the person's own choices, not their sign-in data, so an access
     /// key acts as the person: it reads them, and changes them only if it may change anything
     /// (WP-07, ADR-0025 decision 8).
@@ -273,6 +282,15 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("readDraft", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::route("throwAwayDraft"),
     Example::route("checkVersions"),
+    Example::with("listIssueTypes", &[Quirk::KeysActAsThePerson]),
+    Example::route("makeIssueType"),
+    Example::route("changeIssueType"),
+    Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
+    Example::with("makeIssue", &[Quirk::NeedsToSeeTheProject]),
+    Example::with("getIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
 ];
 
 /// A route that judges the record it names, as the example names the target project.
@@ -644,6 +662,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

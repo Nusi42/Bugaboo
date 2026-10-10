@@ -1,0 +1,99 @@
+//! The port of the issues use cases: what they need from storage beyond the projects port.
+//!
+//! Like [`ProjectStore`], reads take `&self` and **writes** are associated functions that run
+//! inside `record_change`, so a change and its domain event are committed together (ARCH-EVENTS).
+//! A read that is also needed inside a change is written once with `queries!`.
+
+use std::future::Future;
+
+use bb_core::event::DomainEvent;
+use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType};
+use bb_core::issue_key::IssueCode;
+use jiff::Timestamp;
+
+use crate::projects::ProjectStore;
+use crate::store_macros::{queries, reads, writes};
+
+/// An issue found by a readable ID: the issue, and whether the code was an old one of it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IssueFound {
+    /// The issue (also one in the trash: the use case decides what to say about it).
+    pub issue: Issue,
+    /// The code named an old code of the issue.
+    pub old_code: bool,
+}
+
+/// What the issues use cases need from storage.
+pub trait IssueStore: ProjectStore + 'static {
+    queries! {
+        /// Every issue type, in the order they are offered in (then by ID).
+        fn issue_types() -> Vec<IssueType> = issue_types_in;
+        /// The issue with this ID, also one in the trash.
+        fn issue(id: IssueId) -> Option<Issue> = issue_in;
+        /// The issue that has this code in the project now or had it once.
+        fn issue_at(project: ProjectId, code: IssueCode) -> Option<IssueFound> = issue_at_in;
+        /// Whether a code is given out in the project: an issue has it, or had it once.
+        fn issue_code_taken(project: ProjectId, code: IssueCode) -> bool = issue_code_taken_in;
+        /// The people an issue is assigned to, in the order they were put there.
+        fn assignees(issue: IssueId) -> Vec<IssueAssignee> = assignees_in;
+        /// Every issue of a project, also those in the trash, with their IDs and codes.
+        fn issue_codes(project: ProjectId) -> Vec<(IssueId, IssueCode)> = issue_codes_in;
+    }
+
+    reads! {
+        /// The issue type with this ID.
+        fn issue_type(id: IssueTypeId) -> Option<IssueType>;
+        /// A page of the issues of a project that are not in the trash, newest first: the ones
+        /// before `before` (the last of the page before), only the ones `reported_by` reported
+        /// when it is given, at most `limit`.
+        fn issues_page(
+            project: ProjectId,
+            reported_by: Option<UserId>,
+            before: Option<IssueId>,
+            limit: u64
+        ) -> Vec<Issue>;
+        /// The people the issues are assigned to, for a page of issues at once.
+        fn assignees_of(issues: &[IssueId]) -> Vec<IssueAssignee>;
+    }
+
+    writes! {
+        /// Adds an issue type.
+        fn insert_issue_type(issue_type: &IssueType) -> ();
+        /// Changes the name, icon and retired date of an issue type, counts its version up, and
+        /// says whether the type was still at `version`.
+        fn update_issue_type(
+            id: IssueTypeId,
+            name: &str,
+            icon: IssueIcon,
+            retired_at: Option<Timestamp>,
+            version: i64
+        ) -> bool;
+        /// Adds an issue with the people it is assigned to.
+        fn insert_issue(issue: &Issue, assignees: &[IssueAssignee]) -> ();
+        /// Writes the type, title, description, status, priority, update date and closed date of
+        /// `issue`, counts its version up, and says whether it was still at `version`.
+        fn update_issue(issue: &Issue, version: i64) -> bool;
+        /// Replaces the people an issue is assigned to.
+        fn replace_assignees(issue: IssueId, assignees: &[IssueAssignee]) -> ();
+        /// Puts an issue into the trash (a date) or takes it out (`None`), counts its version up,
+        /// and says whether the issue was there.
+        fn set_issue_deleted(id: IssueId, deleted_at: Option<Timestamp>) -> bool;
+        /// Gives out the next counting number of a project: the number after the last one given
+        /// out, which is stored. Two writers wait for each other, so no number is skipped or
+        /// given twice.
+        fn next_counting_number(project: ProjectId) -> i64;
+        /// Gives an issue a new code (the old one is kept with `insert_issue_alias`).
+        fn set_issue_code(id: IssueId, code: &IssueCode) -> ();
+        /// Keeps an old code with its issue.
+        fn insert_issue_alias(alias: &IssueAlias) -> ();
+        /// Waits for every other change that gives out or renews the codes of this project, until
+        /// the end of this change: the mode and the codes of a project are judged and written by
+        /// one change at a time.
+        fn lock_issue_codes(project: ProjectId) -> ();
+        /// Appends the event of something this change did besides what its own event says (an
+        /// issue got a new code because the mode of its project changed), in the same
+        /// transaction.
+        fn append_follow_up_event(event: &DomainEvent) -> ();
+    }
+}

@@ -179,6 +179,8 @@ macro_rules! words {
 
         // Words are fixed vocabulary, never personal data.
         impl $crate::personal::NotPersonal for $name {}
+        impl $crate::plain::sealed::Sealed for $name {}
+        impl $crate::plain::Plain for $name {}
     };
 }
 

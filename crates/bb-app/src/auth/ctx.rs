@@ -161,6 +161,34 @@ impl IdSource for OwnedClockIds {
     }
 }
 
+/// Makes the events of one request: its actor, its channel and the clock of the context.
+#[derive(Clone)]
+pub(crate) struct EventMaker {
+    clock: Arc<dyn Clock + Send + Sync>,
+    actor: Actor,
+    channel: Channel,
+}
+
+impl EventMaker {
+    /// The event of a change to the record `entity`.
+    pub(crate) fn make(
+        &self,
+        entity: EntityRef,
+        changes: Vec<FieldChange>,
+    ) -> Result<DomainEvent, bb_core::id::IdError> {
+        let mut ids = ClockIds(self.clock.as_ref());
+        Ok(DomainEvent {
+            id: EventId::generate(&mut ids)?,
+            time: self.clock.now(),
+            actor: self.actor,
+            channel: self.channel,
+            entity,
+            changes,
+            reason: None,
+        })
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) const fn store(&self) -> &S {
         &self.services.store
@@ -194,21 +222,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         entity: EntityRef,
         changes: Vec<FieldChange>,
     ) -> Result<DomainEvent, AppError> {
-        let mut ids = ClockIds(self.services.clock.as_ref());
-        Ok(DomainEvent {
-            id: EventId::generate(&mut ids)
-                .map_err(|error| AppError::Internal(error.to_string()))?,
-            time: self.now(),
+        self.event_maker(actor)
+            .make(entity, changes)
+            .map_err(|error| AppError::Internal(error.to_string()))
+    }
+
+    /// What makes events of this request by `actor` inside a change, which cannot borrow the
+    /// context (a change that does more than its own event says, one event for each thing).
+    pub(crate) fn event_maker(&self, actor: Actor) -> EventMaker {
+        EventMaker {
+            clock: Arc::clone(&self.services.clock),
             actor,
             channel: if self.via_key.load(Ordering::Relaxed) {
                 Channel::Api
             } else {
                 Channel::Ui
             },
-            entity,
-            changes,
-            reason: None,
-        })
+        }
     }
 
     /// Writes an entry into the security log. A log that cannot be written is reported in the

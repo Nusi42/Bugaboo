@@ -111,6 +111,10 @@ words! {
         Group => "group",
         /// An invitation.
         Invitation => "invitation",
+        /// An issue.
+        Issue => "issue",
+        /// An issue type.
+        IssueType => "issue_type",
         /// A passkey.
         Passkey => "passkey",
         /// A person.

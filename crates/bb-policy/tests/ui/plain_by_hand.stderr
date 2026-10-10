@@ -1,0 +1,26 @@
+error[E0277]: the trait bound `View: bb_core::plain::sealed::Sealed` is not satisfied
+ --> tests/ui/plain_by_hand.rs:6:16
+  |
+6 | impl Plain for View {}
+  |                ^^^^ unsatisfied trait bound
+  |
+help: the trait `bb_core::plain::sealed::Sealed` is not implemented for `View`
+ --> tests/ui/plain_by_hand.rs:3:1
+  |
+3 | struct View;
+  | ^^^^^^^^^^^
+  = help: the following other types implement trait `bb_core::plain::sealed::Sealed`:
+            AccessKeyId
+            AppliesTo
+            AssignmentId
+            Basis
+            Box<T>
+            Category
+            Channel
+            EditorId
+          and $N others
+note: required by a bound in `Plain`
+ --> $WORKSPACE/crates/bb-core/src/plain.rs
+  |
+  | pub trait Plain: sealed::Sealed {}
+  |                  ^^^^^^^^^^^^^^ required by this bound in `Plain`

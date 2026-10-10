@@ -35,6 +35,12 @@ use crate::editing::{
     edit_anyway, heartbeat, read_draft, release_lock, release_stuck_lock, save_draft, take_lock,
     throw_away_draft,
 };
+use crate::issues::{
+    ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
+    IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
+    change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
+    make_issue_type, restore_issue,
+};
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
     GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery, MakeGroup,
@@ -67,6 +73,7 @@ pub use access_keys::{
     require_session, see_server_status,
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
+pub(crate) use ctx::EventMaker;
 pub use ctx::{AuthServices, Ctx, RequestInfo};
 pub use error::AppError;
 pub(crate) use error::{Stops, change_failed, if_there, internal};
@@ -336,4 +343,22 @@ use_cases! {
     throw_away_draft(ThrowAwayDraftQuery) -> Done;
     /// The versions of the records on the screen.
     check_versions(CheckVersionsQuery) -> Authorized<Versions>;
+    /// Lists the issue types.
+    issue_types(IssueTypesQuery) -> Authorized<IssueTypePage>;
+    /// Makes an issue type.
+    make_issue_type(MakeIssueType) -> Authorized<IssueTypeView>;
+    /// Changes the name, icon or retired state of an issue type.
+    change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
+    /// Lists the issues of a project a person sees.
+    issues(IssuesQuery) -> Authorized<IssuePage>;
+    /// Makes an issue.
+    make_issue(MakeIssue) -> Authorized<IssueView>;
+    /// Shows one issue by its readable or internal ID.
+    issue(IssueQuery) -> Authorized<IssueDetail>;
+    /// Changes the fields of an issue.
+    change_issue(ChangeIssue) -> Authorized<IssueView>;
+    /// Puts an issue into the trash.
+    delete_issue(DeleteIssue) -> Done;
+    /// Takes an issue out of the trash.
+    restore_issue(RestoreIssue) -> Authorized<IssueView>;
 }

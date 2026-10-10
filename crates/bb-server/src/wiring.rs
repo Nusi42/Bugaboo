@@ -17,6 +17,7 @@ use bb_app::access::{MakeStartingRoles, make_starting_roles};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::context::SystemClock;
 use bb_app::editing::{PurgeDraftsQuery, purge_drafts};
+use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
 use bb_app::ports::SetupCodeFile;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
@@ -170,6 +171,13 @@ pub(crate) async fn wire(
     make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
         .await
         .map_err(|error| anyhow!(error.to_string()))?;
+    // The issue types (Bug, Task, Feature, Goal) are made once as well (ISS-02).
+    make_starting_issue_types(
+        &services.ctx(RequestInfo::default()),
+        MakeStartingIssueTypes,
+    )
+    .await
+    .map_err(|error| anyhow!(error.to_string()))?;
     let setup_code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
         .await
         .map_err(|error| anyhow!(error.to_string()))?

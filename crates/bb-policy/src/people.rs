@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 use bb_core::access::PeopleLevel;
 use bb_core::id::{IdSource, UserId};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::text::crockford_symbol;
+use bb_core::text::CodeDraws;
 use serde::Serialize;
 
 use crate::catalogue::Permission;
@@ -163,8 +163,6 @@ pub fn resolve(
 const LABEL_LENGTH: usize = 4;
 /// The longest label.
 const LABEL_LENGTH_MAX: usize = 12;
-/// How often a length is tried again after a clash before the label gets longer.
-const TRIES_PER_LENGTH: usize = 16;
 
 /// Makes the random code of a *Former user* (PRIV-13): four characters of Crockford Base32 from
 /// the secure random source, drawn again on a clash and longer when four run short. Never made
@@ -177,20 +175,7 @@ pub fn former_user_label(
     source: &mut impl IdSource,
     taken: &dyn Fn(&str) -> bool,
 ) -> Option<String> {
-    for length in LABEL_LENGTH..=LABEL_LENGTH_MAX {
-        for _ in 0..TRIES_PER_LENGTH {
-            let random = source.random();
-            let label: String = random
-                .iter()
-                .take(length)
-                .map(|byte| crockford_symbol(*byte))
-                .collect();
-            if !taken(&label) {
-                return Some(label);
-            }
-        }
-    }
-    None
+    CodeDraws::new(source, LABEL_LENGTH, LABEL_LENGTH_MAX).find(|label| !taken(label))
 }
 
 /// The set of labels as the store's rows give them, for [`former_user_label`].

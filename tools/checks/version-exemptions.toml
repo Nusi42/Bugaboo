@@ -41,8 +41,10 @@ routes = [
   "POST /api/v1/assignments",
   "POST /api/v1/auth/invitations",
   "POST /api/v1/groups",
+  "POST /api/v1/issue-types",
   "POST /api/v1/projects",
   "POST /api/v1/projects/{project}/assignments",
+  "POST /api/v1/projects/{project}/issues",
   "POST /api/v1/projects/{project}/sub-projects",
   "POST /api/v1/roles",
   "POST /api/v1/roles/{role_id}/copy",
@@ -55,11 +57,13 @@ routes = [
   "DELETE /api/v1/assignments/{assignment_id}",
   "DELETE /api/v1/auth/invitations/{invitation_id}",
   "DELETE /api/v1/groups/{group_id}",
+  "DELETE /api/v1/issues/{issue}",
+  "POST /api/v1/issues/{issue}/restore",
   "DELETE /api/v1/roles/{role_id}",
   "PUT /api/v1/groups/{group_id}/members/{person_id}",
   "DELETE /api/v1/groups/{group_id}/members/{person_id}",
 ]
-reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not_found, and a row that is there already is there."
+reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not_found, and a row that is there already is there. An issue goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite."
 
 [[exempt]]
 routes = ["POST /api/v1/projects/{project}/move"]

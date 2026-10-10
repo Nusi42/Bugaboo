@@ -24,7 +24,7 @@ Issues exist: people with the right to make issues create them in a project, see
 
 ## Acceptance tests (write first)
 
-- `iss_01_a_person_makes_and_changes_an_issue_they_may` (both databases), `iss_01_a_hidden_issue_answers_not_found_like_a_missing_one`, `iss_01_a_guest_sees_only_the_issues_they_reported`, `iss_01_a_stale_version_is_refused_with_who_changed_it`.
+- `iss_01_a_person_makes_and_changes_an_issue_they_may` (both databases), `iss_01_a_hidden_issue_answers_not_found_like_a_missing_one`, `iss_01_a_guest_sees_only_the_issues_they_reported`, `iss_01_a_stale_version_is_refused`.
 - `iss_01a_random_ids_use_the_readable_alphabet_and_never_repeat` (property test), `iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers` (both databases), `iss_01a_an_old_id_redirects_after_the_mode_changes`.
 - `iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones`.
 - `sec_04_a_nested_view_never_carries_a_hidden_field`, `sec_06_issue_answers_refuse_every_field_the_role_may_not_see`.

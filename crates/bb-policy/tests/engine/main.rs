@@ -2,6 +2,7 @@
 //! The tests that run the engine through the store, on both databases, are in `bb-store`.
 
 // Dependencies of the library that these tests do not use themselves (`unused_crate_dependencies`).
+use bb_macros as _;
 #[cfg(feature = "openapi")]
 use utoipa as _;
 
@@ -13,6 +14,8 @@ mod compile_fail;
 mod evaluation;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod guards;
+#[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
+mod issues;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod keys;
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).

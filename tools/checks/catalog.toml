@@ -463,10 +463,10 @@ status = "active"
 id = "TEST-ISSUE-IDS"
 title = "Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes"
 rule = "ADR-0021"
-tool = "unit + property tests"
+tool = "xtask (the unit, property and two-database tests of the rules about issue IDs exist by name; the two-database ones run through each_database)"
 when = ["ci"]
-files = ["crates/bb-app/**", "crates/bb-store/**"]
-status = "planned"
+files = ["crates/**"]
+status = "active"
 
 # ───────────── Security ─────────────
 [[check]]

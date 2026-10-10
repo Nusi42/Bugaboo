@@ -51,6 +51,8 @@ mod check_access;
 mod editing;
 mod field_permissions;
 mod groups;
+mod issue_types;
+mod issues;
 mod own_access;
 mod people;
 mod people_visibility;
@@ -142,6 +144,8 @@ where
         .merge(admin::routes())
         .merge(settings::routes())
         .merge(projects::routes())
+        .merge(issue_types::routes())
+        .merge(issues::routes())
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())

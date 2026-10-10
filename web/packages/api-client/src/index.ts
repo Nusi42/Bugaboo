@@ -37,6 +37,7 @@ export type {
 export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
+export { issueIconWords } from "./words.generated.ts";
 export {
   settingChoices,
   settingDefaults,

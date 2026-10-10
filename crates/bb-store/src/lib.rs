@@ -15,6 +15,7 @@ mod db;
 mod editing;
 mod error;
 mod events;
+mod issues;
 mod jobs;
 mod keys;
 mod layout;
