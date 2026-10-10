@@ -48,3 +48,8 @@ export abstract class EditingStore {
     this.stopBeats = null;
   }
 }
+
+/** The end of a call whose answer nobody waits for. */
+export function ignore(): void {
+  // Nothing to do: a failure of a release or of throwing a draft away is tried again by the lease.
+}

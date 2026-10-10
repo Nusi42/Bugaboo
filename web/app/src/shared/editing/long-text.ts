@@ -1,8 +1,9 @@
 import { conflictOf, type LockOutcome } from "@bugaboo/api-client";
 
 import { codeOf } from "../errors.ts";
-import { lostReasonOf, newestDraft, startingState, type LongTextDeps } from "./long-text-model.ts";
-import { EditingStore } from "./long-text-store.ts";
+import { lostReasonOf, startingState, type LongTextDeps } from "./long-text-model.ts";
+import { ignore } from "./long-text-store.ts";
+import { WatchingEditor } from "./long-text-watching.ts";
 
 export type * from "./long-text-model.ts";
 
@@ -14,7 +15,7 @@ export type * from "./long-text-model.ts";
  */
 
 /** The controller of one long text of one record. */
-export class LongTextEditor extends EditingStore {
+export class LongTextEditor extends WatchingEditor {
   private baseVersion: number;
   private readonly editor: string;
   private saveWhenLocked = false;
@@ -49,64 +50,6 @@ export class LongTextEditor extends EditingStore {
     void this.findHolder();
   };
 
-  /**
-   * Asks who is editing when the box opens, so a person who comes second is told before the first
-   * key (UX §6). While somebody is, the question is asked again at each beat: when they let go,
-   * the box opens.
-   */
-  private async findHolder(): Promise<void> {
-    const holder = await this.deps.peek().catch(() => null);
-    // Only while nothing was typed: a person who started writing meets the lock when it is taken.
-    if (
-      holder !== null &&
-      this.state.phase.kind === "open" &&
-      this.state.text === this.state.saved
-    ) {
-      this.set({ phase: { kind: "held", lock: holder } });
-      this.stopBeats ??= this.deps.startHeartbeats(this.watchHolder);
-    }
-  }
-
-  private readonly watchHolder = async (): Promise<void> => {
-    if (this.state.phase.kind !== "held") {
-      return;
-    }
-    const holder = await this.deps.peek();
-    if (holder === null) {
-      this.stopHeartbeats();
-      this.set({ phase: { kind: "open" } });
-    } else {
-      this.set({ phase: { kind: "held", lock: holder } });
-    }
-  };
-
-  private async findDraft(): Promise<void> {
-    const newest = newestDraft(
-      [this.deps.browserDraft.read(), await this.deps.serverDraft().catch(() => null)],
-      this.state.saved,
-    );
-    // Only while nothing was typed: a person who started writing has their own text.
-    if (newest !== undefined && this.state.phase.kind === "open") {
-      this.set({ offered: newest });
-    }
-  }
-
-  /** Continues from the offered draft; the first key of a draft that differs takes the lock. */
-  readonly continueDraft = (): void => {
-    const draft = this.state.offered;
-    if (draft !== null) {
-      this.set({ offered: null });
-      this.type(draft.text);
-    }
-  };
-
-  /** Starts again from the saved text and drops the offered draft. */
-  readonly dropDraft = (): void => {
-    this.set({ offered: null });
-    this.deps.browserDraft.forget();
-    void this.deps.throwAwayServerDraft().catch(ignore);
-  };
-
   /** The text in the box changed. The first change takes the lock. */
   readonly type = (text: string): void => {
     const { phase } = this.state;
@@ -121,12 +64,27 @@ export class LongTextEditor extends EditingStore {
   };
 
   private async begin(): Promise<void> {
+    const generation = this.generation;
     this.set({ phase: { kind: "taking" }, problem: null });
     try {
-      this.arrive(await this.deps.take(this.editor));
+      this.arriveIfCurrent(await this.deps.take(this.editor), generation);
     } catch (error) {
-      this.set({ phase: { kind: "open" }, problem: error });
+      if (generation === this.generation) {
+        this.set({ phase: { kind: "open" }, problem: error });
+      }
     }
+  }
+
+  /** Like `arrive`, unless the editing ended meanwhile: then a lock that came is let go. */
+  private arriveIfCurrent(outcome: LockOutcome, generation: number): boolean {
+    if (generation === this.generation) {
+      this.arrive(outcome);
+      return true;
+    }
+    if (outcome.status === "taken") {
+      void this.deps.release(outcome.lock_token).catch(ignore);
+    }
+    return false;
   }
 
   /** The answer to asking for the lock (or to *Edit anyway*). */
@@ -152,10 +110,14 @@ export class LongTextEditor extends EditingStore {
     if (token === null || this.state.phase.kind !== "locked") {
       return;
     }
+    const generation = this.generation;
     const answer = await this.deps.heartbeat(token, {
       text: this.state.text,
       base_version: this.baseVersion,
     });
+    if (generation !== this.generation) {
+      return;
+    }
     const asked = answer.notices.find((notice) => notice.kind === "finish_asked");
     if (asked !== undefined) {
       this.set({ asked: asked.from });
@@ -169,8 +131,13 @@ export class LongTextEditor extends EditingStore {
       this.token = null;
       this.set({ phase: { kind: "taking" } });
       try {
-        this.arrive(await this.deps.take(this.editor));
+        if (!this.arriveIfCurrent(await this.deps.take(this.editor), generation)) {
+          return;
+        }
       } catch (problem) {
+        if (generation !== this.generation) {
+          return;
+        }
         // The lock could not be asked for: the text stays in the box, and *Compare and save*
         // takes the lock again.
         this.set({ phase: { kind: "lost", reason: "ran-out" }, problem });
@@ -242,6 +209,7 @@ export class LongTextEditor extends EditingStore {
 
   /** Throws the editing away: the lock is let go and no draft is kept. */
   readonly cancel = (): void => {
+    this.generation += 1;
     const token = this.token;
     this.finish();
     this.set({ text: this.state.saved, startedFrom: this.state.saved });
@@ -273,8 +241,9 @@ export class LongTextEditor extends EditingStore {
     if (this.state.phase.kind !== "held") {
       return;
     }
+    const generation = this.generation;
     try {
-      this.arrive(await this.deps.editAnyway(this.editor));
+      this.arriveIfCurrent(await this.deps.editAnyway(this.editor), generation);
     } catch (error) {
       this.set({ problem: error });
     }
@@ -282,6 +251,7 @@ export class LongTextEditor extends EditingStore {
 
   /** The screen goes away: the beats stop and the lock is let go; the draft stays. */
   readonly dispose = (): void => {
+    this.generation += 1;
     const token = this.token;
     this.stopHeartbeats();
     this.token = null;
@@ -289,9 +259,4 @@ export class LongTextEditor extends EditingStore {
       void this.deps.release(token).catch(ignore);
     }
   };
-}
-
-/** The end of a call whose answer nobody waits for. */
-function ignore(): void {
-  // Nothing to do: a failure of a release or of throwing a draft away is tried again by the lease.
 }
