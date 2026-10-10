@@ -46,7 +46,7 @@ fn read_type(row: &Row) -> Result<IssueType, StoreError> {
     })
 }
 
-fn issue_select() -> SelectStatement {
+pub(crate) fn issue_select() -> SelectStatement {
     let mut select = Query::select();
     select
         .columns([
@@ -73,7 +73,7 @@ fn read_code(text: &str) -> Result<IssueCode, StoreError> {
     IssueCode::new(text).map_err(|_| StoreError::Corrupt("an issue code"))
 }
 
-fn read_issue(row: &Row) -> Result<Issue, StoreError> {
+pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
     Ok(Issue {
         id: row.id::<IssueId>(IssueRow::Id)?,
         project: row.id::<ProjectId>(IssueRow::Project)?,

@@ -28,6 +28,12 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
+use crate::comments::{
+    AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
+    MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
+    add_comment, comment_versions, delete_comment, mention_choices, mentions, read_mentions,
+    restore_comment, save_comment,
+};
 use crate::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftView, EditAnyway, HeartbeatAnswer,
     HeartbeatQuery, LockOutcome, ReadDraftQuery, ReleaseLockQuery, ReleaseStuckLock,
@@ -35,6 +41,10 @@ use crate::editing::{
     edit_anyway, heartbeat, read_draft, release_lock, release_stuck_lock, save_draft, take_lock,
     throw_away_draft,
 };
+use crate::follow::{
+    FollowIssue, Followers, FollowersQuery, UnfollowIssue, follow_issue, followers, unfollow_issue,
+};
+use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
     ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
     IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
@@ -52,6 +62,12 @@ use crate::projects::{
     ChangeProject, MakeProject, MovePreview, MovePreviewQuery, MoveProject, ProjectDetail,
     ProjectPage, ProjectQuery, ProjectView, ProjectsQuery, change_project, make_project,
     move_project, preview_move, project, projects,
+};
+use crate::relations::{
+    AddRelation, ChangeRelationKind, IssueRelations, IssueRelationsQuery, MakeRelationKind,
+    RelationKindPage, RelationKindView, RelationKindsQuery, RelationView, RemoveRelation,
+    SetParent, add_relation, change_relation_kind, issue_relations, make_relation_kind,
+    relation_kinds, remove_relation, set_parent,
 };
 use crate::roles::{
     AccessAnswer, AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, ChangeRole,
@@ -361,4 +377,42 @@ use_cases! {
     delete_issue(DeleteIssue) -> Done;
     /// Takes an issue out of the trash.
     restore_issue(RestoreIssue) -> Authorized<IssueView>;
+    /// Lists the kinds of relation.
+    relation_kinds(RelationKindsQuery) -> Authorized<RelationKindPage>;
+    /// Makes a kind of relation.
+    make_relation_kind(MakeRelationKind) -> Authorized<RelationKindView>;
+    /// Changes the names or the retired state of a kind of relation.
+    change_relation_kind(ChangeRelationKind) -> Authorized<RelationKindView>;
+    /// Shows the sub-issues and the related issues of an issue.
+    issue_relations(IssueRelationsQuery) -> Authorized<IssueRelations>;
+    /// Puts an issue under another one, or takes it out.
+    set_parent(SetParent) -> Authorized<IssueRelations>;
+    /// Adds a relation between two issues.
+    add_relation(AddRelation) -> Authorized<RelationView>;
+    /// Takes a relation away.
+    remove_relation(RemoveRelation) -> Done;
+    /// Writes a comment under an issue.
+    add_comment(AddComment) -> Authorized<CommentView>;
+    /// Saves the new text of a comment under its lock.
+    save_comment(SaveComment) -> Authorized<CommentView>;
+    /// Puts a comment into the trash.
+    delete_comment(DeleteComment) -> Done;
+    /// Takes a comment out of the trash.
+    restore_comment(RestoreComment) -> Authorized<CommentView>;
+    /// Shows every text a comment had.
+    comment_versions(CommentVersionsQuery) -> Authorized<CommentVersions>;
+    /// Lists what a writer may name after @.
+    mention_choices(MentionChoicesQuery) -> Authorized<MentionChoices>;
+    /// Lists the comments that mention the person.
+    mentions(MentionsQuery) -> Authorized<Mentions>;
+    /// Marks the mentions of the person as read.
+    read_mentions(ReadMentions) -> Done;
+    /// Shows the history of an issue.
+    history(HistoryQuery) -> Authorized<HistoryPage>;
+    /// Follows an issue.
+    follow_issue(FollowIssue) -> Done;
+    /// Stops following an issue.
+    unfollow_issue(UnfollowIssue) -> Done;
+    /// Lists who follows an issue.
+    followers(FollowersQuery) -> Authorized<Followers>;
 }

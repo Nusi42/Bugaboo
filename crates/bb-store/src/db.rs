@@ -12,8 +12,9 @@ use std::time::Duration;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, EditorId, EntityId, EventId, GroupId, IdError, InvitationId,
-    IssueId, IssueTypeId, JobId, LockToken, PasskeyId, ProjectId, RoleId, SessionId, UserId,
+    AccessKeyId, AssignmentId, CommentId, EditorId, EntityId, EventId, GroupId, IdError,
+    InvitationId, IssueId, IssueTypeId, JobId, LockToken, PasskeyId, ProjectId, RelationId,
+    RelationKindId, RoleId, SessionId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -371,6 +372,9 @@ pub(crate) enum LockClass {
     Policy = 2,
     /// The codes of the issues of one project (key: four bytes of the project's ID).
     IssueCodes = 3,
+    /// Changes of which issue sits under which (key 0): two changes at the same moment cannot
+    /// make a circle between them.
+    IssueParents = 4,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -613,6 +617,7 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AssignmentId => "an assignment ID",
+    CommentId => "a comment ID",
     EditorId => "an editor ID",
     EntityId => "a record ID",
     EventId => "an event ID",
@@ -624,6 +629,8 @@ stored_ids!(
     LockToken => "an edit lock token",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",
+    RelationId => "a relation ID",
+    RelationKindId => "a kind of relation ID",
     RoleId => "a role ID",
     SessionId => "a session ID",
     UserId => "a person ID",

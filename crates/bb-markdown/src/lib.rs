@@ -52,6 +52,13 @@ pub struct Options {
     /// with `bb_core::settings::list_items`, the one reading of a list in a text; this crate has no
     /// second parser of it.
     pub image_hosts: Vec<String>,
+    /// The places (in [`Rendered::tokens`], counting from 0) of the tokens that stay plain text:
+    /// the server renders a text once to find its tokens, decides which of them it may resolve
+    /// (an issue the reader may see, a person the writer may name), and renders it again with
+    /// the others here, so a hidden issue ID or an unknown name is text and not a chip. The
+    /// places do not move: a token that stays plain still has its place in the list. The browser
+    /// preview leaves it empty.
+    pub plain_tokens: Vec<usize>,
 }
 
 /// The result of [`render`].

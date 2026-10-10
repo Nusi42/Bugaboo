@@ -132,6 +132,10 @@ pub(crate) mod member {
     pub(crate) const REPORTED_BY: &str = Field::ReportedBy.code();
     pub(crate) const ASSIGNED_TO: &str = Field::AssignedTo.code();
     pub(crate) const DELETED_AT: &str = "deleted-at";
+    /// The issue it sits under (the ID of the parent), in the event of the sub-issue.
+    pub(crate) const PARENT: &str = "parent";
+    /// A sub-issue that was added or taken away, in the event of the parent as History writes it.
+    pub(crate) const SUB_ISSUE: &str = "sub-issue";
 
     /// The members of an issue type.
     pub(crate) mod issue_type {

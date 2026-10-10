@@ -24,10 +24,14 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
+use crate::comments::CommentStore;
 use crate::editing::EditStore;
+use crate::follow::FollowStore;
+use crate::history::HistoryStore;
 use crate::issues::IssueStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
+use crate::relations::RelationStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
 
@@ -312,6 +316,10 @@ pub trait AuthStore:
     + PolicyStore
     + ProjectStore
     + IssueStore
+    + RelationStore
+    + CommentStore
+    + FollowStore
+    + HistoryStore
     + SettingsStore
     + 'static
 {

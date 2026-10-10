@@ -25,6 +25,9 @@ const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
 const PORT: &str = "trait ChangeStore";
 /// The method of the port that writes a change with its event.
 const RECORD: &str = "record_change";
+/// The one other call that writes a change with its event: saving a long text under its edit lock
+/// (ADR-0019), which runs `record_change` itself and so cannot be left out of a command.
+const RECORDS_TOO: &str = "save_text";
 /// The file with the table of the test that runs every command.
 const TABLE_FILE: &str = "crates/bb-app/src/tests/events.rs";
 /// The ending of the input type of a use case that only reads.
@@ -137,7 +140,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             let Some(body) = balanced(&after[body_start..], '{') else {
                 continue;
             };
-            if body.contains(&format!("{RECORD}(")) {
+            if body.contains(&format!("{RECORD}(")) || body.contains(&format!("{RECORDS_TOO}(")) {
                 let line_start = code[..at].rfind('\n').map_or(0, |newline| newline + 1);
                 let is_public = code[line_start..at].trim_start().starts_with("pub");
                 if is_public && table.is_some_and(|table| !table.contains(&format!("\"{name}\""))) {
@@ -195,6 +198,20 @@ mod tests {
     fn good_example_a_command_that_writes_through_the_port() {
         let text = "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {\n    ctx.store().record_change(&event, async |tx| Ok(())).await?;\n    Ok(())\n}\n";
         assert!(found(text).is_empty());
+    }
+
+    #[test]
+    fn good_example_a_command_that_saves_a_long_text_under_its_lock() {
+        let text =
+            "pub async fn save_comment(ctx: &Ctx, cmd: SaveComment) -> Result<(), AppError> {
+    ctx.save_text(person, place, &save, &event, write).await?;
+    Ok(())
+}
+";
+        let messages = found(text);
+        // It still has to be in the table of the test that runs every command.
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("not in the table"), "{messages:?}");
     }
 
     #[test]

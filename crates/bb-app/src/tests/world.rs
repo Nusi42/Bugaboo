@@ -18,6 +18,7 @@ use crate::auth::{
 use crate::context::Clock;
 use crate::editing::EditableRecords;
 use crate::issues::{MakeStartingIssueTypes, make_starting_issue_types};
+use crate::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
 
 pub(crate) use bb_dev_words::accounts::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
@@ -92,6 +93,9 @@ impl World {
     pub(crate) async fn new() -> Result<Self, String> {
         let world = Self::new_without_issue_types().await?;
         make_starting_issue_types(&world.ctx(), MakeStartingIssueTypes)
+            .await
+            .map_err(text)?;
+        make_starting_relation_kinds(&world.ctx(), MakeStartingRelationKinds)
             .await
             .map_err(text)?;
         Ok(world)

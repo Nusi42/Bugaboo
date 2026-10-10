@@ -26,3 +26,37 @@ pub(crate) mod sign_up_policy {
     pub(crate) const ENABLED: &str = "auth_sign_up_enabled";
     pub(crate) const DOMAINS: &str = "auth_sign_up_domains";
 }
+
+/// The members of a kind of relation.
+pub(crate) mod relation_kind {
+    pub(crate) const FORWARD: &str = "forward";
+    pub(crate) const BACKWARD: &str = "backward";
+    pub(crate) const RETIRED: &str = "retired";
+    /// The list of the kinds the first start made.
+    pub(crate) const STARTING: &str = "relation-kinds";
+}
+
+/// The members of a relation between two issues. History reads the two issues from `FROM` and
+/// `TO`.
+pub(crate) mod relation {
+    pub(crate) const KIND: &str = "kind";
+    pub(crate) const FROM: &str = "from";
+    pub(crate) const TO: &str = "to";
+}
+
+/// The members of a comment. History reads the issue of a new comment from `ISSUE`.
+pub(crate) mod comment {
+    pub(crate) const ISSUE: &str = "issue";
+    pub(crate) const TEXT: &str = "text";
+    pub(crate) const DELETED_AT: &str = "deleted-at";
+}
+
+/// The member of the event of someone following an issue or leaving it.
+pub(crate) mod follower {
+    pub(crate) const PERSON: &str = "follower";
+}
+
+/// The member of the event of a person reading their *Mentions*.
+pub(crate) mod mentions {
+    pub(crate) const READ: &str = "mentions-read";
+}

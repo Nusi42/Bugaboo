@@ -14,7 +14,14 @@ use wasm_bindgen::prelude::wasm_bindgen;
 #[must_use]
 #[wasm_bindgen]
 pub fn render(text: &str, image_hosts: Vec<String>) -> String {
-    bb_markdown::render(text, &Options { image_hosts }).html
+    bb_markdown::render(
+        text,
+        &Options {
+            image_hosts,
+            ..Options::default()
+        },
+    )
+    .html
 }
 
 #[cfg(test)]

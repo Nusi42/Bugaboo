@@ -33,6 +33,23 @@ words_in_api!(
     "What a row of the history is: a comment or a change."
 );
 
+words! {
+    /// The tabs of the history of an issue.
+    pub enum HistoryTab {
+        /// Comments and changes together.
+        Everything => "everything",
+        /// Only the comments.
+        Comments => "comments",
+        /// Only the changes.
+        Changes => "changes",
+    }
+}
+
+words_in_api!(
+    HistoryTab,
+    "Which rows of the history of an issue to list: everything, only the comments, or only the changes."
+);
+
 /// One row of the history of an issue.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct HistoryEntry {

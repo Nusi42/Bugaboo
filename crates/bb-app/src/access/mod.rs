@@ -82,6 +82,22 @@ impl From<Refusal> for AppError {
     }
 }
 
+/// What `person` may do at `place`, read from the store and decided by the policy engine; `None`
+/// when the place is a project that does not exist. The one place that loads what the engine needs
+/// and asks it: `Ctx::evaluate` keeps the answer for the request, and the kinds of record that
+/// the editing use cases know (`EditableRecords`) have no context and ask here.
+pub(crate) async fn evaluation_in<S: AuthStore>(
+    store: &S,
+    person: UserId,
+    place: Place,
+) -> Result<Option<Evaluation>, AppError> {
+    Ok(store
+        .policy_inputs(person, place)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .map(|inputs| evaluate(&inputs)))
+}
+
 /// A project as a person who may see it, or who decides who has which role there, sees it; a
 /// project they may not know about is not named (ADR-0025, decision 12).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -150,13 +166,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(found) = self.cached_evaluation(person, place) {
             return Ok(found);
         }
-        let inputs = self
-            .store()
-            .policy_inputs(person, place)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        let evaluation = Arc::new(evaluate(&inputs));
+        let evaluation = Arc::new(
+            evaluation_in(self.store(), person, place)
+                .await?
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?,
+        );
         self.remember_evaluation(person, place, &evaluation);
         Ok(evaluation)
     }

@@ -14,6 +14,7 @@ use super::fields::{Given, clean_description, clean_title, ensure_may_change, me
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::follow::started_following;
 use crate::projects::Why;
 use std::sync::Arc;
 
@@ -224,8 +225,8 @@ pub async fn change_issue<S: AuthStore>(
     let Plan {
         current,
         mut next,
+        assigned_now,
         assigned_next,
-        ..
     } = plan;
     next.updated_at = now;
     next.closed_at = current
@@ -250,6 +251,11 @@ pub async fn change_issue<S: AuthStore>(
         .collect();
     let version = current.version;
     let why = Why::default();
+    let newly_assigned: Vec<UserId> = assigned_next
+        .iter()
+        .filter(|person| !assigned_now.contains(person))
+        .copied()
+        .collect();
     let (stopped, written, new_people) = (why.clone(), next.clone(), people);
     ctx.store()
         .record_change(&event, move |transaction| {
@@ -278,7 +284,10 @@ pub async fn change_issue<S: AuthStore>(
                 if !S::update_issue(transaction, &written, version).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
-                S::replace_assignees(transaction, id, &new_people).await
+                S::replace_assignees(transaction, id, &new_people).await?;
+                // Whoever the issue is assigned to now follows it (ISS-07).
+                let followers = started_following(id, None, &newly_assigned, None, now);
+                S::add_followers(transaction, &followers).await
             })
         })
         .await

@@ -141,6 +141,7 @@ mod corpus {
         let hosts = fs::read_to_string(case.with_extension("hosts")).unwrap_or_default();
         Options {
             image_hosts: hosts.lines().map(str::to_owned).collect(),
+            ..Options::default()
         }
     }
 
@@ -193,6 +194,7 @@ fn sec_13_links_open_outside_and_say_nothing_about_us() {
 fn sec_13_only_our_own_origin_and_allowed_hosts_show_images() {
     let allowed = Options {
         image_hosts: vec!["images.example.com".to_owned()],
+        ..Options::default()
     };
     let with_host = render("![a](https://images.example.com/a.png)", &allowed).html;
     assert!(with_host.contains("<img"), "{with_host}");
@@ -310,7 +312,7 @@ proptest! {
         text in mixed(),
         arbitrary in "\\PC{0,400}",
     ) {
-        let options = Options { image_hosts: vec!["images.example.com".to_owned()] };
+        let options = Options { image_hosts: vec!["images.example.com".to_owned()], ..Options::default() };
         for input in [text, arbitrary] {
             let html = render(&input, &options).html;
             prop_assert_eq!(problems_in(&html), Vec::<String>::new(), "{}", input);

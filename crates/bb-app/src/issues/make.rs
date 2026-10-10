@@ -18,6 +18,7 @@ use super::ids::{code_plan_in, new_code_in};
 use super::types::{IssueView, MakeIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::follow::started_following;
 use crate::projects::Why;
 
 /// How often a change is tried again when two writers drew the same random code at the same
@@ -183,7 +184,18 @@ pub async fn make_issue<S: AuthStore>(
                     let code =
                         new_code_in::<S>(transaction, issue.project, plan, &mut source).await?;
                     let issue = Issue { code, ..issue };
-                    S::insert_issue(transaction, &issue, &people).await
+                    S::insert_issue(transaction, &issue, &people).await?;
+                    // Whoever reports an issue, or is assigned to it, follows it (ISS-07).
+                    let assigned: Vec<UserId> =
+                        people.iter().map(|assignee| assignee.person).collect();
+                    let followers = started_following(
+                        issue.id,
+                        Some(issue.reported_by),
+                        &assigned,
+                        None,
+                        issue.created_at,
+                    );
+                    S::add_followers(transaction, &followers).await
                 })
             })
             .await;
