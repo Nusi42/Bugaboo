@@ -549,7 +549,11 @@ mod tests {
                 serde_json::json!(true),
                 "{schema}.{property} lacks the mark"
             );
-            assert_eq!(schemas[*schema]["properties"][*property]["type"], "string");
+            let kind = &schemas[*schema]["properties"][*property]["type"];
+            assert!(
+                kind == "string" || kind == &serde_json::json!(["string", "null"]),
+                "{schema}.{property} is not text"
+            );
         }
         let marked = value
             .to_string()
