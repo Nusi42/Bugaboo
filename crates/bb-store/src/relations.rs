@@ -360,4 +360,10 @@ impl RelationStore for AuthStorage {
     async fn lock_issue_parents(transaction: &mut Transaction) -> Result<(), StoreError> {
         transaction.advisory_lock(LockClass::IssueParents, 0).await
     }
+
+    async fn lock_issue_relations(transaction: &mut Transaction) -> Result<(), StoreError> {
+        transaction
+            .advisory_lock(LockClass::IssueRelations, 0)
+            .await
+    }
 }

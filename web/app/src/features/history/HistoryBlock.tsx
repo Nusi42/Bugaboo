@@ -23,7 +23,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
   return (
     <div {...partOf(part.stack)}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
-      {groups.length === 0 && list.isSuccess ? <NothingYet /> : null}
+      {groups.length === 0 && list.isSuccess && !list.hasNextPage ? <NothingYet /> : null}
       {groups.map((group) =>
         group[0]?.kind === "comment" ? (
           <CommentEntry key={group[0].event} entry={group[0]} />

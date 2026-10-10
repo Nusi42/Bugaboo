@@ -172,6 +172,10 @@ impl RelationStore for FakeStore {
     async fn lock_issue_parents(_tx: &mut Tx) -> Result<(), FakeError> {
         Ok(())
     }
+
+    async fn lock_issue_relations(_tx: &mut Tx) -> Result<(), FakeError> {
+        Ok(())
+    }
 }
 
 impl CommentStore for FakeStore {

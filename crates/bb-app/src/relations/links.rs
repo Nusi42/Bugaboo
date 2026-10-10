@@ -105,6 +105,7 @@ pub async fn add_relation<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                S::lock_issue_relations(transaction).await?;
                 // Judged again on what is stored now: the same relation may have been added meanwhile
                 // (the unique key stops two at the same moment), and a kind that reads the same from
                 // both ends is one relation whichever issue it starts from.

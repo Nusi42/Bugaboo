@@ -96,13 +96,18 @@ struct Batch<'a> {
     kinds: &'a [RelationKind],
 }
 
+/// Whether the row is about a relation (the rest are about an issue).
+fn is_relation(row: &HistoryEntry) -> bool {
+    row.record_kind.as_str() == RecordKind::Relation.code()
+}
+
 /// The issues that the rows of a batch name: the parent and the sub-issues of a change, and the
 /// two ends of a relation.
 fn issues_named_by(rows: &[HistoryEntry]) -> Vec<IssueId> {
     let mut ids = Vec::new();
     for row in rows.iter().filter(|row| row.kind == HistoryKind::Change) {
         for change in &row.changes {
-            let names_issues = if row.record_kind.as_str() == RecordKind::Relation.code() {
+            let names_issues = if is_relation(row) {
                 change.field == relation_member::FROM || change.field == relation_member::TO
             } else {
                 Member::of(&change.field) == Member::Issue
@@ -343,7 +348,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Some(HistoryWhat::Comment { comment: view })
             }
             HistoryKind::Change => {
-                if row.record_kind.as_str() == RecordKind::Relation.code() {
+                if is_relation(row) {
                     self.relation_change(actor, maker, issue.id, batch, row)
                         .await?
                 } else {

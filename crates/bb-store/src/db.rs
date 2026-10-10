@@ -375,6 +375,9 @@ pub(crate) enum LockClass {
     /// Changes of which issue sits under which (key 0): two changes at the same moment cannot
     /// make a circle between them.
     IssueParents = 4,
+    /// Adding relations (key 0): two relations added at the same moment cannot both pass the
+    /// limit of relations of an issue.
+    IssueRelations = 5,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through

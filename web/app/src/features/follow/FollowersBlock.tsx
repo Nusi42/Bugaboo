@@ -77,7 +77,8 @@ function countOf(loaded: number, more: boolean): string {
 
 /**
  * *Followers 3 · Follow* in the fields panel (ISS-07): the number of followers, the button, and the
- * names when asked for. A reader who may not see followers gets neither names nor a number. People who report, are assigned or comment follow by themselves.
+ * names when asked for. A reader who may not see followers gets neither names nor a number.
+ * People who report, are assigned or comment follow by themselves.
  */
 export function FollowersBlock({ issueKey }: { readonly issueKey: string }) {
   const list = useFollowers(issueKey);

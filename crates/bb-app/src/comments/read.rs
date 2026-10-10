@@ -119,9 +119,7 @@ pub async fn mention_choices<S: AuthStore>(
         for person in people {
             if person.id != actor.person.id
                 && matches(&person.display_name)
-                && ctx
-                    .has_a_role_at(person.id, Place::Project(issue.project))
-                    .await?
+                && ctx.person_sees_issue(person.id, &issue).await?
                 && let Some(handle) = handle_of(&person.display_name)
             {
                 offered.push(MentionChoice {

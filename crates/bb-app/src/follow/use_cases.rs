@@ -5,6 +5,7 @@ use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::follow::{FollowReason, Follower};
+use bb_core::id::{IssueId, UserId};
 use bb_core::paging::window;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, PeopleContext};
@@ -16,6 +17,19 @@ use super::types::{
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::member::follower as member;
 use crate::projects::Why;
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The row of `person` among the followers of `issue`, if they follow it.
+    async fn follows(&self, issue: IssueId, person: UserId) -> Result<Option<Follower>, AppError> {
+        Ok(self
+            .store()
+            .followers_of(issue)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .find(|follower| follower.person == person))
+    }
+}
 
 /// Makes the person a follower of the issue. Following an issue already followed changes nothing
 /// and writes no event.
@@ -30,14 +44,7 @@ pub async fn follow_issue<S: AuthStore>(
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let (issue, _) = ctx.visible_issue(&actor, &input.issue).await?;
     let person = actor.person.id;
-    if ctx
-        .store()
-        .followers_of(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .iter()
-        .any(|follower| follower.person == person)
-    {
+    if ctx.follows(issue.id, person).await?.is_some() {
         return Ok(Done);
     }
     let now = ctx.now();
@@ -84,14 +91,7 @@ pub async fn unfollow_issue<S: AuthStore>(
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let (issue, _) = ctx.visible_issue(&actor, &input.issue).await?;
     let person = actor.person.id;
-    if !ctx
-        .store()
-        .followers_of(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .iter()
-        .any(|follower| follower.person == person)
-    {
+    if ctx.follows(issue.id, person).await?.is_none() {
         return Ok(Done);
     }
     let event = ctx.event(
@@ -130,13 +130,7 @@ pub async fn following<S: AuthStore>(
 ) -> Result<Authorized<FollowingState>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    let mine = ctx
-        .store()
-        .followers_of(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .into_iter()
-        .find(|follower| follower.person == actor.person.id);
+    let mine = ctx.follows(issue.id, actor.person.id).await?;
     Ok(held.authorize(FollowingState {
         following: mine.is_some(),
         reason: mine.map(|follower| follower.reason),

@@ -5,12 +5,13 @@
 
 use axum::http::StatusCode;
 use bb_app::access::{Permission, StartingRole};
+use bb_app::comments::CommentStore as _;
 use bb_app::history::{HistoryStore as _, catch_up, catch_up_batch};
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
 use bb_core::fields::Field;
 use bb_core::history::HistoryKind;
-use bb_core::id::IssueId;
+use bb_core::id::{CommentId, IssueId};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -523,7 +524,6 @@ async fn iss_07_a_followers_list_hidden_for_the_reader_is_left_out_with_its_leng
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
         let issue = key_of(&site.make(&mut gus, "Gus cannot print").await?)?;
         // Ada comments, so two people follow the issue.
         ok(&comment(&mut ada, &issue, "On it.").await?)?;
@@ -542,11 +542,6 @@ async fn iss_07_a_followers_list_hidden_for_the_reader_is_left_out_with_its_leng
             .send("GET", &format!("{ISSUES}/{issue}/follow"), None)
             .await?;
         assert_eq!(ok(&own)?["following"], true);
-        // Bob sees nothing of an issue he may not see.
-        let hidden = bob
-            .send("GET", &format!("{ISSUES}/{issue}/followers"), None)
-            .await?;
-        assert_eq!(hidden.status, StatusCode::OK);
         Ok(())
     })
     .await
@@ -557,15 +552,94 @@ async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> 
     each_database("iss_05_mention_unseen", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (mut gus, _) = site
+        let (mut gus, gus_id) = site
             .person_called(StartingRole::Guest, "gus", "Gus Guest")
             .await?;
-        // Gus reported nothing here, so he cannot see Ada's issue; Ada names him all the same.
+        let (_, bob_id) = site
+            .person_called(StartingRole::TeamMember, "bob", "Bob Builder")
+            .await?;
+        // Gus reported nothing here, so he cannot see Ada's issue; Ada names him and Bob.
         let issue = key_of(&site.make(&mut ada, "Budget plan").await?)?;
-        let written = comment(&mut ada, &issue, "Please ask @gus.guest about it.").await?;
-        ok(&written)?;
+        let written = comment(&mut ada, &issue, "Please ask @gus.guest and @bob.builder.").await?;
+        let comment_id: CommentId = ok(&written)?["id"].as_str().ok_or("no id")?.parse()?;
+        // The rows that are stored: Bob has one, Gus has none.
+        let rows = rig.storage.mentions_in_comment(comment_id).await?;
+        let people: Vec<_> = rows.iter().map(|row| row.recipient).collect();
+        assert_eq!(people, [bob_id], "{rows:?}");
+        assert!(!people.contains(&gus_id));
         let theirs = gus.send("GET", "/api/v1/me/mentions", None).await?;
         assert!(items(&theirs).is_empty(), "{:?}", theirs.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_06_a_page_of_hidden_rows_still_answers_with_a_cursor_and_repeats_nothing() -> TestResult
+{
+    each_database("iss_06_bounded", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let mut reader = reader_without_priority(&site, &rig).await?;
+        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        // One change the reader sees, then many they do not (the newest are read first).
+        ok(&ada
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{issue}"),
+                Some(json!({"version": 1, "status": "in-progress"})),
+            )
+            .await?)?;
+        for version in 2..=30 {
+            let priority = if version % 2 == 0 { "low" } else { "high" };
+            ok(&ada
+                .send(
+                    "PATCH",
+                    &format!("{ISSUES}/{issue}"),
+                    Some(json!({"version": version, "priority": priority})),
+                )
+                .await?)?;
+        }
+        let first = reader
+            .send(
+                "GET",
+                &format!("{ISSUES}/{issue}/history?tab=changes&limit=1"),
+                None,
+            )
+            .await?;
+        // Nothing to show on the first page, but the history goes on: a cursor comes back.
+        assert!(items(&first).is_empty(), "{:?}", first.body);
+        let mut cursor = ok(&first)?["next_cursor"]
+            .as_str()
+            .ok_or("no cursor after a page of hidden rows")?
+            .to_owned();
+        let mut events: Vec<String> = Vec::new();
+        for _ in 0..40 {
+            let page = reader
+                .send(
+                    "GET",
+                    &format!("{ISSUES}/{issue}/history?tab=changes&limit=1&cursor={cursor}"),
+                    None,
+                )
+                .await?;
+            events.extend(items(&page).iter().filter_map(|item| {
+                // An event with several fields has one item for each of them.
+                Some(format!(
+                    "{}/{}",
+                    item["event"].as_str()?,
+                    item["field"].as_str()?
+                ))
+            }));
+            match ok(&page)?["next_cursor"].as_str() {
+                Some(next) => next.clone_into(&mut cursor),
+                None => break,
+            }
+        }
+        let mut unique = events.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), events.len(), "no change twice: {events:?}");
+        assert!(!events.is_empty(), "the change the reader sees is reached");
         Ok(())
     })
     .await

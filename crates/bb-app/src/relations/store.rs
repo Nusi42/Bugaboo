@@ -66,5 +66,8 @@ pub trait RelationStore: IssueStore + 'static {
         /// Waits for every other change of which issue sits under which, until the end of this
         /// change: the chain above a new parent is judged and written by one change at a time.
         fn lock_issue_parents() -> ();
+        /// Waits for every other adding of a relation, until the end of this change: the limit of
+        /// relations of an issue is counted on what is stored when the others are done.
+        fn lock_issue_relations() -> ();
     }
 }
