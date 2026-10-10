@@ -16,7 +16,7 @@ use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
 use utoipa::openapi::response::{ResponseBuilder, ResponsesBuilder};
-use utoipa::openapi::schema::{Components, Schema};
+use utoipa::openapi::schema::{ArrayItems, Components, Object, Schema};
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use utoipa::openapi::{ContentBuilder, HeaderBuilder, ObjectBuilder, Ref, RefOr, Type};
 use utoipa::{Modify, OpenApi};
@@ -120,7 +120,35 @@ pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
     ("CommentTextItem", "html"),
     ("HistoryEntryItem", "html"),
     ("MentionedComment", "html"),
+    // A page holds its own copy of the item: the path goes into the items of the list.
+    ("Page_CommentTextItem", "items/html"),
+    ("Page_HistoryEntryItem", "items/html"),
+    ("Page_MentionedComment", "items/html"),
 ];
+
+/// The property at `path` of a schema: names separated by `/`, where a name that is a list goes into
+/// the items of the list.
+fn property_at<'a>(object: &'a mut Object, path: &str) -> Option<&'a mut Object> {
+    let (first, rest) = match path.split_once('/') {
+        Some((first, rest)) => (first, Some(rest)),
+        None => (path, None),
+    };
+    let inner = match object.properties.get_mut(first)? {
+        RefOr::T(Schema::Object(inner)) => Some(inner),
+        RefOr::T(Schema::Array(array)) => match &mut array.items {
+            ArrayItems::RefOrSchema(item) => match item.as_mut() {
+                RefOr::T(Schema::Object(item)) => Some(item),
+                _ => None,
+            },
+            ArrayItems::False => None,
+        },
+        _ => None,
+    }?;
+    match rest {
+        None => Some(inner),
+        Some(rest) => property_at(inner, rest),
+    }
+}
 
 /// Puts `x-safe-html` on the properties of [`SAFE_HTML_PROPERTIES`]. Returns the ones that were
 /// not found (a test says there are none).
@@ -129,11 +157,11 @@ fn mark_safe_html(openapi: &mut utoipa::openapi::OpenApi) -> Vec<(&'static str, 
     let components = openapi.components.get_or_insert_with(Default::default);
     for (schema, property) in SAFE_HTML_PROPERTIES {
         let object = match components.schemas.get_mut(*schema) {
-            Some(RefOr::T(Schema::Object(object))) => object.properties.get_mut(*property),
+            Some(RefOr::T(Schema::Object(object))) => property_at(object, property),
             _ => None,
         };
         match object {
-            Some(RefOr::T(Schema::Object(property))) => {
+            Some(property) => {
                 property
                     .extensions
                     .get_or_insert_with(Extensions::default)
@@ -549,13 +577,26 @@ mod tests {
     fn m3_f12_every_server_rendered_property_has_the_mark_and_no_other_has() {
         let value = serde_json::to_value(document()).unwrap();
         let schemas = &value["components"]["schemas"];
-        for (schema, property) in SAFE_HTML_PROPERTIES {
+        for (schema, path) in SAFE_HTML_PROPERTIES {
+            // A name that is a list goes into the items of the list.
+            let mut at = &schemas[*schema];
+            for name in path.split('/') {
+                at = &at["properties"][name];
+                if at["type"] == "array" {
+                    at = &at["items"];
+                }
+            }
             assert_eq!(
-                schemas[*schema]["properties"][*property][marks::SAFE_HTML],
+                at[marks::SAFE_HTML],
                 serde_json::json!(true),
-                "{schema}.{property} lacks the mark"
+                "{schema}.{path} lacks the mark"
             );
-            assert_eq!(schemas[*schema]["properties"][*property]["type"], "string");
+            // A text that may be missing is a string or null.
+            let is_text = at["type"] == "string"
+                || at["type"]
+                    .as_array()
+                    .is_some_and(|kinds| kinds.contains(&serde_json::json!("string")));
+            assert!(is_text, "{schema}.{path} is no text");
         }
         let marked = value
             .to_string()

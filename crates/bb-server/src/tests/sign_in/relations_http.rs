@@ -138,7 +138,7 @@ async fn iss_03_progress_counts_only_the_sub_issues_you_see() -> TestResult {
         let list = gus
             .send("GET", &format!("{ISSUES}/{goal}/sub-issues"), None)
             .await?;
-        assert_eq!(keys(&list), [mine.clone()]);
+        assert_eq!(keys(&list), std::slice::from_ref(&mine));
         // Gus sees the goal under no parent and the part under the goal; Ada's parts are not
         // there for him, not even as a gap.
         let own = gus
@@ -160,23 +160,23 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let blocker = key_of(&site.make(&mut ada, "Release notes").await?)?;
-        let blocked = key_of(&site.make(&mut ada, "Release").await?)?;
+        let victim = key_of(&site.make(&mut ada, "Release").await?)?;
         let (blocks, related_to) = kinds(&mut ada).await?;
         let added = ada
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": blocked, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": victim, "kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(ok(&added)?["name"], "blocks");
-        assert_eq!(added.body["issue"]["key"], blocked);
+        assert_eq!(added.body["issue"]["key"], victim);
         // The same relation again is refused.
         let again = ada
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": blocked, "kind": blocks, "direction": "forward"})),
+                Some(json!({"other": victim, "kind": blocks, "direction": "forward"})),
             )
             .await?;
         assert_eq!(again.code(), "relation.exists");
@@ -185,9 +185,9 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send("GET", &format!("{ISSUES}/{blocker}/related-issues"), None)
             .await?;
         assert_eq!(from.body["items"][0]["name"], "blocks");
-        assert_eq!(from.body["items"][0]["issue"]["key"], blocked);
+        assert_eq!(from.body["items"][0]["issue"]["key"], victim);
         let to = ada
-            .send("GET", &format!("{ISSUES}/{blocked}/related-issues"), None)
+            .send("GET", &format!("{ISSUES}/{victim}/related-issues"), None)
             .await?;
         assert_eq!(to.body["items"][0]["name"], "is blocked by");
         assert_eq!(to.body["items"][0]["issue"]["key"], blocker);
@@ -196,7 +196,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
         let backward = ada
             .send(
                 "POST",
-                &format!("{ISSUES}/{blocked}/relations"),
+                &format!("{ISSUES}/{victim}/relations"),
                 Some(json!({"other": blocker, "kind": related_to, "direction": "backward"})),
             )
             .await?;
@@ -206,7 +206,7 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
             .send(
                 "POST",
                 &format!("{ISSUES}/{blocker}/relations"),
-                Some(json!({"other": blocked, "kind": related_to, "direction": "forward"})),
+                Some(json!({"other": victim, "kind": related_to, "direction": "forward"})),
             )
             .await?;
         assert_eq!(alike.code(), "relation.exists");

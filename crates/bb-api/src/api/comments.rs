@@ -209,6 +209,7 @@ pub(crate) struct ReadMentionsBody {
 
 /// What the writer has typed after `@`.
 #[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
 pub(crate) struct ChoiceSearch {
     /// The start of a name; every choice when left out.
     search: Option<String>,

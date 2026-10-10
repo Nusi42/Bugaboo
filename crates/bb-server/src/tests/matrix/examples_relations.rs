@@ -221,6 +221,17 @@ pub(super) async fn relation_request(
                 .into_value();
             ("DELETE", format!("/api/v1/relations/{}", added.id), None)
         }
+        _ => return text_request(fixture, operation, browser).await,
+    }))
+}
+
+/// The request of a route of comments, mentions, history or following, if the operation is one.
+async fn text_request(
+    fixture: &Fixture<'_>,
+    operation: &str,
+    browser: &mut Browser,
+) -> Result<Option<Request>, Failure> {
+    Ok(Some(match operation {
         "addComment" => (
             "POST",
             format!("/api/v1/issues/{}/comments", an_issue(fixture).await?),

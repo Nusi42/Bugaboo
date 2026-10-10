@@ -60,7 +60,7 @@ pub struct CommentVersionsQuery {
     pub session_token: String,
     /// The comment.
     pub comment: CommentId,
-    /// Where the page starts: the next_cursor of the page before.
+    /// Where the page starts: the `next_cursor` of the page before.
     pub cursor: Option<String>,
     /// How many texts a page holds at most.
     pub limit: u32,

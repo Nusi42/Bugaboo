@@ -402,6 +402,13 @@ export const part = {
   markdownToolbar: "markdown.toolbar",
   markdownPanel: "markdown.panel",
   markdownPreview: "markdown.preview",
+  issueRef: "issue-ref",
+  issueRefStatus: "issue-ref.status",
+  progress: "progress",
+  historyTabs: "history.tabs",
+  historyTab: "history.tab",
+  historyEntry: "history.entry",
+  historyWhen: "history.when",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
 
@@ -617,4 +624,11 @@ export const partWords = {
   "markdown.toolbar": { variant: [], state: [] },
   "markdown.panel": { variant: [], state: [] },
   "markdown.preview": { variant: [], state: [] },
+  "issue-ref": { variant: [], state: [] },
+  "issue-ref.status": { variant: ["not-started", "in-progress", "done"], state: [] },
+  progress: { variant: [], state: [] },
+  "history.tabs": { variant: [], state: [] },
+  "history.tab": { variant: [], state: [] },
+  "history.entry": { variant: ["comment"], state: [] },
+  "history.when": { variant: [], state: [] },
 } as const;

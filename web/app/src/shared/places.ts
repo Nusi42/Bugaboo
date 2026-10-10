@@ -187,6 +187,15 @@ const organizationTopics: readonly Place[] = [
     listed: true,
   },
   {
+    path: paths.relationKinds,
+    name: "nav.relation-kinds",
+    icon: iconName["relation-kinds"],
+    parent: paths.organizationSettings,
+    anyOf: ["manage-issue-types"],
+    group: "nav.group.work",
+    listed: true,
+  },
+  {
     path: paths.organizationSecurity,
     name: "nav.organization-security",
     icon: iconName.security,

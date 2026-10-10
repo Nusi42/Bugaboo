@@ -127,7 +127,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
         assert_eq!(stale.body["conflict"]["version"], 2);
         // Only the author changes a text: another person cannot even take the lock.
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
-        let taken = bob
+        let refused = bob
             .send(
                 "POST",
                 "/api/v1/edit-locks",
@@ -137,7 +137,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
                 })),
             )
             .await?;
-        assert_eq!(taken.code(), "resource.not_found");
+        assert_eq!(refused.code(), "resource.not_found");
         Ok(())
     })
     .await

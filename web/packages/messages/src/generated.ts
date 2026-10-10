@@ -1052,12 +1052,117 @@ export const messages = {
   "check-access.show-every-field": "Show every field",
   "check-access.show-every-kind": "Show every kind",
   "check-access.group-the-same": "Group those with the same reason",
+  "nav.relation-kinds": "Kinds of relation",
+  "relation-kinds.intro":
+    "A kind of relation says what a connection between two issues means, in words for both ends: blocks and is blocked by. Retire a kind to stop new relations of it; the relations that have it keep it.",
+  "relation-kinds.more": "Show more kinds of relation",
+  "relation-kinds.search": "Search kinds of relation",
+  "relation-kinds.nothing": "No kind of relation has that name.",
+  "relation-kinds.retired": "Retired",
+  "relation-kinds.reads": "{forward} / {backward}",
+  "relation-kinds.make-title": "Make a kind of relation",
+  "relation-kinds.make-intro":
+    "Write what the first issue reads and what the second one reads, like blocks and is blocked by. Use the same words twice for a kind that reads alike from both ends.",
+  "relation-kinds.field-forward": "Words for the first issue",
+  "relation-kinds.field-backward": "Words for the second issue",
+  "relation-kinds.make": "Make the kind of relation",
+  "relation-kinds.made": "The kind of relation {name} is made.",
+  "relation-kinds.saved": "Saved.",
+  "relation-kinds.retire-help":
+    "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
+  "relation-kinds.retire": "Retire the kind of relation",
+  "relation-kinds.offer-again": "Offer the kind of relation again",
+  "issue-ref.status-not-started": "Not started",
+  "issue-ref.status-in-progress": "In progress",
+  "issue-ref.status-done": "Done",
+  "sub-issues.title": "Sub-issues",
+  "sub-issues.none": "No sub-issues yet.",
+  "sub-issues.field": "Issue to add (for example WEB-142)",
+  "sub-issues.add-it": "Add",
+  "sub-issues.added": "{key} is now a sub-issue.",
+  "sub-issues.more": "Show more sub-issues",
+  "sub-issues.progress-label": "How far the sub-issues are",
+  "sub-issues.progress": "{done} of {total} done",
+  "sub-issues.take-out": "Take {key} out of the sub-issues",
+  "sub-issues.undo": "Undo",
+  "sub-issues.part-of": "Part of",
+  "sub-issues.not-part-of": "Take this issue out of {key}",
+  "related-issues.title": "Related issues",
+  "related-issues.none": "No related issues yet.",
+  "related-issues.more": "Show more related issues",
+  "related-issues.add": "Add relation",
+  "related-issues.kind-field": "What the relation means",
+  "related-issues.issue-field": "The other issue (for example WEB-142)",
+  "related-issues.back": "Back",
+  "related-issues.cancel": "Cancel",
+  "related-issues.add-it": "Add the relation",
+  "related-issues.added": "{key} now {name} {other}.",
+  "related-issues.undo": "Undo",
+  "related-issues.take-away": "Take away the relation: {name} {other}",
+  "related-issues.nothing-to-pick":
+    "There is no kind of relation to pick. Someone who manages kinds of relation can make one.",
+  "history.title": "History",
+  "history.tabs": "What to show",
+  "history.tab-everything": "Everything",
+  "history.tab-comments": "Comments",
+  "history.tab-changes": "Changes",
+  "history.nothing": "Nothing here yet.",
+  "history.more": "Show earlier",
+  "history.by": "{who} · {when}",
+  "history.system": "Bugaboo",
+  "history.changed": "{who} changed {field} from {before} to {after}",
+  "history.set": "{who} set {field} to {after}",
+  "history.cleared": "{who} cleared {field}",
+  "history.changed-long-text": "{who} changed {field}",
+  "history.relation-added": "{who} added a relation: this issue {name} {issue}",
+  "history.relation-removed": "{who} took away a relation: this issue {name} {issue}",
+  "history.field-issue-type": "Issue type",
+  "history.field-parent": "Part of",
+  "history.field-sub-issue": "Sub-issue",
+  "history.field-other": "{field}",
+  "history.people-none": "nobody",
+  "comments.write": "Write a comment",
+  "comments.write-help": "Type @ and a name to mention someone.",
+  "comments.add": "Comment",
+  "comments.edited": "edited",
+  "comments.edit": "Edit",
+  "comments.save": "Save",
+  "comments.cancel": "Cancel",
+  "comments.delete": "Delete",
+  "comments.deleted": "The comment is deleted.",
+  "comments.undo": "Undo",
+  "comments.versions": "Earlier versions",
+  "comments.versions-hide": "Hide earlier versions",
+  "comments.version-saved": "Version {version} · {when}",
+  "comments.editing": "Edit the comment",
+  "comments.lock-held": "Someone else is editing this comment.",
+  "comments.mention-choices": "Who you can mention",
+  "mentions.title": "Mentions",
+  "mentions.unread": "{count, plural, one {# unread} other {# unread}}",
+  "mentions.nothing": "Nobody has mentioned you.",
+  "mentions.in": "{who} in {issue}",
+  "mentions.mark-read": "Mark as read",
+  "mentions.new": "New",
+  "followers.count": "Followers {count}",
+  "followers.follow": "Follow",
+  "followers.following": "Following",
+  "followers.stop": "Stop following",
+  "followers.none": "Nobody follows this issue yet.",
+  "followers.more": "Show more followers",
+  "followers.reason-reported": "You reported it",
+  "followers.reason-assigned": "It is assigned to you",
+  "followers.reason-commented": "You commented on it",
+  "followers.reason-chose": "You chose to follow it",
   "error.issue.parent-circle":
     "An issue cannot sit under itself or under one of its own sub-issues, and sub-issues cannot go that deep. Choose another issue.",
   "error.relation.exists": "Those two issues are related in that way already.",
   "status.open": "Open",
   "status.in-progress": "In progress",
   "status.done": "Done",
+  "priority.low": "Low",
+  "priority.normal": "Normal",
+  "priority.high": "High",
+  "priority.critical": "Critical",
   "issue-id-mode.random": "Random IDs",
   "issue-id-mode.counting": "Counting IDs",
   "error.issue.type-retired":
@@ -1169,6 +1274,7 @@ export interface MessageArguments {
     role: string | number;
   };
   "check-access.result-heading": { person: string | number; place: string | number };
+  "comments.version-saved": { version: string | number; when: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
@@ -1178,6 +1284,7 @@ export interface MessageArguments {
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.project-title": { project: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
+  "followers.count": { count: string | number };
   "frames.open-focus": { name: string | number };
   "frames.remove-name": { name: string | number };
   "frames.removed": { name: string | number };
@@ -1191,6 +1298,23 @@ export interface MessageArguments {
   "groups.removed": { group: string | number; name: string | number };
   "groups.used": { places: string | number };
   "groups.used-projects": { count: number };
+  "history.by": { when: string | number; who: string | number };
+  "history.changed": {
+    after: string | number;
+    before: string | number;
+    field: string | number;
+    who: string | number;
+  };
+  "history.changed-long-text": { field: string | number; who: string | number };
+  "history.cleared": { field: string | number; who: string | number };
+  "history.field-other": { field: string | number };
+  "history.relation-added": { issue: string | number; name: string | number; who: string | number };
+  "history.relation-removed": {
+    issue: string | number;
+    name: string | number;
+    who: string | number;
+  };
+  "history.set": { after: string | number; field: string | number; who: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -1199,6 +1323,8 @@ export interface MessageArguments {
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
   "issue-types.made": { name: string | number };
+  "mentions.in": { issue: string | number; who: string | number };
+  "mentions.unread": { count: number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
@@ -1262,6 +1388,10 @@ export interface MessageArguments {
   "projects.person-role": { role: string | number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
+  "related-issues.added": { key: string | number; name: string | number; other: string | number };
+  "related-issues.take-away": { name: string | number; other: string | number };
+  "relation-kinds.made": { name: string | number };
+  "relation-kinds.reads": { backward: string | number; forward: string | number };
   "roles.badge-used": { badge: string | number; used: string | number };
   "roles.copy-of": { name: string | number };
   "roles.delete-name": { name: string | number };
@@ -1303,5 +1433,9 @@ export interface MessageArguments {
   "status.log-failures": { count: number };
   "status.started": { when: string | number };
   "status.uptime": { days: number; hours: number; minutes: number };
+  "sub-issues.added": { key: string | number };
+  "sub-issues.not-part-of": { key: string | number };
+  "sub-issues.progress": { done: string | number; total: string | number };
+  "sub-issues.take-out": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
 }

@@ -6,6 +6,7 @@
 //! of it they see there. A hidden issue is not a line: it is left out of the list, so a list never
 //! tells that something is hidden.
 
+use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
@@ -96,13 +97,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !held.sees_issue(issue.reported_by) {
             return Ok(None);
         }
-        if !maker.projects.contains_key(&issue.project) {
+        if let Entry::Vacant(slot) = maker.projects.entry(issue.project) {
             let project = self
                 .store()
                 .project(issue.project)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            maker.projects.insert(issue.project, project);
+            slot.insert(project);
         }
         let Some(Some(project)) = maker.projects.get(&issue.project) else {
             return Ok(None);

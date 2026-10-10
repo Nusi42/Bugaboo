@@ -41,6 +41,13 @@ export function fieldList<Item extends object>(names: FieldNames<Item>): string 
   return names.join(",");
 }
 
+/** The items of the pages read so far, in order, as read-only data. */
+export function itemsOf<Item>(
+  pages: readonly { readonly items: readonly Item[] }[] | undefined,
+): readonly Item[] {
+  return (pages ?? []).flatMap((page) => page.items);
+}
+
 /** What a request for the pages of a list is made of. */
 export interface PagedRequest<Page extends CursorPage> {
   /** The key of the list in the cache (`shared/query-keys.ts`). */

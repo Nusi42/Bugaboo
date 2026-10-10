@@ -235,6 +235,21 @@ fn more_tokens_than_the_limit_stay_plain_text() {
 }
 
 #[test]
+fn iss_05_a_token_listed_as_plain_keeps_its_place_but_is_text() {
+    let text = "see WEB-1 and WEB-2";
+    let all = render(text, &Options::default());
+    assert_eq!(all.tokens.len(), 2);
+    let options = Options {
+        plain_tokens: vec![0],
+        ..Options::default()
+    };
+    let some = render(text, &options);
+    assert_eq!(some.tokens.len(), 2, "the places do not move");
+    assert_eq!(some.html.matches("data-token=").count(), 1);
+    assert!(some.html.contains("WEB-1"));
+}
+
+#[test]
 fn nesting_deeper_than_the_limit_is_flattened() {
     let deep = format!("{}deep", "> ".repeat(MAX_NESTING_DEPTH * 4));
     let html = render(&deep, &Options::default()).html;

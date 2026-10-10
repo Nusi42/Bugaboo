@@ -8123,20 +8123,13 @@
           },
           {
             "name": "tab",
-            "in": "path",
+            "in": "query",
             "description": "Everything (the default), only the comments, or only the changes.",
-            "required": true,
+            "required": false,
             "schema": {
-              "oneOf": [
-                {
-                  "type": "string",
-                  "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
-                  "enum": ["everything", "comments", "changes"]
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "type": "string",
+              "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
+              "enum": ["everything", "comments", "changes"]
             }
           }
         ],
@@ -8279,11 +8272,11 @@
           },
           {
             "name": "search",
-            "in": "path",
+            "in": "query",
             "description": "The start of a name; every choice when left out.",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": ["string", "null"]
+              "type": "string"
             }
           }
         ],
@@ -17798,7 +17791,8 @@
               "properties": {
                 "html": {
                   "type": "string",
-                  "description": "The text as safe HTML, made on the server for this reader."
+                  "description": "The text as safe HTML, made on the server for this reader.",
+                  "x-safe-html": true
                 },
                 "saved_at": {
                   "type": "string",
@@ -17957,7 +17951,8 @@
                 },
                 "html": {
                   "type": ["string", "null"],
-                  "description": "A comment: the text as safe HTML, made on the server for this reader."
+                  "description": "A comment: the text as safe HTML, made on the server for this reader.",
+                  "x-safe-html": true
                 },
                 "issue": {
                   "oneOf": [
@@ -18378,7 +18373,8 @@
                 },
                 "html": {
                   "type": "string",
-                  "description": "The text as safe HTML, made on the server for this reader."
+                  "description": "The text as safe HTML, made on the server for this reader.",
+                  "x-safe-html": true
                 },
                 "issue": {
                   "$ref": "#/components/schemas/IssueRef",

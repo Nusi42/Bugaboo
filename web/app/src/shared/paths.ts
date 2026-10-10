@@ -24,6 +24,7 @@ export const paths = {
   person: "/settings/people/$person",
   groups: "/settings/groups",
   issueTypes: "/settings/issue-types",
+  relationKinds: "/settings/relation-kinds",
   roles: "/settings/roles",
   role: "/settings/roles/$role",
   signInRules: "/settings/sign-in-rules",
@@ -75,6 +76,11 @@ export function personAddress(id: string): string {
 /** The address of *Groups* with one group open, `/settings/groups?open=<ID>`. */
 export function groupAddress(id: string): string {
   return `${paths.groups}?open=${encodeURIComponent(id)}`;
+}
+
+/** The address of *Kinds of relation* with one kind open, `/settings/relation-kinds?open=<ID>`. */
+export function relationKindAddress(id: string): string {
+  return `${paths.relationKinds}?open=${encodeURIComponent(id)}`;
 }
 
 /** The address of *Issue types* with one type open, `/settings/issue-types?open=<ID>`. */

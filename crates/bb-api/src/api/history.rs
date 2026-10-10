@@ -160,7 +160,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
 
 /// Where a value of a change goes in an item.
 fn place_value(
-    value: &Option<ChangeValue>,
+    value: Option<&ChangeValue>,
     text: &mut Option<String>,
     people: &mut Option<Vec<PersonRef>>,
     issue: &mut Option<IssueRef>,
@@ -195,13 +195,13 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 let mut item = start(row, HistoryEntryKind::Change);
                 item.field = Some(change.field.clone());
                 place_value(
-                    &change.before,
+                    change.before.as_ref(),
                     &mut item.before_text,
                     &mut item.before_people,
                     &mut item.before_issue,
                 );
                 place_value(
-                    &change.after,
+                    change.after.as_ref(),
                     &mut item.after_text,
                     &mut item.after_people,
                     &mut item.after_issue,
@@ -227,6 +227,7 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
 
 /// Which rows of the history to list.
 #[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
 pub(crate) struct TabParams {
     /// Everything (the default), only the comments, or only the changes.
     #[param(inline)]

@@ -21,6 +21,26 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::issues::member as issue_member;
 use crate::projects::Why;
 
+/// The chain above `parent` as it is now, read inside the lock, so two changes at the same moment
+/// cannot make a circle between them.
+async fn chain_above<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    parent: IssueId,
+) -> Result<HashMap<IssueId, IssueId>, S::Error> {
+    let mut chain = HashMap::new();
+    let mut at = parent;
+    for _ in 0..=SUB_ISSUE_DEPTH_MAX {
+        match S::parent_of_in(transaction, at).await? {
+            Some(row) => {
+                chain.insert(at, row.parent);
+                at = row.parent;
+            }
+            None => break,
+        }
+    }
+    Ok(chain)
+}
+
 /// Puts the issue under `parent`, or takes it out from under its parent (`None`). Putting it where
 /// it is already, or taking out one that sits under none, changes nothing and answers with the
 /// issue as it is.
@@ -87,19 +107,7 @@ pub async fn set_parent<S: AuthStore>(
             Box::pin(async move {
                 S::lock_issue_parents(transaction).await?;
                 if let Some(parent) = wanted {
-                    // The chain above the new parent as it is now, inside the lock, so two changes
-                    // at the same moment cannot make a circle between them.
-                    let mut chain: HashMap<IssueId, IssueId> = HashMap::new();
-                    let mut at = parent;
-                    for _ in 0..=SUB_ISSUE_DEPTH_MAX {
-                        match S::parent_of_in(transaction, at).await? {
-                            Some(row) => {
-                                chain.insert(at, row.parent);
-                                at = row.parent;
-                            }
-                            None => break,
-                        }
-                    }
+                    let chain = chain_above::<S>(transaction, parent).await?;
                     if check_parent(child_id, parent, |issue| chain.get(&issue).copied()).is_err() {
                         return Err(stopped.stop::<S>(ErrorCode::ParentCircle));
                     }

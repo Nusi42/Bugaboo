@@ -18,6 +18,7 @@ use crate::schema::{
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = relations();
+    steps.extend(parents());
     steps.extend(comments());
     steps.extend(followers());
     steps.extend(history());
@@ -113,6 +114,11 @@ fn relations() -> Vec<Step> {
                 .col(RelationRow::ToIssue)
                 .to_owned(),
         ),
+    ]
+}
+
+fn parents() -> Vec<Step> {
+    vec![
         Step::Table(
             Table::create()
                 .table(IssueParentRow::Table)

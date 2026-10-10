@@ -3575,7 +3575,7 @@ export interface components {
       /** @description The items of this page. */
       items: {
         /** @description The text as safe HTML, made on the server for this reader. */
-        html: string;
+        html: SafeHtml;
         /** @description When it was saved. */
         saved_at: string;
         /** @description The text, in Markdown. */
@@ -3639,7 +3639,7 @@ export interface components {
         /** @description A change: the key of the field. */
         field?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this reader. */
-        html?: string | null;
+        html?: SafeHtml;
         issue?: components["schemas"]["IssueRef"] | null;
         /** @description What it is. */
         kind: components["schemas"]["HistoryEntryKind"];
@@ -3808,7 +3808,7 @@ export interface components {
         /** @description The ID of the comment. */
         comment: string;
         /** @description The text as safe HTML, made on the server for this reader. */
-        html: string;
+        html: SafeHtml;
         /** @description The issue it is under. */
         issue: components["schemas"]["IssueRef"];
         /** @description Whether the person has not looked at it under *Mentions* yet. */
@@ -11240,13 +11240,13 @@ export interface operations {
         cursor?: string;
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
+        /** @description Everything (the default), only the comments, or only the changes. */
+        tab?: "everything" | "comments" | "changes";
       };
       header?: never;
       path: {
         /** @description The readable ID (WEB-142) or the internal ID of the issue. */
         issue: string;
-        /** @description Everything (the default), only the comments, or only the changes. */
-        tab: ("everything" | "comments" | "changes") | null;
       };
       cookie?: never;
     };
@@ -11330,13 +11330,13 @@ export interface operations {
         cursor?: string;
         /** @description How many items a page holds at most (default 50, at most 100). */
         limit?: number;
+        /** @description The start of a name; every choice when left out. */
+        search?: string;
       };
       header?: never;
       path: {
         /** @description The readable ID (WEB-142) or the internal ID of the issue. */
         issue: string;
-        /** @description The start of a name; every choice when left out. */
-        search: string | null;
       };
       cookie?: never;
     };
