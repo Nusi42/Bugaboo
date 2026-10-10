@@ -9188,7 +9188,7 @@
     "/api/v1/projects/{project}/assignable-people": {
       "get": {
         "tags": ["issues"],
-        "summary": "The people an issue of the project can be assigned to, a page at a time, by name: the members\nof the project, those who hold a role that reaches it. A person who cannot see names for\n*Assigned to* is listed nobody. Needs the permission *See issues*.",
+        "summary": "The people an issue of the project can be assigned to, a page at a time, by name: those who\nsee the project and hold *See issues* there, and the person who asks. A person who cannot see\nnames for *Assigned to* and *Project members* is offered only themselves. Needs the right to\nset *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that\nlets the person change that field.",
         "operationId": "listAssignablePeople",
         "parameters": [
           {

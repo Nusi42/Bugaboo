@@ -16,7 +16,6 @@ use axum::response::Response;
 use bb_app::auth::RequestInfo;
 use bb_app::settings::DocumentImagesQuery;
 use bb_auth::Device;
-use bb_core::settings::is_host;
 use tokio::sync::Mutex;
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -58,14 +57,7 @@ const HOSTS_KEPT: Duration = Duration::from_secs(10);
 /// HTTPS, so the sources say so.
 #[must_use]
 pub(crate) fn with_image_hosts(policy: &str, hosts: &[String]) -> String {
-    let sources: Vec<String> = hosts
-        .iter()
-        // The registry checks the setting when it is saved; the same rule is the second line of
-        // defence for a value written by hand into the database, because a space or a `;` would
-        // add a directive.
-        .filter(|host| is_host(host))
-        .map(|host| format!("https://{host}"))
-        .collect();
+    let sources: Vec<String> = hosts.iter().map(|host| format!("https://{host}")).collect();
     if sources.is_empty() {
         return policy.to_owned();
     }
@@ -229,16 +221,6 @@ mod tests {
             policy()
         );
         assert_eq!(with_image_hosts(policy(), &[]), policy());
-    }
-
-    #[test]
-    fn m3_f10_a_host_that_is_not_plain_is_left_out() {
-        let hosts = [
-            "a.example.com; script-src *".to_owned(),
-            "b'.example.com".to_owned(),
-            String::new(),
-        ];
-        assert_eq!(with_image_hosts(policy(), &hosts), policy());
     }
 
     #[test]

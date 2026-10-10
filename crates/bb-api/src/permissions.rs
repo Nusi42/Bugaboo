@@ -277,8 +277,10 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "listAssignablePeople",
-        // The right to set *Assigned to*: a role that changes issues (the field mask and *Project
-        // members* narrow the answer further, ADR-0022).
+        // The matrix row declares the permission of the starting roles that set *Assigned to*. The
+        // use case accepts *Change issues*, *Change own issues* or *Make issues* (the new-issue
+        // form) together with a field mask that lets the person change that field, and
+        // *Project members* narrows the list (ADR-0022); the tests of `issues_assign` cover it.
         Declared::Permission(Permission::ChangeIssues),
         Answer::NeverStored,
     ),

@@ -12,7 +12,9 @@
 //! or one that has a version now, fails, so the file shrinks as the routes are fixed and cannot go
 //! stale. A change of an existing record (a body with `version`) that holds a long-text property
 //! (`LONG_TEXT_PROPERTIES`) and is not marked `x-long-text` fails: long text is never written without
-//! its lock. A route that takes a version must also document the structured answer to a stale
+//! its lock. The static check sees only properties of the body that are named in the description;
+//! the own long-text fields of an issue, which travel inside the open `fields` map, are refused at
+//! run time (M3 WP-05). A route that takes a version must also document the structured answer to a stale
 //! version (`ConflictProblem`) as its `409`, so the generated client types it.
 
 use bb_api_words::marks::LONG_TEXT;

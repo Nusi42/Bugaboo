@@ -50,6 +50,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
     }
 
+    /// A lock held on a thing as the person who asks sees it: who holds it (by the kind *"… is
+    /// editing"*), since when, whether it is the person's own in another window, and whether they
+    /// may take the editing over. The one place that makes it, for taking and for asking.
+    async fn held_lock(
+        &self,
+        access: &Evaluation,
+        actor: &Actor,
+        lock: &EditLock,
+    ) -> Result<HeldLock, AppError> {
+        Ok(HeldLock {
+            holder: self.editor_ref(access, lock.holder).await?,
+            since: lock.taken_at,
+            yours_elsewhere: lock.holder == actor.person.id,
+            can_edit_anyway: access.allows(Permission::EditAnyway),
+        })
+    }
+
     /// A new lock for the actor, with a fresh token and a lease that starts now.
     fn lock_for(
         &self,
@@ -124,12 +141,7 @@ pub async fn read_lock<S: AuthStore>(
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let held = match ctx.live_lock(&input.what).await? {
-        Some(lock) => Some(HeldLock {
-            holder: ctx.editor_ref(&access, lock.holder).await?,
-            since: lock.taken_at,
-            yours_elsewhere: lock.holder == actor.person.id,
-            can_edit_anyway: access.allows(Permission::EditAnyway),
-        }),
+        Some(lock) => Some(ctx.held_lock(&access, &actor, &lock).await?),
         None => None,
     };
     Ok(access.authorize(LockHolder { held }))
@@ -155,12 +167,7 @@ pub async fn take_lock<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let outcome = match taking {
         Taking::Granted(lock) => LockOutcome::Taken(Ctx::<S>::taken(&lock)),
-        Taking::Held(lock) => LockOutcome::Held(HeldLock {
-            holder: ctx.editor_ref(&access, lock.holder).await?,
-            since: lock.taken_at,
-            yours_elsewhere: lock.holder == actor.person.id,
-            can_edit_anyway: access.allows(Permission::EditAnyway),
-        }),
+        Taking::Held(lock) => LockOutcome::Held(ctx.held_lock(&access, &actor, &lock).await?),
     };
     Ok(access.authorize(outcome))
 }

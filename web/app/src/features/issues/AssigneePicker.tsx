@@ -1,5 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Overlay, PickerHint, PickerRow, SearchPicker } from "@bugaboo/ui";
+import {
+  Button,
+  buttonLook,
+  Overlay,
+  PickerHint,
+  PickerRow,
+  SearchPicker,
+  part,
+  partOf,
+} from "@bugaboo/ui";
 
 import type { NamedPerson } from "../../shared/person.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
@@ -84,6 +93,9 @@ function Inside({ project, assigned, onChange, onClose }: InsideProps) {
           />
         ))}
       </SearchPicker>
+      {words === "" && people.length <= 1 && !found.isPending ? (
+        <p {...partOf(part.muted)}>{t("issues.assign-only-you")}</p>
+      ) : null}
       <Button look={buttonLook.primary} onPress={onClose}>
         {t("common.done")}
       </Button>

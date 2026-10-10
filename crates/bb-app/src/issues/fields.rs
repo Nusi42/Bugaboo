@@ -7,10 +7,10 @@ use bb_core::fields::Field;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNEES_MAX;
 use bb_core::text::{LONG_TEXT_MAX, TITLE_MAX, clean_long};
-use bb_policy::{FieldMask, Place};
+use bb_policy::FieldMask;
 
 use super::types::{ChangeIssue, MakeIssue};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx};
 use crate::input::clean_text;
 
 /// The title as it is kept, or `request.invalid`.
@@ -35,14 +35,18 @@ pub(crate) fn ensure_may_change(mask: &FieldMask, fields: &[Field]) -> Result<()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The people an issue of the project is assigned to, each once in the order given: they have
-    /// to be members of the project (a role that reaches it), and there are not more than an issue
-    /// may have. `request.invalid` otherwise, the same for a person who does not exist and for one
-    /// who is no member, so the answer is no way to find out who exists.
+    /// The people an issue of the project is assigned to, each once in the order given: those who
+    /// are not assigned already have to be able to see the issue (`may_be_assigned`, judged for an
+    /// issue that `reported_by` reported), and there are not more than an issue may have. People
+    /// assigned already stay, whatever happened to their access since, so an issue stays
+    /// changeable. `request.invalid` otherwise, the same for a person who does not exist and for
+    /// one who may not see the issue, so the answer is no way to find out who exists.
     pub(crate) async fn clean_assignees(
         &self,
         project: ProjectId,
+        reported_by: UserId,
         people: &[UserId],
+        already: &[UserId],
     ) -> Result<Vec<UserId>, AppError> {
         let mut distinct: Vec<UserId> = Vec::with_capacity(people.len());
         for person in people {
@@ -53,13 +57,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         if distinct.len() > ASSIGNEES_MAX {
             return Err(ErrorCode::InvalidRequest.into());
         }
-        for person in &distinct {
-            let found = self
-                .store()
-                .person(*person)
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            if found.is_none() || !self.has_a_role_at(*person, Place::Project(project)).await? {
+        for person in distinct.iter().filter(|person| !already.contains(person)) {
+            if !self.may_be_assigned(*person, project, reported_by).await? {
                 return Err(ErrorCode::InvalidRequest.into());
             }
         }

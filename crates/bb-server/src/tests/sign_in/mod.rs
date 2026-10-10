@@ -21,6 +21,7 @@ mod caching;
 mod editing;
 pub(crate) mod http;
 mod invitations;
+mod issues_assign;
 mod issues_editing;
 mod issues_fields;
 mod issues_http;

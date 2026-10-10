@@ -131,7 +131,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|assignee| assignee.person)
             .collect();
         let assigned_next = match &input.assigned_to {
-            Some(people) => self.clean_assignees(current.project, people).await?,
+            Some(people) => {
+                self.clean_assignees(current.project, current.reported_by, people, &assigned_now)
+                    .await?
+            }
             None => assigned_now.clone(),
         };
         let mut next = current.clone();

@@ -1161,6 +1161,9 @@ pub const ISSUES_ASSIGN_MORE: MessageKey = MessageKey::new("issues.assign-more")
 /// The message `issues.assign-nothing`.
 pub const ISSUES_ASSIGN_NOTHING: MessageKey = MessageKey::new("issues.assign-nothing");
 
+/// The message `issues.assign-only-you`.
+pub const ISSUES_ASSIGN_ONLY_YOU: MessageKey = MessageKey::new("issues.assign-only-you");
+
 /// The message `issues.assign-search`.
 pub const ISSUES_ASSIGN_SEARCH: MessageKey = MessageKey::new("issues.assign-search");
 
@@ -6413,6 +6416,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "issues.assign-nothing",
         "Nobody in this project has that name.",
+    ),
+    (
+        "issues.assign-only-you",
+        "Nobody else is offered here: people you cannot see by name are not listed.",
     ),
     ("issues.assign-search", "Search the people of the project"),
     ("issues.assign-title", "Assigned to"),

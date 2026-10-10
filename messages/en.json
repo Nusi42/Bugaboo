@@ -1128,6 +1128,7 @@
   "issues.assign-search": "Search the people of the project",
   "issues.assign-list": "People of the project",
   "issues.assign-nothing": "Nobody in this project has that name.",
+  "issues.assign-only-you": "Nobody else is offered here: people you cannot see by name are not listed.",
   "issues.assign-more": "Show more people",
   "issues.assign": "Assign",
   "issues.assign-name": "Assign {name}",

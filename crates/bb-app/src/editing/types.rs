@@ -34,8 +34,8 @@ pub struct ReadLockQuery {
 /// Whether somebody else is editing a thing now.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct LockHolder {
-    /// Who is editing and since when; nothing when the thing is free or the lock is the person's
-    /// own in the window that asks.
+    /// Who is editing and since when; nothing when the thing is free. A lock of the person's own
+    /// (another window) is shown too, with `yours_elsewhere` set.
     pub held: Option<HeldLock>,
 }
 

@@ -51,9 +51,9 @@ pub(crate) fn link_allowed(url: &str) -> bool {
 
 /// Whether an image may be shown: a path of our own origin, or an `https` address on one of the
 /// hosts the organization allows (the setting `content.image-hosts`; a host with a port must be
-/// written with it). The hosts are those the registry checked with `bb_core::settings::is_host`
-/// (this crate may not depend on `bb-core`); the host of the address has to be one of them, so no
-/// rule for the characters of a host is repeated here.
+/// written with it). The hosts are those `bb-app` checked with `bb_core::settings::is_host` (this
+/// crate may not depend on `bb-core`); the host of the address has to be one of them, so no rule
+/// for the characters of a host is repeated here.
 pub(crate) fn image_allowed(url: &str, hosts: &[String]) -> bool {
     if !plain(url) {
         return false;

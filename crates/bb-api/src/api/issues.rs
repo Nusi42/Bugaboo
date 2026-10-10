@@ -317,9 +317,11 @@ async fn list_issues(
     Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
 }
 
-/// The people an issue of the project can be assigned to, a page at a time, by name: the members
-/// of the project, those who hold a role that reaches it. A person who cannot see names for
-/// *Assigned to* is listed nobody. Needs the permission *See issues*.
+/// The people an issue of the project can be assigned to, a page at a time, by name: those who
+/// see the project and hold *See issues* there, and the person who asks. A person who cannot see
+/// names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
+/// set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
+/// lets the person change that field.
 #[utoipa::path(
     get,
     path = "/api/v1/projects/{project}/assignable-people",

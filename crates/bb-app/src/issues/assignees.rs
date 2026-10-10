@@ -1,22 +1,26 @@
 //! The people an issue can be assigned to (ISS-01, M3-F28): the members of the project, so nobody
 //! is assigned to an issue they cannot open.
 //!
-//! A member of the project is a person who holds a role that reaches it, the same rule as for
-//! *Check access*. Only somebody who may set *Assigned to* can ask (a role that may change issues
-//! or make them, and a field mask that lets them change that field): *See issues* alone is not
-//! enough. Names are listed only when both *Assigned to* and *Project members* show names to the
-//! reader (ADR-0022): a person shown as a role or as *Someone* has no ID to be chosen by, so for
-//! such a reader the list is empty and says nothing about who is there.
+//! A person can be assigned to an issue only if they may see it: the list holds the people who see
+//! the project and hold *See issues* there, and the reader. Only somebody who may set *Assigned
+//! to* can ask (a role that may change issues or make them, and a field mask that lets them
+//! change that field): *See issues* alone is not enough. Names of others are listed only when
+//! both *Assigned to* and *Project members* show names to the reader (ADR-0022): a person shown
+//! as a role or as *Someone* has no ID to be chosen by, so such a reader is offered only
+//! themselves, whose name they know.
 
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::fields::Field;
+use bb_core::id::UserId;
 use bb_core::paging::{Cut, page_len};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::person::Person;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 use serde::Serialize;
 
-use crate::auth::{AppError, AuthStore, Ctx};
+use crate::access::Members;
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::people::write_cursor;
 
 /// List the people an issue of a project can be assigned to.
@@ -73,18 +77,20 @@ pub async fn assignable_people<S: AuthStore>(
         return Err(ErrorCode::Forbidden.into());
     }
     let after = ctx.people_position(input.cursor.as_deref()).await?;
+    let you = actor.person.id;
     let names = |kind| held.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names;
-    if !(names(PeopleKind::AssignedTo) && names(PeopleKind::ProjectMembers)) {
-        return Ok(held.authorize(AssignablePeoplePage {
-            items: Vec::new(),
-            next_cursor: None,
-        }));
-    }
     let wanted = page_len(Some(input.limit));
-    let page = ctx
-        .members_page(place, input.search.as_deref(), after, wanted, false)
-        .await?;
-    let page = Cut::of(page, wanted);
+    let people = if names(PeopleKind::AssignedTo) && names(PeopleKind::ProjectMembers) {
+        let members = Members::Assignable { reported_by: you };
+        ctx.members_page(place, input.search.as_deref(), after, wanted, members)
+            .await?
+    } else if after.is_none() {
+        // The reader knows their own name, whatever else they see: they can assign themselves.
+        ctx.own_page(you, input.search.as_deref()).await?
+    } else {
+        Vec::new()
+    };
+    let page = Cut::of(people, wanted);
     let next_cursor = page.next_cursor(write_cursor);
     let mut items = Vec::with_capacity(page.items.len());
     for person in &page.items {
@@ -99,4 +105,30 @@ pub async fn assignable_people<S: AuthStore>(
         );
     }
     Ok(held.authorize(AssignablePeoplePage { items, next_cursor }))
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The person alone, when the words of the search fit their name (all the words, in any
+    /// order, ignoring case) or there are none: the list of somebody who sees other people only
+    /// as a role.
+    async fn own_page(
+        &self,
+        person: UserId,
+        search: Option<&str>,
+    ) -> Result<Vec<Person>, AppError> {
+        let Some(found) = self
+            .store()
+            .person(person)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(Vec::new());
+        };
+        let name = found.display_name.to_lowercase();
+        let fits = search
+            .unwrap_or_default()
+            .split_whitespace()
+            .all(|word| name.contains(&word.to_lowercase()));
+        Ok(if fits { vec![found] } else { Vec::new() })
+    }
 }

@@ -2,7 +2,7 @@
 //! once here, already split with the registry's own reading of a list, so no screen and no
 //! renderer splits it again (M3-F10, M3-F11).
 
-use bb_core::settings::{CONTENT_IMAGE_HOSTS, list_items};
+use bb_core::settings::{CONTENT_IMAGE_HOSTS, is_host, list_items};
 use bb_policy::{Authorized, Masked, Place};
 use serde::Serialize;
 
@@ -39,8 +39,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         let text = CONTENT_IMAGE_HOSTS
             .resolve(Some(&value))
             .unwrap_or_default();
-        Ok(list_items(&text).map(str::to_owned).collect())
+        Ok(checked_hosts(list_items(&text)))
     }
+}
+
+/// The items that are hosts. The registry checks the setting when it is saved; this is the one
+/// place that checks again, for a value written by hand into the database, because every reader
+/// (the renderer, the preview, the content security policy) trusts what it gets: a space or a `;`
+/// in a host would add a directive.
+fn checked_hosts<'a>(items: impl Iterator<Item = &'a str>) -> Vec<String> {
+    items
+        .filter(|item| is_host(item))
+        .map(str::to_owned)
+        .collect()
 }
 
 /// The image hosts for a signed-in person (any person may read them: they are in the content
@@ -70,4 +81,24 @@ pub async fn document_image_hosts<S: AuthStore>(
     Ok(ImageHosts {
         hosts: ctx.image_hosts().await?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::checked_hosts;
+
+    #[test]
+    fn m3_f10_a_host_that_is_not_plain_is_left_out() {
+        let items = [
+            "images.example.com",
+            "a.example.com; script-src *",
+            "b'.example.com",
+            "",
+            "cdn.example.org:8443",
+        ];
+        assert_eq!(
+            checked_hosts(items.into_iter()),
+            ["images.example.com", "cdn.example.org:8443"]
+        );
+    }
 }
