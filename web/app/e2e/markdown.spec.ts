@@ -1,28 +1,25 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { paths } from "../src/shared/paths.ts";
+import { prepareWeb } from "./support/issues.ts";
+import { issueAddress, paths } from "../src/shared/paths.ts";
 
-test.use({
-  preparation: {
-    run: async (server) => {
-      await (await makeAdmin(server)).dispose();
-    },
-  },
-});
+test.use({ preparation: { run: prepareWeb } });
+test.describe.configure({ mode: "serial" });
 
 /** The text of the script that a person might paste into a description. */
 const pasted = "<script>window.attacked = true</script>";
 
-/** Opens the page that has the editor, and returns the text box. */
+/** Opens the description of an issue for editing, and returns the text box. */
 async function openEditor(page: Page) {
   await signIn(page, ada);
-  await page.goto(paths.frames);
-  const box = page.getByRole("textbox", { name: t("frames.text-label"), exact: true });
+  await page.goto(issueAddress("WEB-2"));
+  await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+  const box = page.getByRole("textbox", { name: t("issue-field.description"), exact: true });
   await expect(box).toBeVisible();
   return box;
 }

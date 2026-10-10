@@ -8,6 +8,7 @@ import {
   projectAddress,
   roleAddress,
   addressInProject,
+  issueAddress,
 } from "../src/shared/paths.ts";
 import {
   ada,
@@ -24,7 +25,7 @@ import {
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
-import { makeProject } from "./support/projects.ts";
+import { makeProjectWithIssue } from "./support/issues.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
 
@@ -39,6 +40,7 @@ let invitationLink = "";
 /** The IDs of a person and of a role, for the pages of one. */
 let somebody = "";
 let someRole = "";
+let someIssue = "";
 
 test.use({
   preparation: {
@@ -51,7 +53,7 @@ test.use({
           .items[0]?.id ?? "";
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
-      await makeProject(admin, "WEB", "Website");
+      someIssue = (await makeProjectWithIssue(admin, "WEB", "Website")).id;
       await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();
@@ -184,7 +186,12 @@ const visits: readonly Visit[] = [
     open: signedIn(addressInProject(paths.projectCheckAccess, "WEB")),
     guest: false,
   },
-  { address: paths.frames, open: signedIn(paths.frames), guest: false },
+  {
+    address: paths.projectIssues,
+    open: signedIn(addressInProject(paths.projectIssues, "WEB")),
+    guest: false,
+  },
+  { address: paths.issue, open: signedInAt(() => issueAddress(someIssue)), guest: false },
 ];
 
 for (const visit of visits) {

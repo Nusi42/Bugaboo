@@ -35,6 +35,7 @@ export type ButtonType = (typeof buttonType)[keyof typeof buttonType];
 /** Where something that opens over the page comes from. */
 export const overlayEdge = {
   center: "center",
+  full: "full",
   bottom: "bottom",
   start: "start",
   top: "top",

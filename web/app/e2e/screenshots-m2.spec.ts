@@ -63,21 +63,6 @@ async function quickScreens(page: Page): Promise<void> {
   await page.keyboard.press("Escape");
 }
 
-async function frameScreens(page: Page): Promise<void> {
-  await page.goto(`${paths.frames}?show=panel&item=first`);
-  await expect(page.getByRole("complementary", { name: t("frames.item-1") })).toBeVisible();
-  await shot(page, "09-side-panel-phone", MILESTONE);
-  await page.goto(`${paths.frames}?show=focus&item=second`);
-  await expect(page.getByRole("heading", { level: 2, name: t("frames.item-2") })).toBeVisible();
-  await shot(page, "10-focus-view-phone", MILESTONE);
-  await page.goto(paths.frames);
-  await page
-    .getByRole("button", { name: t("frames.remove-name", { name: t("frames.item-3") }) })
-    .click();
-  await expect(page.getByRole("button", { name: t("common.undo") })).toBeVisible();
-  await shot(page, "11-undo-phone", MILESTONE);
-}
-
 /** The pages of *My settings* and the organization's settings that WP-07 added, at phone width. */
 async function settingsScreens(page: Page): Promise<void> {
   await page.setViewportSize(viewports.phoneForPictures);
@@ -116,12 +101,6 @@ async function largerScreens(page: Page): Promise<void> {
   await page.goto(paths.appearance);
   await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
   await shot(page, "12-shell-computer", MILESTONE);
-  await page.goto(`${paths.frames}?show=focus&item=second`);
-  await expect(page.getByRole("heading", { level: 2, name: t("frames.item-2") })).toBeVisible();
-  await shot(page, "13-focus-view-computer", MILESTONE);
-  await page.goto(`${paths.frames}?show=panel&item=first`);
-  await expect(page.getByRole("complementary", { name: t("frames.item-1") })).toBeVisible();
-  await shot(page, "14-side-panel-computer", MILESTONE);
   await page.setViewportSize(viewports.tablet);
   await page.goto(paths.appearance);
   await page.getByRole("button", { name: t("shell.menu-button"), exact: true }).click();
@@ -135,7 +114,6 @@ test("the screens of the app shell", async ({ page, server }) => {
   await signIn(page, ada);
   await phoneScreens(page);
   await quickScreens(page);
-  await frameScreens(page);
   await settingsScreens(page);
   await largerScreens(page);
 });

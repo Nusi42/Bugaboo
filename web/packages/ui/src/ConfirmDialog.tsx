@@ -11,6 +11,15 @@ import { part } from "./tokens.ts";
 const dialogRole = "alertdialog";
 const titleSlot = "title";
 
+/**
+ * A question is a short task, so it is a dialog, and on a phone it fills the screen (UX §6). It is
+ * drawn with the one overlay part of the shell (the layer that menus and sheets use), in its
+ * variant `question`, or `full`.
+ */
+function useQuestionVariant(): "question" | "full" {
+  return useLayout() === "phone" ? "full" : "question";
+}
+
 export interface ConfirmDialogProps {
   /** The text of the button that opens the question. */
   readonly triggerLabel: string;
@@ -40,8 +49,7 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog(props: ConfirmDialogProps) {
   const { triggerLabel, triggerName, onClosed } = props;
   const [isOpen, setOpen] = useState(false);
-  // A short task is a dialog, and on a phone the dialog fills the screen (UX §6).
-  const full = useLayout() === "phone";
+  const variant = useQuestionVariant();
   const changeOpen = (open: boolean): void => {
     setOpen(open);
     if (!open) {
@@ -53,8 +61,8 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       <Button {...(triggerName === undefined ? {} : { "aria-label": triggerName })}>
         {triggerLabel}
       </Button>
-      <ModalOverlay {...partOf(part.confirm, { variants: [full && "full"] })} isDismissable>
-        <Modal {...partOf(part.confirmModal, { variants: [full && "full"] })}>
+      <ModalOverlay {...partOf(part.overlay, { variants: [variant] })} isDismissable>
+        <Modal {...partOf(part.overlayModal, { variants: [variant] })}>
           <Question
             {...props}
             close={() => {
@@ -80,15 +88,15 @@ export interface AskDialogProps extends Omit<ConfirmDialogProps, "triggerLabel" 
  * into it and goes back to where it was when it closes.
  */
 export function AskDialog({ isOpen, onOpenChange, ...question }: AskDialogProps) {
-  const full = useLayout() === "phone";
+  const variant = useQuestionVariant();
   return (
     <ModalOverlay
-      {...partOf(part.confirm, { variants: [full && "full"] })}
+      {...partOf(part.overlay, { variants: [variant] })}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable
     >
-      <Modal {...partOf(part.confirmModal, { variants: [full && "full"] })}>
+      <Modal {...partOf(part.overlayModal, { variants: [variant] })}>
         <Question
           {...question}
           close={() => {

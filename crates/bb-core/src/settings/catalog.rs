@@ -22,7 +22,7 @@ const SPACING_CHOICES: &[Choice] = &[
 ];
 
 const ISSUE_VIEW_CHOICES: &[Choice] = &[
-    Choice::new("focus", message::FRAMES_FOCUS_VIEW),
+    Choice::new("focus", message::APPEARANCE_ISSUE_VIEW_FOCUS),
     Choice::new("panel", message::APPEARANCE_ISSUE_VIEW_PANEL),
 ];
 

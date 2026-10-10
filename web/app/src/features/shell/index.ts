@@ -1,5 +1,4 @@
 export { AppLayout } from "./AppLayout.tsx";
-export { FramesPage, type FramesShow } from "./FramesPage.tsx";
 export { GuestLayout } from "./GuestLayout.tsx";
 export { ErrorPage, NotFoundPage, PendingPage } from "./Pages.tsx";
 export { QueryGate, type QueryGateProps } from "./QueryGate.tsx";
@@ -23,3 +22,12 @@ export { ShortcutsPage } from "./ShortcutsPage.tsx";
 export { FocusView, type FocusViewProps } from "./FocusView.tsx";
 export { ListEditor, type ListEditorProps, type ListRow } from "./ListEditor.tsx";
 export { SidePanel, type SidePanelProps } from "./SidePanel.tsx";
+export { addOverlayHost, type OverlayHost } from "./overlay-hosts.ts";
+export {
+  closeOverlay,
+  openOverlay,
+  useOverlay,
+  useOverlayOpen,
+  type OverlayName,
+} from "./overlay-state.ts";
+export { useNarrowSidebarWhile } from "./sidebar-state.ts";

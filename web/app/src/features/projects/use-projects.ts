@@ -73,19 +73,22 @@ export function linesOf(pages: readonly Schema<"Page_ProjectItem">[] | undefined
   return linesFrom(pages, lineOf);
 }
 
-/** One project by its address (a short name, also an old one, or an ID). */
-export function useProject(address: string) {
+/** One project by its address (a short name, also an old one, or an ID); nothing is asked without one. */
+export function useProject(address: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.projects.one(address),
+    queryKey: queryKeys.projects.one(address ?? ""),
     // While another address loads (a project got a new short name), the page keeps showing the
     // project: nothing blinks away and what was typed stays.
     placeholderData: keepPreviousData,
-    queryFn: async () =>
-      dataOf(
-        await api.client.GET("/api/v1/projects/{project}", {
-          params: { path: { project: address } },
-        }),
-      ),
+    queryFn:
+      address === undefined
+        ? skipToken
+        : async () =>
+            dataOf(
+              await api.client.GET("/api/v1/projects/{project}", {
+                params: { path: { project: address } },
+              }),
+            ),
   });
 }
 
