@@ -136,6 +136,8 @@ test("iss_01a the mode of issue IDs is a setting of the project, and it is kept"
   // The form shows the choice once the change is on its way, so the click is not a `check`.
   await choice.click();
   await expect(choice).toBeChecked();
+  // The reload must come after the server kept the choice, not only after the form shows it.
+  await expect(page.getByRole("status").filter({ hasText: t("save.saved") })).toBeVisible();
   await page.reload();
   await expect(choice).toBeChecked();
   await expectGoodInEveryLook(page);
