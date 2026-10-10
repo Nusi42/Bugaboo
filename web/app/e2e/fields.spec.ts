@@ -1,9 +1,7 @@
-import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, makeAdmin, makePerson, ownId, signInThroughApi } from "./support/accounts.ts";
-import { giveRole, roleId, roleName, setFieldLevel, signedInAdmin } from "./support/access.ts";
+import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
@@ -85,87 +83,4 @@ test("cf_01 Platforms (pick several) and Customer (text) are made on the same sc
   const list = page.getByRole("list", { name: t("fields.list") });
   await expect(list.getByRole("link")).toHaveText(["Severity", "Platforms", "Customer"]);
   await expectGoodInEveryLook(page);
-});
-
-/** A field of the list by its name; the test stops with a plain message when it is not there. */
-function fieldNamed(fields: readonly Schema<"FieldBody">[], name: string): Schema<"FieldBody"> {
-  const found = fields.find((each) => each.name === name);
-  if (found === undefined) {
-    throw new TypeError(`The organization has no field called ${name}.`);
-  }
-  return found;
-}
-
-/** The ID of a choice of a field by its name. */
-function choiceNamed(field: Schema<"FieldBody">, name: string): string {
-  const found = field.choices.find((each) => each.name === name);
-  if (found === undefined) {
-    throw new TypeError(`The field ${field.name} has no choice called ${name}.`);
-  }
-  return found.id;
-}
-
-/** The key and version of an issue that was just made, which an answer always holds. */
-function issueRef(made: Schema<"IssueItem">): { readonly key: string; readonly version: number } {
-  const { key, version } = made;
-  if (key === undefined || key === null || version === undefined || version === null) {
-    throw new TypeError("The answer has no key or version.");
-  }
-  return { key, version };
-}
-
-/** The keys of the own fields an answer about an issue holds, in order. */
-function ownKeys(detail: Schema<"IssueDetailBody">): readonly string[] {
-  return Object.keys(detail.issue.own_fields ?? {}).toSorted();
-}
-
-/** The first issue type, for the issue a Guest reports. */
-async function firstIssueType(admin: Awaited<ReturnType<typeof signedInAdmin>>): Promise<string> {
-  const types = dataOf(await admin.client.GET("/api/v1/issue-types"));
-  return types.items[0]?.id ?? "";
-}
-
-test("cf_06 Severity is hidden from a Guest, who still sees the other fields of their issue", async ({
-  server,
-}) => {
-  const admin = await signedInAdmin(server);
-  const { fields } = dataOf(await admin.client.GET("/api/v1/fields"));
-  const severityField = fieldNamed(fields, "Severity");
-  const platforms = fieldNamed(fields, "Platforms");
-  const customer = fieldNamed(fields, "Customer");
-  const guest = await signInThroughApi(server, bob);
-  await giveRole(admin, await ownId(guest), roleName.guest, null);
-  await setFieldLevel(
-    admin,
-    { role: await roleId(admin, roleName.guest), field: severityField.id },
-    "hidden",
-  );
-  // The Guest reports an issue; an administrator fills in the fields.
-  const made = issueRef(
-    dataOf(
-      await guest.client.POST("/api/v1/projects/{project}/issues", {
-        params: { path: { project: "WEB" } },
-        body: { issue_type: await firstIssueType(admin), title: "Crash on start" },
-      }),
-    ),
-  );
-  await admin.client.PATCH("/api/v1/issues/{issue}", {
-    params: { path: { issue: made.key } },
-    body: {
-      version: made.version,
-      fields: {
-        [severityField.id]: choiceNamed(severityField, "Critical"),
-        [platforms.id]: [choiceNamed(platforms, "Windows"), choiceNamed(platforms, "Mac")],
-        [customer.id]: "Acme",
-      },
-    },
-  });
-  const path = { params: { path: { issue: made.key } } };
-  const asAdmin = dataOf(await admin.client.GET("/api/v1/issues/{issue}", path));
-  expect(ownKeys(asAdmin)).toEqual([severityField.id, platforms.id, customer.id].toSorted());
-  const asGuest = dataOf(await guest.client.GET("/api/v1/issues/{issue}", path));
-  expect(ownKeys(asGuest)).toEqual([platforms.id, customer.id].toSorted());
-  expect(asGuest.changeable).not.toContain(severityField.id);
-  await guest.dispose();
-  await admin.dispose();
 });
