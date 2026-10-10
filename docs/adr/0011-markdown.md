@@ -22,6 +22,10 @@ Issue descriptions, comments and documents are Markdown written by people, so th
 
 The first plan was to sanitize with **ammonia** after pulldown-cmark's own HTML. Measured on the real module: ammonia brings an HTML parser (html5ever), the URL library with its tables for international domain names, and their data, about **250 KB more with Brotli**, so the module would be about four times the size of the parser alone, far over its budget, which the search language (M5) has to share. Writing the HTML from the events needs none of that, is easier to read as one allow list, and keeps the security property: the output holds only what the writer can write. The corpus test (SEC-13) and the property tests check the output for tags, attributes and addresses that the allow list does not have.
 
+## Change (M3 WP-07)
+
+A comment is shown to many readers, and what a token may become depends on the reader: an issue ID is a chip only for a reader who may see that issue, a mention only if the writer may name that person. The renderer stays pure and knows nothing of this. `Options.plain_tokens` lists the places (in `Rendered::tokens`) that stay plain text; the server renders once to find the tokens, decides, and renders again with the list. The places do not move, so the decision is made on the same list both times. The rendering is per reader and never stored.
+
 ## Alternatives considered
 
 - **marked/markdown-it + DOMPurify in the browser:** a second renderer that could disagree with the server. Rejected.

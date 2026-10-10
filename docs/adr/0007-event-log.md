@@ -16,6 +16,10 @@ Every use case appends **domain events** (actor, channel, entity, field changes 
 - The security log is hash-chained from the security-relevant events.
 - Events contain personal data, so they carry personal-data marks and follow keep-and-delete rules (ADR-0015).
 
+## Change (M3 WP-07)
+
+The first consumer of the outbox is the history of an issue (`history_entry`, ISS-06). It reads events after its stored position, writes one row per event and issue (`ON CONFLICT DO NOTHING`, so a repeat changes nothing) and moves the position in the same transaction, so it resumes after a restart. The rows hold the facts; the reader's field mask is applied when the history is read, never when it is built, so a change of roles changes what is shown at once. Until the job runner exists (M3-F61) the consumer runs when a history is read and at start.
+
 ## Alternatives considered
 
 - **Full event sourcing:** more power than needed and harder for agents to get right. Rejected; current state stays in normal tables.
