@@ -33,3 +33,66 @@ const ONE_CHECK_WITHIN_MS = 1000;
 export function checkedJustNow(lastCheck: number, now: number): boolean {
   return now - lastCheck < ONE_CHECK_WITHIN_MS;
 }
+
+/** The events of the window after which the screen asks at once: the person comes back. */
+const comingBack = ["focus", "online"] as const;
+
+/** What the check of versions needs from outside, so it can be tested without a browser. */
+export interface WatchEnv {
+  /** Calls `run` for each event of the window with this name; returns the way to stop. */
+  readonly onWindow: (name: string, run: () => void) => () => void;
+  /** Calls `run` for each event of the document with this name; returns the way to stop. */
+  readonly onDocument: (name: string, run: () => void) => () => void;
+  /** Whether the tab is hidden. */
+  readonly hidden: () => boolean;
+  /** Calls `run` every `seconds`; returns the way to stop. */
+  readonly repeat: (seconds: number, run: () => void) => () => void;
+  readonly now: () => number;
+  /** The versions the server has now of the records. */
+  readonly ask: (records: readonly RecordRef[]) => Promise<readonly Found[]>;
+}
+
+/**
+ * Checks the versions of the watched records every `seconds` and when the person comes back to
+ * the tab (ADR-0019): one small request asks for all of them, and one return sends one request
+ * though several events come with it. `onNewer` is told which records somebody else changed.
+ * Returns the way to stop.
+ */
+export function startWatching(
+  env: WatchEnv,
+  watched: readonly Watched[],
+  seconds: number,
+  onNewer: (newer: readonly Watched[]) => void,
+): () => void {
+  let lastCheck = Number.NEGATIVE_INFINITY;
+  const check = (): void => {
+    if (watched.length === 0 || env.hidden() || checkedJustNow(lastCheck, env.now())) {
+      return;
+    }
+    lastCheck = env.now();
+    env
+      .ask(watched.map((one) => one.record))
+      .then(
+        (found) => {
+          const newer = newerThan(watched, found);
+          if (newer.length > 0) {
+            onNewer(newer);
+          }
+        },
+        () => {
+          // No answer now (offline, signed out): the next check tries again.
+        },
+      )
+      .catch(() => null);
+  };
+  const stops = [
+    ...(watched.length === 0 ? [] : [env.repeat(seconds, check)]),
+    ...comingBack.map((name) => env.onWindow(name, check)),
+    env.onDocument("visibilitychange", check),
+  ];
+  return () => {
+    for (const stop of stops) {
+      stop();
+    }
+  };
+}

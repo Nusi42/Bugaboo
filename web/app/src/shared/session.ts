@@ -54,9 +54,9 @@ export async function currentPerson(): Promise<Person | null> {
   }
 }
 
-/** The ID of the person who is signed in as the app knows it now; empty until the app knows. */
-export function signedInPersonId(): string {
-  return queryClient.getQueryData<Person>(meOptions().queryKey)?.id ?? "";
+/** The ID of the person who is signed in as the app knows it now; `null` until the app knows. */
+export function signedInPersonId(): string | null {
+  return queryClient.getQueryData<Person>(meOptions().queryKey)?.id ?? null;
 }
 
 /**

@@ -77,3 +77,15 @@ describe("iss_17 the browser keeps a draft for each person and each target", () 
     expect(readBrowserDraft("ana", description, now, store)).toBeNull();
   });
 });
+
+describe("iss_17 the browser keeps no draft for nobody", () => {
+  it("keeps nothing for nobody: the person is not known yet", () => {
+    const { store, items } = memory();
+    writeBrowserDraft(null, description, { text: "A", baseVersion: 1 }, now, store);
+    expect(items.size).toBe(0);
+    writeBrowserDraft("ana", description, { text: "B", baseVersion: 1 }, now, store);
+    expect(readBrowserDraft(null, description, now, store)).toBeNull();
+    forgetBrowserDraft(null, description, now, store);
+    expect(readBrowserDraft("ana", description, now, store)?.text).toBe("B");
+  });
+});

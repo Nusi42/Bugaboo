@@ -66,20 +66,15 @@ function depsOf(which: Which): LongTextDeps {
         : { text: found.text, savedAt: found.saved_at, baseVersion: found.base_version ?? null };
     },
     throwAwayServerDraft: () => throwAwayDraft(client, target()),
-    // A draft is kept by person, who is asked when the draft is read or written: before the app
-    // knows who is signed in, none is read or written.
+    // A draft is kept by person, who is asked when the draft is read or written (nobody, before
+    // the app knows who is signed in: `browser-drafts.ts` keeps nothing then).
     browserDraft: {
-      read: () =>
-        signedInPersonId() === "" ? null : readBrowserDraft(signedInPersonId(), target()),
+      read: () => readBrowserDraft(signedInPersonId(), target()),
       write: (text, baseVersion) => {
-        if (signedInPersonId() !== "") {
-          writeBrowserDraft(signedInPersonId(), target(), { text, baseVersion });
-        }
+        writeBrowserDraft(signedInPersonId(), target(), { text, baseVersion });
       },
       forget: () => {
-        if (signedInPersonId() !== "") {
-          forgetBrowserDraft(signedInPersonId(), target());
-        }
+        forgetBrowserDraft(signedInPersonId(), target());
       },
     },
     startHeartbeats,

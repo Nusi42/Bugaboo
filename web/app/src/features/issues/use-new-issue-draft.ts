@@ -28,13 +28,13 @@ export interface NewIssueDraft {
  * after *Create*. Without a project there is no draft yet.
  */
 export function useNewIssueDraft(project: string | undefined): NewIssueDraft {
-  const person = useMe()?.id ?? "";
+  const person = useMe()?.id ?? null;
   const target: DraftTarget | undefined =
     project === undefined ? undefined : { kind: "issue", project };
   const found = useQuery({
     queryKey: queryKeys.issues.drafts(project ?? ""),
-    queryFn: () => (target === undefined ? null : findDraft(person, target)),
-    enabled: target !== undefined && person !== "",
+    queryFn: () => (target === undefined || person === null ? null : findDraft(person, target)),
+    enabled: target !== undefined && person !== null,
     staleTime: Infinity,
     gcTime: 0,
   });
@@ -42,17 +42,14 @@ export function useNewIssueDraft(project: string | undefined): NewIssueDraft {
   const forget = (): void => {
     later.cancel();
     if (target !== undefined) {
-      if (person !== "") {
-        forgetBrowserDraft(person, target);
-      }
+      forgetBrowserDraft(person, target);
       void throwAwayDraft(api.client, target).catch(() => null);
     }
   };
   return {
     found: found.data ?? null,
     keep: (values) => {
-      // Nothing is filed under nobody: the draft waits until the page knows who is signed in.
-      if (target === undefined || person === "") {
+      if (target === undefined) {
         return;
       }
       if (!hasWriting(values)) {

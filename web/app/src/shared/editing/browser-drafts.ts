@@ -75,24 +75,31 @@ function readAll(nowMs: number, store: StoreGetter): Drafts {
   return kept;
 }
 
-/** The draft of the person for a target, or `null`. */
+/**
+ * The draft of the person for a target, or `null`. Nothing is read, written or forgotten for
+ * nobody (`null`: the app does not know yet who is signed in), so no draft is ever filed under no
+ * person. This is the one place that rule is kept.
+ */
 export function readBrowserDraft(
-  person: string,
+  person: string | null,
   target: DraftTarget,
   nowMs: number = Date.now(),
   store: StoreGetter = browserStorage,
 ): BrowserDraft | null {
-  return readAll(nowMs, store)[addressOf(person, target)] ?? null;
+  return person === null ? null : (readAll(nowMs, store)[addressOf(person, target)] ?? null);
 }
 
 /** Keeps a text as the draft of the person for a target. */
 export function writeBrowserDraft(
-  person: string,
+  person: string | null,
   target: DraftTarget,
   draft: Omit<BrowserDraft, "savedAt">,
   nowMs: number = Date.now(),
   store: StoreGetter = browserStorage,
 ): void {
+  if (person === null) {
+    return;
+  }
   const all = readAll(nowMs, store);
   const saved: BrowserDraft = { ...draft, savedAt: new Date(nowMs).toISOString() };
   writeStored(
@@ -104,11 +111,14 @@ export function writeBrowserDraft(
 
 /** Throws the draft of the person for a target away. */
 export function forgetBrowserDraft(
-  person: string,
+  person: string | null,
   target: DraftTarget,
   nowMs: number = Date.now(),
   store: StoreGetter = browserStorage,
 ): void {
+  if (person === null) {
+    return;
+  }
   const address = addressOf(person, target);
   const { [address]: _gone, ...rest } = readAll(nowMs, store);
   if (Object.keys(rest).length === 0) {

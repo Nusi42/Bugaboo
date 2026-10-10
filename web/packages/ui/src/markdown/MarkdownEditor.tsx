@@ -10,7 +10,7 @@ import {
 } from "react-aria-components";
 
 import { partOf } from "../parts.ts";
-import { fieldShape, fieldState } from "../props.ts";
+import { busyState, fieldShape } from "../props.ts";
 import { part } from "../tokens.ts";
 import { FormattingToolbar } from "./FormattingToolbar.tsx";
 import type { MarkdownEditorLabels } from "./labels.ts";
@@ -55,14 +55,15 @@ function WriteBox({
       isReadOnly={busy}
     >
       <Label {...partOf(part.fieldLabel)}>{label}</Label>
-      <FormattingToolbar labels={labels} onFormat={format} />
+      <FormattingToolbar labels={labels} onFormat={format} isDisabled={busy} />
       <TextArea
         ref={area}
         {...partOf(part.fieldInput, {
           variants: [fieldShape.multiline],
-          states: [busy && fieldState.busy],
+          states: [busy && busyState.busy],
         })}
         rows={8}
+        aria-busy={busy}
       />
     </AriaTextField>
   );
