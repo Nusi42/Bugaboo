@@ -18,6 +18,7 @@ use bb_core::settings::{
     ISSUES_ID_LENGTH, ISSUES_ID_MODE, Layers, Scope, SettingDefinition, SettingValue,
 };
 use bb_core::text::CodeDraws;
+use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_policy::Tree;
 use jiff::Timestamp;
 
@@ -232,17 +233,23 @@ pub(crate) async fn renew_in<S: AuthStore>(
             },
         )
         .await?;
+        let version = S::issue_in(transaction, issue)
+            .await?
+            .map_or(FIRST_VERSION, |found| found.version);
         let key = |code: IssueCode| {
             serde_json::json!(IssueKey::new(renewal.short_name.clone(), code).to_string())
         };
         let event = events
             .make(
                 entity(RecordKind::Issue, issue),
-                vec![FieldChange {
-                    field: member::KEY.to_owned(),
-                    before: Some(key(old)),
-                    after: Some(key(code)),
-                }],
+                vec![
+                    FieldChange {
+                        field: member::KEY.to_owned(),
+                        before: Some(key(old)),
+                        after: Some(key(code)),
+                    },
+                    counted_up(version),
+                ],
             )
             .map_err(|_| S::aborted())?;
         S::append_follow_up_event(transaction, &event).await?;

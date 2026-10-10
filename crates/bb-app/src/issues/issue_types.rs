@@ -9,10 +9,12 @@
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::IssueTypeId;
-use bb_core::issue::{IssueType, STARTING_ISSUE_TYPES};
+use bb_core::issue::{IssueIcon, IssueType, STARTING_ISSUE_TYPES};
 use bb_core::message::Message;
 use bb_core::paging::window;
+use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
+use jiff::Timestamp;
 use serde_json::json;
 
 use super::fields::member;
@@ -92,7 +94,7 @@ pub async fn make_issue_type<S: AuthStore>(
             .max()
             .map_or(0, |last| last + 1),
         retired_at: None,
-        version: 1,
+        version: FIRST_VERSION,
     };
     let event = ctx.event(
         by(actor.person.id),
@@ -118,6 +120,39 @@ pub async fn make_issue_type<S: AuthStore>(
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
     Ok(held.authorize(IssueTypeView::from(&issue_type)))
+}
+
+/// What a change of an issue type changes, before and after, for the event (and the version
+/// counted up).
+fn differences(
+    current: &IssueType,
+    name: &str,
+    icon: IssueIcon,
+    retired_at: Option<Timestamp>,
+) -> Vec<FieldChange> {
+    let mut differences = Vec::new();
+    if name != current.name {
+        differences.push(FieldChange {
+            field: member::issue_type::NAME.to_owned(),
+            before: Some(json!(current.name)),
+            after: Some(json!(name)),
+        });
+    }
+    if icon != current.icon {
+        differences.push(FieldChange {
+            field: member::issue_type::ICON.to_owned(),
+            before: Some(json!(current.icon.code())),
+            after: Some(json!(icon.code())),
+        });
+    }
+    if retired_at.is_some() != current.retired_at.is_some() {
+        differences.push(FieldChange {
+            field: member::issue_type::RETIRED.to_owned(),
+            before: Some(json!(current.retired_at.is_some())),
+            after: Some(json!(retired_at.is_some())),
+        });
+    }
+    differences
 }
 
 /// Changes the name, the icon or the retired state of an issue type: what is `Some` is changed.
@@ -149,8 +184,13 @@ pub async fn change_issue_type<S: AuthStore>(
         .find(|found| found.id == input.issue_type)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?
         .clone();
+    let record = entity(RecordKind::IssueType, current.id);
     if current.version != input.version {
-        return Err(ErrorCode::VersionChanged.into());
+        return Err(AppError::stale(
+            record,
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let name = name.unwrap_or_else(|| current.name.clone());
     if name_taken(&types, &name, Some(current.id)) {
@@ -163,43 +203,19 @@ pub async fn change_issue_type<S: AuthStore>(
         Some(true) => current.retired_at.or(Some(now)),
         Some(false) => None,
     };
-    let mut differences = Vec::new();
-    if name != current.name {
-        differences.push(FieldChange {
-            field: member::issue_type::NAME.to_owned(),
-            before: Some(json!(current.name)),
-            after: Some(json!(name)),
-        });
-    }
-    if icon != current.icon {
-        differences.push(FieldChange {
-            field: member::issue_type::ICON.to_owned(),
-            before: Some(json!(current.icon.code())),
-            after: Some(json!(icon.code())),
-        });
-    }
-    if retired_at.is_some() != current.retired_at.is_some() {
-        differences.push(FieldChange {
-            field: member::issue_type::RETIRED.to_owned(),
-            before: Some(json!(current.retired_at.is_some())),
-            after: Some(json!(retired_at.is_some())),
-        });
-    }
+    let mut differences = differences(&current, &name, icon, retired_at);
     let after = IssueType {
         name,
         icon,
         retired_at,
-        version: current.version + 1,
+        version: next(current.version),
         ..current.clone()
     };
     if differences.is_empty() {
         return Ok(held.authorize(IssueTypeView::from(&current)));
     }
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::IssueType, current.id),
-        differences,
-    )?;
+    differences.push(counted_up(current.version));
+    let event = ctx.event(by(actor.person.id), record.clone(), differences)?;
     let why = Why::default();
     let (stopped, written, version) = (why.clone(), after.clone(), current.version);
     ctx.store()
@@ -227,7 +243,13 @@ pub async fn change_issue_type<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+                &record,
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     Ok(held.authorize(IssueTypeView::from(&after)))
 }
 
@@ -261,7 +283,7 @@ pub async fn make_starting_issue_types<S: AuthStore>(
             icon: starting.icon,
             position,
             retired_at: None,
-            version: 1,
+            version: FIRST_VERSION,
         });
     }
     let names: Vec<serde_json::Value> = types.iter().map(|found| json!(found.name)).collect();

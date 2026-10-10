@@ -281,10 +281,12 @@ async fn iss_01a_a_change_of_the_mode_writes_one_event_for_each_issue_it_renews(
         let mut was = BTreeSet::new();
         for event in &renewals {
             assert_eq!(event.actor, Actor::Person(site.org.admin.id));
-            let [change] = event.changes.as_slice() else {
-                return Err("one change for each event".into());
+            // The new key, and the version counted up (a stale change names who renewed the key).
+            let [change, version] = event.changes.as_slice() else {
+                return Err("the key and the version for each event".into());
             };
             assert_eq!(change.field, "key");
+            assert_eq!(version.field, "version");
             was.insert(
                 change
                     .before

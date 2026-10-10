@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use bb_core::ErrorCode;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::Field;
-use bb_core::id::{GroupId, IssueId, ProjectId, RoleId, UserId};
+use bb_core::id::{GroupId, IssueId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 use jiff::Timestamp;
@@ -104,6 +104,12 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
             issue_member::STATUS,
             issue_member::PRIORITY,
         ]
+    } else if *kind == EntityKind::from(RecordKind::IssueType) {
+        &[
+            issue_member::issue_type::NAME,
+            issue_member::issue_type::ICON,
+            issue_member::issue_type::RETIRED,
+        ]
     } else if *kind == EntityKind::from(RecordKind::Setting) {
         &[
             member::sign_up_policy::ENABLED,
@@ -150,6 +156,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                         .map_err(failed)?,
                 ));
             }
+        }
+        if ours(RecordKind::IssueType) {
+            let found = match IssueTypeId::from_bytes(record.id.to_bytes()) {
+                Ok(id) => self.store().issue_type(id).await.map_err(failed)?,
+                Err(_) => None,
+            };
+            return Ok(found.map(|found| found.version));
         }
         if ours(RecordKind::Issue) {
             let found = match IssueId::from_bytes(record.id.to_bytes()) {

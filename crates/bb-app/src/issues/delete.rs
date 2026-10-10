@@ -4,6 +4,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::UserId;
+use bb_core::version::counted_up;
 use bb_policy::{Authorized, Place};
 use serde_json::json;
 
@@ -42,11 +43,14 @@ pub async fn delete_issue<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Issue, id),
-        vec![FieldChange {
-            field: member::DELETED_AT.to_owned(),
-            before: None,
-            after: Some(json!(now.to_string())),
-        }],
+        vec![
+            FieldChange {
+                field: member::DELETED_AT.to_owned(),
+                before: None,
+                after: Some(json!(now.to_string())),
+            },
+            counted_up(issue.version),
+        ],
     )?;
     let why = Why::default();
     let stopped = why.clone();
@@ -94,11 +98,14 @@ pub async fn restore_issue<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Issue, id),
-        vec![FieldChange {
-            field: member::DELETED_AT.to_owned(),
-            before: issue.deleted_at.map(|at| json!(at.to_string())),
-            after: None,
-        }],
+        vec![
+            FieldChange {
+                field: member::DELETED_AT.to_owned(),
+                before: issue.deleted_at.map(|at| json!(at.to_string())),
+                after: None,
+            },
+            counted_up(issue.version),
+        ],
     )?;
     let why = Why::default();
     let stopped = why.clone();

@@ -160,7 +160,6 @@ fn json_of(value: &SettingValue) -> Value {
     }
 }
 
-/// The setting with this key, or what the person is told about a key that does not exist.
 /// A setting of a policy that is one record with one version is changed through its own route
 /// only, so nothing here can go around the version.
 fn refuse_own_screen_setting(definition: &SettingDefinition) -> Result<(), AppError> {
@@ -170,6 +169,7 @@ fn refuse_own_screen_setting(definition: &SettingDefinition) -> Result<(), AppEr
     Ok(())
 }
 
+/// The setting with this key, or what the person is told about a key that does not exist.
 fn definition_of(key: &str) -> Result<&'static SettingDefinition, AppError> {
     find(key).ok_or_else(|| ErrorCode::NotFound.into())
 }
