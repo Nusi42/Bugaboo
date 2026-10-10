@@ -48,8 +48,6 @@ pub struct ChangeIssue {
     pub issue_type: Option<IssueTypeId>,
     /// A new title, as typed.
     pub title: Option<String>,
-    /// A new description.
-    pub description: Option<String>,
     /// A new status. Entering the group *Done* sets the closed date; leaving it clears it.
     pub status: Option<Status>,
     /// A new priority.

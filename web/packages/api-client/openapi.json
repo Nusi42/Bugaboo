@@ -12734,7 +12734,7 @@
       },
       "ChangeIssueBody": {
         "type": "object",
-        "description": "What to change about an issue: what is left out stays as it is.",
+        "description": "What to change about an issue: what is left out stays as it is. The description is not here: it\nis saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.",
         "required": ["version"],
         "properties": {
           "assigned_to": {
@@ -12743,10 +12743,6 @@
               "type": "string"
             },
             "description": "The IDs of the people it is assigned to from now on: all of them, not the ones to add."
-          },
-          "description": {
-            "type": ["string", "null"],
-            "description": "A new description."
           },
           "issue_type": {
             "type": ["string", "null"],
@@ -12783,7 +12779,8 @@
             "format": "int64",
             "description": "The version the person looked at."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ChangeIssueTypeBody": {
         "type": "object",

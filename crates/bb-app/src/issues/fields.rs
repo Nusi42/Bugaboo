@@ -1,13 +1,13 @@
 //! What a person asks for in the fields of an issue: the texts are cleaned the way every short
-//! text is, the people have to exist, and every field the person touches has to be one they may
+//! text is, the people have to be members of the project, and every field the person touches has to be one they may
 //! change (the mask of their roles, SEC-04).
 
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
-use bb_core::id::UserId;
+use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNEES_MAX;
 use bb_core::text::{LONG_TEXT_MAX, TITLE_MAX, clean_long};
-use bb_policy::FieldMask;
+use bb_policy::{FieldMask, Place};
 
 use super::types::{ChangeIssue, MakeIssue};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -35,9 +35,15 @@ pub(crate) fn ensure_may_change(mask: &FieldMask, fields: &[Field]) -> Result<()
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The people an issue is assigned to, each once in the order given: they have to exist, and
-    /// there are not more than an issue may have. `request.invalid` otherwise.
-    pub(crate) async fn clean_assignees(&self, people: &[UserId]) -> Result<Vec<UserId>, AppError> {
+    /// The people an issue of the project is assigned to, each once in the order given: they have
+    /// to be members of the project (a role that reaches it), and there are not more than an issue
+    /// may have. `request.invalid` otherwise, the same for a person who does not exist and for one
+    /// who is no member, so the answer is no way to find out who exists.
+    pub(crate) async fn clean_assignees(
+        &self,
+        project: ProjectId,
+        people: &[UserId],
+    ) -> Result<Vec<UserId>, AppError> {
         let mut distinct: Vec<UserId> = Vec::with_capacity(people.len());
         for person in people {
             if !distinct.contains(person) {
@@ -53,7 +59,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .person(*person)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
-            if found.is_none() {
+            if found.is_none() || !self.has_a_role_at(*person, Place::Project(project)).await? {
                 return Err(ErrorCode::InvalidRequest.into());
             }
         }
@@ -91,10 +97,10 @@ impl Given {
 
 impl From<&ChangeIssue> for Given {
     fn from(input: &ChangeIssue) -> Self {
-        // Title, description, status, priority, assigned to.
+        // Title, description (saved under its lock, never here), status, priority, assigned to.
         Self([
             input.title.is_some(),
-            input.description.is_some(),
+            false,
             input.status.is_some(),
             input.priority.is_some(),
             input.assigned_to.is_some(),

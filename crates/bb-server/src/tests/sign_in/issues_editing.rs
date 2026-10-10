@@ -98,6 +98,31 @@ async fn iss_17_the_description_is_saved_under_the_lock_and_rendered_by_the_serv
 }
 
 #[tokio::test]
+async fn m3_f50_a_change_never_carries_the_description_whoever_holds_the_lock() -> TestResult {
+    each_database("m3_f50_patch_no_description", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let made = site.make(&mut ada, "Nobody overwrites the text").await?;
+        let (id, key) = ids_of(ok(&made)?)?;
+        let _held = lock(&mut ada, &id).await?;
+        let path = format!("{ISSUES}/{key}");
+        let refused = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": 1, "description": "Sneaked in"})),
+            )
+            .await?;
+        assert!(refused.status.is_client_error(), "{}", refused.status);
+        let read = ada.send("GET", &path, None).await?;
+        assert_eq!(ok(&read)?["issue"]["description"], "");
+        assert_eq!(read.body["issue"]["version"], 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn adr_0019_a_stale_version_gets_the_structured_answer_and_the_text_is_kept() -> TestResult {
     each_database("adr_0019_issue_stale", async |db| {
         let (rig, app) = rig_and_app(db).await?;
@@ -267,12 +292,12 @@ async fn m3_f28_an_issue_can_be_assigned_to_the_members_of_its_project_only() ->
     each_database("m3_f28_assignable_people", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (mut cora, cora_id) = site.person(StartingRole::Contributor, "cora").await?;
+        let (_, cora_id) = site.person(StartingRole::Contributor, "cora").await?;
         let (_, vera_id) = site.person(StartingRole::Viewer, "vera").await?;
+        let outsider = site.outsider("olga").await?;
         let path = format!("/api/v1/projects/{}/assignable-people", site.acme);
-        let listed = cora.send("GET", &path, None).await?;
-        assert_eq!(listed.status, StatusCode::OK, "{}", listed.body);
-        let ids: Vec<&str> = listed.body["items"]
+        let listed = ada.send("GET", &path, None).await?;
+        let ids: Vec<&str> = ok(&listed)?["items"]
             .as_array()
             .ok_or("no list")?
             .iter()
@@ -280,16 +305,83 @@ async fn m3_f28_an_issue_can_be_assigned_to_the_members_of_its_project_only() ->
             .collect();
         assert!(ids.contains(&cora_id.to_string().as_str()), "{ids:?}");
         assert!(ids.contains(&vera_id.to_string().as_str()), "{ids:?}");
+        assert!(!ids.contains(&outsider.to_string().as_str()), "{ids:?}");
         // A search narrows the list by name (the people of the tests are all called Bob Builder).
         let found = ada
             .send("GET", &format!("{path}?search=builder"), None)
             .await?;
         assert_eq!(ok(&found)?["items"].as_array().map(Vec::len), Some(2));
-        // A person who is not a member of the project is not offered.
-        let nobody = ada
-            .send("GET", &format!("{path}?search=nobody-by-that-name"), None)
+        // Assigning an issue to a person who is no member is refused, like a person who does not
+        // exist, so the answer tells nothing about who exists.
+        let made = site.make(&mut ada, "Who does it").await?;
+        let issue = format!("{ISSUES}/{}", ok(&made)?["key"].as_str().ok_or("no key")?);
+        for nobody in [
+            outsider.to_string(),
+            "01900000-0000-4000-8000-000000000000".to_owned(),
+        ] {
+            let refused = ada
+                .send(
+                    "PATCH",
+                    &issue,
+                    Some(json!({"version": 1, "assigned_to": [nobody]})),
+                )
+                .await?;
+            assert_eq!(
+                (refused.status, refused.code()),
+                (StatusCode::BAD_REQUEST, "request.invalid"),
+                "{}",
+                refused.body
+            );
+        }
+        let member = ada
+            .send(
+                "PATCH",
+                &issue,
+                Some(json!({"version": 1, "assigned_to": [cora_id.to_string()]})),
+            )
             .await?;
-        assert_eq!(ok(&nobody)?["items"], json!([]));
+        assert_eq!(ok(&member)?["version"], 2);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0022_the_list_of_people_to_assign_follows_project_members_and_the_right_to_assign()
+-> TestResult {
+    each_database("adr_0022_assignable_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
+        let (mut cora, _) = site.person(StartingRole::Contributor, "cora").await?;
+        let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
+        let path = format!("/api/v1/projects/{}/assignable-people", site.acme);
+        // A Team member sets *Assigned to* and sees the names of the project members.
+        let team = tim.send("GET", &path, None).await?;
+        assert!(
+            ok(&team)?["items"]
+                .as_array()
+                .is_some_and(|l| !l.is_empty())
+        );
+        // The same Team member when *Project members* shows a role only: no names, no list.
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "project-members",
+            "role-only",
+        )
+        .await?;
+        let narrowed = tim.send("GET", &path, None).await?;
+        assert_eq!(ok(&narrowed)?["items"], json!([]));
+        // A Contributor and a Viewer cannot set *Assigned to*: seeing issues is not enough.
+        for (who, name) in [(&mut cora, "contributor"), (&mut vera, "viewer")] {
+            let refused = who.send("GET", &path, None).await?;
+            assert_eq!(
+                (refused.status, refused.code()),
+                (StatusCode::FORBIDDEN, "access.forbidden"),
+                "{name}"
+            );
+        }
         Ok(())
     })
     .await

@@ -2,13 +2,15 @@
 //! is assigned to an issue they cannot open.
 //!
 //! A member of the project is a person who holds a role that reaches it, the same rule as for
-//! *Check access*. They are shown as the kind of people information *Assigned to* says, the same
-//! as after the choice is made. Only somebody who sees names there can choose a person: a
-//! person shown as a role or as *Someone* has no ID to be chosen by, so for such a reader the list
-//! is empty and says nothing about who is there.
+//! *Check access*. Only somebody who may set *Assigned to* can ask (a role that may change issues
+//! or make them, and a field mask that lets them change that field): *See issues* alone is not
+//! enough. Names are listed only when both *Assigned to* and *Project members* show names to the
+//! reader (ADR-0022): a person shown as a role or as *Someone* has no ID to be chosen by, so for
+//! such a reader the list is empty and says nothing about who is there.
 
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
+use bb_core::fields::Field;
 use bb_core::paging::{Cut, page_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
@@ -46,7 +48,7 @@ impl Masked for AssignablePeoplePage {}
 ///
 /// # Errors
 /// `resource.not_found` for a project that does not exist or that the person may not see,
-/// `access.forbidden` without *See issues* there, `request.invalid` for a cursor that is not
+/// `access.forbidden` without the right to set *Assigned to* there, `request.invalid` for a cursor that is not
 /// one.
 pub async fn assignable_people<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -61,11 +63,18 @@ pub async fn assignable_people<S: AuthStore>(
     if found.is_none() || !held.sees_project() {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    if !held.allows(Permission::SeeIssues) {
+    let may_set = held.allows(Permission::ChangeIssues)
+        || held.allows(Permission::ChangeOwnIssues)
+        || held.allows(Permission::MakeIssues);
+    if !(held.allows(Permission::SeeIssues)
+        && may_set
+        && held.field_mask().can_change(Field::AssignedTo))
+    {
         return Err(ErrorCode::Forbidden.into());
     }
     let after = ctx.people_position(input.cursor.as_deref()).await?;
-    if held.people_level(PeopleKind::AssignedTo, PeopleContext::Ordinary) != PeopleLevel::Names {
+    let names = |kind| held.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names;
+    if !(names(PeopleKind::AssignedTo) && names(PeopleKind::ProjectMembers)) {
         return Ok(held.authorize(AssignablePeoplePage {
             items: Vec::new(),
             next_cursor: None,

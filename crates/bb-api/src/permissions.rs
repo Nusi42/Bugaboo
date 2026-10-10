@@ -276,7 +276,9 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "listAssignablePeople",
-        Declared::Permission(Permission::SeeIssues),
+        // The right to set *Assigned to*: a role that changes issues (the field mask and *Project
+        // members* narrow the answer further, ADR-0022).
+        Declared::Permission(Permission::ChangeIssues),
         Answer::NeverStored,
     ),
     route(

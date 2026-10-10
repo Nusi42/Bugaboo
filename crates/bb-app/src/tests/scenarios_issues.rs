@@ -92,7 +92,6 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
                 version: 1,
                 issue_type: None,
                 title: Some("The login button does nothing at all".to_owned()),
-                description: None,
                 status: Some(Status::Done),
                 priority: None,
                 assigned_to: None,

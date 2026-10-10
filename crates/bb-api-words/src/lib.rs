@@ -38,6 +38,11 @@ pub mod versions {
     pub const VERSION: &str = "version";
     /// The token of the edit lock, in the body of every save of long text.
     pub const LOCK_TOKEN: &str = "lock_token";
+    /// The properties of a request body that hold the long text of a record (a description, the
+    /// text of a comment). A change of an existing record (a body with a `version`) that holds one
+    /// is refused by ARCH-VERSIONED unless the route is marked `x-long-text`, so no change writes
+    /// long text without the edit lock (M3-F50). Making a new record has no version and no lock.
+    pub const LONG_TEXT_PROPERTIES: &[&str] = &["description", "text"];
     /// The schema of the `409` answer to a stale version.
     pub const CONFLICT_SCHEMA: &str = "ConflictProblem";
 }

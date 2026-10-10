@@ -1931,12 +1931,13 @@ export interface components {
       /** @description What the device is asked, to give to `navigator.credentials`. */
       options: Record<string, unknown>;
     };
-    /** @description What to change about an issue: what is left out stays as it is. */
+    /**
+     * @description What to change about an issue: what is left out stays as it is. The description is not here: it
+     *     is saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.
+     */
     ChangeIssueBody: {
       /** @description The IDs of the people it is assigned to from now on: all of them, not the ones to add. */
       assigned_to?: string[] | null;
-      /** @description A new description. */
-      description?: string | null;
       /** @description A new issue type; a retired type is refused. */
       issue_type?: string | null;
       priority?: components["schemas"]["Priority"] | null;

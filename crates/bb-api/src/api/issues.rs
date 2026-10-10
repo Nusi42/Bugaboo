@@ -227,8 +227,10 @@ pub(crate) struct NewIssueBody {
     assigned_to: Option<Vec<String>>,
 }
 
-/// What to change about an issue: what is left out stays as it is.
+/// What to change about an issue: what is left out stays as it is. The description is not here: it
+/// is saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.
 #[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ChangeIssueBody {
     /// The version the person looked at.
     version: i64,
@@ -236,8 +238,6 @@ pub(crate) struct ChangeIssueBody {
     issue_type: Option<String>,
     /// A new title.
     title: Option<String>,
-    /// A new description.
-    description: Option<String>,
     /// A new status. Entering the group *Done* sets the closed date; leaving it clears it.
     status: Option<Status>,
     /// A new priority.
@@ -490,7 +490,6 @@ async fn change_issue(
                 version: body.version,
                 issue_type,
                 title: body.title,
-                description: body.description,
                 status: body.status,
                 priority: body.priority,
                 assigned_to,
