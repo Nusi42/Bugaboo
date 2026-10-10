@@ -107,10 +107,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         for (key, value) in &mut own_fields.0 {
             if let Some(kind) = views.values.kind_of(key) {
                 *value = self
-                    .display_value(&views.actor, &views.viewer, kind, std::mem::take(value))
+                    .display_value(
+                        &views.actor,
+                        &views.viewer,
+                        &mut views.people,
+                        kind,
+                        std::mem::take(value),
+                    )
                     .await?;
             }
         }
+        // A value the viewer is not shown (an issue they do not see) is no value.
+        own_fields.0.retain(|_, value| !value.is_null());
         let reported_by = self
             .person_once(views, PeopleKind::ReportedBy, issue.reported_by)
             .await?;

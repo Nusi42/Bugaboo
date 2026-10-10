@@ -121,13 +121,15 @@ pub async fn project<S: AuthStore>(
         Vec::new()
     };
     let mut own_fields = values.shown(&held, None, project.id.into());
+    let mut people = std::collections::HashMap::new();
     for (key, value) in &mut own_fields.0 {
         if let Some(kind) = values.kind_of(key) {
             *value = ctx
-                .display_value(&actor, &held, kind, std::mem::take(value))
+                .display_value(&actor, &held, &mut people, kind, std::mem::take(value))
                 .await?;
         }
     }
+    own_fields.0.retain(|_, value| !value.is_null());
     Ok(held.authorize(ProjectDetail {
         own_fields,
         changeable_fields,

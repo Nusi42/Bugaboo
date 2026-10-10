@@ -241,6 +241,10 @@ pub async fn make_field<S: AuthStore>(
     let name = clean_name(&input.name)?;
     let help_text = clean_help(input.help.as_deref())?;
     let kind = input.kind;
+    // A long text is saved under an edit lock of an issue; projects have no such route yet (M3-F49).
+    if kind.is_long_text() && input.applies_to != FieldFor::Issues {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
     check_rules(kind, &input.rules)?;
     let look = input.look.unwrap_or_else(|| Look::starting(kind));
     if !look.fits(kind) || (!kind.has_choices() && !input.choices.is_empty()) {

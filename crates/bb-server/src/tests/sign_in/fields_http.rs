@@ -417,6 +417,13 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
             .send("GET", &format!("{}?fields=own_fields", acme_issues()), None)
             .await?;
         assert!(!list.body.to_string().contains(&major), "{}", list.body);
+        // The definition of the field is not there for them, and the list does not hold it.
+        let one = writer.send("GET", &format!("{FIELDS}/{key}"), None).await?;
+        assert_eq!(one.code(), "resource.not_found", "{}", one.body);
+        let all = writer.send("GET", FIELDS, None).await?;
+        assert!(!all.body.to_string().contains(&key), "{}", all.body);
+        let for_ada = ada.send("GET", &format!("{FIELDS}/{key}"), None).await?;
+        assert_eq!(for_ada.status, StatusCode::OK, "{}", for_ada.body);
         // A write is refused alike for a hidden field and for one that is not there.
         let version = ok(&detail)?["issue"]["version"].clone();
         let hidden = writer
@@ -607,6 +614,288 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
             .send("GET", &format!("{FIELDS}?project=ACME"), None)
             .await?;
         assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(1));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_rows() -> TestResult {
+    each_database("cf_06_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let salary = make_field(
+            &mut ada,
+            json!({"name": "Salary band", "kind": "text", "applies_to": "issues"}),
+        )
+        .await?;
+        let elsewhere = ok(&ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "BETA", "name": "Beta"})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no project")?
+            .to_owned();
+        let only_beta = make_field(
+            &mut ada,
+            json!({
+                "name": "Beta only",
+                "kind": "text",
+                "applies_to": "issues",
+                "scope": {"projects": [elsewhere]},
+            }),
+        )
+        .await?;
+        let (salary_id, beta_id) = (id_of(&salary)?, id_of(&only_beta)?);
+        // A lead who decides what roles see and checks access, with the salary band hidden.
+        let mut lead = reader_of(
+            &site,
+            &rig,
+            "lena@example.test",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::DecideWhatRolesSee,
+                Permission::CheckAccess,
+            ],
+            &[
+                (&salary_id, None, FieldLevel::Hidden),
+                (&beta_id, None, FieldLevel::CanSee),
+                ("title", None, FieldLevel::CanSee),
+            ],
+        )
+        .await?;
+        let me = lead.send("GET", "/api/v1/auth/me", None).await?;
+        let lena = id_of(ok(&me)?)?;
+        // The same answers for Ada, who manages fields, do name them.
+        let table = ada.send("GET", "/api/v1/field-permissions", None).await?;
+        assert!(ok(&table)?.to_string().contains("Salary band"));
+        for (screen, path) in [
+            ("field permissions", "/api/v1/field-permissions".to_owned()),
+            (
+                "field permissions of a project",
+                format!("/api/v1/field-permissions?project={}", site.acme),
+            ),
+            (
+                "check access",
+                format!("/api/v1/check-access/people/{lena}?project={}", site.acme),
+            ),
+            ("the list of fields", FIELDS.to_owned()),
+        ] {
+            let seen = lead.send("GET", &path, None).await?;
+            assert_eq!(seen.status, StatusCode::OK, "{screen}: {}", seen.body);
+            let text = seen.body.to_string();
+            assert!(!text.contains("Salary band"), "{screen}: {text}");
+            assert!(!text.contains(&salary_id), "{screen}: {text}");
+            // A field that belongs to another project is not told either, in a project.
+            if screen != "field permissions" && screen != "the list of fields" {
+                assert!(!text.contains("Beta only"), "{screen}: {text}");
+            }
+        }
+        // At the organization the lead reads the field that they may see and that sits in a
+        // project they see.
+        let list = lead.send("GET", FIELDS, None).await?;
+        assert_eq!(ok(&list)?["fields"].as_array().map(Vec::len), Some(1));
+        // A field they may not see answers like one that is not there; a field they may see does not.
+        let hidden = lead
+            .send("GET", &format!("{FIELDS}/{salary_id}"), None)
+            .await?;
+        assert_eq!(hidden.code(), "resource.not_found", "{}", hidden.body);
+        let hidden_used = lead
+            .send("GET", &format!("{FIELDS}/{salary_id}/used-by"), None)
+            .await?;
+        assert!(matches!(
+            hidden_used.code(),
+            "resource.not_found" | "access.forbidden"
+        ));
+        let shown = lead
+            .send("GET", &format!("{FIELDS}/{beta_id}"), None)
+            .await?;
+        assert_eq!(shown.status, StatusCode::OK, "{}", shown.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn cf_06_an_own_field_never_starts_with_a_default_that_cannot_be_kept() -> TestResult {
+    each_database("cf_06_default", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let refuse = |reply: &Reply| {
+            assert_eq!(
+                (reply.status, reply.code()),
+                (StatusCode::BAD_REQUEST, "request.invalid"),
+                "{}",
+                reply.body
+            );
+        };
+        // A kind that points to people, or a long text, takes no starting value.
+        for kind in ["person", "long-text"] {
+            let made = ada
+                .send(
+                    "POST",
+                    FIELDS,
+                    Some(json!({
+                        "name": format!("Starts {kind}"),
+                        "kind": kind,
+                        "applies_to": "issues",
+                        "default_value": "x",
+                    })),
+                )
+                .await?;
+            refuse(&made);
+        }
+        // A long text cannot be made for projects at all.
+        let long = ada
+            .send(
+                "POST",
+                FIELDS,
+                Some(json!({"name": "Notes", "kind": "long-text", "applies_to": "projects"})),
+            )
+            .await?;
+        refuse(&long);
+        // A starting value is used, and dropped when the rules no longer allow it.
+        let field = make_field(
+            &mut ada,
+            json!({"name": "Region", "kind": "text", "applies_to": "issues", "default_value": "North"}),
+        )
+        .await?;
+        let key = id_of(&field)?;
+        let made = ok(&site.make(&mut ada, "Uses the default").await?)?.clone();
+        assert_eq!(made["own_fields"][&key], "North");
+        let tightened = ada
+            .send(
+                "PATCH",
+                &format!("{FIELDS}/{key}"),
+                Some(json!({"version": field["version"], "rules": {"max_length": 3}})),
+            )
+            .await?;
+        assert!(ok(&tightened)?["default_value"].is_null(), "{}", tightened.body);
+        let later = ok(&site.make(&mut ada, "Starts empty").await?)?.clone();
+        assert!(later["own_fields"].get(&key).is_none());
+        Ok(())
+    })
+    .await
+}
+
+/// Fields that point to a person, people, a group, an issue, and a long text: their IDs.
+async fn reference_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
+    let mut keys = Vec::new();
+    for (name, kind) in [
+        ("Tester", "person"),
+        ("Reviewers", "people"),
+        ("Team", "group"),
+        ("Duplicate of", "issue"),
+        ("Notes", "long-text"),
+    ] {
+        let made = make_field(
+            ada,
+            json!({"name": name, "kind": kind, "applies_to": "issues"}),
+        )
+        .await?;
+        keys.push(id_of(&made)?);
+    }
+    Ok(keys)
+}
+
+#[tokio::test]
+async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text_waits_for_its_lock()
+-> TestResult {
+    each_database("cf_01_references", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let keys = reference_fields(&mut ada).await?;
+        let [tester, reviewers, team, duplicate, notes] = keys.as_slice() else {
+            return Err("five fields".into());
+        };
+        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let group = id_of(ok(&ada
+            .send("POST", "/api/v1/groups", Some(json!({"name": "Core"})))
+            .await?)?)?;
+        let first = ok(&site.make(&mut ada, "The first").await?)?.clone();
+        let (guest, _) = site.person(StartingRole::Guest, "gus").await?;
+        let mut guest = guest;
+        let second = ok(&site.make(&mut guest, "The second").await?)?.clone();
+        let path = format!("{ISSUES}/{}", second["key"].as_str().ok_or("no key")?);
+        let values = json!({
+            tester: me, reviewers: [me], team: group, duplicate: first["id"],
+        });
+        let set = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": second["version"], "fields": values})),
+            )
+            .await?;
+        let own = &ok(&set)?["own_fields"];
+        // A person is a PersonRef, a group is its ID (and its name for those who see names), an
+        // issue is its readable ID.
+        assert_eq!(own[tester]["shown"], "name", "{own}");
+        assert_eq!(own[reviewers][0]["shown"], "name", "{own}");
+        assert_eq!(own[team]["id"], json!(group), "{own}");
+        assert_eq!(own[duplicate]["key"], first["key"], "{own}");
+        // The Guest sees only the issue they reported: the issue named in the field is not theirs
+        // to see, so the field shows nothing.
+        let seen = guest.send("GET", &path, None).await?;
+        let theirs = &ok(&seen)?["issue"]["own_fields"];
+        assert!(theirs.get(duplicate).is_none(), "{theirs}");
+        // The ID of another kind of thing is no person, and a person who is not there is no choice.
+        let version = ok(&set)?["version"].clone();
+        let wrong_kind = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": version, "fields": { tester: first["id"] }})),
+            )
+            .await?;
+        assert_eq!(
+            wrong_kind.code(),
+            "field.wrong_value",
+            "{}",
+            wrong_kind.body
+        );
+        let gone = format!(
+            "{}{}",
+            &me[..me.len() - 1],
+            if me.ends_with('a') { 'b' } else { 'a' }
+        );
+        let nobody = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": version, "fields": { tester: gone }})),
+            )
+            .await?;
+        assert_eq!(nobody.code(), "field.unknown_choice", "{}", nobody.body);
+        // A long text is saved only under its lock: the change of the issue refuses it.
+        let long = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({
+                    "version": ok(&set)?["version"],
+                    "fields": { notes: "Steps" },
+                })),
+            )
+            .await?;
+        assert_eq!(long.code(), "request.invalid", "{}", long.body);
+        let on_project = ada
+            .send(
+                "PATCH",
+                &format!("{PROJECTS}/{}", site.acme),
+                Some(json!({"version": 1, "fields": { notes: "Steps" }})),
+            )
+            .await?;
+        assert_eq!(
+            on_project.status,
+            StatusCode::BAD_REQUEST,
+            "{}",
+            on_project.body
+        );
         Ok(())
     })
     .await

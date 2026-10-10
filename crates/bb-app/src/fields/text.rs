@@ -5,11 +5,11 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::edit::EditWhat;
+use bb_core::edit::{DraftTarget, EditWhat};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{FieldId, LockToken};
-use bb_core::own_fields::edit_part;
+use bb_core::own_fields::{FieldFor, edit_part};
 use bb_core::own_fields_value::FieldValue;
 use bb_core::text::{LONG_TEXT_MAX, clean_long};
 use bb_core::version::{counted_up, next};
@@ -23,7 +23,7 @@ use bb_policy::Evaluation;
 use super::pattern::Linear;
 use super::types::Definition;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::editing::{TextSave, Written};
+use crate::editing::{DraftText, TextSave, Written};
 use crate::fields::Item;
 use crate::issues::IssueView;
 
@@ -72,10 +72,36 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !field.kind.is_long_text() {
             return Err(ErrorCode::InvalidRequest.into());
         }
-        if field.retired_at.is_some() || !definition.scope.reaches(&item.chain, item.issue_type) {
+        if field.applies_to != FieldFor::Issues
+            || field.retired_at.is_some()
+            || !definition.scope.reaches(&item.chain, item.issue_type)
+        {
             return Err(ErrorCode::FieldNotHere.into());
         }
         Ok((held, current, definition))
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The answer for a save that is refused before it is tried, with the text kept as the draft
+    /// of the person (failing to keep it never hides the reason).
+    async fn refused_keeping_draft(
+        &self,
+        actor: &crate::access::Actor,
+        save: &TextSave,
+        refused: AppError,
+    ) -> AppError {
+        self.keep_draft(
+            actor.person.id,
+            &DraftTarget::Editing(save.what.clone()),
+            DraftText {
+                text: save.text.clone(),
+                base_version: Some(save.version),
+            },
+        )
+        .await
+        .ok();
+        refused
     }
 }
 
@@ -99,16 +125,28 @@ pub async fn save_field_text<S: AuthStore>(
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?
         .to_owned();
     let new = (!text.is_empty()).then(|| FieldValue::Text(text.clone()));
-    field
-        .rules
-        .check(field.kind, new.as_ref(), &Linear)
-        .map_err(|violation| AppError::from(violation.error()))?;
+    let save = TextSave {
+        what: EditWhat {
+            record: entity(RecordKind::Issue, current.id),
+            part: edit_part(input.field).map_err(|error| AppError::Internal(error.to_string()))?,
+        },
+        token: input.token,
+        text,
+        version: input.version,
+    };
+    // A save that is refused keeps the text as the person's draft, whatever the reason.
+    if let Err(violation) = field.rules.check(field.kind, new.as_ref(), &Linear) {
+        return Err(ctx
+            .refused_keeping_draft(&actor, &save, violation.error().into())
+            .await);
+    }
     if current.version != input.version {
-        return Err(AppError::stale(
+        let stale = AppError::stale(
             entity(RecordKind::Issue, current.id),
             Place::Project(current.project),
             actor.person.id,
-        ));
+        );
+        return Err(ctx.refused_keeping_draft(&actor, &save, stale).await);
     }
     let stored = ctx
         .load_values(RecordKind::Issue, &[current.id.into()])
@@ -129,15 +167,6 @@ pub async fn save_field_text<S: AuthStore>(
             counted_up(current.version),
         ],
     )?;
-    let save = TextSave {
-        what: EditWhat {
-            record: entity(RecordKind::Issue, current.id),
-            part: edit_part(input.field).map_err(|error| AppError::Internal(error.to_string()))?,
-        },
-        token: input.token,
-        text,
-        version: input.version,
-    };
     let (id, version, at) = (current.id, current.version, ctx.now());
     let (kind, cells) = (
         bb_core::event::EntityKind::from(RecordKind::Issue),

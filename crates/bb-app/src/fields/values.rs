@@ -23,7 +23,7 @@ use bb_core::id::{ChoiceId, EntityId, FieldId, GroupId, IssueId, IssueTypeId, Pr
 use bb_core::own_fields::{FieldFor, FieldType};
 use bb_core::own_fields_value::{Cell, FieldValue, OwnValues, Violation};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Evaluation, PeopleContext, Place};
+use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 use serde_json::Value;
 
 use super::manage::current_default;
@@ -198,48 +198,57 @@ impl<S: AuthStore> Ctx<'_, S> {
             .ok_or(AppError::Refused(ErrorCode::NotFound))
     }
 
+    /// A person as the viewer is shown them in an own field, resolved once for every value of a
+    /// page (`people` is the cache of the page).
+    async fn field_person(
+        &self,
+        viewer: &Evaluation,
+        people: &mut HashMap<(PeopleKind, UserId), PersonRef>,
+        person: UserId,
+    ) -> Result<Value, AppError> {
+        let key = (PeopleKind::AssignedTo, person);
+        let to_json = |shown: &PersonRef| {
+            serde_json::to_value(shown).map_err(|error| AppError::Internal(error.to_string()))
+        };
+        if let Some(shown) = people.get(&key) {
+            return to_json(shown);
+        }
+        let shown = self
+            .person_ref(
+                viewer,
+                PeopleKind::AssignedTo,
+                PeopleContext::Ordinary,
+                person,
+            )
+            .await?;
+        let json = to_json(&shown);
+        people.insert(key, shown);
+        json
+    }
+
     /// A value as a viewer is shown it. A person is a `PersonRef` as the kind *Assigned to* says,
     /// a group is its name when the viewer sees names in *Mentions*, an issue is its readable ID
-    /// when the viewer sees it; the other types are the JSON of the value.
+    /// when the viewer sees it (an issue they do not see is shown as no value); the other types
+    /// are the JSON of the value.
     pub(crate) async fn display_value(
         &self,
         actor: &Actor,
         viewer: &Evaluation,
+        people: &mut HashMap<(PeopleKind, UserId), PersonRef>,
         kind: FieldType,
         json: Value,
     ) -> Result<Value, AppError> {
-        let to_json = |error: serde_json::Error| AppError::Internal(error.to_string());
         let id_of = |value: &Value| value.as_str().map(str::to_owned);
         match (kind, &json) {
             (FieldType::Person, Value::String(id)) => match id.parse::<UserId>() {
-                Ok(person) => serde_json::to_value(
-                    self.person_ref(
-                        viewer,
-                        PeopleKind::AssignedTo,
-                        PeopleContext::Ordinary,
-                        person,
-                    )
-                    .await?,
-                )
-                .map_err(to_json),
+                Ok(person) => self.field_person(viewer, people, person).await,
                 Err(_) => Ok(Value::Null),
             },
             (FieldType::People, Value::Array(ids)) => {
                 let mut shown = Vec::with_capacity(ids.len());
                 for id in ids.iter().filter_map(id_of) {
                     if let Ok(person) = id.parse::<UserId>() {
-                        shown.push(
-                            serde_json::to_value(
-                                self.person_ref(
-                                    viewer,
-                                    PeopleKind::AssignedTo,
-                                    PeopleContext::Ordinary,
-                                    person,
-                                )
-                                .await?,
-                            )
-                            .map_err(to_json)?,
-                        );
+                        shown.push(self.field_person(viewer, people, person).await?);
                     }
                 }
                 Ok(Value::Array(shown))
@@ -262,7 +271,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Ok(issue) => self.issue_key_for(actor, issue).await?,
                     Err(_) => None,
                 };
-                Ok(serde_json::json!({ "id": id, "key": key }))
+                Ok(key.map_or(
+                    Value::Null,
+                    |key| serde_json::json!({ "id": id, "key": key }),
+                ))
             }
             _ => Ok(json),
         }
