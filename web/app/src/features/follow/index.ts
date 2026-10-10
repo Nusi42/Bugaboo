@@ -1,7 +1,8 @@
-import { addIssueBlock, issueSlots } from "../issues/index.ts";
-import { FollowersBlock } from "./FollowersBlock.tsx";
+import { lazyRouteComponent } from "@tanstack/react-router";
 
-export { FollowersBlock } from "./FollowersBlock.tsx";
+import { addIssueBlock, issueSlots } from "../issues/index.ts";
+
+const FollowersBlock = lazyRouteComponent(() => import("./FollowersBlock.tsx"), "FollowersBlock");
 
 /** Puts *Followers · Follow* into the fields panel of the issue page, after the other fields (WP-07). */
 export function registerFollowersBlock(): void {

@@ -1709,6 +1709,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li>The security log is hash-chained from the security-relevant events.</li>
 <li>Events contain personal data, so they carry personal-data marks and follow keep-and-delete rules (ADR-0015).</li>
 </ul>
+<h4>Change (2026-10-10, M3 WP-07)</h4>
+<p>The first consumer of the outbox is the history of an issue (<code>history_entry</code>, ISS-06). It reads events after its stored position, writes one row per event and issue (<code>ON CONFLICT DO NOTHING</code>, so a repeat changes nothing) and moves the position in the same transaction, so it resumes after a restart. The rows hold the facts; the reader's field mask is applied when the history is read, never when it is built, so a change of roles changes what is shown at once. Until the job runner exists (M3-F61) the consumer runs when a history is read and at start.</p>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>Full event sourcing:</strong> more power than needed and harder for agents to get right. Rejected; current state stays in normal tables.</li>
@@ -1806,6 +1808,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Change (2026-10-09, M3 WP-02)</h4>
 <p>The first plan was to sanitize with <strong>ammonia</strong> after pulldown-cmark's own HTML. Measured on the real module: ammonia brings an HTML parser (html5ever), the URL library with its tables for international domain names, and their data, about <strong>250 KB more with Brotli</strong>, so the module would be about four times the size of the parser alone, far over its budget, which the search language (M5) has to share. Writing the HTML from the events needs none of that, is easier to read as one allow list, and keeps the security property: the output holds only what the writer can write. The corpus test (SEC-13) and the property tests check the output for tags, attributes and addresses that the allow list does not have.</p>
+<h4>Change (2026-10-10, M3 WP-07)</h4>
+<p>A comment is shown to many readers, and what a token may become depends on the reader: an issue ID is a chip only for a reader who may see that issue, a mention only if the writer may name that person. The renderer stays pure and knows nothing of this. <code>Options.plain_tokens</code> lists the places (in <code>Rendered::tokens</code>) that stay plain text; the server renders once to find the tokens, decides, and renders again with the list. The places do not move, so the decision is made on the same list both times. The rendering is per reader and never stored.</p>
 <h4>Alternatives considered</h4>
 <ul>
 <li><strong>marked/markdown-it + DOMPurify in the browser:</strong> a second renderer that could disagree with the server. Rejected.</li>

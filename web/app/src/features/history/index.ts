@@ -1,7 +1,8 @@
-import { addIssueBlock, issueSlots } from "../issues/index.ts";
-import { HistoryBlock } from "./HistoryBlock.tsx";
+import { lazyRouteComponent } from "@tanstack/react-router";
 
-export { HistoryBlock } from "./HistoryBlock.tsx";
+import { addIssueBlock, issueSlots } from "../issues/index.ts";
+
+const HistoryBlock = lazyRouteComponent(() => import("./HistoryBlock.tsx"), "HistoryBlock");
 
 /** Puts *History* into its slot at the end of the main column of the issue page (WP-07). */
 export function registerHistoryBlock(): void {

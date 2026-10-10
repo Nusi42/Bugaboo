@@ -1,9 +1,13 @@
-import { addIssueBlock, issueSlots } from "../issues/index.ts";
-import { RelatedIssuesBlock } from "./RelatedIssuesBlock.tsx";
-import { SubIssuesBlock } from "./SubIssuesBlock.tsx";
+import { lazyRouteComponent } from "@tanstack/react-router";
 
-export { RelatedIssuesBlock } from "./RelatedIssuesBlock.tsx";
-export { SubIssuesBlock } from "./SubIssuesBlock.tsx";
+import { addIssueBlock, issueSlots } from "../issues/index.ts";
+
+// Loaded when an issue is first opened, so the first page stays small (coding-standards section 6).
+const SubIssuesBlock = lazyRouteComponent(() => import("./SubIssuesBlock.tsx"), "SubIssuesBlock");
+const RelatedIssuesBlock = lazyRouteComponent(
+  () => import("./RelatedIssuesBlock.tsx"),
+  "RelatedIssuesBlock",
+);
 
 /** Puts the sub-issues and the related issues into their slots of the issue page (WP-07). */
 export function registerRelationBlocks(): void {
