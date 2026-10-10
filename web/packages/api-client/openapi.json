@@ -13261,6 +13261,11 @@
             },
             "description": "The fields the person may change in this issue; empty when they may not change it."
           },
+          "description_html": {
+            "type": ["string", "null"],
+            "description": "The description as safe HTML, made by the server with the same renderer as the editor's\npreview (the mark `x-safe-html`). Hidden with the description.",
+            "x-safe-html": true
+          },
           "issue": {
             "$ref": "#/components/schemas/IssueItem",
             "description": "The issue, with every field the person may see."

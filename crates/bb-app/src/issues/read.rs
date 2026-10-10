@@ -10,6 +10,7 @@ use bb_core::ErrorCode;
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue_key::IssueKey;
 use bb_core::paging::{Cut, page_len, read_len};
+use bb_core::settings::{CONTENT_IMAGE_HOSTS, list_items};
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 
@@ -52,6 +53,23 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The hosts images in text may come from: the organization's setting `content.image-hosts`,
+    /// split once here with the registry's own reading of a list.
+    pub(crate) async fn image_hosts(&self) -> Result<Vec<String>, AppError> {
+        let layers = self
+            .store()
+            .setting_layers(None, None)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let value = layers.resolve(CONTENT_IMAGE_HOSTS.definition()).value;
+        let text = CONTENT_IMAGE_HOSTS
+            .resolve(Some(&value))
+            .unwrap_or_default();
+        Ok(list_items(&text).map(str::to_owned).collect())
+    }
+}
+
 /// One issue, with what the person may do with it.
 ///
 /// # Errors
@@ -91,8 +109,12 @@ pub async fn issue<S: AuthStore>(
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
     let may_change = held.may_change_issue(issue.reported_by);
     let mask = held.field_mask();
+    let image_hosts = ctx.image_hosts().await?;
+    let description_html =
+        bb_markdown::render(&issue.description, &bb_markdown::Options { image_hosts }).html;
     Ok(held.authorize(IssueDetail {
         issue: view,
+        description_html,
         may_change,
         may_delete: held.may_delete_issue(issue.reported_by),
         changeable: if may_change {

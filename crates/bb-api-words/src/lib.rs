@@ -23,6 +23,11 @@ pub mod marks {
     /// A route that saves long text: it takes the token of the edit lock besides the version
     /// (ADR-0019). Written from the list of such routes in `bb-api`.
     pub const LONG_TEXT: &str = "x-long-text";
+    /// A string property of an answer that holds HTML the server rendered with `bb-markdown`
+    /// (a description, a comment). The generated client turns it into a `SafeHtml` through
+    /// `markSafeHtml`; no other string is ever one (SEC-RICHTEXT). Written from the table
+    /// `SAFE_HTML_PROPERTIES` in `bb-api`.
+    pub const SAFE_HTML: &str = "x-safe-html";
 }
 
 /// The words of a change that does not overwrite another one unseen (ADR-0019 amendment M3): the

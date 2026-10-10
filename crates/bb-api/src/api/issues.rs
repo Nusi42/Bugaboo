@@ -177,6 +177,11 @@ pub(crate) struct IssueDetailBody {
     /// The issue, with every field the person may see.
     #[masked(nested)]
     issue: IssueItem,
+    /// The description as safe HTML, made by the server with the same renderer as the editor's
+    /// preview (the mark `x-safe-html`). Hidden with the description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "description")]
+    description_html: Option<String>,
     /// Whether the person may change the issue at all, in the fields they may change.
     #[masked(open)]
     may_change: bool,
@@ -192,6 +197,7 @@ impl From<IssueDetail> for IssueDetailBody {
     fn from(detail: IssueDetail) -> Self {
         Self {
             issue: IssueItem::from(&detail.issue),
+            description_html: Some(detail.description_html),
             may_change: detail.may_change,
             may_delete: detail.may_delete,
             changeable: detail.changeable,
