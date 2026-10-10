@@ -42,6 +42,10 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
   const save = api.query.useMutation("put", "/api/v1/auth/sign-up-policy", {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: statusOptions().queryKey });
+    },
+    // Also after a refusal (a stale version): the policy is read again, so the next save is made
+    // on the version the server has now and the form is not stuck on the old one.
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: policyOptions().queryKey });
     },
   });

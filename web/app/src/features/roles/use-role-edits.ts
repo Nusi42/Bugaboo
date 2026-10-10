@@ -33,8 +33,8 @@ export function after(before: Detail | undefined, edit: RoleEdit): Detail | unde
     edit.kind === "permissions"
       ? { ...before.role, permissions: [...edit.permissions] }
       : { ...before.role, two_step: edit.on };
-  // Contract with `update_role` on the server: every change counts the version up by exactly one,
-  // so the next change on screen is made on that one.
+  // Contract with `update_role` on the server: every change counts the version up with
+  // `bb_core::version::next` (exactly one), so the next change on screen is made on that one.
   return { ...before, role: { ...changed, version: edit.version + 1 } };
 }
 
