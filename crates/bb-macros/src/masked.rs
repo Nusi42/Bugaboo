@@ -102,6 +102,17 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
             let mask: &::bb_policy::FieldMask = &item_mask;
         }
     });
+    // A view that does not say its issue type is masked with the lowest level its fields have in
+    // any type, so a field that is hidden for some type never leaves with it (fail closed). The
+    // views inside it still get the whole mask, to pick the mask of their own type.
+    let (floor, own_mask) = if item_type.is_some() {
+        (quote! {}, quote! { mask })
+    } else {
+        (
+            quote! { let floor = mask.for_type(None); },
+            quote! { &floor },
+        )
+    };
     // An open member is a plain value: a type that is itself a view with a mask would leak.
     let plain = members.iter().filter(|member| member.open).map(|member| {
         let ty = member.ty;
@@ -118,7 +129,8 @@ pub(crate) fn expand(input: &DeriveInput) -> syn::Result<TokenStream> {
 
             fn mask(value: &mut ::bb_policy::MaskedValue, mask: &::bb_policy::FieldMask) {
                 #pick_mask
-                ::bb_policy::drop_hidden(value, <Self as ::bb_policy::Masked>::FIELDS, mask);
+                #floor
+                ::bb_policy::drop_hidden(value, <Self as ::bb_policy::Masked>::FIELDS, #own_mask);
                 #(#nested)*
                 #(#own)*
             }
