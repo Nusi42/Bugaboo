@@ -38,7 +38,7 @@ async fn a_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
 }
 
 /// A new issue in the target project, reported by the administrator of the matrix: its readable ID.
-async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
+pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
     let made = fixture
         .rig()
         .api()

@@ -20,7 +20,7 @@ pub use kinds::{
 };
 pub use links::{add_relation, remove_relation};
 pub use parents::set_parent;
-pub use read::issue_relations;
+pub use read::{issue_relations, related_issues, sub_issues};
 pub use store::RelationStore;
 pub use types::*;
 

@@ -1,14 +1,15 @@
 //! Reading what comments hold: every text of a comment, what the writer may name after `@`, and the
 //! *Mentions* block of the start page (ISS-05, M3-Q3, M3-Q7).
 
+use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
 use bb_core::comment::{Mention, handle_of};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{CommentId, UserId};
-use bb_core::paging::page_len;
+use bb_core::paging::{page_len, window};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, PeopleContext, Place};
+use bb_policy::{Authorized, PeopleContext, Permission, Place};
 use serde_json::json;
 
 use super::types::{
@@ -17,6 +18,18 @@ use super::types::{
 };
 use crate::auth::{AppError, AuthStore, Ctx, Done, SearchIn, by, entity, internal};
 use crate::member::mentions as member;
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The person whose *Mentions* are asked for. They are the person's own inbox, so only a
+    /// session reaches them: an access key is turned away like it is from the rest of the person's
+    /// own data (ADR-0025, decision 8).
+    async fn inbox_owner(&self, token: &str) -> Result<crate::access::Actor, AppError> {
+        if looks_like_access_key(token) {
+            return Err(self.key_on_sign_in_data(token).await);
+        }
+        self.session_actor(token).await
+    }
+}
 
 /// The most people a search for choices reads.
 const PEOPLE_READ: u64 = 100;
@@ -49,9 +62,12 @@ pub async fn comment_versions<S: AuthStore>(
         .html_of(&actor, &held, issue.project, &comment.text)
         .await?;
     items.push(CommentTextView::current(&comment, html));
+    let page = window(items.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(CommentVersions {
         comment: comment.id,
-        items,
+        items: items[page.start..page.end].to_vec(),
+        next_cursor: page.next,
     }))
 }
 
@@ -69,6 +85,9 @@ pub async fn mention_choices<S: AuthStore>(
 ) -> Result<Authorized<MentionChoices>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
+    if !held.allows(Permission::Comment) {
+        return Err(ErrorCode::Forbidden.into());
+    }
     let level = held.people_level(PeopleKind::Mentions, PeopleContext::Ordinary);
     let search = input
         .search
@@ -141,7 +160,10 @@ pub async fn mention_choices<S: AuthStore>(
             == 1
     });
     offered.truncate(page_len(Some(input.limit)));
-    Ok(held.authorize(MentionChoices { items: offered }))
+    Ok(held.authorize(MentionChoices {
+        items: offered,
+        next_cursor: None,
+    }))
 }
 
 /// The comments that mention the person: the unread ones first, then the newest. A comment is
@@ -154,7 +176,7 @@ pub async fn mentions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: MentionsQuery,
 ) -> Result<Authorized<Mentions>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.inbox_owner(&input.session_token).await?;
     let limit = page_len(Some(input.limit));
     let failed = |error| internal::<S>(&error);
     let mut maker = ctx.line_maker().await?;
@@ -221,7 +243,10 @@ pub async fn mentions<S: AuthStore>(
         }
     }
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    Ok(held.authorize(Mentions { items }))
+    Ok(held.authorize(Mentions {
+        items,
+        next_cursor: None,
+    }))
 }
 
 /// Marks the mentions of the person in these comments as read.
@@ -232,7 +257,7 @@ pub async fn read_mentions<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ReadMentions,
 ) -> Result<Done, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.inbox_owner(&input.session_token).await?;
     if input.comments.is_empty() {
         return Err(ErrorCode::InvalidRequest.into());
     }

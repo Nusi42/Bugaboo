@@ -12,10 +12,6 @@ permission = "manage-fields"
 reason = "Field routes come in M3 WP-05 (docs/milestones/M3/WP-05-own-fields.md); tracked by M3-F01."
 
 [[engine-only]]
-permission = "comment"
-reason = "Comment routes come in M3 WP-07 (docs/milestones/M3/WP-07-relations-comments-history-follow.md); tracked by M3-F01."
-
-[[engine-only]]
 permission = "move-issues"
 reason = "Moving issues comes in M3 WP-08 (docs/milestones/M3/WP-08-tags-labels-and-many-at-once.md); tracked by M3-F01."
 

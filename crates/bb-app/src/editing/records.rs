@@ -6,6 +6,8 @@
 //! the services (`AuthServices::with_records`); nothing in the editing code names a kind. The
 //! project is the one kind that `bb-app` knows itself, because its version is stored since M2.
 
+use std::sync::Arc;
+
 use bb_core::event::{EntityKind, EntityRef, RecordKind};
 use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
@@ -65,6 +67,49 @@ pub trait EditableRecords: Send + Sync {
     /// What a person needs to make a new record of this kind in a project (the form behind a
     /// draft of a new record), or `None` for a kind that has no form.
     fn making(&self, kind: &EntityKind) -> Option<Permission>;
+}
+
+/// Several kinds of record, each told by its own `EditableRecords`: the program hands the services
+/// one of these when more than one package knows a kind (issues, comments, …). A record is looked
+/// up in each in turn and belongs to the first that knows it; a field is shown as the first that
+/// says anything about it shows it; a form is the first that has one.
+pub struct ChainedRecords(Vec<Arc<dyn EditableRecords>>);
+
+impl ChainedRecords {
+    /// The kinds of all of these, in this order.
+    #[must_use]
+    pub fn new(kinds: Vec<Arc<dyn EditableRecords>>) -> Self {
+        Self(kinds)
+    }
+}
+
+impl EditableRecords for ChainedRecords {
+    fn look_up<'a>(
+        &'a self,
+        person: UserId,
+        record: &'a EntityRef,
+    ) -> BoxFuture<'a, Result<Option<RecordFacts>, AppError>> {
+        Box::pin(async move {
+            for kind in &self.0 {
+                if let Some(facts) = kind.look_up(person, record).await? {
+                    return Ok(Some(facts));
+                }
+            }
+            Ok(None)
+        })
+    }
+
+    fn shows(&self, record: &EntityRef, field: &str) -> Shown {
+        self.0
+            .iter()
+            .map(|kind| kind.shows(record, field))
+            .find(|shown| *shown != Shown::Hidden)
+            .unwrap_or(Shown::Hidden)
+    }
+
+    fn making(&self, kind: &EntityKind) -> Option<Permission> {
+        self.0.iter().find_map(|each| each.making(kind))
+    }
 }
 
 /// No other kinds: the services start with this, and the program adds its kinds.

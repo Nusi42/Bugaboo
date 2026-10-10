@@ -42,6 +42,9 @@ routes = [
   "POST /api/v1/auth/invitations",
   "POST /api/v1/groups",
   "POST /api/v1/issue-types",
+  "POST /api/v1/relation-kinds",
+  "POST /api/v1/issues/{issue}/relations",
+  "POST /api/v1/issues/{issue}/comments",
   "POST /api/v1/projects",
   "POST /api/v1/projects/{project}/assignments",
   "POST /api/v1/projects/{project}/issues",
@@ -59,11 +62,16 @@ routes = [
   "DELETE /api/v1/groups/{group_id}",
   "DELETE /api/v1/issues/{issue}",
   "POST /api/v1/issues/{issue}/restore",
+  "DELETE /api/v1/relations/{relation}",
+  "DELETE /api/v1/comments/{comment}",
+  "POST /api/v1/comments/{comment}/restore",
+  "PUT /api/v1/issues/{issue}/follow",
+  "DELETE /api/v1/issues/{issue}/follow",
   "DELETE /api/v1/roles/{role_id}",
   "PUT /api/v1/groups/{group_id}/members/{person_id}",
   "DELETE /api/v1/groups/{group_id}/members/{person_id}",
 ]
-reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not_found, and a row that is there already is there. An issue goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite."
+reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not_found, and a row that is there already is there. An issue or a comment goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite. A relation is one fact between two issues, and following an issue is a mark of one person: neither has text to lose."
 
 [[exempt]]
 routes = ["POST /api/v1/projects/{project}/move"]
@@ -102,3 +110,7 @@ routes = [
   "PUT /api/v1/people-visibility/{role}/{kind}",
 ]
 reason = "Accepted for now (M3-F31): each route sets one single value, one setting or one level cell, from a screen that applies the change at once and does not carry the version of each row yet. Nothing else is overwritten with it, the last writer wins, and the event and the security log say who set it."
+
+[[exempt]]
+routes = ["POST /api/v1/me/mentions/read"]
+reason = "The read marks of *Mentions* belong to the one person who reads them; marking a mention read twice is the same as once, and nobody else can change them."

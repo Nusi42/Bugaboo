@@ -114,7 +114,13 @@ pub fn json() -> &'static str {
 /// name of the schema and the property: each gets the mark `x-safe-html`, and the generated client
 /// turns its value into a `SafeHtml` (M3-F12). A new rendered field is added here and nowhere else;
 /// the test below holds the table to the real schemas.
-pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[("IssueDetailBody", "description_html")];
+pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
+    ("IssueDetailBody", "description_html"),
+    ("CommentItem", "html"),
+    ("CommentTextItem", "html"),
+    ("HistoryEntryItem", "html"),
+    ("MentionedComment", "html"),
+];
 
 /// Puts `x-safe-html` on the properties of [`SAFE_HTML_PROPERTIES`]. Returns the ones that were
 /// not found (a test says there are none).

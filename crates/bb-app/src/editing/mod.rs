@@ -28,7 +28,7 @@ pub use drafts::{purge_drafts, read_draft, save_draft, throw_away_draft};
 pub use lock::{
     ask_to_finish, edit_anyway, heartbeat, release_lock, release_stuck_lock, take_lock,
 };
-pub use records::{EditableRecords, NoRecords, RecordFacts, Shown};
+pub use records::{ChainedRecords, EditableRecords, NoRecords, RecordFacts, Shown};
 pub use save::{TextSave, Written};
 pub use store::EditStore;
 pub use types::*;

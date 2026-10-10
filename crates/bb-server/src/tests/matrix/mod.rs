@@ -16,5 +16,6 @@ mod examples;
 mod examples_editing;
 mod examples_issues;
 mod examples_people;
+mod examples_relations;
 mod record;
 mod routes;

@@ -298,6 +298,104 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::DeleteIssues),
         Answer::Ordinary,
     ),
+    route("listRelationKinds", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "makeRelationKind",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeRelationKind",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
+        "getIssueRelations",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "listSubIssues",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "listRelatedIssues",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "setIssueParent",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "addRelation",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "removeRelation",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "addComment",
+        Declared::Permission(Permission::Comment),
+        Answer::Ordinary,
+    ),
+    route(
+        "saveComment",
+        Declared::Permission(Permission::Comment),
+        Answer::Ordinary,
+    ),
+    route(
+        "deleteComment",
+        Declared::Permission(Permission::Comment),
+        Answer::Ordinary,
+    ),
+    route(
+        "restoreComment",
+        Declared::Permission(Permission::Comment),
+        Answer::Ordinary,
+    ),
+    route(
+        "listCommentVersions",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "listMentionChoices",
+        Declared::Permission(Permission::Comment),
+        Answer::NeverStored,
+    ),
+    route("listMentions", Declared::SignedIn, Answer::NeverStored),
+    route("readMentions", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "listIssueHistory",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "listFollowers",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "getFollowing",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "followIssue",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "unfollowIssue",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::Ordinary,
+    ),
     route("listIssueTypes", Declared::SignedIn, Answer::Ordinary),
     route(
         "makeIssueType",
@@ -475,7 +573,7 @@ pub const ROUTES: &[Route] = &[
 /// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`.
 /// The routes that save the description of an issue and the text of a comment are added here by the
 /// packages that make them.
-pub const LONG_TEXT_ROUTES: &[&str] = &[];
+pub const LONG_TEXT_ROUTES: &[&str] = &["saveComment"];
 
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]

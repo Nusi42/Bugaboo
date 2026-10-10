@@ -63,7 +63,7 @@ pub async fn set_parent<S: AuthStore>(
         .map(|row| row.parent);
     let wanted = above.as_ref().map(|parent| parent.id);
     if current == wanted {
-        let view = ctx.relations_view(&actor, &held, &child).await?;
+        let view = ctx.standing(&actor, &held, &child).await?.header;
         return Ok(held.authorize(view));
     }
     let shown = |id: Option<IssueId>| id.map(|id| json!(id.to_string()));
@@ -137,6 +137,6 @@ pub async fn set_parent<S: AuthStore>(
     let mut changed = child;
     changed.version = bb_core::version::next(version);
     changed.updated_at = now;
-    let view = ctx.relations_view(&actor, &held, &changed).await?;
+    let view = ctx.standing(&actor, &held, &changed).await?.header;
     Ok(held.authorize(view))
 }

@@ -60,6 +60,10 @@ pub struct CommentVersionsQuery {
     pub session_token: String,
     /// The comment.
     pub comment: CommentId,
+    /// Where the page starts: the next_cursor of the page before.
+    pub cursor: Option<String>,
+    /// How many texts a page holds at most.
+    pub limit: u32,
 }
 
 /// A comment as one viewer sees it.
@@ -109,6 +113,8 @@ pub struct CommentVersions {
     pub comment: CommentId,
     /// The texts, oldest first.
     pub items: Vec<CommentTextView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for CommentVersions {}
@@ -163,6 +169,8 @@ pub struct MentionChoice {
 pub struct MentionChoices {
     /// The choices, people first, then groups, then roles.
     pub items: Vec<MentionChoice>,
+    /// The cursor of the next page; always none, a writer reads the first few choices.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for MentionChoices {}
@@ -197,6 +205,8 @@ pub struct MentionItem {
 pub struct Mentions {
     /// The comments, unread first and then the newest.
     pub items: Vec<MentionItem>,
+    /// The cursor of the next page; always none, the block shows the newest few.
+    pub next_cursor: Option<String>,
 }
 
 impl Masked for Mentions {}

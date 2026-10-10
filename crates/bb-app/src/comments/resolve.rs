@@ -171,7 +171,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         project: ProjectId,
         text: &str,
     ) -> Result<String, AppError> {
-        let first = render(text, &Options::default());
+        let image_hosts = self.image_hosts().await?;
+        let first = render(
+            text,
+            &Options {
+                image_hosts: image_hosts.clone(),
+                ..Options::default()
+            },
+        );
         if first.tokens.is_empty() {
             return Ok(first.html);
         }
@@ -184,8 +191,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(render(
             text,
             &Options {
+                image_hosts,
                 plain_tokens: resolution.plain,
-                ..Options::default()
             },
         )
         .html)

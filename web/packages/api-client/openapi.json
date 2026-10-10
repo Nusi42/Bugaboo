@@ -4118,6 +4118,463 @@
         "x-permission": "check-access"
       }
     },
+    "/api/v1/comments/{comment}": {
+      "delete": {
+        "tags": ["comments"],
+        "summary": "Puts a comment into the trash (*Undo* takes it out again). The author may, and whoever may\nchange issues.",
+        "operationId": "deleteComment",
+        "parameters": [
+          {
+            "name": "comment",
+            "in": "path",
+            "description": "The ID of the comment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The comment is in the trash."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "comment"
+      },
+      "patch": {
+        "tags": ["comments"],
+        "summary": "Saves the new text of a comment. Only the author changes a text. The editor holds the lock on\nthe text (`edit-locks`, the part `text`) and sends its token and the version it started from;\nevery earlier text is kept.",
+        "operationId": "saveComment",
+        "parameters": [
+          {
+            "name": "comment",
+            "in": "path",
+            "description": "The ID of the comment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCommentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The comment as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-long-text": true,
+        "x-permission": "comment"
+      }
+    },
+    "/api/v1/comments/{comment}/restore": {
+      "post": {
+        "tags": ["comments"],
+        "summary": "Takes a comment out of the trash (*Undo*).",
+        "operationId": "restoreComment",
+        "parameters": [
+          {
+            "name": "comment",
+            "in": "path",
+            "description": "The ID of the comment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comment, out of the trash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "comment"
+      }
+    },
+    "/api/v1/comments/{comment}/versions": {
+      "get": {
+        "tags": ["comments"],
+        "summary": "Every text a comment had, the current one last, a page at a time. Whoever may see the comment\nmay see its earlier texts.",
+        "operationId": "listCommentVersions",
+        "parameters": [
+          {
+            "name": "comment",
+            "in": "path",
+            "description": "The ID of the comment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The texts, oldest first.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CommentTextItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/drafts": {
       "get": {
         "tags": ["editing"],
@@ -7094,6 +7551,1348 @@
         "x-permission": "change-issues"
       }
     },
+    "/api/v1/issues/{issue}/comments": {
+      "post": {
+        "tags": ["comments"],
+        "summary": "Writes a comment under an issue. Needs the permission *Comment* and the right to see the issue.",
+        "operationId": "addComment",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCommentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The comment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "comment"
+      }
+    },
+    "/api/v1/issues/{issue}/follow": {
+      "get": {
+        "tags": ["follow"],
+        "summary": "Whether the person follows the issue (*Follow* or *Following*).",
+        "operationId": "getFollowing",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether the person follows it.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowingBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      },
+      "put": {
+        "tags": ["follow"],
+        "summary": "Makes the person a follower of the issue. Following it already changes nothing.",
+        "operationId": "followIssue",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The person follows the issue."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "see-issues"
+      },
+      "delete": {
+        "tags": ["follow"],
+        "summary": "Takes the person out of the followers of the issue. Not following changes nothing.",
+        "operationId": "unfollowIssue",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The person does not follow the issue."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "see-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/followers": {
+      "get": {
+        "tags": ["follow"],
+        "summary": "Who follows an issue, a page at a time, each as the kind *Followers* says for the reader.",
+        "operationId": "listFollowers",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The followers.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PersonRef"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/history": {
+      "get": {
+        "tags": ["history"],
+        "summary": "The history of an issue, newest first, a page at a time: the comments and the changes, in three\ntabs. A change to a field the person may not see is not in it. A row's changes stay together, so\na page may hold a few items more than `limit`.",
+        "operationId": "listIssueHistory",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "tab",
+            "in": "path",
+            "description": "Everything (the default), only the comments, or only the changes.",
+            "required": true,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
+                  "enum": ["everything", "comments", "changes"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The history.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_HistoryEntryItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/mention-choices": {
+      "get": {
+        "tags": ["comments"],
+        "summary": "What the writer of a comment under this issue may name after `@`: people and groups for someone\nwho sees names, groups and roles for someone who sees roles only, nobody for someone who sees no\npeople. Needs the permission *Comment*.",
+        "operationId": "listMentionChoices",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "path",
+            "description": "The start of a name; every choice when left out.",
+            "required": true,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What may be named.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_MentionChoiceItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "comment"
+      }
+    },
+    "/api/v1/issues/{issue}/parent": {
+      "put": {
+        "tags": ["relations"],
+        "summary": "Puts an issue under another one, or takes it out from under its parent. Needs the right to\nchange both issues. No issue sits under itself or under one of its own sub-issues.",
+        "operationId": "setIssueParent",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the sub-issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "How the issue stands now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueRelationsBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/related-issues": {
+      "get": {
+        "tags": ["relations"],
+        "summary": "The issues related to an issue, whose other end the person may see, a page at a time, by kind\nand then oldest first. Each relation reads in the words of this issue's end.",
+        "operationId": "listRelatedIssues",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The related issues.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_RelatedIssueItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/relations": {
+      "get": {
+        "tags": ["relations"],
+        "summary": "How an issue stands among the others: the issue it sits under and the progress of its\nsub-issues. The lists are `sub-issues` and `related-issues`.",
+        "operationId": "getIssueRelations",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How the issue stands.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueRelationsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      },
+      "post": {
+        "tags": ["relations"],
+        "summary": "Adds a relation between this issue and another. Needs the right to change this issue and to see\nthe other. The relation shows on both issues, each in its own words.",
+        "operationId": "addRelation",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRelationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The relation as this issue reads it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatedIssueItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
     "/api/v1/issues/{issue}/restore": {
       "post": {
         "tags": ["issues"],
@@ -7191,6 +8990,344 @@
           }
         },
         "x-permission": "delete-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/sub-issues": {
+      "get": {
+        "tags": ["relations"],
+        "summary": "The sub-issues of an issue that the person may see, a page at a time, in the order they were\nput there.",
+        "operationId": "listSubIssues",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sub-issues.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_IssueRef"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
+    "/api/v1/me/mentions": {
+      "get": {
+        "tags": ["comments"],
+        "summary": "The comments that mention the person, unread first and then the newest: the *Mentions* block of\nthe start page. Only comments under issues the person may see.",
+        "operationId": "listMentions",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comments.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_MentionedComment"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/mentions/read": {
+      "post": {
+        "tags": ["comments"],
+        "summary": "Marks the mentions of the person in these comments as read.",
+        "operationId": "readMentions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadMentionsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "They are marked."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
       }
     },
     "/api/v1/me/settings": {
@@ -10300,6 +12437,451 @@
         "x-permission": "make-sub-projects"
       }
     },
+    "/api/v1/relation-kinds": {
+      "get": {
+        "tags": ["relations"],
+        "summary": "The kinds of relation in the order they are offered in, a page at a time, retired ones too.\nOpen to everybody who is signed in.",
+        "operationId": "listRelationKinds",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The kinds of relation.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_RelationKindItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "post": {
+        "tags": ["relations"],
+        "summary": "Makes a kind of relation. Needs the permission *Manage issue types, kinds of relation and\nlayouts*.",
+        "operationId": "makeRelationKind",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRelationKindBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The kind of relation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationKindItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/relation-kinds/{kind}": {
+      "patch": {
+        "tags": ["relations"],
+        "summary": "Changes the names of a kind of relation, or retires it (or offers it again). Needs the\npermission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "changeRelationKind",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The ID of the kind of relation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRelationKindBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The kind of relation as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationKindItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/relations/{relation}": {
+      "delete": {
+        "tags": ["relations"],
+        "summary": "Takes a relation away (*Undo* adds it again). Needs the right to change one of its issues.",
+        "operationId": "removeRelation",
+        "parameters": [
+          {
+            "name": "relation",
+            "in": "path",
+            "description": "The ID of the relation.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The relation is gone."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
     "/api/v1/roles": {
       "get": {
         "tags": ["roles"],
@@ -12462,6 +15044,30 @@
           }
         }
       },
+      "ChangeRelationKindBody": {
+        "type": "object",
+        "description": "What to change about a kind of relation: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "backward": {
+            "type": ["string", "null"],
+            "description": "A new backward name."
+          },
+          "forward": {
+            "type": ["string", "null"],
+            "description": "A new forward name."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "`true` retires the kind (no new relations of it), `false` offers it again."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
       "ChangeRoleBody": {
         "type": "object",
         "description": "What to change about a role: what is left out stays as it is.",
@@ -12606,6 +15212,90 @@
           "code": {
             "type": "string",
             "description": "A code from the code app (six digits) or a backup code."
+          }
+        }
+      },
+      "CommentItem": {
+        "type": "object",
+        "description": "A comment as the reader sees it.",
+        "required": [
+          "id",
+          "issue",
+          "author",
+          "text",
+          "html",
+          "created_at",
+          "version",
+          "may_edit",
+          "may_delete"
+        ],
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who wrote it, as the reader may see people of the kind *Authors*."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "When it was written."
+          },
+          "edited_at": {
+            "type": ["string", "null"],
+            "description": "When its text was last changed, if it was."
+          },
+          "html": {
+            "type": "string",
+            "description": "The text as safe HTML, made on the server for this reader.",
+            "x-safe-html": true
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the comment."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The ID of the issue it is under."
+          },
+          "may_delete": {
+            "type": "boolean",
+            "description": "Whether the reader may put it into the trash."
+          },
+          "may_edit": {
+            "type": "boolean",
+            "description": "Whether the reader may change the text (they wrote it)."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text, in Markdown."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "CommentTextItem": {
+        "type": "object",
+        "description": "One text a comment had.",
+        "required": ["version", "text", "html", "saved_at"],
+        "properties": {
+          "html": {
+            "type": "string",
+            "description": "The text as safe HTML, made on the server for this reader.",
+            "x-safe-html": true
+          },
+          "saved_at": {
+            "type": "string",
+            "description": "When it was saved."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text, in Markdown."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the comment this text belonged to."
           }
         }
       },
@@ -12779,6 +15469,11 @@
         "description": "Which database the server uses.",
         "enum": ["built_in", "sqlite", "postgres"]
       },
+      "Direction": {
+        "type": "string",
+        "description": "Which end of a relation a person starts from: the forward name or the backward one.",
+        "enum": ["forward", "backward"]
+      },
       "DraftBody": {
         "type": "object",
         "description": "A draft as its author sees it.",
@@ -12924,6 +15619,8 @@
           "project.too_deep",
           "project.preview_changed",
           "issue.type_retired",
+          "issue.parent_circle",
+          "relation.exists",
           "name.taken",
           "resource.not_found",
           "request.invalid",
@@ -12985,6 +15682,33 @@
           "field": {
             "$ref": "#/components/schemas/WordBody",
             "description": "The field."
+          }
+        }
+      },
+      "FollowReason": {
+        "type": "string",
+        "description": "Why a person follows an issue: they reported it, were assigned to it, commented on it or chose to.",
+        "enum": ["reported", "assigned", "commented", "chose"]
+      },
+      "FollowingBody": {
+        "type": "object",
+        "description": "Whether the person follows an issue.",
+        "required": ["following"],
+        "properties": {
+          "following": {
+            "type": "boolean",
+            "description": "Whether the person follows the issue."
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FollowReason",
+                "description": "Why they follow it, when they do."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -13181,6 +15905,145 @@
             "description": "The holder is the person who asks, in another window."
           }
         }
+      },
+      "HistoryEntryItem": {
+        "type": "object",
+        "description": "One item of the history of an issue.",
+        "required": ["event", "at", "kind"],
+        "properties": {
+          "after_issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "A change: the issue the field holds now."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after_people": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PersonRef"
+            },
+            "description": "A change: the people the field holds now."
+          },
+          "after_text": {
+            "type": ["string", "null"],
+            "description": "A change: what the field is now, when it is a word, a name or a number."
+          },
+          "at": {
+            "type": "string",
+            "description": "When it happened."
+          },
+          "before_issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "A change: the issue the field held (the parent), when the reader may see it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before_people": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PersonRef"
+            },
+            "description": "A change: the people the field held, as the kind of the field says."
+          },
+          "before_text": {
+            "type": ["string", "null"],
+            "description": "A change: what the field was, when it is a word, a name or a number."
+          },
+          "by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who did it, as the reader may see people of the kind *Authors*; left out for Bugaboo itself."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment": {
+            "type": ["string", "null"],
+            "description": "A comment: its ID."
+          },
+          "direction": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Direction",
+                "description": "A relation: which end this issue is."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "edited_at": {
+            "type": ["string", "null"],
+            "description": "A comment: when its text was last changed."
+          },
+          "event": {
+            "type": "string",
+            "description": "The event the item was made from; the items of one event share it."
+          },
+          "field": {
+            "type": ["string", "null"],
+            "description": "A change: the key of the field."
+          },
+          "html": {
+            "type": ["string", "null"],
+            "description": "A comment: the text as safe HTML, made on the server for this reader.",
+            "x-safe-html": true
+          },
+          "issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "A relation: the issue at the other end."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/HistoryEntryKind",
+            "description": "What it is."
+          },
+          "may_delete": {
+            "type": ["boolean", "null"],
+            "description": "A comment: whether the reader may put it into the trash."
+          },
+          "may_edit": {
+            "type": ["boolean", "null"],
+            "description": "A comment: whether the reader may change its text."
+          },
+          "relation": {
+            "type": ["string", "null"],
+            "description": "A relation: `added` or `removed`."
+          },
+          "text": {
+            "type": ["string", "null"],
+            "description": "A comment: the text, in Markdown."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "A comment: the version, which a change of it is made on."
+          }
+        }
+      },
+      "HistoryEntryKind": {
+        "type": "string",
+        "description": "What an item of the history is.",
+        "enum": ["comment", "change", "relation"]
       },
       "InvitationBody": {
         "type": "object",
@@ -13411,6 +16274,97 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "IssueRef": {
+        "type": "object",
+        "description": "An issue as a small reference: its readable ID and what the viewer may see of it in its own\nproject. A title or a status that the viewer's role hides there is left out.",
+        "required": ["id", "key", "project", "issue_type"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The internal ID of the issue."
+          },
+          "issue_type": {
+            "$ref": "#/components/schemas/IssueTypeRef",
+            "description": "Its issue type."
+          },
+          "key": {
+            "type": "string",
+            "description": "The readable ID now (`WEB-142`)."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRef",
+            "description": "The project it is in."
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Status",
+                "description": "Where it stands in the workflow."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status_group": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StatusGroup",
+                "description": "The group of its status."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "What it is about."
+          }
+        }
+      },
+      "IssueRelationsBody": {
+        "type": "object",
+        "description": "Where an issue stands among the others.",
+        "required": ["issue", "version", "may_change"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The internal ID of the issue."
+          },
+          "may_change": {
+            "type": "boolean",
+            "description": "Whether the viewer may add and take away sub-issues and relations here."
+          },
+          "part_of": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue it sits under, when the viewer may see it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProgressBody",
+                "description": "How far its sub-issues are; left out without sub-issues, or when the viewer may not see\ntheir status."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue: what *Part of* is changed from."
           }
         }
       },
@@ -14123,6 +17077,62 @@
           }
         }
       },
+      "MentionChoiceItem": {
+        "type": "object",
+        "description": "One thing the writer may name after `@`.",
+        "required": ["target", "handle", "name"],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "What is written after `@`."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name as people read it."
+          },
+          "target": {
+            "$ref": "#/components/schemas/MentionTarget",
+            "description": "What it is."
+          }
+        }
+      },
+      "MentionTarget": {
+        "type": "string",
+        "description": "What a mention names: a person, a group or a role.",
+        "enum": ["person", "group", "role"]
+      },
+      "MentionedComment": {
+        "type": "object",
+        "description": "A comment that mentions the person.",
+        "required": ["comment", "issue", "author", "html", "at", "unread"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When it was written."
+          },
+          "author": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who wrote it, as the person may see people of the kind *Authors*."
+          },
+          "comment": {
+            "type": "string",
+            "description": "The ID of the comment."
+          },
+          "html": {
+            "type": "string",
+            "description": "The text as safe HTML, made on the server for this reader.",
+            "x-safe-html": true
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueRef",
+            "description": "The issue it is under."
+          },
+          "unread": {
+            "type": "boolean",
+            "description": "Whether the person has not looked at it under *Mentions* yet."
+          }
+        }
+      },
       "MoveBody": {
         "type": "object",
         "description": "Where a project goes, and the version of the preview that was looked at.",
@@ -14202,6 +17212,17 @@
         "type": "string",
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
+      },
+      "NewCommentBody": {
+        "type": "object",
+        "description": "A comment to write.",
+        "required": ["text"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The text, in Markdown."
+          }
+        }
       },
       "NewFieldLevelBody": {
         "type": "object",
@@ -14346,6 +17367,40 @@
           "who": {
             "$ref": "#/components/schemas/WhoBody",
             "description": "Whom the row is for."
+          }
+        }
+      },
+      "NewRelationBody": {
+        "type": "object",
+        "description": "A relation to add.",
+        "required": ["other", "kind", "direction"],
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/Direction",
+            "description": "Which end the issue of the route is: *this issue blocks the other* is `forward`."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What the relation means (the ID of its kind)."
+          },
+          "other": {
+            "type": "string",
+            "description": "The issue at the other end, by its readable or internal ID."
+          }
+        }
+      },
+      "NewRelationKindBody": {
+        "type": "object",
+        "description": "A kind of relation to make.",
+        "required": ["forward", "backward"],
+        "properties": {
+          "backward": {
+            "type": "string",
+            "description": "What the other issue reads (*is blocked by*). The same words for a kind that reads alike\nfrom both ends (*related to*)."
+          },
+          "forward": {
+            "type": "string",
+            "description": "What the issue it starts from reads (*blocks*)."
           }
         }
       },
@@ -14729,6 +17784,45 @@
           }
         }
       },
+      "Page_CommentTextItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One text a comment had.",
+              "required": ["version", "text", "html", "saved_at"],
+              "properties": {
+                "html": {
+                  "type": "string",
+                  "description": "The text as safe HTML, made on the server for this reader."
+                },
+                "saved_at": {
+                  "type": "string",
+                  "description": "When it was saved."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "The text, in Markdown."
+                },
+                "version": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "The version of the comment this text belonged to."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_GroupItem": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -14752,6 +17846,154 @@
                   "type": ["integer", "null"],
                   "format": "int64",
                   "description": "Counts up with every change. A change is made on the version that was looked at."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_HistoryEntryItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One item of the history of an issue.",
+              "required": ["event", "at", "kind"],
+              "properties": {
+                "after_issue": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueRef",
+                      "description": "A change: the issue the field holds now."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "after_people": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRef"
+                  },
+                  "description": "A change: the people the field holds now."
+                },
+                "after_text": {
+                  "type": ["string", "null"],
+                  "description": "A change: what the field is now, when it is a word, a name or a number."
+                },
+                "at": {
+                  "type": "string",
+                  "description": "When it happened."
+                },
+                "before_issue": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueRef",
+                      "description": "A change: the issue the field held (the parent), when the reader may see it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "before_people": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/PersonRef"
+                  },
+                  "description": "A change: the people the field held, as the kind of the field says."
+                },
+                "before_text": {
+                  "type": ["string", "null"],
+                  "description": "A change: what the field was, when it is a word, a name or a number."
+                },
+                "by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PersonRef",
+                      "description": "Who did it, as the reader may see people of the kind *Authors*; left out for Bugaboo itself."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "comment": {
+                  "type": ["string", "null"],
+                  "description": "A comment: its ID."
+                },
+                "direction": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Direction",
+                      "description": "A relation: which end this issue is."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "edited_at": {
+                  "type": ["string", "null"],
+                  "description": "A comment: when its text was last changed."
+                },
+                "event": {
+                  "type": "string",
+                  "description": "The event the item was made from; the items of one event share it."
+                },
+                "field": {
+                  "type": ["string", "null"],
+                  "description": "A change: the key of the field."
+                },
+                "html": {
+                  "type": ["string", "null"],
+                  "description": "A comment: the text as safe HTML, made on the server for this reader."
+                },
+                "issue": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueRef",
+                      "description": "A relation: the issue at the other end."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/HistoryEntryKind",
+                  "description": "What it is."
+                },
+                "may_delete": {
+                  "type": ["boolean", "null"],
+                  "description": "A comment: whether the reader may put it into the trash."
+                },
+                "may_edit": {
+                  "type": ["boolean", "null"],
+                  "description": "A comment: whether the reader may change its text."
+                },
+                "relation": {
+                  "type": ["string", "null"],
+                  "description": "A relation: `added` or `removed`."
+                },
+                "text": {
+                  "type": ["string", "null"],
+                  "description": "A comment: the text, in Markdown."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "A comment: the version, which a change of it is made on."
                 }
               }
             },
@@ -14927,6 +18169,70 @@
           }
         }
       },
+      "Page_IssueRef": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An issue as a small reference: its readable ID and what the viewer may see of it in its own\nproject. A title or a status that the viewer's role hides there is left out.",
+              "required": ["id", "key", "project", "issue_type"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "The internal ID of the issue."
+                },
+                "issue_type": {
+                  "$ref": "#/components/schemas/IssueTypeRef",
+                  "description": "Its issue type."
+                },
+                "key": {
+                  "type": "string",
+                  "description": "The readable ID now (`WEB-142`)."
+                },
+                "project": {
+                  "$ref": "#/components/schemas/ProjectRef",
+                  "description": "The project it is in."
+                },
+                "status": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Status",
+                      "description": "Where it stands in the workflow."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status_group": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/StatusGroup",
+                      "description": "The group of its status."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "title": {
+                  "type": ["string", "null"],
+                  "description": "What it is about."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_IssueTypeItem": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -15001,6 +18307,86 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_MentionChoiceItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One thing the writer may name after `@`.",
+              "required": ["target", "handle", "name"],
+              "properties": {
+                "handle": {
+                  "type": "string",
+                  "description": "What is written after `@`."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name as people read it."
+                },
+                "target": {
+                  "$ref": "#/components/schemas/MentionTarget",
+                  "description": "What it is."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_MentionedComment": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A comment that mentions the person.",
+              "required": ["comment", "issue", "author", "html", "at", "unread"],
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "description": "When it was written."
+                },
+                "author": {
+                  "$ref": "#/components/schemas/PersonRef",
+                  "description": "Who wrote it, as the person may see people of the kind *Authors*."
+                },
+                "comment": {
+                  "type": "string",
+                  "description": "The ID of the comment."
+                },
+                "html": {
+                  "type": "string",
+                  "description": "The text as safe HTML, made on the server for this reader."
+                },
+                "issue": {
+                  "$ref": "#/components/schemas/IssueRef",
+                  "description": "The issue it is under."
+                },
+                "unread": {
+                  "type": "boolean",
+                  "description": "Whether the person has not looked at it under *Mentions* yet."
                 }
               }
             },
@@ -15223,6 +18609,90 @@
           }
         }
       },
+      "Page_RelatedIssueItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One relation as one end of it reads it.",
+              "required": ["id", "kind", "direction", "name", "issue"],
+              "properties": {
+                "direction": {
+                  "$ref": "#/components/schemas/Direction",
+                  "description": "Which end the issue asked about is at."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The ID of the relation, to take it away again."
+                },
+                "issue": {
+                  "$ref": "#/components/schemas/IssueRef",
+                  "description": "The issue at the other end."
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "What it means (the ID of its kind)."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "What that end reads (*blocks*, *is blocked by*)."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_RelationKindItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A kind of relation: the fields that can be asked for.",
+              "properties": {
+                "backward": {
+                  "type": ["string", "null"],
+                  "description": "What the other issue reads."
+                },
+                "forward": {
+                  "type": ["string", "null"],
+                  "description": "What the issue it starts from reads."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the kind."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it is retired: old relations keep it, new ones cannot have it."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_RoleItem": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -15274,6 +18744,22 @@
           "next_cursor": {
             "type": ["string", "null"],
             "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "ParentBody": {
+        "type": "object",
+        "description": "An issue to put under another one, or to take out.",
+        "required": ["version"],
+        "properties": {
+          "parent": {
+            "type": ["string", "null"],
+            "description": "The issue it goes under, by its readable or internal ID; `null` takes it out from under its\nparent."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the sub-issue the person looked at."
           }
         }
       },
@@ -15734,6 +19220,25 @@
           }
         }
       },
+      "ProgressBody": {
+        "type": "object",
+        "description": "How far the sub-issues of an issue are. Only the sub-issues the viewer may see are in it.",
+        "required": ["done", "total"],
+        "properties": {
+          "done": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The sub-issues in the group *Done*.",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "All the sub-issues the viewer sees.",
+            "minimum": 0
+          }
+        }
+      },
       "ProjectBody": {
         "type": "object",
         "description": "A project after it was made, changed or moved.",
@@ -15946,6 +19451,20 @@
         "type": "string",
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
+      },
+      "ReadMentionsBody": {
+        "type": "object",
+        "description": "The mentions to mark as read.",
+        "required": ["comments"],
+        "properties": {
+          "comments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the comments."
+          }
+        }
       },
       "ReasonBody": {
         "oneOf": [
@@ -16162,6 +19681,60 @@
             "type": ["integer", "null"],
             "format": "int64",
             "description": "Its version now; nothing when it is gone or the person may not know about it (the two look\nthe same)."
+          }
+        }
+      },
+      "RelatedIssueItem": {
+        "type": "object",
+        "description": "One relation as one end of it reads it.",
+        "required": ["id", "kind", "direction", "name", "issue"],
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/Direction",
+            "description": "Which end the issue asked about is at."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the relation, to take it away again."
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueRef",
+            "description": "The issue at the other end."
+          },
+          "kind": {
+            "type": "string",
+            "description": "What it means (the ID of its kind)."
+          },
+          "name": {
+            "type": "string",
+            "description": "What that end reads (*blocks*, *is blocked by*)."
+          }
+        }
+      },
+      "RelationKindItem": {
+        "type": "object",
+        "description": "A kind of relation: the fields that can be asked for.",
+        "properties": {
+          "backward": {
+            "type": ["string", "null"],
+            "description": "What the other issue reads."
+          },
+          "forward": {
+            "type": ["string", "null"],
+            "description": "What the issue it starts from reads."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the kind."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is retired: old relations keep it, new ones cannot have it."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -16428,6 +20001,26 @@
           "whole_organization": {
             "type": "boolean",
             "description": "Whether somebody has the role for the whole organization."
+          }
+        }
+      },
+      "SaveCommentBody": {
+        "type": "object",
+        "description": "The new text of a comment, saved under the lock the editor holds.",
+        "required": ["version", "lock_token", "text"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The token the lock on the text was taken with."
+          },
+          "text": {
+            "type": "string",
+            "description": "The new text, in Markdown."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the comment the person started from."
           }
         }
       },

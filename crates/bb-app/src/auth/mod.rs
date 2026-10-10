@@ -65,9 +65,10 @@ use crate::projects::{
 };
 use crate::relations::{
     AddRelation, ChangeRelationKind, IssueRelations, IssueRelationsQuery, MakeRelationKind,
-    RelationKindPage, RelationKindView, RelationKindsQuery, RelationView, RemoveRelation,
-    SetParent, add_relation, change_relation_kind, issue_relations, make_relation_kind,
-    relation_kinds, remove_relation, set_parent,
+    RelatedIssuePage, RelatedIssuesQuery, RelationKindPage, RelationKindView, RelationKindsQuery,
+    RelationView, RemoveRelation, SetParent, SubIssuePage, SubIssuesQuery, add_relation,
+    change_relation_kind, issue_relations, make_relation_kind, related_issues, relation_kinds,
+    remove_relation, set_parent, sub_issues,
 };
 use crate::roles::{
     AccessAnswer, AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, ChangeRole,
@@ -385,6 +386,10 @@ use_cases! {
     change_relation_kind(ChangeRelationKind) -> Authorized<RelationKindView>;
     /// Shows the sub-issues and the related issues of an issue.
     issue_relations(IssueRelationsQuery) -> Authorized<IssueRelations>;
+    /// Lists the sub-issues of an issue that the person may see.
+    sub_issues(SubIssuesQuery) -> Authorized<SubIssuePage>;
+    /// Lists the issues related to an issue whose other end the person may see.
+    related_issues(RelatedIssuesQuery) -> Authorized<RelatedIssuePage>;
     /// Puts an issue under another one, or takes it out.
     set_parent(SetParent) -> Authorized<IssueRelations>;
     /// Adds a relation between two issues.

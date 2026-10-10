@@ -65,7 +65,9 @@ pub struct RelationView {
 
 impl Masked for RelationView {}
 
-/// Sub-issues and related issues of an issue, as the viewer may see them.
+/// Where an issue stands among the others, as the viewer may see it: the issue it sits under and
+/// how far its sub-issues are. The lists themselves come a page at a time (`SubIssuePage`,
+/// `RelatedIssuePage`).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct IssueRelations {
     /// The issue these belong to.
@@ -74,12 +76,9 @@ pub struct IssueRelations {
     pub version: i64,
     /// The issue it sits under, if the viewer may see it.
     pub part_of: Option<IssueLine>,
-    /// The issues under it that the viewer may see, oldest first.
-    pub sub_issues: Vec<IssueLine>,
-    /// How far they are; `None` without sub-issues, or when the viewer may not see the status.
+    /// How far the sub-issues are; `None` without sub-issues, or when the viewer may not see the
+    /// status.
     pub progress: Option<Progress>,
-    /// The relations whose other end the viewer may see, by kind and then oldest first.
-    pub relations: Vec<RelationView>,
     /// Whether the viewer may add and take away sub-issues and relations here.
     pub may_change: bool,
 }
@@ -93,6 +92,52 @@ pub struct IssueRelationsQuery {
     /// The issue, by its readable ID (also an old one) or its internal ID.
     pub issue: String,
 }
+
+/// The sub-issues of an issue that the viewer may see, a page at a time.
+pub struct SubIssuesQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The issue, by its readable ID (also an old one) or its internal ID.
+    pub issue: String,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many issues a page holds at most.
+    pub limit: u32,
+}
+
+/// A page of sub-issues, oldest first.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct SubIssuePage {
+    /// The sub-issues the viewer may see.
+    pub items: Vec<IssueLine>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
+}
+
+impl Masked for SubIssuePage {}
+
+/// The related issues of an issue whose other end the viewer may see, a page at a time.
+pub struct RelatedIssuesQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The issue, by its readable ID (also an old one) or its internal ID.
+    pub issue: String,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many relations a page holds at most.
+    pub limit: u32,
+}
+
+/// A page of relations, by kind and then oldest first.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct RelatedIssuePage {
+    /// The relations the viewer may see both ends of.
+    pub items: Vec<RelationView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
+}
+
+impl Masked for RelatedIssuePage {}
 
 /// Put an issue under another one, or take it out from under its parent.
 pub struct SetParent {
