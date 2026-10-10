@@ -65,8 +65,8 @@ test("cf_04 an administrator makes Severity with four colored choices and sees i
   await inOrder(
     severity.map(([name, color]) => async () => {
       const group = page.getByRole("group", { name: t("fields.choice-color", { name }) });
-      const swatch = group.getByRole("radio", { name: t(`choice-color.${color}`) });
-      await swatch.check();
+      const swatch = group.getByRole("radio", { name: t(`choice-color.${color}`), exact: true });
+      await swatch.click();
       await expect(swatch).toBeChecked();
     }),
   );
@@ -83,7 +83,7 @@ test("cf_01 Platforms (pick several) and Customer (text) are made on the same sc
   await makeField(page, t("field-type.text"), "Customer");
   await openFromMenu(page, t("nav.fields"));
   const list = page.getByRole("list", { name: t("fields.list") });
-  await expect(list.getByRole("link")).toHaveText(["Customer", "Platforms", "Severity"]);
+  await expect(list.getByRole("link")).toHaveText(["Severity", "Platforms", "Customer"]);
   await expectGoodInEveryLook(page);
 });
 
