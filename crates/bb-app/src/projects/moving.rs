@@ -24,7 +24,7 @@ use bb_core::id::ProjectId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
 use bb_core::sign_in::SecurityAction;
-use bb_core::version::counted_up;
+use bb_core::version::{counted_up, next};
 use bb_policy::{
     Access, Authorized, Change, Evaluation, MoveRefusal, MoveRequest, PeopleContext, Place, Policy,
     Preview, Tree, check_move, preview_move as difference,
@@ -423,6 +423,6 @@ pub async fn move_project<S: AuthStore>(
         parent: shown_parent,
         short_name: project.short_name,
         name: project.name,
-        version: project.version + 1,
+        version: next(project.version),
     }))
 }

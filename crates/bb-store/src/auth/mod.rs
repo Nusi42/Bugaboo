@@ -21,7 +21,7 @@ use bb_core::security_log::Digest;
 use bb_core::settings::{
     AUTH_ACCESS_KEY_DEFAULT_DAYS, AUTH_ACCESS_KEY_LONGEST_DAYS, AUTH_SIGN_UP_DOMAINS,
     AUTH_SIGN_UP_ENABLED, SECURITY_SESSION_ABSOLUTE_HOURS, SECURITY_SESSION_IDLE_MINUTES,
-    SettingValue,
+    SIGN_UP_POLICY, SettingValue,
 };
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
@@ -32,8 +32,8 @@ use crate::error::StoreError;
 use crate::keys::KeyRing;
 use crate::security_log::NewSecurityLogEntry;
 use crate::settings::{
-    Scopes, count_organization_version_up, organization_version, put_organization_setting,
-    resolved, resolved_in_bounds, resolved_list,
+    Scopes, count_policy_version_up, policy_version, put_organization_setting, resolved,
+    resolved_in_bounds, resolved_list,
 };
 
 /// The sign-in storage: the database, the keys that protect secrets in it, and the seal of the
@@ -151,19 +151,14 @@ impl AuthStore for AuthStorage {
     }
 
     async fn sign_up_policy_version(&self) -> Result<i64, StoreError> {
-        organization_version(&self.database, AUTH_SIGN_UP_ENABLED.definition().key()).await
+        policy_version(&self.database, SIGN_UP_POLICY).await
     }
 
     async fn count_sign_up_policy_up(
         transaction: &mut Transaction,
         version: i64,
     ) -> Result<bool, StoreError> {
-        count_organization_version_up(
-            transaction,
-            AUTH_SIGN_UP_ENABLED.definition().key(),
-            version,
-        )
-        .await
+        count_policy_version_up(transaction, SIGN_UP_POLICY, version).await
     }
 
     async fn put_setting(

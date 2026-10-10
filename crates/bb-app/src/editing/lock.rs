@@ -117,7 +117,7 @@ pub async fn take_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: TakeLockQuery,
 ) -> Result<Authorized<LockOutcome>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let wanted = ctx.lock_for(&actor, &input.what, input.editor)?;
@@ -149,7 +149,7 @@ pub async fn heartbeat<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: HeartbeatQuery,
 ) -> Result<Authorized<HeartbeatAnswer>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let now = ctx.now();
@@ -231,8 +231,9 @@ pub async fn release_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ReleaseLockQuery,
 ) -> Result<Done, AppError> {
-    // Only a person who is signed in (not an access key) holds a lock, and only with the token
-    // the lock was taken with: nobody can release another editor's lock without both.
+    // A lock belongs to an editor, an open tab of a signed-in person, so an access key has none
+    // (ADR-0019); and it is let go of only with the token the lock was taken with and by the
+    // person who holds it: nobody can release another editor's lock without both.
     let person = ctx.active(&input.session_token).await?.person.id;
     ctx.store()
         .release_edit_lock(
@@ -257,7 +258,7 @@ pub async fn ask_to_finish<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AskToFinish,
 ) -> Result<Authorized<Done>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let holder = ctx
@@ -304,7 +305,7 @@ pub async fn edit_anyway<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: EditAnyway,
 ) -> Result<Authorized<LockOutcome>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
     // *Edit anyway* is the right to take over, and only for a person who may change the record: a
     // lock they could not keep would run out in a minute (M3-F35).
@@ -365,7 +366,7 @@ pub async fn release_stuck_lock<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ReleaseStuckLock,
 ) -> Result<Authorized<Done>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let facts = ctx.facts_of(&actor, &input.what.record).await?;
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)

@@ -13,6 +13,7 @@ use super::Why;
 use super::types::{MakeProject, ProjectView};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::input::clean_name;
+use crate::member;
 
 /// Makes a project. Top level takes *Make projects*; a sub-project takes *Make sub-projects* in
 /// its parent.
@@ -69,8 +70,11 @@ pub async fn make_project<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Project, project.id),
         vec![
-            set_to("short_name", json!(project.short_name.as_str())),
-            set_to("name", json!(project.name)),
+            set_to(
+                member::project::SHORT_NAME,
+                json!(project.short_name.as_str()),
+            ),
+            set_to(member::project::NAME, json!(project.name)),
             set_to(
                 "parent",
                 json!(project.parent.map(|parent| parent.to_string())),

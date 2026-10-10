@@ -247,6 +247,36 @@ async fn iss_17_the_person_whose_lock_was_released_is_told_who_released_it() -> 
 }
 
 #[tokio::test]
+async fn iss_17_edit_anyway_needs_the_right_to_change_the_record_too() -> TestResult {
+    on_both_databases("iss_17_edit_anyway_needs_change", async |stage| {
+        let only_take_over = stage
+            .org
+            .role(
+                "Only take over",
+                &[Permission::SeeProjects, Permission::EditAnyway],
+            )
+            .await?;
+        let eve = stage.rig().person(&stage.ada().session, EVE).await?;
+        let eve = Member {
+            id: eve.person.id,
+            session: eve.session_token,
+        };
+        stage
+            .org
+            .give(&eve, only_take_over.id, stage.project.id)
+            .await?;
+        let (token, _) = stage.lock(&stage.ben).await?;
+        let error = stage.edit_anyway(&eve).await.unwrap_err();
+        assert_eq!(error.code(), Some(ErrorCode::Forbidden));
+        // Ben still holds the lock.
+        let beat = stage.heartbeat(&stage.ben, token, None).await?;
+        assert!(matches!(beat.lock, LockStatus::Held { .. }));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn iss_17_a_token_is_no_use_to_another_person() -> TestResult {
     on_both_databases("iss_17_token_holder", async |stage| {
         let (token, _) = stage.lock(&stage.ben).await?;

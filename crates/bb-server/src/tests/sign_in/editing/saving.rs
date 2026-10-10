@@ -325,6 +325,64 @@ async fn iss_17_a_stale_sign_up_policy_cannot_turn_signing_up_back_on() -> TestR
 }
 
 #[tokio::test]
+async fn iss_17_the_generic_settings_routes_cannot_go_around_the_sign_up_policy() -> TestResult {
+    use bb_app::settings::{LockSetting, SettingsScope};
+    use bb_core::settings::{SIGN_UP_POLICY, SettingValue, changed_only_on_its_own_screen};
+
+    use super::super::settings::{change, reset};
+
+    on_both_databases("iss_17_policy_own_route", async |stage| {
+        let api = stage.rig().api();
+        let ada = stage.ada();
+        let policy = |version: i64, enabled: bool| {
+            api.change_sign_up_policy(
+                Rig::info(),
+                ChangeSignUpPolicy {
+                    session_token: ada.session.clone(),
+                    policy: SignUpPolicy {
+                        enabled,
+                        domains: Vec::new(),
+                        version,
+                    },
+                },
+            )
+        };
+        assert_eq!(SIGN_UP_POLICY, "auth.sign-up-policy");
+        assert_eq!(policy(0, true).await?.into_value().version, 1);
+        for key in ["auth.sign-up-enabled", "auth.sign-up-domains"] {
+            assert!(changed_only_on_its_own_screen(key));
+            let value = if key.ends_with("enabled") {
+                SettingValue::Bool(false)
+            } else {
+                SettingValue::Text("evil.test".to_owned())
+            };
+            let changed = change(stage.rig(), ada, SettingsScope::Organization, key, value).await;
+            assert_eq!(refused(changed), Some(ErrorCode::InvalidRequest), "{key}");
+            let reset = reset(stage.rig(), ada, SettingsScope::Organization, key).await;
+            assert_eq!(refused(reset), Some(ErrorCode::InvalidRequest), "{key}");
+            let locked = api
+                .lock_setting(
+                    Rig::info(),
+                    LockSetting {
+                        session_token: ada.session.clone(),
+                        key: key.to_owned(),
+                        locked: true,
+                    },
+                )
+                .await;
+            assert_eq!(refused(locked), Some(ErrorCode::InvalidRequest), "{key}");
+        }
+        // Nothing went around the version: a screen that read version 0 is still stale, and the
+        // policy is the one the policy route wrote.
+        let stale = policy(0, false).await.unwrap_err();
+        assert!(matches!(stale, AppError::Conflict(_)), "{stale:?}");
+        assert!(policy(1, false).await.is_ok());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn iss_17_a_stale_group_or_role_answers_who_changed_what() -> TestResult {
     on_both_databases("iss_17_stale_group_and_role", async |stage| {
         let api = stage.rig().api();

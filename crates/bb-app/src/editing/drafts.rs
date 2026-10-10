@@ -90,7 +90,7 @@ pub async fn save_draft<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SaveDraftQuery,
 ) -> Result<Authorized<DraftView>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let access = ctx.allow_draft(&actor, &input.target).await?;
     let base_version = input.draft.base_version;
     let text = input.draft.text.clone();
@@ -114,7 +114,7 @@ pub async fn read_draft<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ReadDraftQuery,
 ) -> Result<Authorized<DraftSlot>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
+    let actor = ctx.session_actor(&input.session_token).await?;
     let access = ctx.allow_draft(&actor, &input.target).await?;
     let draft = ctx
         .store()

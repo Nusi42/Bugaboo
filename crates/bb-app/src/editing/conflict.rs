@@ -27,6 +27,9 @@ use serde_json::Value;
 
 use super::records::Shown;
 use crate::auth::{AppError, AuthStore, Ctx, fixed_entity, internal};
+use bb_core::settings::SIGN_UP_POLICY;
+
+use crate::member;
 
 /// A record that a change found at another version than the one the person looked at. It holds
 /// only what is needed to find out what happened; `AuthApi` turns it into a [`Conflict`].
@@ -77,21 +80,24 @@ impl AppError {
     }
 }
 
-/// How many of the newest events about a record are looked through for the one that counted its
-/// version up.
-const EVENTS_LOOKED_AT: u64 = 50;
-
 /// How the change of a field of a record that `bb-app` keeps itself is shown: only what is no
 /// personal data and no hidden project. Every other field stays out.
 fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
     let plain: &[&str] = if *kind == EntityKind::from(RecordKind::Project) {
-        &["name", "short_name"]
+        &[member::project::NAME, member::project::SHORT_NAME]
     } else if *kind == EntityKind::from(RecordKind::Group) {
-        &["name"]
+        &[member::group::NAME]
     } else if *kind == EntityKind::from(RecordKind::Role) {
-        &["name", "permissions", "two_step"]
+        &[
+            member::role::NAME,
+            member::role::PERMISSIONS,
+            member::role::TWO_STEP,
+        ]
     } else if *kind == EntityKind::from(RecordKind::Setting) {
-        &["auth_sign_up_enabled", "auth_sign_up_domains"]
+        &[
+            member::sign_up_policy::ENABLED,
+            member::sign_up_policy::DOMAINS,
+        ]
     } else {
         &[]
     };
@@ -124,7 +130,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         if ours(RecordKind::Setting) {
             // The one setting record with a version: the sign-up policy.
-            let policy = fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?;
+            let policy = fixed_entity(RecordKind::Setting, SIGN_UP_POLICY)?;
             if *record == policy {
                 return Ok(Some(
                     self.store()
@@ -168,11 +174,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         // or a level change the log of the record but not what the reader looked at.
         let last = self
             .store()
-            .latest_events_about(&stale.record, EVENTS_LOOKED_AT)
+            .latest_version_event_about(&stale.record)
             .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .find(DomainEvent::counted_version);
+            .map_err(|error| internal::<S>(&error))?;
         let changed_by = match last.as_ref().map(|event| event.actor) {
             Some(EventActor::Person(person)) => Some(
                 self.person_ref(&viewer, PeopleKind::LastChangedBy, context, person)

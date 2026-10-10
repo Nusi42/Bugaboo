@@ -34,6 +34,7 @@ crate::entities! {
     crate::security_log::SecurityLogEntry,
     crate::settings::StoredPersonSetting,
     crate::settings::StoredSetting,
+    crate::settings::PolicyVersion,
     crate::sign_in::BackupCode,
     crate::sign_in::Invitation,
     crate::sign_in::PasswordLogin,

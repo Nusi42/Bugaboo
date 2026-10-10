@@ -6,9 +6,9 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::InvitationId;
 use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
-use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SettingValue};
+use bb_core::settings::{AUTH_SIGN_UP_DOMAINS, AUTH_SIGN_UP_ENABLED, SIGN_UP_POLICY, SettingValue};
 use bb_core::sign_in::{Invitation, SecurityAction};
-use bb_core::version::counted_up;
+use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -24,6 +24,7 @@ use super::types::{
     SignUpPolicy, SignUpPolicyQuery,
 };
 use crate::input::cursor_or_invalid;
+use crate::member;
 use crate::projects::Why;
 
 fn view(invitation: &Invitation) -> InvitationView {
@@ -253,7 +254,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         )
         .await?;
     let domains = checked_domains(&input.policy.domains)?;
-    let record = fixed_entity(RecordKind::Setting, "auth.sign-up-policy")?;
+    let record = fixed_entity(RecordKind::Setting, SIGN_UP_POLICY)?;
     let version = input.policy.version;
     let current = ctx
         .store()
@@ -270,7 +271,7 @@ pub async fn change_sign_up_policy<S: AuthStore>(
     let policy = SignUpPolicy {
         enabled: input.policy.enabled,
         domains,
-        version: version + 1,
+        version: next(version),
     };
     let list = policy.domains.join(",");
     // The registry says how long the list and its items may be (one place for the numbers).
@@ -281,8 +282,8 @@ pub async fn change_sign_up_policy<S: AuthStore>(
         by(actor.person.id),
         record.clone(),
         vec![
-            set_to("auth_sign_up_enabled", json!(policy.enabled)),
-            set_to("auth_sign_up_domains", json!(list)),
+            set_to(member::sign_up_policy::ENABLED, json!(policy.enabled)),
+            set_to(member::sign_up_policy::DOMAINS, json!(list)),
             counted_up(version),
         ],
     )?;

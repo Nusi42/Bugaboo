@@ -25,7 +25,7 @@ use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
-use bb_core::version::{FIRST_VERSION, counted_up};
+use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::guards::ensure_a_manager_remains;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 use jiff::Timestamp;
@@ -37,6 +37,7 @@ use crate::auth::{
     AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
 };
 use crate::input::clean_name;
+use crate::member;
 use crate::projects::Why;
 
 /// Make a group.
@@ -207,7 +208,7 @@ pub async fn make_group<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, group.id),
-        vec![set_to("name", json!(group.name))],
+        vec![set_to(member::group::NAME, json!(group.name))],
     )?;
     let stored = group.clone();
     ctx.store()
@@ -251,7 +252,7 @@ pub async fn rename_group<S: AuthStore>(
         entity(RecordKind::Group, id),
         vec![
             bb_core::event::FieldChange {
-                field: "name".to_owned(),
+                field: member::group::NAME.to_owned(),
                 before: Some(json!(before.name)),
                 after: Some(json!(name)),
             },
@@ -289,7 +290,7 @@ pub async fn rename_group<S: AuthStore>(
     Ok(access.authorize(GroupView {
         id,
         name,
-        version: before.version + 1,
+        version: next(before.version),
     }))
 }
 

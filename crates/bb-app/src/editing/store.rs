@@ -58,9 +58,10 @@ pub trait EditStore: ChangeStore + 'static {
         /// lock rows that ran out at `now`, so nothing outlives its keep period. Returns how many
         /// drafts went.
         fn purge_drafts(before: Timestamp, now: Timestamp) -> u64;
-        /// The newest events about a record, newest first, at most `limit`: where the conflict
-        /// finds who changed it last, when, and what.
-        fn latest_events_about(record: &EntityRef, limit: u64) -> Vec<DomainEvent>;
+        /// The newest event about a record that counted its version up (`DomainEvent::
+        /// counted_version`), however far back it is: where the conflict finds who changed the
+        /// record last, when, and what.
+        fn latest_version_event_about(record: &EntityRef) -> Option<DomainEvent>;
         /// The notes for a person about a thing, oldest first; they are deleted as they are
         /// read, so each is shown once.
         fn take_edit_notices(recipient: UserId, what: &EditWhat) -> Vec<EditNotice>;

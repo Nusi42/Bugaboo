@@ -94,20 +94,17 @@ impl EditStore for FakeStore {
         Ok(u64::try_from(drafts - shared.state.drafts.len()).unwrap_or(u64::MAX))
     }
 
-    async fn latest_events_about(
+    async fn latest_version_event_about(
         &self,
         record: &EntityRef,
-        limit: u64,
-    ) -> Result<Vec<DomainEvent>, FakeError> {
+    ) -> Result<Option<DomainEvent>, FakeError> {
         Ok(self
             .lock()
             .events
             .iter()
             .rev()
-            .filter(|event| event.entity == *record)
-            .take(usize::try_from(limit).unwrap_or(usize::MAX))
-            .cloned()
-            .collect())
+            .find(|event| event.entity == *record && event.counted_version())
+            .cloned())
     }
 
     async fn take_edit_notices(

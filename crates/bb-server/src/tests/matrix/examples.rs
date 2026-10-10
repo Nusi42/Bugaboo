@@ -60,6 +60,9 @@ pub(super) enum Quirk {
     /// The route declares one permission and its use case also needs this one on the record it
     /// names (*Edit anyway* takes over editing a record only for a person who may change it).
     AlsoNeeds(Permission),
+    /// The route belongs to an open editor, a tab of a signed-in person: an access key is turned
+    /// away from it, whatever the key may do (ADR-0019).
+    SessionOnly,
 }
 
 /// One row of the table: a route and what is special about it.
@@ -241,16 +244,20 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changePeopleVisibility", &[Quirk::AtTheTargetProject]),
     Example::with("checkAccess", &[Quirk::AtTheTargetProject]),
     Example::with("listPeopleToCheck", &[Quirk::AtTheTargetProject]),
-    Example::with("takeEditLock", &[ON_THE_TARGET]),
-    Example::with("heartbeatEditLock", &[ON_THE_TARGET]),
+    Example::with("takeEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::with("heartbeatEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::route("releaseEditLock"),
-    Example::with("askToFinish", &[ON_THE_TARGET, Quirk::NamesAMissingThing]),
+    Example::with(
+        "askToFinish",
+        &[ON_THE_TARGET, Quirk::NamesAMissingThing, Quirk::SessionOnly],
+    ),
     Example::with(
         "editAnyway",
         &[
             Quirk::AtTheTargetProject,
             Quirk::HidesUnseen,
             Quirk::AlsoNeeds(Permission::ChangeProjectSettings),
+            Quirk::SessionOnly,
         ],
     ),
     Example::with(
@@ -259,10 +266,11 @@ pub(super) const EXAMPLES: &[Example] = &[
             Quirk::AtTheTargetProject,
             Quirk::HidesUnseen,
             Quirk::NamesAMissingThing,
+            Quirk::SessionOnly,
         ],
     ),
-    Example::with("saveDraft", &[ON_THE_TARGET]),
-    Example::with("readDraft", &[ON_THE_TARGET]),
+    Example::with("saveDraft", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::with("readDraft", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::route("throwAwayDraft"),
     Example::route("checkVersions"),
 ];

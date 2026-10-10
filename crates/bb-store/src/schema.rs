@@ -144,6 +144,15 @@ pub(crate) enum SettingRow {
     Value,
     Locked,
     UpdatedAt,
+}
+
+/// The version of a policy that is made of several settings: a row of its own, so that a change or
+/// a reset of a setting cannot take the version back.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum PolicyVersionRow {
+    #[iden = "policy_version"]
+    Table,
+    Policy,
     Version,
 }
 
@@ -713,6 +722,9 @@ stored_tables! {
         Value => value,
         Locked => locked,
         UpdatedAt => updated_at,
+    },
+    PolicyVersionRow => bb_core::settings::PolicyVersion {
+        Policy => policy,
         Version => version,
     },
     PersonSettingRow => bb_core::settings::StoredPersonSetting {

@@ -23,7 +23,7 @@ use bb_core::id::RoleId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
-use bb_core::version::{FIRST_VERSION, counted_up};
+use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::guards::{Refusal, ensure_a_manager_remains, ensure_no_escalation};
 use bb_policy::{Authorized, Permission, Place, StartingRole};
 use serde_json::json;
@@ -43,6 +43,7 @@ use crate::auth::{
     AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
 };
 use crate::input::clean_name;
+use crate::member;
 use crate::projects::Why;
 
 /// The keys of the permissions in a set: what an event and a view say.
@@ -140,9 +141,9 @@ pub async fn make_role<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Role, role.id),
         vec![
-            set_to("name", json!(role.name)),
-            set_to("permissions", json!(keys(&permissions))),
-            set_to("two_step", json!(role.two_step)),
+            set_to(member::role::NAME, json!(role.name)),
+            set_to(member::role::PERMISSIONS, json!(keys(&permissions))),
+            set_to(member::role::TWO_STEP, json!(role.two_step)),
         ],
     )?;
     let (stored, stored_permissions) = (
@@ -215,17 +216,17 @@ pub async fn change_role<S: AuthStore>(
         entity(RecordKind::Role, id),
         vec![
             FieldChange {
-                field: "name".to_owned(),
+                field: member::role::NAME.to_owned(),
                 before: Some(json!(before.role.name)),
                 after: Some(json!(name)),
             },
             FieldChange {
-                field: "permissions".to_owned(),
+                field: member::role::PERMISSIONS.to_owned(),
                 before: Some(json!(keys(&before.permissions))),
                 after: Some(json!(keys(&permissions))),
             },
             FieldChange {
-                field: "two_step".to_owned(),
+                field: member::role::TWO_STEP.to_owned(),
                 before: Some(json!(before.role.two_step)),
                 after: Some(json!(two_step)),
             },
@@ -280,7 +281,7 @@ pub async fn change_role<S: AuthStore>(
     let mut role = before.role;
     role.name = name;
     role.two_step = two_step;
-    role.version += 1;
+    role.version = next(role.version);
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
 }
 
@@ -429,7 +430,7 @@ pub async fn reset_role<S: AuthStore>(
         entity(RecordKind::Role, id),
         vec![
             FieldChange {
-                field: "permissions".to_owned(),
+                field: member::role::PERMISSIONS.to_owned(),
                 before: Some(json!(keys(&before.permissions))),
                 after: Some(json!(keys(&permissions))),
             },
@@ -493,7 +494,7 @@ pub async fn reset_role<S: AuthStore>(
     .await;
     let mut role = before.role;
     role.two_step = starting.two_step();
-    role.version += 1;
+    role.version = next(role.version);
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
 }
 

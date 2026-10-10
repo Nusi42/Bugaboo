@@ -11,12 +11,18 @@ pub const FIRST_VERSION: i64 = 1;
 /// did not (a lock, a member of a group), so a stale change is told who really changed the record.
 pub const FIELD: &str = "version";
 
+/// The version after `version`: the one place that counts a version up.
+#[must_use]
+pub const fn next(version: i64) -> i64 {
+    version.saturating_add(1)
+}
+
 /// The change that counts a record from `before` to the next version.
 #[must_use]
 pub fn counted_up(before: i64) -> FieldChange {
     FieldChange {
         field: FIELD.to_owned(),
         before: Some(before.into()),
-        after: Some(before.saturating_add(1).into()),
+        after: Some(next(before).into()),
     }
 }

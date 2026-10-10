@@ -77,6 +77,10 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     if !actor.signed_in() || example.has(Quirk::FinishesAHalfDoneSignIn) {
         return Expect::NotSignedIn;
     }
+    // A lock or a draft belongs to an open editor of a signed-in person, never to a key.
+    if actor.has_a_key() && example.has(Quirk::SessionOnly) {
+        return Expect::NotForKeys;
+    }
     let permission = match route.needs {
         Declared::Public | Declared::SignedIn | Declared::OwnAccount => return Expect::Allowed,
         Declared::Permission(permission) => Some(permission),

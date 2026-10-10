@@ -327,12 +327,13 @@ impl EditStore for AuthStorage {
         Ok(gone)
     }
 
-    async fn latest_events_about(
+    async fn latest_version_event_about(
         &self,
         record: &EntityRef,
-        limit: u64,
-    ) -> Result<Vec<DomainEvent>, StoreError> {
-        self.database().latest_events_about(record, limit).await
+    ) -> Result<Option<DomainEvent>, StoreError> {
+        self.database()
+            .latest_event_about_where(record, DomainEvent::counted_version)
+            .await
     }
 
     async fn take_edit_notices(

@@ -10,7 +10,7 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
 use crate::schema::{
-    EditDraftRow, EditLockRow, EditNoticeRow, GroupRow, PersonRow, RoleRow, SettingRow,
+    EditDraftRow, EditLockRow, EditNoticeRow, GroupRow, PersonRow, PolicyVersionRow, RoleRow,
 };
 
 pub(super) fn steps() -> Vec<Step> {
@@ -47,17 +47,18 @@ fn versions() -> Vec<Step> {
                 )
                 .to_owned(),
         ),
-        // The sign-up policy is two rows with one version (the version of one of them); a row
-        // that was never counted has 0.
-        Step::Alter(
-            Table::alter()
-                .table(SettingRow::Table)
-                .add_column(
-                    ColumnDef::new(SettingRow::Version)
+        // The sign-up policy is two settings with one version, kept in a row of its own that no
+        // change or reset of a setting touches; a policy without a row is at version 0.
+        Step::Table(
+            Table::create()
+                .table(PolicyVersionRow::Table)
+                .col(ColumnDef::new(PolicyVersionRow::Policy).text().not_null())
+                .col(
+                    ColumnDef::new(PolicyVersionRow::Version)
                         .big_integer()
-                        .not_null()
-                        .default(0),
+                        .not_null(),
                 )
+                .primary_key(Index::create().col(PolicyVersionRow::Policy))
                 .to_owned(),
         ),
     ]

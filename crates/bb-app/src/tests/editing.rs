@@ -191,6 +191,58 @@ async fn iss_17_a_kind_of_record_decides_which_changes_a_conflict_shows_and_peop
 }
 
 #[tokio::test]
+async fn iss_17_a_conflict_finds_the_version_event_however_many_events_came_after() -> Outcome {
+    let notes = TestNotes::new()?;
+    let world = World::new().await?.with_records(Arc::new(notes.clone()));
+    let note = notes.add(EntityId::from(UserId::from_random([6; 16])));
+    let event = |at: u8, changes: Vec<FieldChange>| -> Result<DomainEvent, String> {
+        Ok(DomainEvent {
+            id: EventId::from_parts(world.clock.now(), [at; 10])
+                .map_err(|error| error.to_string())?,
+            time: world.clock.now(),
+            actor: Actor::Person(world.admin.person.id),
+            channel: Channel::Ui,
+            entity: note.clone(),
+            changes,
+            reason: None,
+        })
+    };
+    world.store.lock().events.push(event(
+        1,
+        vec![
+            FieldChange {
+                field: "title".to_owned(),
+                before: None,
+                after: Some(json!("Renamed")),
+            },
+            counted_up(1),
+        ],
+    )?);
+    // Far more later events than any window, none of which counted the version up.
+    for at in 2..=120_u8 {
+        world.store.lock().events.push(event(
+            at,
+            vec![FieldChange {
+                field: "edit_lock".to_owned(),
+                before: None,
+                after: Some(json!({ "asked_to_finish": "description" })),
+            }],
+        )?);
+    }
+    let stale = Stale {
+        record: note,
+        place: Place::Organization,
+        viewer: world.admin.person.id,
+    };
+    let crate::auth::AppError::Conflict(conflict) = world.ctx().conflict_of(&stale).await else {
+        return Err("no structured answer".into());
+    };
+    assert_eq!(conflict.fields, ["title"]);
+    assert_eq!(conflict.current["title"], json!("Renamed"));
+    Ok(())
+}
+
+#[tokio::test]
 async fn iss_17_a_conflict_about_a_record_without_events_still_answers() -> Outcome {
     let world = World::new().await?;
     let stale = Stale {

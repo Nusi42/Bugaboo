@@ -16,6 +16,7 @@ use super::{RoleView, keys, view};
 use crate::access::{RoleRecord, held_in};
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal, set_to};
 use crate::input::clean_name;
+use crate::member;
 
 /// Make a role that is a copy of another.
 pub struct CopyRole {
@@ -61,9 +62,9 @@ pub async fn copy_role<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Role, role.id),
         vec![
-            set_to("name", json!(role.name)),
-            set_to("permissions", json!(keys(&source.permissions))),
-            set_to("two_step", json!(role.two_step)),
+            set_to(member::role::NAME, json!(role.name)),
+            set_to(member::role::PERMISSIONS, json!(keys(&source.permissions))),
+            set_to(member::role::TWO_STEP, json!(role.two_step)),
             set_to("copy_of", json!(source.role.id.to_string())),
         ],
     )?;
