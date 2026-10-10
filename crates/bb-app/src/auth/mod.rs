@@ -36,10 +36,11 @@ use crate::editing::{
     throw_away_draft,
 };
 use crate::issues::{
-    ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
-    IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
-    SaveDescription, change_issue, change_issue_type, delete_issue, issue, issue_types, issues,
-    make_issue, make_issue_type, restore_issue, save_description,
+    AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
+    IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView, IssueTypesQuery, IssueView,
+    IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue, SaveDescription, assignable_people,
+    change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
+    make_issue_type, restore_issue, save_description,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
@@ -352,6 +353,8 @@ use_cases! {
     change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<IssuePage>;
+    /// Lists the people an issue of a project can be assigned to.
+    assignable_people(AssignablePeopleQuery) -> Authorized<AssignablePeoplePage>;
     /// Makes an issue.
     make_issue(MakeIssue) -> Authorized<IssueView>;
     /// Shows one issue by its readable or internal ID.

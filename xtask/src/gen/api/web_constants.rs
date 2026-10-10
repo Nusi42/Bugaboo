@@ -143,10 +143,11 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
         .with_context(|| format!("{path} has no `const {name}` that is a number"))
 }
 
-/// The vocabularies the browser lists at run time (a drop-down of icons), by the name of their
+/// The vocabularies the browser lists or recognizes at run time (a drop-down of icons, the words of
+/// a status or a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 1] = ["IssueIcon"];
+const WORD_LISTS: [&str; 5] = ["IssueIcon", "Status", "StatusGroup", "Priority", "Field"];
 
 /// `IssueIcon` as `issueIconWords`.
 fn words_name(schema: &str) -> String {
@@ -263,6 +264,9 @@ export const leaseSeconds = {};
 /** How often the open editor sends a heartbeat, in seconds. */
 export const heartbeatSeconds = {};
 
+/** How often the browser asks for the versions of what is on its screen, in seconds. */
+export const watchSeconds = {};
+
 /** How long a draft is kept after its last change, in days. */
 export const draftKeepDays = {};
 
@@ -274,6 +278,7 @@ export const versionsMax = {};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
+        number("WATCH_SECONDS")?,
         number("DRAFT_KEEP_DAYS")?,
         number("DRAFT_TEXT_MAX")?,
         number("VERSIONS_MAX")?,

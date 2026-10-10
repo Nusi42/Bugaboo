@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   ApiError,
   createApi,
+  conflictOf,
   CSRF_HEADER,
   dataOf,
   isProblem,
@@ -213,5 +214,38 @@ describe("m3_f12 server-rendered HTML becomes SafeHtml", () => {
     expect(isSafeHtml(data.get("description_html"))).toBe(true);
     expect(isSafeHtml(data.get("description"))).toBe(false);
     expect(data.get("description")).toBe("<p>Hi</p>");
+  });
+});
+
+describe("adr_0019 the structured answer to a stale version", () => {
+  const stale = {
+    type: "edit.version_changed",
+    title: "x",
+    status: 409,
+    code: "edit.version_changed",
+    message_key: "error.edit.version-changed",
+    params: {},
+    conflict: { version: 4, fields: ["priority"], current: { priority: "critical" } },
+  } as const;
+
+  it("hands out who changed what, from the error of a change", async () => {
+    const error = await failureOf(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(stale), {
+          status: 409,
+          headers: { "content-type": "application/problem+json" },
+        }),
+      ),
+    );
+    expect(conflictOf(error)?.fields).toEqual(["priority"]);
+    expect(conflictOf(error)?.version).toBe(4);
+  });
+
+  it("is nothing for any other error and for a conflict that is not one", () => {
+    expect(conflictOf(new Error("x"))).toBeUndefined();
+    expect(conflictOf(new ApiError(404, undefined))).toBeUndefined();
+    const body = { ...stale, conflict: { fields: "no" } };
+    const broken = new ApiError(409, body);
+    expect(conflictOf(broken)).toBeUndefined();
   });
 });

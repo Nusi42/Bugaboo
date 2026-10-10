@@ -287,6 +287,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("makeIssueType"),
     Example::route("changeIssueType"),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
+    Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("makeIssue", &[Quirk::NeedsToSeeTheProject]),
     Example::with("getIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),

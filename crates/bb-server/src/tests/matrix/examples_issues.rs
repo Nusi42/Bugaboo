@@ -99,6 +99,11 @@ pub(super) async fn issue_request(
             Some(json!({"version": 1, "icon": "star"})),
         ),
         "listIssues" => ("GET", format!("/api/v1/projects/{target}/issues"), None),
+        "listAssignablePeople" => (
+            "GET",
+            format!("/api/v1/projects/{target}/assignable-people"),
+            None,
+        ),
         "makeIssue" => (
             "POST",
             format!("/api/v1/projects/{target}/issues"),

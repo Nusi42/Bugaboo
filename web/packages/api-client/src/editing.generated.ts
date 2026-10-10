@@ -6,6 +6,9 @@ export const leaseSeconds = 60;
 /** How often the open editor sends a heartbeat, in seconds. */
 export const heartbeatSeconds = 15;
 
+/** How often the browser asks for the versions of what is on its screen, in seconds. */
+export const watchSeconds = 30;
+
 /** How long a draft is kept after its last change, in days. */
 export const draftKeepDays = 30;
 

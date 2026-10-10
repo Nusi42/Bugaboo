@@ -261,3 +261,36 @@ async fn m3_f10_the_policy_of_a_page_lists_the_image_hosts_of_the_organization()
     })
     .await
 }
+
+#[tokio::test]
+async fn m3_f28_an_issue_can_be_assigned_to_the_members_of_its_project_only() -> TestResult {
+    each_database("m3_f28_assignable_people", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut cora, cora_id) = site.person(StartingRole::Contributor, "cora").await?;
+        let (_, vera_id) = site.person(StartingRole::Viewer, "vera").await?;
+        let path = format!("/api/v1/projects/{}/assignable-people", site.acme);
+        let listed = cora.send("GET", &path, None).await?;
+        assert_eq!(listed.status, StatusCode::OK, "{}", listed.body);
+        let ids: Vec<&str> = listed.body["items"]
+            .as_array()
+            .ok_or("no list")?
+            .iter()
+            .filter_map(|person| person["id"].as_str())
+            .collect();
+        assert!(ids.contains(&cora_id.to_string().as_str()), "{ids:?}");
+        assert!(ids.contains(&vera_id.to_string().as_str()), "{ids:?}");
+        // A search narrows the list by name (the people of the tests are all called Bob Builder).
+        let found = ada
+            .send("GET", &format!("{path}?search=builder"), None)
+            .await?;
+        assert_eq!(ok(&found)?["items"].as_array().map(Vec::len), Some(2));
+        // A person who is not a member of the project is not offered.
+        let nobody = ada
+            .send("GET", &format!("{path}?search=nobody-by-that-name"), None)
+            .await?;
+        assert_eq!(ok(&nobody)?["items"], json!([]));
+        Ok(())
+    })
+    .await
+}

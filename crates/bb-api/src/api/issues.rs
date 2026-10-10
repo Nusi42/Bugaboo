@@ -11,8 +11,9 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
-    ChangeIssue, DeleteIssue, IssueDetail, IssueQuery, IssueTypeRef as AppIssueTypeRef, IssueView,
-    IssuesQuery, MakeIssue, RestoreIssue, SaveDescription,
+    AssignablePeopleQuery, ChangeIssue, DeleteIssue, IssueDetail, IssueQuery,
+    IssueTypeRef as AppIssueTypeRef, IssueView, IssuesQuery, MakeIssue, RestoreIssue,
+    SaveDescription,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
@@ -28,6 +29,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
+use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::projects::ProjectRef;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -53,6 +55,9 @@ const ISSUE_FIELDS: [FieldSpec; 15] = [
 ];
 /// The name of the list, so its cursors are its own.
 const ISSUES_LIST: &str = "issues";
+
+/// The name of the list of the people an issue can be assigned to, so its cursors are its own.
+const ASSIGNABLE_LIST: &str = "assignable-people";
 
 /// An issue type as a small reference: what the line of an issue needs.
 #[derive(Serialize, ToSchema, Masked)]
@@ -312,6 +317,65 @@ async fn list_issues(
     Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
 }
 
+/// The people an issue of the project can be assigned to, a page at a time, by name: the members
+/// of the project, those who hold a role that reaches it. A person who cannot see names for
+/// *Assigned to* is listed nobody. Needs the permission *See issues*.
+#[utoipa::path(
+    get,
+    path = "/api/v1/projects/{project}/assignable-people",
+    operation_id = "listAssignablePeople",
+    tag = "issues",
+    params(("project" = String, Path, description = "The ID of the project, or its short name."), ListParams, PeopleSearch),
+    responses((status = 200, description = "The people, by name.", body = Page<PersonRef>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+)]
+async fn list_assignable_people(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(project): ApiPath<String>,
+    ApiQuery(params): ApiQuery<ListParams>,
+    ApiQuery(find): ApiQuery<PeopleSearch>,
+) -> Result<Response, ApiError> {
+    // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
+    // the use case cannot read, so its answer comes after the check of the person.
+    let position = params.position(ASSIGNABLE_LIST);
+    let cursor = match &position {
+        Ok(position) => position.clone(),
+        Err(_) => Some(String::new()),
+    };
+    let page = auth
+        .api()?
+        .assignable_people(
+            info,
+            AssignablePeopleQuery {
+                session_token,
+                project,
+                search: find.search,
+                cursor,
+                limit: params.limit(),
+            },
+        )
+        .await
+        .map_err(|error| match error {
+            // The only thing the use case can find invalid is the cursor.
+            bb_app::auth::AppError::Refused(ErrorCode::InvalidRequest) => {
+                ApiError::new(ErrorCode::BadCursor)
+            }
+            other => ApiError::from(other),
+        })?;
+    position?;
+    let list = page.map(|page| Listed {
+        items: page.items,
+        next: page.next_cursor,
+    });
+    let fields = params.fields_readable(&PERSON_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(
+        ASSIGNABLE_LIST,
+        &list,
+        &fields,
+    )?))
+}
+
 /// Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones
 /// the person may change (the title always).
 #[utoipa::path(
@@ -556,6 +620,7 @@ where
 {
     OpenApiRouter::new()
         .routes(routes!(list_issues, make_issue))
+        .routes(routes!(list_assignable_people))
         .routes(routes!(get_issue, change_issue, delete_issue))
         .routes(routes!(restore_issue))
         .routes(routes!(save_issue_description))

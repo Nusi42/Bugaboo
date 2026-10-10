@@ -275,6 +275,11 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
+        "listAssignablePeople",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
         "makeIssue",
         Declared::Permission(Permission::MakeIssues),
         Answer::Ordinary,
