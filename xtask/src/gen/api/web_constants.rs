@@ -193,6 +193,43 @@ export const {} = [{}] as const;
     Ok(out)
 }
 
+/// The names of the properties that carry the mark `x-safe-html` anywhere in the API description,
+/// sorted: the generated client turns the value of such a property into a `SafeHtml` (M3-F12).
+pub(super) fn safe_html_properties(spec: &str) -> anyhow::Result<Vec<String>> {
+    let spec: serde_json::Value =
+        serde_json::from_str(spec).context("the API description is not JSON")?;
+    let schemas = spec["components"]["schemas"]
+        .as_object()
+        .context("the API description has no schemas")?;
+    let mut names = std::collections::BTreeSet::new();
+    for schema in schemas.values() {
+        let Some(properties) = schema["properties"].as_object() else {
+            continue;
+        };
+        for (name, property) in properties {
+            if property[bb_api_words::marks::SAFE_HTML] == serde_json::json!(true) {
+                names.insert(name.clone());
+            }
+        }
+    }
+    Ok(names.into_iter().collect())
+}
+
+/// The names from [`safe_html_properties`] as a constant for the browser client.
+pub(super) fn safe_html(spec: &str) -> anyhow::Result<String> {
+    let names: Vec<String> = safe_html_properties(spec)?
+        .iter()
+        .map(|name| format!("{name:?}"))
+        .collect();
+    Ok(format!(
+        "{TS_HEADER}/** The properties of answers that hold HTML the server rendered (mark `{}`): the client turns their values into `SafeHtml`. */
+export const safeHtmlProperties: ReadonlySet<string> = new Set([{}]);
+",
+        bb_api_words::marks::SAFE_HTML,
+        names.join(", ")
+    ))
+}
+
 /// The page sizes of the lists as constants for the browser client.
 pub(super) fn paging(sources: &[Source]) -> anyhow::Result<String> {
     let Some((_, text)) = sources.iter().find(|(path, _)| path == PAGING_SOURCE) else {

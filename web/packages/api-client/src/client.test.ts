@@ -1,7 +1,15 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { ApiError, createApi, CSRF_HEADER, isProblem, readCookie } from "./index.ts";
+import {
+  ApiError,
+  createApi,
+  CSRF_HEADER,
+  dataOf,
+  isProblem,
+  isSafeHtml,
+  readCookie,
+} from "./index.ts";
 
 const BASE = "http://bugaboo.test";
 
@@ -192,5 +200,18 @@ describe("adr_0008 helpers", () => {
     expect(isProblem({ ...body, status: "400" })).toBe(false);
     expect(isProblem(null)).toBe(false);
     expect(isProblem("text")).toBe(false);
+  });
+});
+
+describe("m3_f12 server-rendered HTML becomes SafeHtml", () => {
+  it("marks the properties the description lists and no other string", async () => {
+    const api = answering(() =>
+      Promise.resolve(ok({ description_html: "<p>Hi</p>", description: "<p>Hi</p>" })),
+    );
+    const answer = await api.client.GET("/api/v1/status");
+    const data = new Map(Object.entries(dataOf(answer)));
+    expect(isSafeHtml(data.get("description_html"))).toBe(true);
+    expect(isSafeHtml(data.get("description"))).toBe(false);
+    expect(data.get("description")).toBe("<p>Hi</p>");
   });
 });

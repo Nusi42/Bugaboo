@@ -182,6 +182,11 @@ pub struct IssueDetail {
     /// The issue.
     #[masked(nested)]
     pub issue: IssueView,
+    /// The description as safe HTML, rendered by `bb-markdown` with the image hosts of the
+    /// organization (the same renderer the editor's preview runs in the browser). Hidden with the
+    /// description.
+    #[masked(field = "description")]
+    pub description_html: String,
     /// Whether the person may change the issue at all (in the fields they may change).
     #[masked(open)]
     pub may_change: bool,

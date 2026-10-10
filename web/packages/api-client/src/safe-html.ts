@@ -9,6 +9,18 @@ export interface SafeHtml {
   readonly [safeHtmlBrand]: true;
 }
 
+/**
+ * What `markSafeHtml` makes. It is a class so that it is not a plain object: the query cache
+ * shares structure only between plain objects and would copy a plain one without its mark.
+ */
+class MadeSafeHtml implements SafeHtml {
+  readonly html: string;
+  readonly [safeHtmlBrand] = true as const;
+  constructor(html: string) {
+    this.html = html;
+  }
+}
+
 /** Every value `markSafeHtml` made. A look-alike object, or a cast, is not in it. */
 const made = new WeakSet<object>();
 
@@ -18,7 +30,7 @@ const made = new WeakSet<object>();
  * holds the list of callers).
  */
 export function markSafeHtml(html: string): SafeHtml {
-  const safe: SafeHtml = { html, [safeHtmlBrand]: true };
+  const safe = Object.freeze(new MadeSafeHtml(html));
   made.add(safe);
   return safe;
 }

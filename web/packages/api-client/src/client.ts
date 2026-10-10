@@ -3,6 +3,8 @@ import createQueryClient from "openapi-react-query";
 
 import { ApiError, isProblem, PROBLEM_CONTENT_TYPE } from "./problem.ts";
 import { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
+import { markSafeHtml } from "./safe-html.ts";
+import { safeHtmlProperties } from "./safe-html.generated.ts";
 import type { paths } from "./schema.ts";
 
 /** The methods that only read; every other method carries the CSRF token. */
@@ -45,6 +47,39 @@ async function errorOf(response: Response): Promise<ApiError> {
   return new ApiError(response.status, undefined);
 }
 
+/** Whether an answer is JSON the client may read (not a problem, which has its own type). */
+function isJson(response: Response): boolean {
+  return response.headers.get("content-type")?.includes("application/json") === true;
+}
+
+/**
+ * Turns the value of every property the server marks as rendered HTML (`x-safe-html`, listed in
+ * `safeHtmlProperties`) into a `SafeHtml`. This is the one place in the client that makes one from
+ * an answer (M3-F12, SEC-RICHTEXT); the generated types say `SafeHtml` for these properties.
+ */
+export function readAnswer(text: string): unknown {
+  return JSON.parse(text, (key: string, value: unknown) =>
+    safeHtmlProperties.has(key) && typeof value === "string" ? markSafeHtml(value) : value,
+  );
+}
+
+/**
+ * The same answer, read with {@link readAnswer} when something asks for its JSON. The length is
+ * given so the client reads the body once as text.
+ */
+async function withSafeHtml(response: Response): Promise<Response> {
+  const text = await response.text();
+  const headers = new Headers(response.headers);
+  headers.set("content-length", String(new TextEncoder().encode(text).length));
+  const read = new Response(text, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+  Object.defineProperty(read, "json", { value: () => Promise.resolve(readAnswer(text)) });
+  return read;
+}
+
 /** Adds the CSRF token to requests that change something, and raises {@link ApiError}s. */
 function rules(csrfToken: NonNullable<ClientOptions["csrfToken"]>): Middleware {
   return {
@@ -61,6 +96,7 @@ function rules(csrfToken: NonNullable<ClientOptions["csrfToken"]>): Middleware {
       if (!response.ok) {
         throw await errorOf(response);
       }
+      return isJson(response) && response.status !== 204 ? withSafeHtml(response) : response;
     },
     onError() {
       // No answer at all: the network or the server is not there.
