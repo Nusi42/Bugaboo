@@ -1352,6 +1352,23 @@ export const messages = {
   "issues.selected": "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
   "issues.clear-selection": "Clear the ticks",
   "issues.of-project": "Issues of this project",
+  "issues.changed-own": "{count, plural, one {# field changed.} other {# fields changed.}}",
+  "fields.long-empty": "Nothing is written here yet.",
+  "fields.choose": "Choose",
+  "fields.choose-title": "Choose for {name}",
+  "fields.pick-search": "Search by name",
+  "fields.pick-people-list": "People you can choose",
+  "fields.pick-groups-list": "Groups you can choose",
+  "fields.pick-nothing": "Nobody found.",
+  "fields.pick-no-groups": "There are no groups you can choose.",
+  "fields.pick-more": "Show more",
+  "fields.pick-chosen": "Chosen",
+  "fields.pick-take-out": "Take out",
+  "fields.pick-take-out-name": "Take out {name}",
+  "fields.pick-choose-name": "Choose {name}",
+  "fields.pick-issue-key": "ID of the issue, like WEB-12",
+  "fields.pick-issue-find": "Find the issue",
+  "fields.pick-no-issue": "No issue has that ID.",
 } as const;
 
 export type MessageKey = keyof typeof messages;
@@ -1433,9 +1450,12 @@ export interface MessageArguments {
   "fields.choice-down": { name: string | number };
   "fields.choice-icon": { name: string | number };
   "fields.choice-up": { name: string | number };
+  "fields.choose-title": { name: string | number };
   "fields.combine-name": { name: string | number };
   "fields.combine-text": { into: string | number; name: string | number };
   "fields.combine-title": { name: string | number };
+  "fields.pick-choose-name": { name: string | number };
+  "fields.pick-take-out-name": { name: string | number };
   "fields.scope-projects": { count: number };
   "fields.scope-remove": { name: string | number };
   "fields.used-everywhere": { count: number };
@@ -1466,6 +1486,7 @@ export interface MessageArguments {
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
   "issues.changed": { field: string | number; value: string | number };
+  "issues.changed-own": { count: number };
   "issues.changed-people": { count: number; field: string | number; names: string | number };
   "issues.compare-keep": { number: string | number };
   "issues.compare-paragraph": { number: string | number };

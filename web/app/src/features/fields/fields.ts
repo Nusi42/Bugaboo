@@ -1,5 +1,6 @@
-import type { Schema } from "@bugaboo/api-client";
+import { ownFieldPartPrefix, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
+import type { IssueBlockProps } from "../issues/index.ts";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
@@ -14,6 +15,11 @@ export type TypeInfo = Schema<"FieldTypeBody">;
 export type KindWord = Schema<"FieldType">;
 /** How a value is shown, by its word. */
 export type LookWord = Schema<"Look">;
+
+/** The name of the part of an issue that a long-text field is: what its lock and drafts are about. */
+export function editPartOf(field: string): string {
+  return [ownFieldPartPrefix, field].join("");
+}
 
 /** The look of plain text, which has no color or icon of its own. */
 export const plainText = "plain-text" satisfies LookWord;
@@ -91,4 +97,18 @@ export function scopeText(field: OwnField): string {
 /** The choice with this ID in a field. */
 export function choiceOf(field: OwnField, id: string): Choice | undefined {
   return field.choices.find((choice) => choice.id === id);
+}
+
+/** The own fields of an issue that the person sees: used in its project and its issue type. */
+export function issueFieldsOf(
+  fields: readonly OwnField[],
+  issue: IssueBlockProps["issue"],
+): readonly OwnField[] {
+  const type = issue.issue_type?.id;
+  return fields.filter(
+    (field) =>
+      field.applies_to === "issues" &&
+      (field.scope.issue_types.length === 0 ||
+        field.scope.issue_types.some((each) => each.id === type)),
+  );
 }

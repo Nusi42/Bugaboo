@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { formatDate, formatDateTime, formatNumber } from "../../shared/format.ts";
 import { personName, type Person } from "../../shared/person.ts";
 import { choiceOf, plainText, type Choice, type OwnField, type KindWord } from "./fields.ts";
+import { memberOf } from "./reference.ts";
 import { durationText } from "./value-text.ts";
 
 /** A day from the API (`2026-10-10`) as a moment, for the way the person writes days. */
@@ -26,15 +27,6 @@ function textsOf(value: unknown): readonly string[] {
   return Array.isArray(value)
     ? value.filter((each): each is string => typeof each === "string")
     : [];
-}
-
-/** A member of an object from the API, whatever it holds. */
-function memberOf(value: unknown, name: string): unknown {
-  if (typeof value !== "object" || value === null) {
-    return undefined;
-  }
-  const found: unknown = Reflect.get(value, name);
-  return found;
 }
 
 /** Whether an object from the API is a person as the server shows one (`PersonRef`). */

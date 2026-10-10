@@ -57,8 +57,12 @@ export type IssueChange = Readonly<Record<string, unknown>>;
 export interface IssueBlockProps {
   /** The issue as the person sees it. */
   readonly issue: IssueView;
+  /** The address the page was opened with: what a block that reads the issue again asks for. */
+  readonly address: string;
   /** The readable ID (`WEB-142`), for links and for the records a block reads. */
   readonly issueKey: string;
+  /** The long-text own fields as the server rendered them (WP-05), by the key of the field. */
+  readonly ownFieldsHtml: IssueDetail["own_fields_html"];
   /** What the person may change in this issue. */
   readonly mask: IssueFieldMask;
   /** The version of the issue now: a block that saves sends the one it read. */
@@ -97,11 +101,16 @@ export function issueBlocks(slot: IssueSlot): readonly IssueBlockEntry[] {
   return blocks.get(slot) ?? [];
 }
 
-/** The mask of an issue answer: `changeable` names the built-in fields the person may change. */
+/**
+ * The mask of an issue answer: `changeable` names the fields the person may change, built-in or
+ * own. An own field is seen when it has a value or the person may change it (a hidden field is in
+ * neither).
+ */
 export function maskOf(detail: Readonly<IssueDetail>): IssueFieldMask {
   const changeable = new Set<string>(detail.changeable);
+  const own = detail.issue.own_fields ?? {};
   return {
-    sees: (key) => key in detail.issue,
+    sees: (key) => key in detail.issue || key in own || changeable.has(key),
     changes: (key) => detail.may_change && changeable.has(key),
   };
 }

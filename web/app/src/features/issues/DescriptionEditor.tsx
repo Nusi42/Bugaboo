@@ -4,10 +4,17 @@ import { Button, buttonLook, MarkdownEditor, MarkdownView, partOf, part } from "
 
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
+import type { LongTextWords } from "./long-text-words.ts";
 import type { Description } from "./use-description.ts";
 
 /** The box with the buttons under it. */
-export function DescriptionEditor({ description }: { readonly description: Description }) {
+export function DescriptionEditor({
+  description,
+  words,
+}: {
+  readonly description: Description;
+  readonly words: LongTextWords;
+}) {
   const hosts = useImageHosts();
   const { phase } = description;
   const saving = phase.kind === "saving";
@@ -17,7 +24,7 @@ export function DescriptionEditor({ description }: { readonly description: Descr
     <>
       {held ? null : (
         <MarkdownEditor
-          label={t("issue-field.description")}
+          label={words.title}
           labels={markdownLabels()}
           value={description.text}
           // Every key counts while the lock is being taken; only a save in flight takes none.
@@ -46,14 +53,16 @@ export interface DescriptionReadingProps {
   readonly html: SafeHtml | undefined;
   /** Whether there is a description at all. */
   readonly filled: boolean;
+  /** What is said when there is nothing yet. */
+  readonly empty: string;
 }
 
 /** The description as the server rendered it, or the word that there is none yet. */
-export function DescriptionReading({ html, filled }: DescriptionReadingProps) {
+export function DescriptionReading({ html, filled, empty }: DescriptionReadingProps) {
   return (
     <div {...partOf(part.issueSectionReading)}>
       {html === undefined || !filled ? (
-        <p {...partOf(part.muted)}>{t("issues.description.empty")}</p>
+        <p {...partOf(part.muted)}>{empty}</p>
       ) : (
         <MarkdownView html={html} />
       )}

@@ -75,10 +75,14 @@ async function joinIssues(): Promise<void> {
   if (issuesJoined) {
     return;
   }
-  const issues = await import("../features/issues/index.ts");
+  const [issues, fields] = await Promise.all([
+    import("../features/issues/index.ts"),
+    import("../features/fields/index.ts"),
+  ]);
   if (!issuesJoined) {
     issuesJoined = true;
     issues.registerIssues();
+    fields.registerFields();
   }
 }
 

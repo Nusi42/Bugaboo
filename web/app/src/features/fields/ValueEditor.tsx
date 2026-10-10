@@ -15,6 +15,8 @@ import {
 import { useState, type ReactNode } from "react";
 
 import type { OwnField, KindWord } from "./fields.ts";
+import { GroupChoice, IssueChoice } from "./OtherChoices.tsx";
+import { PeopleChoice } from "./PeopleChoice.tsx";
 import { ValueView } from "./ValueView.tsx";
 import { durationSeconds, durationText, isDecimalText, isWholeNumberText } from "./value-text.ts";
 
@@ -30,6 +32,8 @@ export interface ValueEditorProps {
   /** What the server said was wrong with the last value, in words. */
   readonly problem?: string | undefined;
   readonly isPending?: boolean;
+  /** The project of the item (its short name), for the people a field can point to. */
+  readonly project?: string | undefined;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
@@ -220,15 +224,18 @@ function PickSeveralEditor({ field, value, onCommit, problem }: ValueEditorProps
   );
 }
 
-/** People, groups and issues are shown, and can be taken away; picking them comes with the issue page. */
-function ReferenceEditor({ field, value, onCommit, isPending = false }: ValueEditorProps) {
+/** People, groups and issues: the value as shown, *Choose* to pick another, and *Take away*. */
+function ReferenceEditor({ field, value, project, onCommit, isPending = false }: ValueEditorProps) {
   const hasValue = value !== undefined && value !== null && field.rules.required !== true;
   return (
     <div {...partOf(part.stack)}>
       <p {...partOf(part.fieldLabel)}>{field.name}</p>
       <ValueView field={field} value={value} />
-      {hasValue ? (
-        <div {...partOf(part.row)}>
+      <div {...partOf(part.row)}>
+        {project === undefined ? null : (
+          <Chooser field={field} value={value} project={project} onCommit={onCommit} />
+        )}
+        {hasValue ? (
           <Button
             look={buttonLook.quiet}
             isPending={isPending}
@@ -238,10 +245,26 @@ function ReferenceEditor({ field, value, onCommit, isPending = false }: ValueEdi
           >
             {t("fields.take-away")}
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
+}
+
+/** The dialog that picks what a field of people, a group or an issue points to. */
+function Chooser({
+  field,
+  value,
+  project,
+  onCommit,
+}: Pick<ValueEditorProps, "field" | "value" | "onCommit"> & { readonly project: string }) {
+  if (field.kind === "group") {
+    return <GroupChoice field={field} onCommit={onCommit} />;
+  }
+  if (field.kind === "issue") {
+    return <IssueChoice field={field} onCommit={onCommit} />;
+  }
+  return <PeopleChoice field={field} value={value} project={project} onCommit={onCommit} />;
 }
 
 /** One editor for each kind of value, so a new kind cannot be forgotten. */
