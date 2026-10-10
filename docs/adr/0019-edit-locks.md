@@ -62,3 +62,9 @@ ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
 - **Locks and drafts belong to a tab of a signed-in person.** Every lock and draft route needs the session of a browser (`ctx.session_actor`), so an access key is turned away from them, whatever it may change elsewhere.
 - **Nothing typed is dropped.** The heartbeat keeps the text so far as the person's draft even when the lock is gone; a save that is refused (`edit.lock_lost`, `edit.taken_over`, `edit.version_changed`) keeps its text as the draft. The notes for the person who was editing are handed over once at their next heartbeat.
 - **Enforced by:** ARCH-VERSIONED (every change takes a version, or is named in `tools/checks/version-exemptions.toml`; a save of long text also takes `lock_token`; both are required in the body), TEST-EDIT-LOCKS (server part, both databases; WP-10 adds the browser scenarios).
+
+## Amendment (M3 WP-05)
+
+- **A long-text own field is saved only under the lock.** `PUT /api/v1/issues/{issue}/fields/{field}/text` is the one route that changes it (`saveIssueFieldText`, in `LONG_TEXT_ROUTES`); `PATCH` of an issue and of a project refuse such a field. A refused save, also one refused before it is tried (a rule, a stale version), keeps the text as the person's draft.
+- **A new issue may be made with a long text, like the description.** `POST /issues` takes long-text own fields, because nothing is edited yet and no lock can exist; every later change goes through the lock.
+- **A long-text field can only be made for issues.** Projects have no lock route for it yet (M3-F49); the server refuses the pair when the field is made.
