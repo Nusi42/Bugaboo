@@ -461,6 +461,7 @@ pub(super) const DEFAULT_LOOK: &str = \"day\";
             EDIT_SOURCE.to_owned(),
             "pub const LEASE_SECONDS: i64 = 60;
 pub const HEARTBEAT_SECONDS: i64 = 15;
+pub const WATCH_SECONDS: i64 = 30;
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
@@ -470,6 +471,7 @@ pub const VERSIONS_MAX: u32 = 50;
         let text = editing(&[source]).unwrap();
         assert!(text.contains("leaseSeconds = 60;"), "{text}");
         assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
+        assert!(text.contains("watchSeconds = 30;"), "{text}");
         assert!(text.contains("draftKeepDays = 30;"), "{text}");
         assert!(text.contains("draftTextMax = 100000;"), "{text}");
         assert!(text.contains("versionsMax = 50;"), "{text}");
@@ -478,9 +480,13 @@ pub const VERSIONS_MAX: u32 = 50;
 
     #[test]
     fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
-        let spec =
-            r#"{"components":{"schemas":{"IssueIcon":{"type":"string","enum":["bug","flag"]}}}}"#;
-        let text = words(spec).unwrap();
+        let schemas = WORD_LISTS
+            .iter()
+            .map(|name| format!(r#""{name}":{{"type":"string","enum":["bug","flag"]}}"#))
+            .collect::<Vec<_>>()
+            .join(",");
+        let spec = format!(r#"{{"components":{{"schemas":{{{schemas}}}}}}}"#);
+        let text = words(&spec).unwrap();
         assert!(
             text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),
             "{text}"
