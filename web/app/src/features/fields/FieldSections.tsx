@@ -1,12 +1,12 @@
 import { BasicsSection } from "./BasicsSection.tsx";
 import { ChoicesSection } from "./ChoicesSection.tsx";
-import { useFieldTypes, type Field } from "./fields.ts";
+import { useFieldTypes, type OwnField } from "./fields.ts";
 import { LookSection } from "./LookSection.tsx";
 import { RulesSection } from "./RulesSection.tsx";
 import { UsageSection } from "./UsageSection.tsx";
 
 /** The sections of the page of a field that edit it: basics, choices, rules, look and where it is used. */
-export function FieldSections({ field }: { readonly field: Field }) {
+export function FieldSections({ field }: { readonly field: OwnField }) {
   const types = useFieldTypes();
   const hasChoices = types.data?.kinds
     .find((each) => each.kind === field.kind)

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshFields } from "../../shared/query-keys.ts";
-import { useFields, type Field } from "./fields.ts";
+import { useFields, type OwnField } from "./fields.ts";
 import { ValueEditor, type Sent } from "./ValueEditor.tsx";
 import { ValueView } from "./ValueView.tsx";
 
@@ -34,7 +34,7 @@ export interface OwnFieldsBlockProps {
 }
 
 /** The own fields of an issue that the person sees: used in its project and its issue type. */
-function fieldsOf(fields: readonly Field[], issue: Schema<"IssueItem">): readonly Field[] {
+function fieldsOf(fields: readonly OwnField[], issue: Schema<"IssueItem">): readonly OwnField[] {
   const type = issue.issue_type?.id;
   return fields.filter(
     (field) =>
@@ -45,15 +45,15 @@ function fieldsOf(fields: readonly Field[], issue: Schema<"IssueItem">): readonl
 }
 
 /** What makes a line start afresh: the field, the value it holds and the version of the item. */
-function lineKey(field: Field, value: unknown, version = 0): string {
+function lineKey(field: OwnField, value: unknown, version = 0): string {
   return [field.id, JSON.stringify(value), version].join("|");
 }
 
 interface FieldLineProps {
-  readonly field: Field;
+  readonly field: OwnField;
   readonly value: unknown;
   readonly editable: boolean;
-  readonly onCommit: (field: Field, value: Sent) => Promise<unknown>;
+  readonly onCommit: (field: OwnField, value: Sent) => Promise<unknown>;
 }
 
 /** One field: its name and value, or its editor where the person may change it. */

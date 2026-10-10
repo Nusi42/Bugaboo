@@ -63,14 +63,6 @@ export async function openMovePreview({ page }: Needs): Promise<void> {
   await openMove(page, addressInProject(paths.projectSettings, SUB_PROJECT));
 }
 
-/** A screen of the page frames, once what it shows is there. */
-export function inFrames(search: string, ready: (page: Page) => Promise<void>): Screen["open"] {
-  return async ({ page }) => {
-    await page.goto(`${paths.frames}${search}`);
-    await ready(page);
-  };
-}
-
 /** Makes an invitation for somebody new, so that the link that shows once is in the picture. */
 export async function openInvitation({ page }: Needs): Promise<void> {
   await page.goto(paths.people);

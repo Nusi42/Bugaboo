@@ -21,6 +21,8 @@
 //!   `src/fields.generated.ts`;
 //! - the words of the vocabularies the browser lists (the icons of issue types) are read from the
 //!   API description into `src/words.generated.ts`;
+//! - the names of the properties the server renders as HTML (the mark `x-safe-html`) are written
+//!   as `src/safe-html.generated.ts`, and their TypeScript type is `SafeHtml`;
 //! - the name of the Trusted Types policy (`crates/bb-api-words`) is read as Rust source and
 //!   written as `src/browser.generated.ts`.
 //!
@@ -60,6 +62,8 @@ pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generat
 pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.generated.ts";
 /// The scale of own-field numbers, for the browser app.
 pub(crate) const FIELDS_PATH: &str = "web/packages/api-client/src/fields.generated.ts";
+/// The names of the properties the server renders as HTML (mark `x-safe-html`).
+pub(crate) const SAFE_HTML_PATH: &str = "web/packages/api-client/src/safe-html.generated.ts";
 /// The words of the vocabularies the browser lists at run time.
 pub(crate) const WORDS_PATH: &str = "web/packages/api-client/src/words.generated.ts";
 /// Names the browser needs from the server code, such as the Trusted Types policy.
@@ -82,6 +86,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         PAGING_PATH,
         EDITING_PATH,
         WORDS_PATH,
+        SAFE_HTML_PATH,
         BROWSER_NAMES_PATH,
         COOKIES_PAGE,
     ]
@@ -127,6 +132,10 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         Generated::new(
             WORDS_PATH,
             format_with_oxfmt(repo, WORDS_PATH, &web_constants::words(&spec)?)?,
+        ),
+        Generated::new(
+            SAFE_HTML_PATH,
+            format_with_oxfmt(repo, SAFE_HTML_PATH, &web_constants::safe_html(&spec)?)?,
         ),
         Generated::new(
             BROWSER_NAMES_PATH,
@@ -196,7 +205,12 @@ pub(crate) fn format_with_oxfmt(repo: &Repo, path: &str, text: &str) -> anyhow::
 }
 
 fn openapi_types(repo: &Repo, spec: &str) -> anyhow::Result<String> {
-    pipe(Path::new("node"), &[TYPES_SCRIPT], repo.root(), spec)
+    pipe(
+        Path::new("node"),
+        &[TYPES_SCRIPT, bb_api_words::marks::SAFE_HTML],
+        repo.root(),
+        spec,
+    )
 }
 
 /// What the browser client needs from `cookies.rs`.

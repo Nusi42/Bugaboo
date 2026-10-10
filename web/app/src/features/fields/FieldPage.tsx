@@ -6,11 +6,11 @@ import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
 import { FieldSections } from "./FieldSections.tsx";
-import { scopeText, typeName, useField, type Field } from "./fields.ts";
+import { scopeText, typeName, useField, type OwnField } from "./fields.ts";
 import { useChangeField } from "./use-change-field.ts";
 
 /** *Retire the field*: no new values, while the old ones stay. A switch, because it can be taken back. */
-function RetireField({ field }: { readonly field: Field }) {
+function RetireField({ field }: { readonly field: OwnField }) {
   const change = useChangeField();
   return (
     <Card heading={t("fields.retire-title")}>
@@ -31,7 +31,7 @@ function RetireField({ field }: { readonly field: Field }) {
 }
 
 /** The page of a field: the sections of UX §5.3, one under the other. */
-function Page({ field }: { readonly field: Field }) {
+function Page({ field }: { readonly field: OwnField }) {
   usePageTitle(field.name);
   return (
     <div {...partOf(part.stack)}>

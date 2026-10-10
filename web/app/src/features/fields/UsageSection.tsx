@@ -15,7 +15,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { QueryGate } from "../shell/index.ts";
-import { useFieldUsage, type Field } from "./fields.ts";
+import { useFieldUsage, type OwnField } from "./fields.ts";
 import { IssueTypeBoxes } from "./IssueTypeBoxes.tsx";
 import { ProjectsToUse, type ProjectChoice } from "./ProjectsToUse.tsx";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
@@ -43,7 +43,7 @@ function ProjectLine({
 }
 
 /** What the field is used for now: the projects with a value and the issue types, before a change is made. */
-function WhereUsed({ field }: { readonly field: Field }) {
+function WhereUsed({ field }: { readonly field: OwnField }) {
   const usage = useFieldUsage(field.id);
   return (
     <QueryGate error={usage.error} data={usage.data}>
@@ -117,7 +117,7 @@ function ProjectScope({
  * field now, listed before a change, and the form that limits the field to some projects (with their
  * sub-projects) and some issue types.
  */
-export function UsageSection({ field }: { readonly field: Field }) {
+export function UsageSection({ field }: { readonly field: OwnField }) {
   const [everywhere, setEverywhere] = useState(field.scope.whole_organization);
   const [projects, setProjects] = useState<readonly ProjectChoice[]>(
     field.scope.projects.map((project) => ({

@@ -10,7 +10,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::fields::FieldKey;
-use bb_core::id::{IssueId, IssueTypeId, UserId};
+use bb_core::id::{IssueId, IssueTypeId, LockToken, UserId};
 use bb_core::issue::{IssueIcon, IssueType, Priority, Status, StatusGroup};
 use bb_core::own_fields_value::OwnValues;
 use bb_policy::{Masked, PersonRef};
@@ -54,8 +54,6 @@ pub struct ChangeIssue {
     pub issue_type: Option<IssueTypeId>,
     /// A new title, as typed.
     pub title: Option<String>,
-    /// A new description.
-    pub description: Option<String>,
     /// A new status. Entering the group *Done* sets the closed date; leaving it clears it.
     pub status: Option<Status>,
     /// A new priority.
@@ -65,6 +63,20 @@ pub struct ChangeIssue {
     /// The values of own fields to set, by the key of the field; `null` takes a value away. A
     /// long text is saved on its own route, under its edit lock.
     pub fields: BTreeMap<String, Value>,
+}
+
+/// Save the description of an issue under the edit lock the person holds.
+pub struct SaveDescription {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The issue, by its readable ID (also an old one) or its internal ID.
+    pub issue: String,
+    /// The version the person started from; a change made meanwhile stops the save.
+    pub version: i64,
+    /// The token of the edit lock the person holds on the description.
+    pub lock_token: LockToken,
+    /// The description, in Markdown.
+    pub text: String,
 }
 
 /// Put an issue into the trash, or take it out again (*Undo*).
@@ -195,6 +207,11 @@ pub struct IssueDetail {
     /// The issue.
     #[masked(nested)]
     pub issue: IssueView,
+    /// The description as safe HTML, rendered by `bb-markdown` with the image hosts of the
+    /// organization (the same renderer the editor's preview runs in the browser). Hidden with the
+    /// description.
+    #[masked(field = "description")]
+    pub description_html: String,
     /// Whether the person may change the issue at all (in the fields they may change).
     #[masked(open)]
     pub may_change: bool,

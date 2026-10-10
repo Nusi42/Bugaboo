@@ -40,6 +40,13 @@ export const shortcutDefinitions = [
     button: "nav.home",
   },
   {
+    id: "new-issue",
+    keys: ["c"],
+    message: "shortcut.new-issue",
+    where: "everywhere",
+    button: "issues.new",
+  },
+  {
     id: "list-next",
     keys: ["j"],
     message: "shortcut.list-next",
@@ -53,7 +60,38 @@ export const shortcutDefinitions = [
     where: "lists",
     button: "list.previous",
   },
+  {
+    id: "change-status",
+    keys: ["s"],
+    message: "shortcut.change-status",
+    where: "issues",
+    button: "issue-field.status",
+  },
+  {
+    id: "assign",
+    keys: ["a"],
+    message: "shortcut.assign",
+    where: "issues",
+    button: "issue-field.assigned-to",
+  },
+  {
+    id: "edit-description",
+    keys: ["e"],
+    message: "shortcut.edit-description",
+    where: "issues",
+    button: "issues.description.edit",
+  },
 ] as const satisfies readonly ShortcutDefinition[];
+
+/** Where a shortcut works. */
+export type ShortcutPlace = "everywhere" | "lists" | "issues";
+
+/** The words that say where a shortcut works, for the list under `?` and the page in *My settings*. */
+export const placeMessage = {
+  everywhere: "shortcut.everywhere",
+  lists: "shortcut.in-lists",
+  issues: "shortcut.on-issue",
+} as const satisfies Record<ShortcutPlace, MessageKey>;
 
 export interface ShortcutDefinition {
   readonly id: string;
@@ -61,8 +99,8 @@ export interface ShortcutDefinition {
   readonly keys: readonly string[];
   /** What the shortcut does, in words. */
   readonly message: MessageKey;
-  /** Where it works: on every screen, or only where a list is shown. */
-  readonly where: "everywhere" | "lists";
+  /** Where it works: on every screen, only where a list is shown, or only on an open issue. */
+  readonly where: ShortcutPlace;
   /** The name of the visible button or link that does the same. */
   readonly button: MessageKey;
   /**

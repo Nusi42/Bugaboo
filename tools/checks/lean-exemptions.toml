@@ -153,3 +153,9 @@ route = "GET /api/v1/projects/{project}"
 property = "changeable_fields"
 whole_value = true
 reason = "The fields a person may change in one project are at most as many as the field catalogue and the own fields have (at most 200 own fields, FIELDS_MAX): a list bounded when it is written, and the project page needs all of them at once (M3-F48)."
+
+[[exempt]]
+route = "GET /api/v1/content/image-hosts"
+property = "hosts"
+whole_value = true
+reason = "The hosts are the value of one setting (content.image-hosts), read as a whole; the setting allows at most 50 and the preview needs all of them at once (M3-F11)."

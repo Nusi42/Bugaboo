@@ -23,6 +23,24 @@ pub struct TakeLockQuery {
     pub editor: EditorId,
 }
 
+/// Ask who is editing a thing, without taking the lock (the box has just opened).
+pub struct ReadLockQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The thing that is going to be edited.
+    pub what: EditWhat,
+}
+
+/// Whether somebody else is editing a thing now.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct LockHolder {
+    /// Who is editing and since when; nothing when the thing is free. A lock of the person's own
+    /// (another window) is shown too, with `yours_elsewhere` set.
+    pub held: Option<HeldLock>,
+}
+
+impl Masked for LockHolder {}
+
 /// A text that is kept as the draft of the person while they edit.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DraftText {

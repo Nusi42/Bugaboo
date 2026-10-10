@@ -10,11 +10,15 @@
 //! `x-long-text` (from the table of `bb-api`) saves long text: its body must have `version` and
 //! `lock_token`, and it can never be exempt. An exemption that names a route that is not there,
 //! or one that has a version now, fails, so the file shrinks as the routes are fixed and cannot go
-//! stale. A route that takes a version must also document the structured answer to a stale
+//! stale. A change of an existing record (a body with `version`) that holds a long-text property
+//! (`LONG_TEXT_PROPERTIES`) and is not marked `x-long-text` fails: long text is never written without
+//! its lock. The static check sees only properties of the body that are named in the description;
+//! the own long-text fields of an issue, which travel inside the open `fields` map, are refused at
+//! run time (M3 WP-05). A route that takes a version must also document the structured answer to a stale
 //! version (`ConflictProblem`) as its `409`, so the generated client types it.
 
 use bb_api_words::marks::LONG_TEXT;
-use bb_api_words::versions::{CONFLICT_SCHEMA, LOCK_TOKEN, VERSION};
+use bb_api_words::versions::{CONFLICT_SCHEMA, LOCK_TOKEN, LONG_TEXT_PROPERTIES, VERSION};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -162,7 +166,17 @@ fn route_findings(spec: &Value, found: &Operation<'_>, exempt: Option<&Exemption
                 format!("A route that saves long text is never exempt from `{VERSION}` and `{LOCK_TOKEN}`: remove it from {EXEMPTIONS_PATH}."),
             ));
         }
-    } else if !versioned && exempt.is_none() {
+    } else if versioned {
+        // A change of an existing record never writes long text but under its lock (M3-F50).
+        for name in LONG_TEXT_PROPERTIES {
+            if properties.contains(name) {
+                findings.push(Finding::at(
+                    &place,
+                    format!("A change of a record must not take the long text `{name}` in its body: long text is saved by a route marked `x-long-text`, under the edit lock (ADR-0019)."),
+                ));
+            }
+        }
+    } else if exempt.is_none() {
         findings.push(Finding::at(
             &place,
             format!("A change must take the `{VERSION}` it read in its body, so nobody overwrites another change unseen (ADR-0019). If it cannot have one (signing in, making a new record), name the route with its reason in {EXEMPTIONS_PATH}."),
@@ -313,6 +327,23 @@ mod tests {
 ",
         );
         assert!(found.contains("must be required"), "{found}");
+    }
+
+    #[test]
+    fn bad_example_a_change_of_a_record_that_takes_the_description_without_the_lock() {
+        let bad = spec(&change(&["title", "description", "version"], true, false));
+        let found = messages(&bad, &[]).join(
+            "
+",
+        );
+        assert!(found.contains("long text `description`"), "{found}");
+    }
+
+    #[test]
+    fn good_example_making_a_record_may_take_the_description() {
+        let made = spec(&change(&["title", "description"], false, false));
+        let named = [exempt(&["PATCH /api/v1/things/{id}"], LONG)];
+        assert!(messages(&made, &named).is_empty());
     }
 
     #[test]

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 
 /** An own field as the server shows it to this person (`FieldBody`). */
-export type Field = Schema<"FieldBody">;
+export type OwnField = Schema<"FieldBody">;
 /** A choice of a *Pick one* or *Pick several* field. */
 export type Choice = Schema<"FieldChoiceBody">;
 /** What a kind of information allows. */
@@ -50,7 +50,7 @@ export function useFields(
 export function useField(id: string) {
   return useQuery({
     ...api.query.queryOptions("get", "/api/v1/fields/{field}", { params: { path: { field: id } } }),
-    select: (found: Field) => found,
+    select: (found: OwnField) => found,
   });
 }
 
@@ -80,7 +80,7 @@ export function typeExample(kind: KindWord): string {
 }
 
 /** Where a field is used, in words: the whole organization, or how many projects. */
-export function scopeText(field: Field): string {
+export function scopeText(field: OwnField): string {
   const projects = field.scope.projects.length;
   if (field.scope.whole_organization) {
     return t("fields.scope-everywhere");
@@ -89,6 +89,6 @@ export function scopeText(field: Field): string {
 }
 
 /** The choice with this ID in a field. */
-export function choiceOf(field: Field, id: string): Choice | undefined {
+export function choiceOf(field: OwnField, id: string): Choice | undefined {
   return field.choices.find((choice) => choice.id === id);
 }

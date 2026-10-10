@@ -5,9 +5,8 @@
 //! appends the event and the outbox entry, and commits them together; `bb-store` implements it).
 //! A *use case* is an `async fn` of any visibility in `bb-app` that takes the context (a
 //! parameter whose type mentions `Ctx`). It is a *query* when its input type ends in `Query`;
-//! every other use case is a command, and its body must call `record_change` or `save_text`, the
-//! method of `Ctx` that saves a long text under its edit lock and calls `record_change` inside
-//! (ADR-0019; `bb-app/src/editing/save.rs`). Comments and
+//! every other use case is a command, and its body must call `record_change` or `save_text` (the
+//! save of a long text under its lock, which calls `record_change` itself). Comments and
 //! string literals are removed before the code is read, so a mention of the call does not count.
 //! Calling a command a query is a way around the rule; review looks at the names (the type of the
 //! input is part of the signature, not just a parameter name). This check reads the code; the
@@ -27,10 +26,11 @@ const USE_CASES_FOLDER: &str = "crates/bb-app/src/";
 const PORT: &str = "trait ChangeStore";
 /// The method of the port that writes a change with its event.
 const RECORD: &str = "record_change";
+/// The other call that writes a change with its event: it checks the edit lock and calls
+/// `record_change` inside (`editing/save.rs`).
+const SAVE_TEXT: &str = "save_text";
 /// The file with the table of the test that runs every command.
 const TABLE_FILE: &str = "crates/bb-app/src/tests/events.rs";
-/// The call of `Ctx::save_text`, which writes through `record_change` and so counts as one.
-const SAVE_TEXT: &str = ".save_text(";
 /// The ending of the input type of a use case that only reads.
 const QUERY_SUFFIX: &str = "Query";
 
@@ -141,7 +141,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
             let Some(body) = balanced(&after[body_start..], '{') else {
                 continue;
             };
-            if body.contains(&format!("{RECORD}(")) || body.contains(SAVE_TEXT) {
+            if body.contains(&format!("{RECORD}(")) || body.contains(&format!("{SAVE_TEXT}(")) {
                 let line_start = code[..at].rfind('\n').map_or(0, |newline| newline + 1);
                 let is_public = code[line_start..at].trim_start().starts_with("pub");
                 if is_public && table.is_some_and(|table| !table.contains(&format!("\"{name}\""))) {
@@ -202,8 +202,13 @@ mod tests {
     }
 
     #[test]
-    fn good_example_a_command_that_saves_a_long_text_under_its_lock() {
-        let text = "pub async fn save_field_text(ctx: &Ctx, cmd: SaveFieldText) -> Result<(), AppError> {\n    ctx.save_text(person, place, &save, &event, write).await?;\n    Ok(())\n}\n";
+    fn good_example_a_command_that_saves_long_text_under_its_lock() {
+        let text =
+            "pub async fn change_status(ctx: &Ctx, cmd: ChangeStatus) -> Result<(), AppError> {
+    ctx.save_text(person, place, &save, &event, write).await?;
+    Ok(())
+}
+";
         assert!(found(text).is_empty());
     }
 

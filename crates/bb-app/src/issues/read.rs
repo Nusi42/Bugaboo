@@ -111,8 +111,12 @@ pub async fn issue<S: AuthStore>(
     } else {
         Vec::new()
     };
+    let image_hosts = ctx.image_hosts().await?;
+    let description_html =
+        bb_markdown::render(&issue.description, &bb_markdown::Options { image_hosts }).html;
     Ok(held.authorize(IssueDetail {
         issue: view,
+        description_html,
         may_change,
         may_delete: held.may_delete_issue(issue.reported_by),
         changeable,

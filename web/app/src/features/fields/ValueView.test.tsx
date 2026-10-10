@@ -2,11 +2,11 @@ import { t } from "@bugaboo/messages";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import type { Field } from "./fields.ts";
+import type { OwnField } from "./fields.ts";
 import { ValueView } from "./ValueView.tsx";
 
 /** A field for the tests; `more` replaces what it is given. */
-function field(more: Partial<Field>): Field {
+function field(more: Partial<OwnField>): OwnField {
   return {
     applies_to: "issues",
     choices: [
@@ -28,7 +28,7 @@ function field(more: Partial<Field>): Field {
   };
 }
 
-function shown(of: Field, value: unknown): string {
+function shown(of: OwnField, value: unknown): string {
   return renderToStaticMarkup(<ValueView field={of} value={value} />);
 }
 

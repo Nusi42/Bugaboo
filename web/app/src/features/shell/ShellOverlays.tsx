@@ -9,8 +9,11 @@ import {
   part,
 } from "@bugaboo/ui";
 
+import { Fragment } from "react";
+
 import { MoreSheet } from "./MoreSheet.tsx";
 import { closeOverlay, useOverlay } from "./overlay-state.ts";
+import { useOverlayHosts } from "./overlay-hosts.ts";
 import { QuickSearch } from "./QuickSearch.tsx";
 import { ShortcutHelp } from "./ShortcutHelp.tsx";
 import { Sidebar, type SidebarProps } from "./Sidebar.tsx";
@@ -43,6 +46,7 @@ function Drawer(props: Omit<ShellOverlaysProps, "layout">) {
 export function ShellOverlays({ layout, ...person }: ShellOverlaysProps) {
   const tablet = layout === "tablet";
   const phone = layout === "phone";
+  const hosts = useOverlayHosts();
   return (
     <>
       {tablet ? <Drawer {...person} /> : null}
@@ -54,6 +58,9 @@ export function ShellOverlays({ layout, ...person }: ShellOverlaysProps) {
           signingOut={person.signingOut}
         />
       ) : null}
+      {hosts.map((host) => (
+        <Fragment key={host.id}>{host.render()}</Fragment>
+      ))}
       <QuickSearch />
       <ShortcutHelp />
       <UndoHost aboveBar={phone} />

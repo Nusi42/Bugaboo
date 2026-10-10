@@ -1,0 +1,77 @@
+import { t } from "@bugaboo/messages";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  Form,
+  SubmitButton,
+  partOf,
+  part,
+} from "@bugaboo/ui";
+
+import { messageOf } from "../../shared/errors.ts";
+import { DraftOffer } from "./DraftOffer.tsx";
+import { canCreate } from "./new-issue-form.ts";
+import { NewIssueFields } from "./NewIssueFields.tsx";
+import { ProjectChoice } from "./ProjectChoice.tsx";
+import { useNewIssue } from "./use-new-issue.ts";
+
+export interface NewIssueFormProps {
+  /** Called with the readable ID and the project when an issue was made and the dialog is done. */
+  readonly onMade: (key: string, project: string) => void;
+  readonly onClose: () => void;
+}
+
+/**
+ * The form of a new issue in its dialog (ISS-11, UX §4.5): project, type, then the fields. What is
+ * written is kept as a draft, in the browser and on the server, until the issue is made;
+ * *Create and start another* keeps the project and the type.
+ */
+export function NewIssueForm({ onMade, onClose }: NewIssueFormProps) {
+  const form = useNewIssue();
+  const { project, values, offered } = form;
+  return (
+    <Form
+      onSubmit={() => {
+        form.create(false, onMade);
+      }}
+    >
+      <h2 {...partOf(part.issueSectionTitle)}>{t("issues.new-title")}</h2>
+      <ProjectChoice name={project?.name} shortName={form.address} onPick={form.pick} />
+      {offered === null ? null : (
+        <DraftOffer
+          draft={offered}
+          now={form.now}
+          onContinue={() => {
+            form.continueDraft(offered);
+          }}
+          onDrop={form.dropDraft}
+        />
+      )}
+      {form.lastKey === null ? null : (
+        <Alert tone={alertTone.success}>{t("issues.created", { key: form.lastKey })}</Alert>
+      )}
+      {project === undefined ? null : (
+        <NewIssueFields values={values} types={form.types} onChange={form.change} />
+      )}
+      {form.error === null ? null : <Alert tone={alertTone.danger}>{messageOf(form.error)}</Alert>}
+      <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
+      <div {...partOf(part.issueSectionActions)}>
+        <Button look={buttonLook.quiet} onPress={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          isDisabled={!canCreate(values) || project === undefined}
+          isPending={form.pending}
+          onPress={() => {
+            form.create(true, onMade);
+          }}
+        >
+          {t("issues.create-another")}
+        </Button>
+        <SubmitButton isPending={form.pending}>{t("issues.create")}</SubmitButton>
+      </div>
+    </Form>
+  );
+}

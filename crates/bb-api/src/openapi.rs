@@ -12,6 +12,7 @@ use axum::http::Method;
 use axum::http::header::{ETAG, RETRY_AFTER};
 use bb_api_words::marks;
 use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
+use bb_core::fields::Field;
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
@@ -41,7 +42,7 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         description = "The API of Bugaboo. The browser app uses exactly this API. Every error \
             is application/problem+json with a stable code and a message key."
     ),
-    components(schemas(Problem, ErrorCode, ConflictProblem)),
+    components(schemas(Problem, ErrorCode, ConflictProblem, Field)),
     tags(
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
@@ -110,6 +111,39 @@ pub fn json() -> &'static str {
     })
 }
 
+/// The string properties of answers that hold HTML the server rendered with `bb-markdown`, as the
+/// name of the schema and the property: each gets the mark `x-safe-html`, and the generated client
+/// turns its value into a `SafeHtml` (M3-F12). A new rendered field is added here and nowhere else;
+/// the test below holds the table to the real schemas.
+pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[("IssueDetailBody", "description_html")];
+
+/// Puts `x-safe-html` on the properties of [`SAFE_HTML_PROPERTIES`]. Returns the ones that were
+/// not found (a test says there are none).
+fn mark_safe_html(openapi: &mut utoipa::openapi::OpenApi) -> Vec<(&'static str, &'static str)> {
+    let mut missing = Vec::new();
+    let components = openapi.components.get_or_insert_with(Default::default);
+    for (schema, property) in SAFE_HTML_PROPERTIES {
+        let object = match components.schemas.get_mut(*schema) {
+            Some(RefOr::T(Schema::Object(object))) => object.properties.get_mut(*property),
+            _ => None,
+        };
+        match object {
+            Some(RefOr::T(Schema::Object(property))) => {
+                property
+                    .extensions
+                    .get_or_insert_with(Extensions::default)
+                    .merge(
+                        Extensions::builder()
+                            .add(marks::SAFE_HTML, serde_json::json!(true))
+                            .build(),
+                    );
+            }
+            _ => missing.push((*schema, *property)),
+        }
+    }
+    missing
+}
+
 /// What every route has: the answers every request can get, and the security schemes.
 struct StandardParts;
 
@@ -131,6 +165,7 @@ impl Modify for StandardParts {
             CSRF_SCHEME,
             SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new(CSRF_HEADER))),
         );
+        mark_safe_html(openapi);
         let components = openapi.components.clone().unwrap_or_default();
         for item in openapi.paths.paths.values_mut() {
             for (_, operation) in each_operation(item) {
@@ -504,6 +539,29 @@ fn steady_text(text: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn m3_f12_every_server_rendered_property_has_the_mark_and_no_other_has() {
+        let value = serde_json::to_value(document()).unwrap();
+        let schemas = &value["components"]["schemas"];
+        for (schema, property) in SAFE_HTML_PROPERTIES {
+            assert_eq!(
+                schemas[*schema]["properties"][*property][marks::SAFE_HTML],
+                serde_json::json!(true),
+                "{schema}.{property} lacks the mark"
+            );
+            let kind = &schemas[*schema]["properties"][*property]["type"];
+            assert!(
+                kind == "string" || kind == &serde_json::json!(["string", "null"]),
+                "{schema}.{property} is not text"
+            );
+        }
+        let marked = value
+            .to_string()
+            .matches(&format!("\"{}\":true", marks::SAFE_HTML))
+            .count();
+        assert_eq!(marked, SAFE_HTML_PROPERTIES.len());
+    }
 
     #[test]
     fn the_extensions_come_in_the_order_of_their_names_and_nothing_else_moves() {

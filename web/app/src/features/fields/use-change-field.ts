@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../shared/api.ts";
 import { fieldAddress } from "../../shared/paths.ts";
 import { refreshFields } from "../../shared/query-keys.ts";
-import type { Field } from "./fields.ts";
+import type { OwnField } from "./fields.ts";
 
 /** The routes that change an own field or one of its choices: each reads every field again when it succeeds. */
 export function useChangeField() {
@@ -51,7 +51,7 @@ export function useCombineChoices() {
 }
 
 /** The request that changes some members of a field, on the version the person looked at. */
-export function fieldChange(field: Field, more: Readonly<Record<string, unknown>>) {
+export function fieldChange(field: OwnField, more: Readonly<Record<string, unknown>>) {
   return {
     params: { path: { field: field.id } },
     body: { version: field.version, ...more },

@@ -17,6 +17,7 @@ testing = []
 [dependencies]
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
+bb-markdown = { path = "../bb-markdown" }
 bb-policy = { path = "../bb-policy" }
 getrandom = { workspace = true }
 jiff = { workspace = true }

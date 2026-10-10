@@ -59,6 +59,15 @@ export function formatDateTime(moment: string, region: Region = currentRegion())
   return `${numeric(date, region)}, ${time}`;
 }
 
+/** The time of day of a moment from the server, in the person's time zone: "10:42". */
+export function formatTime(moment: string, region: Region = currentRegion()): string {
+  return new Intl.DateTimeFormat(locale, {
+    ...zoneOf(region),
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(moment).getTime());
+}
+
 /** A day from the server as people write it: "October 5, 2026". */
 export function formatDate(moment: string, region: Region = currentRegion()): string {
   const date = new Date(moment).getTime();
@@ -107,4 +116,43 @@ export function splitUptime(seconds: number): {
     hours: Math.floor((seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR),
     minutes: Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE),
   };
+}
+
+/** The units a span of time is written in, from the longest to the shortest, with their length in seconds. */
+const SPAN_UNITS = [
+  { unit: "day", seconds: SECONDS_PER_DAY },
+  { unit: "hour", seconds: SECONDS_PER_HOUR },
+  { unit: "minute", seconds: SECONDS_PER_MINUTE },
+] as const;
+
+/** The longest whole unit that fits in a span of seconds, with how many of it; seconds count as 0 minutes. */
+function spanIn(seconds: number): {
+  readonly unit: "day" | "hour" | "minute";
+  readonly count: number;
+} {
+  const unit = SPAN_UNITS.find((candidate) => seconds >= candidate.seconds);
+  return unit === undefined
+    ? { unit: "minute", count: 0 }
+    : { unit: unit.unit, count: Math.floor(seconds / unit.seconds) };
+}
+
+/** Whole seconds from `moment` (ISO 8601 text) to `nowMs`; never negative (a clock that is a little behind). */
+function secondsSince(moment: string, nowMs: number): number {
+  return Math.max(0, Math.floor((nowMs - new Date(moment).getTime()) / MS_PER_SECOND));
+}
+
+/** How long ago a moment was, as people say it: "2 minutes ago", "yesterday"; "now" for under a minute. */
+export function formatAgo(moment: string, nowMs: number): string {
+  const { unit, count } = spanIn(secondsSince(moment, nowMs));
+  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-count, unit);
+}
+
+/** How long since a moment, short, for a line like "since 2 min": "2 min", "3 hr", "1 day". */
+export function formatSince(moment: string, nowMs: number): string {
+  const { unit, count } = spanIn(secondsSince(moment, nowMs));
+  return new Intl.NumberFormat(locale, {
+    style: "unit",
+    unit,
+    unitDisplay: "short",
+  }).format(count);
 }

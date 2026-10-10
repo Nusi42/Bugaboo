@@ -304,7 +304,7 @@ pub(crate) struct PersonPath {
 }
 
 /// What the person is called in a list of people to choose from.
-const PERSON_FIELDS: [FieldSpec; 3] = [
+pub(super) const PERSON_FIELDS: [FieldSpec; 3] = [
     FieldSpec::by_default("shown"),
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
@@ -317,7 +317,7 @@ const PEOPLE_LIST: &str = "check-access-people";
 #[into_params(parameter_in = Query)]
 pub(crate) struct PeopleSearch {
     /// Words that every found name holds, in any order; left out or empty, everybody is listed.
-    search: Option<String>,
+    pub(super) search: Option<String>,
 }
 
 /// What a person can do in a project, or in the whole organization when no project is named:

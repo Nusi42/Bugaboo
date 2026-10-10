@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { ChoiceRow } from "./ChoiceRow.tsx";
-import type { Field } from "./fields.ts";
+import type { OwnField } from "./fields.ts";
 import { useAddChoice, useCombineChoices, useReorderChoices } from "./use-change-field.ts";
 
 /** The new order after the choice at `from` goes to `to`. */
@@ -18,7 +18,7 @@ function moved(ids: readonly string[], from: number, to: number): string[] {
 }
 
 /** Puts the choices in the order the buttons ask for. */
-function useChoiceOrder(field: Field) {
+function useChoiceOrder(field: OwnField) {
   const reorder = useReorderChoices();
   const ids = field.choices.map((choice) => choice.id);
   return {
@@ -33,7 +33,7 @@ function useChoiceOrder(field: Field) {
 }
 
 /** The form that adds a choice at the end. */
-function AddChoice({ field }: { readonly field: Field }) {
+function AddChoice({ field }: { readonly field: OwnField }) {
   const [name, setName] = useState("");
   const add = useAddChoice();
   return (
@@ -71,7 +71,7 @@ function AddChoice({ field }: { readonly field: Field }) {
  * an icon for each, *Combine with another choice* (moves every value, and says so in the history of
  * every issue it touches) and *Retire* (not offered for new values, kept on the old ones).
  */
-export function ChoicesSection({ field }: { readonly field: Field }) {
+export function ChoicesSection({ field }: { readonly field: OwnField }) {
   const order = useChoiceOrder(field);
   const combine = useCombineChoices();
   const failure = order.error ?? combine.error;

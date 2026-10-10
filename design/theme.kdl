@@ -94,6 +94,7 @@ tokens {
     size "size-icon" "20px"
     size "size-icon-small" "16px"
     size "size-list" "300px"
+    size "size-details" "300px"
     size "size-reading" "75ch"
     size "size-sheet-share" "85%"
     size "size-matrix-cell" "calc($size-target * 3)"
@@ -653,6 +654,10 @@ part "field.input[invalid]" {
     border-color "$danger"
 }
 
+part "field.input[state=busy]" {
+    use "busy"
+}
+
 part "field.input[disabled]" {
     opacity "$opacity-disabled"
 }
@@ -932,6 +937,18 @@ part "overlay[variant=bottom]" {
     align-items flex-end
 }
 
+// A question that needs an answer, and a form that takes the whole screen of a phone.
+part "overlay[variant=question]" {
+    align-items center
+    justify-content center
+    padding "$space-4"
+    overflow-y auto
+}
+
+part "overlay[variant=full]" {
+    align-items stretch
+}
+
 part "overlay[variant=start]" {
     justify-content flex-start
 }
@@ -954,6 +971,19 @@ part "overlay.modal[variant=center]" {
     max-width "$size-dialog"
     max-height "100%"
     border-radius "$r-card"
+}
+
+part "overlay.modal[variant=question]" {
+    width "100%"
+    max-width "$size-form"
+    border-radius "$r-card"
+}
+
+part "overlay.modal[variant=full]" {
+    width "100%"
+    max-width none
+    border 0
+    border-radius 0
 }
 
 part "overlay.modal[variant=bottom]" {
@@ -1008,11 +1038,11 @@ part "overlay.modal[variant=start][exiting]" {
     animation "from-start $motion-base $ease-in reverse"
 }
 
-part "overlay.modal[variant=center][entering]" "overlay.modal[variant=top][entering]" {
+part "overlay.modal[variant=center][entering]" "overlay.modal[variant=top][entering]" "overlay.modal[variant=question][entering]" "overlay.modal[variant=full][entering]" {
     animation "fade $motion-fast $ease-out"
 }
 
-part "overlay.modal[variant=center][exiting]" "overlay.modal[variant=top][exiting]" {
+part "overlay.modal[variant=center][exiting]" "overlay.modal[variant=top][exiting]" "overlay.modal[variant=question][exiting]" "overlay.modal[variant=full][exiting]" {
     animation "fade $motion-fast $ease-in reverse"
 }
 
@@ -1385,27 +1415,8 @@ part "search-field.input::-webkit-search-cancel-button" {
 
 // ───────────── ConfirmDialog (packages/ui) ─────────────
 //
-// On a phone the variant `full` makes the question fill the screen.
-
-part "confirm" {
-    position fixed
-    inset 0
-    z-index "$z-bar"
-    display flex
-    align-items center
-    justify-content center
-    padding "$space-4"
-    background "$bg-sunken"
-    overflow-y auto
-}
-
-part "confirm.modal" {
-    use "floating-box"
-    width "100%"
-    max-width "$size-form"
-    border-radius "$r-card"
-    color "$fg"
-}
+// The layer around a question is the one overlay part (the variant `question`, or `full` on a
+// phone); only what is inside it has parts of its own.
 
 part "confirm.dialog" {
     display flex
@@ -1428,20 +1439,7 @@ part "confirm.actions" {
     gap "$space-3"
 }
 
-part "confirm[variant=full]" {
-    align-items stretch
-    padding 0
-}
-
-part "confirm.modal[variant=full]" {
-    display flex
-    flex-direction column
-    max-width none
-    border 0
-    border-radius 0
-}
-
-part "confirm.modal[variant=full] confirm.dialog" {
+part "overlay.modal[variant=full] confirm.dialog" {
     flex 1
     justify-content center
 }
@@ -2082,6 +2080,11 @@ part "app-layout.inner" {
     margin 0 auto
 }
 
+// The focus view (M2C-F81) takes the whole width that the narrowed sidebar leaves.
+part "app-layout.inner[variant=wide]" {
+    max-width none
+}
+
 // The link that jumps to the content, in the app and before sign-in: out of sight until it has the focus.
 part "skip" {
     position absolute
@@ -2528,10 +2531,313 @@ part "focus-view.bar" {
     gap "$space-2"
 }
 
-part "frames-page.actions" {
-    display inline-flex
+// ───────────── Issues (features/issues, packages/ui: InPlaceText, ActionMenu) ─────────────
+//
+// The issue page (UX §4.4) and the list of a project's issues (UX §4.2). The layout of the page
+// (focus view, side panel, phone) is chosen by the app; the variants here only say which.
+
+// A value that is changed where it stands: it looks like the text around it until it is pressed.
+part "in-place.text" {
+    font-family inherit
+    font-size inherit
+    overflow-wrap anywhere
+}
+
+part "in-place.button" {
+    use "bare-button"
+    box-sizing border-box
+    max-width "100%"
+    min-height "$size-target"
+    padding 0 "$space-2"
+    border-radius "$r-ctl"
+    color inherit
+    font-size inherit
+    text-align start
+    overflow-wrap anywhere
+}
+
+part "in-place.button:hover" {
+    background "$bg-hover"
+}
+
+part "in-place.button:focus-visible" {
+    use "ring"
+}
+
+part "in-place.input" {
+    use "input-box"
+}
+
+part "in-place.input:focus" {
+    use "ring"
+}
+
+// The list of actions that opens from a button, inside the one overlay.
+part "action-menu" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-1"
+}
+
+part "issue-page" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "issue-head" {
+    display flex
     flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
+}
+
+part "issue-head.kind" {
+    display inline-flex
+    align-items center
     gap "$space-2"
+    color "$fg-muted"
+    font-size "$fs-md"
+}
+
+part "issue-head.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    margin-inline-start auto
+}
+
+part "issue-title" {
+    width "100%"
+    margin 0
+    font-size "$fs-xl"
+    line-height "$lh-snug"
+}
+
+// The most used fields under the title (UX §3.4): each says its name, its value or the way to
+// change it, and, when it cannot be changed, why.
+part "issue-facts" {
+    use "surface-box"
+    display flex
+    flex-wrap wrap
+    gap "$space-3" "$space-5"
+    padding "$space-3"
+}
+
+part "issue-fact" {
+    display flex
+    flex 1
+    flex-direction column
+    gap "$space-1"
+    min-width "$size-list"
+}
+
+part "issue-fact[variant=compact]" {
+    min-width 0
+}
+
+part "issue-fact.name" {
+    use "quiet-text"
+}
+
+part "issue-fact.value" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    min-height "$size-target"
+    font-size "$fs-md"
+}
+
+part "issue-fact.reason" {
+    display flex
+    align-items center
+    gap "$space-1"
+    use "quiet-text"
+}
+
+part "issue-body" {
+    display flex
+    align-items flex-start
+    gap "$space-5"
+}
+
+part "issue-body[variant=stacked]" {
+    flex-direction column
+    align-items stretch
+}
+
+part "issue-main" {
+    display flex
+    flex 1
+    flex-direction column
+    gap "$space-5"
+    min-width 0
+}
+
+// Details on wide screens keep their own scroll bar, so long details never push the description away.
+part "issue-details" {
+    use "surface-box"
+    display flex
+    flex none
+    flex-direction column
+    gap "$space-3"
+    box-sizing border-box
+    width "$size-details"
+    max-height "$size-viewport"
+    padding "$space-3"
+    overflow-y auto
+}
+
+part "issue-details[variant=stacked]" {
+    width "100%"
+    max-height none
+    overflow-y visible
+}
+
+part "issue-details.heading" {
+    margin 0
+    font-size "$fs-lg"
+}
+
+part "issue-section" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "issue-section.head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2"
+}
+
+part "issue-section.title" {
+    margin 0
+    font-size "$fs-lg"
+}
+
+part "issue-section.reading" {
+    max-width "$size-reading"
+    min-width 0
+}
+
+part "issue-section.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
+part "issue-note" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
+}
+
+// The two texts of *Compare and save* side by side, paragraph by paragraph.
+part "issue-compare" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+part "issue-compare.row" {
+    use "fieldset-reset"
+    display grid
+    grid-template-columns "repeat(2, minmax(0, 1fr))"
+    gap "$space-3"
+}
+
+part "issue-compare.row[variant=stacked]" {
+    grid-template-columns "minmax(0, 1fr)"
+}
+
+part "issue-compare.choice" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+}
+
+part "issue-compare.choice[variant=full]" {
+    grid-column "1 / -1"
+}
+
+part "issue-compare.paragraph" {
+    margin 0
+    overflow-wrap anywhere
+    white-space pre-wrap
+}
+
+// The list of the issues of a project.
+part "issue-list" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "issue-row" {
+    use "surface-box"
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
+    padding "$space-2" "$space-3"
+}
+
+part "issue-row[variant=current]" {
+    use "current-item"
+}
+
+part "issue-row.key" {
+    color "$fg-muted"
+    font-size "$fs-base"
+    white-space nowrap
+}
+
+part "issue-row.title" {
+    flex 1
+    min-width 0
+    use "menu-text"
+    overflow-wrap anywhere
+}
+
+part "issue-row.title:focus-visible" {
+    use "ring"
+}
+
+part "issue-row.meta" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
+    color "$fg-muted"
+    font-size "$fs-base"
+}
+
+// On a phone: the bar with the most used actions of an issue, above the bar of the app.
+part "issue-bar" {
+    display flex
+    position sticky
+    bottom 0
+    gap "$space-2"
+    padding "$space-2"
+    border-top "$border-width solid $border"
+    background "$bg-raised"
+}
+
+part "issue-bar.item" {
+    flex 1
 }
 
 part "key-capture-field.label" {

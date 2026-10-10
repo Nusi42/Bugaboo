@@ -11,8 +11,9 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
-    ChangeIssue, DeleteIssue, IssueDetail, IssueQuery, IssueTypeRef as AppIssueTypeRef, IssueView,
-    IssuesQuery, MakeIssue, RestoreIssue,
+    AssignablePeopleQuery, ChangeIssue, DeleteIssue, IssueDetail, IssueQuery,
+    IssueTypeRef as AppIssueTypeRef, IssueView, IssuesQuery, MakeIssue, RestoreIssue,
+    SaveDescription,
 };
 use bb_core::ErrorCode;
 use std::collections::BTreeMap;
@@ -31,6 +32,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
+use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::projects::ProjectRef;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -57,6 +59,9 @@ const ISSUE_FIELDS: [FieldSpec; 16] = [
 ];
 /// The name of the list, so its cursors are its own.
 const ISSUES_LIST: &str = "issues";
+
+/// The name of the list of the people an issue can be assigned to, so its cursors are its own.
+const ASSIGNABLE_LIST: &str = "assignable-people";
 
 /// An issue type as a small reference: what the line of an issue needs.
 #[derive(Serialize, ToSchema, Masked)]
@@ -187,6 +192,11 @@ pub(crate) struct IssueDetailBody {
     /// The issue, with every field the person may see.
     #[masked(nested)]
     issue: IssueItem,
+    /// The description as safe HTML, made by the server with the same renderer as the editor's
+    /// preview (the mark `x-safe-html`). Hidden with the description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "description")]
+    description_html: Option<String>,
     /// Whether the person may change the issue at all, in the fields they may change.
     #[masked(open)]
     may_change: bool,
@@ -203,6 +213,7 @@ impl From<IssueDetail> for IssueDetailBody {
     fn from(detail: IssueDetail) -> Self {
         Self {
             issue: IssueItem::from(&detail.issue),
+            description_html: Some(detail.description_html),
             may_change: detail.may_change,
             may_delete: detail.may_delete,
             changeable: detail.changeable,
@@ -230,8 +241,10 @@ pub(crate) struct NewIssueBody {
     fields: BTreeMap<String, serde_json::Value>,
 }
 
-/// What to change about an issue: what is left out stays as it is.
+/// What to change about an issue: what is left out stays as it is. The description is not here: it
+/// is saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.
 #[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct ChangeIssueBody {
     /// The version the person looked at.
     version: i64,
@@ -239,8 +252,6 @@ pub(crate) struct ChangeIssueBody {
     issue_type: Option<String>,
     /// A new title.
     title: Option<String>,
-    /// A new description.
-    description: Option<String>,
     /// A new status. Entering the group *Done* sets the closed date; leaving it clears it.
     status: Option<Status>,
     /// A new priority.
@@ -251,6 +262,17 @@ pub(crate) struct ChangeIssueBody {
     /// A long text is saved on its own route, under its edit lock.
     #[serde(default)]
     fields: BTreeMap<String, serde_json::Value>,
+}
+
+/// The description to save under the lock the person holds.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct SaveDescriptionBody {
+    /// The version the person started from.
+    version: i64,
+    /// The token of the edit lock the person holds on the description.
+    lock_token: String,
+    /// The description, in Markdown.
+    text: String,
 }
 
 /// The ID in a request body; a text that is no ID is not a valid request.
@@ -311,6 +333,67 @@ async fn list_issues(
     });
     let fields = params.fields_readable(&ISSUE_FIELDS, &list.hidden_properties())?;
     Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
+}
+
+/// The people an issue of the project can be assigned to, a page at a time, by name: those who
+/// see the project and hold *See issues* there, and the person who asks. A person who cannot see
+/// names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
+/// set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
+/// lets the person change that field.
+#[utoipa::path(
+    get,
+    path = "/api/v1/projects/{project}/assignable-people",
+    operation_id = "listAssignablePeople",
+    tag = "issues",
+    params(("project" = String, Path, description = "The ID of the project, or its short name."), ListParams, PeopleSearch),
+    responses((status = 200, description = "The people, by name.", body = Page<PersonRef>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+)]
+async fn list_assignable_people(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(project): ApiPath<String>,
+    ApiQuery(params): ApiQuery<ListParams>,
+    ApiQuery(find): ApiQuery<PeopleSearch>,
+) -> Result<Response, ApiError> {
+    // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
+    // the use case cannot read, so its answer comes after the check of the person.
+    let position = params.position(ASSIGNABLE_LIST);
+    let cursor = match &position {
+        Ok(position) => position.clone(),
+        Err(_) => Some(String::new()),
+    };
+    let page = auth
+        .api()?
+        .assignable_people(
+            info,
+            AssignablePeopleQuery {
+                session_token,
+                project,
+                search: find.search,
+                cursor,
+                limit: params.limit(),
+            },
+        )
+        .await
+        .map_err(|error| match error {
+            // The only thing the use case can find invalid is the cursor.
+            bb_app::auth::AppError::Refused(ErrorCode::InvalidRequest) => {
+                ApiError::new(ErrorCode::BadCursor)
+            }
+            other => ApiError::from(other),
+        })?;
+    position?;
+    let list = page.map(|page| Listed {
+        items: page.items,
+        next: page.next_cursor,
+    });
+    let fields = params.fields_readable(&PERSON_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(
+        ASSIGNABLE_LIST,
+        &list,
+        &fields,
+    )?))
 }
 
 /// Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones
@@ -428,7 +511,6 @@ async fn change_issue(
                 version: body.version,
                 issue_type,
                 title: body.title,
-                description: body.description,
                 status: body.status,
                 priority: body.priority,
                 assigned_to,
@@ -437,6 +519,51 @@ async fn change_issue(
         )
         .await?;
     answer_authorized(&changed.map(|issue| IssueItem::from(&issue)))
+}
+
+/// Saves the description of an issue under the edit lock the person holds, on the version they
+/// started from. A refused save (the lock is gone, somebody took the editing over, the issue
+/// changed) keeps the text as the draft of the person. Needs the permission *Change anybody's
+/// issues*, or *Change the issues they reported* on an issue the person reported, and the right
+/// to change the description.
+#[utoipa::path(
+    put,
+    path = "/api/v1/issues/{issue}/description",
+    operation_id = "saveIssueDescription",
+    tag = "issues",
+    params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
+    request_body = SaveDescriptionBody,
+    responses(
+        (status = 200, description = "The issue as it is now.", body = IssueItem),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer,
+        ConflictAnswer
+    )
+)]
+async fn save_issue_description(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(issue): ApiPath<String>,
+    ApiJson(body): ApiJson<SaveDescriptionBody>,
+) -> Result<Response, ApiError> {
+    let lock_token = id_in_body(&body.lock_token)?;
+    let saved = auth
+        .api()?
+        .save_description(
+            info,
+            SaveDescription {
+                session_token,
+                issue,
+                version: body.version,
+                lock_token,
+                text: body.text,
+            },
+        )
+        .await?;
+    answer_authorized(&saved.map(|issue| IssueItem::from(&issue)))
 }
 
 /// Puts an issue into the trash. Needs the permission *Delete issues into the trash*. *Undo*
@@ -514,8 +641,10 @@ where
 {
     OpenApiRouter::new()
         .routes(routes!(list_issues, make_issue))
+        .routes(routes!(list_assignable_people))
         .routes(routes!(get_issue, change_issue, delete_issue))
         .routes(routes!(restore_issue))
+        .routes(routes!(save_issue_description))
 }
 
 #[cfg(test)]

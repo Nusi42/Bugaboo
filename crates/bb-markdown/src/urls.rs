@@ -15,9 +15,6 @@ const AUTHORITY_MARK: &str = "//";
 const OWN_ORIGIN_PREFIX: &str = "/";
 /// Where the host of an address ends.
 const HOST_END: [char; 3] = ['/', '?', '#'];
-/// Characters besides letters and digits that a host (with its port) may have. Names with other
-/// letters are written the way the browser sends them (punycode).
-const HOST_MARKS: [char; 3] = ['.', '-', ':'];
 
 /// An address without spaces, control characters or backslashes. Browsers strip tabs and line
 /// breaks inside addresses and read `\` as `/`, which would hide a scheme or turn `/\host` into
@@ -54,7 +51,9 @@ pub(crate) fn link_allowed(url: &str) -> bool {
 
 /// Whether an image may be shown: a path of our own origin, or an `https` address on one of the
 /// hosts the organization allows (the setting `content.image-hosts`; a host with a port must be
-/// written with it).
+/// written with it). The hosts are those `bb-app` checked with `bb_core::settings::is_host` (this
+/// crate may not depend on `bb-core`); the host of the address has to be one of them, so no rule
+/// for the characters of a host is repeated here.
 pub(crate) fn image_allowed(url: &str, hosts: &[String]) -> bool {
     if !plain(url) {
         return false;
@@ -71,9 +70,6 @@ pub(crate) fn image_allowed(url: &str, hosts: &[String]) -> bool {
     let host = rest.split(HOST_END).next().unwrap_or_default();
     scheme.eq_ignore_ascii_case(IMAGE_SCHEME)
         && !host.is_empty()
-        && host
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || HOST_MARKS.contains(&c))
         && hosts
             .iter()
             .any(|allowed| allowed.eq_ignore_ascii_case(host))

@@ -23,6 +23,9 @@ use crate::technical::TechnicalName;
 pub const LEASE_SECONDS: i64 = 60;
 /// How often the open editor sends a heartbeat, in seconds.
 pub const HEARTBEAT_SECONDS: i64 = 15;
+/// How often the browser asks for the versions of what is on its screen, in seconds (until live
+/// updates arrive, ISS-14): *"Ben changed the description after you"*.
+pub const WATCH_SECONDS: i64 = 30;
 /// How long a draft is kept after its last change, in days (M3-Q9).
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 /// The most records one check of versions asks about: what is on the screen.

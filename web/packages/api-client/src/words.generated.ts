@@ -20,6 +20,35 @@ export const issueIconWords = [
   "flame",
 ] as const;
 
+/** Every word of `Status`, in the order the server lists them. */
+export const statusWords = ["open", "in-progress", "done"] as const;
+
+/** Every word of `StatusGroup`, in the order the server lists them. */
+export const statusGroupWords = ["not-started", "in-progress", "done"] as const;
+
+/** Every word of `Priority`, in the order the server lists them. */
+export const priorityWords = ["low", "normal", "high", "critical"] as const;
+
+/** Every word of `Field`, in the order the server lists them. */
+export const fieldWords = [
+  "title",
+  "description",
+  "status",
+  "priority",
+  "assigned-to",
+  "reported-by",
+  "due-date",
+  "labels",
+  "tags",
+  "planned-for-release",
+  "found-in-release",
+  "estimated-time",
+  "time-left",
+  "time-spent",
+  "activity",
+  "cost-center",
+] as const;
+
 /** Every word of `FieldType`, in the order the server lists them. */
 export const fieldTypeWords = [
   "text",

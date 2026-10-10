@@ -14,7 +14,7 @@ import {
 } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
-import type { Field, KindWord } from "./fields.ts";
+import type { OwnField, KindWord } from "./fields.ts";
 import { ValueView } from "./ValueView.tsx";
 import { durationSeconds, durationText, isDecimalText, isWholeNumberText } from "./value-text.ts";
 
@@ -22,7 +22,7 @@ import { durationSeconds, durationText, isDecimalText, isWholeNumberText } from 
 export type Sent = string | number | boolean | readonly string[] | null;
 
 export interface ValueEditorProps {
-  readonly field: Field;
+  readonly field: OwnField;
   /** The value now, as the API words it; nothing when there is none. */
   readonly value: unknown;
   /** Sends a new value; `null` takes the value away. */
@@ -33,12 +33,12 @@ export interface ValueEditorProps {
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
-function pickable(field: Field, current: readonly string[]) {
+function pickable(field: OwnField, current: readonly string[]) {
   return field.choices.filter((choice) => !choice.retired || current.includes(choice.id));
 }
 
 /** The words every box of a field carries: its name, its help text and what is wrong with it. */
-function boxWords(field: Field, error?: string) {
+function boxWords(field: OwnField, error?: string) {
   return {
     label: field.name,
     ...(field.help === "" ? {} : { description: field.help }),
@@ -47,7 +47,7 @@ function boxWords(field: Field, error?: string) {
 }
 
 /** The text a value has in a box: what a person edits. */
-function textOf(field: Field, value: unknown): string {
+function textOf(field: OwnField, value: unknown): string {
   if (value === undefined || value === null) {
     return "";
   }
@@ -59,7 +59,7 @@ function textOf(field: Field, value: unknown): string {
 
 /** What the text of a box means for the API, or a sentence that says why it cannot be sent. */
 function sentFrom(
-  field: Field,
+  field: OwnField,
   text: string,
 ): { readonly value: Sent } | { readonly problem: string } {
   const trimmed = text.trim();

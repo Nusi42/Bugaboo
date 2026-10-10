@@ -43,6 +43,9 @@ export function useShell(): {
     "show-shortcuts": () => {
       openOverlay("shortcuts");
     },
+    "new-issue": () => {
+      openOverlay("new-issue");
+    },
     "go-home": () => {
       void navigate({ to: paths.home });
     },

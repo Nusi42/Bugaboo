@@ -1,8 +1,8 @@
 export { dataOf, type Answer } from "./answer.ts";
 export { createApi, readCookie } from "./client.ts";
 export type { Api, ClientOptions } from "./client.ts";
-export { ApiError, isProblem, messageKeyOf, PROBLEM_CONTENT_TYPE } from "./problem.ts";
-export type { ErrorCode, Problem } from "./problem.ts";
+export { ApiError, conflictOf, isProblem, messageKeyOf, PROBLEM_CONTENT_TYPE } from "./problem.ts";
+export type { Conflict, ErrorCode, Problem } from "./problem.ts";
 export { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
 export type { ReadonlyDeep, Schema } from "./readonly.ts";
 export {
@@ -11,8 +11,11 @@ export {
   heartbeatSeconds,
   leaseSeconds,
   versionsMax,
+  watchSeconds,
 } from "./editing.generated.ts";
 export {
+  askToFinish,
+  editAnyway,
   inGroupsOfOneCheck,
   newEditorId,
   readDraft,
@@ -21,6 +24,7 @@ export {
   sendHeartbeat,
   startHeartbeats,
   startHeartbeatsOn,
+  readEditLock,
   takeEditLock,
   throwAwayDraft,
   versionsOf,
@@ -31,6 +35,7 @@ export type {
   DraftText,
   EditWhat,
   Heartbeat,
+  LockOutcome,
   RecordRef,
   Timers,
 } from "./editing.ts";
@@ -42,8 +47,12 @@ export {
   choiceColorWords,
   fieldForWords,
   fieldTypeWords,
+  fieldWords,
   issueIconWords,
   lookWords,
+  priorityWords,
+  statusGroupWords,
+  statusWords,
 } from "./words.generated.ts";
 export {
   settingChoices,

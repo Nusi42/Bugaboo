@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { QueryGate } from "../shell/index.ts";
-import { useFieldTypes, type Field } from "./fields.ts";
+import { useFieldTypes, type OwnField } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import {
   decimalToMillionths,
@@ -15,7 +15,7 @@ import {
 } from "./value-text.ts";
 
 /** The lowest or highest value in a box, as people write it for this kind. */
-function boxOf(field: Field, stored: number | null | undefined): string {
+function boxOf(field: OwnField, stored: number | null | undefined): string {
   if (stored === undefined || stored === null) {
     return "";
   }
@@ -26,7 +26,7 @@ function boxOf(field: Field, stored: number | null | undefined): string {
 }
 
 /** What a box means in the unit the API stores; `null` for an empty box, `undefined` for text that is none. */
-function storedOf(field: Field, text: string): number | null | undefined {
+function storedOf(field: OwnField, text: string): number | null | undefined {
   const trimmed = text.trim();
   if (trimmed === "") {
     return null;
@@ -59,7 +59,7 @@ interface Shape {
 }
 
 /** *Rules* of the field page (CF-03): the allowed range, length and pattern, for the kinds that have them. */
-export function RulesSection({ field }: { readonly field: Field }) {
+export function RulesSection({ field }: { readonly field: OwnField }) {
   const types = useFieldTypes();
   return (
     <QueryGate error={types.error} data={types.data}>
@@ -85,7 +85,7 @@ interface Boxes {
   readonly text: string;
 }
 
-function boxesOf(field: Field): Boxes {
+function boxesOf(field: OwnField): Boxes {
   const { rules } = field;
   return {
     min: boxOf(field, rules.min),
@@ -99,7 +99,7 @@ function boxesOf(field: Field): Boxes {
 }
 
 /** The rules the boxes say, or `undefined` when one box holds text that is no number. */
-function rulesOf(field: Field, boxes: Boxes, shape: Shape): Record<string, unknown> | undefined {
+function rulesOf(field: OwnField, boxes: Boxes, shape: Shape): Record<string, unknown> | undefined {
   const lowest = shape.ranged ? storedOf(field, boxes.min) : null;
   const highest = shape.ranged ? storedOf(field, boxes.max) : null;
   const fewest = shape.counted ? countOf(boxes.shortest) : null;
@@ -186,7 +186,7 @@ function RuleBoxes({ shape, ...rest }: BoxesProps & { readonly shape: Shape }) {
   );
 }
 
-function RulesForm({ field, shape }: { readonly field: Field; readonly shape: Shape }) {
+function RulesForm({ field, shape }: { readonly field: OwnField; readonly shape: Shape }) {
   const [boxes, setBoxes] = useState(boxesOf(field));
   const [problem, setProblem] = useState<string | undefined>();
   const change = useChangeField();

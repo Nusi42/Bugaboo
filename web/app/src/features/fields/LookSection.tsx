@@ -16,7 +16,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { QueryGate } from "../shell/index.ts";
-import { lookName, useFieldTypes, type Field, type LookWord } from "./fields.ts";
+import { lookName, useFieldTypes, type OwnField, type LookWord } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 
 /** How far the sample of a progress bar is. */
@@ -25,7 +25,7 @@ const SAMPLE_FRACTION = 0.6;
 const SAMPLE_CHOICES = 4;
 
 /** One value in the look, for the preview: the choices of the field, or a sample of the kind. */
-function Samples({ field, look }: { readonly field: Field; readonly look: LookWord }) {
+function Samples({ field, look }: { readonly field: OwnField; readonly look: LookWord }) {
   const choices = field.choices.filter((choice) => !choice.retired).slice(0, SAMPLE_CHOICES);
   if (choices.length > 0) {
     return (
@@ -50,7 +50,7 @@ function LookForm({
   field,
   looks,
 }: {
-  readonly field: Field;
+  readonly field: OwnField;
   readonly looks: readonly LookWord[];
 }) {
   const [look, setLook] = useState<LookWord>(field.look);
@@ -92,7 +92,7 @@ function LookForm({
  * *Look* of the field page (CF-04): how its values are shown, with a preview in all four themes
  * side by side, so a color that cannot be read in one of them is seen before it is chosen.
  */
-export function LookSection({ field }: { readonly field: Field }) {
+export function LookSection({ field }: { readonly field: OwnField }) {
   const types = useFieldTypes();
   return (
     <Card heading={t("fields.look")}>

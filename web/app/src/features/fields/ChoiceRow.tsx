@@ -20,7 +20,7 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { badgeLook, plainText, type Choice, type Field } from "./fields.ts";
+import { badgeLook, plainText, type Choice, type OwnField } from "./fields.ts";
 import { useChangeChoice } from "./use-change-field.ts";
 
 /** Words of the HTML standard and marks that are not text for people. */
@@ -40,7 +40,7 @@ const colorChoices = choiceColorWords.map((word) => ({
 type Send = (more: Readonly<Record<string, unknown>>) => void;
 
 export interface ChoiceRowProps {
-  readonly field: Field;
+  readonly field: OwnField;
   readonly choice: Choice;
   readonly first: boolean;
   readonly last: boolean;

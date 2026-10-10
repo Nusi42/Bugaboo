@@ -21,9 +21,12 @@ const toolbarActions: readonly FormatAction[] = [
 export function FormattingToolbar({
   labels,
   onFormat,
+  isDisabled = false,
 }: {
   readonly labels: MarkdownEditorLabels;
   readonly onFormat: (action: FormatAction) => void;
+  /** The text is being saved: no formatting until the answer is there. */
+  readonly isDisabled?: boolean;
 }) {
   const names: Record<FormatAction, string> = {
     bold: labels.bold,
@@ -39,6 +42,7 @@ export function FormattingToolbar({
         <Button
           key={action}
           look={buttonLook.quiet}
+          isDisabled={isDisabled}
           onPress={() => {
             onFormat(action);
           }}

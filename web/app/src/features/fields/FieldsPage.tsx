@@ -5,11 +5,11 @@ import { messageOf } from "../../shared/errors.ts";
 import { fieldAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
-import { scopeText, typeName, useFields, type Field } from "./fields.ts";
+import { scopeText, typeName, useFields, type OwnField } from "./fields.ts";
 import { MakeFieldForm } from "./MakeFieldForm.tsx";
 
 /** What is special about a field, said in words next to its name: its kind, where it is used, retired. */
-function detailsOf(field: Field): string {
+function detailsOf(field: OwnField): string {
   return [
     typeName(field.kind),
     t(`field-for.${field.applies_to}`),

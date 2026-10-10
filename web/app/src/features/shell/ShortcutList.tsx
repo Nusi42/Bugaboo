@@ -5,6 +5,7 @@ import { partOf, part } from "@bugaboo/ui";
 import {
   definitionOf,
   keysOf,
+  placeMessage,
   shortcutDefinitions,
   type ShortcutId,
   type ShortcutOverrides,
@@ -31,11 +32,7 @@ export function ShortcutList({ overrides, action, show }: ShortcutListProps) {
             <span {...partOf(part.shortcutListWhat)}>
               <span {...partOf(part.shortcutListName)}>{t(definition.message)}</span>
               <span {...partOf(part.hint)}>
-                {t(
-                  definitionOf(definition.id).where === "lists"
-                    ? "shortcut.in-lists"
-                    : "shortcut.everywhere",
-                )}
+                {t(placeMessage[definitionOf(definition.id).where])}
               </span>
             </span>
             <span {...partOf(part.shortcutListKeys)}>

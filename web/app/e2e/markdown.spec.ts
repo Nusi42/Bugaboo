@@ -1,31 +1,41 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { paths } from "../src/shared/paths.ts";
+import { prepareWeb } from "./support/issues.ts";
+import { issueAddress, paths } from "../src/shared/paths.ts";
 
-test.use({
-  preparation: {
-    run: async (server) => {
-      await (await makeAdmin(server)).dispose();
-    },
-  },
-});
+test.use({ preparation: { run: prepareWeb } });
+test.describe.configure({ mode: "serial" });
 
 /** The text of the script that a person might paste into a description. */
 const pasted = "<script>window.attacked = true</script>";
 
-/** Opens the page that has the editor, and returns the text box. */
+/** Opens the description of an issue for editing, and returns the text box. */
 async function openEditor(page: Page) {
   await signIn(page, ada);
-  await page.goto(paths.frames);
-  const box = page.getByRole("textbox", { name: t("frames.text-label"), exact: true });
+  await page.goto(issueAddress("WEB-2"));
+  await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+  const box = page.getByRole("textbox", {
+    name: t("issue-field.description"),
+    exact: true,
+  });
   await expect(box).toBeVisible();
   return box;
 }
+
+// Every test cancels its editing, so the lock is let go and the next test is not told that somebody
+// is editing.
+test.afterEach(async ({ page }) => {
+  const cancel = page.getByRole("button", { name: t("common.cancel"), exact: true });
+  if (await cancel.isVisible()) {
+    await cancel.click();
+    await expect(cancel).toBeHidden();
+  }
+});
 
 async function openPreview(page: Page): Promise<void> {
   await page.getByRole("tab", { name: t("markdown.preview"), exact: true }).click();
@@ -35,7 +45,10 @@ test("sec_13 a pasted script shows as text in the preview and never runs", async
   const box = await openEditor(page);
   await box.fill(`${pasted}\n\nSee **this**.`);
   await openPreview(page);
-  const preview = page.getByRole("tabpanel", { name: t("markdown.preview"), exact: true });
+  const preview = page.getByRole("tabpanel", {
+    name: t("markdown.preview"),
+    exact: true,
+  });
   await expect(preview.getByText(pasted)).toBeVisible();
   await expect(preview.locator("strong")).toHaveText("this");
   expect(await page.evaluate(() => "attacked" in window)).toBe(false);
@@ -53,7 +66,10 @@ test("cf_01 the toolbar writes Markdown and the preview shows what others will s
   await box.press("End");
   await page.keyboard.type(" and WEB-142 for @ana");
   await openPreview(page);
-  const preview = page.getByRole("tabpanel", { name: t("markdown.preview"), exact: true });
+  const preview = page.getByRole("tabpanel", {
+    name: t("markdown.preview"),
+    exact: true,
+  });
   await expect(preview.locator("strong")).toHaveText("one two");
   await expect(preview.locator("[data-kind='issue-id']")).toHaveText("WEB-142");
   await expect(preview.locator("[data-kind='mention']")).toHaveText("@ana");
@@ -80,9 +96,14 @@ test("sec_13 Security shows the hosts that images in text may come from", async 
   await signIn(page, ada);
   await page.goto(paths.organizationSecurity);
   await expect(
-    page.getByRole("heading", { level: 1, name: t("nav.organization-security") }),
+    page.getByRole("heading", {
+      level: 1,
+      name: t("nav.organization-security"),
+    }),
   ).toBeVisible();
-  const hosts = page.getByRole("textbox", { name: t("setting.content.image-hosts.name") });
+  const hosts = page.getByRole("textbox", {
+    name: t("setting.content.image-hosts.name"),
+  });
   await expect(hosts).toBeVisible();
   await expect(hosts).toHaveValue("");
   await expectGoodInEveryLook(page);
@@ -91,7 +112,9 @@ test("sec_13 Security shows the hosts that images in text may come from", async 
 test("sec_13 a host list with an address in it is refused in plain words", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(paths.organizationSecurity);
-  const hosts = page.getByRole("textbox", { name: t("setting.content.image-hosts.name") });
+  const hosts = page.getByRole("textbox", {
+    name: t("setting.content.image-hosts.name"),
+  });
   await hosts.fill("https://images.example.com");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText(t("error.setting.hosts-not-bare"))).toBeVisible();

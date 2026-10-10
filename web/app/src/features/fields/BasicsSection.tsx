@@ -13,12 +13,12 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { useFieldTypes, type Field } from "./fields.ts";
+import { useFieldTypes, type OwnField } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import { ValueEditor, type Sent } from "./ValueEditor.tsx";
 
 /** The switches of the basics: required, and never sent to the assistant. */
-function Flags({ field }: { readonly field: Field }) {
+function Flags({ field }: { readonly field: OwnField }) {
   const change = useChangeField();
   return (
     <>
@@ -42,7 +42,7 @@ function Flags({ field }: { readonly field: Field }) {
 }
 
 /** The value a new issue or project starts with. */
-function DefaultValue({ field }: { readonly field: Field }) {
+function DefaultValue({ field }: { readonly field: OwnField }) {
   const change = useChangeField();
   return (
     <div {...partOf(part.stack)}>
@@ -61,7 +61,7 @@ function DefaultValue({ field }: { readonly field: Field }) {
 }
 
 /** *Basics* of the field page: name, help text, required, the default and the mark for the assistant. */
-export function BasicsSection({ field }: { readonly field: Field }) {
+export function BasicsSection({ field }: { readonly field: OwnField }) {
   const [name, setName] = useState(field.name);
   const [help, setHelp] = useState(field.help);
   const change = useChangeField();

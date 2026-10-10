@@ -233,9 +233,10 @@ export const places: readonly Place[] = [
   ...organizationTopics,
   ...projectPlaces,
   {
-    path: paths.frames,
-    name: "nav.frames",
-    icon: iconName.frames,
+    // An issue is reached from a list, a link or quick search; its address is `/issues/WEB-142`.
+    path: paths.issue,
+    name: "issues.title",
+    icon: iconName.issues,
     parent: paths.home,
     listed: false,
   },

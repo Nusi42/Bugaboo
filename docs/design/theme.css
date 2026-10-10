@@ -40,6 +40,7 @@
   --size-icon: 20px;
   --size-icon-small: 16px;
   --size-list: 300px;
+  --size-details: 300px;
   --size-reading: 75ch;
   --size-sheet-share: 85%;
   --size-matrix-cell: calc(var(--size-target) * 3);

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { formatDate, formatDateTime, formatNumber } from "../../shared/format.ts";
 import { personName, type Person } from "../../shared/person.ts";
-import { choiceOf, plainText, type Choice, type Field, type KindWord } from "./fields.ts";
+import { choiceOf, plainText, type Choice, type OwnField, type KindWord } from "./fields.ts";
 import { durationText } from "./value-text.ts";
 
 /** A day from the API (`2026-10-10`) as a moment, for the way the person writes days. */
@@ -13,7 +13,7 @@ function momentOfDay(day: string): string {
 }
 
 /** How far a number is between the lowest and the highest of the field, from 0 to 1 (a percent without a range). */
-function fractionOf(field: Field, value: number): number {
+function fractionOf(field: OwnField, value: number): number {
   const { min, max } = field.rules;
   if (min !== undefined && min !== null && max !== undefined && max !== null && max > min) {
     return (value - min) / (max - min);
@@ -65,7 +65,7 @@ function ChoiceValue({
   field,
   choice,
 }: {
-  readonly field: Field;
+  readonly field: OwnField;
   readonly choice: Choice | undefined;
 }) {
   return (
@@ -80,7 +80,7 @@ function ChoiceValue({
 
 /** What a viewer of one kind of value is given. */
 interface ViewProps {
-  readonly field: Field;
+  readonly field: OwnField;
   readonly value: unknown;
 }
 

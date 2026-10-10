@@ -73,9 +73,10 @@ async function tabletFrame(page: Page): Promise<void> {
 
 async function phoneFrame(page: Page): Promise<void> {
   const bar = mainMenu(page);
-  // The bar holds only screens that exist: Home, Search and More.
+  // The bar holds only screens that exist: Home, Search, New and More.
   await expect(bar.getByRole("link")).toHaveCount(1);
-  await expect(bar.getByRole("button")).toHaveCount(2);
+  await expect(bar.getByRole("button")).toHaveCount(3);
+  await expect(bar.getByRole("button", { name: t("issues.new"), exact: true })).toBeVisible();
   await expect(bar.getByRole("link", { name: t("nav.home"), exact: true })).toBeVisible();
   await expect(bar.getByRole("button", { name: t("shell.search"), exact: true })).toBeVisible();
   await expectNoLaterScreens(bar);
