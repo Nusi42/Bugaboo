@@ -1,5 +1,5 @@
 //! The words of the API description that more than one program needs, each written once: the marks
-//! that `bb-api` puts on a route, the words of a paged list, the three words for a route that needs no
+//! that `bb-api` puts on a route, the words of a paged list, the four words for a route that needs no single
 //! permission of the catalogue, and the names of the actors and answers of the permission matrix (SEC-MATRIX).
 //! `sec_matrix::RECORD_PATH` is the exception that is no word of the API: the path of the record in
 //! the repository.
@@ -20,6 +20,21 @@ pub mod marks {
     pub const NEVER_STORED: &str = "x-never-stored";
     /// A route whose answer hands out a secret: never stored, never compressed.
     pub const SECRET: &str = "x-secret";
+    /// A route that saves long text: it takes the token of the edit lock besides the version
+    /// (ADR-0019). Written from the list of such routes in `bb-api`.
+    pub const LONG_TEXT: &str = "x-long-text";
+}
+
+/// The words of a change that does not overwrite another one unseen (ADR-0019 amendment M3): the
+/// properties of the request body that ARCH-VERSIONED looks for, and the schema of the answer to a
+/// stale version.
+pub mod versions {
+    /// The version the person read, in the body of every change.
+    pub const VERSION: &str = "version";
+    /// The token of the edit lock, in the body of every save of long text.
+    pub const LOCK_TOKEN: &str = "lock_token";
+    /// The schema of the `409` answer to a stale version.
+    pub const CONFLICT_SCHEMA: &str = "ConflictProblem";
 }
 
 /// The words of a paged list: the query parameters a list route takes, and the properties of its
@@ -49,8 +64,12 @@ pub mod needs {
     pub const SIGNED_IN: &str = "signed-in";
     /// A person's own sign-in data: password, passkeys, second step, sessions.
     pub const OWN_ACCOUNT: &str = "own-account";
-    /// All three, for the code that checks a declaration is a key or one of these.
-    pub const WITHOUT_CATALOGUE: [&str; 3] = [PUBLIC, SIGNED_IN, OWN_ACCOUNT];
+    /// A permission that depends on the record the request names: its kind decides what a person
+    /// needs to change it (a project, an issue), so the route lets in whoever is signed in and the
+    /// use case judges the record (ADR-0019, edit locks and drafts).
+    pub const BY_RECORD: &str = "by-record";
+    /// All four, for the code that checks a declaration is a key or one of these.
+    pub const WITHOUT_CATALOGUE: [&str; 4] = [PUBLIC, SIGNED_IN, OWN_ACCOUNT, BY_RECORD];
 }
 
 /// The names the permission matrix (SEC-MATRIX) writes into its record.

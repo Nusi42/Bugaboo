@@ -57,7 +57,7 @@ sequenceDiagram
   participant P as bb-policy
   participant S as bb-store
   participant O as Outbox consumers
-  B->>A: POST change status (If-Match: version)
+  B->>A: POST change status (version in the body)
   A->>U: change_status(actor, cmd)
   U->>P: may actor make this status change? (who can do it, only if …)
   U->>S: BEGIN · check version · apply · "must be filled in" rules
@@ -67,7 +67,7 @@ sequenceDiagram
   S-->>O: outbox → history, notifications, webhooks, security log, search index, live updates
 ```
 
-- **Optimistic locking:** every entity has a version. A stale version gives the plain-language conflict message.
+- **Optimistic locking:** every entity has a version, and every change sends the version it read in its body (`version`, ARCH-VERSIONED). A stale version gives the plain-language conflict message and, with it, who changed the record, when, which fields and the values now (ADR-0019 amendment M3); the browser writes the sentence from them.
 - **"Then automatically …"** actions run as part of the same use case, as the same actor.
 - **Consumers** filter by the **receiver's** permissions before sending anything (e-mail, webhook, live update).
 
@@ -98,10 +98,10 @@ sequenceDiagram
   participant A as Ana's browser
   participant S as Server
   participant B as Ben's browser
-  A->>S: first keystroke in Description → take lock
+  A->>S: first keystroke in Description → take lock (POST /edit-locks)
   S-->>A: lock token (60 s lease)
   loop every 15 s while editing
-    A->>S: heartbeat (renews lease) + private draft
+    A->>S: heartbeat (renews lease) + private draft; the answer carries the notes of others
   end
   B->>S: open WEB-142
   S-->>B: "Ana is editing the description" (read-only for Ben)
@@ -112,8 +112,11 @@ sequenceDiagram
 ```
 
 - **Short values** use only the version check (no lock).
+- **One mechanism for any record:** a lock and a draft are about one *part* of a record named by its kind and ID (`EntityRef`), so issues, comments and documents use the same routes (`/edit-locks`, `/drafts`). A kind of record says where it sits, which version it has and what a person needs to change it by implementing `EditableRecords`; the project is the one kind `bb-app` knows itself. The lease and the heartbeat are the state of an open editor and write no domain event; *Edit anyway*, *Ask … to finish* and an administrator's release are facts others can learn from, so they are commands with an event, and the release is also in the security log. Expired lock rows are deleted when the next lock is taken; a draft is kept 30 days after its last change and deleted by the job `editing.purge_drafts` (and ignored when older). Enforced by: TEST-EDIT-LOCKS.
+- **Notes at the next heartbeat:** *Ask … to finish* and *Edit anyway* leave a note for the person who was editing; the heartbeat hands it over once. The heartbeat keeps the text so far as the person's draft also when the lock is gone, and a refused save keeps its text as the draft: nothing typed is dropped. Enforced by: TEST-EDIT-LOCKS.
+- **Saving long text** goes through `Ctx::save_text`: inside the change that writes the record it checks the lock token, runs the write (which checks the version) and lets go of the lock and the draft; a refusal is `edit.lock_lost`, `edit.taken_over` or the structured `edit.version_changed`. Enforced by: ARCH-VERSIONED, TEST-EDIT-LOCKS.
 - **Confirmed saves:** the browser shows changes at once as *Saving…*, then *Saved* when the server confirms, or a plain explanation (conflict, lock lost, offline) that keeps the person's text.
-- **Watching open items:** every 30 s and on focus, the browser asks for the current versions of what's on screen; a newer version by someone else shows *"Ben changed this after you"*.
+- **Checking versions:** every 30 s and on focus, the browser asks (`POST /versions/check`, up to 50 records) for the current versions of what's on screen; a newer version by someone else shows *"Ben changed this after you"*.
 
 ## Working hours
 

@@ -52,7 +52,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
             .script(
                 "PUT",
                 CHANGE_ROUTE,
-                Some(json!({"enabled": false, "domains": []})),
+                Some(json!({"enabled": false, "domains": [], "version": 0})),
                 &key,
             )
             .await?;
@@ -72,7 +72,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
                     .header(header::HOST, "bugaboo.test"),
                 "PUT",
                 CHANGE_ROUTE,
-                Some(json!({"enabled": false, "domains": []})),
+                Some(json!({"enabled": false, "domains": [], "version": 0})),
             )
             .await?;
         assert_eq!(nothing.code(), "request.wrong_origin");
@@ -85,7 +85,7 @@ async fn auth_07_a_script_with_a_key_needs_no_origin_no_token_and_no_cookie() ->
             .send_without_token(
                 "PUT",
                 CHANGE_ROUTE,
-                json!({"enabled": false, "domains": []}),
+                json!({"enabled": false, "domains": [], "version": 0}),
             )
             .await?;
         assert_eq!(no_token.code(), "request.wrong_token");
@@ -133,7 +133,7 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> TestResult {
                     .header(header::ORIGIN, "https://evil.test"),
                 "PUT",
                 CHANGE_ROUTE,
-                Some(json!({"enabled": false, "domains": []})),
+                Some(json!({"enabled": false, "domains": [], "version": 0})),
             )
             .await?;
         assert_eq!(not_a_key.code(), "request.wrong_origin");
@@ -147,7 +147,7 @@ async fn sec_06_a_page_of_another_website_cannot_send_a_key() -> TestResult {
                     .header(header::AUTHORIZATION, format!("Basic {key}")),
                 "PUT",
                 CHANGE_ROUTE,
-                Some(json!({"enabled": false, "domains": []})),
+                Some(json!({"enabled": false, "domains": [], "version": 0})),
             )
             .await?;
         assert_eq!(basic.code(), "request.wrong_origin");

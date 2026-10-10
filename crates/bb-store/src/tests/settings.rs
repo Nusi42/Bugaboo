@@ -825,3 +825,37 @@ async fn cfg_06_a_bounded_number_and_a_switch_are_stored_on_a_project() -> TestR
     })
     .await
 }
+
+#[tokio::test]
+async fn iss_17_the_newest_version_event_is_found_however_many_events_came_after() -> TestResult {
+    each_database("iss_17_version_event_search", async |db| {
+        let fixture = fixture(db).await?;
+        let database = fixture.storage.database();
+        let mut source = ids();
+        let first = event(&mut source, "security.session-idle-minutes");
+        let mut versioned = first.clone();
+        versioned.changes.push(bb_core::version::counted_up(1));
+        let write = change(
+            "security.session-idle-minutes",
+            Scope::Organization,
+            SettingValue::Integer(15),
+        );
+        database.set_setting(&versioned, &write).await?;
+        // More events than one page of the search, none of which counted the version up.
+        for _ in 0..120 {
+            let mut later = event(&mut source, "security.session-idle-minutes");
+            later.entity = versioned.entity.clone();
+            database.set_setting(&later, &write).await?;
+        }
+        let found = database
+            .latest_event_about_where(&versioned.entity, DomainEvent::counted_version)
+            .await?;
+        assert_eq!(found, Some(versioned.clone()));
+        let none = database
+            .latest_event_about_where(&versioned.entity, |_| false)
+            .await?;
+        assert_eq!(none, None);
+        Ok(())
+    })
+    .await
+}

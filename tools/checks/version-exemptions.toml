@@ -1,0 +1,104 @@
+# Changes that take no version in their body (ARCH-VERSIONED, ADR-0019 amendment M3). Every other
+# change takes the version it read as `version`, and a save of long text also takes `lock_token`.
+# Each entry names routes (`METHOD /path`, as the API description writes them) and says why a
+# version makes no sense for them. An entry for a route that is gone, or one that takes a version
+# now, fails, so the file shrinks as routes are fixed and cannot go stale. A route that saves long
+# text is never listed here.
+
+[[exempt]]
+routes = [
+  "POST /api/v1/auth/sign-in",
+  "POST /api/v1/auth/sign-up",
+  "POST /api/v1/auth/setup",
+  "POST /api/v1/auth/sign-out",
+  "DELETE /api/v1/auth/sessions",
+  "DELETE /api/v1/auth/sessions/{session_id}",
+  "POST /api/v1/auth/password",
+  "POST /api/v1/auth/second-step",
+  "POST /api/v1/auth/second-step/passkey",
+  "POST /api/v1/auth/second-step/passkey/options",
+  "POST /api/v1/auth/passkey/sign-in",
+  "POST /api/v1/auth/passkey/sign-in/options",
+  "POST /api/v1/auth/passkeys",
+  "POST /api/v1/auth/passkeys/options",
+  "POST /api/v1/auth/passkeys/{passkey_id}/remove",
+  "POST /api/v1/auth/two-step/code-app",
+  "POST /api/v1/auth/two-step/code-app/confirm",
+  "POST /api/v1/auth/two-step/code-app/remove",
+  "POST /api/v1/auth/two-step/backup-codes",
+  "POST /api/v1/auth/invitation/accept",
+  "POST /api/v1/auth/invitation/lookup",
+]
+reason = "Signing in and a person's own sign-in data have no stored version: each step answers for itself (a password or a code that is right or wrong, a session that ends), and nobody else can have changed it meanwhile."
+
+[[exempt]]
+routes = ["PUT /api/v1/me/settings/{key}", "DELETE /api/v1/me/settings/{key}"]
+reason = "A person's own choices in My settings belong to that one person and have no version of their own; the last choice of the same person wins, and no other person can change them."
+
+[[exempt]]
+routes = [
+  "POST /api/v1/access-keys",
+  "POST /api/v1/assignments",
+  "POST /api/v1/auth/invitations",
+  "POST /api/v1/groups",
+  "POST /api/v1/issue-types",
+  "POST /api/v1/projects",
+  "POST /api/v1/projects/{project}/assignments",
+  "POST /api/v1/projects/{project}/issues",
+  "POST /api/v1/projects/{project}/sub-projects",
+  "POST /api/v1/roles",
+  "POST /api/v1/roles/{role_id}/copy",
+]
+reason = "Making a new record has no earlier version that could be stale; a name that is taken is refused on its own (name.taken)."
+
+[[exempt]]
+routes = [
+  "DELETE /api/v1/access-keys/{access_key_id}",
+  "DELETE /api/v1/assignments/{assignment_id}",
+  "DELETE /api/v1/auth/invitations/{invitation_id}",
+  "DELETE /api/v1/groups/{group_id}",
+  "DELETE /api/v1/issues/{issue}",
+  "POST /api/v1/issues/{issue}/restore",
+  "DELETE /api/v1/roles/{role_id}",
+  "PUT /api/v1/groups/{group_id}/members/{person_id}",
+  "DELETE /api/v1/groups/{group_id}/members/{person_id}",
+]
+reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not_found, and a row that is there already is there. An issue goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite."
+
+[[exempt]]
+routes = ["POST /api/v1/projects/{project}/move"]
+reason = "A move carries the version of its preview, which names the project, both parents and who has which role (ADR-0025 decision 13); it is refused as project.preview_changed, or edit.version_changed when the project changed first."
+
+[[exempt]]
+routes = [
+  "POST /api/v1/projects/{project}/move-preview",
+  "POST /api/v1/own-access/check-change",
+  "POST /api/v1/versions/check",
+]
+reason = "These only read: they are sent as POST because they carry a body, and they change nothing."
+
+[[exempt]]
+routes = [
+  "POST /api/v1/edit-locks",
+  "POST /api/v1/edit-locks/heartbeat",
+  "POST /api/v1/edit-locks/release",
+  "POST /api/v1/edit-locks/ask-to-finish",
+  "POST /api/v1/edit-locks/edit-anyway",
+  "POST /api/v1/edit-locks/release-stuck",
+  "PUT /api/v1/drafts",
+  "POST /api/v1/drafts/throw-away",
+]
+reason = "The lease on a thing being edited and the private draft of a person are the state of an open editor, not a change of the record: they name the record but never overwrite it. The save of the text itself takes the version and the lock token (ADR-0019)."
+
+[[exempt]]
+routes = [
+  "PUT /api/v1/settings/{key}",
+  "DELETE /api/v1/settings/{key}",
+  "PUT /api/v1/settings/{key}/lock",
+  "DELETE /api/v1/settings/{key}/lock",
+  "PUT /api/v1/projects/{project}/settings/{key}",
+  "DELETE /api/v1/projects/{project}/settings/{key}",
+  "PUT /api/v1/field-permissions/{role}/{field}",
+  "PUT /api/v1/people-visibility/{role}/{kind}",
+]
+reason = "Accepted for now (M3-F31): each route sets one single value, one setting or one level cell, from a screen that applies the change at once and does not carry the version of each row yet. Nothing else is overwritten with it, the last writer wins, and the event and the security log say who set it."

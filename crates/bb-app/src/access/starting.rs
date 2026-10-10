@@ -13,6 +13,7 @@ use bb_core::id::{AssignmentId, RoleId};
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
+use bb_core::version::FIRST_VERSION;
 use bb_policy::StartingRole;
 use serde_json::json;
 
@@ -49,6 +50,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 starting: Some(key),
                 position: i64::try_from(starting.index()).unwrap_or(i64::MAX),
                 two_step: starting.two_step(),
+                version: FIRST_VERSION,
             },
             permissions: starting.permissions(),
             fields: bb_core::fields::Field::ALL

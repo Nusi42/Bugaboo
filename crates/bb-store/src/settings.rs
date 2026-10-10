@@ -19,6 +19,7 @@ use bb_core::settings::{
     Integer, Layers, Level, OrganizationValue, Scope, Setting, SettingKind, SettingValue, Text,
 };
 use bb_core::technical::TechnicalName;
+use bb_core::version::next;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 
@@ -26,7 +27,7 @@ use crate::auth::AuthStorage;
 use crate::db::{Database, Row, Transaction, to_micros};
 use crate::error::{SettingProblem, StoreError};
 use crate::projects::chain_of;
-use crate::schema::{PersonSettingRow, SettingRow as Columns};
+use crate::schema::{PersonSettingRow, PolicyVersionRow, SettingRow as Columns};
 
 /// A value to store.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -200,6 +201,49 @@ async fn organization_row(
         .as_ref()
         .map(read_value)
         .transpose()
+}
+
+/// The version of a policy that is made of several settings, `0` while it has no row.
+pub(crate) async fn policy_version(database: &Database, policy: &str) -> Result<i64, StoreError> {
+    let mut select = Query::select();
+    select
+        .column(PolicyVersionRow::Version)
+        .from(PolicyVersionRow::Table)
+        .and_where(Expr::col(PolicyVersionRow::Policy).eq(policy));
+    match database.fetch_optional(&select).await? {
+        Some(row) => row.get(PolicyVersionRow::Version),
+        None => Ok(0),
+    }
+}
+
+/// Counts the version of a policy up, inside a change; `false` when the policy is not at
+/// `version`. The first change makes the row.
+pub(crate) async fn count_policy_version_up(
+    transaction: &mut Transaction,
+    policy: &str,
+    version: i64,
+) -> Result<bool, StoreError> {
+    if version == 0 {
+        let mut insert = Query::insert();
+        insert
+            .into_table(PolicyVersionRow::Table)
+            .columns([PolicyVersionRow::Policy, PolicyVersionRow::Version])
+            .values([Expr::val(policy), Expr::val(next(version))])
+            .map_err(|_| StoreError::Corrupt("a policy version"))?
+            .on_conflict(
+                OnConflict::column(PolicyVersionRow::Policy)
+                    .do_nothing()
+                    .to_owned(),
+            );
+        return Ok(transaction.execute(&insert).await? > 0);
+    }
+    let mut update = Query::update();
+    update
+        .table(PolicyVersionRow::Table)
+        .value(PolicyVersionRow::Version, next(version))
+        .and_where(Expr::col(PolicyVersionRow::Policy).eq(policy))
+        .and_where(Expr::col(PolicyVersionRow::Version).eq(version));
+    Ok(transaction.execute(&update).await? > 0)
 }
 
 fn read_value(row: &Row) -> Result<StoredValue, StoreError> {

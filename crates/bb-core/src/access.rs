@@ -79,6 +79,9 @@ pub struct Group {
     /// What the group is called. Free text that could name a person.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub name: String,
+    /// Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).
+    #[not_personal]
+    pub version: i64,
 }
 
 /// A person in a group.
@@ -115,6 +118,10 @@ pub struct Role {
     /// Whether everybody with this role needs two-step sign-in (AUTH-03, M1-F45).
     #[not_personal]
     pub two_step: bool,
+    /// Counts up with every change of the role, for the check that nobody changed it meanwhile
+    /// (ADR-0019).
+    #[not_personal]
+    pub version: i64,
 }
 
 /// One permission of a role, by the key of the permission catalogue.

@@ -10,6 +10,7 @@ use std::fmt;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use bb_core::access::{Assignment, Group, GroupMember};
+use bb_core::edit::{Draft, EditLock, EditNotice};
 use bb_core::event::DomainEvent;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueType};
@@ -77,6 +78,10 @@ pub(crate) struct State {
     pub(crate) assignments: Vec<Assignment>,
     pub(crate) projects: Vec<Project>,
     pub(crate) aliases: Vec<ProjectAlias>,
+    pub(crate) sign_up_version: i64,
+    pub(crate) locks: Vec<EditLock>,
+    pub(crate) drafts: Vec<Draft>,
+    pub(crate) notices: Vec<EditNotice>,
     pub(crate) issue_types: Vec<IssueType>,
     pub(crate) issues: Vec<Issue>,
     pub(crate) assignees: Vec<IssueAssignee>,

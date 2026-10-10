@@ -142,7 +142,7 @@ impl From<RecordKind> for EntityKind {
 }
 
 /// The record an event is about.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct EntityRef {
     /// What kind of record it is.
     pub kind: EntityKind,
@@ -190,6 +190,17 @@ pub struct DomainEvent {
     /// Why, when the person said so.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub reason: Option<String>,
+}
+
+impl DomainEvent {
+    /// Whether the event counted the version of its record up (it holds the change `version`).
+    /// Events about a lock, a member of a group or a level do not.
+    #[must_use]
+    pub fn counted_version(&self) -> bool {
+        self.changes
+            .iter()
+            .any(|change| change.field == crate::version::FIELD)
+    }
 }
 
 #[cfg(test)]

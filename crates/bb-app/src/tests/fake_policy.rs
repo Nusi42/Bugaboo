@@ -279,6 +279,7 @@ impl PolicyStore for FakeStore {
         id: RoleId,
         name: &str,
         two_step: bool,
+        version: i64,
     ) -> Result<bool, FakeError> {
         if tx
             .state
@@ -292,12 +293,13 @@ impl PolicyStore for FakeStore {
             .state
             .roles
             .iter_mut()
-            .find(|record| record.role.id == id)
+            .find(|record| record.role.id == id && record.role.version == version)
         else {
             return Ok(false);
         };
         name.clone_into(&mut record.role.name);
         record.role.two_step = two_step;
+        record.role.version += 1;
         Ok(true)
     }
 
@@ -352,7 +354,12 @@ impl PolicyStore for FakeStore {
         Ok(())
     }
 
-    async fn rename_group(tx: &mut Tx, id: GroupId, name: &str) -> Result<bool, FakeError> {
+    async fn rename_group(
+        tx: &mut Tx,
+        id: GroupId,
+        name: &str,
+        version: i64,
+    ) -> Result<bool, FakeError> {
         if tx
             .state
             .groups
@@ -361,10 +368,16 @@ impl PolicyStore for FakeStore {
         {
             return Err(FakeError::Duplicate);
         }
-        let Some(group) = tx.state.groups.iter_mut().find(|group| group.id == id) else {
+        let Some(group) = tx
+            .state
+            .groups
+            .iter_mut()
+            .find(|group| group.id == id && group.version == version)
+        else {
             return Ok(false);
         };
         name.clone_into(&mut group.name);
+        group.version += 1;
         Ok(true)
     }
 

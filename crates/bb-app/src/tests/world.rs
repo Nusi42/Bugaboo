@@ -16,6 +16,7 @@ use crate::auth::{
     issue_setup_code,
 };
 use crate::context::Clock;
+use crate::editing::EditableRecords;
 use crate::issues::{MakeStartingIssueTypes, make_starting_issue_types};
 
 pub(crate) use bb_dev_words::accounts::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
@@ -122,6 +123,12 @@ impl World {
         drop(ctx);
         world.admin = admin;
         Ok(world)
+    }
+
+    /// The same server that also knows another kind of record.
+    pub(crate) fn with_records(mut self, records: Arc<dyn EditableRecords>) -> Self {
+        self.services = self.services.with_records(records);
+        self
     }
 
     /// The context of one request (a new one every time: nothing is kept between requests).

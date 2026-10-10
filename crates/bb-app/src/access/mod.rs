@@ -108,6 +108,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if looks_like_access_key(token_text) {
             return self.key_actor(token_text).await;
         }
+        self.session_actor(token_text).await
+    }
+
+    /// The signed-in person behind a cookie as the actor, never the owner of an access key: what
+    /// belongs to an open editor (a lock, a draft) belongs to a person in a browser tab (ADR-0019).
+    pub(crate) async fn session_actor(&self, token_text: &str) -> Result<Actor, AppError> {
         let record = self.active(token_text).await?;
         Ok(Actor {
             person: record.person,

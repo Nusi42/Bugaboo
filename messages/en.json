@@ -29,6 +29,8 @@
   "error.request.timed-out": "Your request took too long to arrive. Please try again.",
   "error.request.too-large": "That is too big to send.",
   "error.edit.version-changed": "Someone changed this while you were working. Use Compare and save to keep your changes.",
+  "error.edit.lock-lost": "Your editing time ran out. Your text is kept as a draft. Use Compare and save to keep your changes.",
+  "error.edit.taken-over": "Someone took over the editing. Your text is kept as a draft. Use Compare and save to keep your changes.",
   "error.rate-limit.exceeded": "Too many tries. Please wait a little and try again.",
   "error.server.unavailable": "Bugaboo is not available right now. Please try again in a moment.",
   "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",

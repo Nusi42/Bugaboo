@@ -25,6 +25,7 @@ use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
+use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::guards::ensure_a_manager_remains;
 use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
 use jiff::Timestamp;
@@ -36,6 +37,8 @@ use crate::auth::{
     AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
 };
 use crate::input::clean_name;
+use crate::member;
+use crate::projects::Why;
 
 /// Make a group.
 pub struct MakeGroup {
@@ -51,6 +54,8 @@ pub struct RenameGroup {
     pub session_token: String,
     /// The group.
     pub group: GroupId,
+    /// The version the person looked at; a change made meanwhile stops this one.
+    pub version: i64,
     /// The new name.
     pub name: String,
 }
@@ -114,6 +119,8 @@ pub struct GroupView {
     pub id: GroupId,
     /// What it is called.
     pub name: String,
+    /// Counts up with every change; a change is made on the version that was looked at.
+    pub version: i64,
 }
 
 impl Masked for GroupView {}
@@ -123,6 +130,7 @@ impl From<&Group> for GroupView {
         Self {
             id: group.id,
             name: group.name.clone(),
+            version: group.version,
         }
     }
 }
@@ -195,11 +203,12 @@ pub async fn make_group<S: AuthStore>(
         id: GroupId::generate(&mut ctx.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?,
         name,
+        version: FIRST_VERSION,
     };
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, group.id),
-        vec![set_to("name", json!(group.name))],
+        vec![set_to(member::group::NAME, json!(group.name))],
     )?;
     let stored = group.clone();
     ctx.store()
@@ -221,7 +230,8 @@ pub async fn make_group<S: AuthStore>(
 ///
 /// # Errors
 /// `access.forbidden` without *Manage groups*, `resource.not_found` for an unknown group,
-/// `request.invalid` for a name that cannot be one, `name.taken` when another group has it.
+/// `request.invalid` for a name that cannot be one, `name.taken` when another group has it,
+/// `edit.version_changed` when somebody changed the group since it was looked at.
 pub async fn rename_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RenameGroup,
@@ -233,31 +243,42 @@ pub async fn rename_group<S: AuthStore>(
     let name = clean_name(&input.name)?;
     let before = ctx.group_or_missing(input.group).await?;
     let id = before.id;
+    let (record, editor) = (entity(RecordKind::Group, id), actor.person.id);
+    if before.version != input.version {
+        return Err(AppError::stale(record, Place::Organization, editor));
+    }
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Group, id),
-        vec![bb_core::event::FieldChange {
-            field: "name".to_owned(),
-            before: Some(json!(before.name)),
-            after: Some(json!(name)),
-        }],
+        vec![
+            bb_core::event::FieldChange {
+                field: member::group::NAME.to_owned(),
+                before: Some(json!(before.name)),
+                after: Some(json!(name)),
+            },
+            counted_up(before.version),
+        ],
     )?;
-    let new_name = name.clone();
+    let (new_name, version) = (name.clone(), input.version);
+    let why = Why::default();
+    let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::rename_group(transaction, id, &new_name).await? {
+                // A group that is gone, or one somebody changed since the person looked.
+                if S::rename_group(transaction, id, &new_name, version).await? {
                     Ok(())
                 } else {
-                    Err(S::aborted())
+                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
                 }
             })
         })
         .await
         .map_err(|error| {
-            change_failed::<S>(
-                &error,
-                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
+            why.answer::<S>(&error, ErrorCode::NameTaken).about(
+                &record,
+                Place::Organization,
+                editor,
             )
         })?;
     ctx.note(
@@ -266,7 +287,11 @@ pub async fn rename_group<S: AuthStore>(
         Some(entity(RecordKind::Group, id)),
     )
     .await;
-    Ok(access.authorize(GroupView { id, name }))
+    Ok(access.authorize(GroupView {
+        id,
+        name,
+        version: next(before.version),
+    }))
 }
 
 /// Deletes a group, with its members and the rows that give it a role.

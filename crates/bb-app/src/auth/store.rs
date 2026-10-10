@@ -24,6 +24,7 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
+use crate::editing::EditStore;
 use crate::issues::IssueStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
@@ -307,6 +308,7 @@ pub trait AuthStore:
     + SecondStepStore
     + InvitationStore
     + AccessKeyStore
+    + EditStore
     + PolicyStore
     + ProjectStore
     + IssueStore
@@ -338,11 +340,16 @@ pub trait AuthStore:
     reads! {
         /// The sign-in settings.
         fn auth_settings() -> AuthSettings;
+        /// The version of the sign-up policy: `0` until it is changed the first time.
+        fn sign_up_policy_version() -> i64;
         /// Adds an entry to the security log.
         fn append_security_log(event: &SecurityEvent) -> ();
     }
 
     writes! {
+        /// Counts the version of the sign-up policy up, after its two values were written, and
+        /// says whether it was still at `version`.
+        fn count_sign_up_policy_up(version: i64) -> bool;
         /// Stores the value of a setting of the whole organization.
         fn put_setting(key: &str, value: &SettingValue, at: Timestamp) -> ();
     }

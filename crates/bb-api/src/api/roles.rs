@@ -30,11 +30,12 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of a role in a list that can be asked for, and which of them a list holds when the
 /// request names none: what the list of roles needs.
-const ROLE_FIELDS: [FieldSpec; 6] = [
+const ROLE_FIELDS: [FieldSpec; 7] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("starting"),
     FieldSpec::by_default("two_step"),
+    FieldSpec::by_default("version"),
     FieldSpec::on_request("position"),
     FieldSpec::on_request("permissions"),
 ];
@@ -56,6 +57,9 @@ pub(crate) struct RoleItem {
     /// Whether everybody with it needs two-step sign-in.
     #[serde(skip_serializing_if = "Option::is_none")]
     two_step: Option<bool>,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<i64>,
     /// The place in the order of roles.
     #[serde(skip_serializing_if = "Option::is_none")]
     position: Option<i64>,
@@ -73,6 +77,7 @@ impl From<&RoleView> for RoleItem {
             name: Some(role.name.clone()),
             starting: role.starting.clone(),
             two_step: Some(role.two_step),
+            version: Some(role.version),
             position: Some(role.position),
             permissions: Some(role.permissions.clone()),
         }
@@ -92,6 +97,8 @@ pub(crate) struct RoleBody {
     position: i64,
     /// Whether everybody with it needs two-step sign-in.
     two_step: bool,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    version: i64,
     /// What it allows, in the order of the catalogue.
     permissions: Vec<Permission>,
 }
@@ -106,9 +113,17 @@ impl From<&RoleView> for RoleBody {
             starting: role.starting.clone(),
             position: role.position,
             two_step: role.two_step,
+            version: role.version,
             permissions: role.permissions.clone(),
         }
     }
+}
+
+/// Which role to give its starting permissions back, made on the version that was looked at.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct ResetRoleBody {
+    /// The version of the role the person looked at; a change made meanwhile stops this one.
+    version: i64,
 }
 
 /// What a role is used for, as far as the person who asks may see.
@@ -172,6 +187,8 @@ pub(crate) struct CopyRoleBody {
 /// What to change about a role: what is left out stays as it is.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ChangeRoleBody {
+    /// The version of the role the person looked at; a change made meanwhile stops this one.
+    version: i64,
     /// A new name.
     name: Option<String>,
     /// The permissions from now on.
@@ -400,6 +417,7 @@ async fn change_role(
             ChangeRole {
                 session_token,
                 role,
+                version: body.version,
                 name: body.name,
                 permissions: body.permissions,
                 two_step: body.two_step,
@@ -502,6 +520,7 @@ async fn copy_role(
     operation_id = "resetRole",
     tag = "roles",
     params(("role_id" = String, Path, description = "The ID of the role.")),
+    request_body = ResetRoleBody,
     responses(
         (status = 200, description = "The role as it is now.", body = RoleBody),
         InvalidAnswer,
@@ -516,6 +535,7 @@ async fn reset_role(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(role_id): ApiPath<String>,
+    ApiJson(body): ApiJson<ResetRoleBody>,
 ) -> Result<Response, ApiError> {
     let role = parse::<RoleId>(&role_id)?;
     let reset = auth
@@ -525,6 +545,7 @@ async fn reset_role(
             ResetRole {
                 session_token,
                 role,
+                version: body.version,
             },
         )
         .await?;
@@ -577,6 +598,7 @@ mod tests {
             name: Some("n".to_owned()),
             starting: Some("viewer".to_owned()),
             two_step: Some(false),
+            version: Some(1),
             position: Some(0),
             permissions: Some(Vec::new()),
         };

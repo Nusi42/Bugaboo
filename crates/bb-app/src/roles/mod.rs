@@ -16,11 +16,14 @@ mod types;
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::access::Role;
+use bb_core::access::{FieldLevel, PeopleLevel, Role};
 use bb_core::event::{FieldChange, RecordKind};
+use bb_core::fields::Field;
 use bb_core::id::RoleId;
+use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
+use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::guards::{Refusal, ensure_a_manager_remains, ensure_no_escalation};
 use bb_policy::{Authorized, Permission, Place, StartingRole};
 use serde_json::json;
@@ -40,6 +43,8 @@ use crate::auth::{
     AppError, AuthStore, Ctx, Done, Stops, by, change_failed, changed, entity, internal, set_to,
 };
 use crate::input::clean_name;
+use crate::member;
+use crate::projects::Why;
 
 /// The keys of the permissions in a set: what an event and a view say.
 fn keys(permissions: &BTreeSet<Permission>) -> Vec<&'static str> {
@@ -60,6 +65,7 @@ fn view(record: &RoleRecord) -> RoleView {
             .map(|key| key.as_str().to_owned()),
         position: record.role.position,
         two_step: record.role.two_step,
+        version: record.role.version,
         permissions: record.permissions.iter().copied().collect(),
     }
 }
@@ -92,6 +98,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             starting: None,
             position,
             two_step,
+            version: FIRST_VERSION,
         })
     }
 }
@@ -134,9 +141,9 @@ pub async fn make_role<S: AuthStore>(
         by(actor.person.id),
         entity(RecordKind::Role, role.id),
         vec![
-            set_to("name", json!(role.name)),
-            set_to("permissions", json!(keys(&permissions))),
-            set_to("two_step", json!(role.two_step)),
+            set_to(member::role::NAME, json!(role.name)),
+            set_to(member::role::PERMISSIONS, json!(keys(&permissions))),
+            set_to(member::role::TWO_STEP, json!(role.two_step)),
         ],
     )?;
     let (stored, stored_permissions) = (
@@ -186,6 +193,14 @@ pub async fn change_role<S: AuthStore>(
         .require(&actor, Permission::ManageRoles, Place::Organization)
         .await?;
     let before = ctx.role_or_missing(input.role).await?;
+    let (record, editor, version) = (
+        entity(RecordKind::Role, before.role.id),
+        actor.person.id,
+        input.version,
+    );
+    if before.role.version != version {
+        return Err(AppError::stale(record, Place::Organization, editor));
+    }
     let name = match &input.name {
         Some(name) => clean_name(name)?,
         None => before.role.name.clone(),
@@ -201,20 +216,21 @@ pub async fn change_role<S: AuthStore>(
         entity(RecordKind::Role, id),
         vec![
             FieldChange {
-                field: "name".to_owned(),
+                field: member::role::NAME.to_owned(),
                 before: Some(json!(before.role.name)),
                 after: Some(json!(name)),
             },
             FieldChange {
-                field: "permissions".to_owned(),
+                field: member::role::PERMISSIONS.to_owned(),
                 before: Some(json!(keys(&before.permissions))),
                 after: Some(json!(keys(&permissions))),
             },
             FieldChange {
-                field: "two_step".to_owned(),
+                field: member::role::TWO_STEP.to_owned(),
                 before: Some(json!(before.role.two_step)),
                 after: Some(json!(two_step)),
             },
+            counted_up(before.role.version),
         ],
     )?;
     let (new_name, new_permissions) = (
@@ -222,7 +238,8 @@ pub async fn change_role<S: AuthStore>(
         permissions.iter().copied().collect::<Vec<_>>(),
     );
     let wanted = input.permissions.as_deref().map(set_of);
-    let editor = actor.person.id;
+    let why = Why::default();
+    let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -230,8 +247,11 @@ pub async fn change_role<S: AuthStore>(
                 // Nobody adds a permission they do not hold; taking one away needs nothing. Both
                 // the role and what the person holds are read now, after the lock.
                 let Some(current) = S::role_in(transaction, id).await? else {
-                    return Err(S::aborted());
+                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 };
+                if current.role.version != version {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                }
                 let held = held_in::<S>(transaction, editor, Place::Organization).await?;
                 if let Some(wanted) = &wanted {
                     let added: BTreeSet<Permission> =
@@ -239,8 +259,8 @@ pub async fn change_role<S: AuthStore>(
                     ensure_no_escalation(&held, &added).map_err(S::refused)?;
                 }
                 let state_before = S::organization_state_in(transaction).await?;
-                if !S::update_role(transaction, id, &new_name, two_step).await? {
-                    return Err(S::aborted());
+                if !S::update_role(transaction, id, &new_name, two_step, version).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 S::replace_role_permissions(transaction, id, &new_permissions).await?;
                 let state_after = S::organization_state_in(transaction).await?;
@@ -249,10 +269,8 @@ pub async fn change_role<S: AuthStore>(
         })
         .await
         .map_err(|error| {
-            change_failed::<S>(
-                &error,
-                Stops::new(ErrorCode::NotFound, ErrorCode::NameTaken),
-            )
+            why.answer_with::<S>(&error, ErrorCode::NotFound, ErrorCode::NameTaken)
+                .about(&record, Place::Organization, editor)
         })?;
     ctx.note(
         SecurityAction::RoleChanged,
@@ -263,6 +281,7 @@ pub async fn change_role<S: AuthStore>(
     let mut role = before.role;
     role.name = name;
     role.two_step = two_step;
+    role.version = next(role.version);
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
 }
 
@@ -352,6 +371,25 @@ pub async fn delete_role<S: AuthStore>(
     Ok(Done)
 }
 
+/// The level of each field.
+type FieldLevels = Vec<(Field, FieldLevel)>;
+
+/// The levels of a kind of people information, for each kind.
+type PeopleLevels = Vec<(PeopleKind, PeopleLevel)>;
+
+/// The levels of a starting role: for each field, and for each kind of people information.
+fn starting_levels(starting: StartingRole) -> (FieldLevels, PeopleLevels) {
+    let fields = Field::ALL
+        .iter()
+        .map(|field| (*field, starting.field_level(*field)))
+        .collect();
+    let people = PeopleKind::ALL
+        .iter()
+        .map(|kind| (*kind, starting.people_level(*kind)))
+        .collect();
+    (fields, people)
+}
+
 /// Gives a starting role back the permissions and levels it had at the start (*Reset to the
 /// starting permissions*). The name stays; so do the levels set for single projects.
 ///
@@ -376,30 +414,35 @@ pub async fn reset_role<S: AuthStore>(
         .map(TechnicalName::as_str)
         .and_then(StartingRole::from_code)
         .ok_or(ErrorCode::InvalidRequest)?;
+    let (record, editor, version) = (
+        entity(RecordKind::Role, before.role.id),
+        actor.person.id,
+        input.version,
+    );
+    if before.role.version != version {
+        return Err(AppError::stale(record, Place::Organization, editor));
+    }
     let permissions: BTreeSet<Permission> = starting.permissions().into_iter().collect();
-    let fields: Vec<_> = bb_core::fields::Field::ALL
-        .iter()
-        .map(|field| (*field, starting.field_level(*field)))
-        .collect();
-    let people: Vec<_> = bb_core::people_kinds::PeopleKind::ALL
-        .iter()
-        .map(|kind| (*kind, starting.people_level(*kind)))
-        .collect();
+    let (fields, people) = starting_levels(starting);
     let id = before.role.id;
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Role, id),
-        vec![FieldChange {
-            field: "permissions".to_owned(),
-            before: Some(json!(keys(&before.permissions))),
-            after: Some(json!(keys(&permissions))),
-        }],
+        vec![
+            FieldChange {
+                field: member::role::PERMISSIONS.to_owned(),
+                before: Some(json!(keys(&before.permissions))),
+                after: Some(json!(keys(&permissions))),
+            },
+            counted_up(before.role.version),
+        ],
     )?;
     let (name, new_permissions) = (
         before.role.name.clone(),
         permissions.iter().copied().collect::<Vec<_>>(),
     );
-    let editor = actor.person.id;
+    let why = Why::default();
+    let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -407,8 +450,11 @@ pub async fn reset_role<S: AuthStore>(
                 // The reset adds what the role lacks now and sets levels: nobody gives what they
                 // do not hold, judged on the role and on the person as they are stored now.
                 let Some(current) = S::role_in(transaction, id).await? else {
-                    return Err(S::aborted());
+                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 };
+                if current.role.version != version {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                }
                 let held = held_in::<S>(transaction, editor, Place::Organization).await?;
                 let added: BTreeSet<Permission> = new_permissions
                     .iter()
@@ -426,8 +472,8 @@ pub async fn reset_role<S: AuthStore>(
                     return Err(S::refused(Refusal::TooMuch));
                 }
                 let state_before = S::organization_state_in(transaction).await?;
-                if !S::update_role(transaction, id, &name, starting.two_step()).await? {
-                    return Err(S::aborted());
+                if !S::update_role(transaction, id, &name, starting.two_step(), version).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 S::replace_role_permissions(transaction, id, &new_permissions).await?;
                 S::replace_role_levels(transaction, id, &fields, &people).await?;
@@ -436,7 +482,10 @@ pub async fn reset_role<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NotFound)))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::NotFound)
+                .about(&record, Place::Organization, editor)
+        })?;
     ctx.note(
         SecurityAction::RoleReset,
         Some(actor.person.id),
@@ -445,6 +494,7 @@ pub async fn reset_role<S: AuthStore>(
     .await;
     let mut role = before.role;
     role.two_step = starting.two_step();
+    role.version = next(role.version);
     Ok(access.authorize(view(&RoleRecord { role, permissions })))
 }
 

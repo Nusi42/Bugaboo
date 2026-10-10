@@ -311,9 +311,8 @@ async fn iss_01_a_stale_version_is_refused() -> TestResult {
             )
             .await?;
         assert_eq!(ok(&first)?["version"], 2);
-        // Ada looked at version 1; the refusal is `edit.version_changed`. The answer that says who
-        // changed it, when and which fields comes with the edit locks (WP-04) for every route at
-        // once, so this test asserts the code now.
+        // Ada looked at version 1: the refusal is `edit.version_changed` with the structured
+        // answer (ADR-0019): who changed it, which fields, and what they are now.
         let late = ada
             .send(
                 "PATCH",
@@ -325,6 +324,12 @@ async fn iss_01_a_stale_version_is_refused() -> TestResult {
             (late.status, late.code()),
             (StatusCode::CONFLICT, "edit.version_changed")
         );
+        let conflict = &late.body["conflict"];
+        assert_eq!(conflict["version"], 2, "{conflict}");
+        assert_eq!(conflict["fields"], json!(["priority"]), "{conflict}");
+        assert_eq!(conflict["current"]["priority"], "high", "{conflict}");
+        assert!(conflict["changed_by"].is_object(), "{conflict}");
+        assert!(conflict["changed_at"].is_string(), "{conflict}");
         let current = ada.send("GET", &path, None).await?;
         assert_eq!(ok(&current)?["issue"]["priority"], "high");
         assert_eq!(current.body["issue"]["version"], 2);
@@ -508,6 +513,88 @@ async fn iss_02_only_people_who_manage_issue_types_make_and_change_them() -> Tes
             ada.send("POST", TYPES, Some(unknown)).await?.code(),
             "request.invalid"
         );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_01_a_stale_change_after_undo_or_a_new_mode_names_who_counted_the_version_up()
+-> TestResult {
+    each_database("iss_01_stale_after_trash_and_mode", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut cora, _) = site.person(StartingRole::Contributor, "cora").await?;
+        let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
+        let made = site.make(&mut cora, "Looked at version 1").await?;
+        let path = format!("{ISSUES}/{}", key_of(ok(&made)?)?);
+        // The trash and its undo count the version up (3), by Ada: no field of the issue changed.
+        let deleted = ada.send("DELETE", &path, None).await?;
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+        ok(&ada.send("POST", &format!("{path}/restore"), None).await?)?;
+        let late = tim
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": 1, "priority": "low"})),
+            )
+            .await?;
+        assert_eq!(late.code(), "edit.version_changed");
+        let conflict = &late.body["conflict"];
+        assert_eq!(conflict["version"], 3, "{conflict}");
+        assert_eq!(conflict["fields"], json!([]), "{conflict}");
+        assert!(!conflict["changed_by"].is_null(), "{conflict}");
+        // A new mode of IDs renews the key and counts the version up again (4).
+        let switched = ada
+            .send(
+                "PUT",
+                "/api/v1/projects/ACME/settings/issues.id-mode",
+                Some(json!({"value": "counting"})),
+            )
+            .await?;
+        ok(&switched)?;
+        let key = key_of(&ok(&ada.send("GET", &path, None).await?)?["issue"])?;
+        let late = tim
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{key}"),
+                Some(json!({"version": 3, "priority": "low"})),
+            )
+            .await?;
+        assert_eq!(late.code(), "edit.version_changed");
+        let conflict = &late.body["conflict"];
+        assert_eq!(conflict["version"], 4, "{conflict}");
+        assert_eq!(conflict["fields"], json!([]), "{conflict}");
+        assert!(!conflict["changed_by"].is_null(), "{conflict}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_02_two_administrators_renaming_the_same_type_get_who_and_which_field() -> TestResult {
+    each_database("iss_02_stale_type", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut ben, _) = site.person(StartingRole::Administrator, "ben").await?;
+        let path = format!("{TYPES}/{}", site.bug);
+        let first = ada
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": 1, "name": "Defect"})),
+            )
+            .await?;
+        assert_eq!(ok(&first)?["version"], 2);
+        let late = ben
+            .send("PATCH", &path, Some(json!({"version": 1, "name": "Fault"})))
+            .await?;
+        assert_eq!(late.code(), "edit.version_changed");
+        let conflict = &late.body["conflict"];
+        assert_eq!(conflict["version"], 2, "{conflict}");
+        assert_eq!(conflict["fields"], json!(["name"]), "{conflict}");
+        assert_eq!(conflict["current"]["name"], "Defect", "{conflict}");
+        assert!(conflict["changed_by"].is_object(), "{conflict}");
         Ok(())
     })
     .await

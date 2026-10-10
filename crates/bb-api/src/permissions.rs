@@ -30,6 +30,9 @@ pub enum Declared {
     SignedIn,
     /// A person's own sign-in data.
     OwnAccount,
+    /// The permission that depends on the record the request names (its kind decides): the use
+    /// case judges it.
+    ByRecord,
     /// A permission of the catalogue.
     Permission(Permission),
 }
@@ -42,6 +45,7 @@ impl Declared {
             Self::Public => needs::PUBLIC,
             Self::SignedIn => needs::SIGNED_IN,
             Self::OwnAccount => needs::OWN_ACCOUNT,
+            Self::ByRecord => needs::BY_RECORD,
             Self::Permission(permission) => permission.code(),
         }
     }
@@ -119,6 +123,24 @@ pub const ROUTES: &[Route] = &[
         Declared::OwnAccount,
         Answer::Ordinary,
     ),
+    route("takeEditLock", Declared::ByRecord, Answer::Secret),
+    route("heartbeatEditLock", Declared::ByRecord, Answer::Ordinary),
+    route("releaseEditLock", Declared::SignedIn, Answer::Ordinary),
+    route("askToFinish", Declared::ByRecord, Answer::Ordinary),
+    route(
+        "editAnyway",
+        Declared::Permission(Permission::EditAnyway),
+        Answer::Secret,
+    ),
+    route(
+        "releaseStuckEditLock",
+        Declared::Permission(Permission::EditAnyway),
+        Answer::Ordinary,
+    ),
+    route("saveDraft", Declared::ByRecord, Answer::Ordinary),
+    route("readDraft", Declared::ByRecord, Answer::NeverStored),
+    route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
+    route("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
     route("makeAccessKey", Declared::OwnAccount, Answer::Secret),
     route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),
@@ -449,6 +471,12 @@ pub const ROUTES: &[Route] = &[
     ),
 ];
 
+/// The routes that save long text, by operation ID: each takes the token of an edit lock besides the
+/// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`.
+/// The routes that save the description of an issue and the text of a comment are added here by the
+/// packages that make them.
+pub const LONG_TEXT_ROUTES: &[&str] = &[];
+
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]
 pub fn declared(operation_id: &str) -> Option<&'static Route> {
@@ -479,6 +507,13 @@ mod tests {
 
     use super::*;
     use crate::openapi::operations;
+
+    #[test]
+    fn adr_0019_a_route_that_saves_long_text_is_a_route() {
+        for id in LONG_TEXT_ROUTES {
+            assert!(declared(id).is_some(), "{id} is no route");
+        }
+    }
 
     #[test]
     fn m1_f32_no_row_names_a_route_that_does_not_exist_or_a_route_twice() {

@@ -283,7 +283,7 @@ async fn sec_02_groups_are_made_and_renamed_over_http() -> TestResult {
             .send(
                 "PATCH",
                 &format!("/api/v1/groups/{group}"),
-                Some(json!({"name": "Back end"})),
+                Some(json!({"name": "Back end", "version": 1})),
             )
             .await?;
         assert_eq!(renamed.body["name"], "Back end");
@@ -454,7 +454,7 @@ async fn sec_02_a_person_who_may_not_manage_groups_is_refused_on_every_group_rou
             (
                 "PATCH",
                 format!("/api/v1/groups/{group}"),
-                Some(json!({"name": "Mine"})),
+                Some(json!({"name": "Mine", "version": 1})),
             ),
             ("DELETE", format!("/api/v1/groups/{group}"), None),
             ("GET", format!("/api/v1/groups/{group}/members"), None),

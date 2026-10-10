@@ -9,6 +9,7 @@ use bb_core::id::{IssueId, UserId};
 use bb_core::issue::{Issue, IssueAssignee, Priority, Status};
 use bb_core::issue_key::IssueCode;
 use bb_core::project::Project;
+use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -106,7 +107,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             updated_at: now,
             closed_at: Status::NEW.closed_after(status, None, now),
             deleted_at: None,
-            version: 1,
+            version: FIRST_VERSION,
         };
         Ok((
             access,

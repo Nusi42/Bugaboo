@@ -88,6 +88,11 @@ async fn change(
     role: RoleId,
     permissions: Option<Vec<Permission>>,
 ) -> Result<RoleView, AppError> {
+    let version = org
+        .rig
+        .role_version(role)
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?;
     Ok(org
         .rig
         .api()
@@ -96,6 +101,7 @@ async fn change(
             ChangeRole {
                 session_token: by.session.clone(),
                 role,
+                version,
                 name: None,
                 permissions,
                 two_step: None,
@@ -148,6 +154,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
                 ChangeRole {
                     session_token: org.admin.session.clone(),
                     role: viewer.id,
+                    version: viewer.version,
                     name: Some("Looker".to_owned()),
                     permissions: Some(vec![Permission::SeeProjects, Permission::CheckAccess]),
                     two_step: Some(true),
@@ -169,6 +176,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
                 ResetRole {
                     session_token: org.admin.session.clone(),
                     role: viewer.id,
+                    version: renamed.version,
                 },
             )
             .await?
@@ -187,6 +195,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
                 ResetRole {
                     session_token: org.admin.session.clone(),
                     role: own.id,
+                    version: own.version,
                 },
             )
             .await;
@@ -689,6 +698,7 @@ async fn projects_and_groups(org: &Org<'_>, journal: &Journal<'_>, bea: &Member)
             RenameGroup {
                 session_token: session.clone(),
                 group,
+                version: org.rig.group_version(group).await?,
                 name: "Crew".to_owned(),
             },
         )
@@ -756,6 +766,7 @@ async fn roles_of_the_organization(org: &Org<'_>, journal: &Journal<'_>) -> Run<
             ChangeRole {
                 session_token: session.clone(),
                 role: made.id,
+                version: made.version,
                 name: Some("Own role".to_owned()),
                 permissions: None,
                 two_step: Some(true),
@@ -771,6 +782,7 @@ async fn roles_of_the_organization(org: &Org<'_>, journal: &Journal<'_>) -> Run<
             ResetRole {
                 session_token: session.clone(),
                 role: starting.id,
+                version: starting.version,
             },
         )
     );

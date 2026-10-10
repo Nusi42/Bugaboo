@@ -115,6 +115,12 @@ error_codes! {
     TooLarge => ("request.too_large", 413),
     /// Someone else changed the thing since the person loaded it (ADR-0019).
     VersionChanged => ("edit.version_changed", 409),
+    /// The edit lock ran out or was released, so the text cannot be saved with it. The text is
+    /// kept as the person's draft (ADR-0019).
+    EditLockLost => ("edit.lock_lost", 409),
+    /// Somebody took the editing over (*Edit anyway*), so the text cannot be saved with the
+    /// lock. The text is kept as the person's draft (ADR-0019).
+    EditTakenOver => ("edit.taken_over", 409),
     /// Too many requests in a short time (SEC-14).
     TooManyRequests => ("rate_limit.exceeded", 429),
     /// The server cannot answer right now.

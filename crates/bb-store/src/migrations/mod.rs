@@ -31,6 +31,7 @@ mod m0004_settings;
 mod m0005_projects;
 mod m0006_access_keys;
 mod m0007_issues;
+mod m0008_editing;
 
 /// One step of a migration.
 pub(crate) enum Step {
@@ -132,6 +133,11 @@ const ALL: &[Definition] = &[
         version: 7,
         name: "issues",
         steps: || Ok(m0007_issues::steps()),
+    },
+    Definition {
+        version: 8,
+        name: "editing",
+        steps: || Ok(m0008_editing::steps()),
     },
 ];
 
@@ -389,6 +395,51 @@ mod tests {
                 assert!(!table.marks.fields().is_empty());
             }
             database.close().await;
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0019_groups_and_roles_that_were_there_start_at_the_first_version() -> TestResult {
+        each_database("migration_8_first_version", async |db| {
+            use crate::schema::{GroupRow, RoleRow};
+            use bb_core::version::FIRST_VERSION;
+            let database = Database::connect(db.url()).await?;
+            database.migrate_until(6, at(0)).await?;
+            // A group and a role as the database held them before they had a version.
+            let mut group = Query::insert();
+            group
+                .into_table(GroupRow::Table)
+                .columns([GroupRow::Id, GroupRow::Name])
+                .values([Expr::val(vec![1_u8; 16]), Expr::val("Old group")])?;
+            database.execute(&group).await?;
+            let mut role = Query::insert();
+            role.into_table(RoleRow::Table)
+                .columns([
+                    RoleRow::Id,
+                    RoleRow::Name,
+                    RoleRow::Position,
+                    RoleRow::TwoStep,
+                ])
+                .values([
+                    Expr::val(vec![2_u8; 16]),
+                    Expr::val("Old role"),
+                    Expr::val(0_i64),
+                    Expr::val(false),
+                ])?;
+            database.execute(&role).await?;
+            database.migrate(at(1)).await?;
+            let mut groups = Query::select();
+            groups.column(GroupRow::Version).from(GroupRow::Table);
+            let rows = database.fetch_all(&groups).await?;
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].get::<i64>(GroupRow::Version)?, FIRST_VERSION);
+            let mut roles = Query::select();
+            roles.column(RoleRow::Version).from(RoleRow::Table);
+            let rows = database.fetch_all(&roles).await?;
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].get::<i64>(RoleRow::Version)?, FIRST_VERSION);
             Ok(())
         })
         .await

@@ -150,7 +150,9 @@ export async function setSignUpPolicy(
   admin: ApiSession,
   policy: { readonly enabled: boolean; readonly domains: readonly string[] },
 ): Promise<void> {
+  // A change is made on the version that was read.
+  const { version } = dataOf(await admin.client.GET("/api/v1/auth/sign-up-policy"));
   await admin.client.PUT("/api/v1/auth/sign-up-policy", {
-    body: { enabled: policy.enabled, domains: [...policy.domains] },
+    body: { enabled: policy.enabled, domains: [...policy.domains], version },
   });
 }

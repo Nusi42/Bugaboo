@@ -92,6 +92,47 @@ pub(crate) enum Secret {
     UpdatedAt,
 }
 
+/// The lease on one thing being edited. A row lives only while its lease runs (ADR-0019).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum EditLockRow {
+    #[iden = "edit_lock"]
+    Table,
+    RecordKind,
+    RecordId,
+    Part,
+    Holder,
+    Editor,
+    Token,
+    TakenAt,
+    ExpiresAt,
+}
+
+/// The unsaved text of a person (a draft), kept until it is saved, thrown away, or 30 days old.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum EditDraftRow {
+    #[iden = "edit_draft"]
+    Table,
+    Author,
+    Target,
+    Text,
+    BaseVersion,
+    SavedAt,
+}
+
+/// A note for the person who was editing, read at their next heartbeat.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum EditNoticeRow {
+    #[iden = "edit_notice"]
+    Table,
+    Recipient,
+    RecordKind,
+    RecordId,
+    Part,
+    Kind,
+    FromPerson,
+    At,
+}
+
 /// The values of settings. Only `settings.rs` reads or writes this table (ARCH-SETTINGS).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum SettingRow {
@@ -103,6 +144,16 @@ pub(crate) enum SettingRow {
     Value,
     Locked,
     UpdatedAt,
+}
+
+/// The version of a policy that is made of several settings: a row of its own, so that a change or
+/// a reset of a setting cannot take the version back.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum PolicyVersionRow {
+    #[iden = "policy_version"]
+    Table,
+    Policy,
+    Version,
 }
 
 /// The values of settings that people chose for themselves in *My settings*. Only `settings.rs`
@@ -301,6 +352,7 @@ pub(crate) enum GroupRow {
     Table,
     Id,
     Name,
+    Version,
 }
 
 #[derive(Clone, Copy, Iden)]
@@ -321,6 +373,7 @@ pub(crate) enum RoleRow {
     Starting,
     Position,
     TwoStep,
+    Version,
 }
 
 #[derive(Clone, Copy, Iden)]
@@ -664,6 +717,7 @@ stored_tables! {
     GroupRow => bb_core::access::Group {
         Id => id,
         Name => name,
+        Version => version,
     },
     GroupMemberRow => bb_core::access::GroupMember {
         Group => group,
@@ -676,6 +730,7 @@ stored_tables! {
         Starting => starting,
         Position => position,
         TwoStep => two_step,
+        Version => version,
     },
     RolePermissionRow => bb_core::access::RolePermission {
         Role => role,
@@ -737,6 +792,32 @@ stored_tables! {
         Key => key,
         Project => project,
     },
+    EditLockRow => bb_core::edit::EditLock {
+        RecordKind => record,
+        RecordId => record,
+        Part => part,
+        Holder => holder,
+        Editor => editor,
+        Token => token,
+        TakenAt => taken_at,
+        ExpiresAt => expires_at,
+    },
+    EditDraftRow => bb_core::edit::Draft {
+        Author => author,
+        Target => target,
+        Text => text,
+        BaseVersion => base_version,
+        SavedAt => saved_at,
+    },
+    EditNoticeRow => bb_core::edit::EditNotice {
+        Recipient => recipient,
+        RecordKind => record,
+        RecordId => record,
+        Part => part,
+        Kind => kind,
+        FromPerson => from,
+        At => at,
+    },
     SettingRow => bb_core::settings::StoredSetting {
         Key => key,
         Level => level,
@@ -744,6 +825,10 @@ stored_tables! {
         Value => value,
         Locked => locked,
         UpdatedAt => updated_at,
+    },
+    PolicyVersionRow => bb_core::settings::PolicyVersion {
+        Policy => policy,
+        Version => version,
     },
     PersonSettingRow => bb_core::settings::StoredPersonSetting {
         Person => person,

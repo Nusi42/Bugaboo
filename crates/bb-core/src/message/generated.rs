@@ -670,6 +670,12 @@ pub const ERROR_AUTH_WRONG_SECOND_STEP_CODE: MessageKey =
 /// The message `error.auth.wrong-setup-code`.
 pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.wrong-setup-code");
 
+/// The message `error.edit.lock-lost`.
+pub const ERROR_EDIT_LOCK_LOST: MessageKey = MessageKey::new("error.edit.lock-lost");
+
+/// The message `error.edit.taken-over`.
+pub const ERROR_EDIT_TAKEN_OVER: MessageKey = MessageKey::new("error.edit.taken-over");
+
 /// The message `error.edit.version-changed`.
 pub const ERROR_EDIT_VERSION_CHANGED: MessageKey = MessageKey::new("error.edit.version-changed");
 
@@ -5655,6 +5661,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.auth.wrong-setup-code",
         "That setup code is not right. Copy it again from the window where Bugaboo is running.",
+    ),
+    (
+        "error.edit.lock-lost",
+        "Your editing time ran out. Your text is kept as a draft. Use Compare and save to keep your changes.",
+    ),
+    (
+        "error.edit.taken-over",
+        "Someone took over the editing. Your text is kept as a draft. Use Compare and save to keep your changes.",
     ),
     (
         "error.edit.version-changed",

@@ -23,6 +23,9 @@ use crate::schema::{Event, Outbox, OutboxPosition};
 /// The name of the counter row in the consumer positions that hands out outbox positions.
 pub(crate) const OUTBOX_HEAD: &str = "head";
 
+/// How many events one page of the search for a record's newest event of a kind reads.
+const EVENT_PAGE: u64 = 50;
+
 const ACTOR_PERSON: &str = "person";
 const ACTOR_SYSTEM: &str = "system";
 
@@ -71,6 +74,50 @@ impl Database {
             .iter()
             .map(read_event)
             .collect()
+    }
+
+    /// The newest event about one record for which `wanted` is true, looked for through all its
+    /// events from the newest on, a page at a time, so no window cuts the search short.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn latest_event_about_where(
+        &self,
+        entity: &EntityRef,
+        wanted: impl Fn(&DomainEvent) -> bool + Send,
+    ) -> Result<Option<DomainEvent>, StoreError> {
+        // The order they were committed in (the outbox position), not the time in their IDs: two
+        // events of the same millisecond have no order there.
+        let mut before = i64::MAX;
+        loop {
+            let mut select = Query::select();
+            select
+                .columns(event_columns().map(|column| (Event::Table, column)))
+                .column((Outbox::Table, Outbox::Position))
+                .from(Outbox::Table)
+                .inner_join(
+                    Event::Table,
+                    Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
+                )
+                .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
+                .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
+                .and_where(Expr::col((Outbox::Table, Outbox::Position)).lt(before))
+                .order_by((Outbox::Table, Outbox::Position), Order::Desc)
+                .limit(EVENT_PAGE);
+            let rows = self.fetch_all(&select).await?;
+            for row in &rows {
+                let event = read_event(row)?;
+                if wanted(&event) {
+                    return Ok(Some(event));
+                }
+            }
+            match rows.last() {
+                Some(last) if rows.len() as u64 == EVENT_PAGE => {
+                    before = last.get(Outbox::Position)?;
+                }
+                _ => return Ok(None),
+            }
+        }
     }
 
     /// The next events a consumer has not finished, with their outbox entries, in the order they

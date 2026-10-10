@@ -288,12 +288,13 @@ async fn adr_0007_events_about_a_fixed_thing_name_the_same_record() -> TestResul
     each_database("adr_0007_fixed_entity", async |db| {
         let rig = Rig::start(db).await?;
         let admin = rig.admin(ADA_EMAIL).await?;
-        for enabled in [true, false] {
+        for (version, enabled) in [(0, true), (1, false)] {
             let change = ChangeSignUpPolicy {
                 session_token: admin.session_token.clone(),
                 policy: SignUpPolicy {
                     enabled,
                     domains: vec![],
+                    version,
                 },
             };
             rig.api().change_sign_up_policy(Rig::info(), change).await?;

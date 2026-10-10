@@ -28,7 +28,11 @@ use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of a group in a list that can be asked for.
-const GROUP_FIELDS: [FieldSpec; 2] = [FieldSpec::by_default("id"), FieldSpec::by_default("name")];
+const GROUP_FIELDS: [FieldSpec; 3] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("version"),
+];
 /// The name of the list, so its cursors are its own.
 const GROUPS_LIST: &str = "groups";
 
@@ -41,6 +45,9 @@ pub(crate) struct GroupItem {
     /// What it is called.
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    version: Option<i64>,
 }
 
 impl Masked for GroupItem {}
@@ -50,6 +57,7 @@ impl From<&GroupView> for GroupItem {
         Self {
             id: Some(group.id.to_string()),
             name: Some(group.name.clone()),
+            version: Some(group.version),
         }
     }
 }
@@ -61,6 +69,8 @@ pub(crate) struct GroupBody {
     id: String,
     /// What it is called.
     name: String,
+    /// Counts up with every change. A change is made on the version that was looked at.
+    version: i64,
 }
 
 impl Masked for GroupBody {}
@@ -70,6 +80,7 @@ impl From<&GroupView> for GroupBody {
         Self {
             id: group.id.to_string(),
             name: group.name.clone(),
+            version: group.version,
         }
     }
 }
@@ -115,6 +126,15 @@ impl From<&GroupDetail> for GroupDetailBody {
 pub(crate) struct GroupNameBody {
     /// What the group is called.
     name: String,
+}
+
+/// A new name for a group, made on the version that was looked at.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct RenameGroupBody {
+    /// What the group is called from now on.
+    name: String,
+    /// The version of the group the person looked at; a change made meanwhile stops this one.
+    version: i64,
 }
 
 const MEMBER_FIELDS: [FieldSpec; 2] = [
@@ -318,7 +338,7 @@ async fn get_group(
     operation_id = "renameGroup",
     tag = "groups",
     params(("group_id" = String, Path, description = "The ID of the group.")),
-    request_body = GroupNameBody,
+    request_body = RenameGroupBody,
     responses(
         (status = 200, description = "The group as it is now.", body = GroupBody),
         InvalidAnswer,
@@ -333,7 +353,7 @@ async fn rename_group(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(group_id): ApiPath<String>,
-    ApiJson(body): ApiJson<GroupNameBody>,
+    ApiJson(body): ApiJson<RenameGroupBody>,
 ) -> Result<Response, ApiError> {
     let group = parse::<GroupId>(&group_id)?;
     let renamed = auth
@@ -343,6 +363,7 @@ async fn rename_group(
             RenameGroup {
                 session_token,
                 group,
+                version: body.version,
                 name: body.name,
             },
         )
@@ -579,6 +600,7 @@ mod tests {
             &GroupItem {
                 id: Some("i".to_owned()),
                 name: Some("n".to_owned()),
+                version: Some(1),
             },
         );
         crate::lean::assert_fields_are_the_keys_of(

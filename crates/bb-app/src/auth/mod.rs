@@ -28,6 +28,13 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
+use crate::editing::{
+    AskToFinish, CheckVersionsQuery, DraftSlot, DraftView, EditAnyway, HeartbeatAnswer,
+    HeartbeatQuery, LockOutcome, ReadDraftQuery, ReleaseLockQuery, ReleaseStuckLock,
+    SaveDraftQuery, TakeLockQuery, ThrowAwayDraftQuery, Versions, ask_to_finish, check_versions,
+    edit_anyway, heartbeat, read_draft, release_lock, release_stuck_lock, save_draft, take_lock,
+    throw_away_draft,
+};
 use crate::issues::{
     ChangeIssue, ChangeIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage,
     IssueTypeView, IssueTypesQuery, IssueView, IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue,
@@ -124,7 +131,14 @@ macro_rules! use_cases {
 
             $(fn $name(&self, request: RequestInfo, input: $input) -> Answer<'_, $output>
             {
-                Box::pin(async move { function!($name $($via)?)(&self.ctx(request), input).await })
+                Box::pin(async move {
+                    let ctx = self.ctx(request);
+                    match function!($name $($via)?)(&ctx, input).await {
+                        // The one place where a stale version becomes the structured answer.
+                        Err(AppError::Stale(stale)) => Err(ctx.conflict_of(&stale).await),
+                        answer => answer,
+                    }
+                })
             })+
         }
     };
@@ -309,6 +323,26 @@ use_cases! {
     project(ProjectQuery) -> Authorized<ProjectDetail>;
     /// Lists the projects a person sees.
     projects(ProjectsQuery) -> Authorized<ProjectPage>;
+    /// Takes the lock on a long text, or says who is editing it.
+    take_lock(TakeLockQuery) -> Authorized<LockOutcome>;
+    /// Renews the lock on a long text and keeps the text so far as the draft.
+    heartbeat(HeartbeatQuery) -> Authorized<HeartbeatAnswer>;
+    /// Lets go of a lock.
+    release_lock(ReleaseLockQuery) -> Done;
+    /// Asks the person who is editing to finish.
+    ask_to_finish(AskToFinish) -> Authorized<Done>;
+    /// Takes the editing over from the person who is editing.
+    edit_anyway(EditAnyway) -> Authorized<LockOutcome>;
+    /// Releases a lock that is stuck.
+    release_stuck_lock(ReleaseStuckLock) -> Authorized<Done>;
+    /// Keeps a text as the draft of the person.
+    save_draft(SaveDraftQuery) -> Authorized<DraftView>;
+    /// The draft of the person for a target.
+    read_draft(ReadDraftQuery) -> Authorized<DraftSlot>;
+    /// Throws the draft of the person away.
+    throw_away_draft(ThrowAwayDraftQuery) -> Done;
+    /// The versions of the records on the screen.
+    check_versions(CheckVersionsQuery) -> Authorized<Versions>;
     /// Lists the issue types.
     issue_types(IssueTypesQuery) -> Authorized<IssueTypePage>;
     /// Makes an issue type.

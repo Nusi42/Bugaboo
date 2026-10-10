@@ -49,6 +49,7 @@ async fn settings_of_the_organization(rig: &Rig, credential: &str) -> Result<(),
                 policy: SignUpPolicy {
                     enabled: true,
                     domains: Vec::new(),
+                    version: 0,
                 },
             },
         )
@@ -61,12 +62,17 @@ async fn change_a_role(
     credential: &str,
     role: bb_core::id::RoleId,
 ) -> Result<(), AppError> {
+    let version = rig
+        .role_version(role)
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?;
     rig.api()
         .change_role(
             Rig::info(),
             ChangeRole {
                 session_token: credential.to_owned(),
                 role,
+                version,
                 name: Some("Renamed".to_owned()),
                 permissions: None,
                 two_step: None,

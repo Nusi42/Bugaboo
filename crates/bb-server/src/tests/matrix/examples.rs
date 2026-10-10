@@ -9,6 +9,7 @@
 //! The entry points of later milestones add their own tables next to this one (M3 issues, M4 e-mail,
 //! M5 search, M8 assistant and AI apps, M9 exports); this one is the API.
 
+use bb_app::access::Permission;
 use bb_app::auth::CreateInvitation;
 use bb_testing::Failure;
 use serde_json::{Value, json};
@@ -61,6 +62,16 @@ pub(super) enum Quirk {
     /// key acts as the person: it reads them, and changes them only if it may change anything
     /// (WP-07, ADR-0025 decision 8).
     KeysActAsThePerson,
+    /// The route lets in whoever is signed in and the use case judges the record it names; the
+    /// example names the target project, so the person needs this permission there (and to see
+    /// the project: one who does not is told it is not found, before the permission is looked at).
+    OnTheTargetProject(Permission),
+    /// The route declares one permission and its use case also needs this one on the record it
+    /// names (*Edit anyway* takes over editing a record only for a person who may change it).
+    AlsoNeeds(Permission),
+    /// The route belongs to an open editor, a tab of a signed-in person: an access key is turned
+    /// away from it, whatever the key may do (ADR-0019).
+    SessionOnly,
 }
 
 /// One row of the table: a route and what is special about it.
@@ -87,6 +98,23 @@ impl Example {
     /// Whether the route has this quirk.
     pub(super) fn has(&self, quirk: Quirk) -> bool {
         self.quirks.contains(&quirk)
+    }
+
+    /// The permission a person needs on the target project for a route that judges the record
+    /// it names, if the row says so.
+    pub(super) fn record_permission(&self) -> Option<Permission> {
+        self.quirks.iter().find_map(|quirk| match quirk {
+            Quirk::OnTheTargetProject(permission) => Some(*permission),
+            _ => None,
+        })
+    }
+
+    /// The second permission the use case needs, if the row says so.
+    pub(super) fn also_needs(&self) -> Option<Permission> {
+        self.quirks.iter().find_map(|quirk| match quirk {
+            Quirk::AlsoNeeds(permission) => Some(*permission),
+            _ => None,
+        })
     }
 
     /// Whether the row says that the route may answer a person who is let in with this code.
@@ -225,6 +253,35 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changePeopleVisibility", &[Quirk::AtTheTargetProject]),
     Example::with("checkAccess", &[Quirk::AtTheTargetProject]),
     Example::with("listPeopleToCheck", &[Quirk::AtTheTargetProject]),
+    Example::with("takeEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::with("heartbeatEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::route("releaseEditLock"),
+    Example::with(
+        "askToFinish",
+        &[ON_THE_TARGET, Quirk::NamesAMissingThing, Quirk::SessionOnly],
+    ),
+    Example::with(
+        "editAnyway",
+        &[
+            Quirk::AtTheTargetProject,
+            Quirk::HidesUnseen,
+            Quirk::AlsoNeeds(Permission::ChangeProjectSettings),
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with(
+        "releaseStuckEditLock",
+        &[
+            Quirk::AtTheTargetProject,
+            Quirk::HidesUnseen,
+            Quirk::NamesAMissingThing,
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with("saveDraft", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::with("readDraft", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::route("throwAwayDraft"),
+    Example::route("checkVersions"),
     Example::with("listIssueTypes", &[Quirk::KeysActAsThePerson]),
     Example::route("makeIssueType"),
     Example::route("changeIssueType"),
@@ -235,6 +292,9 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
 ];
+
+/// A route that judges the record it names, as the example names the target project.
+const ON_THE_TARGET: Quirk = Quirk::OnTheTargetProject(Permission::ChangeProjectSettings);
 
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
 /// one would not be an ID of these, and the route would say "not found" before it looked at
@@ -472,7 +532,7 @@ async fn organization_request(
         "changeSignUpPolicy" => (
             "PUT",
             "/api/v1/auth/sign-up-policy".into(),
-            Some(json!({"enabled": false, "domains": []})),
+            Some(json!({"enabled": false, "domains": [], "version": 0})),
         ),
         "getServerStatus" => ("GET", "/api/v1/admin/status".into(), None),
         // How many people with a role still have to set up a second step.
@@ -599,6 +659,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_people::people_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
         return Ok(found);
     }
     if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {

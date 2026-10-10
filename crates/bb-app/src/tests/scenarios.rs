@@ -7,10 +7,14 @@ use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_auth::TotpSecret;
 use bb_core::access::AppliesTo;
 use bb_core::access_key::KeyChoice;
+use bb_core::edit::EditWhat;
+use bb_core::event::{EntityRef, RecordKind};
 use bb_core::fields::Field;
-use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
+use bb_core::id::{EditorId, EntityId, GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::SettingValue;
+use bb_core::technical::TechnicalName;
+use bb_core::version::FIRST_VERSION;
 use serde_json::Value;
 use webauthn_authenticator_rs::prelude::{Url, WebauthnAuthenticator as _};
 use webauthn_authenticator_rs::softpasskey::SoftPasskey;
@@ -32,6 +36,10 @@ use crate::auth::{
     start_code_app,
 };
 use crate::auth::{SecondStepStore as _, delete_access_key, make_access_key};
+use crate::editing::{
+    AskToFinish, EditAnyway, ReleaseStuckLock, TakeLockQuery, ask_to_finish, edit_anyway,
+    release_stuck_lock, take_lock,
+};
 use crate::people::{
     AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member,
     delete_group, make_group, remove_group_member, rename_group,
@@ -554,6 +562,7 @@ pub(crate) async fn change_sign_up_policy_scenario(world: &World) -> Added {
                 policy: SignUpPolicy {
                     enabled: true,
                     domains: vec!["example.test".to_owned()],
+                    version: 0,
                 },
             },
         ),
@@ -569,6 +578,7 @@ pub(crate) async fn sign_up_scenario(world: &World) -> Added {
             policy: SignUpPolicy {
                 enabled: true,
                 domains: vec!["example.test".to_owned()],
+                version: 0,
             },
         },
     )
@@ -718,6 +728,7 @@ pub(crate) async fn rename_group_scenario(world: &World) -> Added {
             RenameGroup {
                 session_token: token(world),
                 group,
+                version: FIRST_VERSION,
                 name: "Crew".to_owned(),
             },
         ),
@@ -807,6 +818,7 @@ pub(crate) async fn change_role_scenario(world: &World) -> Added {
             ChangeRole {
                 session_token: token(world),
                 role,
+                version: FIRST_VERSION,
                 name: Some("Own role".to_owned()),
                 permissions: None,
                 two_step: Some(true),
@@ -866,6 +878,7 @@ pub(crate) async fn reset_role_scenario(world: &World) -> Added {
             ResetRole {
                 session_token: token(world),
                 role: viewer,
+                version: FIRST_VERSION,
             },
         ),
     )
@@ -1120,6 +1133,103 @@ pub(crate) async fn delete_access_key_scenario(world: &World) -> Added {
             DeleteAccessKey {
                 session_token: token(world),
                 id: made.key.id,
+            },
+        ),
+    )
+    .await
+}
+
+// ---- Editing ----
+
+/// The description of a project, held under an edit lock by Bob, who may change the project.
+async fn bob_is_editing(world: &World) -> Result<EditWhat, String> {
+    let project = a_project(world, "ACME").await?;
+    let bob = world.person("bob@example.test").await.map_err(text)?;
+    let role = make_role(
+        &world.ctx(),
+        MakeRole {
+            session_token: token(world),
+            name: "Editor".to_owned(),
+            permissions: vec![Permission::SeeProjects, Permission::ChangeProjectSettings],
+            two_step: false,
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value()
+    .id;
+    assign_role(
+        &world.ctx(),
+        AssignRole {
+            session_token: token(world),
+            subject: Subject::Person(bob.person.id),
+            given: Given::Role(role),
+            project: Some(project),
+            applies_to: AppliesTo::ProjectAndSubProjects,
+        },
+    )
+    .await
+    .map_err(text)?;
+    let what = EditWhat {
+        record: EntityRef {
+            kind: RecordKind::Project.into(),
+            id: EntityId::from(project),
+        },
+        part: TechnicalName::new("description").map_err(text)?,
+    };
+    take_lock(
+        &world.ctx(),
+        TakeLockQuery {
+            session_token: bob.session_token,
+            what: what.clone(),
+            editor: EditorId::from_random([3; 16]),
+        },
+    )
+    .await
+    .map_err(text)?;
+    Ok(what)
+}
+
+pub(crate) async fn ask_to_finish_scenario(world: &World) -> Added {
+    let what = bob_is_editing(world).await?;
+    measured(
+        &world.store,
+        ask_to_finish(
+            &world.ctx(),
+            AskToFinish {
+                session_token: token(world),
+                what,
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn edit_anyway_scenario(world: &World) -> Added {
+    let what = bob_is_editing(world).await?;
+    measured(
+        &world.store,
+        edit_anyway(
+            &world.ctx(),
+            EditAnyway {
+                session_token: token(world),
+                what,
+                editor: EditorId::from_random([4; 16]),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn release_stuck_lock_scenario(world: &World) -> Added {
+    let what = bob_is_editing(world).await?;
+    measured(
+        &world.store,
+        release_stuck_lock(
+            &world.ctx(),
+            ReleaseStuckLock {
+                session_token: token(world),
+                what,
             },
         ),
     )

@@ -7,6 +7,7 @@
 //! are built from a text written in the code, and error statuses named outside this file.
 
 use std::fmt::Display;
+use std::sync::Arc;
 
 use axum::body::Body;
 use axum::extract::rejection::JsonRejection;
@@ -18,6 +19,7 @@ use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use serde::de::DeserializeOwned;
 
 use crate::api::is_api;
+use crate::conflict::{ConflictBody, ConflictProblem};
 use crate::cookies::Cookie;
 use crate::logging::RequestId;
 
@@ -25,18 +27,20 @@ use crate::logging::RequestId;
 ///
 /// The body is the [`Problem`] of the code. The middleware [`add_request_id`] adds the ID of the
 /// request, which only it knows.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct ApiError {
     code: ErrorCode,
     retry_after: Option<u64>,
     /// The session of the request has ended: the answer also makes the browser forget the
     /// session cookie and what it kept (M2-F06).
     ends_session: bool,
+    /// What changed the record, for `edit.version_changed` (ADR-0019 amendment M3).
+    conflict: Option<Arc<ConflictBody>>,
 }
 
-/// Tells [`add_request_id`] which answers to rewrite.
-#[derive(Clone, Copy, Debug)]
-struct ProblemOf(ErrorCode);
+/// Tells [`add_request_id`] which answers to rewrite, and with what.
+#[derive(Clone, Debug)]
+struct ProblemOf(ErrorCode, Option<Arc<ConflictBody>>);
 
 impl ApiError {
     /// The answer for `code`.
@@ -46,7 +50,15 @@ impl ApiError {
             code,
             retry_after: None,
             ends_session: false,
+            conflict: None,
         }
+    }
+
+    /// Adds what changed the record to an `edit.version_changed` answer.
+    #[must_use]
+    pub(crate) fn with_conflict(mut self, conflict: ConflictBody) -> Self {
+        self.conflict = Some(Arc::new(conflict));
+        self
     }
 
     /// The server failed. `cause` goes to the log and nowhere else; the person gets the
@@ -91,10 +103,11 @@ fn status_of(code: ErrorCode) -> StatusCode {
     StatusCode::from_u16(code.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-fn problem_response(problem: &Problem) -> Response {
+fn problem_response(problem: &Problem, conflict: Option<&ConflictBody>) -> Response {
     // A `Problem` holds text and numbers only, so it always serializes; the empty body is what
     // a (impossible) failure would leave.
-    let body = serde_json::to_vec(problem).unwrap_or_default();
+    let body = serde_json::to_vec(&ConflictProblem::new(problem.clone(), conflict.cloned()))
+        .unwrap_or_default();
     let mut response = Response::new(Body::from(body));
     *response.status_mut() = status_of(problem.code());
     let headers = response.headers_mut();
@@ -109,7 +122,7 @@ fn problem_response(problem: &Problem) -> Response {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let mut response = problem_response(&Problem::new(self.code));
+        let mut response = problem_response(&Problem::new(self.code), self.conflict.as_deref());
         if let Some(seconds) = self.retry_after {
             response
                 .headers_mut()
@@ -119,7 +132,9 @@ impl IntoResponse for ApiError {
             Cookie::Session.forget(&mut response);
             Cookie::Csrf.forget(&mut response);
         }
-        response.extensions_mut().insert(ProblemOf(self.code));
+        response
+            .extensions_mut()
+            .insert(ProblemOf(self.code, self.conflict));
         response
     }
 }
@@ -130,15 +145,15 @@ pub(crate) async fn add_request_id(request: Request, next: Next) -> Response {
     let id = request.extensions().get::<RequestId>().cloned();
     let api = is_api(request.uri().path());
     let mut response = next.run(request).await;
-    let marked = response.extensions().get::<ProblemOf>().map(|p| p.0);
+    let marked = response.extensions().get::<ProblemOf>().cloned();
     // Anything below /api that fails without a problem body (a rejection of an extractor, a
     // layer) is turned into one by its status; the text it came with is dropped.
     let unmarked = (api && marked.is_none() && is_failure(response.status()))
-        .then(|| code_for_status(response.status()));
-    let (Some(RequestId(id)), Some(code)) = (id, marked.or(unmarked)) else {
+        .then(|| ProblemOf(code_for_status(response.status()), None));
+    let (Some(RequestId(id)), Some(ProblemOf(code, conflict))) = (id, marked.or(unmarked)) else {
         return response;
     };
-    let rewritten = problem_response(&Problem::new(code).with_request_id(id));
+    let rewritten = problem_response(&Problem::new(code).with_request_id(id), conflict.as_deref());
     let (parts, body) = rewritten.into_parts();
     *response.status_mut() = parts.status;
     // Keep what the answer already says (`Retry-After`, `Allow`); the new body replaces the old.

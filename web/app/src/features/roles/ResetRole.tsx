@@ -8,13 +8,15 @@ import { messageOf } from "../../shared/errors.ts";
 export interface ResetRoleProps {
   readonly id: string;
   readonly name: string;
+  /** The version of the role that was looked at. */
+  readonly version: number;
 }
 
 /**
  * *Reset to the starting permissions* for a starting role: the permissions and the switch the role
  * had at the start come back; the name stays. A dialog says exactly what happens.
  */
-export function ResetRole({ id, name }: ResetRoleProps) {
+export function ResetRole({ id, name, version }: ResetRoleProps) {
   const reset = api.query.useMutation("post", "/api/v1/roles/{role_id}/reset", {
     onSuccess: refreshAccess,
   });
@@ -33,7 +35,7 @@ export function ResetRole({ id, name }: ResetRoleProps) {
           confirmLabel={t("roles.reset")}
           cancelLabel={t("common.cancel")}
           onConfirm={() => {
-            reset.mutate({ params: { path: { role_id: id } } });
+            reset.mutate({ params: { path: { role_id: id } }, body: { version } });
           }}
         />
       </div>

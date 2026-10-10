@@ -505,6 +505,36 @@ pub struct StoredSetting {
     pub updated_at: jiff::Timestamp,
 }
 
+/// The record name of the sign-up policy: it sets `auth.sign-up-enabled` and `auth.sign-up-domains`
+/// together, as one record with one version, through its own route only.
+pub const SIGN_UP_POLICY: &str = "auth.sign-up-policy";
+
+/// Whether a setting is changed only through its own screen and route, not through the generic
+/// ones (`change_setting`, `reset_setting`, `lock_setting`), and so is not listed in the generic
+/// settings screen: the settings of a policy that is one record with one version.
+#[must_use]
+pub fn changed_only_on_its_own_screen(key: &str) -> bool {
+    [
+        AUTH_SIGN_UP_ENABLED.definition(),
+        AUTH_SIGN_UP_DOMAINS.definition(),
+    ]
+    .iter()
+    .any(|definition| definition.key() == key)
+}
+
+/// The version of a record that is made of several settings (the sign-up policy). It lives in a
+/// row of its own, which no change or reset of a setting writes or deletes. A policy without a row
+/// is at version 0.
+#[derive(Clone, Debug, PartialEq, Eq, crate::personal::Entity)]
+pub struct PolicyVersion {
+    /// The record name of the policy ([`SIGN_UP_POLICY`]).
+    #[not_personal]
+    pub policy: crate::technical::TechnicalName,
+    /// Counts up with every change of the policy.
+    #[not_personal]
+    pub version: i64,
+}
+
 /// One value of a setting that a person chose for themselves in *My settings* (CFG-04). It is the
 /// person's own data: it goes with them when they download their data and is gone when they are
 /// removed. The key must be one of the registry ([`find`]); `bb-store` is the only place that reads

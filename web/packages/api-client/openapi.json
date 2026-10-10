@@ -3238,6 +3238,16 @@
               }
             }
           },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
           "429": {
             "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
             "headers": {
@@ -4108,6 +4118,958 @@
         "x-permission": "check-access"
       }
     },
+    "/api/v1/drafts": {
+      "get": {
+        "tags": ["editing"],
+        "summary": "The draft of the person for a target: theirs, and nobody else's.",
+        "operationId": "readDraft",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "The kind of record, like `issue`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The ID of the record, for a draft of a part of a record.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "part",
+            "in": "query",
+            "description": "Which long text of the record, for a draft of a part of a record.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The project, for a draft of a new record.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draft, or nothing.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftSlotBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "by-record"
+      },
+      "put": {
+        "tags": ["editing"],
+        "summary": "Keeps a text as the draft of the person, in place of the older one for the same target. Only the\nperson can read it, until it is saved, thrown away, or 30 days old.",
+        "operationId": "saveDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The draft as it is kept.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/drafts/throw-away": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Throws the draft of the person away (*Throw away*).",
+        "operationId": "throwAwayDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftTargetBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The draft is gone."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/edit-locks": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a\nlease of a minute that the heartbeat renews; closing the page lets it run out.",
+        "operationId": "takeEditLock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TakeLockBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The editor has the lock, or somebody else is editing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockOutcomeBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "by-record",
+        "x-secret": true
+      }
+    },
+    "/api/v1/edit-locks/ask-to-finish": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Asks the person who is editing to finish (*Ask … to finish*). They read it at their next\nheartbeat.",
+        "operationId": "askToFinish",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditWhatOnlyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The person is asked."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/edit-locks/edit-anyway": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Takes the editing over (*Edit anyway*). Needs the permission *Take over text somebody else is\nediting*. The person who was editing keeps their text as their draft and reads at their next\nheartbeat that it was taken over.",
+        "operationId": "editAnyway",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditAnywayBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The editor has the lock now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockOutcomeBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "edit-anyway",
+        "x-secret": true
+      }
+    },
+    "/api/v1/edit-locks/heartbeat": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Renews the lease of a lock, keeps the text so far as the draft of the person (also when the lock\nis gone), and hands over what others did since the last heartbeat: somebody asked to finish, or\ntook the editing over.",
+        "operationId": "heartbeatEditLock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeartbeatBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Whether the editor still has the lock, and the notes for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeartbeatAnswerBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "by-record"
+      }
+    },
+    "/api/v1/edit-locks/release": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Lets go of a lock: the text was saved, or the editor was closed.",
+        "operationId": "releaseEditLock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseLockBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The lock is gone."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/edit-locks/release-stuck": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "Releases a lock that is stuck, whoever holds it. Needs the permission *Take over text somebody\nelse is editing*; it is written to the security log.",
+        "operationId": "releaseStuckEditLock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditWhatOnlyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The lock is gone."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "edit-anyway"
+      }
+    },
     "/api/v1/field-permissions": {
       "get": {
         "tags": ["access"],
@@ -4829,7 +5791,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GroupNameBody"
+                "$ref": "#/components/schemas/RenameGroupBody"
               }
             }
           },
@@ -4891,7 +5853,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -5759,7 +6721,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -6085,7 +7047,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -7814,7 +8776,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -9900,7 +10862,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -10092,6 +11054,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetRoleBody"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "The role as it is now.",
@@ -10148,7 +11120,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/ConflictProblem"
                 }
               }
             }
@@ -10941,6 +11913,104 @@
         },
         "x-permission": "public"
       }
+    },
+    "/api/v1/versions/check": {
+      "post": {
+        "tags": ["editing"],
+        "summary": "The versions of the records on the screen, in one small request: what the browser asks every 30\nseconds and when it returns to a tab, to offer *Show changes* where somebody else changed\nsomething.",
+        "operationId": "checkVersions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckVersionsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The version of every record asked about.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionsBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "by-record"
+      }
     }
   },
   "components": {
@@ -11395,6 +12465,7 @@
       "ChangeRoleBody": {
         "type": "object",
         "description": "What to change about a role: what is left out stays as it is.",
+        "required": ["version"],
         "properties": {
           "name": {
             "type": ["string", "null"],
@@ -11410,6 +12481,11 @@
           "two_step": {
             "type": ["boolean", "null"],
             "description": "The two-step switch from now on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the role the person looked at; a change made meanwhile stops this one."
           }
         }
       },
@@ -11453,6 +12529,20 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "CheckVersionsBody": {
+        "type": "object",
+        "description": "The records on the screen.",
+        "required": ["records"],
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecordRefBody"
+            },
+            "description": "The records, at most the number the generated client calls `versionsMax`."
           }
         }
       },
@@ -11533,6 +12623,68 @@
             "description": "The password."
           }
         }
+      },
+      "ConflictBody": {
+        "type": "object",
+        "description": "What changed a record since the person looked at it.",
+        "required": ["fields", "current"],
+        "properties": {
+          "changed_at": {
+            "type": ["string", "null"],
+            "description": "When, as a moment in time."
+          },
+          "changed_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who changed it last, as the reader may see them."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current": {
+            "type": "object",
+            "description": "The values those fields have now."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The fields that changed, without the ones the reader may not see."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version the record has now: what *Use mine* sends again."
+          }
+        }
+      },
+      "ConflictProblem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "conflict": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ConflictBody",
+                    "description": "What changed the record; only for `edit.version_changed`."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "description": "The answer to a change that found the record at another version, or to any other refused\nchange: the usual problem, and for `edit.version_changed` the `conflict` member."
       },
       "CopyRoleBody": {
         "type": "object",
@@ -11627,6 +12779,123 @@
         "description": "Which database the server uses.",
         "enum": ["built_in", "sqlite", "postgres"]
       },
+      "DraftBody": {
+        "type": "object",
+        "description": "A draft as its author sees it.",
+        "required": ["text", "saved_at"],
+        "properties": {
+          "base_version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version of the record the person started from."
+          },
+          "saved_at": {
+            "type": "string",
+            "description": "When the draft last changed."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text."
+          }
+        }
+      },
+      "DraftSlotBody": {
+        "type": "object",
+        "description": "The draft of the person for a target, if there is one.",
+        "properties": {
+          "draft": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DraftBody",
+                "description": "The draft, or nothing."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "DraftTargetBody": {
+        "type": "object",
+        "description": "What a draft is for: a part of a record (`kind`, `id` and `part`), or the form that makes a new\nrecord of a kind in a project (`kind` and `project`).",
+        "required": ["kind"],
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the record, for a draft of a part of a record."
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record, like `issue`."
+          },
+          "part": {
+            "type": ["string", "null"],
+            "description": "Which long text of the record, for a draft of a part of a record."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project, for a draft of a new record."
+          }
+        }
+      },
+      "DraftTextBody": {
+        "type": "object",
+        "description": "The text so far of a draft, with the version it started from.",
+        "required": ["text"],
+        "properties": {
+          "base_version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version of the record the person started from; nothing for a new record."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text as it stands now."
+          }
+        }
+      },
+      "EditAnywayBody": {
+        "type": "object",
+        "description": "Take the editing over from the person who is editing.",
+        "required": ["what", "editor_id"],
+        "properties": {
+          "editor_id": {
+            "type": "string",
+            "description": "The open editor (a tab) that takes over."
+          },
+          "what": {
+            "$ref": "#/components/schemas/EditWhatBody",
+            "description": "The thing somebody else is editing."
+          }
+        }
+      },
+      "EditWhatBody": {
+        "type": "object",
+        "description": "One thing being edited: one part of one record.",
+        "required": ["record", "part"],
+        "properties": {
+          "part": {
+            "type": "string",
+            "description": "Which long text of the record, like `description`."
+          },
+          "record": {
+            "$ref": "#/components/schemas/RecordRefBody",
+            "description": "The record."
+          }
+        }
+      },
+      "EditWhatOnlyBody": {
+        "type": "object",
+        "description": "Which thing somebody else is editing.",
+        "required": ["what"],
+        "properties": {
+          "what": {
+            "$ref": "#/components/schemas/EditWhatBody",
+            "description": "The thing somebody else is editing."
+          }
+        }
+      },
       "ErrorCode": {
         "type": "string",
         "description": "What went wrong. Clients react to this text, which never changes.",
@@ -11666,6 +12935,8 @@
           "request.timed_out",
           "request.too_large",
           "edit.version_changed",
+          "edit.lock_lost",
+          "edit.taken_over",
           "rate_limit.exceeded",
           "server.unavailable",
           "server.internal"
@@ -11725,7 +12996,7 @@
       "GroupBody": {
         "type": "object",
         "description": "A group after it was made or renamed.",
-        "required": ["id", "name"],
+        "required": ["id", "name", "version"],
         "properties": {
           "id": {
             "type": "string",
@@ -11734,6 +13005,11 @@
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -11763,6 +13039,11 @@
           "name": {
             "type": ["string", "null"],
             "description": "What it is called."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -11827,6 +13108,77 @@
           "whole_organization": {
             "type": "boolean",
             "description": "Whether the group has a role for the whole organization."
+          }
+        }
+      },
+      "HeartbeatAnswerBody": {
+        "type": "object",
+        "description": "The answer to a heartbeat.",
+        "required": ["lock", "notices", "draft_saved"],
+        "properties": {
+          "draft_saved": {
+            "type": "boolean",
+            "description": "The text that came with the heartbeat was kept as the draft of the person."
+          },
+          "lock": {
+            "$ref": "#/components/schemas/LockStatusBody",
+            "description": "Whether the editor still has the lock."
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoticeBody"
+            },
+            "description": "What others did since the last heartbeat; each note is shown once."
+          }
+        }
+      },
+      "HeartbeatBody": {
+        "type": "object",
+        "description": "A heartbeat: the editor is still open.",
+        "required": ["what", "lock_token"],
+        "properties": {
+          "draft": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DraftTextBody",
+                "description": "The text so far: kept as the draft of the person, also when the lock is gone."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lock_token": {
+            "type": "string",
+            "description": "The lock token the lock was taken with."
+          },
+          "what": {
+            "$ref": "#/components/schemas/EditWhatBody",
+            "description": "The thing that is being edited."
+          }
+        }
+      },
+      "HeldLockBody": {
+        "type": "object",
+        "description": "Somebody else is editing.",
+        "required": ["holder", "since", "yours_elsewhere", "can_edit_anyway"],
+        "properties": {
+          "can_edit_anyway": {
+            "type": "boolean",
+            "description": "The person who asks may take the editing over (*Edit anyway*)."
+          },
+          "holder": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who is editing, as the person who asks may see them."
+          },
+          "since": {
+            "type": "string",
+            "description": "Since when."
+          },
+          "yours_elsewhere": {
+            "type": "boolean",
+            "description": "The holder is the person who asks, in another window."
           }
         }
       },
@@ -12571,6 +13923,95 @@
           }
         }
       },
+      "LockOutcomeBody": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TakenLockBody",
+                "description": "The editor has the lock."
+              },
+              {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["taken"]
+                  }
+                }
+              }
+            ],
+            "description": "The editor has the lock."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeldLockBody",
+                "description": "Somebody else is editing."
+              },
+              {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["held"]
+                  }
+                }
+              }
+            ],
+            "description": "Somebody else is editing."
+          }
+        ],
+        "description": "The answer to asking for a lock."
+      },
+      "LockStatusBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The lease is renewed.",
+            "required": ["expires_at", "status"],
+            "properties": {
+              "expires_at": {
+                "type": "string",
+                "description": "When it runs out now."
+              },
+              "status": {
+                "type": "string",
+                "enum": ["held"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "No heartbeat came for a minute, or the lock was let go. The draft is kept.",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["ran_out"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Somebody took the editing over (*Edit anyway*). The draft is kept.",
+            "required": ["by", "status"],
+            "properties": {
+              "by": {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who, as the person who asks may see them."
+              },
+              "status": {
+                "type": "string",
+                "enum": ["taken_over"]
+              }
+            }
+          }
+        ],
+        "description": "Whether the editor still has the lock, and if not, why."
+      },
       "LogBreakBody": {
         "type": "string",
         "description": "Why the chain of the security log does not verify.",
@@ -12936,6 +14377,30 @@
           }
         }
       },
+      "NoticeBody": {
+        "type": "object",
+        "description": "A note for the person who is editing.",
+        "required": ["kind", "from", "at"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "description": "When."
+          },
+          "from": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who did it, as the person who asks may see them."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NoticeKind",
+            "description": "What happened."
+          }
+        }
+      },
+      "NoticeKind": {
+        "type": "string",
+        "description": "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.",
+        "enum": ["finish_asked", "taken_over", "released"]
+      },
       "OwnChangeBody": {
         "oneOf": [
           {
@@ -13277,6 +14742,11 @@
                 "name": {
                   "type": ["string", "null"],
                   "description": "What it is called."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
                 }
               }
             },
@@ -13786,6 +15256,11 @@
                 "two_step": {
                   "type": ["boolean", "null"],
                   "description": "Whether everybody with it needs two-step sign-in."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change. A change is made on the version that was looked at."
                 }
               }
             },
@@ -14654,6 +16129,80 @@
         ],
         "description": "Whom a row of *Who has which role* was for."
       },
+      "RecordRefBody": {
+        "type": "object",
+        "description": "A record, by its kind and ID.",
+        "required": ["kind", "id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the record."
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind of record, like `issue`."
+          }
+        }
+      },
+      "RecordVersionBody": {
+        "type": "object",
+        "description": "The version of one record on the screen.",
+        "required": ["record"],
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/RecordRefBody",
+            "description": "The record."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Its version now; nothing when it is gone or the person may not know about it (the two look\nthe same)."
+          }
+        }
+      },
+      "ReleaseLockBody": {
+        "type": "object",
+        "description": "Which lock to let go of, and the token it was taken with.",
+        "required": ["what", "lock_token"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The lock token the lock was taken with."
+          },
+          "what": {
+            "$ref": "#/components/schemas/EditWhatBody",
+            "description": "The thing that was edited."
+          }
+        }
+      },
+      "RenameGroupBody": {
+        "type": "object",
+        "description": "A new name for a group, made on the version that was looked at.",
+        "required": ["name", "version"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What the group is called from now on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the group the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
+      "ResetRoleBody": {
+        "type": "object",
+        "description": "Which role to give its starting permissions back, made on the version that was looked at.",
+        "required": ["version"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the role the person looked at; a change made meanwhile stops this one."
+          }
+        }
+      },
       "RoleAtRef": {
         "type": "object",
         "description": "A role (or *No access*) that somebody has, and where: what a sentence like \"Team member in\nWebsite\" needs.",
@@ -14687,7 +16236,7 @@
       "RoleBody": {
         "type": "object",
         "description": "A role as it is after it was made or changed.",
-        "required": ["id", "name", "position", "two_step", "permissions"],
+        "required": ["id", "name", "position", "two_step", "version", "permissions"],
         "properties": {
           "id": {
             "type": "string",
@@ -14716,6 +16265,11 @@
           "two_step": {
             "type": "boolean",
             "description": "Whether everybody with it needs two-step sign-in."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -14765,6 +16319,11 @@
           "two_step": {
             "type": ["boolean", "null"],
             "description": "Whether everybody with it needs two-step sign-in."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -14864,6 +16423,21 @@
           "whole_organization": {
             "type": "boolean",
             "description": "Whether somebody has the role for the whole organization."
+          }
+        }
+      },
+      "SaveDraftBody": {
+        "type": "object",
+        "description": "A draft to keep.",
+        "required": ["target", "draft"],
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/DraftTextBody",
+            "description": "The text and the version it started from."
+          },
+          "target": {
+            "$ref": "#/components/schemas/DraftTargetBody",
+            "description": "What the draft is for."
           }
         }
       },
@@ -15252,7 +16826,7 @@
       "SignUpPolicyBody": {
         "type": "object",
         "description": "Who may sign up on their own.",
-        "required": ["enabled", "domains"],
+        "required": ["enabled", "domains", "version"],
         "properties": {
           "domains": {
             "type": "array",
@@ -15264,6 +16838,11 @@
           "enabled": {
             "type": "boolean",
             "description": "Whether signing up without an invitation is on."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at; the\npolicy has version 0 until it is changed the first time."
           }
         }
       },
@@ -15359,6 +16938,46 @@
         "description": "The only value a status can have today.",
         "enum": ["ok"]
       },
+      "TakeLockBody": {
+        "type": "object",
+        "description": "Which thing a person wants the lock on, and from which open editor.",
+        "required": ["what", "editor_id"],
+        "properties": {
+          "editor_id": {
+            "type": "string",
+            "description": "The open editor (a tab): an ID the browser makes when the editor opens."
+          },
+          "what": {
+            "$ref": "#/components/schemas/EditWhatBody",
+            "description": "The thing that is going to be edited."
+          }
+        }
+      },
+      "TakenLockBody": {
+        "type": "object",
+        "description": "The editor has the lock.",
+        "required": ["lock_token", "expires_at", "lease_seconds", "heartbeat_seconds"],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "description": "When the lock runs out if no heartbeat renews it."
+          },
+          "heartbeat_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How often to send a heartbeat, in seconds."
+          },
+          "lease_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How long a lease lasts, in seconds."
+          },
+          "lock_token": {
+            "type": "string",
+            "description": "The lock token to save with and to send with every heartbeat."
+          }
+        }
+      },
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
@@ -15408,6 +17027,20 @@
           }
         ],
         "description": "What a setting holds: yes or no, a whole number, or text."
+      },
+      "VersionsBody": {
+        "type": "object",
+        "description": "The versions of the records asked about, in the order asked.",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecordVersionBody"
+            },
+            "description": "One entry for each record asked about."
+          }
+        }
       },
       "WhereToBody": {
         "type": "object",
@@ -15484,6 +17117,10 @@
     {
       "name": "settings",
       "description": "Settings in layers: the organization's, a project's and a person's own."
+    },
+    {
+      "name": "editing",
+      "description": "Edit locks, drafts and the check of what is on the screen: nobody loses text, and no change overwrites another unseen."
     },
     {
       "name": "access",

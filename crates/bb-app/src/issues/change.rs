@@ -6,6 +6,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{IssueTypeId, UserId};
 use bb_core::issue::{Issue, IssueAssignee};
+use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
 
@@ -158,7 +159,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             assigned_next,
         };
         if plan.current.version != input.version {
-            return Err(ErrorCode::VersionChanged.into());
+            return Err(AppError::stale(
+                entity(RecordKind::Issue, plan.current.id),
+                Place::Project(plan.current.project),
+                actor.person.id,
+            ));
         }
         Ok((held, plan))
     }
@@ -227,11 +232,14 @@ pub async fn change_issue<S: AuthStore>(
         .status
         .closed_after(next.status, current.closed_at, now);
     let id = current.id;
-    let event = ctx.event(
-        by(actor.person.id),
+    let mut field_changes = field_changes;
+    field_changes.push(counted_up(current.version));
+    let (record, place, editor) = (
         entity(RecordKind::Issue, id),
-        field_changes,
-    )?;
+        Place::Project(current.project),
+        actor.person.id,
+    );
+    let event = ctx.event(by(actor.person.id), record.clone(), field_changes)?;
     let people: Vec<IssueAssignee> = assigned_next
         .iter()
         .map(|person| IssueAssignee {
@@ -274,8 +282,11 @@ pub async fn change_issue<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
-    next.version = version + 1;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged)
+                .about(&record, place, editor)
+        })?;
+    next.version = next_version(version);
     let view = ctx.issue_view(&mut views, &next, &assigned_next).await?;
     Ok(held.authorize(view))
 }

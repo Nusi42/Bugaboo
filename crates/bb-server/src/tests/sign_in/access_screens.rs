@@ -465,6 +465,7 @@ async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_th
         let guest = role(&org, StartingRole::Guest).await?;
         let contributor = role(&org, StartingRole::Contributor).await?;
         // The Guest may check access here, to have a screen that shows a person to them.
+        let version = rig.role_version(guest).await?;
         org.rig
             .api()
             .change_role(
@@ -472,6 +473,7 @@ async fn priv_12_a_guest_sees_role_only_or_someone_as_set_and_no_name_reaches_th
                 ChangeRole {
                     session_token: org.admin.session.clone(),
                     role: guest,
+                    version,
                     name: None,
                     permissions: Some(vec![Permission::SeeProjects, Permission::CheckAccess]),
                     two_step: None,

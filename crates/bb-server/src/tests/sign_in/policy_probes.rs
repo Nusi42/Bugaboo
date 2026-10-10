@@ -885,6 +885,7 @@ async fn sec_04_nobody_resets_a_role_to_levels_above_their_own() -> TestResult {
                     ResetRole {
                         session_token: kim.session.clone(),
                         role: viewer.id,
+                        version: viewer.version,
                     },
                 )
             };

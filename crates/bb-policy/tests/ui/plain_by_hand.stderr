@@ -17,7 +17,7 @@ help: the trait `bb_core::plain::sealed::Sealed` is not implemented for `View`
             Box<T>
             Category
             Channel
-            EntityId
+            EditorId
           and $N others
 note: required by a bound in `Plain`
  --> $WORKSPACE/crates/bb-core/src/plain.rs

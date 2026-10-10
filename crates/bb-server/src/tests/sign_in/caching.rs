@@ -105,6 +105,12 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{person}", &person_id)
                 .replace("{issue}", &issue_key)
                 .replace("{project}", project);
+            // The draft route is about a record named in the query: the example project.
+            let filled = if template == "/api/v1/drafts" {
+                format!("{filled}?kind=project&id={project_id}&part=description")
+            } else {
+                filled
+            };
             let path = &filled;
             assert!(
                 !path.contains('{'),
@@ -170,7 +176,7 @@ async fn perf_03_a_read_asked_about_again_is_not_modified_when_nothing_changed()
             .send(
                 "PUT",
                 path,
-                Some(json!({"enabled": true, "domains": ["example.test"]})),
+                Some(json!({"enabled": true, "domains": ["example.test"], "version": 0})),
             )
             .await?;
         assert_eq!(changed.status, StatusCode::OK);

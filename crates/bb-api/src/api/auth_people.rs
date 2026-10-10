@@ -17,8 +17,9 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::auth::{
-    AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer,
-    PreviousSession, Session, SignedInBody, answer, answer_authorized, done, signed_in,
+    AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
+    NotSignedInAnswer, PreviousSession, Session, SignedInBody, answer, answer_authorized, done,
+    signed_in,
 };
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -164,6 +165,9 @@ pub(crate) struct SignUpPolicyBody {
     enabled: bool,
     /// The e-mail domains that may sign up. Empty: every domain, while signing up is on.
     domains: Vec<String>,
+    /// Counts up with every change. A change is made on the version that was looked at; the
+    /// policy has version 0 until it is changed the first time.
+    version: i64,
 }
 
 impl Masked for SignUpPolicyBody {}
@@ -422,6 +426,7 @@ fn policy_body(policy: Authorized<SignUpPolicy>) -> Result<Response, ApiError> {
     answer_authorized(&policy.map(|policy| SignUpPolicyBody {
         enabled: policy.enabled,
         domains: policy.domains,
+        version: policy.version,
     }))
 }
 
@@ -456,7 +461,8 @@ async fn get_sign_up_policy(
         (status = 200, description = "The new rule.", body = SignUpPolicyBody),
         InvalidAnswer,
         NotSignedInAnswer,
-        ForbiddenAnswer
+        ForbiddenAnswer,
+        ConflictAnswer
     )
 )]
 async fn change_sign_up_policy(
@@ -474,6 +480,7 @@ async fn change_sign_up_policy(
                 policy: SignUpPolicy {
                     enabled: body.enabled,
                     domains: body.domains,
+                    version: body.version,
                 },
             },
         )

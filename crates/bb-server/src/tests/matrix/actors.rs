@@ -19,6 +19,8 @@ use bb_api::permissions::Declared;
 use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
 
+use super::examples::Example;
+
 /// The projects of the matrix.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Project {
@@ -63,6 +65,9 @@ pub(super) enum Actor {
     /// routes that need none). Every route with a permission is run as the person with exactly
     /// that, so a route cannot ask for more than it declares.
     Exactly(Option<Permission>),
+    /// Like `Exactly`, for a route that declares one permission and whose use case needs a second
+    /// one on the record it names (the `AlsoNeeds` quirk): the person holds exactly these two.
+    ExactlyBoth(Permission, Permission),
     /// An *Administrator* who came with an access key that may only see (WP-09).
     KeySeeOnly,
     /// An *Administrator* who came with an access key for the sibling project (WP-09).
@@ -89,9 +94,13 @@ impl Actor {
     pub(super) const WITH_A_KEY: [Self; 2] = [Self::KeySeeOnly, Self::KeyForAnotherProject];
 
     /// The actor that holds exactly what a route declares.
-    pub(super) const fn exactly(declared: Declared) -> Self {
+    pub(super) fn exactly(declared: Declared, example: &Example) -> Self {
         match declared {
-            Declared::Permission(permission) => Self::Exactly(Some(permission)),
+            Declared::Permission(permission) => match example.also_needs() {
+                Some(second) => Self::ExactlyBoth(permission, second),
+                None => Self::Exactly(Some(permission)),
+            },
+            Declared::ByRecord => Self::Exactly(example.record_permission()),
             Declared::Public | Declared::SignedIn | Declared::OwnAccount => Self::Exactly(None),
         }
     }
@@ -100,6 +109,9 @@ impl Actor {
     pub(super) fn key(self) -> String {
         match self {
             Self::Exactly(Some(permission)) => format!("exactly-{}", permission.code()),
+            Self::ExactlyBoth(first, second) => {
+                format!("exactly-{}-and-{}", first.code(), second.code())
+            }
             Self::Exactly(None) => "exactly-nothing".to_owned(),
             other => other.name(),
         }
@@ -108,7 +120,7 @@ impl Actor {
     /// The name in the record of what the matrix covered.
     pub(super) fn name(self) -> String {
         match self {
-            Self::Exactly(_) => words::EXACTLY_THE_PERMISSION.to_owned(),
+            Self::Exactly(_) | Self::ExactlyBoth(..) => words::EXACTLY_THE_PERMISSION.to_owned(),
             Self::Nobody => words::NOBODY.to_owned(),
             Self::NoRole => words::NO_ROLE.to_owned(),
             Self::Role(role) => words::role_actor(role.code()),
@@ -181,15 +193,26 @@ const KIND_SEE: [Permission; 4] = [
 /// the permission counts in projects (a route that names a project answers *not found* to a person
 /// who does not see it, before it looks at anything else).
 pub(super) fn held_exactly(permission: Permission) -> Vec<Permission> {
-    if ORGANIZATION_ONLY.contains(&permission) || permission == Permission::SeeProjects {
-        vec![permission]
-    } else if ACTS_ON_ISSUES_SEEN.contains(&permission) {
-        // Whoever changes or deletes an issue sees it first: the route of an issue answers
-        // `resource.not_found` to a person who does not.
-        vec![permission, Permission::SeeProjects, Permission::SeeIssues]
-    } else {
-        vec![permission, Permission::SeeProjects]
+    held_exactly_all(&[permission])
+}
+
+/// Like [`held_exactly`] for several permissions: *See projects* joins them when any of them
+/// counts in projects, and *See issues* when any of them acts on an issue the person sees.
+pub(super) fn held_exactly_all(permissions: &[Permission]) -> Vec<Permission> {
+    let mut held = permissions.to_vec();
+    let in_projects = permissions.iter().any(|permission| {
+        !ORGANIZATION_ONLY.contains(permission) && *permission != Permission::SeeProjects
+    });
+    let acts_on_issues = permissions
+        .iter()
+        .any(|permission| ACTS_ON_ISSUES_SEEN.contains(permission));
+    if in_projects && !held.contains(&Permission::SeeProjects) {
+        held.push(Permission::SeeProjects);
     }
+    if acts_on_issues && !held.contains(&Permission::SeeIssues) {
+        held.push(Permission::SeeIssues);
+    }
+    held
 }
 
 /// The permissions that act on an issue the person sees: the person of `Actor::Exactly` holds
@@ -338,6 +361,9 @@ pub(super) fn standing(actor: Actor, at: Where) -> Standing {
             Where::Target if ORGANIZATION_ONLY.contains(&permission) => Standing::nothing(),
             _ => Standing::of(held_exactly(permission).into_iter().collect()),
         },
+        Actor::ExactlyBoth(first, second) => {
+            Standing::of(held_exactly_all(&[first, second]).into_iter().collect())
+        }
         Actor::Role(role) => Standing::of(given_everywhere(role, at)),
         // A role on a project counts in the project and below, and gives nothing for the whole
         // organization (organization permissions count only from a row for the whole organization).
@@ -380,6 +406,9 @@ pub(super) fn sees(actor: Actor, project: Project) -> bool {
         }
         Actor::Exactly(permission) => permission
             .is_some_and(|permission| held_exactly(permission).contains(&Permission::SeeProjects)),
+        Actor::ExactlyBoth(first, second) => {
+            held_exactly_all(&[first, second]).contains(&Permission::SeeProjects)
+        }
         Actor::Role(_) | Actor::LeadOnParent | Actor::KeySeeOnly => true,
         Actor::LeadOnSiblingOnly => project == Project::Sibling,
         Actor::NoAccessOnTarget | Actor::NoAccessUnderLead => project != Project::Target,

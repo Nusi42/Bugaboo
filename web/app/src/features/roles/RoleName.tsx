@@ -9,10 +9,12 @@ import { messageOf } from "../../shared/errors.ts";
 export interface RoleNameProps {
   readonly id: string;
   readonly name: string;
+  /** The version of the role that was looked at. */
+  readonly version: number;
 }
 
 /** *Rename*: the name of the role, saved with the button. A starting role can be renamed too. */
-export function RoleName({ id, name }: RoleNameProps) {
+export function RoleName({ id, name, version }: RoleNameProps) {
   const [typed, setTyped] = useState(name);
   const rename = api.query.useMutation("patch", "/api/v1/roles/{role_id}", {
     onSuccess: refreshAccess,
@@ -20,7 +22,7 @@ export function RoleName({ id, name }: RoleNameProps) {
   return (
     <Form
       onSubmit={() => {
-        rename.mutate({ params: { path: { role_id: id } }, body: { name: typed.trim() } });
+        rename.mutate({ params: { path: { role_id: id } }, body: { name: typed.trim(), version } });
       }}
     >
       <TextField

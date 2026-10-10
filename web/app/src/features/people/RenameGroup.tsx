@@ -16,7 +16,10 @@ export function RenameGroup({ group }: { readonly group: GroupLine }) {
   return (
     <Form
       onSubmit={() => {
-        rename.mutate({ params: { path: { group_id: group.id } }, body: { name: name.trim() } });
+        rename.mutate({
+          params: { path: { group_id: group.id } },
+          body: { name: name.trim(), version: group.version },
+        });
       }}
     >
       <TextField

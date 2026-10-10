@@ -366,7 +366,7 @@ mod tests {
     }
 
     fn wait_of(error: &ApiError) -> u64 {
-        let response = error.into_response();
+        let response = error.clone().into_response();
         response.headers()[axum::http::header::RETRY_AFTER]
             .to_str()
             .unwrap()

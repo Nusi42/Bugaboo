@@ -7,6 +7,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::project::{Project, ProjectAlias, ShortName};
 use bb_core::sign_in::SecurityAction;
+use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -15,6 +16,7 @@ use super::types::{ChangeProject, ProjectView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::input::clean_name;
+use crate::member;
 
 /// What a change of a project asks for, checked against what the person may do and what is stored.
 struct Plan {
@@ -40,14 +42,14 @@ impl Plan {
         let mut fields = Vec::new();
         if self.renames() {
             fields.push(FieldChange {
-                field: "name".to_owned(),
+                field: member::project::NAME.to_owned(),
                 before: Some(json!(self.current.name)),
                 after: Some(json!(self.name)),
             });
         }
         if self.changes_short_name() {
             fields.push(FieldChange {
-                field: "short_name".to_owned(),
+                field: member::project::SHORT_NAME.to_owned(),
                 before: Some(json!(self.current.short_name.as_str())),
                 after: Some(json!(self.short_name.as_str())),
             });
@@ -88,7 +90,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         if current.version != input.version {
-            return Err(ErrorCode::VersionChanged.into());
+            return Err(AppError::stale(
+                entity(RecordKind::Project, id),
+                Place::Project(id),
+                actor.person.id,
+            ));
         }
         let plan = Plan {
             name: name.unwrap_or_else(|| current.name.clone()),
@@ -131,10 +137,11 @@ pub async fn change_project<S: AuthStore>(
         name: plan.name.clone(),
         version,
     };
-    let field_changes = plan.field_changes();
+    let mut field_changes = plan.field_changes();
     if field_changes.is_empty() {
         return Ok(access.authorize(view(plan.current.version)));
     }
+    field_changes.push(counted_up(plan.current.version));
     let id = plan.current.id;
     let event = ctx.event(
         by(actor.person.id),
@@ -186,7 +193,13 @@ pub async fn change_project<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::NameTaken).about(
+                &entity(RecordKind::Project, id),
+                Place::Project(id),
+                actor.person.id,
+            )
+        })?;
     if plan.changes_short_name() {
         ctx.note(
             SecurityAction::ProjectShortNameChanged,
@@ -203,5 +216,5 @@ pub async fn change_project<S: AuthStore>(
         )
         .await;
     }
-    Ok(access.authorize(view(plan.current.version + 1)))
+    Ok(access.authorize(view(next(plan.current.version))))
 }

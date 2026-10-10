@@ -48,6 +48,7 @@ mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
 mod check_access;
+mod editing;
 mod field_permissions;
 mod groups;
 mod issue_types;
@@ -153,6 +154,7 @@ where
         .merge(field_permissions::routes())
         .merge(people_visibility::routes())
         .merge(check_access::routes())
+        .merge(editing::routes())
 }
 
 /// Whether the address belongs to the API. Escapes are decoded first; an address with a

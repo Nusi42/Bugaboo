@@ -26,7 +26,7 @@ use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
 use bb_core::settings::{
     ChangedBy, Format, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue,
-    Source, find, list_items, registry,
+    Source, changed_only_on_its_own_screen, find, list_items, registry,
 };
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -158,6 +158,15 @@ fn json_of(value: &SettingValue) -> Value {
         SettingValue::Integer(value) => json!(value),
         SettingValue::Text(value) => json!(value),
     }
+}
+
+/// A setting of a policy that is one record with one version is changed through its own route
+/// only, so nothing here can go around the version.
+fn refuse_own_screen_setting(definition: &SettingDefinition) -> Result<(), AppError> {
+    if changed_only_on_its_own_screen(definition.key()) {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    Ok(())
 }
 
 /// The setting with this key, or what the person is told about a key that does not exist.
@@ -413,7 +422,8 @@ pub async fn settings<S: AuthStore>(
     let layers = ctx.layers_of(scope, working_in).await?;
     let mut settings = Vec::new();
     for definition in registry().filter(|definition| {
-        definition.levels().contains(&scope.level())
+        !changed_only_on_its_own_screen(definition.key())
+            && definition.levels().contains(&scope.level())
             && input.topic.as_deref().is_none_or(|topic| {
                 list_items(topic).any(|start| definition.key().starts_with(start))
             })
@@ -438,6 +448,7 @@ pub async fn change_setting<S: AuthStore>(
     let definition = definition_of(&input.key)?;
     let scope = ctx.scope_of(&actor, &input.scope).await?;
     let evaluation = ctx.may_change(&actor, scope, definition).await?;
+    refuse_own_screen_setting(definition)?;
     if !definition.has_type_of(&input.value) {
         return Err(ErrorCode::InvalidRequest.into());
     }
@@ -505,6 +516,7 @@ pub async fn reset_setting<S: AuthStore>(
     let definition = definition_of(&input.key)?;
     let scope = ctx.scope_of(&actor, &input.scope).await?;
     let evaluation = ctx.may_change(&actor, scope, definition).await?;
+    refuse_own_screen_setting(definition)?;
     let layers = ctx.layers_of(scope, None).await?;
     let view = ctx.view_of(&actor, scope, definition, &layers).await?;
     if !view.own {
@@ -565,6 +577,7 @@ pub async fn lock_setting<S: AuthStore>(
     let evaluation = ctx
         .may_change(&actor, Scope::Organization, definition)
         .await?;
+    refuse_own_screen_setting(definition)?;
     if !definition.lockable() {
         return Err(ErrorCode::InvalidRequest.into());
     }

@@ -13,6 +13,7 @@ use bb_core::id::{AssignmentId, GroupId, IdSource, RoleId};
 use bb_core::person::Person;
 use bb_core::settings::{AUTH_ACCESS_KEY_LONGEST_DAYS, SECURITY_TWO_STEP_REQUIRED, SettingValue};
 use bb_core::sign_in::{StoredPasskey, TwoStep};
+use bb_core::version::FIRST_VERSION;
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::*;
@@ -252,6 +253,7 @@ fn role(id: RoleId, name: &str, position: i64, two_step: bool) -> Role {
         starting: None,
         position,
         two_step,
+        version: FIRST_VERSION,
     }
 }
 
@@ -284,6 +286,7 @@ async fn strict_and_relaxed(
     let group = Group {
         id: GroupId::generate(source)?,
         name: "Strict people".to_owned(),
+        version: FIRST_VERSION,
     };
     let member = GroupMember {
         group: group.id,

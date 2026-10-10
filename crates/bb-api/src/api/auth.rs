@@ -36,6 +36,7 @@ use utoipa::{IntoResponses, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 
 use super::is_api;
+use crate::conflict::ConflictBody;
 use crate::cookies::{CSRF_HEADER, Cookie};
 use crate::errors::ApiError;
 use crate::limits::{Limits, limit_sign_in};
@@ -82,6 +83,11 @@ impl From<AppError> for ApiError {
         match error {
             AppError::Refused(code) => Self::new(code),
             AppError::SessionEnded => Self::new(ErrorCode::NotSignedIn).with_session_ended(),
+            AppError::Conflict(conflict) => {
+                Self::new(ErrorCode::VersionChanged).with_conflict(ConflictBody::from(&*conflict))
+            }
+            // Only a use case that is called without `AuthApi` can leave a stale version unnamed.
+            AppError::Stale(_) => Self::new(ErrorCode::VersionChanged),
             AppError::Limited { retry_after } => {
                 Self::new(ErrorCode::TooManyRequests).with_retry_after(retry_after)
             }

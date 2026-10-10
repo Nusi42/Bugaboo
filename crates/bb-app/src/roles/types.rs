@@ -50,6 +50,8 @@ pub struct ChangeRole {
     pub session_token: String,
     /// The role.
     pub role: RoleId,
+    /// The version the person looked at; a change made meanwhile stops this one.
+    pub version: i64,
     /// A new name.
     pub name: Option<String>,
     /// The permissions from now on.
@@ -76,6 +78,8 @@ pub struct ResetRole {
     pub session_token: String,
     /// The role.
     pub role: RoleId,
+    /// The version the person looked at; a change made meanwhile stops this one.
+    pub version: i64,
 }
 
 /// Give a role, or *No access*, to a person or a group.
@@ -242,6 +246,8 @@ pub struct RoleView {
     pub position: i64,
     /// Whether everybody with it needs two-step sign-in.
     pub two_step: bool,
+    /// Counts up with every change; a change is made on the version that was looked at.
+    pub version: i64,
     /// What it allows, in the order of the catalogue.
     pub permissions: Vec<Permission>,
 }

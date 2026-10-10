@@ -55,6 +55,7 @@ pub(super) async fn role_with(
 
 /// The switch of a role, set by the administrator.
 pub(super) async fn switch(org: &Org<'_>, role: RoleId, two_step: bool) -> Run<()> {
+    let version = org.rig.role_version(role).await?;
     org.rig
         .api()
         .change_role(
@@ -62,6 +63,7 @@ pub(super) async fn switch(org: &Org<'_>, role: RoleId, two_step: bool) -> Run<(
             ChangeRole {
                 session_token: org.admin.session.clone(),
                 role,
+                version,
                 name: None,
                 permissions: None,
                 two_step: Some(two_step),
