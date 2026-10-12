@@ -3197,6 +3197,8 @@ export interface components {
       event: string;
       /** @description A change: the key of the field. */
       field?: string | null;
+      /** @description A change of an own field: its name. */
+      field_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this reader. */
       html?: SafeHtml;
       issue?: components["schemas"]["IssueRef"] | null;
@@ -4164,6 +4166,8 @@ export interface components {
         event: string;
         /** @description A change: the key of the field. */
         field?: string | null;
+        /** @description A change of an own field: its name. */
+        field_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this reader. */
         html?: SafeHtml;
         issue?: components["schemas"]["IssueRef"] | null;

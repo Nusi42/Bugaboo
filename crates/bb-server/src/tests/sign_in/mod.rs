@@ -23,6 +23,7 @@ mod editing;
 mod fields_http;
 mod fields_names;
 mod fields_references;
+mod history_own_fields;
 pub(crate) mod http;
 mod invitations;
 mod issues_assign;

@@ -4,18 +4,20 @@
 //! The one rule of the screen is that **a change to a field the reader may not see is not in the
 //! history**: it is left out whole, not shown as hidden, and a row whose changes are all left out
 //! is left out too. What a reader may see of a change of an issue is decided by the names of the
-//! members of the events (`issues::member`): a field of the catalogue by the mask of the reader in
-//! the project of the issue, the issue type, the parent and the sub-issues as open, everything else
-//! never. A person in a value is shown as the kind of the field says, an issue by a line that the
+//! members of the events (`issues::member`): a field of the catalogue or an own field by the mask of
+//! the reader in the project and for the issue type of the issue, the issue type, the parent and
+//! the sub-issues as open, everything else never. A person in a value is shown as the kind of the field says, an issue by a line that the
 //! reader may see, or not at all.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{HistoryEntry, HistoryKind, HistoryTab};
-use bb_core::id::{CommentId, IssueId, IssueTypeId, UserId};
+use bb_core::id::{ChoiceId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
+use bb_core::own_fields::FieldType;
 use bb_core::paging::page_len;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::relation::{Direction, RelationKind};
@@ -28,6 +30,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::comments::CommentView;
+use crate::fields::Definition;
 use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
 use crate::relations::LineMaker;
@@ -39,6 +42,8 @@ use bb_core::issue::Issue;
 pub(crate) enum Member {
     /// A field of the catalogue: shown when the reader's mask lets them see it.
     Catalogue(Field),
+    /// An own field: shown when the reader's mask for the issue type lets them see it.
+    Own(FieldId),
     /// The issue type: shown to everyone who sees the issue.
     IssueType,
     /// The issue it sits under, or an issue that sits under it: shown as a line the reader may
@@ -50,10 +55,12 @@ pub(crate) enum Member {
 
 impl Member {
     /// The way the member called `name` is shown. The one mapping from the names of the events to
-    /// what a reader sees: a field of the catalogue is known by its key, the rest is listed here.
+    /// what a reader sees: a field is known by its key (`FieldKey`), the rest is listed here.
     pub(crate) fn of(name: &str) -> Self {
-        if let Some(field) = Field::from_code(name) {
-            return Self::Catalogue(field);
+        match FieldKey::from_code(name) {
+            Some(FieldKey::BuiltIn(field)) => return Self::Catalogue(field),
+            Some(FieldKey::Own(field)) => return Self::Own(field),
+            None => {}
         }
         match name {
             issue_member::ISSUE_TYPE => Self::IssueType,
@@ -62,21 +69,22 @@ impl Member {
         }
     }
 
-    /// Whether a reader may see a change of the member, given which fields of the catalogue they
-    /// may see (their mask).
-    pub(crate) fn may_show(self, can_see: &impl Fn(Field) -> bool) -> bool {
+    /// Whether a reader may see a change of the member, given which fields they may see (their
+    /// mask).
+    pub(crate) fn may_show(self, can_see: &impl Fn(FieldKey) -> bool) -> bool {
         match self {
-            Self::Catalogue(field) => can_see(field),
+            Self::Catalogue(field) => can_see(field.into()),
+            Self::Own(field) => can_see(field.into()),
             Self::IssueType | Self::Issue => true,
             Self::Never => false,
         }
     }
 }
 
-/// The changes of an event that a reader may see, in the order of the event, given which fields of
-/// the catalogue they may see (their mask).
+/// The changes of an event that a reader may see, in the order of the event, given which fields
+/// they may see (their mask).
 pub(crate) fn visible_changes<'a>(
-    can_see: &impl Fn(Field) -> bool,
+    can_see: &impl Fn(FieldKey) -> bool,
     changes: &'a [FieldChange],
 ) -> Vec<&'a FieldChange> {
     changes
@@ -94,6 +102,17 @@ struct Batch<'a> {
     comments: BTreeMap<CommentId, Comment>,
     issues: BTreeMap<IssueId, Issue>,
     kinds: &'a [RelationKind],
+    /// The own fields, to name them and to read their values.
+    fields: Arc<Vec<Definition>>,
+}
+
+impl Batch<'_> {
+    /// The own field with this ID, if there is one.
+    fn field(&self, id: FieldId) -> Option<&Definition> {
+        self.fields
+            .iter()
+            .find(|definition| definition.field.id == id)
+    }
 }
 
 /// Whether the row is about a relation (the rest are about an issue).
@@ -161,6 +180,44 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(ChangeValue::People { people })
     }
 
+    /// One value of a change of an own field as the reader may see it: the people as the kind
+    /// *Assigned to* says (the kind of people information own fields use), the names of the
+    /// choices, any other value as its text. `None` for a long text, and for a group or an issue,
+    /// which are not shown here (M3-F79).
+    async fn own_value(
+        &self,
+        held: &Evaluation,
+        definition: &Definition,
+        value: &Value,
+    ) -> Result<Option<ChangeValue>, AppError> {
+        Ok(match definition.field.kind {
+            kind if kind.is_long_text() => None,
+            FieldType::Group | FieldType::Issue => None,
+            FieldType::Person | FieldType::People => {
+                Some(self.people_in(held, PeopleKind::AssignedTo, value).await?)
+            }
+            FieldType::PickOne | FieldType::PickSeveral => {
+                let ids = match value {
+                    Value::Array(items) => items.iter().filter_map(Value::as_str).collect(),
+                    Value::String(text) => vec![text.as_str()],
+                    _ => Vec::new(),
+                };
+                let names: Vec<&str> = ids
+                    .into_iter()
+                    .filter_map(|text| text.parse::<ChoiceId>().ok())
+                    .filter_map(|id| definition.choices.iter().find(|choice| choice.id == id))
+                    .map(|choice| choice.name.as_str())
+                    .collect();
+                (!names.is_empty()).then(|| ChangeValue::Text {
+                    text: names.join(", "),
+                })
+            }
+            _ => Some(ChangeValue::Text {
+                text: plain_text(value),
+            }),
+        })
+    }
+
     /// One value of a change as the reader may see it; `None` when there is no value, the value
     /// is a long text, or it names an issue the reader may not see.
     async fn change_value(
@@ -177,6 +234,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         Ok(match member {
             Member::Catalogue(Field::Description) | Member::Never => None,
+            Member::Own(id) => match batch.field(id) {
+                Some(definition) => self.own_value(held, definition, value).await?,
+                None => None,
+            },
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(held, kind, value).await?),
                 None => Some(ChangeValue::Text {
@@ -210,11 +271,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
+        issue_type: IssueTypeId,
         maker: &mut LineMaker,
         batch: &Batch<'_>,
         row: &HistoryEntry,
     ) -> Result<Option<HistoryWhat>, AppError> {
-        let mask = held.field_mask();
+        // The mask for the type of the issue now, built-in and own fields alike, so a field the
+        // reader may not see on this type is in no row.
+        let mask = held.field_mask_for(Some(issue_type));
         let mut fields = Vec::new();
         for change in visible_changes(&|field| mask.can_see(field), &row.changes) {
             let member = Member::of(&change.field);
@@ -228,8 +292,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             if member == Member::Issue && before.is_none() && after.is_none() {
                 continue;
             }
+            let name = match member {
+                Member::Own(id) => batch.field(id).map(|found| found.field.name.clone()),
+                _ => None,
+            };
             fields.push(FieldChangeView {
                 field: change.field.clone(),
+                name,
                 before,
                 after,
             });
@@ -320,6 +389,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             comments,
             issues,
             kinds,
+            fields: self.field_catalogue().await?,
         })
     }
 
@@ -352,7 +422,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                     self.relation_change(actor, maker, issue.id, batch, row)
                         .await?
                 } else {
-                    self.field_changes(actor, held, maker, batch, row).await?
+                    self.field_changes(actor, held, issue.issue_type, maker, batch, row)
+                        .await?
                 }
             }
         };
@@ -475,7 +546,10 @@ mod tests {
             hidden in proptest::sample::subsequence(Field::ALL.to_vec(), 0..=Field::ALL.len()),
             asked in proptest::sample::subsequence(Field::ALL.to_vec(), 0..=Field::ALL.len()),
         ) {
-            let can_see = |field: Field| !hidden.contains(&field);
+            let can_see = |field: FieldKey| match field {
+                FieldKey::BuiltIn(field) => !hidden.contains(&field),
+                FieldKey::Own(_) => false,
+            };
             let mut changes: Vec<FieldChange> =
                 asked.iter().map(|field| change(field.code())).collect();
             // Members that are no field of the catalogue: the version, the trash and the key never

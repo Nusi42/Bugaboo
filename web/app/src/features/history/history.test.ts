@@ -42,6 +42,19 @@ describe("iss_06 the history in plain sentences", () => {
     );
   });
 
+  it("names an own field by the name the server sends", () => {
+    expect(
+      changeSentence(
+        change({
+          field: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c",
+          field_name: "Severity",
+          before_text: "Minor",
+          after_text: "Critical",
+        }),
+      ),
+    ).toBe("Ben changed Severity from Minor to Critical");
+  });
+
   it("does not show what a long text held, only that it changed", () => {
     expect(changeSentence(change({ field: "description" }))).toBe("Ben changed Description");
   });

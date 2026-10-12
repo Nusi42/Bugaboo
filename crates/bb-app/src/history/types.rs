@@ -56,6 +56,8 @@ pub enum ChangeValue {
 pub struct FieldChangeView {
     /// The key of the field (`status`, `assigned-to`, `parent`).
     pub field: String,
+    /// The name of an own field; `None` for a field of the catalogue and the other members.
+    pub name: Option<String>,
     /// What it was; `None` when it had no value, or for a long text.
     pub before: Option<ChangeValue>,
     /// What it is; `None` when it has no value now, or for a long text.

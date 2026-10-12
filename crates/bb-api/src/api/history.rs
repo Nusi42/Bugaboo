@@ -28,7 +28,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 21] = [
+const HISTORY_FIELDS: [FieldSpec; 22] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -41,6 +41,7 @@ const HISTORY_FIELDS: [FieldSpec; 21] = [
     FieldSpec::by_default("may_edit"),
     FieldSpec::by_default("may_delete"),
     FieldSpec::by_default("field"),
+    FieldSpec::by_default("field_name"),
     FieldSpec::by_default("before_text"),
     FieldSpec::by_default("after_text"),
     FieldSpec::by_default("before_people"),
@@ -100,6 +101,9 @@ pub(crate) struct HistoryEntryItem {
     /// A change: the key of the field.
     #[serde(skip_serializing_if = "Option::is_none")]
     field: Option<String>,
+    /// A change of an own field: its name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    field_name: Option<String>,
     /// A change: what the field was, when it is a word, a name or a number.
     #[serde(skip_serializing_if = "Option::is_none")]
     before_text: Option<String>,
@@ -146,6 +150,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         may_edit: None,
         may_delete: None,
         field: None,
+        field_name: None,
         before_text: None,
         after_text: None,
         before_people: None,
@@ -194,6 +199,7 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             .map(|change| {
                 let mut item = start(row, HistoryEntryKind::Change);
                 item.field = Some(change.field.clone());
+                item.field_name.clone_from(&change.name);
                 place_value(
                     change.before.as_ref(),
                     &mut item.before_text,
@@ -331,6 +337,7 @@ mod tests {
             may_edit: Some(true),
             may_delete: Some(true),
             field: Some(String::new()),
+            field_name: Some(String::new()),
             before_text: Some(String::new()),
             after_text: Some(String::new()),
             before_people: Some(Vec::new()),

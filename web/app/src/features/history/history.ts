@@ -43,8 +43,14 @@ export function whoOf(entry: Schema<"HistoryEntryItem">): string {
   return entry.by === undefined || entry.by === null ? t("history.system") : personName(entry.by);
 }
 
-/** The name of a field as people read it: the catalogue's own, or one of the members History adds. */
-export function fieldLabel(field: string): string {
+/**
+ * The name of a field as people read it: the name of an own field, which the server sends, the
+ * catalogue's own, or one of the members History adds.
+ */
+export function fieldLabel(field: string, name?: string | null): string {
+  if (name !== undefined && name !== null) {
+    return name;
+  }
   switch (field) {
     case "issue-type":
       return t("history.field-issue-type");
@@ -84,7 +90,7 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
 /** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
 export function changeSentence(entry: HistoryEntry): string {
   const who = whoOf(entry);
-  const field = fieldLabel(entry.field ?? "");
+  const field = fieldLabel(entry.field ?? "", entry.field_name);
   const before = sideOf(entry, "before");
   const after = sideOf(entry, "after");
   if (before !== undefined && after !== undefined) {

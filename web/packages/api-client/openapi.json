@@ -18376,6 +18376,10 @@
             "type": ["string", "null"],
             "description": "A change: the key of the field."
           },
+          "field_name": {
+            "type": ["string", "null"],
+            "description": "A change of an own field: its name."
+          },
           "html": {
             "type": ["string", "null"],
             "description": "A comment: the text as safe HTML, made on the server for this reader.",
@@ -20531,6 +20535,10 @@
                 "field": {
                   "type": ["string", "null"],
                   "description": "A change: the key of the field."
+                },
+                "field_name": {
+                  "type": ["string", "null"],
+                  "description": "A change of an own field: its name."
                 },
                 "html": {
                   "type": ["string", "null"],
