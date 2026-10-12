@@ -150,6 +150,38 @@ pub(crate) fn is_kept<T: PartialEq>(held: &[T], value: &T) -> bool {
     held.contains(value)
 }
 
+/// The definition of an own field when the viewer may change the field on an item of this issue
+/// type: `None` for a field that is not there and for one the level does not let them change,
+/// which look alike (SEC-04, SEC-06).
+fn may_change<'a>(
+    definitions: &'a [Definition],
+    viewer: &Evaluation,
+    id: FieldId,
+    issue_type: Option<IssueTypeId>,
+) -> Option<&'a Definition> {
+    definitions
+        .iter()
+        .find(|definition| definition.field.id == id)
+        .filter(|_| viewer.field_level_for(issue_type, FieldKey::Own(id)) >= FieldLevel::CanChange)
+}
+
+/// `field.not_here` unless the field is used for this kind of item, is not retired, and reaches an
+/// item in a project of this chain and of this issue type.
+fn ensure_here(
+    definition: &Definition,
+    used_for: FieldFor,
+    chain: &[ProjectId],
+    issue_type: Option<IssueTypeId>,
+) -> Result<(), AppError> {
+    if definition.field.applies_to != used_for
+        || definition.field.retired_at.is_some()
+        || !definition.scope.reaches(chain, issue_type)
+    {
+        return Err(ErrorCode::FieldNotHere.into());
+    }
+    Ok(())
+}
+
 /// The item a request sets values on.
 #[derive(Clone, Debug)]
 pub(crate) struct Item {
@@ -197,6 +229,34 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .map(|definition| FieldKey::Own(definition.field.id))
             .collect())
+    }
+
+    /// What an own field of people is used for, when the viewer may choose its value in a project
+    /// for an issue of this type (the list to choose from): `access.forbidden` for a field that
+    /// is not there or that they may not change, `field.not_here` for one that is not of people,
+    /// is retired, or does not reach the project and the type. The same judgement as for setting
+    /// a value (`plan_values`).
+    pub(crate) async fn people_field_to_choose(
+        &self,
+        viewer: &Evaluation,
+        field: FieldId,
+        project: ProjectId,
+        issue_type: Option<IssueTypeId>,
+    ) -> Result<FieldFor, AppError> {
+        let definitions = self.field_catalogue().await?;
+        let definition = may_change(&definitions, viewer, field, issue_type)
+            .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
+        let used_for = definition.field.applies_to;
+        ensure_here(
+            definition,
+            used_for,
+            &self.chain_of(project).await?,
+            issue_type,
+        )?;
+        if !matches!(definition.field.kind, FieldType::Person | FieldType::People) {
+            return Err(ErrorCode::FieldNotHere.into());
+        }
+        Ok(used_for)
     }
 
     /// The projects from the top down to this one: where the scope of a field is judged.
@@ -478,17 +538,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         // The mask first, for every field asked about.
         let mut targets: Vec<(&Definition, &Value)> = Vec::with_capacity(asked.len());
         for (key, value) in asked {
-            let definition = FieldKey::from_code(key)
+            let allowed = FieldKey::from_code(key)
                 .and_then(FieldKey::own)
-                .and_then(|id| {
-                    definitions
-                        .iter()
-                        .find(|definition| definition.field.id == id)
-                });
-            let allowed = definition.filter(|definition| {
-                viewer.field_level_for(item.issue_type, FieldKey::Own(definition.field.id))
-                    >= FieldLevel::CanChange
-            });
+                .and_then(|id| may_change(&definitions, viewer, id, item.issue_type));
             let Some(definition) = allowed else {
                 return Err(ErrorCode::Forbidden.into());
             };
@@ -497,12 +549,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut sets: Vec<Set> = Vec::new();
         for (definition, json) in targets {
             let field = &definition.field;
-            if field.applies_to != item.field_for()
-                || field.retired_at.is_some()
-                || !definition.scope.reaches(&item.chain, item.issue_type)
-            {
-                return Err(ErrorCode::FieldNotHere.into());
-            }
+            ensure_here(definition, item.field_for(), &item.chain, item.issue_type)?;
             if field.kind.is_long_text() && !creating {
                 // A long text is saved under an edit lock, on its own route.
                 return Err(ErrorCode::InvalidRequest.into());

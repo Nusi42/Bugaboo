@@ -10,8 +10,7 @@
 //! themselves, whose name they know.
 
 use bb_core::ErrorCode;
-use bb_core::access::FieldLevel;
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::Field;
 use bb_core::id::{FieldId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldFor;
 use bb_core::paging::{Cut, page_len};
@@ -101,24 +100,19 @@ pub async fn assignable_people<S: AuthStore>(
             Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
         ),
         Some(field) => {
+            let project = found
+                .as_ref()
+                .map(|found| found.project.id)
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
             let applies_to = ctx
-                .field_catalogue()
-                .await?
-                .iter()
-                .find(|definition| definition.field.id == field)
-                .map(|definition| definition.field.applies_to);
-            let may_change =
-                held.field_level_for(issue_type, FieldKey::Own(field)) >= FieldLevel::CanChange;
+                .people_field_to_choose(&held, field, project, issue_type)
+                .await?;
             match applies_to {
-                Some(FieldFor::Issues) => (
-                    may_change && may_set_issues(&held),
+                FieldFor::Issues => (
+                    may_set_issues(&held),
                     Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
                 ),
-                Some(FieldFor::Projects) => (
-                    may_change && held.allows(Permission::ChangeProjectSettings),
-                    None,
-                ),
-                None => (false, None),
+                FieldFor::Projects => (held.allows(Permission::ChangeProjectSettings), None),
             }
         }
     };
