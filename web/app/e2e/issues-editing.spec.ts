@@ -115,6 +115,20 @@ test("iss_17 every key typed while the lock is still being asked for is kept", a
   await expect(page.getByText("Typed key by key")).toBeVisible();
 });
 
+test("iss_17 Save pressed before the lock has arrived saves as soon as it does", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await holdBackLocks(page, 1500);
+  await page.goto(issueAddress("WEB-1"));
+  await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
+  await descriptionBox(page).fill("Typed in a hurry");
+  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Typed in a hurry")).toBeVisible();
+});
+
 test("adr_0019 a short value that somebody changed first shows Keep their value or Use mine", async ({
   page,
   server,

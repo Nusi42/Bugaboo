@@ -70,6 +70,7 @@ export class LongTextEditor extends WatchingEditor {
       this.arriveIfCurrent(await this.deps.take(this.editor), generation);
     } catch (error) {
       if (generation === this.generation) {
+        this.saveWhenLocked = false;
         this.set({ phase: { kind: "open" }, problem: error });
       }
     }
@@ -90,6 +91,7 @@ export class LongTextEditor extends WatchingEditor {
   /** The answer to asking for the lock (or to *Edit anyway*). */
   private arrive(outcome: LockOutcome): void {
     if (outcome.status === "held") {
+      this.saveWhenLocked = false;
       this.stopHeartbeats();
       this.set({ phase: { kind: "held", lock: outcome } });
       return;
@@ -157,6 +159,11 @@ export class LongTextEditor extends WatchingEditor {
       this.cancel();
       return;
     }
+    if (phase.kind === "taking") {
+      // Save was pressed before the answer to asking for the lock came: save when it does.
+      this.saveWhenLocked = true;
+      return;
+    }
     if (phase.kind === "lost" || phase.kind === "held") {
       this.saveWhenLocked = true;
       await this.begin();
@@ -201,6 +208,7 @@ export class LongTextEditor extends WatchingEditor {
 
   /** The text is saved or thrown away: nothing is held and no draft is kept. */
   private finish(): void {
+    this.saveWhenLocked = false;
     this.stopHeartbeats();
     this.token = null;
     this.deps.browserDraft.forget();

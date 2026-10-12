@@ -49,6 +49,34 @@ describe("iss_17 the box and the lock", () => {
   });
 });
 
+describe("iss_17 Save pressed while the lock is being asked for", () => {
+  it("saves when the lock comes, if Save was pressed while it was being asked for", async () => {
+    const lock = deferred<ReturnType<typeof taken>>();
+    const w = world({ take: () => lock.promise });
+    w.editor.open();
+    w.editor.type("New words");
+    await w.editor.save();
+    expect(w.saves).toEqual([]);
+    expect(w.editor.snapshot().phase.kind).toBe("taking");
+    lock.resolve(taken("t1"));
+    await settle();
+    expect(w.saves).toEqual([{ text: "New words", version: 3, lockToken: "t1" }]);
+    expect(w.editor.snapshot().phase.kind).toBe("reading");
+  });
+
+  it("does not save later on its own when the lock was not given after Save was pressed", async () => {
+    const lock = deferred<ReturnType<typeof heldBy>>();
+    const w = world({ take: () => lock.promise });
+    w.editor.open();
+    w.editor.type("New words");
+    await w.editor.save();
+    lock.resolve(heldBy(true));
+    await settle();
+    expect(w.editor.snapshot().phase.kind).toBe("held");
+    expect(w.saves).toEqual([]);
+  });
+});
+
 describe("ux_06 the box learns who is editing", () => {
   it("tells at once who is editing when the box opens, and opens when they let go", async () => {
     const holders = inTurn(holding, holding, null);
