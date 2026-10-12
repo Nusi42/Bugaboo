@@ -2,9 +2,9 @@ import { isMessageKey, locale, t } from "@bugaboo/messages";
 import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { personName } from "../../shared/person.ts";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
-import { fieldNameOf } from "./field-names.ts";
 import { groupLevels, type LevelEntry } from "./group-levels.ts";
 import { projectText } from "./origin-text.ts";
 import type { CheckAnswerBody } from "./use-check.ts";

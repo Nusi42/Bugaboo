@@ -1,7 +1,5 @@
 import { t } from "@bugaboo/messages";
 import {
-  Button,
-  buttonLook,
   Checkbox,
   Form,
   SelectField,
@@ -15,9 +13,7 @@ import {
 import { useState, type ReactNode } from "react";
 
 import type { OwnField, KindWord } from "./fields.ts";
-import { GroupChoice, IssueChoice } from "./OtherChoices.tsx";
-import { PeopleChoice } from "./PeopleChoice.tsx";
-import { ValueView } from "./ValueView.tsx";
+import { ReferenceEditor } from "./ReferenceEditor.tsx";
 import { durationSeconds, durationText, isDecimalText, isWholeNumberText } from "./value-text.ts";
 
 /** The value the editor sends: what the API takes for this field, or `null` to take the value away. */
@@ -34,6 +30,8 @@ export interface ValueEditorProps {
   readonly isPending?: boolean;
   /** The project of the item (its short name), for the people a field can point to. */
   readonly project?: string | undefined;
+  /** The issue (its ID), when the item is one: only people who may see it can be chosen. */
+  readonly issue?: string | undefined;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
@@ -222,49 +220,6 @@ function PickSeveralEditor({ field, value, onCommit, problem }: ValueEditorProps
       {problem === undefined ? null : <p {...partOf(part.fieldError)}>{problem}</p>}
     </fieldset>
   );
-}
-
-/** People, groups and issues: the value as shown, *Choose* to pick another, and *Take away*. */
-function ReferenceEditor({ field, value, project, onCommit, isPending = false }: ValueEditorProps) {
-  const hasValue = value !== undefined && value !== null && field.rules.required !== true;
-  return (
-    <div {...partOf(part.stack)}>
-      <p {...partOf(part.fieldLabel)}>{field.name}</p>
-      <ValueView field={field} value={value} />
-      <div {...partOf(part.row)}>
-        {project === undefined ? null : (
-          <Chooser field={field} value={value} project={project} onCommit={onCommit} />
-        )}
-        {hasValue ? (
-          <Button
-            look={buttonLook.quiet}
-            isPending={isPending}
-            onPress={() => {
-              onCommit(null);
-            }}
-          >
-            {t("fields.take-away")}
-          </Button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-/** The dialog that picks what a field of people, a group or an issue points to. */
-function Chooser({
-  field,
-  value,
-  project,
-  onCommit,
-}: Pick<ValueEditorProps, "field" | "value" | "onCommit"> & { readonly project: string }) {
-  if (field.kind === "group") {
-    return <GroupChoice field={field} onCommit={onCommit} />;
-  }
-  if (field.kind === "issue") {
-    return <IssueChoice field={field} onCommit={onCommit} />;
-  }
-  return <PeopleChoice field={field} value={value} project={project} onCommit={onCommit} />;
 }
 
 /** One editor for each kind of value, so a new kind cannot be forgotten. */

@@ -22,13 +22,15 @@ interface FieldLineProps {
   readonly field: OwnField;
   /** The project of the item: its short name. */
   readonly project: string | undefined;
+  /** The issue, when the item is one: its ID. */
+  readonly issue?: string | undefined;
   readonly value: unknown;
   readonly editable: boolean;
   readonly onCommit: (field: OwnField, value: Sent) => void;
 }
 
 /** One field: its name and value, or its editor where the person may change it. */
-function FieldLine({ field, project, value, editable, onCommit }: FieldLineProps) {
+function FieldLine({ field, project, issue, value, editable, onCommit }: FieldLineProps) {
   if (!editable) {
     return (
       <div {...partOf(part.stack)}>
@@ -41,6 +43,7 @@ function FieldLine({ field, project, value, editable, onCommit }: FieldLineProps
     <ValueEditor
       field={field}
       project={project}
+      issue={issue}
       value={value}
       onCommit={(sent) => {
         onCommit(field, sent);
@@ -71,6 +74,7 @@ export function OwnFieldsPanel({ issue, mask, onChange }: IssueBlockProps) {
             key={lineKey(field, values[field.id])}
             field={field}
             project={project}
+            issue={issue.id ?? undefined}
             value={values[field.id]}
             editable={mask.changes(field.id)}
             onCommit={(each, value) => {

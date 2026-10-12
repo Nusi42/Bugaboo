@@ -54,6 +54,10 @@ export function useHtml(safe: SafeHtml): RefObject<HTMLDivElement | null> {
   useLayoutEffect(() => {
     if (box.current !== null) {
       box.current.innerHTML = trustedHtml(html);
+      // A code block that is wider than the text scrolls sideways: the keyboard has to reach it.
+      for (const block of box.current.querySelectorAll("pre")) {
+        block.tabIndex = 0;
+      }
     }
   }, [html]);
   return box;

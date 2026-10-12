@@ -5,8 +5,8 @@ import { type Page } from "@playwright/test";
 import { giveRole, roleId, roleName, setFieldLevel, signedInAdmin } from "./support/access.ts";
 import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { anotherBrowser, signIn } from "./support/flows.ts";
-import { openIssueWithDetails, prepareFieldsIssue } from "./support/fields.ts";
+import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
+import { fieldNamed, prepareFieldsIssue } from "./support/fields.ts";
 import { makeIssue } from "./support/issues.ts";
 
 // Own fields on the issue page (CF-01, CF-06, M3 WP-05 with WP-06): the fields are filled in on
@@ -15,15 +15,6 @@ import { makeIssue } from "./support/issues.ts";
 
 test.use({ preparation: { run: prepareFieldsIssue } });
 test.describe.configure({ mode: "serial" });
-
-/** A field of the list by its name; the test stops with a plain message when it is not there. */
-function fieldNamed(fields: readonly Schema<"FieldBody">[], name: string): Schema<"FieldBody"> {
-  const found = fields.find((each) => each.name === name);
-  if (found === undefined) {
-    throw new TypeError(`The organization has no field called ${name}.`);
-  }
-  return found;
-}
 
 /** The ID of a choice of a field by its name. */
 function choiceNamed(field: Schema<"FieldBody">, name: string): string {

@@ -14,6 +14,8 @@ export interface PeopleChoiceProps {
   readonly value: unknown;
   /** The project of the item (its short name): the people of the project are offered. */
   readonly project: string;
+  /** The issue (its ID), when the item is one: the people who may see it are offered. */
+  readonly issue?: string | undefined;
   /** Sends the IDs of the people from now on; `null` takes the value away. */
   readonly onCommit: (ids: readonly string[] | string | null) => void;
 }
@@ -63,17 +65,19 @@ function PeopleList({
   field,
   chosen,
   project,
+  issue,
   onPick,
   onTakeOut,
 }: {
   readonly field: OwnField;
   readonly chosen: readonly string[];
   readonly project: string;
+  readonly issue: string | undefined;
   readonly onPick: (id: string) => void;
   readonly onTakeOut: (id: string) => void;
 }) {
   const { words, frame } = usePickerFrame();
-  const found = useAssignablePeople(project, words);
+  const found = useAssignablePeople(project, words, { field: field.id, issue });
   const people = peopleOf(found.data?.pages);
   return (
     <SearchPicker
@@ -100,7 +104,7 @@ function PeopleList({
 }
 
 /** *Person*: one person of the project; *People*: several. Only people shown by name can be chosen. */
-export function PeopleChoice({ field, value, project, onCommit }: PeopleChoiceProps) {
+export function PeopleChoice({ field, value, project, issue, onCommit }: PeopleChoiceProps) {
   const many = field.kind === "people";
   const chosen = referenceIds(value);
   return (
@@ -110,6 +114,7 @@ export function PeopleChoice({ field, value, project, onCommit }: PeopleChoicePr
           field={field}
           chosen={chosen}
           project={project}
+          issue={issue}
           onPick={(id) => {
             if (many) {
               onCommit([...chosen, id]);

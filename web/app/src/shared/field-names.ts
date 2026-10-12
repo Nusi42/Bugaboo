@@ -3,8 +3,8 @@ import { isMessageKey, t } from "@bugaboo/messages";
 /** The parts of a field's key that name it, as the API sends them. */
 export interface FieldKeyWords {
   readonly code: string;
-  readonly message_key?: string | null;
-  readonly name?: string | null;
+  readonly message_key?: string | null | undefined;
+  readonly name?: string | null | undefined;
 }
 
 /**

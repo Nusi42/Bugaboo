@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, Overlay } from "@bugaboo/ui";
+import { Button, buttonLook, Overlay, partOf, part } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
 import type { OwnField } from "./fields.ts";
@@ -19,6 +19,7 @@ export function ChoiceDialog({ field, children }: ChoiceDialogProps) {
   return (
     <>
       <Button
+        aria-label={t("fields.choose-title", { name: field.name })}
         onPress={() => {
           setOpen(true);
         }}
@@ -31,7 +32,7 @@ export function ChoiceDialog({ field, children }: ChoiceDialogProps) {
         label={t("fields.choose-title", { name: field.name })}
       >
         {open ? (
-          <div>
+          <div {...partOf(part.stack)}>
             {children(close)}
             <Button look={buttonLook.primary} onPress={close}>
               {t("common.done")}

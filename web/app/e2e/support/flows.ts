@@ -5,7 +5,7 @@ import { type Person } from "./accounts.ts";
 import { layoutOf } from "./layout.ts";
 import { type Instance } from "./server.ts";
 import { type CodeApp, codeApp } from "./totp.ts";
-import { paths } from "../../src/shared/paths.ts";
+import { issueAddress, paths } from "../../src/shared/paths.ts";
 import { type ApiSession, sessionOver } from "./api.ts";
 import { places } from "../../src/shared/places.ts";
 
@@ -267,4 +267,15 @@ export async function chooseGoHomeKeys(page: Page): Promise<void> {
   await page.keyboard.press("i");
   await panel.getByRole("button", { name: t("shortcuts.use") }).click();
   await expect(panel.getByText(t("shortcuts.saved"))).toBeVisible();
+}
+
+/**
+ * Opens an issue and, on a screen without room for a column of details, opens *All details*, where
+ * the own fields are (UX §4.4).
+ */
+export async function openIssueWithDetails(page: Page, key: string): Promise<void> {
+  await page.goto(issueAddress(key));
+  if (layoutOf(page) !== "computer") {
+    await page.getByRole("button", { name: t("issues.all-details"), exact: true }).click();
+  }
 }

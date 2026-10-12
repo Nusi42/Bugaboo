@@ -30,6 +30,7 @@ export async function makeIssue(
   project: string,
   title: string,
   description?: string,
+  fields?: Readonly<Record<string, unknown>>,
 ): Promise<MadeIssue> {
   const made = dataOf(
     await session.client.POST("/api/v1/projects/{project}/issues", {
@@ -38,6 +39,7 @@ export async function makeIssue(
         issue_type: await firstIssueType(session),
         title,
         ...(description === undefined ? {} : { description }),
+        ...(fields === undefined ? {} : { fields }),
       },
     }),
   );

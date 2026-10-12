@@ -1,8 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { isMessageKey, t } from "@bugaboo/messages";
 
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { personName } from "../../shared/person.ts";
-import { fieldNameOf } from "../access/index.ts";
 
 import type { Preview } from "./use-projects.ts";
 

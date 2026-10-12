@@ -16,21 +16,20 @@ export interface AssignedFactProps {
   readonly onChange: (values: IssueValues) => void;
 }
 
+/** The shortcut that opens the picker, while the person may change *Assigned to*. */
+function useAssignShortcut(canChange: boolean, open: () => void): void {
+  useShortcuts(canChange ? { assign: open } : {});
+}
+
 /** *Assigned to*: the people, and the way to change them or to add the first one. */
 export function AssignedFact({ issue, mask, onChange }: AssignedFactProps) {
   const [picking, setPicking] = useState(false);
   const people = issue.assigned_to ?? [];
   const name = t("issue-field.assigned-to");
   const canChange = mask.changes("assigned-to");
-  useShortcuts(
-    canChange
-      ? {
-          assign: () => {
-            setPicking(true);
-          },
-        }
-      : {},
-  );
+  useAssignShortcut(canChange, () => {
+    setPicking(true);
+  });
   if (!canChange && people.length === 0) {
     return null;
   }
@@ -59,6 +58,7 @@ export function AssignedFact({ issue, mask, onChange }: AssignedFactProps) {
           setPicking(false);
         }}
         project={issue.project?.short_name ?? ""}
+        issue={issue.id ?? undefined}
         assigned={named}
         onChange={(next) => {
           onChange({ assignedTo: next });

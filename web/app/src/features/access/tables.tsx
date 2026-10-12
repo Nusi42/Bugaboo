@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
-import { fieldNameOf } from "./field-names.ts";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { LevelTableView } from "./LevelTableView.tsx";
 import type { LevelTable, PeopleKindKey, PeopleLevelCode } from "./levels.ts";
 import { PeoplePreview } from "./PeoplePreview.tsx";
