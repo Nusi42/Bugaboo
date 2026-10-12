@@ -2,13 +2,21 @@
 //! counts only what the viewer sees, relations read from both sides in their own words, and
 //! relations to hidden issues that are not shown. Every flow runs on SQLite and PostgreSQL.
 
+use std::sync::Arc;
+
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
+use bb_app::auth::{AppError, AuthApi as _};
+use bb_app::relations::{AddRelation, SetParent};
+use bb_core::ErrorCode;
+use bb_core::relation::Direction;
+use bb_core::relation::RELATIONS_MAX;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
+use super::rig::Rig;
 
 /// The key of the issue an answer is about.
 fn key_of(reply: &Reply) -> Result<String, Failure> {
@@ -325,6 +333,142 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
                     ("added", name, other.as_str())
                 ]
             );
+        }
+        Ok(())
+    })
+    .await
+}
+
+/// How many issues want the one place that is left on an issue that is full but for one relation.
+const WANTING: usize = 80;
+
+/// Runs all the requests at the same moment on their own threads; what each one answered, in the
+/// order of the requests.
+async fn at_the_same_moment(
+    requests: Vec<impl Future<Output = Result<(), AppError>> + Send + 'static>,
+) -> Result<Vec<Result<(), AppError>>, Failure> {
+    let tasks: Vec<_> = requests.into_iter().map(tokio::spawn).collect();
+    let mut answers = Vec::new();
+    for task in tasks {
+        answers.push(task.await?);
+    }
+    Ok(answers)
+}
+
+/// How many of the answers are `Ok`, and how many are the refusal `code`.
+fn count(answers: &[Result<(), AppError>], code: ErrorCode) -> (usize, usize) {
+    let worked = answers.iter().filter(|answer| answer.is_ok()).count();
+    let refused = answers
+        .iter()
+        .filter(|answer| matches!(answer, Err(AppError::Refused(found)) if *found == code))
+        .count();
+    (worked, refused)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn iss_04_relations_made_at_the_same_moment_do_not_pass_the_limit() -> TestResult {
+    each_database("iss_04_limit_race", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (blocks, _) = kinds(&mut ada).await?;
+        let hub = key_of(&site.make(&mut ada, "Hub").await?)?;
+        // The hub holds one relation less than the limit.
+        for number in 1..RELATIONS_MAX {
+            let other = key_of(&site.make(&mut ada, &format!("Other {number}")).await?)?;
+            let added = ada
+                .send(
+                    "POST",
+                    &format!("{ISSUES}/{hub}/relations"),
+                    Some(json!({"other": other, "kind": blocks, "direction": "forward"})),
+                )
+                .await?;
+            ok(&added)?;
+        }
+        // More issues than one each want the one place that is left.
+        let mut late = Vec::new();
+        for number in 0..WANTING {
+            late.push(key_of(
+                &site.make(&mut ada, &format!("Late {number}")).await?,
+            )?);
+        }
+        let requests = late
+            .iter()
+            .map(|other| {
+                let services = Arc::clone(&rig.services);
+                let input = AddRelation {
+                    session_token: site.org.admin.session.clone(),
+                    issue: hub.clone(),
+                    other: other.clone(),
+                    kind: blocks.parse().expect("an ID"),
+                    direction: Direction::Forward,
+                };
+                async move { services.add_relation(Rig::info(), input).await.map(|_| ()) }
+            })
+            .collect();
+        let answers = at_the_same_moment(requests).await?;
+        assert_eq!(
+            count(&answers, ErrorCode::LimitReached),
+            (1, WANTING - 1),
+            "{answers:?}"
+        );
+        // Exactly one of them is related to the hub.
+        let mut related = 0;
+        for key in &late {
+            let list = ada
+                .send("GET", &format!("{ISSUES}/{key}/related-issues"), None)
+                .await?;
+            related += list.body["items"].as_array().map_or(0, Vec::len);
+        }
+        assert_eq!(related, 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn iss_03_parents_set_at_the_same_moment_do_not_make_a_circle() -> TestResult {
+    each_database("iss_03_circle_race", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        // Ten pairs: in each, A goes under B and B under A, both from version 1.
+        let mut pairs = Vec::new();
+        for number in 0..10 {
+            let a = key_of(&site.make(&mut ada, &format!("A {number}")).await?)?;
+            let b = key_of(&site.make(&mut ada, &format!("B {number}")).await?)?;
+            pairs.push((a, b));
+        }
+        let put = |child: &str, parent: &str| {
+            let services = Arc::clone(&rig.services);
+            let input = SetParent {
+                session_token: site.org.admin.session.clone(),
+                issue: child.to_owned(),
+                version: 1,
+                parent: Some(parent.to_owned()),
+            };
+            async move { services.set_parent(Rig::info(), input).await.map(|_| ()) }
+        };
+        let requests = pairs
+            .iter()
+            .flat_map(|(a, b)| [put(a, b), put(b, a)])
+            .collect();
+        let answers = at_the_same_moment(requests).await?;
+        for (number, two) in answers.chunks(2).enumerate() {
+            assert_eq!(
+                count(two, ErrorCode::ParentCircle),
+                (1, 1),
+                "pair {number}: {two:?}"
+            );
+        }
+        // In each pair one issue is under the other, not both.
+        for (a, b) in &pairs {
+            let mut under = 0;
+            for parent in [a, b] {
+                let list = ada
+                    .send("GET", &format!("{ISSUES}/{parent}/sub-issues"), None)
+                    .await?;
+                under += keys(&list).len();
+            }
+            assert_eq!(under, 1, "{a} and {b}");
         }
         Ok(())
     })
