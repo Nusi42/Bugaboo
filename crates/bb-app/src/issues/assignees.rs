@@ -11,16 +11,15 @@
 
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
-use bb_core::id::{FieldId, IssueTypeId, UserId};
+use bb_core::id::{FieldId, IssueTypeId};
 use bb_core::own_fields::FieldFor;
 use bb_core::paging::{Cut, page_len};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::person::Person;
 use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
 use serde::Serialize;
 
-use crate::access::{Members, names_other_people};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::access::Members;
+use crate::auth::{AppError, AuthStore, Ctx};
 use crate::people::write_cursor;
 
 /// List the people an issue of a project can be assigned to.
@@ -121,16 +120,14 @@ pub async fn assignable_people<S: AuthStore>(
     }
     let after = ctx.people_position(input.cursor.as_deref()).await?;
     let wanted = page_len(Some(input.limit));
-    let people = if names_other_people(&held) {
-        let members = Members::Naming { reported_by };
-        ctx.members_page(place, input.search.as_deref(), after, wanted, members)
-            .await?
-    } else if after.is_none() {
-        // The reader knows their own name, whatever else they see: they can assign themselves.
-        ctx.own_page(you, input.search.as_deref()).await?
-    } else {
-        Vec::new()
+    let members = Members::Naming {
+        actor: you,
+        viewer: &held,
+        reported_by,
     };
+    let people = ctx
+        .members_page(place, input.search.as_deref(), after, wanted, members)
+        .await?;
     let page = Cut::of(people, wanted);
     let next_cursor = page.next_cursor(write_cursor);
     let mut items = Vec::with_capacity(page.items.len());
@@ -159,30 +156,4 @@ fn may_set_issues(held: &Evaluation) -> bool {
 /// Whether the person may set *Assigned to*: they set issues, and the field mask lets them change it.
 fn may_set_assigned_to(held: &Evaluation) -> bool {
     may_set_issues(held) && held.field_mask().can_change(Field::AssignedTo)
-}
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// The person alone, when the words of the search fit their name (all the words, in any
-    /// order, ignoring case) or there are none: the list of somebody who sees other people only
-    /// as a role.
-    async fn own_page(
-        &self,
-        person: UserId,
-        search: Option<&str>,
-    ) -> Result<Vec<Person>, AppError> {
-        let Some(found) = self
-            .store()
-            .person(person)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
-            return Ok(Vec::new());
-        };
-        let name = found.display_name.to_lowercase();
-        let fits = search
-            .unwrap_or_default()
-            .split_whitespace()
-            .all(|word| name.contains(&word.to_lowercase()));
-        Ok(if fits { vec![found] } else { Vec::new() })
-    }
 }

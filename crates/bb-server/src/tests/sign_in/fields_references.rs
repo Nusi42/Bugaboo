@@ -355,3 +355,98 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
     })
     .await
 }
+
+/// Whether the list offers each person and whether a change accepts them, for *Assigned to* and
+/// for the own field of people, as this viewer: each pair is `(offered, accepted)`.
+async fn offered_and_accepted(
+    viewer: &mut Browser,
+    ada: &mut Browser,
+    site: &Site<'_>,
+    tester: &str,
+    people: &[String],
+) -> Result<Vec<(String, bool, bool, bool, bool)>, Failure> {
+    let made = ok(&site.make(ada, "Who is named").await?)?.clone();
+    let key = made["key"].as_str().ok_or("no key")?.to_owned();
+    let list = format!("{PROJECTS}/{}/assignable-people", site.acme);
+    let assigned = ok(&viewer
+        .send("GET", &format!("{list}?issue={key}"), None)
+        .await?)?
+    .clone();
+    let in_field = ok(&viewer
+        .send("GET", &format!("{list}?issue={key}&field={tester}"), None)
+        .await?)?
+    .clone();
+    let (assigned, in_field) = (ids_of(&assigned)?, ids_of(&in_field)?);
+    let mut seen = Vec::new();
+    for person in people {
+        let version = version_of(ada, &made).await?;
+        let path = format!("{ISSUES}/{key}");
+        let assign = viewer
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": version, "assigned_to": [person]})),
+            )
+            .await?;
+        let version = version_of(ada, &made).await?;
+        let field = set_on_issue(viewer, &made, &version, json!({ tester: person })).await?;
+        seen.push((
+            person.clone(),
+            assigned.contains(person),
+            assign.status == StatusCode::OK,
+            in_field.contains(person),
+            field.status == StatusCode::OK,
+        ));
+    }
+    Ok(seen)
+}
+
+#[tokio::test]
+async fn cf_01_every_person_the_list_offers_is_accepted_and_no_other() -> TestResult {
+    each_database("cf_01_list_and_check_agree", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let tester = id_of(
+            &make_field(
+                &mut ada,
+                json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
+        let (mut tim, tim_id) = site.person(StartingRole::TeamMember, "tim").await?;
+        let (_, cora) = site.person(StartingRole::Contributor, "cora").await?;
+        let (_, vera) = site.person(StartingRole::Viewer, "vera").await?;
+        let outsider = site.outsider("olga").await?;
+        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let people: Vec<String> = [tim_id, cora, vera, outsider]
+            .iter()
+            .map(ToString::to_string)
+            .chain([me, NOBODY.to_owned()])
+            .collect();
+        // Shown names: the list offers those who may see the issue, and a change accepts them.
+        let named = offered_and_accepted(&mut tim, &mut ada, &site, &tester, &people).await?;
+        for (person, offered, accepted, in_field, in_field_accepted) in &named {
+            assert_eq!(offered, accepted, "assigned to {person}");
+            assert_eq!(in_field, in_field_accepted, "field {person}");
+            assert_eq!(offered, in_field, "both lists {person}");
+        }
+        assert!(named.iter().any(|seen| seen.1) && named.iter().any(|seen| !seen.1));
+        // Shown only themselves: the list offers the viewer alone, and a change accepts only them.
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "project-members",
+            "role-only",
+        )
+        .await?;
+        let alone = offered_and_accepted(&mut tim, &mut ada, &site, &tester, &people).await?;
+        for (person, offered, accepted, in_field, in_field_accepted) in &alone {
+            assert_eq!(offered, accepted, "alone, assigned to {person}");
+            assert_eq!(in_field, in_field_accepted, "alone, field {person}");
+            assert_eq!(*offered, *person == tim_id.to_string(), "alone {person}");
+            assert_eq!(offered, in_field, "alone, both lists {person}");
+        }
+        Ok(())
+    })
+    .await
+}

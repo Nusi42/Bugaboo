@@ -43,13 +43,23 @@ impl Masked for PeopleToCheckPage {}
 
 /// Which people a list of the people of a place holds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Members {
+pub(crate) enum Members<'a> {
     /// Everybody, for a person who manages people or roles.
     Everybody,
     /// The people who have a role that reaches the place.
     WithRole,
-    /// The people who may be named in an item of the place: see [`Ctx::may_be_named`].
-    Naming { reported_by: Option<UserId> },
+    /// The people the `viewer` (the evaluation of `actor`) may name in an item of the place, by
+    /// the one rule, [`Ctx::may_name`]: every person is judged by it. A viewer who is shown other
+    /// people only as a role can name nobody but themselves, so only their own name is looked at
+    /// instead of reading all people to refuse each (the page is the viewer alone, or empty).
+    Naming {
+        /// The person who asks.
+        actor: UserId,
+        /// What they are shown.
+        viewer: &'a Evaluation,
+        /// Who reported the issue the person is named in, or `None` for a project.
+        reported_by: Option<UserId>,
+    },
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -62,8 +72,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         search: Option<&str>,
         mut after: Option<PeoplePosition>,
         wanted: usize,
-        members: Members,
+        members: Members<'_>,
     ) -> Result<Vec<Person>, AppError> {
+        if let Members::Naming { actor, viewer, .. } = members
+            && !names_other_people(viewer)
+        {
+            // Only the viewer can be named: the first page holds them (when the search fits their
+            // name), a later one nobody. The person still goes through `is_listed`.
+            let own = if after.is_none() {
+                self.own_page(actor, search).await?
+            } else {
+                Vec::new()
+            };
+            let mut page = Vec::with_capacity(own.len());
+            for person in own {
+                if self.is_listed(person.id, place, members).await? {
+                    page.push(person);
+                }
+            }
+            return Ok(page);
+        }
         let mut page: Vec<Person> = Vec::with_capacity(wanted.saturating_add(1));
         'batches: loop {
             let batch = self
@@ -92,16 +120,47 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         person: UserId,
         place: Place,
-        members: Members,
+        members: Members<'_>,
     ) -> Result<bool, AppError> {
         match members {
             Members::Everybody => Ok(true),
             Members::WithRole => self.has_a_role_at(person, place).await,
-            Members::Naming { reported_by } => match place {
-                Place::Project(project) => self.may_be_named(person, project, reported_by).await,
+            Members::Naming {
+                actor,
+                viewer,
+                reported_by,
+            } => match place {
+                Place::Project(project) => {
+                    self.may_name(actor, viewer, person, project, reported_by)
+                        .await
+                }
                 Place::Organization => Ok(false),
             },
         }
+    }
+
+    /// The person alone, when the words of the search fit their name (all the words, in any
+    /// order, ignoring case) or there are none: the list of somebody who sees other people only
+    /// as a role.
+    async fn own_page(
+        &self,
+        person: UserId,
+        search: Option<&str>,
+    ) -> Result<Vec<Person>, AppError> {
+        let Some(found) = self
+            .store()
+            .person(person)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(Vec::new());
+        };
+        let name = found.display_name.to_lowercase();
+        let fits = search
+            .unwrap_or_default()
+            .split_whitespace()
+            .all(|word| name.contains(&word.to_lowercase()));
+        Ok(if fits { vec![found] } else { Vec::new() })
     }
 
     /// Whether a person can be assigned to an issue of the project that `reported_by` reported:
