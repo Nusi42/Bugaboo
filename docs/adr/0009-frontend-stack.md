@@ -17,7 +17,7 @@ The UI must be slick, accessible (WCAG 2.2 AA), fast on phones, and buildable by
 ## Consequences
 
 - No global client state library: URL + query cache + local component state cover the needs.
-- Heavy features are lazy-loaded to meet the 250 KB initial budget.
+- Heavy features are lazy-loaded to meet the 250 KB initial budget, and so are their texts: each feature brings its own part of the message catalog (ADR-0028).
 
 ## Alternatives considered
 
