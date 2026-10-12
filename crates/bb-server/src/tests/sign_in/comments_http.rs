@@ -12,6 +12,7 @@ use bb_core::access::FieldLevel;
 use bb_core::fields::Field;
 use bb_core::history::HistoryKind;
 use bb_core::id::{CommentId, IssueId};
+use bb_core::text::LONG_TEXT_MAX;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -542,6 +543,75 @@ async fn iss_07_a_followers_list_hidden_for_the_reader_is_left_out_with_its_leng
             .send("GET", &format!("{ISSUES}/{issue}/follow"), None)
             .await?;
         assert_eq!(ok(&own)?["following"], true);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_07_a_viewer_sees_the_followers_by_role_and_not_by_name() -> TestResult {
+    each_database("iss_07_followers_role_only", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, bob_id) = site.person(StartingRole::Viewer, "bob").await?;
+        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let (mut cora, cora_id) = site
+            .person_called(StartingRole::TeamMember, "cora", "Cora Carpenter")
+            .await?;
+        ok(&comment(&mut cora, &issue, "On it.").await?)?;
+        let for_ada = ada
+            .send("GET", &format!("{ISSUES}/{issue}/followers"), None)
+            .await?;
+        assert_eq!(items(&for_ada).len(), 2);
+        // A viewer is told how many follow and what role each has, but no name and no ID.
+        let for_bob = bob
+            .send("GET", &format!("{ISSUES}/{issue}/followers"), None)
+            .await?;
+        let shown = items(&for_bob);
+        assert_eq!(shown.len(), 2, "{:?}", for_bob.body);
+        assert!(
+            shown.iter().all(|item| item["shown"] == "role"),
+            "{shown:?}"
+        );
+        let text = for_bob.body.to_string();
+        for secret in ["Ada Admin", "Cora Carpenter", &cora_id.to_string()] {
+            assert!(!text.contains(secret), "{secret} in {text}");
+        }
+        // Bob follows nothing here, and the list does not pretend he does.
+        assert!(!text.contains(&bob_id.to_string()));
+        let own = bob
+            .send("GET", &format!("{ISSUES}/{issue}/follow"), None)
+            .await?;
+        assert_eq!(ok(&own)?["following"], false);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_05_a_comment_that_is_too_long_is_refused_and_nothing_is_stored() -> TestResult {
+    each_database("iss_05_comment_too_long", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.make(&mut ada, "Long story").await?)?;
+        let fits = comment(&mut ada, &issue, &"a".repeat(LONG_TEXT_MAX)).await?;
+        ok(&fits)?;
+        let too_long = comment(&mut ada, &issue, &"a".repeat(LONG_TEXT_MAX + 1)).await?;
+        assert_eq!(
+            (too_long.status, too_long.code()),
+            (StatusCode::BAD_REQUEST, "request.invalid"),
+            "{:?}",
+            too_long.body
+        );
+        // Only the one that fits is under the issue.
+        let page = ada
+            .send("GET", &format!("{ISSUES}/{issue}/history"), None)
+            .await?;
+        let comments = items(&page)
+            .iter()
+            .filter(|item| item["kind"] == "comment")
+            .count();
+        assert_eq!(comments, 1, "{:?}", page.body);
         Ok(())
     })
     .await
