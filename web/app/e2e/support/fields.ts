@@ -1,6 +1,11 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
+import { type Page } from "@playwright/test";
+
+import { issueAddress } from "../../src/shared/paths.ts";
 
 import { bob, makeAdmin, makePerson } from "./accounts.ts";
+import { layoutOf } from "./layout.ts";
 import { makeProject } from "./projects.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
@@ -33,4 +38,15 @@ export async function prepareFieldsIssue(server: Instance): Promise<void> {
     () => make("Notes", "long-text"),
   ]);
   await admin.dispose();
+}
+
+/**
+ * Opens an issue and, on a screen without room for a column of details, opens *All details*, where
+ * the own fields are (UX §4.4).
+ */
+export async function openIssueWithDetails(page: Page, key: string): Promise<void> {
+  await page.goto(issueAddress(key));
+  if (layoutOf(page) !== "computer") {
+    await page.getByRole("button", { name: t("issues.all-details"), exact: true }).click();
+  }
 }

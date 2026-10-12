@@ -2,12 +2,11 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { issueAddress } from "../src/shared/paths.ts";
 import { giveRole, roleId, roleName, setFieldLevel, signedInAdmin } from "./support/access.ts";
 import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
-import { prepareFieldsIssue } from "./support/fields.ts";
+import { openIssueWithDetails, prepareFieldsIssue } from "./support/fields.ts";
 import { makeIssue } from "./support/issues.ts";
 
 // Own fields on the issue page (CF-01, CF-06, M3 WP-05 with WP-06): the fields are filled in on
@@ -81,7 +80,7 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
   );
   // The Guest reports an issue; an administrator fills in the fields on the page.
   const made = await makeIssue(guest, "WEB", "Crash on start");
-  await page.goto(issueAddress(made.key));
+  await openIssueWithDetails(page, made.key);
   await fillIn(page, choiceNamed(severity, "Critical"));
   const path = { params: { path: { issue: made.key } } };
   const asAdmin = dataOf(await admin.client.GET("/api/v1/issues/{issue}", path));
@@ -89,7 +88,7 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
   // The Guest reads the page: the customer and the platforms are there, Severity is not.
   const other = await anotherBrowser(browser, server);
   await signIn(other, bob);
-  await other.goto(issueAddress(made.key));
+  await openIssueWithDetails(other, made.key);
   await expect(other.getByText("Acme")).toBeVisible();
   await expect(other.getByText("Windows")).toBeVisible();
   await expect(other.getByText("Severity")).toHaveCount(0);
@@ -107,7 +106,7 @@ test("cf_01 a long text own field is edited under the lock and shown as the serv
   const admin = await signedInAdmin(server);
   const made = await makeIssue(admin, "WEB", "Needs notes");
   await signIn(page, ada);
-  await page.goto(issueAddress(made.key));
+  await openIssueWithDetails(page, made.key);
   const section = page.getByRole("region", { name: "Notes", exact: true });
   await section.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
   await page.getByRole("textbox", { name: "Notes", exact: true }).fill("Steps: **bold** words");
