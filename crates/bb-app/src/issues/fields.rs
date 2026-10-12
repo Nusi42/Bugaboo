@@ -6,7 +6,7 @@ use bb_core::ErrorCode;
 use bb_core::fields::Field;
 use bb_core::id::UserId;
 use bb_core::issue::ASSIGNEES_MAX;
-use bb_core::text::{LONG_TEXT_MAX, TITLE_MAX, clean_long};
+use bb_core::text::TITLE_MAX;
 use bb_policy::FieldMask;
 
 use super::types::{ChangeIssue, MakeIssue};
@@ -16,13 +16,6 @@ use crate::input::clean_text;
 /// The title as it is kept, or `request.invalid`.
 pub(crate) fn clean_title(title: &str) -> Result<String, AppError> {
     clean_text(title, TITLE_MAX)
-}
-
-/// The description as it is kept, or `request.invalid`.
-pub(crate) fn clean_description(text: &str) -> Result<String, AppError> {
-    clean_long(text, LONG_TEXT_MAX)
-        .map(str::to_owned)
-        .ok_or_else(|| ErrorCode::InvalidRequest.into())
 }
 
 /// Refuses (`access.forbidden`) unless the mask lets the person change every one of the fields.

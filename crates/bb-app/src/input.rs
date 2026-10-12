@@ -2,7 +2,7 @@
 //! the error a person can read.
 
 use bb_core::ErrorCode;
-use bb_core::text::{NAME_MAX, clean};
+use bb_core::text::{LONG_TEXT_MAX, NAME_MAX, clean, clean_long};
 
 use crate::auth::AppError;
 
@@ -10,6 +10,14 @@ use crate::auth::AppError;
 /// characters), or `request.invalid`.
 pub(crate) fn clean_text(text: &str, longest: usize) -> Result<String, AppError> {
     clean(text, longest)
+        .map(str::to_owned)
+        .ok_or_else(|| ErrorCode::InvalidRequest.into())
+}
+
+/// A long text (a description, a comment) as it is kept, or `request.invalid`: at most
+/// `LONG_TEXT_MAX` characters and no control characters but line breaks and tabs.
+pub(crate) fn clean_long_text(text: &str) -> Result<String, AppError> {
+    clean_long(text, LONG_TEXT_MAX)
         .map(str::to_owned)
         .ok_or_else(|| ErrorCode::InvalidRequest.into())
 }

@@ -12,7 +12,6 @@ use bb_core::edit::EditWhat;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::CommentId;
 use bb_core::technical::TechnicalName;
-use bb_core::text::{LONG_TEXT_MAX, clean_long};
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
 use serde_json::json;
@@ -22,15 +21,17 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::editing::{TextSave, Written};
 use crate::follow::started_following;
+use crate::input::clean_long_text;
 use crate::member::comment as member;
 use crate::projects::Why;
 
-/// The text as it is kept, or `request.invalid`: not empty, not too long, no control characters.
+/// The text as it is kept, or `request.invalid`: a long text that is not empty.
 fn clean_comment(text: &str) -> Result<String, AppError> {
-    clean_long(text, LONG_TEXT_MAX)
-        .filter(|kept| !kept.trim().is_empty())
-        .map(str::to_owned)
-        .ok_or_else(|| ErrorCode::InvalidRequest.into())
+    let kept = clean_long_text(text)?;
+    if kept.trim().is_empty() {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    Ok(kept)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

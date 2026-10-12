@@ -10,11 +10,12 @@ use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
 
-use super::fields::{Given, clean_description, clean_title, ensure_may_change, member};
+use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::follow::started_following;
+use crate::input::clean_long_text;
 use crate::projects::Why;
 use std::sync::Arc;
 
@@ -146,7 +147,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             next.title = clean_title(title)?;
         }
         if let Some(text) = &input.description {
-            next.description = clean_description(text)?;
+            next.description = clean_long_text(text)?;
         }
         next.status = input.status.unwrap_or(current.status);
         next.priority = input.priority.unwrap_or(current.priority);
