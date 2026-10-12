@@ -8,7 +8,7 @@ use bb_app::access::{Permission, StartingRole};
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
 use bb_core::fields::FieldKey;
-use bb_core::id::IssueTypeId;
+use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -199,23 +199,20 @@ fn key_of(code: &str) -> Result<FieldKey, Failure> {
     FieldKey::from_code(code).ok_or_else(|| format!("no field {code}").into())
 }
 
-/// A person with a role of their own that has `permissions` and the given levels, for the whole
-/// organization or, with an issue type, for that type only: `(field, issue type, level)`.
-async fn reader_of(
+/// Sets the levels `(field, issue type, level)` of a role, as the administrator.
+async fn set_levels(
     site: &Site<'_>,
     rig: &Rig,
-    email: &str,
-    permissions: &[Permission],
+    role: RoleId,
     levels: &[(&str, Option<&str>, FieldLevel)],
-) -> Result<Browser, Failure> {
-    let role = site.org.role(email, permissions).await?;
+) -> Result<(), Failure> {
     for (field, issue_type, level) in levels {
         rig.api()
             .set_field_level(
                 Rig::info(),
                 SetFieldLevel {
                     session_token: site.org.admin.session.clone(),
-                    role: role.id,
+                    role,
                     project: None,
                     issue_type: issue_type
                         .map(str::parse::<IssueTypeId>)
@@ -227,6 +224,20 @@ async fn reader_of(
             )
             .await?;
     }
+    Ok(())
+}
+
+/// A person with a role of their own that has `permissions` and the given levels, for the whole
+/// organization or, with an issue type, for that type only: `(field, issue type, level)`.
+async fn reader_of(
+    site: &Site<'_>,
+    rig: &Rig,
+    email: &str,
+    permissions: &[Permission],
+    levels: &[(&str, Option<&str>, FieldLevel)],
+) -> Result<Browser, Failure> {
+    let role = site.org.role(email, permissions).await?;
+    set_levels(site, rig, role.id, levels).await?;
     let started = rig.person(&site.org.admin.session, email).await?;
     let member = Member {
         id: started.person.id,
@@ -715,6 +726,83 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
             .send("GET", &format!("{FIELDS}/{beta_id}"), None)
             .await?;
         assert_eq!(shown.status, StatusCode::OK, "{}", shown.body);
+        // The move preview: a project with a sub-project (and a field that is only for the
+        // sub-project) moves below ACME, where Pia has a role that reads all three fields.
+        let make = |short: &'static str| json!({"short_name": short, "name": short});
+        let moved = id_of(&ada.send("POST", PROJECTS, Some(make("MOVED"))).await?.body)?;
+        let sub = id_of(&ada.send("POST", PROJECTS, Some(make("MSUB"))).await?.body)?;
+        let into_moved = ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{sub}/move-preview"),
+                Some(json!({"to": moved})),
+            )
+            .await?;
+        let version = into_moved.body["preview"].clone();
+        ok(&ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{sub}/move"),
+                Some(json!({"to": moved, "preview": version})),
+            )
+            .await?)?;
+        let sub_only = make_field(
+            &mut ada,
+            json!({
+                "name": "Sub only",
+                "kind": "text",
+                "applies_to": "issues",
+                "scope": {"projects": [sub]},
+            }),
+        )
+        .await?;
+        let sub_id = id_of(&sub_only)?;
+        let pia = site.org.person().await?;
+        let reads = site
+            .org
+            .role(
+                "Pia reads",
+                &[Permission::SeeProjects, Permission::SeeIssues],
+            )
+            .await?;
+        let all_three = [
+            (salary_id.as_str(), None, FieldLevel::CanSee),
+            (beta_id.as_str(), None, FieldLevel::CanSee),
+            (sub_id.as_str(), None, FieldLevel::CanSee),
+        ];
+        set_levels(&site, &rig, reads.id, &all_three).await?;
+        let acme_id: ProjectId = site.acme.parse().map_err(|error| format!("{error}"))?;
+        site.org.give(&pia, reads.id, acme_id).await?;
+        // The lead may also move projects, and may see "Sub only" but not "Salary band".
+        let mut mover = reader_of(
+            &site,
+            &rig,
+            "mona@example.test",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::MoveProjects,
+            ],
+            &[
+                (&salary_id, None, FieldLevel::Hidden),
+                (&sub_id, None, FieldLevel::CanSee),
+            ],
+        )
+        .await?;
+        let ask = json!({"to": site.acme});
+        let path = format!("{PROJECTS}/{moved}/move-preview");
+        let whole = ada.send("POST", &path, Some(ask.clone())).await?;
+        let everything = whole.body.to_string();
+        assert!(everything.contains(&salary_id), "{everything}");
+        assert!(everything.contains("Sub only"), "{everything}");
+        let seen = mover.send("POST", &path, Some(ask)).await?;
+        assert_eq!(seen.status, StatusCode::OK, "{}", seen.body);
+        let text = seen.body.to_string();
+        // Hidden: neither the name nor the ID of the field, nor a row with its levels.
+        assert!(!text.contains("Salary band"), "move preview: {text}");
+        assert!(!text.contains(&salary_id), "move preview: {text}");
+        // Allowed: the field of the sub-project, by its name, in the sub-project's row.
+        assert!(text.contains("Sub only"), "move preview: {text}");
         Ok(())
     })
     .await

@@ -193,6 +193,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// Whether the viewer may know the field exists: they manage fields, or they may see it in some
 /// issue type.
+///
+/// *Manage fields* counts, because a field manager reads every definition on the *Fields* settings
+/// page anyway; it gives no right to read a value. The rule is written in ADR-0027, amendment WP-05
+/// (*Names of own fields*).
 pub(crate) fn may_know(held: &Evaluation, field: FieldId) -> bool {
     held.allows(Permission::ManageFields)
         || held.field_mask().can_see_somewhere(FieldKey::Own(field))
