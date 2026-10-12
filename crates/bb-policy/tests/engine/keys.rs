@@ -189,7 +189,7 @@ fn auth_07_the_inputs_of_a_place_keep_the_level_rules_of_its_own_project_and_tho
     let field = |project| FieldRule {
         project,
         role,
-        subject: Field::ALL[0],
+        subject: Field::ALL[0].into(),
         level: FieldLevel::CanChange,
     };
     for project in [

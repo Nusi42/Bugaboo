@@ -16,7 +16,13 @@ import {
   projectFieldsRoute,
   projectPeopleRoute,
 } from "./what-roles-see-pages.tsx";
-import { issueRoute, issueTypesRoute, projectIssuesRoute } from "./work-pages.tsx";
+import {
+  fieldRoute,
+  fieldsRoute,
+  issueRoute,
+  issueTypesRoute,
+  projectIssuesRoute,
+} from "./work-pages.tsx";
 import {
   accessKeysRoute,
   appearanceRoute,
@@ -78,6 +84,8 @@ const routeTree = rootRoute.addChildren([
       rolesRoute,
       roleRoute,
       issueTypesRoute,
+      fieldsRoute,
+      fieldRoute,
       fieldPermissionsRoute,
       peopleVisibilityRoute,
       checkAccessRoute,

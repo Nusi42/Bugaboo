@@ -63,6 +63,12 @@ ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
 - **Nothing typed is dropped.** The heartbeat keeps the text so far as the person's draft even when the lock is gone; a save that is refused (`edit.lock_lost`, `edit.taken_over`, `edit.version_changed`) keeps its text as the draft. The notes for the person who was editing are handed over once at their next heartbeat.
 - **Enforced by:** ARCH-VERSIONED (every change takes a version, or is named in `tools/checks/version-exemptions.toml`; a save of long text also takes `lock_token`; both are required in the body), TEST-EDIT-LOCKS (server part, both databases; WP-10 adds the browser scenarios).
 
+## Amendment (M3 WP-05)
+
+- **A long-text own field is saved only under the lock.** `PUT /api/v1/issues/{issue}/fields/{field}/text` is the one route that changes it (`saveIssueFieldText`, in `LONG_TEXT_ROUTES`); `PATCH` of an issue and of a project refuse such a field. A refused save, also one refused before it is tried (a rule, a stale version), keeps the text as the person's draft.
+- **A new issue may be made with a long text, like the description.** `POST /issues` takes long-text own fields, because nothing is edited yet and no lock can exist; every later change goes through the lock.
+- **A long-text field can only be made for issues.** Projects have no lock route for it yet (M3-F49); the server refuses the pair when the field is made.
+
 ## Amendment (M3 WP-06)
 
 - **The issue is known to the editing code.** `bb-app` knows the issue like it knows projects, roles and groups, so locks, drafts and the check of versions work on it without `EditableRecords`: `issues/editing.rs` gives the place, the version and the permission to change (*Change issues*, or *Change own issues* for the person who reported it), and `editing/conflict.rs` says which of its changes a conflict may show. `EditableRecords` stays for kinds the program adds from outside (the notes of the tests). A new kind that `bb-app` itself owns is added the same way, in these two places.

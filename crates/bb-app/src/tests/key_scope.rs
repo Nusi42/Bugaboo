@@ -229,6 +229,7 @@ async fn auth_07_the_answer_of_a_change_does_not_name_a_parent_the_key_cannot_se
         version,
         name: Some("Renamed".to_owned()),
         short_name: None,
+        fields: std::collections::BTreeMap::new(),
     };
     let answer = change_project(&ctx, rename(&key, tree.web, 1))
         .await?

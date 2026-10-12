@@ -60,6 +60,7 @@ proc-macro2 = "1.0.107"
 pulldown-cmark = { version = "0.13.4", default-features = false }
 proptest = "1.11.0"
 quote = "1.0.47"
+regex = { version = "1.13.1", default-features = false, features = ["std", "perf", "unicode"] }
 h2 = "0.4.19"
 html5ever = "0.40.1"
 hyper-util = { version = "0.1.21", default-features = false }

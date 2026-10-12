@@ -7,10 +7,11 @@ use bb_core::fields::Field;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNEES_MAX;
 use bb_core::text::{LONG_TEXT_MAX, TITLE_MAX, clean_long};
-use bb_policy::FieldMask;
+use bb_policy::{Evaluation, FieldMask};
 
 use super::types::{ChangeIssue, MakeIssue};
 use crate::auth::{AppError, AuthStore, Ctx};
+use crate::fields::is_kept;
 use crate::input::clean_text;
 
 /// The title as it is kept, or `request.invalid`.
@@ -36,13 +37,16 @@ pub(crate) fn ensure_may_change(mask: &FieldMask, fields: &[Field]) -> Result<()
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The people an issue of the project is assigned to, each once in the order given: those who
-    /// are not assigned already have to be able to see the issue (`may_be_assigned`, judged for an
+    /// are not assigned already have to be ones `actor` may name (`may_name`: themselves, or
+    /// anybody when `viewer` is shown people by name) and able to see the issue (judged for an
     /// issue that `reported_by` reported), and there are not more than an issue may have. People
     /// assigned already stay, whatever happened to their access since, so an issue stays
     /// changeable. `request.invalid` otherwise, the same for a person who does not exist and for
     /// one who may not see the issue, so the answer is no way to find out who exists.
     pub(crate) async fn clean_assignees(
         &self,
+        actor: UserId,
+        viewer: &Evaluation,
         project: ProjectId,
         reported_by: UserId,
         people: &[UserId],
@@ -57,8 +61,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         if distinct.len() > ASSIGNEES_MAX {
             return Err(ErrorCode::InvalidRequest.into());
         }
-        for person in distinct.iter().filter(|person| !already.contains(person)) {
-            if !self.may_be_assigned(*person, project, reported_by).await? {
+        for person in distinct.iter().filter(|person| !is_kept(already, person)) {
+            if !self
+                .may_name(actor, viewer, *person, project, Some(reported_by))
+                .await?
+            {
                 return Err(ErrorCode::InvalidRequest.into());
             }
         }

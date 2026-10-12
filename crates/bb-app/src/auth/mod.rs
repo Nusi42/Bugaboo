@@ -35,6 +35,12 @@ use crate::editing::{
     check_versions, edit_anyway, heartbeat, read_draft, read_lock, release_lock,
     release_stuck_lock, save_draft, take_lock, throw_away_draft,
 };
+use crate::fields::{
+    AddChoice, ChangeChoice, ChangeField, CombineChoices, FieldPage, FieldQuery, FieldTypePage,
+    FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, MakeField, ReorderChoices, SaveFieldText,
+    add_choice, change_choice, change_field, combine_choices, field, field_types, field_usage,
+    fields, make_field, reorder_choices, save_field_text,
+};
 use crate::issues::{
     AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
     IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView, IssueTypesQuery, IssueView,
@@ -373,4 +379,26 @@ use_cases! {
     delete_issue(DeleteIssue) -> Done;
     /// Takes an issue out of the trash.
     restore_issue(RestoreIssue) -> Authorized<IssueView>;
+    /// Lists the own fields a person sees.
+    fields(FieldsQuery) -> Authorized<FieldPage>;
+    /// Lists the kinds of information a field can hold.
+    field_types(FieldTypesQuery) -> Authorized<FieldTypePage>;
+    /// Shows one own field.
+    field(FieldQuery) -> Authorized<FieldView>;
+    /// Says where an own field is used.
+    field_usage(FieldQuery) -> Authorized<FieldUsage>;
+    /// Makes an own field.
+    make_field(MakeField) -> Authorized<FieldView>;
+    /// Changes an own field.
+    change_field(ChangeField) -> Authorized<FieldView>;
+    /// Adds a choice to an own field.
+    add_choice(AddChoice) -> Authorized<FieldView>;
+    /// Changes a choice of an own field.
+    change_choice(ChangeChoice) -> Authorized<FieldView>;
+    /// Puts the choices of an own field in a new order.
+    reorder_choices(ReorderChoices) -> Authorized<FieldView>;
+    /// Moves every value of a choice to another choice.
+    combine_choices(CombineChoices) -> Authorized<FieldView>;
+    /// Saves the long text of an own field of an issue, under its edit lock.
+    save_field_text(SaveFieldText) -> Authorized<IssueView>;
 }

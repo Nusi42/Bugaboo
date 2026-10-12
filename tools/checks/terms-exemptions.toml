@@ -87,6 +87,7 @@ at = [
   "api:property TakenLockBody.lock_token",
   "api:property HeartbeatBody.lock_token",
   "api:property ReleaseLockBody.lock_token",
+  "api:property SaveFieldTextBody.lock_token",
   "api:property SaveDescriptionBody.lock_token",
 ]
 reason = "The lock token of ADR-0019 proves that a save or a heartbeat comes from the editor that holds an edit lock. It is not the token of a sign-in session, which the glossary entry Session rules out."

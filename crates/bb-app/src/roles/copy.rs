@@ -4,7 +4,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::RoleId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::sign_in::SecurityAction;
@@ -49,12 +49,12 @@ pub async fn copy_role<S: AuthStore>(
     let source = ctx.role_or_missing(input.role).await?;
     let fields = ctx
         .store()
-        .levels::<Field>(source.role.id, None)
+        .levels::<FieldKey>(source.role.id, None, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let people = ctx
         .store()
-        .levels::<PeopleKind>(source.role.id, None)
+        .levels::<PeopleKind>(source.role.id, None, None)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let role = ctx.new_role(name, source.role.two_step).await?;

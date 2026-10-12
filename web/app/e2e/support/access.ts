@@ -60,7 +60,7 @@ export async function addToGroup(admin: ApiSession, group: string, person: strin
 /** Sets the level of a role for a field, in the whole organization or in a project (an ID). */
 export async function setFieldLevel(
   admin: ApiSession,
-  where: { readonly role: string; readonly field: Schema<"Field">; readonly project?: string },
+  where: { readonly role: string; readonly field: Schema<"FieldKey">; readonly project?: string },
   level: Schema<"FieldLevel"> | null,
 ): Promise<void> {
   await admin.client.PUT("/api/v1/field-permissions/{role}/{field}", {
@@ -89,7 +89,7 @@ export function forgetFieldLevel(
   admin: ApiSession,
   project: string,
   role: string,
-  field: Schema<"Field">,
+  field: Schema<"FieldKey">,
 ): Promise<void> {
   return setFieldLevel(admin, { role, field, project }, null);
 }

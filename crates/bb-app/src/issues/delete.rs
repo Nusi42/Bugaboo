@@ -141,7 +141,7 @@ pub async fn restore_issue<S: AuthStore>(
         .into_iter()
         .map(|assignee| assignee.person)
         .collect();
-    let mut views = ctx.issue_views(held.clone(), project).await?;
+    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &restored, &assigned_to).await?;
     Ok(held.authorize(view))
 }

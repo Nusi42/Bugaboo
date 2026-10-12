@@ -19,6 +19,8 @@ export interface AssigneePickerProps {
   readonly onClose: () => void;
   /** The project of the issue: its short name. */
   readonly project: string;
+  /** The issue (its ID): who reported it decides who may see it, and so who is offered. */
+  readonly issue?: string | undefined;
   /** The people it is assigned to now. */
   readonly assigned: readonly NamedPerson[];
   /** The people it is assigned to from now on: all of them. */
@@ -57,15 +59,16 @@ function Row({ person, assigned, onAssign, onUnassign }: RowProps) {
 
 interface InsideProps {
   readonly project: string;
+  readonly issue?: string | undefined;
   readonly assigned: readonly NamedPerson[];
   readonly onChange: (people: readonly NamedPerson[]) => void;
   readonly onClose: () => void;
 }
 
 /** The inside of the dialog, drawn only while it is open so nothing is asked before. */
-function Inside({ project, assigned, onChange, onClose }: InsideProps) {
+function Inside({ project, issue, assigned, onChange, onClose }: InsideProps) {
   const { words, frame } = usePickerFrame();
-  const found = useAssignablePeople(project, words);
+  const found = useAssignablePeople(project, words, { issue });
   const people = peopleOf(found.data?.pages);
   return (
     <div>
@@ -111,6 +114,7 @@ export function AssigneePicker({
   isOpen,
   onClose,
   project,
+  issue,
   assigned,
   onChange,
 }: AssigneePickerProps) {
@@ -125,7 +129,13 @@ export function AssigneePicker({
       label={t("issues.assign-title")}
     >
       {isOpen ? (
-        <Inside project={project} assigned={assigned} onChange={onChange} onClose={onClose} />
+        <Inside
+          project={project}
+          issue={issue}
+          assigned={assigned}
+          onChange={onChange}
+          onClose={onClose}
+        />
       ) : null}
     </Overlay>
   );

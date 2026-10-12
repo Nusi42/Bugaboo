@@ -9,12 +9,10 @@
 //! Setting a cell is [`crate::roles::set_field_level`] and [`crate::roles::set_people_level`].
 
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
-use bb_core::id::{ProjectId, RoleId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{
-    Authorized, Evaluation, LevelSource, LevelSubject, Masked, Permission, Place, level_of_role,
-};
+use bb_policy::{Authorized, Evaluation, LevelSource, LevelSubject, Masked, Permission, Place};
 use serde::Serialize;
 
 use super::{Actor, PlaceLevels, ProjectLabel, RoleRecord};
@@ -31,6 +29,9 @@ pub struct FieldPermissionsQuery {
     pub session_token: String,
     /// The project, or `None` for the levels the roles have of their own.
     pub project: Option<ProjectId>,
+    /// The issue type: the levels that count for issues of this type (ADR-0027), or `None` for
+    /// the levels for all issue types.
+    pub issue_type: Option<IssueTypeId>,
 }
 
 /// List how roles see people, for the whole organization or for a project.
@@ -65,6 +66,8 @@ pub struct LevelCell<L> {
     pub role: RoleId,
     /// Its level in the place.
     pub level: L,
+    /// The level was set for the issue type the table is about (not for all issue types).
+    pub for_type: bool,
     /// Where it was set.
     pub origin: LevelOrigin,
 }
@@ -74,6 +77,9 @@ pub struct LevelCell<L> {
 pub struct LevelRow<K, L> {
     /// The field or the kind.
     pub subject: K,
+    /// The name of an own field; none for a field of the catalogue or a kind, whose names are
+    /// messages.
+    pub name: Option<String>,
     /// The highest level the person who asks may set here: their own.
     pub yours: L,
     /// One cell for each role, in the order of `roles`.
@@ -85,6 +91,8 @@ pub struct LevelRow<K, L> {
 pub struct LevelTable<K, L> {
     /// The project, or `None` for the whole organization.
     pub place: Option<ProjectLabel>,
+    /// The issue type the levels are for, or `None` for all issue types.
+    pub issue_type: Option<IssueTypeId>,
     /// The roles, in the order of roles: the columns.
     pub roles: Vec<RoleRef>,
     /// More roles than [`ROLES_MAX`] exist: the first ones are shown.
@@ -96,7 +104,7 @@ pub struct LevelTable<K, L> {
 impl<K, L> Masked for LevelTable<K, L> {}
 
 /// The field permissions: fields by roles.
-pub type FieldPermissions = LevelTable<Field, FieldLevel>;
+pub type FieldPermissions = LevelTable<FieldKey, FieldLevel>;
 /// *Who sees people*: kinds of people information by roles.
 pub type PeopleVisibility = LevelTable<PeopleKind, PeopleLevel>;
 
@@ -154,34 +162,39 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<LevelTable<K, K::Level>, AppError> {
         let Wanted {
             project,
+            issue_type,
             roles,
             truncated,
             levels,
             access,
         } = wanted;
         let mut named: Vec<(ProjectId, ProjectLabel)> = Vec::new();
-        let mut rows = Vec::with_capacity(K::ALL.len());
-        for subject in K::ALL.iter().copied() {
+        let subjects = K::universe(&levels.rules);
+        let mut rows = Vec::with_capacity(subjects.len());
+        for subject in subjects {
             let mut cells = Vec::with_capacity(roles.len());
             for record in roles {
                 let role = record.role.id;
-                let (source, level) =
-                    level_of_role(&levels.chain, levels.rules.of::<K>(), role, subject)
-                        .unwrap_or((LevelSource::Unset, K::CLOSED));
+                let (source, for_type, level) =
+                    K::level_for(&levels.rules, &levels.chain, role, subject, issue_type)
+                        .unwrap_or((LevelSource::Unset, false, K::CLOSED));
                 cells.push(LevelCell {
                     role,
                     level,
+                    for_type,
                     origin: self.origin_of(actor, project, source, &mut named).await?,
                 });
             }
             rows.push(LevelRow {
                 subject,
-                yours: access.level(subject),
+                name: None,
+                yours: K::held_level(access, subject, issue_type),
                 cells,
             });
         }
         Ok(LevelTable {
             place: self.place_label(actor, project).await?,
+            issue_type,
             roles: roles
                 .iter()
                 .map(|record| RoleRef {
@@ -200,6 +213,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
     ) -> Result<Authorized<LevelTable<K, K::Level>>, AppError> {
         let access = self
             .require(actor, Permission::DecideWhatRolesSee, Place::from(project))
@@ -211,6 +225,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 actor,
                 Wanted {
                     project,
+                    issue_type,
                     roles: &roles,
                     truncated,
                     levels: &levels,
@@ -225,6 +240,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// What [`Ctx::level_table`] makes a table from.
 struct Wanted<'a> {
     project: Option<ProjectId>,
+    issue_type: Option<IssueTypeId>,
     roles: &'a [RoleRecord],
     truncated: bool,
     /// The levels the roles have set, and the projects from the top down to the place.
@@ -244,7 +260,22 @@ pub async fn field_permissions<S: AuthStore>(
     input: FieldPermissionsQuery,
 ) -> Result<Authorized<FieldPermissions>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    ctx.permissions_table(&actor, input.project).await
+    let table = ctx
+        .permissions_table::<FieldKey>(&actor, input.project, input.issue_type)
+        .await?;
+    // Only the own fields the person may know at this place are listed, with their names.
+    let place = input.project.map_or(Place::Organization, Place::Project);
+    let held = ctx.evaluation_of(&actor, place).await?;
+    let names = ctx.known_field_names(&actor, &held, input.project).await?;
+    Ok(table.map(|mut table| {
+        table
+            .rows
+            .retain(|row| row.subject.own().is_none() || names.contains_key(&row.subject));
+        for row in &mut table.rows {
+            row.name = names.get(&row.subject).cloned();
+        }
+        table
+    }))
 }
 
 /// *Who sees people* of the whole organization (the level each role has of its own) or of a
@@ -257,5 +288,5 @@ pub async fn people_visibility<S: AuthStore>(
     input: PeopleVisibilityQuery,
 ) -> Result<Authorized<PeopleVisibility>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    ctx.permissions_table(&actor, input.project).await
+    ctx.permissions_table(&actor, input.project, None).await
 }

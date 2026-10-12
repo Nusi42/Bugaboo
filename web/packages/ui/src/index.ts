@@ -30,6 +30,12 @@ export {
   type ConfirmDialogProps,
 } from "./ConfirmDialog.tsx";
 export { CopyButton, type CopyButtonProps } from "./CopyButton.tsx";
+export {
+  FieldValue,
+  type ChoiceColorName,
+  type FieldLook,
+  type FieldValueProps,
+} from "./FieldValue.tsx";
 export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";
 export { iconName, type IconName } from "./icons.ts";

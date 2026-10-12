@@ -62,7 +62,7 @@ pub async fn save_description<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let mut views = ctx.issue_views(held.clone(), project).await?;
+    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let mut next = current.clone();
     next.description.clone_from(&text);
     next.updated_at = ctx.now();

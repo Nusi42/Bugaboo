@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import {
+  fieldAddress,
   paths,
   personAddress,
   projectAddress,
@@ -40,6 +41,7 @@ let invitationLink = "";
 /** The IDs of a person and of a role, for the pages of one. */
 let somebody = "";
 let someRole = "";
+let someField = "";
 let someIssue = "";
 
 test.use({
@@ -51,6 +53,16 @@ test.use({
       someRole =
         dataOf(await admin.client.GET("/api/v1/roles", { params: { query: { limit: 1 } } }))
           .items[0]?.id ?? "";
+      someField = dataOf(
+        await admin.client.POST("/api/v1/fields", {
+          body: {
+            name: "Severity",
+            kind: "pick-one",
+            applies_to: "issues",
+            choices: [{ name: "Minor" }, { name: "Major" }],
+          },
+        }),
+      ).id;
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
       someIssue = (await makeProjectWithIssue(admin, "WEB", "Website")).id;
@@ -146,6 +158,8 @@ const visits: readonly Visit[] = [
   { address: paths.person, open: signedInAt(() => personAddress(somebody)), guest: false },
   { address: paths.groups, open: signedIn(paths.groups), guest: false },
   { address: paths.issueTypes, open: signedIn(paths.issueTypes), guest: false },
+  { address: paths.fields, open: signedIn(paths.fields), guest: false },
+  { address: paths.field, open: signedInAt(() => fieldAddress(someField)), guest: false },
   { address: paths.roles, open: signedIn(paths.roles), guest: false },
   { address: paths.role, open: signedInAt(() => roleAddress(someRole)), guest: false },
   { address: paths.signInRules, open: signedIn(paths.signInRules), guest: false },

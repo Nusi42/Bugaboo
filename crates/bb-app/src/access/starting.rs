@@ -29,7 +29,7 @@ pub struct MakeStartingRoles;
 pub(crate) struct NewRole {
     pub(crate) role: Role,
     pub(crate) permissions: Vec<bb_policy::Permission>,
-    pub(crate) fields: Vec<(bb_core::fields::Field, bb_core::access::FieldLevel)>,
+    pub(crate) fields: Vec<(bb_core::fields::FieldKey, bb_core::access::FieldLevel)>,
     pub(crate) people: Vec<(
         bb_core::people_kinds::PeopleKind,
         bb_core::access::PeopleLevel,
@@ -55,7 +55,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             permissions: starting.permissions(),
             fields: bb_core::fields::Field::ALL
                 .iter()
-                .map(|field| (*field, starting.field_level(*field)))
+                .map(|field| ((*field).into(), starting.field_level(*field)))
                 .collect(),
             people: bb_core::people_kinds::PeopleKind::ALL
                 .iter()

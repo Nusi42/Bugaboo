@@ -214,6 +214,7 @@ test("ux_01 Organization settings lists the topics that exist, by heading", asyn
     t("nav.themes"),
     t("nav.projects"),
     t("nav.issue-types"),
+    t("nav.fields"),
     t("nav.organization-security"),
     t("nav.status"),
   ]);

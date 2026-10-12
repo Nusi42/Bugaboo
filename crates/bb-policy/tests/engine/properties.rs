@@ -167,7 +167,7 @@ fn inputs(tree: &Tree, spec: &Spec, extra: Option<&RowSpec>) -> Inputs {
             .map(|rule| FieldRule {
                 project: rule.project.map(|at| tree.projects[at]),
                 role: tree.roles[rule.role],
-                subject: Field::ALL[rule.field],
+                subject: Field::ALL[rule.field].into(),
                 level: FieldLevel::ALL[rule.level],
             })
             .collect(),
@@ -181,6 +181,7 @@ fn inputs(tree: &Tree, spec: &Spec, extra: Option<&RowSpec>) -> Inputs {
                 level: PeopleLevel::ALL[rule.level],
             })
             .collect(),
+        ..LevelRules::default()
     };
     Inputs {
         person: tree.person,

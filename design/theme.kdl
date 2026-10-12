@@ -51,6 +51,7 @@ tokens {
     // Corners
     size "r-ctl" "6px"
     size "r-card" "10px"
+    size "r-pill" "999px"
 
     // Text sizes (times the text size choice)
     size "fs-xs" "calc(12px * $text-scale)"
@@ -200,6 +201,18 @@ tokens {
     color "cat5-fg" daylight="#5532b8" paper="#674184" dusk="#c6b5ff" midnight="#bfaeff"
     color "cat6-bg" daylight="#ddf5f3" paper="#dcede9" dusk="#173f3d" midnight="#0a302e"
     color "cat6-fg" daylight="#0e6560" paper="#2d6559" dusk="#7dddd3" midnight="#72d8cd"
+    color "cat7-bg" daylight="#fbdbda" paper="#efd9d9" dusk="#4b2220" midnight="#3b1311" daylight-more="#fce2e1" paper-more="#f0dddd"
+    color "cat7-fg" daylight="#781511" paper="#682927" dusk="#f98e8b" midnight="#f88581"
+    color "cat8-bg" daylight="#fbf4da" paper="#eeead8" dusk="#473f1e" midnight="#3b3311" dusk-more="#443c1d" midnight-more="#322b0e"
+    color "cat8-fg" daylight="#786411" paper="#685b27" dusk="#f9e38b" midnight="#f8e181"
+    color "cat9-bg" daylight="#daf5fb" paper="#d8eaee" dusk="#20444b" midnight="#11343b" dusk-more="#1f4148" midnight-more="#0f2f36"
+    color "cat9-fg" daylight="#116778" paper="#275d68" dusk="#8be7f9" midnight="#81e4f8"
+    color "cat10-bg" daylight="#eefbda" paper="#e5eed8" dusk="#35441d" midnight="#2a3b11" dusk-more="#32411c" midnight-more="#222f0e"
+    color "cat10-fg" daylight="#4c7411" paper="#4e6827" dusk="#cdf98b" midnight="#c9f881"
+    color "cat11-bg" daylight="#e6eaf0" paper="#e0e2e6" dusk="#2e3642" midnight="#1d2735"
+    color "cat11-fg" daylight="#2e4360" paper="#3a475a" dusk="#a9beda" midnight="#9cb9e2"
+    color "cat12-bg" daylight="#fbe4da" paper="#eeded8" dusk="#4b2d20" midnight="#3b1e11"
+    color "cat12-fg" daylight="#783011" paper="#683b27" dusk="#f9ac8b" midnight="#f8a581"
 
     // The shadow of things that float
     shadow "shadow" daylight="0 1px 2px 0 #16181d0f, 0 6px 20px 0 #16181d14" paper="0 1px 2px 0 #3c2d190f, 0 6px 20px 0 #3c2d1914" dusk="0 1px 2px 0 #0000004d, 0 8px 24px 0 #00000059" midnight="0 0 0 1px #272a31, 0 8px 24px 0 #00000099"
@@ -208,8 +221,8 @@ tokens {
 // Contrast rules (WCAG, THM-03, UX-04, THM-06). Every text color is checked on every
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
-    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg"
+    text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
     restricted "on-accent" on="accent" reason="On-accent text is only ever drawn on the accent fill."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -217,6 +230,12 @@ contrast min=4.5 {
     restricted "cat4-fg" on="cat4-bg" reason="Category 4 text is only ever drawn on its own category 4 background."
     restricted "cat5-fg" on="cat5-bg" reason="Category 5 text is only ever drawn on its own category 5 background."
     restricted "cat6-fg" on="cat6-bg" reason="Category 6 text is only ever drawn on its own category 6 background."
+    restricted "cat7-fg" on="cat7-bg" reason="Category 7 text is only ever drawn on its own category 7 background."
+    restricted "cat8-fg" on="cat8-bg" reason="Category 8 text is only ever drawn on its own category 8 background."
+    restricted "cat9-fg" on="cat9-bg" reason="Category 9 text is only ever drawn on its own category 9 background."
+    restricted "cat10-fg" on="cat10-bg" reason="Category 10 text is only ever drawn on its own category 10 background."
+    restricted "cat11-fg" on="cat11-bg" reason="Category 11 text is only ever drawn on its own category 11 background."
+    restricted "cat12-fg" on="cat12-bg" reason="Category 12 text is only ever drawn on its own category 12 background."
 
     exclude reason="The accent fill carries only on-accent text." {
         text "fg" "fg-*" "accent-fg" "danger" "warning" "success" "st-ns" "st-ip" "st-done"
@@ -3146,6 +3165,194 @@ part "markdown.preview" {
     use "surface-box"
     min-height "$size-target"
     padding "$space-3"
+}
+
+
+// ───────────── Own fields (features/fields, packages/ui: FieldValue) ─────────────
+//
+// How the value of an own field is shown (CF-04): a badge, a pill, plain text, a progress bar or an
+// avatar. A choice carries one of the twelve category colors as its variant (`cat1`…`cat12`); each
+// pair is a text color on its own background, which STY-CONTRAST checks in every theme.
+
+part "field-badge" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    padding 0 "$space-2"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+    color "$fg"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+    line-height "$lh-snug"
+    white-space nowrap
+}
+
+part "field-pill" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    padding 0 "$space-3"
+    border-radius "$r-pill"
+    background "$bg-sunken"
+    color "$fg"
+    font-size "$fs-sm"
+    line-height "$lh-snug"
+    white-space nowrap
+}
+
+part "field-text" {
+    margin 0
+    color "$fg"
+    overflow-wrap anywhere
+}
+
+part "field-progress" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-width "$size-sample-short"
+}
+
+part "field-progress.bar" {
+    flex 1
+    width "100%"
+    accent-color "$accent"
+}
+
+part "field-avatar" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    color "$fg"
+}
+
+part "field-avatar.face" {
+    display inline-flex
+    align-items center
+    justify-content center
+    width "$space-5"
+    height "$space-5"
+    border-radius "$r-pill"
+    background "$accent-soft"
+    color "$accent-fg"
+    font-size "$fs-xs"
+    font-weight "$weight-bold"
+}
+
+part "field-swatch" {
+    display inline-flex
+    align-items center
+    justify-content center
+    min-width "$size-target"
+    min-height "$size-target"
+    padding 0 "$space-2"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+    color "$fg"
+    font-size "$fs-sm"
+}
+
+part "choice-group.input:checked + field-swatch" {
+    border "$border-width solid $accent"
+    box-shadow "0 0 0 $border-width $accent"
+    font-weight "$weight-bold"
+}
+
+part "choice-group.input:focus-visible + field-swatch" {
+    use "ring"
+}
+
+part "field-sample" {
+    use "fieldset-reset"
+    display flex
+    flex-wrap wrap
+    gap "$space-3"
+}
+
+part "field-sample.theme" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-canvas"
+    color "$fg"
+    font-size "$fs-sm"
+}
+
+part "field-choice" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    padding "$space-2"
+    border "$border-width solid $border-subtle"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+}
+
+
+part "field-badge[variant=cat1]" "field-pill[variant=cat1]" "field-swatch[variant=cat1]" {
+    background "$cat1-bg"
+    color "$cat1-fg"
+}
+
+part "field-badge[variant=cat2]" "field-pill[variant=cat2]" "field-swatch[variant=cat2]" {
+    background "$cat2-bg"
+    color "$cat2-fg"
+}
+
+part "field-badge[variant=cat3]" "field-pill[variant=cat3]" "field-swatch[variant=cat3]" {
+    background "$cat3-bg"
+    color "$cat3-fg"
+}
+
+part "field-badge[variant=cat4]" "field-pill[variant=cat4]" "field-swatch[variant=cat4]" {
+    background "$cat4-bg"
+    color "$cat4-fg"
+}
+
+part "field-badge[variant=cat5]" "field-pill[variant=cat5]" "field-swatch[variant=cat5]" {
+    background "$cat5-bg"
+    color "$cat5-fg"
+}
+
+part "field-badge[variant=cat6]" "field-pill[variant=cat6]" "field-swatch[variant=cat6]" {
+    background "$cat6-bg"
+    color "$cat6-fg"
+}
+
+part "field-badge[variant=cat7]" "field-pill[variant=cat7]" "field-swatch[variant=cat7]" {
+    background "$cat7-bg"
+    color "$cat7-fg"
+}
+
+part "field-badge[variant=cat8]" "field-pill[variant=cat8]" "field-swatch[variant=cat8]" {
+    background "$cat8-bg"
+    color "$cat8-fg"
+}
+
+part "field-badge[variant=cat9]" "field-pill[variant=cat9]" "field-swatch[variant=cat9]" {
+    background "$cat9-bg"
+    color "$cat9-fg"
+}
+
+part "field-badge[variant=cat10]" "field-pill[variant=cat10]" "field-swatch[variant=cat10]" {
+    background "$cat10-bg"
+    color "$cat10-fg"
+}
+
+part "field-badge[variant=cat11]" "field-pill[variant=cat11]" "field-swatch[variant=cat11]" {
+    background "$cat11-bg"
+    color "$cat11-fg"
+}
+
+part "field-badge[variant=cat12]" "field-pill[variant=cat12]" "field-swatch[variant=cat12]" {
+    background "$cat12-bg"
+    color "$cat12-fg"
 }
 
 // ───────────── The design pages (docs/design) ─────────────

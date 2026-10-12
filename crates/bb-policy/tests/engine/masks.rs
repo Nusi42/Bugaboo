@@ -3,7 +3,7 @@
 use std::collections::BTreeSet;
 
 use bb_core::access::FieldLevel;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_policy::{
     Choice, Kind, Masked, NOT_FOR_KEYS, Narrowing, Permission, Reason, drop_hidden, mask_member,
 };
@@ -36,8 +36,8 @@ fn sec_04_the_highest_field_level_of_the_roles_wins() {
     assert!(mask.can_change(Field::Title));
     assert!(mask.can_see(Field::CostCenter) && !mask.can_change(Field::CostCenter));
     assert!(!mask.can_see(Field::Priority));
-    let readable: Vec<Field> = mask.readable().collect();
-    assert_eq!(readable, [Field::Title, Field::CostCenter]);
+    let readable: Vec<_> = mask.readable().collect();
+    assert_eq!(readable, [Field::Title.into(), Field::CostCenter.into()]);
 }
 
 #[test]
@@ -81,7 +81,9 @@ fn sec_04_a_project_sets_its_own_level_and_sub_projects_inherit_until_one_sets_i
         FieldLevel::CanChange,
         "inherited from WEB, the nearest parent that set one"
     );
-    let decision = world.at(world.api).explain_level(Field::CostCenter);
+    let decision = world
+        .at(world.api)
+        .explain_level(FieldKey::from(Field::CostCenter));
     assert_eq!(decision.level, FieldLevel::CanChange);
     assert_eq!(decision.roles.len(), 1);
     assert_eq!(decision.roles[0].level, FieldLevel::CanChange);
@@ -419,4 +421,65 @@ fn sec_04_the_derive_lists_the_fields_a_view_holds_and_nothing_else() {
     let evaluation = world.at(world.web);
     let shown = evaluation.authorize(nested_issue(1, None, Vec::new()));
     assert_eq!(shown.hidden_properties(), ["cost_center", "assigned_to"]);
+}
+
+#[test]
+fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
+    use bb_core::id::{FieldId, IssueTypeId, SequentialIds};
+    use bb_policy::{FieldRule, TypedFieldRule};
+
+    let mut ids = SequentialIds::default();
+    let (bug, task) = (
+        IssueTypeId::generate(&mut ids).unwrap(),
+        IssueTypeId::generate(&mut ids).unwrap(),
+    );
+    let field = FieldId::generate(&mut ids).unwrap();
+    let severity = FieldKey::Own(field);
+    let mut world = World::new();
+    world.rules.own_fields.push(field);
+    let member = world.role("Team member", &[Permission::SeeProjects]);
+    world.give_everywhere(member);
+    world.rules.add(FieldRule {
+        project: None,
+        role: member,
+        subject: severity,
+        level: FieldLevel::CanChange,
+    });
+    // Hidden for bugs, for the role everywhere; and for tasks the project ACME asks for less.
+    world.rules.typed.push(TypedFieldRule {
+        project: None,
+        role: member,
+        issue_type: bug,
+        subject: severity,
+        level: FieldLevel::Hidden,
+    });
+    world.rules.typed.push(TypedFieldRule {
+        project: Some(world.acme),
+        role: member,
+        issue_type: task,
+        subject: severity,
+        level: FieldLevel::CanSee,
+    });
+    let at_web = world.at(world.web);
+    assert_eq!(
+        at_web.field_level_for(Some(bug), severity),
+        FieldLevel::Hidden
+    );
+    assert_eq!(
+        at_web.field_level_for(Some(task), severity),
+        FieldLevel::CanSee,
+        "the row of the project for tasks is found before the level for all types"
+    );
+    // At another project the role's own level for tasks is the level for all types.
+    let elsewhere = world.at(world.other);
+    assert_eq!(
+        elsewhere.field_level_for(Some(task), severity),
+        FieldLevel::CanChange
+    );
+    // A view that does not say its type gets the lowest level across types: it fails closed.
+    let mask = at_web.field_mask();
+    assert!(!mask.for_type(None).can_see(severity));
+    assert!(!mask.for_type(Some(bug)).can_see(severity));
+    assert!(mask.for_type(Some(task)).can_see(severity));
+    assert!(mask.can_see_somewhere(severity));
 }

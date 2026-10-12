@@ -12,6 +12,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use super::scenarios::{self as s, Added};
+use super::scenarios_fields as sf;
 use super::scenarios_issues as si;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
@@ -92,6 +93,13 @@ table! {
     "make_issue_type" => si::make_issue_type_scenario,
     "change_issue_type" => si::change_issue_type_scenario,
     "make_starting_issue_types" => si::make_starting_issue_types_scenario,
+    "make_field" => sf::make_field_scenario,
+    "change_field" => sf::change_field_scenario,
+    "add_choice" => sf::add_choice_scenario,
+    "change_choice" => sf::change_choice_scenario,
+    "reorder_choices" => sf::reorder_choices_scenario,
+    "combine_choices" => sf::combine_choices_scenario,
+    "save_field_text" => sf::save_field_text_scenario,
 }
 
 #[test]

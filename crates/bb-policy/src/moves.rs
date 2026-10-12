@@ -20,7 +20,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::people_kinds::PeopleKind;
 
@@ -130,7 +130,7 @@ pub struct Access {
     /// What the person may do there.
     pub permissions: BTreeSet<Permission>,
     /// The level of every field.
-    pub fields: BTreeMap<Field, FieldLevel>,
+    pub fields: BTreeMap<FieldKey, FieldLevel>,
     /// How the person sees every kind of people information.
     pub people: BTreeMap<PeopleKind, PeopleLevel>,
     /// Whether a *No access* applies to the person there (own or of one of their groups).

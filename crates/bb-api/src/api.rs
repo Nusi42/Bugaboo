@@ -50,6 +50,7 @@ mod auth_sign_in;
 mod check_access;
 mod editing;
 mod field_permissions;
+mod fields;
 mod groups;
 mod issue_types;
 mod issues;
@@ -144,6 +145,7 @@ where
         .merge(admin::routes())
         .merge(settings::routes())
         .merge(projects::routes())
+        .merge(fields::routes())
         .merge(issue_types::routes())
         .merge(issues::routes())
         .merge(people::routes())

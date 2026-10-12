@@ -16,9 +16,12 @@ use bb_app::issues::{
     SaveDescription,
 };
 use bb_core::ErrorCode;
-use bb_core::fields::Field;
+use std::collections::BTreeMap;
+
+use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, UserId};
 use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
+use bb_core::own_fields_value::OwnValues;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -36,7 +39,7 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-const ISSUE_FIELDS: [FieldSpec; 15] = [
+const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("key"),
     FieldSpec::on_request("project"),
@@ -51,6 +54,7 @@ const ISSUE_FIELDS: [FieldSpec; 15] = [
     FieldSpec::on_request("created_at"),
     FieldSpec::on_request("updated_at"),
     FieldSpec::on_request("closed_at"),
+    FieldSpec::on_request("own_fields"),
     FieldSpec::on_request("version"),
 ];
 /// The name of the list, so its cursors are its own.
@@ -104,9 +108,9 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(nested)]
     project: Option<ProjectRef>,
-    /// Its issue type.
+    /// Its issue type. The levels set for it count for the fields of this issue.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[masked(nested)]
+    #[masked(nested, item_type)]
     issue_type: Option<IssueTypeRef>,
     /// What it is about.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -148,6 +152,11 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "status")]
     closed_at: Option<String>,
+    /// The values of its own fields, by the key of the field. Only the fields the person may see
+    /// on an issue of this type.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(own_fields)]
+    own_fields: Option<OwnValues>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
@@ -171,9 +180,22 @@ impl From<&IssueView> for IssueItem {
             created_at: Some(issue.created_at.to_string()),
             updated_at: Some(issue.updated_at.to_string()),
             closed_at: issue.closed_at.map(|at| at.to_string()),
+            own_fields: Some(issue.own_fields.clone()),
             version: Some(issue.version),
         }
     }
+}
+
+/// A long-text own field of an issue as safe HTML.
+#[derive(Serialize, ToSchema, Masked)]
+pub(crate) struct OwnHtmlBody {
+    /// The key of the field.
+    #[masked(open)]
+    field: FieldKey,
+    /// The text as safe HTML, made by the server with the renderer of the editor's preview (the
+    /// mark `x-safe-html`).
+    #[masked(open)]
+    html: String,
 }
 
 /// One issue with what the person may do with it.
@@ -187,15 +209,19 @@ pub(crate) struct IssueDetailBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "description")]
     description_html: Option<String>,
+    /// The long-text own fields as safe HTML, one for each the person may see.
+    #[masked(nested)]
+    own_fields_html: Vec<OwnHtmlBody>,
     /// Whether the person may change the issue at all, in the fields they may change.
     #[masked(open)]
     may_change: bool,
     /// Whether the person may delete the issue into the trash.
     #[masked(open)]
     may_delete: bool,
-    /// The fields the person may change in this issue; empty when they may not change it.
+    /// The fields the person may change in this issue, built-in or own (by their keys); empty
+    /// when they may not change it.
     #[masked(open)]
-    changeable: Vec<Field>,
+    changeable: Vec<FieldKey>,
 }
 
 impl From<IssueDetail> for IssueDetailBody {
@@ -203,6 +229,14 @@ impl From<IssueDetail> for IssueDetailBody {
         Self {
             issue: IssueItem::from(&detail.issue),
             description_html: Some(detail.description_html),
+            own_fields_html: detail
+                .own_fields_html
+                .into_iter()
+                .map(|each| OwnHtmlBody {
+                    field: each.field,
+                    html: each.html,
+                })
+                .collect(),
             may_change: detail.may_change,
             may_delete: detail.may_delete,
             changeable: detail.changeable,
@@ -225,6 +259,9 @@ pub(crate) struct NewIssueBody {
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to. Nobody when left out.
     assigned_to: Option<Vec<String>>,
+    /// The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.
+    #[serde(default)]
+    fields: BTreeMap<String, serde_json::Value>,
 }
 
 /// What to change about an issue: what is left out stays as it is. The description is not here: it
@@ -244,6 +281,10 @@ pub(crate) struct ChangeIssueBody {
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to from now on: all of them, not the ones to add.
     assigned_to: Option<Vec<String>>,
+    /// The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
+    /// A long text is saved on its own route, under its edit lock.
+    #[serde(default)]
+    fields: BTreeMap<String, serde_json::Value>,
 }
 
 /// The description to save under the lock the person holds.
@@ -257,7 +298,7 @@ pub(crate) struct SaveDescriptionBody {
     text: String,
 }
 
-/// The ID in a request body; a text that is no ID is not a valid request.
+/// The ID in a request body or query; a text that is no ID is not a valid request.
 fn id_in_body<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
     text.parse()
         .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
@@ -317,17 +358,33 @@ async fn list_issues(
     Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
 }
 
+/// What the list of people is for besides *Assigned to*.
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct PeopleFor {
+    /// An own field that holds people: the list is for choosing a value of it, and needs the right
+    /// to change that field instead of *Assigned to*. For a field of projects the list holds the
+    /// people who see the project.
+    field: Option<String>,
+    /// The issue the list is for (its ID or readable ID): the people who may see it are listed.
+    /// Without it, the people who may see an issue the person would report now.
+    issue: Option<String>,
+    /// The ID of the type of the issue that is being made, for a field whose level depends on it.
+    issue_type: Option<String>,
+}
+
 /// The people an issue of the project can be assigned to, a page at a time, by name: those who
 /// see the project and hold *See issues* there, and the person who asks. A person who cannot see
 /// names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
 /// set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
-/// lets the person change that field.
+/// lets the person change that field. For an own field (`field`) the right to change that field
+/// takes the place of the right to set *Assigned to*.
 #[utoipa::path(
     get,
     path = "/api/v1/projects/{project}/assignable-people",
     operation_id = "listAssignablePeople",
     tag = "issues",
-    params(("project" = String, Path, description = "The ID of the project, or its short name."), ListParams, PeopleSearch),
+    params(("project" = String, Path, description = "The ID of the project, or its short name."), ListParams, PeopleSearch, PeopleFor),
     responses((status = 200, description = "The people, by name.", body = Page<PersonRef>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_assignable_people(
@@ -337,6 +394,7 @@ async fn list_assignable_people(
     ApiPath(project): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(find): ApiQuery<PeopleSearch>,
+    ApiQuery(wanted): ApiQuery<PeopleFor>,
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
     // the use case cannot read, so its answer comes after the check of the person.
@@ -355,6 +413,9 @@ async fn list_assignable_people(
                 search: find.search,
                 cursor,
                 limit: params.limit(),
+                field: wanted.field.as_deref().map(id_in_body).transpose()?,
+                issue: wanted.issue,
+                issue_type: wanted.issue_type.as_deref().map(id_in_body).transpose()?,
             },
         )
         .await
@@ -418,6 +479,7 @@ async fn make_issue(
                 status: body.status,
                 priority: body.priority,
                 assigned_to,
+                fields: body.fields,
             },
         )
         .await?;
@@ -495,6 +557,7 @@ async fn change_issue(
                 status: body.status,
                 priority: body.priority,
                 assigned_to,
+                fields: body.fields,
             },
         )
         .await?;
@@ -657,6 +720,7 @@ mod tests {
             created_at: Some(String::new()),
             updated_at: Some(String::new()),
             closed_at: Some(String::new()),
+            own_fields: Some(OwnValues::default()),
             version: Some(1),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_FIELDS, &item);

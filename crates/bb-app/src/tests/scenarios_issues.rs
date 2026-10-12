@@ -50,6 +50,7 @@ pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueI
             status: None,
             priority: None,
             assigned_to: None,
+            fields: std::collections::BTreeMap::new(),
         },
     )
     .await
@@ -73,6 +74,7 @@ pub(crate) async fn make_issue_scenario(world: &World) -> Added {
                 status: Some(Status::InProgress),
                 priority: None,
                 assigned_to: Some(vec![world.admin.person.id]),
+                fields: std::collections::BTreeMap::new(),
             },
         ),
     )
@@ -95,6 +97,7 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
                 status: Some(Status::Done),
                 priority: None,
                 assigned_to: None,
+                fields: std::collections::BTreeMap::new(),
             },
         ),
     )

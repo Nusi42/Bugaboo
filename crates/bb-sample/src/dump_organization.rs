@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use bb_app::access::{PolicyStore as _, RoleRecord, StartingRole};
 use bb_app::projects::ProjectStore as _;
 use bb_core::access::{AppliesTo, Assignment, Group};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
@@ -196,16 +196,22 @@ impl Sample {
                 places.push(None);
             }
             for place in places {
-                for (field, level) in storage.levels::<Field>(record.role.id, place).await? {
+                for (field, level) in storage
+                    .levels::<FieldKey>(record.role.id, place, None)
+                    .await?
+                {
                     levels.push(DumpLevel {
                         role: record.role.name.clone(),
                         project: read.names.project(place),
                         about: "field",
-                        subject: Field::code(field).to_owned(),
+                        subject: field.code().into_owned(),
                         level: level.code(),
                     });
                 }
-                for (kind, level) in storage.levels::<PeopleKind>(record.role.id, place).await? {
+                for (kind, level) in storage
+                    .levels::<PeopleKind>(record.role.id, place, None)
+                    .await?
+                {
                     levels.push(DumpLevel {
                         role: record.role.name.clone(),
                         project: read.names.project(place),

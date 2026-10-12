@@ -204,7 +204,9 @@ test("sec_03 checking Ana's access in Website reads as a sentence with its reaso
   await expect(page.getByText(t("check-access.reason.none", { person: ana.name }))).not.toHaveCount(
     0,
   );
-  await expect(page.getByText(t("check-access.fields-heading"), { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: t("check-access.fields-heading"), exact: true }),
+  ).toBeVisible();
   await expect(page.getByText(t("check-access.people-heading"), { exact: true })).toBeVisible();
   // Fields with the same level for the same reason are told together; every field can be shown.
   await expect(page.getByText(t("check-access.all-other-fields"))).toBeVisible();

@@ -12,6 +12,7 @@ use axum::http::Method;
 use axum::http::header::{ETAG, RETRY_AFTER};
 use bb_api_words::marks;
 use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
+use bb_core::fields::Field;
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
@@ -41,7 +42,7 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         description = "The API of Bugaboo. The browser app uses exactly this API. Every error \
             is application/problem+json with a stable code and a message key."
     ),
-    components(schemas(Problem, ErrorCode, ConflictProblem)),
+    components(schemas(Problem, ErrorCode, ConflictProblem, Field)),
     tags(
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
@@ -114,7 +115,10 @@ pub fn json() -> &'static str {
 /// name of the schema and the property: each gets the mark `x-safe-html`, and the generated client
 /// turns its value into a `SafeHtml` (M3-F12). A new rendered field is added here and nowhere else;
 /// the test below holds the table to the real schemas.
-pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[("IssueDetailBody", "description_html")];
+pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
+    ("IssueDetailBody", "description_html"),
+    ("OwnHtmlBody", "html"),
+];
 
 /// Puts `x-safe-html` on the properties of [`SAFE_HTML_PROPERTIES`]. Returns the ones that were
 /// not found (a test says there are none).

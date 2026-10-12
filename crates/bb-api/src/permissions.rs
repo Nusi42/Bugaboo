@@ -455,6 +455,45 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::DecideRoles),
         Answer::NeverStored,
     ),
+    route("listFieldTypes", Declared::SignedIn, Answer::Ordinary),
+    route("listFields", Declared::SignedIn, Answer::Ordinary),
+    route("getField", Declared::SignedIn, Answer::Ordinary),
+    route("saveIssueFieldText", Declared::ByRecord, Answer::Ordinary),
+    route(
+        "getFieldUsedBy",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "makeField",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeField",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "addChoice",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeChoice",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "reorderChoices",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
+    route(
+        "combineChoices",
+        Declared::Permission(Permission::ManageFields),
+        Answer::Ordinary,
+    ),
     route(
         "getFieldPermissions",
         Declared::Permission(Permission::DecideWhatRolesSee),
@@ -489,9 +528,9 @@ pub const ROUTES: &[Route] = &[
 
 /// The routes that save long text, by operation ID: each takes the token of an edit lock besides the
 /// version (ADR-0019), and ARCH-VERSIONED holds the description to it through the mark `x-long-text`.
-/// The route that saves the description of an issue is here; the one that saves the text of a
-/// comment is added by the package that makes it.
-pub const LONG_TEXT_ROUTES: &[&str] = &["saveIssueDescription"];
+/// The routes that save the description of an issue and the long text of an own field are here; the
+/// one that saves the text of a comment is added by the package that makes it.
+pub const LONG_TEXT_ROUTES: &[&str] = &["saveIssueDescription", "saveIssueFieldText"];
 
 /// The row of the route with this operation ID, if it is declared.
 #[must_use]

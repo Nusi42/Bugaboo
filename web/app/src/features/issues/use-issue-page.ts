@@ -38,7 +38,9 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
     changes,
     blocks: {
       issue,
+      address,
       issueKey: key,
+      ownFieldsHtml: detail.own_fields_html ?? [],
       mask: maskOf(detail),
       version,
       onChange: (change) => {

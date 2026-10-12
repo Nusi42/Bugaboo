@@ -9,7 +9,7 @@
 //! *a project you can't see*).
 
 use bb_core::access::AppliesTo;
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 
@@ -128,7 +128,7 @@ pub struct AccessReport {
     /// Every permission with *yes* or *no*.
     pub permissions: Vec<PermissionDecision>,
     /// Every field with its level.
-    pub fields: Vec<LevelDecision<Field>>,
+    pub fields: Vec<LevelDecision<FieldKey>>,
     /// Every kind of people information with its level.
     pub kinds: Vec<LevelDecision<PeopleKind>>,
 }
@@ -233,8 +233,10 @@ impl Evaluation {
                 .filter(|permission| self.counts_in_this_place(**permission))
                 .map(|permission| self.explain(*permission))
                 .collect(),
-            fields: Field::ALL
-                .iter()
+            fields: self
+                .fields
+                .all()
+                .keys()
                 .map(|field| self.explain_level(*field))
                 .collect(),
             kinds: PeopleKind::ALL

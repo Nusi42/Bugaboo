@@ -15,6 +15,7 @@ export async function sendChange(id: string, edit: IssueEdit): Promise<void> {
     ...(values.assignedTo === undefined
       ? {}
       : { assigned_to: values.assignedTo.map((person) => person.id) }),
+    ...(values.own === undefined ? {} : { fields: values.own }),
   };
   // One after the other: each change is made on the version the one before it has just made.
   await inOrder(`issue:${id}`, () =>

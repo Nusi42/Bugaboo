@@ -20,6 +20,7 @@ const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
+const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -147,7 +148,17 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// a status or a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 5] = ["IssueIcon", "Status", "StatusGroup", "Priority", "Field"];
+const WORD_LISTS: [&str; 9] = [
+    "IssueIcon",
+    "Status",
+    "StatusGroup",
+    "Priority",
+    "Field",
+    "FieldType",
+    "FieldFor",
+    "Look",
+    "ChoiceColor",
+];
 
 /// `IssueIcon` as `issueIconWords`.
 fn words_name(schema: &str) -> String {
@@ -349,6 +360,45 @@ export const versionsMax = {};
         number("DRAFT_KEEP_DAYS")?,
         number("DRAFT_TEXT_MAX")?,
         number("VERSIONS_MAX")?,
+    ))
+}
+
+/// The text of `const NAME: &str = "…";` in a Rust source.
+fn text_const(source: &str, name: &str) -> Option<String> {
+    let file = syn::parse_file(source).ok()?;
+    file.items.iter().find_map(|item| match item {
+        syn::Item::Const(item) if item.ident == name => match &*item.expr {
+            syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(text),
+                ..
+            }) => Some(text.value()),
+            _ => None,
+        },
+        _ => None,
+    })
+}
+
+/// The scale of the decimal numbers of own fields as constants for the browser client: how many
+/// parts a whole has, and how many digits that is after the point.
+pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == FIELDS_SOURCE) else {
+        bail!("{FIELDS_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{FIELDS_SOURCE} is not Rust"))?;
+    let parts = number_const(&file, FIELDS_SOURCE, "DECIMAL_PARTS")?;
+    let digits = parts.len().saturating_sub(1);
+    let prefix = text_const(text, "EDIT_PART_PREFIX")
+        .with_context(|| format!("{FIELDS_SOURCE} has no `const EDIT_PART_PREFIX` that is text"))?;
+    Ok(format!(
+        "{TS_HEADER}/** What the name of the edit part of a long-text own field starts with, before the ID of the field. */
+export const ownFieldPartPrefix = {prefix:?};
+
+/** How many parts a whole has in a decimal number of an own field (it is stored in these parts). */
+export const decimalParts = {parts};
+
+/** How many digits a decimal number of an own field has after the point. */
+export const decimalDigits = {digits};
+"
     ))
 }
 
@@ -558,6 +608,7 @@ pub const VERSIONS_MAX: u32 = 50;
             text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),
             "{text}"
         );
+        assert!(text.contains("export const choiceColorWords = [\"bug\", \"flag\"] as const;"));
         assert!(words("{}").is_err());
         assert!(words("not json").is_err());
     }

@@ -4,7 +4,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use bb_core::id::{IssueTypeId, UserId};
+use bb_core::event::RecordKind;
+use bb_core::id::{EntityId, IssueId, IssueTypeId, UserId};
 use bb_core::issue::Issue;
 use bb_core::issue_key::IssueKey;
 use bb_core::people_kinds::PeopleKind;
@@ -12,16 +13,21 @@ use bb_core::project::Project;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
 use super::types::{IssueTypeRef, IssueView};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::fields::ItemValues;
 use crate::projects::ProjectRef;
 
 /// What turns the issues of one project into views for one viewer. The people are resolved once
 /// each: a list shows the same few people over and over.
 pub(crate) struct IssueViews {
+    actor: Actor,
     viewer: Arc<Evaluation>,
     project: Project,
     types: BTreeMap<IssueTypeId, IssueTypeRef>,
     people: HashMap<(PeopleKind, UserId), PersonRef>,
+    /// The values of own fields of the issues shown so far.
+    values: ItemValues,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -29,6 +35,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// project.
     pub(crate) async fn issue_views(
         &self,
+        actor: &Actor,
         viewer: Arc<Evaluation>,
         project: Project,
     ) -> Result<IssueViews, AppError> {
@@ -41,11 +48,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|found| (found.id, IssueTypeRef::from(found)))
             .collect();
         Ok(IssueViews {
+            actor: actor.clone(),
             viewer,
             project,
             types,
             people: HashMap::new(),
+            values: ItemValues::default(),
         })
+    }
+
+    /// Reads the own-field values of these issues in one go, so a page of issues costs one read.
+    pub(crate) async fn preload_values(
+        &self,
+        views: &mut IssueViews,
+        issues: &[IssueId],
+    ) -> Result<(), AppError> {
+        let ids: Vec<EntityId> = issues.iter().map(|id| (*id).into()).collect();
+        let loaded = self.load_values(RecordKind::Issue, &ids).await?;
+        views.values.merge(loaded);
+        Ok(())
     }
 
     async fn person_once(
@@ -75,6 +96,29 @@ impl<S: AuthStore> Ctx<'_, S> {
             views.types.get(&issue.issue_type).cloned().ok_or_else(|| {
                 AppError::Internal("an issue has an issue type that is gone".into())
             })?;
+        let item: EntityId = issue.id.into();
+        if !views.values.has(item) {
+            let loaded = self.load_values(RecordKind::Issue, &[item]).await?;
+            views.values.merge(loaded);
+        }
+        let mut own_fields = views
+            .values
+            .shown(&views.viewer, Some(issue.issue_type), item);
+        for (key, value) in &mut own_fields.0 {
+            if let Some(kind) = views.values.kind_of(key) {
+                *value = self
+                    .display_value(
+                        &views.actor,
+                        &views.viewer,
+                        &mut views.people,
+                        kind,
+                        std::mem::take(value),
+                    )
+                    .await?;
+            }
+        }
+        // A value the viewer is not shown (an issue they do not see) is no value.
+        own_fields.0.retain(|_, value| !value.is_null());
         let reported_by = self
             .person_once(views, PeopleKind::ReportedBy, issue.reported_by)
             .await?;
@@ -100,6 +144,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             created_at: issue.created_at,
             updated_at: issue.updated_at,
             closed_at: issue.closed_at,
+            own_fields,
             version: issue.version,
         })
     }

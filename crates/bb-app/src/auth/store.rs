@@ -25,6 +25,7 @@ use zeroize::Zeroizing;
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::editing::EditStore;
+use crate::fields::FieldStore;
 use crate::issues::IssueStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
@@ -312,6 +313,7 @@ pub trait AuthStore:
     + PolicyStore
     + ProjectStore
     + IssueStore
+    + FieldStore
     + SettingsStore
     + 'static
 {

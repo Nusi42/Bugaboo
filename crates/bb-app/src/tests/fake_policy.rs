@@ -2,12 +2,14 @@
 //! projects, and the one call that loads what the engine needs for a person at a place.
 
 use bb_core::access::{Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
-use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::guards::OrganizationState;
-use bb_policy::{Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, Tree};
+use bb_policy::{
+    Inputs, LevelRule, LevelRules, LevelSubject, Permission, Place, Tree, TypedFieldRule,
+};
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -150,15 +152,30 @@ impl PolicyStore for FakeStore {
         &self,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
     ) -> Result<Vec<(K, K::Level)>, FakeError> {
-        Ok(self.read(|state| {
-            state
+        Ok(self.read(|state| match issue_type {
+            None => state
                 .rules
                 .of::<K>()
                 .iter()
                 .filter(|rule| rule.role == role && rule.project == project)
                 .map(|rule| (rule.subject, rule.level))
-                .collect()
+                .collect(),
+            Some(issue_type) => state
+                .rules
+                .typed
+                .iter()
+                .filter(|rule| {
+                    rule.role == role && rule.project == project && rule.issue_type == issue_type
+                })
+                .filter_map(|rule| {
+                    Some((
+                        K::from_subject_code(&rule.subject.code())?,
+                        <K::Level as bb_core::words::Word>::from_code(rule.level.code())?,
+                    ))
+                })
+                .collect(),
         }))
     }
 
@@ -255,7 +272,7 @@ impl PolicyStore for FakeStore {
         tx: &mut Tx,
         role: &Role,
         permissions: &[Permission],
-        fields: &[(Field, FieldLevel)],
+        fields: &[(FieldKey, FieldLevel)],
         people: &[(PeopleKind, PeopleLevel)],
     ) -> Result<(), FakeError> {
         if tx
@@ -322,7 +339,7 @@ impl PolicyStore for FakeStore {
     async fn replace_role_levels(
         tx: &mut Tx,
         id: RoleId,
-        fields: &[(Field, FieldLevel)],
+        fields: &[(FieldKey, FieldLevel)],
         people: &[(PeopleKind, PeopleLevel)],
     ) -> Result<(), FakeError> {
         tx.state
@@ -429,9 +446,32 @@ impl PolicyStore for FakeStore {
         tx: &mut Tx,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
         subject: K,
         level: Option<K::Level>,
     ) -> Result<(), FakeError> {
+        if let Some(issue_type) = issue_type {
+            let key = FieldKey::from_code(&subject.subject_code()).ok_or(FakeError::Failed)?;
+            let level = level.and_then(|level| {
+                <FieldLevel as bb_core::words::Word>::from_code(bb_core::words::Word::code(level))
+            });
+            tx.state.rules.typed.retain(|rule| {
+                !(rule.role == role
+                    && rule.project == project
+                    && rule.issue_type == issue_type
+                    && rule.subject == key)
+            });
+            if let Some(level) = level {
+                tx.state.rules.typed.push(TypedFieldRule {
+                    project,
+                    role,
+                    issue_type,
+                    subject: key,
+                    level,
+                });
+            }
+            return Ok(());
+        }
         let rules = K::rules_in_mut(&mut tx.state.rules);
         rules.retain(|rule| {
             !(rule.role == role && rule.project == project && rule.subject == subject)
@@ -465,7 +505,7 @@ impl PolicyStore for FakeStore {
 fn add_own_levels(
     rules: &mut LevelRules,
     role: RoleId,
-    fields: &[(Field, FieldLevel)],
+    fields: &[(FieldKey, FieldLevel)],
     people: &[(PeopleKind, PeopleLevel)],
 ) {
     for (subject, level) in fields {

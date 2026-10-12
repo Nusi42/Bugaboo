@@ -15,7 +15,7 @@ use sea_query::{Expr, ExprTrait as _};
 use super::assignments::{assignment_select, assignments_of};
 use super::groups::{member_select, read_member};
 use super::in_list;
-use super::levels::{Which, read_rules};
+use super::levels::{Which, read_rules, read_typed_rules};
 use super::roles::roles_in;
 use crate::db::{Reader, StoredId as _, Transaction};
 use crate::error::StoreError;
@@ -156,6 +156,8 @@ pub(crate) async fn rules_of(
     Ok(LevelRules {
         fields: read_rules(reader, which).await?,
         people: read_rules(reader, which).await?,
+        typed: read_typed_rules(reader, which).await?,
+        own_fields: crate::fields::field_ids_in(reader).await?,
     })
 }
 

@@ -15,6 +15,7 @@
 //!   has which role and the levels the roles set: a tree that changed meanwhile asks the person to
 //!   look again.
 
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -182,6 +183,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .flatten()
         };
         let mut people: Vec<PersonChange> = Vec::new();
+        // The own fields the viewer may know, by the projects they are asked about: a field for a
+        // sub-project is known there, not in the moved project's own row.
+        let mut known: BTreeMap<ProjectId, KnownFields> = BTreeMap::new();
         let mut truncated = false;
         let mut listed = 0_usize;
         let mut at = 0;
@@ -194,7 +198,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             let mut rows = Vec::new();
             for change in &judged.preview.changes[at..end] {
                 if let Some(named) = shown_ref(change.project) {
-                    rows.push(project_change(named, change));
+                    if let Entry::Vacant(slot) = known.entry(change.project) {
+                        let names = self
+                            .known_field_names(actor, viewer, Some(change.project))
+                            .await?
+                            .into_iter()
+                            .filter_map(|(key, name)| key.own().map(|id| (id, name)))
+                            .collect();
+                        slot.insert(names);
+                    }
+                    rows.push(project_change(named, change, &known[&change.project]));
                 }
             }
             at = end;
@@ -260,8 +273,12 @@ fn standing(access: &Access) -> Standing {
     }
 }
 
-/// What one change of the engine says, as a line of the preview.
-fn project_change(project: ProjectRef, change: &Change) -> ProjectChange {
+/// The own fields a viewer may know in a project, with their names.
+type KnownFields = std::collections::HashMap<bb_core::id::FieldId, String>;
+
+/// What one change of the engine says, as a line of the preview. An own field the viewer may not
+/// know is not in `known`, and its row (its ID, its levels) is left out.
+fn project_change(project: ProjectRef, change: &Change, known: &KnownFields) -> ProjectChange {
     let (before, after) = (&change.before, &change.after);
     ProjectChange {
         project,
@@ -282,8 +299,13 @@ fn project_change(project: ProjectRef, change: &Change) -> ProjectChange {
             .iter()
             .filter_map(|(field, level)| {
                 let now = after.fields.get(field)?;
+                let name = match field.own() {
+                    Some(id) => Some(known.get(&id)?.clone()),
+                    None => None,
+                };
                 (now != level).then_some(FieldLevelChange {
                     field: *field,
+                    name,
                     before: *level,
                     after: *now,
                 })

@@ -10,8 +10,8 @@ use std::collections::BTreeSet;
 use std::future::Future;
 
 use bb_core::access::{Assignment, FieldLevel, Group, GroupMember, PeopleLevel, Role};
-use bb_core::fields::Field;
-use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::guards::OrganizationState;
@@ -125,7 +125,7 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn insert_role(
             role: &Role,
             permissions: &[Permission],
-            fields: &[(Field, FieldLevel)],
+            fields: &[(FieldKey, FieldLevel)],
             people: &[(PeopleKind, PeopleLevel)]
         ) -> ();
         /// Changes the name and the two-step switch of a role, counts its version up, and says
@@ -136,7 +136,7 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// Replaces the levels a role has of its own (not those set for projects).
         fn replace_role_levels(
             id: RoleId,
-            fields: &[(Field, FieldLevel)],
+            fields: &[(FieldKey, FieldLevel)],
             people: &[(PeopleKind, PeopleLevel)]
         ) -> ();
         /// Removes a role, with the rows that give it and the levels it set.
@@ -160,20 +160,23 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn insert_project(project: &Project) -> ();
     }
 
-    /// The levels a role has set for the subjects of one kind (the fields of the catalogue, or
-    /// the kinds of people information): in a project (`Some`) or its own (`None`).
+    /// The levels a role has set for the subjects of one kind (the fields, or the kinds of people
+    /// information): in a project (`Some`) or its own (`None`), for all issue types or, for
+    /// fields, for one.
     fn levels<K: LevelSubject>(
         &self,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
     ) -> impl Future<Output = Result<Vec<(K, K::Level)>, Self::Error>> + Send;
 
     /// Sets (`Some`) or takes away (`None`) the level of a subject for a role, in a project or
-    /// the role's own.
+    /// the role's own, for all issue types or, for fields, for one.
     fn put_level<K: LevelSubject>(
         transaction: &mut Self::Transaction,
         role: RoleId,
         project: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
         subject: K,
         level: Option<K::Level>,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send;

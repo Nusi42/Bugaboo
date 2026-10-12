@@ -11,17 +11,20 @@ export interface IconButtonProps {
   /** What the button does, in words: its name for screen readers and its tooltip. */
   readonly label: string;
   readonly onPress: () => void;
+  /** The button does nothing now (the first of a list cannot move up). */
+  readonly isDisabled?: boolean;
   /** Whether a panel or menu that this button opens is open now. */
   readonly isExpanded?: boolean;
 }
 
 /** A button with only an icon. For the few icons everybody knows: close, search, menu. */
-export function IconButton({ icon, label, onPress, isExpanded }: IconButtonProps) {
+export function IconButton({ icon, label, onPress, isExpanded, isDisabled }: IconButtonProps) {
   return (
     <AriaButton
       {...partOf(part.button, { variants: [buttonLook.quiet, buttonShape.square] })}
       aria-label={label}
       {...(isExpanded === undefined ? {} : { "aria-expanded": isExpanded })}
+      isDisabled={isDisabled === true}
       onPress={onPress}
     >
       <span title={label} {...partOf(part.iconButtonHit)}>

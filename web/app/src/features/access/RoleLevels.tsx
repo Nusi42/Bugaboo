@@ -24,6 +24,7 @@ export function RoleLevels<Subject extends string, Level extends string>({
   onChange,
 }: RoleLevelsProps<Subject, Level>) {
   const inProject = table.project !== undefined && table.project !== null;
+  const typed = table.issue_type !== undefined && table.issue_type !== null;
   const roleName = table.roles.find((known) => known.id === role)?.name ?? "";
   return (
     <ul {...partOf(part.list)} aria-label={tableName}>
@@ -32,8 +33,8 @@ export function RoleLevels<Subject extends string, Level extends string>({
         return cell === undefined ? null : (
           <li key={row.subject} {...partOf(part.box)}>
             <CellControl
-              label={subjectName(row.subject)}
-              subjectName={subjectName(row.subject)}
+              label={subjectName(row.subject, row.name)}
+              subjectName={subjectName(row.subject, row.name)}
               roleName={roleName}
               hideLabel={false}
               levels={table.levels}
@@ -41,6 +42,7 @@ export function RoleLevels<Subject extends string, Level extends string>({
               cell={cell}
               yours={row.yours}
               inProject={inProject}
+              typed={typed}
               onChange={(level) => {
                 onChange({ role, subject: row.subject, level });
               }}

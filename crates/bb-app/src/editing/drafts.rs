@@ -54,7 +54,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters.
-    pub(super) async fn keep_draft(
+    pub(crate) async fn keep_draft(
         &self,
         author: UserId,
         target: &DraftTarget,

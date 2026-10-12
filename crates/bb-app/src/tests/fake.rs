@@ -87,6 +87,8 @@ pub(crate) struct State {
     pub(crate) assignees: Vec<IssueAssignee>,
     pub(crate) issue_aliases: Vec<IssueAlias>,
     pub(crate) counters: Vec<(ProjectId, i64)>,
+    pub(crate) field_definitions: Vec<crate::fields::Definition>,
+    pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

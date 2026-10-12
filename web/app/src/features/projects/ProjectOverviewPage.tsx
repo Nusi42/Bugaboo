@@ -4,6 +4,7 @@ import { Card, Link, partOf, part } from "@bugaboo/ui";
 import { projectIssuesAddress } from "../../shared/paths.ts";
 
 import { projectPages } from "../../shared/project-pages.ts";
+import { OwnFieldsOfProject } from "../fields/index.ts";
 import { ProjectFacts } from "./ProjectFacts.tsx";
 import { ProjectGate } from "./ProjectGate.tsx";
 import { SubProjects } from "./SubProjects.tsx";
@@ -19,6 +20,7 @@ function Overview({ project }: { readonly project: OneProject }) {
           {t("issues.of-project")}
         </Link>
       </Card>
+      <OwnFieldsOfProject project={project} />
       <SubProjects project={project} />
     </div>
   );

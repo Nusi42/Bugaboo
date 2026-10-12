@@ -6,6 +6,7 @@ pub mod access;
 pub mod auth;
 pub mod context;
 pub mod editing;
+pub mod fields;
 mod input;
 pub mod issues;
 mod member;

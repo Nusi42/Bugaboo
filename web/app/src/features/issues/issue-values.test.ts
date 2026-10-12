@@ -15,6 +15,7 @@ const detail: IssueDetail = {
     assigned_to: [ana],
     version: 4,
   },
+  own_fields_html: [],
   may_change: true,
   may_delete: false,
   changeable: ["title", "status", "priority", "assigned-to"],

@@ -14,8 +14,8 @@ use bb_app::access::{FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, Le
 use bb_app::roles::{RoleRef, SetFieldLevel};
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
-use bb_core::fields::Field;
-use bb_core::id::{ProjectId, RoleId};
+use bb_core::fields::FieldKey;
+use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -43,6 +43,33 @@ impl PlaceParams {
     /// The project, if one is named; a text that is no ID names a project that is not there.
     pub(super) fn project(&self) -> Result<Option<ProjectId>, ApiError> {
         self.project.as_deref().map(project_id).transpose()
+    }
+}
+
+/// Which place and which issue type a table or a change is about (field permissions only).
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct TypeParams {
+    /// The ID of the project. Without it the answer is about the whole organization: the level
+    /// each role has of its own.
+    project: Option<String>,
+    /// The ID of an issue type: the levels that count for issues of this type (ADR-0027).
+    /// Without it the answer is about all issue types.
+    issue_type: Option<String>,
+}
+
+impl TypeParams {
+    /// The project, if one is named; a text that is no ID names a project that is not there.
+    fn project(&self) -> Result<Option<ProjectId>, ApiError> {
+        self.project.as_deref().map(project_id).transpose()
+    }
+
+    /// The issue type, if one is named; a text that is no ID names a type that is not there.
+    fn issue_type(&self) -> Result<Option<IssueTypeId>, ApiError> {
+        self.issue_type
+            .as_deref()
+            .map(|text| text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound)))
+            .transpose()
     }
 }
 
@@ -101,6 +128,8 @@ pub(crate) struct LevelCellBody<L> {
     role: String,
     /// Its level in the place.
     level: L,
+    /// The level was set for the issue type of the table, not for all issue types.
+    for_type: bool,
     /// Where it was set.
     origin: LevelOriginBody,
 }
@@ -110,6 +139,8 @@ pub(crate) struct LevelCellBody<L> {
 pub(crate) struct LevelRowBody<K, L> {
     /// The field or the kind.
     subject: K,
+    /// The name of an own field; none for a field of the catalogue or a kind.
+    name: Option<String>,
     /// The highest level the person who asks may set here: their own.
     yours: L,
     /// One cell for each role, in the order of `roles`.
@@ -121,6 +152,8 @@ pub(crate) struct LevelRowBody<K, L> {
 pub(crate) struct LevelTableBody<K, L> {
     /// The project, or `null` for the whole organization.
     project: Option<KeyProjectRef>,
+    /// The ID of the issue type the levels are for, or `null` for all issue types.
+    issue_type: Option<String>,
     /// The roles, in the order of roles: the columns.
     roles: Vec<RoleRefBody>,
     /// There are more roles than the table holds; the first ones are shown.
@@ -138,6 +171,7 @@ impl<K: Copy, L: Copy> LevelTableBody<K, L> {
     pub(super) fn of(table: &LevelTable<K, L>, levels: &[L]) -> Self {
         Self {
             project: table.place.as_ref().map(KeyProjectRef::from),
+            issue_type: table.issue_type.map(|issue_type| issue_type.to_string()),
             roles: table.roles.iter().map(RoleRefBody::from).collect(),
             truncated: table.truncated,
             levels: levels.to_vec(),
@@ -149,6 +183,7 @@ impl<K: Copy, L: Copy> LevelTableBody<K, L> {
 fn row_body<K: Copy, L: Copy>(row: &LevelRow<K, L>) -> LevelRowBody<K, L> {
     LevelRowBody {
         subject: row.subject,
+        name: row.name.clone(),
         yours: row.yours,
         cells: row.cells.iter().map(cell_body).collect(),
     }
@@ -158,6 +193,7 @@ fn cell_body<L: Copy>(cell: &LevelCell<L>) -> LevelCellBody<L> {
     LevelCellBody {
         role: cell.role.to_string(),
         level: cell.level,
+        for_type: cell.for_type,
         origin: LevelOriginBody::from(&cell.origin),
     }
 }
@@ -179,7 +215,7 @@ pub(super) fn role_id(text: &str) -> Result<RoleId, ApiError> {
 #[derive(Deserialize)]
 pub(crate) struct FieldCellPath {
     role: String,
-    field: Field,
+    field: FieldKey,
 }
 
 /// Which level every role has for every field, for the whole organization or for one project,
@@ -190,16 +226,17 @@ pub(crate) struct FieldCellPath {
     path = "/api/v1/field-permissions",
     operation_id = "getFieldPermissions",
     tag = "access",
-    params(PlaceParams),
-    responses((status = 200, description = "The field permissions.", body = LevelTableBody<Field, FieldLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+    params(TypeParams),
+    responses((status = 200, description = "The field permissions.", body = LevelTableBody<FieldKey, FieldLevel>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn get_field_permissions(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiQuery(place): ApiQuery<PlaceParams>,
+    ApiQuery(place): ApiQuery<TypeParams>,
 ) -> Result<Response, ApiError> {
     let project = place.project()?;
+    let issue_type = place.issue_type()?;
     let table = auth
         .api()?
         .field_permissions(
@@ -207,6 +244,7 @@ async fn get_field_permissions(
             FieldPermissionsQuery {
                 session_token,
                 project,
+                issue_type,
             },
         )
         .await?;
@@ -224,8 +262,8 @@ async fn get_field_permissions(
     tag = "access",
     params(
         ("role" = String, Path, description = "The ID of the role."),
-        ("field" = Field, Path, description = "The key of the field."),
-        PlaceParams
+        ("field" = FieldKey, Path, description = "The key of the field: its word, or the ID of an own field."),
+        TypeParams
     ),
     request_body = NewFieldLevelBody,
     responses(
@@ -241,10 +279,11 @@ async fn change_field_permission(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(path): ApiPath<FieldCellPath>,
-    ApiQuery(place): ApiQuery<PlaceParams>,
+    ApiQuery(place): ApiQuery<TypeParams>,
     ApiJson(body): ApiJson<NewFieldLevelBody>,
 ) -> Result<Response, ApiError> {
     let project = place.project()?;
+    let issue_type = place.issue_type()?;
     let role = role_id(&path.role)?;
     auth.api()?
         .set_field_level(
@@ -253,6 +292,7 @@ async fn change_field_permission(
                 session_token,
                 role,
                 project,
+                issue_type,
                 field: path.field,
                 level: body.level,
             },

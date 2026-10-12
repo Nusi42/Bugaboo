@@ -183,7 +183,7 @@ async fn sec_04_a_field_level_set_on_a_project_applies_to_its_sub_projects_and_c
             Ok(answer
                 .fields
                 .iter()
-                .find(|field| field.subject == bb_core::fields::Field::CostCenter)
+                .find(|field| field.subject == bb_core::fields::Field::CostCenter.into())
                 .map(|field| field.level))
         };
         assert_eq!(

@@ -159,7 +159,7 @@ fn evaluate(sources: &[Source], table: Option<&str>) -> Vec<Finding> {
                 findings.push(Finding::at(
                     format!("{path}:{line}"),
                     format!(
-                        "The command `{name}` never calls `{RECORD}`. Every command writes \
+                        "The command `{name}` never calls `{RECORD}` (or `save_text`). Every command writes \
                          through the `ChangeStore` port, which appends the domain event in the \
                          same transaction as the change (ADR-0007). If it only reads, its \
                          input type ends in `{QUERY_SUFFIX}`."
@@ -193,7 +193,7 @@ mod tests {
     }
 
     /// The table of the test, as far as these examples need it.
-    const TABLE: &str = "table! { \"change_status\" => s::change_status_scenario, }";
+    const TABLE: &str = "table! { \"change_status\" => s::change_status_scenario, \"save_field_text\" => s::save_scenario, }";
 
     #[test]
     fn good_example_a_command_that_writes_through_the_port() {

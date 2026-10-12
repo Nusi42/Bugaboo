@@ -266,8 +266,8 @@ async fn sec_08_a_new_role_has_no_levels_everything_is_hidden_until_somebody_dec
                 .find(|row| row.field == field)
                 .map(|row| row.level)
         };
-        assert_eq!(level(Field::CostCenter), Some(FieldLevel::Hidden));
-        assert_eq!(level(Field::Title), Some(FieldLevel::CanChange));
+        assert_eq!(level(Field::CostCenter.into()), Some(FieldLevel::Hidden));
+        assert_eq!(level(Field::Title.into()), Some(FieldLevel::CanChange));
         let people = levels
             .people
             .iter()
@@ -822,7 +822,8 @@ async fn rows_and_levels(
                 session_token: session.clone(),
                 role: made.id,
                 project: None,
-                field: Field::Title,
+                issue_type: None,
+                field: Field::Title.into(),
                 level: Some(FieldLevel::CanSee),
             },
         )
