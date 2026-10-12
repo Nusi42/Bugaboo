@@ -124,7 +124,7 @@ test("iss_01 a Guest sees a role or Someone where names are not for them", async
   await signIn(page, lea);
   await page.goto(issueAddress("WEB-3"));
   await expect(
-    page.getByText(t("projects.person-role", { role: roleName.administrator })),
+    page.getByText(t("projects.person-role", { role: roleName.administrator }), { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
   await expect(page.getByText(/^Someone is editing the description/u)).toBeVisible();
