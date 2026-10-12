@@ -53,6 +53,8 @@ test("iss_05 a comment is written, listed under Comments and kept", async ({ pag
   // The bar of a phone has a button with the same name that only goes to the comments.
   const composer = page.locator("form").filter({ has: box });
   await composer.getByRole("button", { name: t("comments.add"), exact: true }).click();
+  // The box is emptied when the server has the comment.
+  await expect(box).toHaveValue("");
   await page.getByRole("tab", { name: t("history.tab-comments"), exact: true }).click();
   await expect(page.getByText("Seen it.")).toBeVisible();
   await page.reload();
