@@ -53,6 +53,7 @@ pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
                 status: None,
                 priority: None,
                 assigned_to: None,
+                fields: std::collections::BTreeMap::new(),
             },
         )
         .await
@@ -99,6 +100,11 @@ pub(super) async fn issue_request(
             Some(json!({"version": 1, "icon": "star"})),
         ),
         "listIssues" => ("GET", format!("/api/v1/projects/{target}/issues"), None),
+        "listAssignablePeople" => (
+            "GET",
+            format!("/api/v1/projects/{target}/assignable-people"),
+            None,
+        ),
         "makeIssue" => (
             "POST",
             format!("/api/v1/projects/{target}/issues"),
@@ -113,6 +119,15 @@ pub(super) async fn issue_request(
             "PATCH",
             format!("/api/v1/issues/{}", an_issue(fixture).await?),
             Some(json!({"version": 1, "priority": "high"})),
+        ),
+        "saveIssueDescription" => (
+            "PUT",
+            format!("/api/v1/issues/{}/description", an_issue(fixture).await?),
+            Some(json!({
+                "version": 1,
+                "lock_token": super::examples_editing::NO_LOCK_TOKEN,
+                "text": "Typed by the matrix"
+            })),
         ),
         "deleteIssue" => (
             "DELETE",

@@ -18,7 +18,7 @@ help: the trait `Plain` is not implemented for `Inner`
              Box<T>
              Category
              Channel
-             CommentId
+             ChoiceColor
            and $N others
 note: required by a bound in `_::{closure#0}::plain`
   --> tests/ui/masked_open_view.rs:12:21

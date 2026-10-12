@@ -4,7 +4,9 @@ import { iconName } from "@bugaboo/ui/icons";
 import { paths, type Path } from "./paths.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Place } from "./place.ts";
+import { fieldPlaces } from "./field-places.ts";
 import { projectPlaces } from "./project-places.ts";
+import { relationPlaces } from "./relation-places.ts";
 
 export type { Place } from "./place.ts";
 
@@ -186,15 +188,8 @@ const organizationTopics: readonly Place[] = [
     group: "nav.group.work",
     listed: true,
   },
-  {
-    path: paths.relationKinds,
-    name: "nav.relation-kinds",
-    icon: iconName["relation-kinds"],
-    parent: paths.organizationSettings,
-    anyOf: ["manage-issue-types"],
-    group: "nav.group.work",
-    listed: true,
-  },
+  ...fieldPlaces,
+  ...relationPlaces,
   {
     path: paths.organizationSecurity,
     name: "nav.organization-security",
@@ -240,9 +235,10 @@ export const places: readonly Place[] = [
   ...organizationTopics,
   ...projectPlaces,
   {
-    path: paths.frames,
-    name: "nav.frames",
-    icon: iconName.frames,
+    // An issue is reached from a list, a link or quick search; its address is `/issues/WEB-142`.
+    path: paths.issue,
+    name: "issues.title",
+    icon: iconName.issues,
     parent: paths.home,
     listed: false,
   },

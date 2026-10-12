@@ -156,7 +156,7 @@ impl World {
         self.rules.add(FieldRule {
             project,
             role,
-            subject: field,
+            subject: field.into(),
             level,
         });
     }

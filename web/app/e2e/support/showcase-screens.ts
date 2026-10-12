@@ -1,9 +1,5 @@
-import { t } from "@bugaboo/messages";
-import { expect } from "@playwright/test";
-
 import {
   at,
-  inFrames,
   openCheckAccess,
   openInvitation,
   openMovePreview,
@@ -19,6 +15,7 @@ import {
   paths,
   personAddress,
   projectAddress,
+  projectIssuesAddress,
   roleAddress,
 } from "../../src/shared/paths.ts";
 
@@ -137,20 +134,10 @@ export const screens: readonly Screen[] = [
   mine("sessions", "the places where the person is signed in", paths.sessions),
   mine("access-keys", "access keys for scripts", paths.accessKeys),
   screen(
-    "side-panel",
+    "project-issues",
     "administrator",
-    "An item open in the side panel beside the list",
-    inFrames("?show=panel&item=first", (page) =>
-      expect(page.getByRole("complementary", { name: t("frames.item-1") })).toBeVisible(),
-    ),
-  ),
-  screen(
-    "focus-view",
-    "administrator",
-    "An item open in the focus view, alone on the page",
-    inFrames("?show=focus&item=second", (page) =>
-      expect(page.getByRole("heading", { level: 2, name: t("frames.item-2") })).toBeVisible(),
-    ),
+    "The issues of a project, with a box to tick for each",
+    at(projectIssuesAddress(PROJECT)),
   ),
   screen("home-team-member", "teamMember", "The start page of a Team member", at(paths.home)),
   screen(

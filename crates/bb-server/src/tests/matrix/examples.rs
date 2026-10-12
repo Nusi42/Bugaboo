@@ -245,6 +245,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("resetProjectSetting"),
     Example::route("checkOwnAccessChange"),
     Example::with("listMySettings", &[Quirk::KeysActAsThePerson]),
+    Example::with("getImageHosts", &[Quirk::KeysActAsThePerson]),
     Example::with("changeMySetting", &[Quirk::KeysActAsThePerson]),
     Example::with("resetMySetting", &[Quirk::KeysActAsThePerson]),
     Example::with("getFieldPermissions", &[Quirk::AtTheTargetProject]),
@@ -254,6 +255,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("checkAccess", &[Quirk::AtTheTargetProject]),
     Example::with("listPeopleToCheck", &[Quirk::AtTheTargetProject]),
     Example::with("takeEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
+    Example::with("readEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::with("heartbeatEditLock", &[ON_THE_TARGET, Quirk::SessionOnly]),
     Example::route("releaseEditLock"),
     Example::with(
@@ -286,9 +288,11 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("makeIssueType"),
     Example::route("changeIssueType"),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
+    Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("makeIssue", &[Quirk::NeedsToSeeTheProject]),
     Example::with("getIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("saveIssueDescription", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listRelationKinds", &[Quirk::KeysActAsThePerson]),
@@ -331,6 +335,27 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[
             Quirk::AnIssueOfTheTarget,
             SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with("listFieldTypes", &[Quirk::KeysActAsThePerson]),
+    Example::with("listFields", &[Quirk::KeysActAsThePerson]),
+    Example::with(
+        "getField",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
+    Example::with("getFieldUsedBy", &[Quirk::NamesAMissingThing]),
+    Example::route("makeField"),
+    Example::route("changeField"),
+    Example::route("addChoice"),
+    Example::route("changeChoice"),
+    Example::route("reorderChoices"),
+    Example::route("combineChoices"),
+    Example::with(
+        "saveIssueFieldText",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            Quirk::OnTheTargetProject(Permission::ChangeIssues),
             Quirk::SessionOnly,
         ],
     ),
@@ -409,6 +434,7 @@ fn open_request(operation: &str) -> Result<Option<Request>, Failure> {
         ),
         // Whoever is signed in, and the choices a person makes for themselves.
         "listMySettings" => ("GET", "/api/v1/me/settings".into(), None),
+        "getImageHosts" => ("GET", "/api/v1/content/image-hosts".into(), None),
         "changeMySetting" => (
             "PUT",
             "/api/v1/me/settings/appearance.mode".into(),
@@ -708,6 +734,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_fields::field_request(fixture, operation).await? {
         return Ok(found);
     }
     if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {

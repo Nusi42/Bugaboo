@@ -16,9 +16,11 @@
 use std::collections::BTreeMap;
 
 use bb_core::ErrorCode;
+use bb_core::access::FieldLevel;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{GroupId, IssueId, IssueTypeId, ProjectId, RoleId, UserId};
+use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 use jiff::Timestamp;
@@ -126,6 +128,44 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The kind of an own field that a change of an issue or a project names, when the reader may
+    /// see the field on that record (on its issue type, for an issue); `None` when the key is no
+    /// own field of the record or the reader may not see it (CF-06).
+    async fn own_field_shown(
+        &self,
+        viewer: &Evaluation,
+        record: &EntityRef,
+        key: FieldKey,
+    ) -> Result<Option<FieldType>, AppError> {
+        let Some(field) = key.own() else {
+            return Ok(None);
+        };
+        let issue_type = if record.kind == EntityKind::from(RecordKind::Issue) {
+            match IssueId::from_bytes(record.id.to_bytes()) {
+                Ok(id) => self
+                    .store()
+                    .issue(id)
+                    .await
+                    .map_err(|error| internal::<S>(&error))?
+                    .map(|found| found.issue_type),
+                Err(_) => None,
+            }
+        } else if record.kind == EntityKind::from(RecordKind::Project) {
+            None
+        } else {
+            return Ok(None);
+        };
+        if viewer.field_level_for(issue_type, key) < FieldLevel::CanSee {
+            return Ok(None);
+        }
+        Ok(self
+            .field_catalogue()
+            .await?
+            .iter()
+            .find(|definition| definition.field.id == field)
+            .map(|definition| definition.field.kind))
+    }
+
     /// The version the record has now, if it is still there and the person may know about it.
     async fn version_now(&self, stale: &Stale) -> Result<Option<i64>, AppError> {
         let record = &stale.record;
@@ -251,6 +291,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .filter(|change| change.field != bb_core::version::FIELD)
         {
+            // The value of an own field goes through the reader's mask; a person, group or issue in
+            // it is not shown by its ID, only that the field changed.
+            if let Some(key) = FieldKey::from_code(&change.field).filter(|key| key.own().is_some())
+            {
+                if let Some(kind) = self.own_field_shown(viewer, record, key).await? {
+                    fields.push(change.field.clone());
+                    if let (Some(value), false) = (
+                        &change.after,
+                        matches!(
+                            kind,
+                            FieldType::Person
+                                | FieldType::People
+                                | FieldType::Group
+                                | FieldType::Issue
+                        ),
+                    ) {
+                        current.insert(change.field.clone(), value.clone());
+                    }
+                }
+                continue;
+            }
             let shown = match shown_by_us(&record.kind, &change.field) {
                 Shown::Hidden => self.services.records.shows(record, &change.field),
                 known => known,

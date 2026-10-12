@@ -4,7 +4,7 @@ import { useLocation } from "@tanstack/react-router";
 import { Button, Link } from "react-aria-components";
 
 import { paths } from "../../shared/paths.ts";
-import { openOverlay, useOverlayOpen } from "./overlay-state.ts";
+import { openOverlay, overlays, useOverlayOpen, type OverlayName } from "./overlay-state.ts";
 import { placeAt } from "../../shared/places.ts";
 
 /** Words of the ARIA standard, not text for people. */
@@ -25,9 +25,33 @@ function Tab({ icon, label }: TabProps) {
   );
 }
 
+interface OverlayTabProps extends TabProps {
+  /** The layer the button opens. */
+  readonly opens: OverlayName;
+  /** The layer is open now (for screen readers). */
+  readonly expanded?: boolean;
+}
+
+/** A button of the bar that opens a layer over the page. */
+function OverlayTab({ icon, label, opens, expanded }: OverlayTabProps) {
+  return (
+    <li {...partOf(part.bottomBarTab)}>
+      <Button
+        {...partOf(part.bottomBarItem)}
+        {...(expanded === undefined ? {} : { "aria-expanded": expanded })}
+        onPress={() => {
+          openOverlay(opens);
+        }}
+      >
+        <Tab icon={icon} label={label} />
+      </Button>
+    </li>
+  );
+}
+
 /**
- * The bar at the bottom of a phone, with words under the icons (UX §3.3): *Home*, *Search* and
- * *More*. *New* and *Notifications* join when those screens exist (M3, M4); *More* holds the rest.
+ * The bar at the bottom of a phone, with words under the icons (UX §3.3): *Home*, *Search*, *New*
+ * and *More*. *Notifications* joins when that screen exists (M4); *More* holds the rest.
  */
 export function BottomBar() {
   const { pathname } = useLocation();
@@ -47,27 +71,14 @@ export function BottomBar() {
             </Link>
           </li>
         )}
-        <li {...partOf(part.bottomBarTab)}>
-          <Button
-            {...partOf(part.bottomBarItem)}
-            onPress={() => {
-              openOverlay("search");
-            }}
-          >
-            <Tab icon={iconName.search} label={t("shell.search")} />
-          </Button>
-        </li>
-        <li {...partOf(part.bottomBarTab)}>
-          <Button
-            {...partOf(part.bottomBarItem)}
-            aria-expanded={moreOpen}
-            onPress={() => {
-              openOverlay("more");
-            }}
-          >
-            <Tab icon={iconName.more} label={t("shell.more")} />
-          </Button>
-        </li>
+        <OverlayTab icon={iconName.search} label={t("shell.search")} opens={overlays.search} />
+        <OverlayTab icon={iconName.plus} label={t("issues.new")} opens={overlays.newIssue} />
+        <OverlayTab
+          icon={iconName.more}
+          label={t("shell.more")}
+          opens={overlays.more}
+          expanded={moreOpen}
+        />
       </ul>
     </nav>
   );

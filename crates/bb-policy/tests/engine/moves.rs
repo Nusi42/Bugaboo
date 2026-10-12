@@ -416,7 +416,7 @@ fn build(spec: &Spec) -> Option<(World, Vec<UserId>, ProjectId, Option<ProjectId
         world.policy.rules.add(FieldRule {
             project: project.map(|project| projects[project]),
             role: roles[*role],
-            subject: Field::ALL[*field],
+            subject: Field::ALL[*field].into(),
             level: FieldLevel::ALL[*level],
         });
     }

@@ -37,7 +37,8 @@ async fn title_only_reader(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failur
                 session_token: site.org.admin.session.clone(),
                 role: role.id,
                 project: None,
-                field: Field::Title,
+                issue_type: None,
+                field: Field::Title.into(),
                 level: Some(FieldLevel::CanSee),
             },
         )
@@ -230,7 +231,8 @@ async fn changer(
                     session_token: site.org.admin.session.clone(),
                     role: role.id,
                     project: None,
-                    field,
+                    issue_type: None,
+                    field: field.into(),
                     level: Some(level),
                 },
             )
@@ -272,7 +274,6 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
             ("status", json!("open")),
             ("priority", json!("high")),
             ("assigned_to", json!([tim.to_string()])),
-            ("description", json!("A secret")),
         ];
         for (name, level) in [("see", FieldLevel::CanSee), ("hidden", FieldLevel::Hidden)] {
             let mut who = changer(&site, &rig, &format!("{name}@example.test"), level).await?;

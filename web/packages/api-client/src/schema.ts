@@ -742,6 +742,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/content/image-hosts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The hosts that images in text may come from (the setting `content.image-hosts`), for the preview
+     *     of the editor. Every signed-in person may read them: they are in the content security policy
+     *     that every page carries. The list is split here once; the browser never splits it again.
+     */
+    get: operations["getImageHosts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/drafts": {
     parameters: {
       query?: never;
@@ -787,7 +808,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Says whether somebody is editing a long text, and who, without taking the lock: the box asks
+     *     when it opens, so a person who comes second is told before the first key.
+     */
+    get: operations["readEditLock"];
     put?: never;
     /**
      * Takes the lock on a long text, on the first keystroke, or says who is editing it. The lock is a
@@ -935,6 +960,154 @@ export interface paths {
      *     information each role sees* in the place.
      */
     put: operations["changeFieldPermission"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/field-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The kinds of information a field can hold, with what each kind allows. */
+    get: operations["listFieldTypes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/fields": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The own fields the person sees, for the organization or for one project. */
+    get: operations["listFields"];
+    put?: never;
+    /** Makes an own field. Needs the permission *Manage fields*. */
+    post: operations["makeField"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/fields/{field}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One own field the person sees. */
+    get: operations["getField"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Changes an own field, or retires it (or offers it again). Needs the permission *Manage
+     *     fields*.
+     */
+    patch: operations["changeField"];
+    trace?: never;
+  };
+  "/api/v1/fields/{field}/choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Adds a choice to a *Pick one* or *Pick several* field. Needs the permission *Manage fields*. */
+    post: operations["addChoice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/fields/{field}/choices/order": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Puts the choices of a field in a new order. Needs the permission *Manage fields*. */
+    put: operations["reorderChoices"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/fields/{field}/choices/{choice}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Changes the name, color or icon of a choice, or retires it. Needs the permission *Manage
+     *     fields*.
+     */
+    patch: operations["changeChoice"];
+    trace?: never;
+  };
+  "/api/v1/fields/{field}/choices/{choice}/combine": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Moves every value of a choice to another choice and retires the first (*Combine with another
+     *     choice*). Every item it touches gets a record in its history. Needs the permission *Manage
+     *     fields*.
+     */
+    post: operations["combineChoices"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/fields/{field}/used-by": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Where an own field is used now. Needs the permission *Manage fields*. */
+    get: operations["getFieldUsedBy"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -1140,6 +1313,50 @@ export interface paths {
     put?: never;
     /** Writes a comment under an issue. Needs the permission *Comment* and the right to see the issue. */
     post: operations["addComment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/description": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Saves the description of an issue under the edit lock the person holds, on the version they
+     *     started from. A refused save (the lock is gone, somebody took the editing over, the issue
+     *     changed) keeps the text as the draft of the person. Needs the permission *Change anybody's
+     *     issues*, or *Change the issues they reported* on an issue the person reported, and the right
+     *     to change the description.
+     */
+    put: operations["saveIssueDescription"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/fields/{field}/text": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Saves the long text of an own field of an issue, under the edit lock of the person. Needs the
+     *     right to change the issue and the field; a lock that ran out, a take-over or a change made
+     *     meanwhile keeps the text as the person's draft.
+     */
+    put: operations["saveIssueFieldText"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1589,6 +1806,30 @@ export interface paths {
      *     where the project sits.
      */
     patch: operations["changeProject"];
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/assignable-people": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The people an issue of the project can be assigned to, a page at a time, by name: those who
+     *     see the project and hold *See issues* there, and the person who asks. A person who cannot see
+     *     names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
+     *     set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
+     *     lets the person change that field. For an own field (`field`) the right to change that field
+     *     takes the place of the right to set *Assigned to*.
+     */
+    get: operations["listAssignablePeople"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/projects/{project}/assignment-choices": {
@@ -2128,6 +2369,18 @@ export interface components {
        */
       permissions: components["schemas"]["PermissionChoiceBody"][];
     };
+    /** @description A choice to add. */
+    AddChoiceBody: {
+      color?: components["schemas"]["ChoiceColor"] | null;
+      icon?: components["schemas"]["IssueIcon"] | null;
+      /** @description What it is called. */
+      name: string;
+      /**
+       * Format: int64
+       * @description The version of the field the person looked at.
+       */
+      version: number;
+    };
     /** @description A passkey the device made, with the name the person gives it. */
     AddPasskeyBody: {
       /** @description The challenge that was answered. */
@@ -2205,12 +2458,55 @@ export interface components {
       /** @description What the device is asked, to give to `navigator.credentials`. */
       options: Record<string, unknown>;
     };
-    /** @description What to change about an issue: what is left out stays as it is. */
+    /** @description What to change about a choice: what is left out stays as it is. */
+    ChangeChoiceBody: {
+      color?: components["schemas"]["ChoiceColor"] | null;
+      icon?: components["schemas"]["IssueIcon"] | null;
+      /** @description A new name. */
+      name?: string | null;
+      /** @description `true` retires the choice, `false` offers it again. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description The version of the field the person looked at.
+       */
+      version: number;
+    };
+    /** @description What to change about an own field: what is left out stays as it is. */
+    ChangeFieldBody: {
+      /** @description A new default value; `null` takes it away. */
+      default_value?: Record<string, unknown> | null;
+      /** @description New help text; an empty text takes it away. */
+      help?: string | null;
+      look?: components["schemas"]["Look"] | null;
+      /** @description A new name. */
+      name?: string | null;
+      /** @description Whether the assistant is never sent the value. */
+      never_to_assistant?: boolean | null;
+      /** @description `true` retires the field (no new values; old ones stay), `false` offers it again. */
+      retired?: boolean | null;
+      rules?: components["schemas"]["Rules"] | null;
+      scope?: components["schemas"]["ScopeInput"] | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
+    /**
+     * @description What to change about an issue: what is left out stays as it is. The description is not here: it
+     *     is saved under its edit lock (`saveIssueDescription`), and a body that names it is refused.
+     */
     ChangeIssueBody: {
       /** @description The IDs of the people it is assigned to from now on: all of them, not the ones to add. */
       assigned_to?: string[] | null;
-      /** @description A new description. */
-      description?: string | null;
+      /**
+       * @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
+       *     A long text is saved on its own route, under its edit lock.
+       */
+      fields?: {
+        [key: string]: unknown;
+      };
       /** @description A new issue type; a retired type is refused. */
       issue_type?: string | null;
       priority?: components["schemas"]["Priority"] | null;
@@ -2238,6 +2534,10 @@ export interface components {
     };
     /** @description What to change about a project: what is left out stays as it is. */
     ChangeProjectBody: {
+      /** @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away. */
+      fields?: {
+        [key: string]: unknown;
+      };
       /** @description A new name. */
       name?: string | null;
       /** @description A new short name. The old one stays with the project. */
@@ -2279,7 +2579,7 @@ export interface components {
     /** @description What a person can do in a place, and why. */
     CheckAccessBody: {
       /** @description Every field of the catalogue. */
-      fields: components["schemas"]["LevelAnswerBody_Field_FieldLevel"][];
+      fields: components["schemas"]["LevelAnswerBody_FieldKey_FieldLevel"][];
       /** @description Every kind of people information. */
       kinds: components["schemas"]["LevelAnswerBody_PeopleKind_PeopleLevel"][];
       /** @description Every permission that counts here. */
@@ -2300,6 +2600,23 @@ export interface components {
       /** @description The text that is stored and sent. */
       value: string;
     };
+    /**
+     * @description The color of a choice, as a category token.
+     * @enum {string}
+     */
+    ChoiceColor:
+      | "cat1"
+      | "cat2"
+      | "cat3"
+      | "cat4"
+      | "cat5"
+      | "cat6"
+      | "cat7"
+      | "cat8"
+      | "cat9"
+      | "cat10"
+      | "cat11"
+      | "cat12";
     /** @description A person that can be put into a group: the fields that can be asked for. */
     ChoiceItem: {
       /** @description For the choices of a group's members: whether the person is in the group already. */
@@ -2322,6 +2639,16 @@ export interface components {
     CodeBody: {
       /** @description A code from the code app (six digits) or a backup code. */
       code: string;
+    };
+    /** @description The choice that takes the values of another. */
+    CombineChoicesBody: {
+      /** @description The ID of the choice that takes the values. */
+      into: string;
+      /**
+       * Format: int64
+       * @description The version of the field the person looked at.
+       */
+      version: number;
     };
     /** @description A comment as the reader sees it. */
     CommentItem: {
@@ -2546,6 +2873,16 @@ export interface components {
       | "issue.parent_circle"
       | "relation.exists"
       | "limit.reached"
+      | "field.required"
+      | "field.too_short"
+      | "field.too_long"
+      | "field.too_small"
+      | "field.too_big"
+      | "field.no_match"
+      | "field.wrong_value"
+      | "field.unknown_choice"
+      | "field.unknown_reference"
+      | "field.not_here"
       | "name.taken"
       | "resource.not_found"
       | "request.invalid"
@@ -2583,6 +2920,71 @@ export interface components {
       | "time-spent"
       | "activity"
       | "cost-center";
+    /** @description An own field. */
+    FieldBody: {
+      /** @description What it is added to. */
+      applies_to: components["schemas"]["FieldFor"];
+      /** @description The choices of a *Pick one* or *Pick several* field, in order. */
+      choices: components["schemas"]["FieldChoiceBody"][];
+      /** @description The value a new item starts with, in the form of the type; `null` for none. */
+      default_value?: Record<string, unknown> | null;
+      /** @description Words that help people fill it in. */
+      help: string;
+      /** @description The ID of the field, which is its key in levels, values and history. */
+      id: string;
+      /** @description What kind of information it holds. */
+      kind: components["schemas"]["FieldType"];
+      /** @description How the value is shown. */
+      look: components["schemas"]["Look"];
+      /** @description Whether the person may change the definition (*Manage fields*). */
+      may_manage: boolean;
+      /** @description What it is called. */
+      name: string;
+      /** @description The assistant is never sent the value. */
+      never_to_assistant: boolean;
+      /** @description Whether the field is retired: no new values, old ones stay. */
+      retired: boolean;
+      /** @description The rules. The browser checks them for instant feedback; the server decides. */
+      rules: components["schemas"]["Rules"];
+      /** @description Where it is used. */
+      scope: components["schemas"]["FieldScopeBody"];
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
+    /** @description A choice of a field. */
+    FieldChoiceBody: {
+      /** @description Its color, as a category token of the theme. */
+      color: components["schemas"]["ChoiceColor"];
+      icon?: components["schemas"]["IssueIcon"] | null;
+      /** @description The ID of the choice. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /** @description Whether it is retired: not offered for new values, kept on old ones. */
+      retired: boolean;
+    };
+    /**
+     * @description What an own field is added to.
+     * @enum {string}
+     */
+    FieldFor: "issues" | "projects";
+    /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
+    FieldKey: string;
+    /**
+     * @description A field of the move preview: a field of the catalogue is named by a message, an own field by
+     *     its name.
+     */
+    FieldKeyBody: {
+      /** @description The key of the field: its word, or the ID of an own field. */
+      code: string;
+      /** @description The key of the message that names a field of the catalogue. */
+      message_key?: string | null;
+      /** @description The name of an own field. */
+      name?: string | null;
+    };
     /**
      * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
      * @enum {string}
@@ -2595,7 +2997,71 @@ export interface components {
       /** @description The level now. */
       before: components["schemas"]["WordBody"];
       /** @description The field. */
-      field: components["schemas"]["WordBody"];
+      field: components["schemas"]["FieldKeyBody"];
+    };
+    /** @description The fields a person sees. */
+    FieldListBody: {
+      /** @description The fields, in the order they are offered in. */
+      fields: components["schemas"]["FieldBody"][];
+    };
+    /** @description Where a field is used, as the person may know it. */
+    FieldScopeBody: {
+      /** @description The issue types the field is limited to; empty for all. */
+      issue_types: components["schemas"]["IssueTypeRef"][];
+      /** @description The projects the field is limited to that the person sees. */
+      projects: components["schemas"]["ProjectRef"][];
+      /** @description The field is not limited to projects. */
+      whole_organization: boolean;
+    };
+    /**
+     * @description What kind of information an own field holds.
+     * @enum {string}
+     */
+    FieldType:
+      | "text"
+      | "long-text"
+      | "whole-number"
+      | "decimal"
+      | "yes-no"
+      | "web-address"
+      | "date"
+      | "date-time"
+      | "duration"
+      | "pick-one"
+      | "pick-several"
+      | "person"
+      | "people"
+      | "group"
+      | "issue";
+    /** @description One kind of information a field can hold, with what the screens need to know about it. */
+    FieldTypeBody: {
+      /** @description The kind. */
+      kind: components["schemas"]["FieldType"];
+      /** @description The looks that can show it. */
+      looks: components["schemas"]["Look"][];
+      /** @description The look a new field of this kind starts with. */
+      starting_look: components["schemas"]["Look"];
+      /** @description What is true of it. */
+      traits: components["schemas"]["KindTrait"][];
+    };
+    /** @description The kinds of information a field can hold. */
+    FieldTypeListBody: {
+      /** @description The kinds, in the order they are offered in. */
+      kinds: components["schemas"]["FieldTypeBody"][];
+    };
+    /** @description Where an own field is used now. */
+    FieldUsedByBody: {
+      /**
+       * Format: int32
+       * @description How many projects the person sees that use the field.
+       */
+      project_count: number;
+      /** @description The first of them. */
+      projects: components["schemas"]["ProjectRef"][];
+      /** @description The list of projects was cut. */
+      truncated: boolean;
+      /** @description The field is not limited to projects. */
+      whole_organization: boolean;
     };
     /**
      * @description Why a person follows an issue: they reported it, were assigned to it, commented on it or chose to.
@@ -2755,6 +3221,11 @@ export interface components {
      * @enum {string}
      */
     HistoryEntryKind: "comment" | "change" | "relation";
+    /** @description The hosts that images in text may come from, already split into one host for each item. */
+    ImageHostsBody: {
+      /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
+      hosts: string[];
+    };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
       /** @description When it was made. */
@@ -2792,8 +3263,11 @@ export interface components {
     };
     /** @description One issue with what the person may do with it. */
     IssueDetailBody: {
-      /** @description The fields the person may change in this issue; empty when they may not change it. */
-      changeable: components["schemas"]["Field"][];
+      /**
+       * @description The fields the person may change in this issue, built-in or own (by their keys); empty
+       *     when they may not change it.
+       */
+      changeable: components["schemas"]["FieldKey"][];
       /**
        * @description The description as safe HTML, made by the server with the same renderer as the editor's
        *     preview (the mark `x-safe-html`). Hidden with the description.
@@ -2805,6 +3279,8 @@ export interface components {
       may_change: boolean;
       /** @description Whether the person may delete the issue into the trash. */
       may_delete: boolean;
+      /** @description The long-text own fields as safe HTML, one for each the person may see. */
+      own_fields_html: components["schemas"]["OwnHtmlBody"][];
     };
     /**
      * @description The icon of an issue type, by its name in Lucide.
@@ -2846,6 +3322,7 @@ export interface components {
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
       key?: string | null;
+      own_fields?: components["schemas"]["OwnValues"] | null;
       priority?: components["schemas"]["Priority"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
       reported_by?: components["schemas"]["PersonRef"] | null;
@@ -2943,8 +3420,21 @@ export interface components {
      * @enum {string}
      */
     KindBody: "bool" | "integer" | "text";
+    /**
+     * @description What is true of a kind of information.
+     * @enum {string}
+     */
+    KindTrait:
+      | "has-choices"
+      | "many"
+      | "text"
+      | "range"
+      | "long-text"
+      | "holds-people"
+      | "takes-default"
+      | "dated";
     /** @description A field or a kind with its level and what each role says. */
-    LevelAnswerBody_Field_FieldLevel: {
+    LevelAnswerBody_FieldKey_FieldLevel: {
       /** @description An access key lowered the level to *Can see*. */
       capped_by_key: boolean;
       /**
@@ -2952,29 +3442,12 @@ export interface components {
        * @enum {string}
        */
       level: "hidden" | "can-see" | "can-change";
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
       /** @description What each role that counts says. */
       roles: components["schemas"]["RoleSaysBody_FieldLevel"][];
-      /**
-       * @description A built-in field of the field catalogue, by its key.
-       * @enum {string}
-       */
-      subject:
-        | "title"
-        | "description"
-        | "status"
-        | "priority"
-        | "assigned-to"
-        | "reported-by"
-        | "due-date"
-        | "labels"
-        | "tags"
-        | "planned-for-release"
-        | "found-in-release"
-        | "estimated-time"
-        | "time-left"
-        | "time-spent"
-        | "activity"
-        | "cost-center";
+      /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
+      subject: string;
     };
     /** @description A field or a kind with its level and what each role says. */
     LevelAnswerBody_PeopleKind_PeopleLevel: {
@@ -2985,6 +3458,8 @@ export interface components {
        * @enum {string}
        */
       level: "hidden" | "role-only" | "names";
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
       /** @description What each role that counts says. */
       roles: components["schemas"]["RoleSaysBody_PeopleLevel"][];
       /**
@@ -3010,6 +3485,8 @@ export interface components {
     LevelBody: "organization" | "project" | "person";
     /** @description The level of one role. */
     LevelCellBody_FieldLevel: {
+      /** @description The level was set for the issue type of the table, not for all issue types. */
+      for_type: boolean;
       /**
        * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
        * @enum {string}
@@ -3022,6 +3499,8 @@ export interface components {
     };
     /** @description The level of one role. */
     LevelCellBody_PeopleLevel: {
+      /** @description The level was set for the issue type of the table, not for all issue types. */
+      for_type: boolean;
       /**
        * @description How people of one kind are shown: by name, by their role only, or hidden.
        * @enum {string}
@@ -3069,30 +3548,13 @@ export interface components {
           kind: "unset";
         };
     /** @description A field or a kind of people information with the level of every role. */
-    LevelRowBody_Field_FieldLevel: {
+    LevelRowBody_FieldKey_FieldLevel: {
       /** @description One cell for each role, in the order of `roles`. */
       cells: components["schemas"]["LevelCellBody_FieldLevel"][];
-      /**
-       * @description A built-in field of the field catalogue, by its key.
-       * @enum {string}
-       */
-      subject:
-        | "title"
-        | "description"
-        | "status"
-        | "priority"
-        | "assigned-to"
-        | "reported-by"
-        | "due-date"
-        | "labels"
-        | "tags"
-        | "planned-for-release"
-        | "found-in-release"
-        | "estimated-time"
-        | "time-left"
-        | "time-spent"
-        | "activity"
-        | "cost-center";
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
+      /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
+      subject: string;
       /**
        * @description What a role may do with a field: it is hidden, it can be seen, or it can be changed.
        * @enum {string}
@@ -3103,6 +3565,8 @@ export interface components {
     LevelRowBody_PeopleKind_PeopleLevel: {
       /** @description One cell for each role, in the order of `roles`. */
       cells: components["schemas"]["LevelCellBody_PeopleLevel"][];
+      /** @description The name of an own field; none for a field of the catalogue or a kind. */
+      name?: string | null;
       /**
        * @description A kind of people information, by its key.
        * @enum {string}
@@ -3125,19 +3589,23 @@ export interface components {
       yours: "hidden" | "role-only" | "names";
     };
     /** @description What each role sees, for one place. */
-    LevelTableBody_Field_FieldLevel: {
+    LevelTableBody_FieldKey_FieldLevel: {
+      /** @description The ID of the issue type the levels are for, or `null` for all issue types. */
+      issue_type?: string | null;
       /** @description The levels a cell can be set to, the lowest first. */
       levels: ("hidden" | "can-see" | "can-change")[];
       project?: components["schemas"]["KeyProjectRef"] | null;
       /** @description The roles, in the order of roles: the columns. */
       roles: components["schemas"]["RoleRefBody"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
-      rows: components["schemas"]["LevelRowBody_Field_FieldLevel"][];
+      rows: components["schemas"]["LevelRowBody_FieldKey_FieldLevel"][];
       /** @description There are more roles than the table holds; the first ones are shown. */
       truncated: boolean;
     };
     /** @description What each role sees, for one place. */
     LevelTableBody_PeopleKind_PeopleLevel: {
+      /** @description The ID of the issue type the levels are for, or `null` for all issue types. */
+      issue_type?: string | null;
       /** @description The levels a cell can be set to, the lowest first. */
       levels: ("hidden" | "role-only" | "names")[];
       project?: components["schemas"]["KeyProjectRef"] | null;
@@ -3167,6 +3635,10 @@ export interface components {
        * @description The most items.
        */
       most_items: number;
+    };
+    /** @description Whether somebody is editing a thing now. */
+    LockHolderBody: {
+      held?: components["schemas"]["HeldLockBody"] | null;
     };
     /** @description The answer to asking for a lock. */
     LockOutcomeBody:
@@ -3213,6 +3685,11 @@ export interface components {
      * @enum {string}
      */
     LogResult: "valid" | "broken" | "unreadable";
+    /**
+     * @description How the value of an own field is shown.
+     * @enum {string}
+     */
+    Look: "badge" | "pill" | "plain-text" | "progress-bar" | "avatar";
     /** @description An access key to make. */
     MakeKeyBody: {
       /** @description What it may do. */
@@ -3329,6 +3806,36 @@ export interface components {
       /** @description The text, in Markdown. */
       text: string;
     };
+    /** @description An own field to make. */
+    NewFieldBody: {
+      /** @description What it is added to. */
+      applies_to: components["schemas"]["FieldFor"];
+      /** @description The choices of a *Pick one* or *Pick several* field. */
+      choices?: components["schemas"]["NewFieldChoiceBody"][] | null;
+      /**
+       * @description The value a new item starts with, in the form of the type. A *Pick one* or *Pick several*
+       *     field gets its default after its choices exist.
+       */
+      default_value?: Record<string, unknown> | null;
+      /** @description Words that help people fill it in. */
+      help?: string | null;
+      /** @description What kind of information it holds. */
+      kind: components["schemas"]["FieldType"];
+      look?: components["schemas"]["Look"] | null;
+      /** @description What it is called. */
+      name: string;
+      /** @description The assistant is never sent the value. */
+      never_to_assistant?: boolean | null;
+      rules?: components["schemas"]["Rules"] | null;
+      scope?: components["schemas"]["ScopeInput"] | null;
+    };
+    /** @description A choice to make with a new field. */
+    NewFieldChoiceBody: {
+      color?: components["schemas"]["ChoiceColor"] | null;
+      icon?: components["schemas"]["IssueIcon"] | null;
+      /** @description What it is called. */
+      name: string;
+    };
     /**
      * @description The level to set, or `null` to take away what the project set for the role, so the level
      *     from above counts again.
@@ -3342,6 +3849,10 @@ export interface components {
       assigned_to?: string[] | null;
       /** @description The long text, in Markdown. Empty when left out. */
       description?: string | null;
+      /** @description The values of its own fields, by the key (ID) of the field. The defaults fill in the rest. */
+      fields?: {
+        [key: string]: unknown;
+      };
       /** @description The ID of its issue type; a retired type takes no new issues. */
       issue_type: string;
       priority?: components["schemas"]["Priority"] | null;
@@ -3488,6 +3999,16 @@ export interface components {
           /** @description The ID of the role. */
           role: string;
         };
+    /** @description A long-text own field of an issue as safe HTML. */
+    OwnHtmlBody: {
+      /** @description The key of the field. */
+      field: components["schemas"]["FieldKey"];
+      /**
+       * @description The text as safe HTML, made by the server with the renderer of the editor's preview (the
+       *     mark `x-safe-html`).
+       */
+      html: SafeHtml;
+    };
     /** @description What the person would lose. */
     OwnLossBody: {
       /**
@@ -3495,6 +4016,10 @@ export interface components {
        *     change; empty when the change takes nothing from the person.
        */
       loses: components["schemas"]["Permission"][];
+    };
+    /** @description The values of the own fields, by the key (ID) of the field. A value has the form of its field's type. */
+    OwnValues: {
+      [key: string]: unknown;
     };
     /**
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
@@ -3700,6 +4225,7 @@ export interface components {
         issue_type?: components["schemas"]["IssueTypeRef"] | null;
         /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
         key?: string | null;
+        own_fields?: components["schemas"]["OwnValues"] | null;
         priority?: components["schemas"]["Priority"] | null;
         project?: components["schemas"]["ProjectRef"] | null;
         reported_by?: components["schemas"]["PersonRef"] | null;
@@ -4306,10 +4832,17 @@ export interface components {
     };
     /** @description One project, with where it is and what the person may do there. */
     ProjectDetailBody: {
+      /** @description The own fields the person may change in this project, by their keys. */
+      changeable_fields: components["schemas"]["FieldKey"][];
       /** @description Whether the person may change the short name. */
       may_change_short_name: boolean;
       /** @description Where the person may move the project to. */
       may_move: components["schemas"]["MoveRightBody"];
+      /**
+       * @description The values of the own fields of the project, by the key (ID) of the field: only the fields
+       *     the person may see.
+       */
+      own_fields: components["schemas"]["OwnValues"];
       /** @description What the person may do here. */
       permissions: components["schemas"]["Permission"][];
       /** @description The project. Its `short_name` is the one it has now, also when the address named an old one. */
@@ -4503,6 +5036,16 @@ export interface components {
        */
       version: number;
     };
+    /** @description The new order of the choices. */
+    ReorderChoicesBody: {
+      /** @description The IDs of every choice of the field, in the new order. */
+      order: string[];
+      /**
+       * Format: int64
+       * @description The version of the field the person looked at.
+       */
+      version: number;
+    };
     /** @description Which role to give its starting permissions back, made on the version that was looked at. */
     ResetRoleBody: {
       /**
@@ -4637,6 +5180,38 @@ export interface components {
       /** @description Whether somebody has the role for the whole organization. */
       whole_organization: boolean;
     };
+    /**
+     * @description The rules a value has to keep (CF-03). Which rules a type can have is decided by
+     *     [`FieldType`]; [`Rules::check_definition`] refuses a rule the type cannot have.
+     */
+    Rules: {
+      /**
+       * Format: int64
+       * @description The highest one.
+       */
+      max?: number | null;
+      /**
+       * Format: int32
+       * @description The most.
+       */
+      max_length?: number | null;
+      /**
+       * Format: int64
+       * @description The lowest number, day, moment or length of time, in the unit the value is stored in
+       *     (millionths for a decimal, days for a date, microseconds for a moment, seconds for a
+       *     duration).
+       */
+      min?: number | null;
+      /**
+       * Format: int32
+       * @description The fewest characters of a text, or values of a *Pick several* and *People* field.
+       */
+      min_length?: number | null;
+      /** @description A pattern the whole text has to match (a regular expression without look-around). */
+      pattern?: string | null;
+      /** @description The value has to be there. */
+      required?: boolean;
+    };
     /** @description The new text of a comment, saved under the lock the editor holds. */
     SaveCommentBody: {
       /** @description The token the lock on the text was taken with. */
@@ -4649,12 +5224,46 @@ export interface components {
        */
       version: number;
     };
+    /** @description The description to save under the lock the person holds. */
+    SaveDescriptionBody: {
+      /** @description The token of the edit lock the person holds on the description. */
+      lock_token: string;
+      /** @description The description, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description The version the person started from.
+       */
+      version: number;
+    };
     /** @description A draft to keep. */
     SaveDraftBody: {
       /** @description The text and the version it started from. */
       draft: components["schemas"]["DraftTextBody"];
       /** @description What the draft is for. */
       target: components["schemas"]["DraftTargetBody"];
+    };
+    /** @description The long text of an own field, saved under the edit lock of the person. */
+    SaveFieldTextBody: {
+      /** @description The token the edit lock was taken with. */
+      lock_token: string;
+      /** @description The text, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description The version of the issue the person started from.
+       */
+      version: number;
+    };
+    /** @description Where a field is used, in a request. */
+    ScopeInput: {
+      /** @description The IDs of the issue types the field is limited to; empty for all. */
+      issue_types?: string[];
+      /**
+       * @description The IDs of the projects the field is limited to, with their sub-projects; empty for the
+       *     whole organization.
+       */
+      projects?: string[];
     };
     /** @description Which ways there are to finish signing in. */
     SecondStepBody: {
@@ -4952,7 +5561,7 @@ export interface components {
       person?: string | null;
     };
     /**
-     * @description A word of the vocabulary with the message that names it: a field, a kind of people information
+     * @description A word of the vocabulary with the message that names it: a kind of people information
      *     or a level.
      */
     WordBody: {
@@ -8532,6 +9141,75 @@ export interface operations {
       };
     };
   };
+  getImageHosts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The hosts. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ImageHostsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   readDraft: {
     parameters: {
       query: {
@@ -8757,6 +9435,109 @@ export interface operations {
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  readEditLock: {
+    parameters: {
+      query: {
+        /** @description The kind of record, like `issue`. */
+        kind: string;
+        /** @description The ID of the record. */
+        id: string;
+        /** @description Which long text of the record, like `description`. */
+        part: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Who is editing, or nothing. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LockHolderBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -9313,6 +10094,11 @@ export interface operations {
          *     each role has of its own.
          */
         project?: string;
+        /**
+         * @description The ID of an issue type: the levels that count for issues of this type (ADR-0027).
+         *     Without it the answer is about all issue types.
+         */
+        issue_type?: string;
       };
       header?: never;
       path?: never;
@@ -9328,7 +10114,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["LevelTableBody_Field_FieldLevel"];
+          "application/json": components["schemas"]["LevelTableBody_FieldKey_FieldLevel"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
@@ -9406,13 +10192,18 @@ export interface operations {
          *     each role has of its own.
          */
         project?: string;
+        /**
+         * @description The ID of an issue type: the levels that count for issues of this type (ADR-0027).
+         *     Without it the answer is about all issue types.
+         */
+        issue_type?: string;
       };
       header?: never;
       path: {
         /** @description The ID of the role. */
         role: string;
-        /** @description The key of the field. */
-        field: components["schemas"]["Field"];
+        /** @description The key of the field: its word, or the ID of an own field. */
+        field: components["schemas"]["FieldKey"];
       };
       cookie?: never;
     };
@@ -9437,6 +10228,929 @@ export interface operations {
         content: {
           "application/problem+json": components["schemas"]["Problem"];
         };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listFieldTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The kinds of information. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldTypeListBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listFields: {
+    parameters: {
+      query?: {
+        /** @description Only fields for this kind of item. */
+        applies_to?: components["schemas"]["FieldFor"];
+        /** @description Only the fields used in this project (its ID or short name). */
+        project?: string;
+        /** @description Also the retired fields. */
+        retired?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The fields. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldListBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewFieldBody"];
+      };
+    };
+    responses: {
+      /** @description The field. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The field. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeField: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeFieldBody"];
+      };
+    };
+    responses: {
+      /** @description The field as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  addChoice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AddChoiceBody"];
+      };
+    };
+    responses: {
+      /** @description The field as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  reorderChoices: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReorderChoicesBody"];
+      };
+    };
+    responses: {
+      /** @description The field as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeChoice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+        /** @description The ID of the choice. */
+        choice: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeChoiceBody"];
+      };
+    };
+    responses: {
+      /** @description The field as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  combineChoices: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+        /** @description The ID of the choice that goes away. */
+        choice: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CombineChoicesBody"];
+      };
+    };
+    responses: {
+      /** @description The field as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getFieldUsedBy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the field. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Where the field is used. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FieldUsedByBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -10894,6 +12608,210 @@ export interface operations {
         };
         content: {
           "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  saveIssueDescription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveDescriptionBody"];
+      };
+    };
+    responses: {
+      /** @description The issue as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  saveIssueFieldText: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+        /** @description The ID of the long text field. */
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveFieldTextBody"];
+      };
+    };
+    responses: {
+      /** @description The issue as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
@@ -13303,6 +15221,118 @@ export interface operations {
         };
         content: {
           "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listAssignablePeople: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description Words that every found name holds, in any order; left out or empty, everybody is listed. */
+        search?: string;
+        /**
+         * @description An own field that holds people: the list is for choosing a value of it, and needs the right
+         *     to change that field instead of *Assigned to*. For a field of projects the list holds the
+         *     people who see the project.
+         */
+        field?: string;
+        /**
+         * @description The issue the list is for (its ID or readable ID): the people who may see it are listed.
+         *     Without it, the people who may see an issue the person would report now.
+         */
+        issue?: string;
+        /** @description The ID of the type of the issue that is being made, for a field whose level depends on it. */
+        issue_type?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people, by name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_PersonRef"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
         };
       };
       /** @description error.rate-limit.exceeded (rate_limit.exceeded) */

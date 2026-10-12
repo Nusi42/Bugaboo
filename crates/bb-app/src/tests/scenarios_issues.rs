@@ -1,16 +1,21 @@
 //! The scenarios of the issue use cases (ADR-0007, M1-F18): the preparation, the call, and how many
 //! events the call added. `events.rs` names each use case once and runs them.
 
-use bb_core::id::{IssueId, IssueTypeId, ProjectId};
+use bb_core::edit::EditWhat;
+use bb_core::event::{EntityRef, RecordKind};
+use bb_core::id::{EditorId, EntityId, IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::{IssueIcon, Status};
+use bb_core::technical::TechnicalName;
 
 use super::fake::FakeStore;
 use super::scenarios::{Added, a_project, measured, text, token};
 use super::world::World;
+use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
     ChangeIssue, ChangeIssueType, DeleteIssue, IssueTypesQuery, MakeIssue, MakeIssueType,
-    MakeStartingIssueTypes, RestoreIssue, change_issue, change_issue_type, delete_issue,
-    issue_types, make_issue, make_issue_type, make_starting_issue_types, restore_issue,
+    MakeStartingIssueTypes, RestoreIssue, SaveDescription, change_issue, change_issue_type,
+    delete_issue, issue_types, make_issue, make_issue_type, make_starting_issue_types,
+    restore_issue, save_description,
 };
 
 /// The first issue type of the first start (*Bug*).
@@ -45,6 +50,7 @@ pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueI
             status: None,
             priority: None,
             assigned_to: None,
+            fields: std::collections::BTreeMap::new(),
         },
     )
     .await
@@ -68,6 +74,7 @@ pub(crate) async fn make_issue_scenario(world: &World) -> Added {
                 status: Some(Status::InProgress),
                 priority: None,
                 assigned_to: Some(vec![world.admin.person.id]),
+                fields: std::collections::BTreeMap::new(),
             },
         ),
     )
@@ -87,10 +94,49 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
                 version: 1,
                 issue_type: None,
                 title: Some("The login button does nothing at all".to_owned()),
-                description: None,
                 status: Some(Status::Done),
                 priority: None,
                 assigned_to: None,
+                fields: std::collections::BTreeMap::new(),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn save_description_scenario(world: &World) -> Added {
+    let project = a_project(world, "ACME").await?;
+    let issue = an_issue(world, project).await?;
+    let taken = take_lock(
+        &world.ctx(),
+        TakeLockQuery {
+            session_token: token(world),
+            what: EditWhat {
+                record: EntityRef {
+                    kind: RecordKind::Issue.into(),
+                    id: EntityId::from(issue),
+                },
+                part: TechnicalName::new("description").map_err(text)?,
+            },
+            editor: EditorId::from_random([5; 16]),
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    let LockOutcome::Taken(lock) = taken else {
+        return Err("the lock was not free".to_owned());
+    };
+    measured(
+        &world.store,
+        save_description(
+            &world.ctx(),
+            SaveDescription {
+                session_token: token(world),
+                issue: issue.to_string(),
+                version: 1,
+                lock_token: lock.token,
+                text: "It fails on Monday.".to_owned(),
             },
         ),
     )

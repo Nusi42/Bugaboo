@@ -5,7 +5,7 @@ import { partOf } from "./parts.ts";
 import {
   buttonLook,
   buttonShape,
-  buttonState,
+  busyState,
   buttonType,
   type ButtonLook,
   type ButtonType,
@@ -61,7 +61,7 @@ export function Button({
       {...(current ? { "aria-current": currentItem } : {})}
       {...partOf(part.button, {
         variants: [look !== buttonLook.plain && look, wide && buttonShape.wide],
-        states: [isPending && buttonState.busy],
+        states: [isPending && busyState.busy],
       })}
     >
       {children}

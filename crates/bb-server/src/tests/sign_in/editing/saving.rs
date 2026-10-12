@@ -157,6 +157,7 @@ async fn iss_17_a_stale_version_answers_who_changed_what() -> TestResult {
                     version,
                     name: Some(name.to_owned()),
                     short_name: None,
+                    fields: std::collections::BTreeMap::new(),
                 },
             )
         };
@@ -228,6 +229,7 @@ async fn iss_17_a_conflict_names_who_changed_the_record_not_who_asked_to_finish(
                     version,
                     name: Some(name.to_owned()),
                     short_name: None,
+                    fields: std::collections::BTreeMap::new(),
                 },
             )
         };

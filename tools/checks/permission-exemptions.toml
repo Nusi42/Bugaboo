@@ -8,10 +8,6 @@ permission = "change-own-issues"
 reason = "Judged by Evaluation::may_change_issue inside the route that declares change-issues (PATCH /api/v1/issues/{issue}): a person with only this permission changes the issues they reported. It has no route of its own and stays here for good (M3-F01)."
 
 [[engine-only]]
-permission = "manage-fields"
-reason = "Field routes come in M3 WP-05 (docs/milestones/M3/WP-05-own-fields.md); tracked by M3-F01."
-
-[[engine-only]]
 permission = "move-issues"
 reason = "Moving issues comes in M3 WP-08 (docs/milestones/M3/WP-08-tags-labels-and-many-at-once.md); tracked by M3-F01."
 

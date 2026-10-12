@@ -21,6 +21,7 @@ bb-markdown = { path = "../bb-markdown" }
 bb-policy = { path = "../bb-policy" }
 getrandom = { workspace = true }
 jiff = { workspace = true }
+regex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

@@ -945,7 +945,8 @@ pub(crate) async fn set_field_level_scenario(world: &World) -> Added {
                 session_token: token(world),
                 role,
                 project: None,
-                field: Field::Title,
+                issue_type: None,
+                field: Field::Title.into(),
                 level: Some(bb_core::access::FieldLevel::CanSee),
             },
         ),
@@ -1062,6 +1063,7 @@ pub(crate) async fn change_project_scenario(world: &World) -> Added {
                 version: 1,
                 name: Some("Acme Corporation".to_owned()),
                 short_name: Some("ACMECORP".to_owned()),
+                fields: std::collections::BTreeMap::new(),
             },
         ),
     )

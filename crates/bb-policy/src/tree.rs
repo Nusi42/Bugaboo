@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use bb_core::access::{Assignment, GroupMember};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{DEPTH_MAX, Project};
@@ -203,10 +203,17 @@ impl Policy {
             |project: Option<ProjectId>| project.is_some_and(|project| projects.contains(&project));
         let ruled: BTreeSet<RoleId> = self
             .rules
-            .of::<Field>()
+            .of::<FieldKey>()
             .iter()
             .filter(|rule| on_projects(rule.project))
             .map(|rule| rule.role)
+            .chain(
+                self.rules
+                    .typed
+                    .iter()
+                    .filter(|rule| on_projects(rule.project))
+                    .map(|rule| rule.role),
+            )
             .chain(
                 self.rules
                     .of::<PeopleKind>()

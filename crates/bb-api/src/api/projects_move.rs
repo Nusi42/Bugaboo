@@ -25,7 +25,21 @@ use super::auth::{
 use super::projects::{ProjectBody, ProjectRef, project_id};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
-/// A word of the vocabulary with the message that names it: a field, a kind of people information
+/// A field of the move preview: a field of the catalogue is named by a message, an own field by
+/// its name.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct FieldKeyBody {
+    /// The key of the field: its word, or the ID of an own field.
+    code: String,
+    /// The key of the message that names a field of the catalogue.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message_key: Option<String>,
+    /// The name of an own field.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+}
+
+/// A word of the vocabulary with the message that names it: a kind of people information
 /// or a level.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct WordBody {
@@ -60,7 +74,7 @@ impl From<&Standing> for StandingBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct FieldLevelChangeBody {
     /// The field.
-    field: WordBody,
+    field: FieldKeyBody,
     /// The level now.
     before: WordBody,
     /// The level after the move.
@@ -70,9 +84,13 @@ pub(crate) struct FieldLevelChangeBody {
 impl From<&FieldLevelChange> for FieldLevelChangeBody {
     fn from(change: &FieldLevelChange) -> Self {
         Self {
-            field: WordBody {
-                code: change.field.code().to_owned(),
-                message_key: change.field.name().as_str().to_owned(),
+            field: FieldKeyBody {
+                code: change.field.code().into_owned(),
+                message_key: change
+                    .field
+                    .built_in()
+                    .map(|field| field.name().as_str().to_owned()),
+                name: change.name.clone(),
             },
             before: WordBody {
                 code: change.before.code().to_owned(),

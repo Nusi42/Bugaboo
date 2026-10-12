@@ -50,7 +50,7 @@ pub(crate) struct Wired {
 
 /// The clearing of what outlived its keep period (drafts, notes for people who were editing and
 /// lock rows that ran out) and the catching up of the history with the events. It stands in for
-/// the jobs `editing.purge_drafts` and `history` until the job runner exists (M3-F30, M3-F61).
+/// the jobs `editing.purge_drafts` and `history` until the job runner exists (M3-F30, M3-F71).
 #[derive(Clone)]
 pub(crate) struct Housekeeping(Arc<AuthServices<AuthStorage>>);
 

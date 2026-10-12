@@ -21,6 +21,16 @@ M3 brings issue types (ISS-02), layouts for the issue page and the new-issue for
 - The settings registry stays a registry of single values; structures have their own tables and migrations.
 - M4 replaces the starting workflow without a data migration of issues.
 
+## Amendment, M3 WP-05: field levels per issue type
+
+The lookup of decision 2 is `bb_core::lookup::nearest_row`: the one function that finds the row for a place and an issue type. The levels of fields per issue type use it today (`bb_policy::nearest_typed_rule`, which `nearest_rule` for the plain levels also calls); layouts (WP-09) use the same function.
+
+- **Storage.** A level for one issue type is a row in `role_type_field_level` (the role's own) or `project_type_field_level` (set for a project), next to the tables of the levels for all types. The rows join the evaluation as `LevelRules::typed`; they are read together with the other levels of the roles at a place.
+- **Reading.** `Evaluation::field_level_for(issue_type, field)` is the level of a field on an item of that type, `field_mask_for` the mask. A view that holds its issue type (`#[masked(item_type)]`) is masked with the mask of that type; a view that does not say its type gets, for each field, the lowest level the field has in any type, so a field that is hidden for some type is never shown by a view that does not say which type it is for.
+- **Setting.** The route of the field permissions takes `?issue_type=`; taking a level for a type away is allowed at the organization too (the role's own level for all types always exists).
+- **Names of own fields.** A screen that names fields (*Field permissions*, *Check access*, the move preview) lists an own field, and prints its name, only for a viewer who *may know the field*: they may see it in some issue type (any level above *Hidden*), or they have *Manage fields*, because whoever manages fields reads every definition on the *Fields* settings page anyway. For every other viewer the field's name, its ID and its rows are left out of the answer. Values are another matter: a value follows the level of its field, and *Manage fields* gives no right to read one. The rule is `may_know` in `bb-app` (`fields/catalogue.rs`); the move preview applies it per project of a row, so a field for a sub-project keeps its name for a viewer who may know it there.
+- **Naming people in a field.** One rule, `may_name` in `bb-app` (`access/candidates.rs`), decides whether a person can be put into *Assigned to* or into an own field of people, and which people the list to choose from offers: the person exists, the viewer is shown people by name (*Assigned to* and *Project members* both show names, ADR-0022) or names themselves, and the person may see the item. A viewer who is shown others only as a role has no ID to name them by, so the ID of somebody else sent in a request is refused alike for a person who is there and one who is not. A value the field holds already, or that *Undo* puts back, skips only the access of the person named; the person still has to exist.
+
 ## Alternatives considered
 
 - **Layouts as settings values (JSON in the registry):** no issue-type dimension, no typed validation, and every reader would parse JSON. Rejected.

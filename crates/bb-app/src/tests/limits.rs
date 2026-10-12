@@ -1,4 +1,4 @@
-//! What one issue may hold (M3-F68): at most `RELATIONS_MAX` relations and `SUB_ISSUES_MAX`
+//! What one issue may hold (M3-F78): at most `RELATIONS_MAX` relations and `SUB_ISSUES_MAX`
 //! sub-issues, counted in the change itself and with every row, also rows the person may not see.
 
 use bb_core::ErrorCode;

@@ -1,7 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
 /** The fields of the catalogue, the kinds of people information and their levels, as the API words them. */
-export type FieldKey = Schema<"Field">;
+export type FieldKeyCode = Schema<"FieldKey">;
 export type FieldLevelCode = Schema<"FieldLevel">;
 export type PeopleKindKey = Schema<"PeopleKind">;
 export type PeopleLevelCode = Schema<"PeopleLevel">;
@@ -17,11 +17,15 @@ export interface Cell<Level extends string> {
   readonly role: string;
   readonly level: Level;
   readonly origin: Origin;
+  /** In the table of an issue type: the level was set for that type, not for all types. */
+  readonly for_type?: boolean;
 }
 
 /** A field or kind with the level of every role, in the order of the roles. */
 export interface Row<Subject extends string, Level extends string> {
   readonly subject: Subject;
+  /** The name of an own field; a field of the catalogue and a kind are named by messages. */
+  readonly name?: string | null | undefined;
   /** The highest level the person who asks may set. */
   readonly yours: Level;
   readonly cells: readonly Cell<Level>[];
@@ -33,6 +37,8 @@ export interface Row<Subject extends string, Level extends string> {
  */
 export interface LevelTable<Subject extends string, Level extends string> {
   readonly project?: ProjectLabel | null | undefined;
+  /** The issue type the levels are for (an ID); none for all issue types. */
+  readonly issue_type?: string | null | undefined;
   readonly roles: readonly RoleColumn[];
   readonly truncated: boolean;
   /** The levels a cell can be set to, the lowest first. */
@@ -77,6 +83,7 @@ export function applied<Subject extends string, Level extends string>(
     before.project === undefined || before.project === null
       ? { kind: "role_own" }
       : { kind: "set_here" };
+  const forType = before.issue_type !== undefined && before.issue_type !== null;
   return {
     ...before,
     rows: before.rows.map((row) =>
@@ -84,7 +91,9 @@ export function applied<Subject extends string, Level extends string>(
         ? {
             ...row,
             cells: row.cells.map((cell) =>
-              cell.role === change.role ? { ...cell, level, origin } : cell,
+              cell.role === change.role
+                ? { ...cell, level, origin, ...(forType ? { for_type: true } : {}) }
+                : cell,
             ),
           }
         : row,

@@ -26,7 +26,7 @@ mod versions;
 pub use conflict::{Conflict, Stale};
 pub use drafts::{purge_drafts, read_draft, save_draft, throw_away_draft};
 pub use lock::{
-    ask_to_finish, edit_anyway, heartbeat, release_lock, release_stuck_lock, take_lock,
+    ask_to_finish, edit_anyway, heartbeat, read_lock, release_lock, release_stuck_lock, take_lock,
 };
 pub use records::{ChainedRecords, EditableRecords, NoRecords, RecordFacts, Shown};
 pub use save::{TextSave, Written};

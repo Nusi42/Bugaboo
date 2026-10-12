@@ -286,10 +286,10 @@ async fn iss_01_a_guest_sees_only_the_issues_they_reported() -> TestResult {
             .send(
                 "PATCH",
                 &path,
-                Some(json!({"version": 1, "description": "It happens on Mondays."})),
+                Some(json!({"version": 1, "title": "Gus found a worse bug"})),
             )
             .await?;
-        assert_eq!(ok(&changed)?["description"], "It happens on Mondays.");
+        assert_eq!(ok(&changed)?["title"], "Gus found a worse bug");
         Ok(())
     })
     .await

@@ -53,7 +53,7 @@ pub async fn catch_up<S: HistoryStore>(store: &S, now: Timestamp) -> Result<u64,
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Catches the history up with every event not yet read: the server does it when it starts
-    /// and once a day after that, and a reader of a history does it first (M3-F61). Returns how
+    /// and once a day after that, and a reader of a history does it first (M3-F71). Returns how
     /// many events it read.
     ///
     /// # Errors

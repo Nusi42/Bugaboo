@@ -41,10 +41,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 self.require(actor, facts.edit, facts.place).await
             }
             DraftTarget::NewRecord { project, kind } => {
-                let permission = self
-                    .services
-                    .records
-                    .making(kind)
+                let permission = crate::issues::editing::making(kind)
+                    .or_else(|| self.services.records.making(kind))
                     .ok_or(AppError::Refused(ErrorCode::NotFound))?;
                 self.require(actor, permission, Place::Project(*project))
                     .await
@@ -56,7 +54,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ///
     /// # Errors
     /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters.
-    pub(super) async fn keep_draft(
+    pub(crate) async fn keep_draft(
         &self,
         author: UserId,
         target: &DraftTarget,

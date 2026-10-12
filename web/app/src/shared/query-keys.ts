@@ -72,6 +72,22 @@ export const queryKeys = {
     list: () => ["mentions", "list"],
     choices: (issue: string, search: string) => ["mentions", "choices", issue, search],
   },
+  issues: {
+    all: ["issues"],
+    lists: () => ["issues", "list"],
+    list: (project: string) => ["issues", "list", project],
+    one: (address: string) => ["issues", "one", address],
+    people: (project: string, search: string, field = "", issue = "", issueType = "") => [
+      "issues",
+      "assignable-people",
+      project,
+      search,
+      field,
+      issue,
+      issueType,
+    ],
+    drafts: (project: string) => ["issues", "new-draft", project],
+  },
   invitations: {
     all: ["invitations"],
     one: (secret: string) => ["invitations", "one", secret],
@@ -92,6 +108,26 @@ export const queryKeys = {
     ],
   },
 } as const;
+
+/** The reads that hold an own field, its choices or the values of one. */
+const FIELD_READS = [
+  "/api/v1/fields",
+  "/api/v1/fields/{field}",
+  "/api/v1/fields/{field}/used-by",
+  "/api/v1/field-types",
+  "/api/v1/field-permissions",
+  "/api/v1/issues",
+  "/api/v1/issues/{issue}",
+  "/api/v1/projects",
+  "/api/v1/projects/{project}",
+] as const;
+
+/** An own field or one of its choices changed: every answer that holds fields is read again. */
+export function refreshFields(): void {
+  for (const path of FIELD_READS) {
+    void queryClient.invalidateQueries({ queryKey: ["get", path] });
+  }
+}
 
 /** An issue type was made or changed: the list of types is read again. */
 export function refreshIssueTypes(): void {

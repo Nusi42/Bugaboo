@@ -9,7 +9,7 @@ use bb_app::comments::CommentStore as _;
 use bb_app::history::{HistoryStore as _, catch_up, catch_up_batch};
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::history::HistoryKind;
 use bb_core::id::{CommentId, IssueId};
 use bb_core::text::LONG_TEXT_MAX;
@@ -314,7 +314,8 @@ async fn reader_without_priority(site: &Site<'_>, rig: &Rig) -> Result<Browser, 
                     session_token: site.org.admin.session.clone(),
                     role: role.id,
                     project: None,
-                    field,
+                    issue_type: None,
+                    field: FieldKey::BuiltIn(field),
                     level: Some(FieldLevel::CanSee),
                 },
             )

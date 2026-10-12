@@ -192,7 +192,8 @@ async fn setter(org: &Org<'_>) -> Run<RoleId> {
                     session_token: org.admin.session.clone(),
                     role: setter.id,
                     project: None,
-                    field,
+                    issue_type: None,
+                    field: field.into(),
                     level: Some(FieldLevel::CanSee),
                 },
             )
@@ -232,7 +233,8 @@ async fn sec_04_nobody_raises_a_level_by_taking_an_override_away() -> TestResult
             session_token: admin.clone(),
             role: target.id,
             project,
-            field: Field::Title,
+            issue_type: None,
+            field: Field::Title.into(),
             level,
         };
         let kind = |project: Option<ProjectId>, level| SetPeopleLevel {
@@ -567,7 +569,8 @@ async fn adr_0007_events_of_levels_and_removed_rows_say_what_was_there_before() 
                     session_token: org.admin.session.clone(),
                     role: role.id,
                     project: Some(acme),
-                    field: Field::Title,
+                    issue_type: None,
+                    field: Field::Title.into(),
                     level,
                 },
             )
@@ -812,7 +815,8 @@ async fn all_fields(org: &Org<'_>, role: RoleId) -> Run<()> {
                     session_token: org.admin.session.clone(),
                     role,
                     project: None,
-                    field: *field,
+                    issue_type: None,
+                    field: (*field).into(),
                     level: Some(FieldLevel::CanChange),
                 },
             )

@@ -26,6 +26,7 @@ use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
+use crate::fields::FieldStore;
 use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::issues::IssueStore;
@@ -320,6 +321,7 @@ pub trait AuthStore:
     + CommentStore
     + FollowStore
     + HistoryStore
+    + FieldStore
     + SettingsStore
     + 'static
 {

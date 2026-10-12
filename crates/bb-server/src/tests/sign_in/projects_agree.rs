@@ -21,7 +21,7 @@ use super::rig::Rig;
 /// every field and of every kind of people information, from `Check access`.
 type Decision = (
     Vec<Permission>,
-    Vec<(Field, FieldLevel)>,
+    Vec<(bb_core::fields::FieldKey, FieldLevel)>,
     Vec<(PeopleKind, PeopleLevel)>,
 );
 
@@ -124,7 +124,8 @@ async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Failure> {
                     session_token: admin.session.clone(),
                     role: looker.id,
                     project: Some(project),
-                    field,
+                    issue_type: None,
+                    field: field.into(),
                     level: Some(FieldLevel::CanChange),
                 },
             )
@@ -179,7 +180,7 @@ async fn prj_02_the_list_the_preview_and_a_request_decide_alike_for_every_person
                     fields,
                     Field::ALL
                         .iter()
-                        .map(|f| (*f, held.field_level(*f)))
+                        .map(|f| ((*f).into(), held.field_level(*f)))
                         .collect::<Vec<_>>(),
                     "fields at {}",
                     project.short_name

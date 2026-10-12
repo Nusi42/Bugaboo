@@ -39,6 +39,7 @@ reason = "A person's own choices in My settings belong to that one person and ha
 routes = [
   "POST /api/v1/access-keys",
   "POST /api/v1/assignments",
+  "POST /api/v1/fields",
   "POST /api/v1/auth/invitations",
   "POST /api/v1/groups",
   "POST /api/v1/issue-types",

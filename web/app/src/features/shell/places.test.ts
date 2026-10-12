@@ -124,6 +124,6 @@ describe("cfg_08 quick search finds the pages of the app", () => {
     expect(await found("people", administrator)).toEqual([paths.people]);
     expect(await found("roles", administrator)).toEqual([paths.roles]);
     expect((await found("", [])).length).toBeGreaterThan(3);
-    expect(await found("", [])).not.toContain(paths.frames);
+    expect(await found("", [])).not.toContain(paths.issue);
   });
 });

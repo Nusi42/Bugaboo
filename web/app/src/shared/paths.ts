@@ -25,6 +25,8 @@ export const paths = {
   groups: "/settings/groups",
   issueTypes: "/settings/issue-types",
   relationKinds: "/settings/relation-kinds",
+  fields: "/settings/fields",
+  field: "/settings/fields/$field",
   roles: "/settings/roles",
   role: "/settings/roles/$role",
   signInRules: "/settings/sign-in-rules",
@@ -41,14 +43,21 @@ export const paths = {
   projectFields: "/p/$project/settings/fields",
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
-  frames: "/frames",
+  projectIssues: "/p/$project/issues",
+  issue: "/issues/$issue",
 } as const;
 
 /** An address of the app, as the routes know it. */
 export type Path = (typeof paths)[keyof typeof paths];
 
 /** The parts of an address that change from page to page, by the name the route gives them. */
-export const routeParam = { project: "project", person: "person", role: "role" } as const;
+export const routeParam = {
+  project: "project",
+  person: "person",
+  role: "role",
+  field: "field",
+  issue: "issue",
+} as const;
 
 /** The name of a part of an address that changes. */
 export type RouteParam = (typeof routeParam)[keyof typeof routeParam];
@@ -88,7 +97,27 @@ export function issueTypeAddress(id: string): string {
   return `${paths.issueTypes}?open=${encodeURIComponent(id)}`;
 }
 
+/** The address of the page of an own field, `/settings/fields/<ID>`. */
+export function fieldAddress(id: string): string {
+  return filled(paths.field, routeParam.field, id);
+}
+
 /** The address of the page of a role, `/settings/roles/<ID>`. */
 export function roleAddress(id: string): string {
   return filled(paths.role, routeParam.role, id);
+}
+
+/** The address of an issue, `/issues/WEB-142`: the focus view, and the link that is shared. */
+export function issueAddress(key: string): string {
+  return filled(paths.issue, routeParam.issue, key);
+}
+
+/** The address of the issues of a project, `/p/WEB/issues`. */
+export function projectIssuesAddress(shortName: string): string {
+  return addressInProject(paths.projectIssues, shortName);
+}
+
+/** The address of the issues of a project with one issue open in the side panel. */
+export function issuePanelAddress(shortName: string, key: string): string {
+  return `${projectIssuesAddress(shortName)}?open=${encodeURIComponent(key)}`;
 }

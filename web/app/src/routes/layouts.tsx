@@ -67,6 +67,32 @@ async function joinProjects(): Promise<void> {
   }
 }
 
+/** Whether the issues have joined the shell (the new-issue dialog and its key). */
+let issuesJoined = false;
+
+/** The issues join the shell once somebody is signed in, like the projects do. */
+async function joinIssues(): Promise<void> {
+  if (issuesJoined) {
+    return;
+  }
+  const [issues, fields, relations, history, follow] = await Promise.all([
+    import("../features/issues/index.ts"),
+    import("../features/fields/index.ts"),
+    import("../features/relations/index.ts"),
+    import("../features/history/index.ts"),
+    import("../features/follow/index.ts"),
+  ]);
+  if (!issuesJoined) {
+    issuesJoined = true;
+    issues.registerIssues();
+    // The blocks of the issue page, all put into the slots of `features/issues/slots.ts`.
+    fields.registerFields();
+    relations.registerRelationBlocks();
+    history.registerHistoryBlock();
+    follow.registerFollowersBlock();
+  }
+}
+
 /**
  * Pages of somebody who is signed in. Everybody else goes to sign in, or to the setup; somebody
  * who has to set up a second step first goes to that screen and can open nothing else.
@@ -85,6 +111,7 @@ export const appRoute = createRoute({
     // The person's own settings come before the first page, so the look is theirs from the start.
     await loadMySettings();
     await joinProjects();
+    await joinIssues();
     return { person };
   },
   component: AppLayout,

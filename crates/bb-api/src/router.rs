@@ -140,6 +140,7 @@ pub fn router(options: Options) -> Router {
         probe: options.probe,
     };
     let auth = state.auth.clone();
+    let header_auth = auth.clone();
     let app = Router::new()
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
@@ -153,7 +154,7 @@ pub fn router(options: Options) -> Router {
             LogContext::new(&options.trusted_proxies),
             log_request,
         ));
-    headers::apply(app, hsts_max_age)
+    headers::apply(app, hsts_max_age, header_auth)
 }
 
 /// Serves `router(options)` on `incoming` until `shutdown` completes, then lets running

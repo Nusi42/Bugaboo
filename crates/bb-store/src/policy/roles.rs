@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bb_app::access::RoleRecord;
 use bb_core::access::{FieldLevel, PeopleLevel, Role};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::RoleId;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::technical::TechnicalName;
@@ -122,7 +122,7 @@ pub(crate) async fn insert_role(
     transaction: &mut Transaction,
     role: &Role,
     permissions: &[Permission],
-    fields: &[(Field, FieldLevel)],
+    fields: &[(FieldKey, FieldLevel)],
     people: &[(PeopleKind, PeopleLevel)],
 ) -> Result<(), StoreError> {
     let mut insert = Query::insert();
@@ -191,7 +191,7 @@ pub(crate) async fn replace_role_permissions(
 pub(crate) async fn replace_role_levels(
     transaction: &mut Transaction,
     id: RoleId,
-    fields: &[(Field, FieldLevel)],
+    fields: &[(FieldKey, FieldLevel)],
     people: &[(PeopleKind, PeopleLevel)],
 ) -> Result<(), StoreError> {
     levels::replace_own(transaction, id, fields).await?;

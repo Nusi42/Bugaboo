@@ -9,8 +9,9 @@
 //! sub-projects the person sees (PRIV-13).
 
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::ProjectId;
+use bb_core::own_fields_value::OwnValues;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::{Project, ShortName};
 use bb_policy::{Masked, Permission, PersonRef};
@@ -40,6 +41,9 @@ pub struct ChangeProject {
     pub name: Option<String>,
     /// A new short name, as typed. The old one stays with the project.
     pub short_name: Option<String>,
+    /// The values of own fields (for projects) to set, by the key of the field; `null` takes a
+    /// value away.
+    pub fields: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
 /// Put a project inside another one, or at the top level, after looking at the preview.
@@ -199,15 +203,26 @@ pub struct ProjectDetail {
     pub may_change_short_name: bool,
     /// Where the person may move the project to.
     pub may_move: MoveRight,
+    /// The values of the own fields of the project (CF-08), by the key of the field: only the
+    /// fields the person may see.
+    pub own_fields: OwnValues,
+    /// The own fields the person may change in this project.
+    pub changeable_fields: Vec<FieldKey>,
 }
 
-impl Masked for ProjectDetail {}
+impl Masked for ProjectDetail {
+    fn mask(value: &mut bb_policy::MaskedValue, mask: &bb_policy::FieldMask) {
+        bb_policy::drop_hidden_own_fields(value, "own_fields", mask);
+    }
+}
 
 /// A level of a field that a move changes for a person.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FieldLevelChange {
     /// The field.
-    pub field: Field,
+    pub field: FieldKey,
+    /// The name of an own field; none for a field of the catalogue, whose name is a message.
+    pub name: Option<String>,
     /// What it was.
     pub before: FieldLevel,
     /// What it would be.

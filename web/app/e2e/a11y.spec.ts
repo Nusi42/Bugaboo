@@ -3,11 +3,13 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import {
+  fieldAddress,
   paths,
   personAddress,
   projectAddress,
   roleAddress,
   addressInProject,
+  issueAddress,
 } from "../src/shared/paths.ts";
 import {
   ada,
@@ -24,7 +26,7 @@ import {
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
-import { makeProject } from "./support/projects.ts";
+import { makeProjectWithIssue } from "./support/issues.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
 
@@ -39,6 +41,8 @@ let invitationLink = "";
 /** The IDs of a person and of a role, for the pages of one. */
 let somebody = "";
 let someRole = "";
+let someField = "";
+let someIssue = "";
 
 test.use({
   preparation: {
@@ -49,9 +53,19 @@ test.use({
       someRole =
         dataOf(await admin.client.GET("/api/v1/roles", { params: { query: { limit: 1 } } }))
           .items[0]?.id ?? "";
+      someField = dataOf(
+        await admin.client.POST("/api/v1/fields", {
+          body: {
+            name: "Severity",
+            kind: "pick-one",
+            applies_to: "issues",
+            choices: [{ name: "Minor" }, { name: "Major" }],
+          },
+        }),
+      ).id;
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
-      await makeProject(admin, "WEB", "Website");
+      someIssue = (await makeProjectWithIssue(admin, "WEB", "Website")).id;
       await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();
@@ -145,6 +159,8 @@ const visits: readonly Visit[] = [
   { address: paths.groups, open: signedIn(paths.groups), guest: false },
   { address: paths.issueTypes, open: signedIn(paths.issueTypes), guest: false },
   { address: paths.relationKinds, open: signedIn(paths.relationKinds), guest: false },
+  { address: paths.fields, open: signedIn(paths.fields), guest: false },
+  { address: paths.field, open: signedInAt(() => fieldAddress(someField)), guest: false },
   { address: paths.roles, open: signedIn(paths.roles), guest: false },
   { address: paths.role, open: signedInAt(() => roleAddress(someRole)), guest: false },
   { address: paths.signInRules, open: signedIn(paths.signInRules), guest: false },
@@ -185,7 +201,12 @@ const visits: readonly Visit[] = [
     open: signedIn(addressInProject(paths.projectCheckAccess, "WEB")),
     guest: false,
   },
-  { address: paths.frames, open: signedIn(paths.frames), guest: false },
+  {
+    address: paths.projectIssues,
+    open: signedIn(addressInProject(paths.projectIssues, "WEB")),
+    guest: false,
+  },
+  { address: paths.issue, open: signedInAt(() => issueAddress(someIssue)), guest: false },
 ];
 
 for (const visit of visits) {

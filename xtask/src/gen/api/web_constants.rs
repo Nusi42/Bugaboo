@@ -20,6 +20,7 @@ const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
+const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
 
@@ -143,10 +144,21 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
         .with_context(|| format!("{path} has no `const {name}` that is a number"))
 }
 
-/// The vocabularies the browser lists at run time (a drop-down of icons), by the name of their
+/// The vocabularies the browser lists or recognizes at run time (a drop-down of icons, the words of
+/// a status or a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 1] = ["IssueIcon"];
+const WORD_LISTS: [&str; 9] = [
+    "IssueIcon",
+    "Status",
+    "StatusGroup",
+    "Priority",
+    "Field",
+    "FieldType",
+    "FieldFor",
+    "Look",
+    "ChoiceColor",
+];
 
 /// `IssueIcon` as `issueIconWords`.
 fn words_name(schema: &str) -> String {
@@ -193,40 +205,107 @@ export const {} = [{}] as const;
     Ok(out)
 }
 
-/// The names of the properties that carry the mark `x-safe-html` anywhere in the API description,
-/// sorted: the generated client turns the value of such a property into a `SafeHtml` (M3-F12).
-pub(super) fn safe_html_properties(spec: &str) -> anyhow::Result<Vec<String>> {
+/// The mark that says a property holds HTML the server rendered.
+const SAFE_HTML_MARK: &str = bb_api_words::marks::SAFE_HTML;
+/// The step of a path that stands for every item of a list.
+const EVERY_ITEM: &str = "*";
+
+/// Where the properties with the mark `x-safe-html` are in the answers: for each operation
+/// (`METHOD /path/{template}`), the paths of keys from the top of the answer down to the property,
+/// with `*` for every item of a list (M3-F12). The client turns a string into a `SafeHtml` only at
+/// these places, so a key of the same name anywhere else is only text.
+pub(super) fn safe_html_paths(
+    spec: &str,
+) -> anyhow::Result<std::collections::BTreeMap<String, Vec<Vec<String>>>> {
     let spec: serde_json::Value =
         serde_json::from_str(spec).context("the API description is not JSON")?;
-    let schemas = spec["components"]["schemas"]
+    let paths = spec["paths"]
         .as_object()
-        .context("the API description has no schemas")?;
-    let mut names = std::collections::BTreeSet::new();
-    for schema in schemas.values() {
-        let Some(properties) = schema["properties"].as_object() else {
-            continue;
-        };
-        for (name, property) in properties {
-            if property[bb_api_words::marks::SAFE_HTML] == serde_json::json!(true) {
-                names.insert(name.clone());
+        .context("the API description has no paths")?;
+    let mut found = std::collections::BTreeMap::new();
+    for (address, methods) in paths {
+        for (method, operation) in methods.as_object().into_iter().flatten() {
+            let mut here = Vec::new();
+            for (status, answer) in operation["responses"].as_object().into_iter().flatten() {
+                let schema = &answer["content"]["application/json"]["schema"];
+                if status.starts_with('2') && !schema.is_null() {
+                    walk_for_safe_html(&spec, schema, &mut Vec::new(), &mut Vec::new(), &mut here);
+                }
+            }
+            here.sort();
+            here.dedup();
+            if !here.is_empty() {
+                found.insert(format!("{} {address}", method.to_uppercase()), here);
             }
         }
     }
-    Ok(names.into_iter().collect())
+    Ok(found)
 }
 
-/// The names from [`safe_html_properties`] as a constant for the browser client.
+/// Follows a schema: references, the parts of `allOf`/`oneOf`/`anyOf`, properties and list items.
+fn walk_for_safe_html(
+    spec: &serde_json::Value,
+    schema: &serde_json::Value,
+    path: &mut Vec<String>,
+    followed: &mut Vec<String>,
+    found: &mut Vec<Vec<String>>,
+) {
+    if let Some(reference) = schema["$ref"].as_str() {
+        // A schema that refers to itself is followed once.
+        if followed.iter().any(|seen| seen == reference) {
+            return;
+        }
+        let name = reference.rsplit('/').next().unwrap_or_default();
+        followed.push(reference.to_owned());
+        walk_for_safe_html(
+            spec,
+            &spec["components"]["schemas"][name],
+            path,
+            followed,
+            found,
+        );
+        followed.pop();
+        return;
+    }
+    for keyword in ["allOf", "oneOf", "anyOf"] {
+        for part in schema[keyword].as_array().into_iter().flatten() {
+            walk_for_safe_html(spec, part, path, followed, found);
+        }
+    }
+    for (name, property) in schema["properties"].as_object().into_iter().flatten() {
+        path.push(name.clone());
+        if property[SAFE_HTML_MARK] == serde_json::json!(true) {
+            found.push(path.clone());
+        } else {
+            walk_for_safe_html(spec, property, path, followed, found);
+        }
+        path.pop();
+    }
+    if !schema["items"].is_null() {
+        path.push(EVERY_ITEM.to_owned());
+        walk_for_safe_html(spec, &schema["items"], path, followed, found);
+        path.pop();
+    }
+}
+
+/// The places from [`safe_html_paths`] as a constant for the browser client.
 pub(super) fn safe_html(spec: &str) -> anyhow::Result<String> {
-    let names: Vec<String> = safe_html_properties(spec)?
-        .iter()
-        .map(|name| format!("{name:?}"))
-        .collect();
+    let mut rows = String::new();
+    for (operation, paths) in safe_html_paths(spec)? {
+        let paths: Vec<String> = paths
+            .iter()
+            .map(|path| {
+                let steps: Vec<String> = path.iter().map(|step| format!("{step:?}")).collect();
+                format!("[{}]", steps.join(", "))
+            })
+            .collect();
+        let _ = writeln!(rows, "  {operation:?}: [{}],", paths.join(", "));
+    }
     Ok(format!(
-        "{TS_HEADER}/** The properties of answers that hold HTML the server rendered (mark `{}`): the client turns their values into `SafeHtml`. */
-export const safeHtmlProperties: ReadonlySet<string> = new Set([{}]);
-",
-        bb_api_words::marks::SAFE_HTML,
-        names.join(", ")
+        "{TS_HEADER}/** Where the answers of each operation hold HTML the server rendered (mark `{SAFE_HTML_MARK}`): the keys from the top of the answer down to the string, `{EVERY_ITEM}` for every item of a list. The client turns the strings there into `SafeHtml`, and no other. */
+export const safeHtmlPaths: Readonly<Record<string, readonly (readonly string[])[]>> = {{
+{rows}}};
+"
     ))
 }
 
@@ -263,6 +342,9 @@ export const leaseSeconds = {};
 /** How often the open editor sends a heartbeat, in seconds. */
 export const heartbeatSeconds = {};
 
+/** How often the browser asks for the versions of what is on its screen, in seconds. */
+export const watchSeconds = {};
+
 /** How long a draft is kept after its last change, in days. */
 export const draftKeepDays = {};
 
@@ -274,9 +356,49 @@ export const versionsMax = {};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
+        number("WATCH_SECONDS")?,
         number("DRAFT_KEEP_DAYS")?,
         number("DRAFT_TEXT_MAX")?,
         number("VERSIONS_MAX")?,
+    ))
+}
+
+/// The text of `const NAME: &str = "…";` in a Rust source.
+fn text_const(source: &str, name: &str) -> Option<String> {
+    let file = syn::parse_file(source).ok()?;
+    file.items.iter().find_map(|item| match item {
+        syn::Item::Const(item) if item.ident == name => match &*item.expr {
+            syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(text),
+                ..
+            }) => Some(text.value()),
+            _ => None,
+        },
+        _ => None,
+    })
+}
+
+/// The scale of the decimal numbers of own fields as constants for the browser client: how many
+/// parts a whole has, and how many digits that is after the point.
+pub(super) fn fields(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == FIELDS_SOURCE) else {
+        bail!("{FIELDS_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{FIELDS_SOURCE} is not Rust"))?;
+    let parts = number_const(&file, FIELDS_SOURCE, "DECIMAL_PARTS")?;
+    let digits = parts.len().saturating_sub(1);
+    let prefix = text_const(text, "EDIT_PART_PREFIX")
+        .with_context(|| format!("{FIELDS_SOURCE} has no `const EDIT_PART_PREFIX` that is text"))?;
+    Ok(format!(
+        "{TS_HEADER}/** What the name of the edit part of a long-text own field starts with, before the ID of the field. */
+export const ownFieldPartPrefix = {prefix:?};
+
+/** How many parts a whole has in a decimal number of an own field (it is stored in these parts). */
+export const decimalParts = {parts};
+
+/** How many digits a decimal number of an own field has after the point. */
+export const decimalDigits = {digits};
+"
     ))
 }
 
@@ -456,6 +578,7 @@ pub(super) const DEFAULT_LOOK: &str = \"day\";
             EDIT_SOURCE.to_owned(),
             "pub const LEASE_SECONDS: i64 = 60;
 pub const HEARTBEAT_SECONDS: i64 = 15;
+pub const WATCH_SECONDS: i64 = 30;
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
@@ -465,6 +588,7 @@ pub const VERSIONS_MAX: u32 = 50;
         let text = editing(&[source]).unwrap();
         assert!(text.contains("leaseSeconds = 60;"), "{text}");
         assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
+        assert!(text.contains("watchSeconds = 30;"), "{text}");
         assert!(text.contains("draftKeepDays = 30;"), "{text}");
         assert!(text.contains("draftTextMax = 100000;"), "{text}");
         assert!(text.contains("versionsMax = 50;"), "{text}");
@@ -473,15 +597,44 @@ pub const VERSIONS_MAX: u32 = 50;
 
     #[test]
     fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
-        let spec =
-            r#"{"components":{"schemas":{"IssueIcon":{"type":"string","enum":["bug","flag"]}}}}"#;
-        let text = words(spec).unwrap();
+        let schemas = WORD_LISTS
+            .iter()
+            .map(|name| format!(r#""{name}":{{"type":"string","enum":["bug","flag"]}}"#))
+            .collect::<Vec<_>>()
+            .join(",");
+        let spec = format!(r#"{{"components":{{"schemas":{{{schemas}}}}}}}"#);
+        let text = words(&spec).unwrap();
         assert!(
             text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),
             "{text}"
         );
+        assert!(text.contains("export const choiceColorWords = [\"bug\", \"flag\"] as const;"));
         assert!(words("{}").is_err());
         assert!(words("not json").is_err());
+    }
+
+    #[test]
+    fn m3_f12_the_places_of_rendered_html_follow_the_answers_of_each_operation() {
+        let spec = r##"{
+          "paths": {
+            "/a/{id}": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/One"}}}}}}},
+            "/b": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Many"}}}}}}},
+            "/c": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Other"}}}}}}}
+          },
+          "components": {"schemas": {
+            "One": {"type": "object", "properties": {"html": {"type": "string", "x-safe-html": true}}},
+            "Many": {"type": "object", "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Row"}}}},
+            "Row": {"type": "object", "properties": {"body": {"$ref": "#/components/schemas/One"}, "next": {"$ref": "#/components/schemas/Row"}}},
+            "Other": {"type": "object", "properties": {"html": {"type": "string"}}}
+          }}
+        }"##;
+        let found = safe_html_paths(spec).unwrap();
+        assert_eq!(found["GET /a/{id}"], [["html"]]);
+        assert_eq!(found["GET /b"], [["items", "*", "body", "html"]]);
+        // The same key without the mark is only text.
+        assert!(!found.contains_key("GET /c"));
+        let text = safe_html(spec).unwrap();
+        assert!(text.contains("\"GET /a/{id}\": [[\"html\"]],"), "{text}");
     }
 
     #[test]

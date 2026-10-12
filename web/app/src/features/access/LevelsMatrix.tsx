@@ -11,7 +11,7 @@ const rowHeader = "row";
 export interface LevelsViewProps<Subject extends string, Level extends string> {
   readonly table: LevelTable<Subject, Level>;
   /** What a field or kind is called. */
-  readonly subjectName: (subject: Subject) => string;
+  readonly subjectName: (subject: Subject, name: string | null | undefined) => string;
   /** What a level is called. */
   readonly levelName: (level: Level) => string;
   /** The heading of the first column: *Field* or *Kind of people information*. */
@@ -37,7 +37,8 @@ function MatrixRow<Subject extends string, Level extends string>({
   onChange,
 }: MatrixRowProps<Subject, Level>) {
   const inProject = table.project !== undefined && table.project !== null;
-  const subject = subjectName(row.subject);
+  const typed = table.issue_type !== undefined && table.issue_type !== null;
+  const subject = subjectName(row.subject, row.name);
   return (
     <tr {...partOf(part.accessMatrixRow)}>
       <th scope={rowHeader} {...partOf(part.accessMatrixCell, { variants: ["row"] })}>
@@ -57,6 +58,7 @@ function MatrixRow<Subject extends string, Level extends string>({
               cell={cell}
               yours={row.yours}
               inProject={inProject}
+              typed={typed}
               onChange={(level) => {
                 onChange({ role: cell.role, subject: row.subject, level });
               }}

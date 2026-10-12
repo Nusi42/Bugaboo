@@ -95,6 +95,35 @@ impl<'a> Site<'a> {
         Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
     }
 
+    /// A person with no role anywhere: they exist, and they are no member of any project.
+    pub(super) async fn outsider(&self, name: &str) -> Result<UserId, Failure> {
+        let email = format!("{name}@example.test");
+        let started = self.org.rig.person(&self.org.admin.session, &email).await?;
+        Ok(started.person.id)
+    }
+
+    /// Chooses how a starting role sees the people of a kind, everywhere.
+    pub(super) async fn show_people(
+        &self,
+        admin: &mut Browser,
+        role: StartingRole,
+        kind: &str,
+        level: &str,
+    ) -> Result<(), Failure> {
+        let set = admin
+            .send(
+                "PUT",
+                &format!(
+                    "/api/v1/people-visibility/{}/{kind}",
+                    self.roles[role.code()]
+                ),
+                Some(json!({"level": level})),
+            )
+            .await?;
+        assert_eq!(set.status, StatusCode::NO_CONTENT, "{}", set.body);
+        Ok(())
+    }
+
     /// The body that makes an issue with this title.
     pub(super) fn new_issue(&self, title: &str) -> Value {
         json!({"issue_type": self.bug, "title": title})

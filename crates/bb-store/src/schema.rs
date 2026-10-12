@@ -315,6 +315,95 @@ pub(crate) enum IssueRow {
     Version,
 }
 
+/// Own fields (CF-01).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum FieldRow {
+    #[iden = "field"]
+    Table,
+    Id,
+    Name,
+    Help,
+    Kind,
+    AppliesTo,
+    Rules,
+    DefaultValue,
+    Look,
+    NeverToAssistant,
+    Position,
+    RetiredAt,
+    Version,
+}
+
+/// The projects an own field is limited to.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum FieldProjectRow {
+    #[iden = "field_project"]
+    Table,
+    Field,
+    Project,
+}
+
+/// The issue types an own field is limited to.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum FieldIssueTypeRow {
+    #[iden = "field_issue_type"]
+    Table,
+    Field,
+    IssueType,
+}
+
+/// The choices of own fields (CF-04).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum FieldChoiceRow {
+    #[iden = "field_option"]
+    Table,
+    Id,
+    Field,
+    Name,
+    Color,
+    Icon,
+    Position,
+    RetiredAt,
+}
+
+/// The values of own fields (ADR-0006): one row per value, one typed column per kind.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum FieldValueRow {
+    #[iden = "field_value"]
+    Table,
+    EntityKind,
+    EntityId,
+    Field,
+    ValueText,
+    ValueNumber,
+    ValueDate,
+    ValueRef,
+    Position,
+}
+
+/// The level of a field for a role and one issue type, for the whole organization (ADR-0027).
+#[derive(Clone, Copy, IdenStatic)]
+pub(crate) enum RoleTypeFieldLevelRow {
+    #[iden = "role_type_field_level"]
+    Table,
+    Role,
+    IssueType,
+    Field,
+    Level,
+}
+
+/// The level of a field for a role and one issue type, set for a project (ADR-0027).
+#[derive(Clone, Copy, IdenStatic)]
+pub(crate) enum ProjectTypeFieldLevelRow {
+    #[iden = "project_type_field_level"]
+    Table,
+    Project,
+    Role,
+    IssueType,
+    Field,
+    Level,
+}
+
 /// The people an issue is assigned to.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum IssueAssigneeRow {
@@ -823,6 +912,20 @@ stored_tables! {
         RetiredAt => retired_at,
         Version => version,
     },
+    FieldRow => bb_core::own_fields::OwnField {
+        Id => id,
+        Name => name,
+        Help => help,
+        Kind => kind,
+        AppliesTo => applies_to,
+        Rules => rules,
+        DefaultValue => default_value,
+        Look => look,
+        NeverToAssistant => never_to_assistant,
+        Position => position,
+        RetiredAt => retired_at,
+        Version => version,
+    },
     RelationRow => bb_core::relation::Relation {
         Id => id,
         Kind => kind,
@@ -875,6 +978,46 @@ stored_tables! {
         Record => record,
         RecordKind => record_kind,
         Changes => changes,
+    },
+    FieldProjectRow => bb_core::own_fields::FieldProject {
+        Field => field,
+        Project => project,
+    },
+    FieldIssueTypeRow => bb_core::own_fields::FieldIssueType {
+        Field => field,
+        IssueType => issue_type,
+    },
+    FieldChoiceRow => bb_core::own_fields::FieldChoice {
+        Id => id,
+        Field => field,
+        Name => name,
+        Color => color,
+        Icon => icon,
+        Position => position,
+        RetiredAt => retired_at,
+    },
+    FieldValueRow => bb_core::own_fields_value::StoredFieldValue {
+        EntityKind => entity_kind,
+        EntityId => entity_id,
+        Field => field,
+        ValueText => value_text,
+        ValueNumber => value_number,
+        ValueDate => value_date,
+        ValueRef => value_ref,
+        Position => position,
+    },
+    RoleTypeFieldLevelRow => bb_core::access::RoleTypeFieldLevel {
+        Role => role,
+        IssueType => issue_type,
+        Field => field,
+        Level => level,
+    },
+    ProjectTypeFieldLevelRow => bb_core::access::ProjectTypeFieldLevel {
+        Project => project,
+        Role => role,
+        IssueType => issue_type,
+        Field => field,
+        Level => level,
     },
     GroupRow => bb_core::access::Group {
         Id => id,

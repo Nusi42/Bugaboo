@@ -11,7 +11,9 @@ import { PlaceLink, type PlaceLinkProps } from "./PlaceLink.tsx";
 
 /** Search and the start page. */
 export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onNavigate">) {
-  const searchKeys = keysOf("quick-search", useShortcutOverrides())[0] ?? "";
+  const overrides = useShortcutOverrides();
+  const searchKeys = keysOf("quick-search", overrides)[0] ?? "";
+  const newKeys = keysOf("new-issue", overrides)[0] ?? "";
   return (
     <ul {...partOf(part.sidebarList)}>
       <li>
@@ -22,6 +24,17 @@ export function Top({ narrow, onNavigate }: Pick<PlaceLinkProps, "narrow" | "onN
           hint={<Keys sequence={searchKeys} />}
           onPress={() => {
             openOverlay("search");
+          }}
+        />
+      </li>
+      <li>
+        <NavButton
+          icon={iconName.plus}
+          label={t("issues.new")}
+          narrow={narrow}
+          hint={<Keys sequence={newKeys} />}
+          onPress={() => {
+            openOverlay("new-issue");
           }}
         />
       </li>

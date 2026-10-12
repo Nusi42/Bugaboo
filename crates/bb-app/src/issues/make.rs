@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::event::RecordKind;
+use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::{IssueId, UserId};
 use bb_core::issue::{Issue, IssueAssignee, Priority, Status};
 use bb_core::issue_key::IssueCode;
@@ -18,6 +18,7 @@ use super::ids::{code_plan_in, new_code_in};
 use super::types::{IssueView, MakeIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
 use crate::projects::Why;
@@ -32,6 +33,8 @@ struct NewIssue {
     project: Project,
     issue: Issue,
     assignees: Vec<UserId>,
+    /// The values of own fields it starts with: asked for, or the defaults.
+    own: PlannedValues,
 }
 
 impl NewIssue {
@@ -71,7 +74,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         // The mask first: a person who may not set a field is refused alike for any value, so
         // the answer tells nothing about the value (a person ID that exists, a text too long).
-        ensure_may_change(&access.field_mask(), &Given::from(input).fields())?;
+        ensure_may_change(
+            &access.field_mask_for(Some(input.issue_type)),
+            &Given::from(input).fields(),
+        )?;
         let title = clean_title(&input.title)?;
         let description = input
             .description
@@ -79,7 +85,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(clean_long_text)
             .transpose()?;
         let assignees = match &input.assigned_to {
-            Some(people) => self.clean_assignees(people).await?,
+            Some(people) => {
+                self.clean_assignees(
+                    actor.person.id,
+                    &access,
+                    project.id,
+                    actor.person.id,
+                    people,
+                    &[],
+                )
+                .await?
+            }
             None => Vec::new(),
         };
         let issue_type = self
@@ -93,9 +109,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let now = self.now();
         let status = input.status.unwrap_or(Status::NEW);
+        let id = IssueId::generate(&mut self.ids())
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let item = Item {
+            kind: RecordKind::Issue,
+            id: Some(id.into()),
+            chain: self.chain_of(project.id).await?,
+            issue_type: Some(issue_type.id),
+            reported_by: Some(actor.person.id),
+        };
+        let nothing_yet = self.load_values(RecordKind::Issue, &[]).await?;
+        let own = self
+            .plan_values(actor, &access, &item, &input.fields, &nothing_yet, true)
+            .await?;
         let issue = Issue {
-            id: IssueId::generate(&mut self.ids())
-                .map_err(|error| AppError::Internal(error.to_string()))?,
+            id,
             project: project.id,
             issue_type: issue_type.id,
             // The code is given out inside the change.
@@ -117,6 +145,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 project,
                 issue,
                 assignees,
+                own,
             },
         ))
     }
@@ -137,34 +166,35 @@ pub async fn make_issue<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let (access, new) = ctx.plan_new_issue(&actor, &input).await?;
     let (id, people) = (new.issue.id, new.people());
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::Issue, id),
-        vec![
-            set_to(member::PROJECT, json!(new.project.id.to_string())),
-            set_to(member::ISSUE_TYPE, json!(new.issue.issue_type.to_string())),
-            set_to(member::TITLE, json!(new.issue.title)),
-            set_to(member::DESCRIPTION, json!(new.issue.description)),
-            set_to(member::STATUS, json!(new.issue.status.code())),
-            set_to(member::PRIORITY, json!(new.issue.priority.code())),
-            set_to(member::REPORTED_BY, json!(actor.person.id.to_string())),
-            set_to(
-                member::ASSIGNED_TO,
-                json!(
-                    new.assignees
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<_>>()
-                ),
+    let own_writes = new.own.writes();
+    let own_changes = new.own.changes();
+    let mut changes = vec![
+        set_to(member::PROJECT, json!(new.project.id.to_string())),
+        set_to(member::ISSUE_TYPE, json!(new.issue.issue_type.to_string())),
+        set_to(member::TITLE, json!(new.issue.title)),
+        set_to(member::DESCRIPTION, json!(new.issue.description)),
+        set_to(member::STATUS, json!(new.issue.status.code())),
+        set_to(member::PRIORITY, json!(new.issue.priority.code())),
+        set_to(member::REPORTED_BY, json!(actor.person.id.to_string())),
+        set_to(
+            member::ASSIGNED_TO,
+            json!(
+                new.assignees
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
             ),
-        ],
-    )?;
+        ),
+    ];
+    changes.extend(own_changes);
+    let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
     let mut tried = 0;
     loop {
         tried += 1;
         let why = Why::default();
         let (stopped, mut source) = (why.clone(), ctx.owned_ids());
         let (issue, people) = (new.issue.clone(), people.clone());
+        let own_writes = own_writes.clone();
         let result = ctx
             .store()
             .record_change(&event, move |transaction| {
@@ -186,6 +216,16 @@ pub async fn make_issue<S: AuthStore>(
                         new_code_in::<S>(transaction, issue.project, plan, &mut source).await?;
                     let issue = Issue { code, ..issue };
                     S::insert_issue(transaction, &issue, &people).await?;
+                    for (field, cells) in &own_writes {
+                        S::put_field_value(
+                            transaction,
+                            EntityKind::from(RecordKind::Issue),
+                            issue.id.into(),
+                            *field,
+                            cells,
+                        )
+                        .await?;
+                    }
                     // Whoever reports an issue, or is assigned to it, follows it (ISS-07).
                     let assigned: Vec<UserId> =
                         people.iter().map(|assignee| assignee.person).collect();
@@ -212,7 +252,7 @@ pub async fn make_issue<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .ok_or_else(|| AppError::Internal("a new issue is not there".into()))?;
-    let mut views = ctx.issue_views(access.clone(), new.project).await?;
+    let mut views = ctx.issue_views(&actor, access.clone(), new.project).await?;
     let view = ctx.issue_view(&mut views, &stored, &new.assignees).await?;
     Ok(access.authorize(view))
 }

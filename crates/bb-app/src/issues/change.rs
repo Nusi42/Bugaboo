@@ -2,7 +2,7 @@
 //! The closed date follows the status group *Done* (ADR-0027, decision 5).
 
 use bb_core::ErrorCode;
-use bb_core::event::{FieldChange, RecordKind};
+use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{IssueTypeId, UserId};
 use bb_core::issue::{Issue, IssueAssignee};
@@ -14,8 +14,8 @@ use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
-use crate::input::clean_long_text;
 use crate::projects::Why;
 use std::sync::Arc;
 
@@ -30,6 +30,8 @@ struct Plan {
     next: Issue,
     /// The people it will be assigned to.
     assigned_next: Vec<UserId>,
+    /// The values of own fields the request sets.
+    own: PlannedValues,
 }
 
 impl Plan {
@@ -52,11 +54,6 @@ impl Plan {
             json!(after.issue_type.to_string()),
         );
         add(member::TITLE, json!(before.title), json!(after.title));
-        add(
-            member::DESCRIPTION,
-            json!(before.description),
-            json!(after.description),
-        );
         add(
             member::STATUS,
             json!(before.status.code()),
@@ -82,6 +79,7 @@ impl Plan {
                     .collect::<Vec<_>>()
             ),
         );
+        changes.extend(self.own.changes());
         changes
     }
 }
@@ -96,15 +94,14 @@ fn named(input: &ChangeIssue) -> Vec<Field> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// What the person asks for, when they may ask it: they see the issue (or it answers like a
-    /// missing one), may change it, may change each field they touch, and looked at the version
-    /// that is stored.
-    async fn plan_issue_change(
+    /// The issue a person asks to change, with what they hold there: they see it (or it answers
+    /// like a missing one) and may change it.
+    pub(crate) async fn issue_to_change(
         &self,
         actor: &Actor,
-        input: &ChangeIssue,
-    ) -> Result<(Arc<Evaluation>, Plan), AppError> {
-        let found = self.find_issue(&input.issue).await?;
+        issue: &str,
+    ) -> Result<(Arc<Evaluation>, Issue), AppError> {
+        let found = self.find_issue(issue).await?;
         let place = found.as_ref().map_or(Place::Organization, |found| {
             Place::Project(found.issue.project)
         });
@@ -118,18 +115,35 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !held.may_change_issue(current.reported_by) {
             return Err(ErrorCode::Forbidden.into());
         }
+        Ok((held, current))
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// What the person asks for, when they may ask it: they see the issue (or it answers like a
+    /// missing one), may change it, may change each field they touch, and looked at the version
+    /// that is stored.
+    async fn plan_issue_change(
+        &self,
+        actor: &Actor,
+        input: &ChangeIssue,
+    ) -> Result<(Arc<Evaluation>, Plan), AppError> {
+        let (held, current) = self.issue_to_change(actor, &input.issue).await?;
         if input.issue_type.is_none()
             && input.title.is_none()
-            && input.description.is_none()
             && input.status.is_none()
             && input.priority.is_none()
             && input.assigned_to.is_none()
+            && input.fields.is_empty()
         {
             return Err(ErrorCode::InvalidRequest.into());
         }
         // Before anything else is looked at: a field the person may not change is refused whether
         // or not the value differs, and whatever else is wrong with the request.
-        ensure_may_change(&held.field_mask(), &named(input))?;
+        ensure_may_change(
+            &held.field_mask_for(Some(current.issue_type)),
+            &named(input),
+        )?;
         let assigned_now: Vec<UserId> = self
             .store()
             .assignees(current.id)
@@ -139,26 +153,47 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|assignee| assignee.person)
             .collect();
         let assigned_next = match &input.assigned_to {
-            Some(people) => self.clean_assignees(people).await?,
+            Some(people) => {
+                self.clean_assignees(
+                    actor.person.id,
+                    &held,
+                    current.project,
+                    current.reported_by,
+                    people,
+                    &assigned_now,
+                )
+                .await?
+            }
             None => assigned_now.clone(),
         };
         let mut next = current.clone();
         if let Some(title) = &input.title {
             next.title = clean_title(title)?;
         }
-        if let Some(text) = &input.description {
-            next.description = clean_long_text(text)?;
-        }
         next.status = input.status.unwrap_or(current.status);
         next.priority = input.priority.unwrap_or(current.priority);
         if let Some(issue_type) = input.issue_type {
             next.issue_type = self.writable_type(issue_type, &current).await?;
         }
+        let item = Item {
+            kind: RecordKind::Issue,
+            id: Some(current.id.into()),
+            chain: self.chain_of(current.project).await?,
+            issue_type: Some(next.issue_type),
+            reported_by: Some(current.reported_by),
+        };
+        let stored = self
+            .load_values(RecordKind::Issue, &[current.id.into()])
+            .await?;
+        let own = self
+            .plan_values(actor, &held, &item, &input.fields, &stored, false)
+            .await?;
         let plan = Plan {
             current,
             assigned_now,
             next,
             assigned_next,
+            own,
         };
         if plan.current.version != input.version {
             return Err(AppError::stale(
@@ -214,7 +249,7 @@ pub async fn change_issue<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let mut views = ctx.issue_views(held.clone(), project).await?;
+    let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let field_changes = plan.field_changes();
     if field_changes.is_empty() {
         let view = ctx
@@ -228,7 +263,10 @@ pub async fn change_issue<S: AuthStore>(
         mut next,
         assigned_now,
         assigned_next,
+        own,
+        ..
     } = plan;
+    let own_writes = own.writes();
     next.updated_at = now;
     next.closed_at = current
         .status
@@ -258,6 +296,7 @@ pub async fn change_issue<S: AuthStore>(
         .copied()
         .collect();
     let (stopped, written, new_people) = (why.clone(), next.clone(), people);
+    let kind = EntityKind::from(RecordKind::Issue);
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -286,6 +325,9 @@ pub async fn change_issue<S: AuthStore>(
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 S::replace_assignees(transaction, id, &new_people).await?;
+                for (field, cells) in &own_writes {
+                    S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
+                }
                 // Whoever the issue is assigned to now follows it (ISS-07).
                 let followers = started_following(id, None, &newly_assigned, None, now);
                 S::add_followers(transaction, &followers).await

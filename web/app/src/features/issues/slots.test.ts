@@ -17,6 +17,7 @@ describe("the slots of the issue page", () => {
   it("builds the mask from the answer", () => {
     const detail: IssueDetail = {
       issue: { title: "x" },
+      own_fields_html: [],
       may_change: true,
       may_delete: false,
       changeable: ["title"],

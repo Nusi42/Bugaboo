@@ -5,6 +5,9 @@ import type { Schema } from "./readonly.ts";
 /** The body of every error answer (`application/problem+json`), as the API describes it. */
 export type Problem = Schema<"Problem">;
 
+/** What changed a record since a person looked at it: the structured part of `edit.version_changed`. */
+export type Conflict = Schema<"ConflictBody">;
+
 /** What can go wrong, as the API names it. */
 export type ErrorCode = Schema<"ErrorCode">;
 
@@ -59,4 +62,30 @@ export class ApiError extends Error {
   get messageKey(): MessageKey {
     return messageKeyOf(this.problem);
   }
+}
+
+/** Whether a value looks like the `conflict` member of a stale-version answer. */
+function isConflict(value: unknown): value is Conflict {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "fields" in value &&
+    Array.isArray(value.fields) &&
+    "current" in value &&
+    typeof value.current === "object" &&
+    value.current !== null
+  );
+}
+
+/**
+ * Who changed a record, when, which fields and the values now, when the error is the answer to a
+ * change made on a stale version (`edit.version_changed`, ADR-0019). Nothing for any other error.
+ * The screen writes the sentence from it ("Ben changed Priority to Critical 2 minutes ago").
+ */
+export function conflictOf(error: unknown): Conflict | undefined {
+  if (!(error instanceof ApiError) || error.problem?.code !== "edit.version_changed") {
+    return undefined;
+  }
+  const found: unknown = Reflect.get(error.problem, "conflict");
+  return isConflict(found) ? found : undefined;
 }

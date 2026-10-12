@@ -100,6 +100,27 @@ error_codes! {
     /// An issue holds as many relations or sub-issues as it may. The count includes what the
     /// person may not see, as it is a limit of storage, so the answer names no issue.
     LimitReached => ("limit.reached", 409),
+    /// A required own field has no value (CF-03).
+    FieldRequired => ("field.required", 400),
+    /// A text, or a list of values, is shorter than the rules of the own field allow (CF-03).
+    FieldTooShort => ("field.too_short", 400),
+    /// A text, or a list of values, is longer than the rules of the own field allow (CF-03).
+    FieldTooLong => ("field.too_long", 400),
+    /// A number, day, moment or length of time is below the lowest the own field allows (CF-03).
+    FieldTooSmall => ("field.too_small", 400),
+    /// A number, day, moment or length of time is above the highest the own field allows (CF-03).
+    FieldTooBig => ("field.too_big", 400),
+    /// A text does not match the pattern of the own field (CF-03).
+    FieldNoMatch => ("field.no_match", 400),
+    /// A value is not one this kind of own field can hold (CF-01).
+    FieldWrongValue => ("field.wrong_value", 400),
+    /// A value names a choice that the own field does not offer (CF-04).
+    FieldUnknownChoice => ("field.unknown_choice", 400),
+    /// A value names a person, group or issue that the person who sets it may not name: it is not
+    /// there, or they may not know about it (CF-01). Both look the same.
+    FieldUnknownReference => ("field.unknown_reference", 400),
+    /// An own field is not used for this project or this issue type (CF-03).
+    FieldNotHere => ("field.not_here", 400),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.

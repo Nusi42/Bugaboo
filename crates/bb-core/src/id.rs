@@ -275,6 +275,16 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of an own field (CF-01).
+    FieldId
+}
+
+define_ordered_id! {
+    /// The ID of a choice of a *Pick one* or *Pick several* field (CF-04).
+    ChoiceId
+}
+
+define_ordered_id! {
     /// The ID of a kind of relation (ISS-04).
     RelationKindId
 }
@@ -374,6 +384,8 @@ into_entity_id!(
     AssignmentId,
     IssueId,
     IssueTypeId,
+    FieldId,
+    ChoiceId,
     RelationKindId,
     RelationId,
     CommentId,

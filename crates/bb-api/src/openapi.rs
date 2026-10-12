@@ -12,6 +12,7 @@ use axum::http::Method;
 use axum::http::header::{ETAG, RETRY_AFTER};
 use bb_api_words::marks;
 use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
+use bb_core::fields::Field;
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
@@ -41,7 +42,7 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         description = "The API of Bugaboo. The browser app uses exactly this API. Every error \
             is application/problem+json with a stable code and a message key."
     ),
-    components(schemas(Problem, ErrorCode, ConflictProblem)),
+    components(schemas(Problem, ErrorCode, ConflictProblem, Field)),
     tags(
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
@@ -120,6 +121,7 @@ pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
     ("CommentTextItem", "html"),
     ("HistoryEntryItem", "html"),
     ("MentionedComment", "html"),
+    ("OwnHtmlBody", "html"),
 ];
 
 /// The schema of a page of `item` and the path to the property inside its items: a page holds its

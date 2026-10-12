@@ -101,6 +101,8 @@ pub(crate) struct State {
     pub(crate) history: Vec<HistoryEntry>,
     /// How many events the history has finished (their place in the outbox).
     pub(crate) history_position: i64,
+    pub(crate) field_definitions: Vec<crate::fields::Definition>,
+    pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

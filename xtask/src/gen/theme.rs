@@ -51,6 +51,7 @@ pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     for output in &mut generated {
         if crate::docs::text::has_extension(output.path, "css")
             || crate::docs::text::has_extension(output.path, "js")
+            || crate::docs::text::has_extension(output.path, "ts")
         {
             output.content = super::api::format_with_oxfmt(repo, output.path, &output.content)?;
         }

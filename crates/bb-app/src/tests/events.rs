@@ -12,6 +12,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use super::scenarios::{self as s, Added};
+use super::scenarios_fields as sf;
 use super::scenarios_issues as si;
 use super::scenarios_relations as sr;
 use super::world::{Outcome, World};
@@ -88,6 +89,7 @@ table! {
     "release_stuck_lock" => s::release_stuck_lock_scenario,
     "make_issue" => si::make_issue_scenario,
     "change_issue" => si::change_issue_scenario,
+    "save_description" => si::save_description_scenario,
     "delete_issue" => si::delete_issue_scenario,
     "restore_issue" => si::restore_issue_scenario,
     "make_issue_type" => si::make_issue_type_scenario,
@@ -106,6 +108,13 @@ table! {
     "read_mentions" => sr::read_mentions_scenario,
     "follow_issue" => sr::follow_issue_scenario,
     "unfollow_issue" => sr::unfollow_issue_scenario,
+    "make_field" => sf::make_field_scenario,
+    "change_field" => sf::change_field_scenario,
+    "add_choice" => sf::add_choice_scenario,
+    "change_choice" => sf::change_choice_scenario,
+    "reorder_choices" => sf::reorder_choices_scenario,
+    "combine_choices" => sf::combine_choices_scenario,
+    "save_field_text" => sf::save_field_text_scenario,
 }
 
 #[test]

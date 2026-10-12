@@ -213,6 +213,60 @@ mod tests {
     }
 
     #[test]
+    fn cf_04_every_look_is_readable_in_all_four_themes() {
+        // Every choice color the server can store is a pair of tokens in the theme, and the
+        // text of a badge, a pill and the muted text on a plain surface of that color all pass,
+        // in the four themes and with more contrast.
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
+            let pairs = file.contrast.pairs(theme);
+            for color in bb_core::own_fields::ChoiceColor::ALL {
+                let (text, surface) = (
+                    format!("{}-fg", color.code()),
+                    format!("{}-bg", color.code()),
+                );
+                assert!(
+                    pairs.contains(&(text.as_str(), surface.as_str())),
+                    "{text} on {surface} is not checked in {theme}"
+                );
+                assert!(
+                    pairs.contains(&("fg-muted", surface.as_str())),
+                    "fg-muted on {surface} is not checked in {theme}"
+                );
+            }
+        }
+        let findings = evaluate(&file);
+        assert!(findings.is_empty(), "{:#?}", messages(&findings));
+    }
+
+    #[test]
+    fn cf_04_the_progress_bar_and_the_avatar_are_seen_in_all_four_themes() {
+        // The fill of a progress bar is a shape, not text: it is seen against every plain surface
+        // at 3:1 (WCAG 1.4.11). The initials of an avatar are text on the soft accent.
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        for theme in file.themes.iter().map(|theme| theme.name.as_str()) {
+            let value = |name: &str| color(&file, name, theme).expect("the token has a color");
+            for surface in ["bg-canvas", "bg-surface", "bg-raised"] {
+                let ratio = contrast_ratio(value("accent"), value(surface));
+                assert!(ratio >= 3.0, "{theme}: accent on {surface} is {ratio:.2}:1");
+            }
+            let ratio = contrast_ratio(value("accent-fg"), value("accent-soft"));
+            assert!(ratio >= 4.5, "{theme}: the initials are {ratio:.2}:1");
+        }
+    }
+
+    #[test]
+    fn a_choice_color_that_is_hard_to_read_is_rejected() {
+        // Category 3 text on a background that is nearly the same color in Dusk.
+        let findings = evaluate(&with_value("cat3-bg", "dusk", "#6a8f78"));
+        assert!(
+            findings.iter().any(|f| f.message.contains("`cat3-fg`")),
+            "{:?}",
+            messages(&findings)
+        );
+    }
+
+    #[test]
     fn a_color_without_a_classification_is_rejected() {
         let text = text();
         let start = text.find("    non-text").expect("the rule is in the file");

@@ -16,11 +16,17 @@ import {
   projectFieldsRoute,
   projectPeopleRoute,
 } from "./what-roles-see-pages.tsx";
-import { issueTypesRoute, relationKindsRoute } from "./work-pages.tsx";
+import {
+  fieldRoute,
+  fieldsRoute,
+  issueRoute,
+  issueTypesRoute,
+  projectIssuesRoute,
+  relationKindsRoute,
+} from "./work-pages.tsx";
 import {
   accessKeysRoute,
   appearanceRoute,
-  framesRoute,
   homeRoute,
   mySettingsIndexRoute,
   organizationSecurityRoute,
@@ -53,8 +59,9 @@ const routeTree = rootRoute.addChildren([
   setUpRoute.addChildren([setUpSecondStepRoute]),
   appRoute.addChildren([
     homeRoute,
-    framesRoute,
     projectRoute,
+    projectIssuesRoute,
+    issueRoute,
     projectSettingsRoute,
     projectRolesRoute,
     projectFieldsRoute,
@@ -79,6 +86,8 @@ const routeTree = rootRoute.addChildren([
       roleRoute,
       issueTypesRoute,
       relationKindsRoute,
+      fieldsRoute,
+      fieldRoute,
       fieldPermissionsRoute,
       peopleVisibilityRoute,
       checkAccessRoute,

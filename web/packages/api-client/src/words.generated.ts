@@ -19,3 +19,73 @@ export const issueIconWords = [
   "hammer",
   "flame",
 ] as const;
+
+/** Every word of `Status`, in the order the server lists them. */
+export const statusWords = ["open", "in-progress", "done"] as const;
+
+/** Every word of `StatusGroup`, in the order the server lists them. */
+export const statusGroupWords = ["not-started", "in-progress", "done"] as const;
+
+/** Every word of `Priority`, in the order the server lists them. */
+export const priorityWords = ["low", "normal", "high", "critical"] as const;
+
+/** Every word of `Field`, in the order the server lists them. */
+export const fieldWords = [
+  "title",
+  "description",
+  "status",
+  "priority",
+  "assigned-to",
+  "reported-by",
+  "due-date",
+  "labels",
+  "tags",
+  "planned-for-release",
+  "found-in-release",
+  "estimated-time",
+  "time-left",
+  "time-spent",
+  "activity",
+  "cost-center",
+] as const;
+
+/** Every word of `FieldType`, in the order the server lists them. */
+export const fieldTypeWords = [
+  "text",
+  "long-text",
+  "whole-number",
+  "decimal",
+  "yes-no",
+  "web-address",
+  "date",
+  "date-time",
+  "duration",
+  "pick-one",
+  "pick-several",
+  "person",
+  "people",
+  "group",
+  "issue",
+] as const;
+
+/** Every word of `FieldFor`, in the order the server lists them. */
+export const fieldForWords = ["issues", "projects"] as const;
+
+/** Every word of `Look`, in the order the server lists them. */
+export const lookWords = ["badge", "pill", "plain-text", "progress-bar", "avatar"] as const;
+
+/** Every word of `ChoiceColor`, in the order the server lists them. */
+export const choiceColorWords = [
+  "cat1",
+  "cat2",
+  "cat3",
+  "cat4",
+  "cat5",
+  "cat6",
+  "cat7",
+  "cat8",
+  "cat9",
+  "cat10",
+  "cat11",
+  "cat12",
+] as const;

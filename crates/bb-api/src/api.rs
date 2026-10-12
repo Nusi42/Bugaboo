@@ -51,6 +51,7 @@ mod check_access;
 mod comments;
 mod editing;
 mod field_permissions;
+mod fields;
 mod follow;
 mod groups;
 mod history;
@@ -148,6 +149,7 @@ where
         .merge(admin::routes())
         .merge(settings::routes())
         .merge(projects::routes())
+        .merge(fields::routes())
         .merge(issue_types::routes())
         .merge(issues::routes())
         .merge(relations::routes())

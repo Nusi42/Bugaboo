@@ -161,12 +161,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 edit: Permission::ChangeProjectSettings,
             });
         }
-        let facts = self
-            .services
-            .records
-            .look_up(actor.person.id, record)
-            .await?
-            .ok_or_else(not_found)?;
+        let facts = if record.kind == EntityKind::from(RecordKind::Issue) {
+            self.issue_facts(actor, record).await?
+        } else {
+            self.services
+                .records
+                .look_up(actor.person.id, record)
+                .await?
+        }
+        .ok_or_else(not_found)?;
         // A record sits in a project: whoever does not see the project does not know the record,
         // whatever its kind says.
         if let Place::Project(_) = facts.place {

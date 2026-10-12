@@ -1,11 +1,15 @@
 import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
 
-import { paths } from "../shared/paths.ts";
-import { registerIssueBlocks } from "./issue-blocks.ts";
-import { organizationSettingsRoute } from "./layouts.tsx";
+import {
+  issueAddress,
+  issuePanelAddress,
+  paths,
+  projectIssuesAddress,
+  routeParam,
+} from "../shared/paths.ts";
+import { useAddressPart } from "./address-part.ts";
+import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
-
-registerIssueBlocks();
 
 // The screens of work (issue types) are loaded when they are first opened, so the first page stays
 // small (coding-standards section 6).
@@ -46,6 +50,34 @@ export const relationKindsRoute = createRoute({
   },
 });
 
+const FieldsScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldsPage");
+const FieldScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldPage");
+
+/** *Organization settings › Fields*: the own fields, and the form that makes one. */
+export const fieldsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.fields,
+  component: function Fields() {
+    return (
+      <OnlyWith path={paths.fields}>
+        <FieldsScreen />
+      </OnlyWith>
+    );
+  },
+});
+
+/** The page of one own field, `/settings/fields/<ID>`. */
+export const fieldRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.field,
+  component: function FieldOfTheAddress() {
+    const id = useAddressPart(routeParam.field);
+    return (
+      <OnlyWith path={paths.field}>{id === undefined ? null : <FieldScreen field={id} />}</OnlyWith>
+    );
+  },
+});
+
 /** *Organization settings › Issue types*: the address says which type is open in the side panel. */
 export const issueTypesRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
@@ -68,6 +100,70 @@ export const issueTypesRoute = createRoute({
           }}
         />
       </OnlyWith>
+    );
+  },
+});
+
+// The screens of issues are loaded when they are first opened, so the first page stays small
+// (coding-standards section 6).
+
+const ProjectIssuesScreen = lazyRouteComponent(
+  () => import("../features/issues/index.ts"),
+  "ProjectIssuesPage",
+);
+const IssueScreen = lazyRouteComponent(
+  () => import("../features/issues/index.ts"),
+  "IssueFocusPage",
+);
+
+/** The issues of a project, `/p/WEB/issues`; `?open=WEB-142` shows one in the side panel. */
+export const projectIssuesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.projectIssues,
+  validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
+    open: typeof search["open"] === "string" ? search["open"] : undefined,
+  }),
+  component: function ProjectIssues() {
+    const project = useAddressPart(routeParam.project);
+    const { open } = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return project === undefined ? null : (
+      <ProjectIssuesScreen
+        address={project}
+        open={open}
+        onFocus={(key: string) => {
+          void navigate({ href: issueAddress(key) });
+        }}
+        onClose={() => {
+          void navigate({ href: projectIssuesAddress(project) });
+        }}
+      />
+    );
+  },
+});
+
+/** An issue in the focus view, `/issues/WEB-142`: the address that is shared. */
+export const issueRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.issue,
+  component: function Issue() {
+    const issue = useAddressPart(routeParam.issue);
+    const navigate = useNavigate();
+    return issue === undefined ? null : (
+      <IssueScreen
+        address={issue}
+        onFocus={(key: string) => {
+          void navigate({ href: issueAddress(key), replace: true });
+        }}
+        onBack={(project: string | undefined) => {
+          void navigate({
+            href: project === undefined ? paths.home : projectIssuesAddress(project),
+          });
+        }}
+        onPanel={(project: string, key: string) => {
+          void navigate({ href: issuePanelAddress(project, key) });
+        }}
+      />
     );
   },
 });

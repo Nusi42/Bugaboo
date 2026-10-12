@@ -2,6 +2,7 @@ import { isMessageKey, locale, t } from "@bugaboo/messages";
 import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { personName } from "../../shared/person.ts";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
 import { groupLevels, type LevelEntry } from "./group-levels.ts";
@@ -179,7 +180,7 @@ export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
         answer={answer}
         heading={t("check-access.fields-heading")}
         entries={answer.fields.map((field) => ({
-          name: t(`issue-field.${field.subject}`),
+          name: fieldNameOf({ code: field.subject, name: field.name }),
           level: field.level,
           sentences: [],
           says: field.roles,

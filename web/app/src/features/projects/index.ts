@@ -6,3 +6,4 @@ export { registerProjects } from "./register.tsx";
 export { ProjectGate, type ProjectGateProps } from "./ProjectGate.tsx";
 export { ProjectTabs } from "./ProjectTabs.tsx";
 export type { OneProject } from "./use-projects.ts";
+export { linesOf, useProject, useProjectList, type ProjectLine } from "./use-projects.ts";

@@ -7,7 +7,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, ProjectId};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
@@ -135,6 +135,8 @@ pub struct RoleSays<L> {
 pub struct LevelAnswer<K, L> {
     /// The field or kind.
     pub subject: K,
+    /// The name of an own field; none for a field of the catalogue or a kind.
+    pub name: Option<String>,
     /// The level the person has.
     pub level: L,
     /// What each role that counts says.
@@ -153,7 +155,7 @@ pub struct AccessAnswer {
     /// Every permission.
     pub permissions: Vec<PermissionAnswer>,
     /// Every field.
-    pub fields: Vec<LevelAnswer<Field, FieldLevel>>,
+    pub fields: Vec<LevelAnswer<FieldKey, FieldLevel>>,
     /// Every kind of people information.
     pub kinds: Vec<LevelAnswer<PeopleKind, PeopleLevel>>,
 }
@@ -258,6 +260,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(LevelAnswer {
             subject: decision.subject,
+            name: None,
             level: decision.level,
             roles,
             capped_by_key: decision.capped_by_key,
@@ -269,6 +272,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         checker: &Actor,
         report: &AccessReport,
         person: PersonRef,
+        own_names: &std::collections::HashMap<FieldKey, String>,
     ) -> Result<AccessAnswer, AppError> {
         let mut permissions = Vec::with_capacity(report.permissions.len());
         for decision in &report.permissions {
@@ -285,7 +289,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut named = Vec::new();
         let mut fields = Vec::with_capacity(report.fields.len());
         for decision in &report.fields {
-            fields.push(self.level_answer(checker, decision, &mut named).await?);
+            // An own field the checker may not know is not told at all.
+            if decision.subject.own().is_some() && !own_names.contains_key(&decision.subject) {
+                continue;
+            }
+            let mut answer = self.level_answer(checker, decision, &mut named).await?;
+            answer.name = own_names.get(&answer.subject).cloned();
+            fields.push(answer);
         }
         let mut kinds = Vec::with_capacity(report.kinds.len());
         for decision in &report.kinds {
@@ -334,6 +344,9 @@ pub async fn check_access<S: AuthStore>(
             input.person,
         )
         .await?;
-    let answer = ctx.access_answer(&actor, &theirs.report(), person).await?;
+    let own_names = ctx.known_field_names(&actor, &checker, input.place).await?;
+    let answer = ctx
+        .access_answer(&actor, &theirs.report(), person, &own_names)
+        .await?;
     Ok(checker.authorize(answer))
 }
