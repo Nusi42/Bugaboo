@@ -298,7 +298,7 @@ pub(crate) struct SaveDescriptionBody {
     text: String,
 }
 
-/// The ID in a request body; a text that is no ID is not a valid request.
+/// The ID in a request body or query; a text that is no ID is not a valid request.
 fn id_in_body<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
     text.parse()
         .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
@@ -358,17 +358,33 @@ async fn list_issues(
     Ok(answer(Page::of_authorized(ISSUES_LIST, &list, &fields)?))
 }
 
+/// What the list of people is for besides *Assigned to*.
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct PeopleFor {
+    /// An own field that holds people: the list is for choosing a value of it, and needs the right
+    /// to change that field instead of *Assigned to*. For a field of projects the list holds the
+    /// people who see the project.
+    field: Option<String>,
+    /// The issue the list is for (its ID or readable ID): the people who may see it are listed.
+    /// Without it, the people who may see an issue the person would report now.
+    issue: Option<String>,
+    /// The ID of the type of the issue that is being made, for a field whose level depends on it.
+    issue_type: Option<String>,
+}
+
 /// The people an issue of the project can be assigned to, a page at a time, by name: those who
 /// see the project and hold *See issues* there, and the person who asks. A person who cannot see
 /// names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
 /// set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
-/// lets the person change that field.
+/// lets the person change that field. For an own field (`field`) the right to change that field
+/// takes the place of the right to set *Assigned to*.
 #[utoipa::path(
     get,
     path = "/api/v1/projects/{project}/assignable-people",
     operation_id = "listAssignablePeople",
     tag = "issues",
-    params(("project" = String, Path, description = "The ID of the project, or its short name."), ListParams, PeopleSearch),
+    params(("project" = String, Path, description = "The ID of the project, or its short name."), ListParams, PeopleSearch, PeopleFor),
     responses((status = 200, description = "The people, by name.", body = Page<PersonRef>), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn list_assignable_people(
@@ -378,6 +394,7 @@ async fn list_assignable_people(
     ApiPath(project): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(find): ApiQuery<PeopleSearch>,
+    ApiQuery(wanted): ApiQuery<PeopleFor>,
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
     // the use case cannot read, so its answer comes after the check of the person.
@@ -396,6 +413,9 @@ async fn list_assignable_people(
                 search: find.search,
                 cursor,
                 limit: params.limit(),
+                field: wanted.field.as_deref().map(id_in_body).transpose()?,
+                issue: wanted.issue,
+                issue_type: wanted.issue_type.as_deref().map(id_in_body).transpose()?,
             },
         )
         .await

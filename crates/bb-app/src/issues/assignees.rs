@@ -10,16 +10,17 @@
 //! themselves, whose name they know.
 
 use bb_core::ErrorCode;
-use bb_core::access::PeopleLevel;
-use bb_core::fields::Field;
-use bb_core::id::UserId;
+use bb_core::access::FieldLevel;
+use bb_core::fields::{Field, FieldKey};
+use bb_core::id::{FieldId, IssueTypeId, UserId};
+use bb_core::own_fields::FieldFor;
 use bb_core::paging::{Cut, page_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
-use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef, Place};
+use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef, Place};
 use serde::Serialize;
 
-use crate::access::Members;
+use crate::access::{Members, names_other_people};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::people::write_cursor;
 
@@ -35,6 +36,14 @@ pub struct AssignablePeopleQuery {
     pub cursor: Option<String>,
     /// How many people a page holds at most.
     pub limit: u32,
+    /// An own field of people the list is for: the person then needs the right to change that
+    /// field instead of *Assigned to*.
+    pub field: Option<FieldId>,
+    /// The issue the list is for, by ID or readable ID: whoever reported it decides who may see
+    /// it. Without it the list is for an issue the person would report now.
+    pub issue: Option<String>,
+    /// The type of the issue that is being made, for a field whose level depends on the type.
+    pub issue_type: Option<IssueTypeId>,
 }
 
 /// One page of people, by name.
@@ -67,21 +76,59 @@ pub async fn assignable_people<S: AuthStore>(
     if found.is_none() || !held.sees_project() {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    let may_set = held.allows(Permission::ChangeIssues)
-        || held.allows(Permission::ChangeOwnIssues)
-        || held.allows(Permission::MakeIssues);
-    if !(held.allows(Permission::SeeIssues)
-        && may_set
-        && held.field_mask().can_change(Field::AssignedTo))
-    {
+    let you = actor.person.id;
+    let issue = match &input.issue {
+        Some(address) => Some(
+            ctx.find_issue(address)
+                .await?
+                .map(|found| found.issue)
+                .filter(|issue| {
+                    place == Place::Project(issue.project)
+                        && issue.deleted_at.is_none()
+                        && held.sees_issue(issue.reported_by)
+                })
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?,
+        ),
+        None => None,
+    };
+    let issue_type = issue
+        .as_ref()
+        .map(|issue| issue.issue_type)
+        .or(input.issue_type);
+    let (may_ask, reported_by) = match input.field {
+        None => (
+            may_set_assigned_to(&held),
+            Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
+        ),
+        Some(field) => {
+            let applies_to = ctx
+                .field_catalogue()
+                .await?
+                .iter()
+                .find(|definition| definition.field.id == field)
+                .map(|definition| definition.field.applies_to);
+            let may_change =
+                held.field_level_for(issue_type, FieldKey::Own(field)) >= FieldLevel::CanChange;
+            match applies_to {
+                Some(FieldFor::Issues) => (
+                    may_change && may_set_issues(&held),
+                    Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
+                ),
+                Some(FieldFor::Projects) => (
+                    may_change && held.allows(Permission::ChangeProjectSettings),
+                    None,
+                ),
+                None => (false, None),
+            }
+        }
+    };
+    if !may_ask {
         return Err(ErrorCode::Forbidden.into());
     }
     let after = ctx.people_position(input.cursor.as_deref()).await?;
-    let you = actor.person.id;
-    let names = |kind| held.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names;
     let wanted = page_len(Some(input.limit));
-    let people = if names(PeopleKind::AssignedTo) && names(PeopleKind::ProjectMembers) {
-        let members = Members::Assignable { reported_by: you };
+    let people = if names_other_people(&held) {
+        let members = Members::Naming { reported_by };
         ctx.members_page(place, input.search.as_deref(), after, wanted, members)
             .await?
     } else if after.is_none() {
@@ -105,6 +152,19 @@ pub async fn assignable_people<S: AuthStore>(
         );
     }
     Ok(held.authorize(AssignablePeoplePage { items, next_cursor }))
+}
+
+/// Whether the person may make or change issues here, and see them.
+fn may_set_issues(held: &Evaluation) -> bool {
+    held.allows(Permission::SeeIssues)
+        && (held.allows(Permission::ChangeIssues)
+            || held.allows(Permission::ChangeOwnIssues)
+            || held.allows(Permission::MakeIssues))
+}
+
+/// Whether the person may set *Assigned to*: they set issues, and the field mask lets them change it.
+fn may_set_assigned_to(held: &Evaluation) -> bool {
+    may_set_issues(held) && held.field_mask().can_change(Field::AssignedTo)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

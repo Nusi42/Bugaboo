@@ -10551,7 +10551,7 @@
     "/api/v1/projects/{project}/assignable-people": {
       "get": {
         "tags": ["issues"],
-        "summary": "The people an issue of the project can be assigned to, a page at a time, by name: those who\nsee the project and hold *See issues* there, and the person who asks. A person who cannot see\nnames for *Assigned to* and *Project members* is offered only themselves. Needs the right to\nset *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that\nlets the person change that field.",
+        "summary": "The people an issue of the project can be assigned to, a page at a time, by name: those who\nsee the project and hold *See issues* there, and the person who asks. A person who cannot see\nnames for *Assigned to* and *Project members* is offered only themselves. Needs the right to\nset *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that\nlets the person change that field. For an own field (`field`) the right to change that field\ntakes the place of the right to set *Assigned to*.",
         "operationId": "listAssignablePeople",
         "parameters": [
           {
@@ -10596,6 +10596,33 @@
             "name": "search",
             "in": "query",
             "description": "Words that every found name holds, in any order; left out or empty, everybody is listed.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "description": "An own field that holds people: the list is for choosing a value of it, and needs the right\nto change that field instead of *Assigned to*. For a field of projects the list holds the\npeople who see the project.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue",
+            "in": "query",
+            "description": "The issue the list is for (its ID or readable ID): the people who may see it are listed.\nWithout it, the people who may see an issue the person would report now.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of the type of the issue that is being made, for a field whose level depends on it.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15006,6 +15033,7 @@
           "field.no_match",
           "field.wrong_value",
           "field.unknown_choice",
+          "field.unknown_reference",
           "field.not_here",
           "name.taken",
           "resource.not_found",

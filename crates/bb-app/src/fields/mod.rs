@@ -32,4 +32,4 @@ pub use store::{FieldStore, StoredValues};
 pub use text::{SaveFieldText, save_field_text};
 pub use types::*;
 
-pub(crate) use values::{Item, ItemValues, PlannedValues};
+pub(crate) use values::{Item, ItemValues, PlannedValues, is_kept};

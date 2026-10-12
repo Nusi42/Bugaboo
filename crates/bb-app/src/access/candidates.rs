@@ -48,9 +48,8 @@ pub(crate) enum Members {
     Everybody,
     /// The people who have a role that reaches the place.
     WithRole,
-    /// The people an issue that this person reported could be assigned to: see
-    /// [`Ctx::may_be_assigned`].
-    Assignable { reported_by: UserId },
+    /// The people who may be named in an item of the place: see [`Ctx::may_be_named`].
+    Naming { reported_by: Option<UserId> },
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -98,8 +97,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         match members {
             Members::Everybody => Ok(true),
             Members::WithRole => self.has_a_role_at(person, place).await,
-            Members::Assignable { reported_by } => match place {
-                Place::Project(project) => self.may_be_assigned(person, project, reported_by).await,
+            Members::Naming { reported_by } => match place {
+                Place::Project(project) => self.may_be_named(person, project, reported_by).await,
                 Place::Organization => Ok(false),
             },
         }
@@ -119,6 +118,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             if_there(self.evaluate(person, Place::Project(project)).await)?
                 .is_some_and(|theirs| theirs.sees_issue(reported_by)),
         )
+    }
+
+    /// Whether a person may be named in a field of an item of the project: in an issue that
+    /// `reported_by` reported, someone who may see that issue (`may_be_assigned`); in a project
+    /// (no reporter), someone who may see the project. The one rule for *Assigned to*, for the own
+    /// fields that hold people, and for the list to choose from.
+    pub(crate) async fn may_be_named(
+        &self,
+        person: UserId,
+        project: ProjectId,
+        reported_by: Option<UserId>,
+    ) -> Result<bool, AppError> {
+        match reported_by {
+            Some(reporter) => self.may_be_assigned(person, project, reporter).await,
+            None => Ok(
+                if_there(self.evaluate(person, Place::Project(project)).await)?
+                    .is_some_and(|theirs| theirs.sees_project()),
+            ),
+        }
     }
 
     /// Whether a person has a role that reaches the place (and so is a member there).
@@ -191,4 +209,13 @@ pub(crate) fn position_of(person: &Person) -> PeoplePosition {
         name: person.display_name.clone(),
         id: person.id,
     }
+}
+
+/// Whether the viewer is shown other people by name where people are named in a field of an item
+/// (*Assigned to* and *Project members* both show names, ADR-0022): only then can they choose
+/// anybody but themselves, whose name they know.
+pub(crate) fn names_other_people(viewer: &bb_policy::Evaluation) -> bool {
+    [PeopleKind::AssignedTo, PeopleKind::ProjectMembers]
+        .into_iter()
+        .all(|kind| viewer.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names)
 }

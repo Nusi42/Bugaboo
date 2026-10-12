@@ -28,7 +28,7 @@ use bb_policy::{Evaluation, Narrowing, PeopleContext, Target, evaluate, resolve}
 pub use bb_policy::{
     Authorized, Masked, NOT_FOR_KEYS, Permission, PersonRef, Place, StartingRole, Tree, guards,
 };
-pub(crate) use candidates::Members;
+pub(crate) use candidates::{Members, names_other_people};
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
 pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
 pub use starting::{MakeStartingRoles, make_starting_roles};

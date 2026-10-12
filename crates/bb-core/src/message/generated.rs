@@ -745,6 +745,10 @@ pub const ERROR_FIELD_TOO_SMALL: MessageKey = MessageKey::new("error.field.too-s
 /// The message `error.field.unknown-choice`.
 pub const ERROR_FIELD_UNKNOWN_CHOICE: MessageKey = MessageKey::new("error.field.unknown-choice");
 
+/// The message `error.field.unknown-reference`.
+pub const ERROR_FIELD_UNKNOWN_REFERENCE: MessageKey =
+    MessageKey::new("error.field.unknown-reference");
+
 /// The message `error.field.wrong-value`.
 pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
 
@@ -6737,6 +6741,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.field.unknown-choice",
         "That choice is not offered by this field.",
+    ),
+    (
+        "error.field.unknown-reference",
+        "That person, group or issue cannot be chosen here.",
     ),
     (
         "error.field.wrong-value",

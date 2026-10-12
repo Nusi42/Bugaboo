@@ -29,8 +29,8 @@ use serde_json::Value;
 use super::manage::current_default;
 use super::pattern::Linear;
 use super::types::Definition;
-use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::access::{Actor, names_other_people};
+use crate::auth::{AppError, AuthStore, Ctx, entity, internal};
 use crate::issues::{IssueView, OwnHtml};
 
 /// The values of a set of items, as stored, with the definitions they are read with.
@@ -141,6 +141,13 @@ impl PlannedValues {
             })
             .collect()
     }
+}
+
+/// Whether a value stays because the field holds it already: a value that is kept is not judged
+/// again, so a retired choice, a person who lost access or an issue that moved stays until it is
+/// changed. The one rule for the fields of the catalogue (*Assigned to*) and for own fields.
+pub(crate) fn is_kept<T: PartialEq>(held: &[T], value: &T) -> bool {
+    held.contains(value)
 }
 
 /// The item a request sets values on.
@@ -401,8 +408,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether a person, group or issue a value names exists and may be named by this viewer.
-    /// A person has to be one the viewer is shown by name and, in an issue, one who may see the
-    /// issue (the rule of *Assigned to*); a group one whose name the viewer may read.
+    /// A person has to be one the viewer may name (themselves, or someone they are shown by name)
+    /// and who may see the item: the rule of *Assigned to* (`may_be_named`); a group one whose
+    /// name the viewer may read.
     async fn reference_may_be_named(
         &self,
         actor: &Actor,
@@ -417,18 +425,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let Ok(person) = UserId::from_bytes(bytes) else {
                     return Ok(false);
                 };
-                if viewer.people_level(PeopleKind::AssignedTo, PeopleContext::Ordinary)
-                    != PeopleLevel::Names
-                    || self.store().person(person).await.map_err(failed)?.is_none()
-                {
+                let Some(project) = item.chain.last() else {
                     return Ok(false);
-                }
-                match (item.kind, item.chain.last(), item.reported_by) {
-                    (RecordKind::Issue, Some(project), Some(reported_by)) => {
-                        self.may_be_assigned(person, *project, reported_by).await?
-                    }
-                    _ => true,
-                }
+                };
+                (person == actor.person.id || names_other_people(viewer))
+                    && self.store().person(person).await.map_err(failed)?.is_some()
+                    && self
+                        .may_be_named(person, *project, item.reported_by)
+                        .await?
             }
             FieldType::Group => match GroupId::from_bytes(bytes) {
                 Ok(group) => {
@@ -541,29 +545,61 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(value) = new else {
             return Ok(());
         };
+        let held = old.map_or(&[][..], FieldValue::ids);
         for bytes in value.ids() {
-            let fine = if field.kind.has_choices() {
+            let (fine, refusal) = if field.kind.has_choices() {
                 // A retired choice may stay where it already is, but is not set anew.
-                ChoiceId::from_bytes(*bytes).is_ok_and(|choice| {
+                let fine = ChoiceId::from_bytes(*bytes).is_ok_and(|choice| {
                     definition.choices.iter().any(|offered| {
                         offered.id == choice
-                            && (offered.retired_at.is_none()
-                                || old.is_some_and(|old| old.ids().contains(bytes)))
+                            && (offered.retired_at.is_none() || is_kept(held, bytes))
                     })
-                })
+                });
+                (fine, ErrorCode::FieldUnknownChoice)
             } else {
                 // What the field already holds is not asked again, so a person who went away or
                 // an issue that moved stays where it is until it is changed.
-                old.is_some_and(|old| old.ids().contains(bytes))
+                let fine = is_kept(held, bytes)
                     || self
                         .reference_may_be_named(actor, viewer, item, field.kind, *bytes)
-                        .await?
+                        .await?;
+                (fine, ErrorCode::FieldUnknownReference)
             };
-            if !fine {
-                return Err(ErrorCode::FieldUnknownChoice.into());
+            // Putting back exactly what the field held before the last change (*Undo*) is not
+            // asked again either: the choice may be retired or the person gone since.
+            if !fine && !self.puts_back(item, definition, value, old).await? {
+                return Err(refusal.into());
             }
         }
         Ok(())
+    }
+
+    /// Whether `value` is what the field held before the last change of the item, and that
+    /// change is the one that set the value it holds now: *Undo* of that change.
+    async fn puts_back(
+        &self,
+        item: &Item,
+        definition: &Definition,
+        value: &FieldValue,
+        now: Option<&FieldValue>,
+    ) -> Result<bool, AppError> {
+        let Some(id) = item.id else {
+            return Ok(false);
+        };
+        let field = &definition.field;
+        let last = self
+            .store()
+            .latest_version_event_about(&entity(item.kind, id))
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let key = FieldKey::Own(field.id).code().into_owned();
+        Ok(last.is_some_and(|event| {
+            event.changes.iter().any(|change| {
+                change.field == key
+                    && change.before == value.to_json(field.kind)
+                    && change.after == now.and_then(|now| now.to_json(field.kind))
+            })
+        }))
     }
 
     /// For a new item: the default of every field that reaches it and was not asked for, and the

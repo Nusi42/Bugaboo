@@ -106,8 +106,11 @@ error_codes! {
     FieldNoMatch => ("field.no_match", 400),
     /// A value is not one this kind of own field can hold (CF-01).
     FieldWrongValue => ("field.wrong_value", 400),
-    /// A value names a choice, person, group or issue that the own field does not offer (CF-04).
+    /// A value names a choice that the own field does not offer (CF-04).
     FieldUnknownChoice => ("field.unknown_choice", 400),
+    /// A value names a person, group or issue that the person who sets it may not name: it is not
+    /// there, or they may not know about it (CF-01). Both look the same.
+    FieldUnknownReference => ("field.unknown_reference", 400),
     /// An own field is not used for this project or this issue type (CF-03).
     FieldNotHere => ("field.not_here", 400),
     /// A name of a group, role or project is used already.

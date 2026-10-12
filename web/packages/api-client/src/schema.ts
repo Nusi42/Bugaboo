@@ -1542,7 +1542,8 @@ export interface paths {
      *     see the project and hold *See issues* there, and the person who asks. A person who cannot see
      *     names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
      *     set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
-     *     lets the person change that field.
+     *     lets the person change that field. For an own field (`field`) the right to change that field
+     *     takes the place of the right to set *Assigned to*.
      */
     get: operations["listAssignablePeople"];
     put?: never;
@@ -2479,6 +2480,7 @@ export interface components {
       | "field.no_match"
       | "field.wrong_value"
       | "field.unknown_choice"
+      | "field.unknown_reference"
       | "field.not_here"
       | "name.taken"
       | "resource.not_found"
@@ -12930,6 +12932,19 @@ export interface operations {
         limit?: number;
         /** @description Words that every found name holds, in any order; left out or empty, everybody is listed. */
         search?: string;
+        /**
+         * @description An own field that holds people: the list is for choosing a value of it, and needs the right
+         *     to change that field instead of *Assigned to*. For a field of projects the list holds the
+         *     people who see the project.
+         */
+        field?: string;
+        /**
+         * @description The issue the list is for (its ID or readable ID): the people who may see it are listed.
+         *     Without it, the people who may see an issue the person would report now.
+         */
+        issue?: string;
+        /** @description The ID of the type of the issue that is being made, for a field whose level depends on it. */
+        issue_type?: string;
       };
       header?: never;
       path: {

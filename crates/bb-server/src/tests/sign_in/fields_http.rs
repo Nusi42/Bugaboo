@@ -17,16 +17,16 @@ use super::issues_site::{ISSUES, PROJECTS, Site, ok};
 use super::policy_rig::Member;
 use super::rig::Rig;
 
-const FIELDS: &str = "/api/v1/fields";
+pub(super) const FIELDS: &str = "/api/v1/fields";
 
 /// Makes a field as `browser`; the answer, which has to be a success.
-async fn make_field(browser: &mut Browser, body: Value) -> Result<Value, Failure> {
+pub(super) async fn make_field(browser: &mut Browser, body: Value) -> Result<Value, Failure> {
     let made = browser.send("POST", FIELDS, Some(body)).await?;
     Ok(ok(&made)?.clone())
 }
 
 /// The ID of a field or a choice in an answer.
-fn id_of(value: &Value) -> Result<String, Failure> {
+pub(super) fn id_of(value: &Value) -> Result<String, Failure> {
     Ok(value["id"].as_str().ok_or("no ID")?.to_owned())
 }
 
@@ -42,7 +42,7 @@ async fn make_with(ada: &mut Browser, bug: &str, fields: Value) -> Result<Reply,
 }
 
 /// A field *Severity* with three choices, for issues.
-async fn severity(ada: &mut Browser) -> Result<Value, Failure> {
+pub(super) async fn severity(ada: &mut Browser) -> Result<Value, Failure> {
     make_field(
         ada,
         json!({
@@ -200,7 +200,7 @@ fn key_of(code: &str) -> Result<FieldKey, Failure> {
 }
 
 /// Sets the levels `(field, issue type, level)` of a role, as the administrator.
-async fn set_levels(
+pub(super) async fn set_levels(
     site: &Site<'_>,
     rig: &Rig,
     role: RoleId,
@@ -229,7 +229,7 @@ async fn set_levels(
 
 /// A person with a role of their own that has `permissions` and the given levels, for the whole
 /// organization or, with an issue type, for that type only: `(field, issue type, level)`.
-async fn reader_of(
+pub(super) async fn reader_of(
     site: &Site<'_>,
     rig: &Rig,
     email: &str,
@@ -396,16 +396,27 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
         let (key, major) = (id_of(&level)?, id_of(&level["choices"][1])?);
+        // A long text is sent as HTML next to the values: hidden, it is in no answer either.
+        let notes = id_of(
+            &make_field(
+                &mut ada,
+                json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
         let made = ok(&ada
             .send(
                 "POST",
                 &acme_issues(),
-                Some(
-                    json!({"issue_type": site.bug, "title": "Secret", "fields": { &key: &major }}),
-                ),
+                Some(json!({
+                    "issue_type": site.bug,
+                    "title": "Secret",
+                    "fields": { &key: &major, &notes: "Hidden **words**" },
+                })),
             )
             .await?)?
         .clone();
+        assert!(made["own_fields"][&notes].is_string(), "{made}");
         let issue = made["key"].as_str().ok_or("no key")?.to_owned();
         let path = format!("{ISSUES}/{issue}");
         // A role that changes the title, with the own field hidden (it has no level for it).
@@ -424,6 +435,17 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         let detail = writer.send("GET", &path, None).await?;
         assert!(!detail.body.to_string().contains(&key), "{}", detail.body);
         assert!(!detail.body.to_string().contains(&major), "{}", detail.body);
+        // Neither the text nor the HTML of the long text, nor its list of rendered fields.
+        for hidden in [&notes, "Hidden", "<strong>words</strong>"] {
+            assert!(!detail.body.to_string().contains(hidden), "{}", detail.body);
+        }
+        assert!(
+            ok(&detail)?["own_fields_html"]
+                .as_array()
+                .is_some_and(Vec::is_empty),
+            "{}",
+            detail.body
+        );
         let list = writer
             .send("GET", &format!("{}?fields=own_fields", acme_issues()), None)
             .await?;
@@ -479,6 +501,22 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
         assert!(!stale.body.to_string().contains(&key), "{}", stale.body);
         assert!(!stale.body.to_string().contains(&minor), "{}", stale.body);
+        // The record of the change that the conflict reads from (the history of the issue) names
+        // the hidden fields of the change in neither the key nor the text.
+        for hidden in [&notes, "Hidden", "words"] {
+            assert!(!stale.body.to_string().contains(hidden), "{}", stale.body);
+        }
+        // Ada reads the text and the HTML of it.
+        let seen = ada.send("GET", &path, None).await?;
+        assert_eq!(
+            ok(&seen)?["issue"]["own_fields"][&notes],
+            "Hidden **words**"
+        );
+        assert!(
+            ok(&seen)?["own_fields_html"][0]["html"]
+                .as_str()
+                .is_some_and(|html| html.contains("<strong>words</strong>"))
+        );
         Ok(())
     })
     .await
@@ -927,7 +965,7 @@ async fn person_refusals(
             Some(json!({"version": version, "fields": { tester: gone }})),
         )
         .await?;
-    assert_eq!(nobody.code(), "field.unknown_choice", "{}", nobody.body);
+    assert_eq!(nobody.code(), "field.unknown_reference", "{}", nobody.body);
     // A person who has no role anywhere cannot see the issue, so they cannot be named in it.
     let outsider = rig
         .person(&site.org.admin.session, "otto@example.test")
@@ -942,7 +980,7 @@ async fn person_refusals(
             Some(json!({"version": version, "fields": { tester: outsider }})),
         )
         .await?;
-    assert_eq!(unseen.code(), "field.unknown_choice", "{}", unseen.body);
+    assert_eq!(unseen.code(), "field.unknown_reference", "{}", unseen.body);
     Ok(())
 }
 

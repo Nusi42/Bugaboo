@@ -20,6 +20,7 @@ mod assignments_http;
 mod caching;
 mod editing;
 mod fields_http;
+mod fields_references;
 pub(crate) mod http;
 mod invitations;
 mod issues_assign;

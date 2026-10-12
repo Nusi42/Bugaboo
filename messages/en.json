@@ -1105,6 +1105,7 @@
   "error.field.no-match": "That does not have the form this field asks for.",
   "error.field.wrong-value": "That is not a value this field can hold.",
   "error.field.unknown-choice": "That choice is not offered by this field.",
+  "error.field.unknown-reference": "That person, group or issue cannot be chosen here.",
   "error.field.not-here": "This field is not used here.",
   "nav.fields": "Fields",
   "field-permissions.more-options": "More options",

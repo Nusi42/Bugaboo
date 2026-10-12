@@ -11,6 +11,7 @@ use bb_policy::FieldMask;
 
 use super::types::{ChangeIssue, MakeIssue};
 use crate::auth::{AppError, AuthStore, Ctx};
+use crate::fields::is_kept;
 use crate::input::clean_text;
 
 /// The title as it is kept, or `request.invalid`.
@@ -57,7 +58,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if distinct.len() > ASSIGNEES_MAX {
             return Err(ErrorCode::InvalidRequest.into());
         }
-        for person in distinct.iter().filter(|person| !already.contains(person)) {
+        for person in distinct.iter().filter(|person| !is_kept(already, person)) {
             if !self.may_be_assigned(*person, project, reported_by).await? {
                 return Err(ErrorCode::InvalidRequest.into());
             }
