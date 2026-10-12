@@ -180,7 +180,7 @@ export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
         answer={answer}
         heading={t("check-access.fields-heading")}
         entries={answer.fields.map((field) => ({
-          name: field.name ?? fieldNameOf(field.subject),
+          name: fieldNameOf({ code: field.subject, name: field.name }),
           level: field.level,
           sentences: [],
           says: field.roles,

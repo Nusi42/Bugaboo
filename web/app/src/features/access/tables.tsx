@@ -72,7 +72,7 @@ export function FieldPermissionsTable({ project }: { readonly project?: string }
       {more ? <IssueTypeChooser value={issueType} onChange={setIssueType} /> : null}
       <LevelTableView
         levels={levels}
-        subjectName={(field, name) => name ?? fieldNameOf(field)}
+        subjectName={(field, name) => fieldNameOf({ code: field, name })}
         levelName={(level) => t(`field-level.${level}`)}
         subjectHeading={t("access.field")}
         tableName={t("field-permissions.table-name")}

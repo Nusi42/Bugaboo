@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { isMessageKey, t } from "@bugaboo/messages";
 
 import { personName } from "../../shared/person.ts";
+import { fieldNameOf } from "../access/index.ts";
 
 import type { Preview } from "./use-projects.ts";
 
@@ -16,11 +17,6 @@ function say(key: string, fallback: string): string {
 /** What a word of the vocabulary is called: a field, a kind of people information, a level. */
 function wordOf(word: Word): string {
   return say(word.message_key, word.code);
-}
-
-/** What a field of the preview is called: a field of the catalogue by its message, an own field by its name. */
-function fieldNameOf(field: Schema<"FieldKeyBody">): string {
-  return field.name ?? say(field.message_key ?? "", field.code);
 }
 
 /** The names of roles in a sentence; *no role* when there are none. */
