@@ -1,15 +1,16 @@
 //! Who may be named, and what the list to choose from offers (CF-01, CF-07, ISS-01, ADR-0027): the
-//! list for an own field of people judges the field like a change of it does.
+//! list for an own field of people judges the field like a change of it does, and *Undo* puts
+//! back only what still exists.
 
 use axum::http::StatusCode;
-use bb_app::access::Permission;
+use bb_app::access::{Permission, StartingRole};
 use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use super::fields_http::{FIELDS, id_of, make_field, reader_of};
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, ok};
 
 /// The permissions of somebody who sees and changes issues.
 const CHANGER: [Permission; 3] = [
@@ -178,6 +179,111 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
                 (StatusCode::BAD_REQUEST, "field.not_here"),
                 "{what}: {}",
                 refused.body
+            );
+        }
+        Ok(())
+    })
+    .await
+}
+
+/// Changes the own fields of an issue on the version it has now; the answer.
+async fn set(who: &mut Browser, issue: &Value, fields: Value) -> Result<Reply, Failure> {
+    let path = format!("{ISSUES}/{}", issue["key"].as_str().ok_or("no key")?);
+    let version = ok(&who.send("GET", &path, None).await?)?["issue"]["version"].clone();
+    who.send(
+        "PATCH",
+        &path,
+        Some(json!({"version": version, "fields": fields})),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn cf_07_undo_needs_the_right_to_change_the_field() -> TestResult {
+    each_database("cf_07_undo_level", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let tester = person_field(&mut ada, "Tester").await?;
+        let (_, vic) = site.person(StartingRole::Viewer, "vic").await?;
+        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let made = ok(&site.make(&mut ada, "Undo me").await?)?.clone();
+        ok(&set(&mut ada, &made, json!({ &tester: vic.to_string() })).await?)?;
+        ok(&set(&mut ada, &made, json!({ &tester: me })).await?)?;
+        // Somebody who only sees the field cannot put back what it held before.
+        let mut sees = reader_of(
+            &site,
+            &rig,
+            "sue@example.test",
+            &CHANGER,
+            &[(&tester, None, FieldLevel::CanSee)],
+        )
+        .await?;
+        let undone = set(&mut sees, &made, json!({ &tester: vic.to_string() })).await?;
+        assert_eq!(
+            outcome(&undone),
+            (StatusCode::FORBIDDEN, "access.forbidden")
+        );
+        // Somebody who may change it can.
+        let undone = set(&mut ada, &made, json!({ &tester: vic.to_string() })).await?;
+        assert_eq!(outcome(&undone), (StatusCode::OK, ""), "{}", undone.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn cf_07_undo_does_not_put_back_a_group_or_an_issue_that_is_gone() -> TestResult {
+    each_database("cf_07_undo_gone", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let team = id_of(
+            &make_field(
+                &mut ada,
+                json!({"name": "Team", "kind": "group", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
+        let twin = id_of(
+            &make_field(
+                &mut ada,
+                json!({"name": "Twin", "kind": "issue", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
+        let group = id_of(ok(&ada
+            .send("POST", "/api/v1/groups", Some(json!({"name": "Core"})))
+            .await?)?)?;
+        let other = id_of(ok(&ada
+            .send("POST", "/api/v1/groups", Some(json!({"name": "Edge"})))
+            .await?)?)?;
+        let made = ok(&site.make(&mut ada, "Undo me").await?)?.clone();
+        let gone = ok(&site.make(&mut ada, "Soon gone").await?)?.clone();
+        let both = |group: &str, issue: &Value| json!({ &team: group, &twin: issue["id"] });
+        ok(&set(&mut ada, &made, both(&group, &gone)).await?)?;
+        ok(&set(&mut ada, &made, both(&other, &made)).await?)?;
+        // The group and the issue go away; the last change still is the one to put back.
+        let deleted = ada
+            .send("DELETE", &format!("/api/v1/groups/{group}"), None)
+            .await?;
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.body);
+        let trashed = ada
+            .send(
+                "DELETE",
+                &format!("{ISSUES}/{}", gone["key"].as_str().ok_or("no key")?),
+                None,
+            )
+            .await?;
+        assert_eq!(trashed.status, StatusCode::NO_CONTENT, "{}", trashed.body);
+        for (name, values) in [
+            ("group", json!({ &team: group })),
+            ("issue", json!({ &twin: gone["id"] })),
+        ] {
+            let undone = set(&mut ada, &made, values).await?;
+            assert_eq!(
+                outcome(&undone),
+                (StatusCode::BAD_REQUEST, "field.unknown_reference"),
+                "{name}: {}",
+                undone.body
             );
         }
         Ok(())

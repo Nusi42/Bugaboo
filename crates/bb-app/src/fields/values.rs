@@ -469,8 +469,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// Whether a person, group or issue a value names exists and may be named by this viewer.
     /// A person has to be one the viewer may name (themselves, or someone they are shown by name)
-    /// and who may see the item: the rule of *Assigned to* (`may_be_named`); a group one whose
-    /// name the viewer may read.
+    /// and, with `access`, who may see the item: the rule of *Assigned to* (`may_name`); a group
+    /// one whose name the viewer may read. Without `access` (*Undo*) a person who lost access
+    /// since is still named, but one who is gone is not.
     async fn reference_may_be_named(
         &self,
         actor: &Actor,
@@ -478,6 +479,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         item: &Item,
         kind: FieldType,
         bytes: [u8; 16],
+        access: bool,
     ) -> Result<bool, AppError> {
         let failed = |error| internal::<S>(&error);
         Ok(match kind {
@@ -488,8 +490,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let Some(project) = item.chain.last() else {
                     return Ok(false);
                 };
-                self.may_name(actor.person.id, viewer, person, *project, item.reported_by)
-                    .await?
+                if access {
+                    self.may_name(actor.person.id, viewer, person, *project, item.reported_by)
+                        .await?
+                } else {
+                    self.may_name_person(actor.person.id, viewer, person)
+                        .await?
+                }
             }
             FieldType::Group => match GroupId::from_bytes(bytes) {
                 Ok(group) => {
@@ -590,6 +597,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(());
         };
         let held = old.map_or(&[][..], FieldValue::ids);
+        // Whether this is *Undo*: asked only once, and only when a value is not fine as it is.
+        let mut undo: Option<bool> = None;
         for bytes in value.ids() {
             let (fine, refusal) = if field.kind.has_choices() {
                 // A retired choice may stay where it already is, but is not set anew.
@@ -605,17 +614,53 @@ impl<S: AuthStore> Ctx<'_, S> {
                 // an issue that moved stays where it is until it is changed.
                 let fine = is_kept(held, bytes)
                     || self
-                        .reference_may_be_named(actor, viewer, item, field.kind, *bytes)
+                        .reference_may_be_named(actor, viewer, item, field.kind, *bytes, true)
                         .await?;
                 (fine, ErrorCode::FieldUnknownReference)
             };
-            // Putting back exactly what the field held before the last change (*Undo*) is not
-            // asked again either: the choice may be retired or the person gone since.
-            if !fine && !self.puts_back(item, definition, value, old).await? {
+            if fine {
+                continue;
+            }
+            // Putting back exactly what the field held before the last change (*Undo*) skips only
+            // what may have changed since: a choice may be retired, a person may have lost
+            // access. What is put back still has to be there, and to be nameable by the viewer.
+            let undoing = match undo {
+                Some(known) => known,
+                None => *undo.insert(self.puts_back(item, definition, value, old).await?),
+            };
+            if !(undoing
+                && self
+                    .still_there(actor, viewer, item, definition, *bytes)
+                    .await?)
+            {
                 return Err(refusal.into());
             }
         }
         Ok(())
+    }
+
+    /// Whether a value of *Undo* can be put back: a choice of the field (retired or not), or a
+    /// person, group or issue that still exists and that the viewer may name, judged without
+    /// the access of the person named (`reference_may_be_named`).
+    async fn still_there(
+        &self,
+        actor: &Actor,
+        viewer: &Evaluation,
+        item: &Item,
+        definition: &Definition,
+        bytes: [u8; 16],
+    ) -> Result<bool, AppError> {
+        let field = &definition.field;
+        if field.kind.has_choices() {
+            return Ok(ChoiceId::from_bytes(bytes).is_ok_and(|choice| {
+                definition
+                    .choices
+                    .iter()
+                    .any(|offered| offered.id == choice)
+            }));
+        }
+        self.reference_may_be_named(actor, viewer, item, field.kind, bytes, false)
+            .await
     }
 
     /// Whether `value` is what the field held before the last change of the item, and that
