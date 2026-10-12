@@ -15,6 +15,7 @@
 //!   has which role and the levels the roles set: a tree that changed meanwhile asks the person to
 //!   look again.
 
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -197,14 +198,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             let mut rows = Vec::new();
             for change in &judged.preview.changes[at..end] {
                 if let Some(named) = shown_ref(change.project) {
-                    if !known.contains_key(&change.project) {
+                    if let Entry::Vacant(slot) = known.entry(change.project) {
                         let names = self
                             .known_field_names(actor, viewer, Some(change.project))
                             .await?
                             .into_iter()
                             .filter_map(|(key, name)| key.own().map(|id| (id, name)))
                             .collect();
-                        known.insert(change.project, names);
+                        slot.insert(names);
                     }
                     rows.push(project_change(named, change, &known[&change.project]));
                 }

@@ -114,8 +114,8 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
             set_on_issue(&mut filler, &by_gus, &version, json!({ &tester: gus_id })).await?;
         assert_eq!(outcome(&named), (StatusCode::OK, ""), "{}", named.body);
         // A person who is not there: an ID like the Guest's, with another last letter.
-        let last = if gus_id.ends_with('a') { 'b' } else { 'a' };
-        let gone = format!("{}{last}", &gus_id[..gus_id.len() - 1]);
+        let other_end = if gus_id.ends_with('a') { 'b' } else { 'a' };
+        let gone = format!("{}{other_end}", &gus_id[..gus_id.len() - 1]);
         let refusals = [
             (&by_ada, gus_id.clone()),
             (&by_gus, outsider),

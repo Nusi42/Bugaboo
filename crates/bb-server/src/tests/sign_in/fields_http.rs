@@ -389,6 +389,43 @@ async fn cf_06_an_own_field_follows_its_level_per_role_and_per_issue_type() -> T
     .await
 }
 
+/// What a role with no level for the fields reads of an issue that holds a hidden pick-one field
+/// (`key`, with the value `major`) and a hidden long text (`notes`): none of it, in the issue, in
+/// the list and in the definitions. The answer about the issue is returned.
+async fn reads_nothing_of(
+    ada: &mut Browser,
+    writer: &mut Browser,
+    path: &str,
+    (key, major, notes): (&str, &str, &str),
+) -> Result<Reply, Failure> {
+    let detail = writer.send("GET", path, None).await?;
+    assert!(!detail.body.to_string().contains(key), "{}", detail.body);
+    assert!(!detail.body.to_string().contains(major), "{}", detail.body);
+    // Neither the text nor the HTML of the long text, nor its list of rendered fields.
+    for hidden in [notes, "Hidden", "<strong>words</strong>"] {
+        assert!(!detail.body.to_string().contains(hidden), "{}", detail.body);
+    }
+    assert!(
+        ok(&detail)?["own_fields_html"]
+            .as_array()
+            .is_some_and(Vec::is_empty),
+        "{}",
+        detail.body
+    );
+    let list = writer
+        .send("GET", &format!("{}?fields=own_fields", acme_issues()), None)
+        .await?;
+    assert!(!list.body.to_string().contains(major), "{}", list.body);
+    // The definition of the field is not there for them, and the list does not hold it.
+    let one = writer.send("GET", &format!("{FIELDS}/{key}"), None).await?;
+    assert_eq!(one.code(), "resource.not_found", "{}", one.body);
+    let all = writer.send("GET", FIELDS, None).await?;
+    assert!(!all.body.to_string().contains(key), "{}", all.body);
+    let for_ada = ada.send("GET", &format!("{FIELDS}/{key}"), None).await?;
+    assert_eq!(for_ada.status, StatusCode::OK, "{}", for_ada.body);
+    Ok(detail)
+}
+
 #[tokio::test]
 async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> TestResult {
     each_database("cf_06_hidden", async |db| {
@@ -432,31 +469,7 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
             &[("title", None, FieldLevel::CanChange)],
         )
         .await?;
-        let detail = writer.send("GET", &path, None).await?;
-        assert!(!detail.body.to_string().contains(&key), "{}", detail.body);
-        assert!(!detail.body.to_string().contains(&major), "{}", detail.body);
-        // Neither the text nor the HTML of the long text, nor its list of rendered fields.
-        for hidden in [&notes, "Hidden", "<strong>words</strong>"] {
-            assert!(!detail.body.to_string().contains(hidden), "{}", detail.body);
-        }
-        assert!(
-            ok(&detail)?["own_fields_html"]
-                .as_array()
-                .is_some_and(Vec::is_empty),
-            "{}",
-            detail.body
-        );
-        let list = writer
-            .send("GET", &format!("{}?fields=own_fields", acme_issues()), None)
-            .await?;
-        assert!(!list.body.to_string().contains(&major), "{}", list.body);
-        // The definition of the field is not there for them, and the list does not hold it.
-        let one = writer.send("GET", &format!("{FIELDS}/{key}"), None).await?;
-        assert_eq!(one.code(), "resource.not_found", "{}", one.body);
-        let all = writer.send("GET", FIELDS, None).await?;
-        assert!(!all.body.to_string().contains(&key), "{}", all.body);
-        let for_ada = ada.send("GET", &format!("{FIELDS}/{key}"), None).await?;
-        assert_eq!(for_ada.status, StatusCode::OK, "{}", for_ada.body);
+        let detail = reads_nothing_of(&mut ada, &mut writer, &path, (&key, &major, &notes)).await?;
         // A write is refused alike for a hidden field and for one that is not there.
         let version = ok(&detail)?["issue"]["version"].clone();
         let hidden = writer
@@ -764,86 +777,99 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
             .send("GET", &format!("{FIELDS}/{beta_id}"), None)
             .await?;
         assert_eq!(shown.status, StatusCode::OK, "{}", shown.body);
-        // The move preview: a project with a sub-project (and a field that is only for the
-        // sub-project) moves below ACME, where Pia has a role that reads all three fields.
-        let make = |short: &'static str| json!({"short_name": short, "name": short});
-        let moved = id_of(&ada.send("POST", PROJECTS, Some(make("MOVED"))).await?.body)?;
-        let sub = id_of(&ada.send("POST", PROJECTS, Some(make("MSUB"))).await?.body)?;
-        let into_moved = ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{sub}/move-preview"),
-                Some(json!({"to": moved})),
-            )
-            .await?;
-        let version = into_moved.body["preview"].clone();
-        ok(&ada
-            .send(
-                "POST",
-                &format!("{PROJECTS}/{sub}/move"),
-                Some(json!({"to": moved, "preview": version})),
-            )
-            .await?)?;
-        let sub_only = make_field(
-            &mut ada,
-            json!({
-                "name": "Sub only",
-                "kind": "text",
-                "applies_to": "issues",
-                "scope": {"projects": [sub]},
-            }),
-        )
-        .await?;
-        let sub_id = id_of(&sub_only)?;
-        let pia = site.org.person().await?;
-        let reads = site
-            .org
-            .role(
-                "Pia reads",
-                &[Permission::SeeProjects, Permission::SeeIssues],
-            )
-            .await?;
-        let all_three = [
-            (salary_id.as_str(), None, FieldLevel::CanSee),
-            (beta_id.as_str(), None, FieldLevel::CanSee),
-            (sub_id.as_str(), None, FieldLevel::CanSee),
-        ];
-        set_levels(&site, &rig, reads.id, &all_three).await?;
-        let acme_id: ProjectId = site.acme.parse().map_err(|error| format!("{error}"))?;
-        site.org.give(&pia, reads.id, acme_id).await?;
-        // The lead may also move projects, and may see "Sub only" but not "Salary band".
-        let mut mover = reader_of(
-            &site,
-            &rig,
-            "mona@example.test",
-            &[
-                Permission::SeeProjects,
-                Permission::SeeIssues,
-                Permission::MoveProjects,
-            ],
-            &[
-                (&salary_id, None, FieldLevel::Hidden),
-                (&sub_id, None, FieldLevel::CanSee),
-            ],
-        )
-        .await?;
-        let ask = json!({"to": site.acme});
-        let path = format!("{PROJECTS}/{moved}/move-preview");
-        let whole = ada.send("POST", &path, Some(ask.clone())).await?;
-        let everything = whole.body.to_string();
-        assert!(everything.contains(&salary_id), "{everything}");
-        assert!(everything.contains("Sub only"), "{everything}");
-        let seen = mover.send("POST", &path, Some(ask)).await?;
-        assert_eq!(seen.status, StatusCode::OK, "{}", seen.body);
-        let text = seen.body.to_string();
-        // Hidden: neither the name nor the ID of the field, nor a row with its levels.
-        assert!(!text.contains("Salary band"), "move preview: {text}");
-        assert!(!text.contains(&salary_id), "move preview: {text}");
-        // Allowed: the field of the sub-project, by its name, in the sub-project's row.
-        assert!(text.contains("Sub only"), "move preview: {text}");
+        move_preview_hides(&site, &rig, &mut ada, (&salary_id, &beta_id)).await?;
         Ok(())
     })
     .await
+}
+
+/// The move preview of a project with a sub-project: Pia's role (on the new parent) reads the
+/// fields `salary` and `beta` and a field only for the sub-project; a lead who may not see the
+/// salary band reads neither its name nor its row, and reads the field of the sub-project by name.
+async fn move_preview_hides(
+    site: &Site<'_>,
+    rig: &Rig,
+    ada: &mut Browser,
+    (salary_id, beta_id): (&str, &str),
+) -> TestResult {
+    // The move preview: a project with a sub-project (and a field that is only for the
+    // sub-project) moves below ACME, where Pia has a role that reads all three fields.
+    let make = |short: &'static str| json!({"short_name": short, "name": short});
+    let moved = id_of(&ada.send("POST", PROJECTS, Some(make("MOVED"))).await?.body)?;
+    let sub = id_of(&ada.send("POST", PROJECTS, Some(make("MSUB"))).await?.body)?;
+    let into_moved = ada
+        .send(
+            "POST",
+            &format!("{PROJECTS}/{sub}/move-preview"),
+            Some(json!({"to": moved})),
+        )
+        .await?;
+    let version = into_moved.body["preview"].clone();
+    ok(&ada
+        .send(
+            "POST",
+            &format!("{PROJECTS}/{sub}/move"),
+            Some(json!({"to": moved, "preview": version})),
+        )
+        .await?)?;
+    let sub_only = make_field(
+        ada,
+        json!({
+            "name": "Sub only",
+            "kind": "text",
+            "applies_to": "issues",
+            "scope": {"projects": [sub]},
+        }),
+    )
+    .await?;
+    let sub_id = id_of(&sub_only)?;
+    let pia = site.org.person().await?;
+    let reads = site
+        .org
+        .role(
+            "Pia reads",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+        )
+        .await?;
+    let all_three = [
+        (salary_id, None, FieldLevel::CanSee),
+        (beta_id, None, FieldLevel::CanSee),
+        (sub_id.as_str(), None, FieldLevel::CanSee),
+    ];
+    set_levels(site, rig, reads.id, &all_three).await?;
+    let acme_id: ProjectId = site.acme.parse().map_err(|error| format!("{error}"))?;
+    site.org.give(&pia, reads.id, acme_id).await?;
+    // The lead may also move projects, and may see "Sub only" but not "Salary band".
+    let mut mona = reader_of(
+        site,
+        rig,
+        "mona@example.test",
+        &[
+            Permission::SeeProjects,
+            Permission::SeeIssues,
+            Permission::MoveProjects,
+        ],
+        &[
+            (salary_id, None, FieldLevel::Hidden),
+            (&sub_id, None, FieldLevel::CanSee),
+        ],
+    )
+    .await?;
+    let ask = json!({"to": site.acme});
+    let path = format!("{PROJECTS}/{moved}/move-preview");
+    let whole = ada.send("POST", &path, Some(ask.clone())).await?;
+    let everything = whole.body.to_string();
+    assert!(everything.contains(salary_id), "{everything}");
+    assert!(everything.contains("Sub only"), "{everything}");
+    let seen = mona.send("POST", &path, Some(ask)).await?;
+    assert_eq!(seen.status, StatusCode::OK, "{}", seen.body);
+    let text = seen.body.to_string();
+    // Hidden: neither the name nor the ID of the field, nor a row with its levels.
+    assert!(!text.contains("Salary band"), "move preview: {text}");
+    assert!(!text.contains(salary_id), "move preview: {text}");
+    // Allowed: the field of the sub-project, by its name, in the sub-project's row.
+    assert!(text.contains("Sub only"), "move preview: {text}");
+    Ok(())
 }
 
 #[tokio::test]
