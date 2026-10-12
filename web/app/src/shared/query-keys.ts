@@ -52,13 +52,14 @@ export const queryKeys = {
     lists: () => ["issues", "list"],
     list: (project: string) => ["issues", "list", project],
     one: (address: string) => ["issues", "one", address],
-    people: (project: string, search: string, field = "", issue = "") => [
+    people: (project: string, search: string, field = "", issue = "", issueType = "") => [
       "issues",
       "assignable-people",
       project,
       search,
       field,
       issue,
+      issueType,
     ],
     drafts: (project: string) => ["issues", "new-draft", project],
   },

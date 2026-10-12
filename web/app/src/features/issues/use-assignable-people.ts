@@ -12,14 +12,16 @@ export interface PeopleFor {
   readonly field?: string | undefined;
   /** The ID of the issue: who reported it decides who may see it. */
   readonly issue?: string | undefined;
+  /** The ID of the type of the issue that is being made: a level per issue type then decides. */
+  readonly issueType?: string | undefined;
 }
 
 /** The people an issue of the project can be assigned to whose names contain the words, a page at a time. */
 export function useAssignablePeople(project: string, words: string, wanted: PeopleFor = {}) {
-  const { field, issue } = wanted;
+  const { field, issue, issueType } = wanted;
   return usePaged(
     {
-      queryKey: queryKeys.issues.people(project, words, field, issue),
+      queryKey: queryKeys.issues.people(project, words, field, issue, issueType),
       read: (after) =>
         api.client.GET("/api/v1/projects/{project}/assignable-people", {
           params: {
@@ -28,6 +30,7 @@ export function useAssignablePeople(project: string, words: string, wanted: Peop
               ...(words === "" ? {} : { search: words }),
               ...(field === undefined ? {} : { field }),
               ...(issue === undefined ? {} : { issue }),
+              ...(issueType === undefined ? {} : { issue_type: issueType }),
               limit: pageSize.short,
               ...after,
             },

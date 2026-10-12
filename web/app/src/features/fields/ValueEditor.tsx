@@ -32,6 +32,8 @@ export interface ValueEditorProps {
   readonly project?: string | undefined;
   /** The issue (its ID), when the item is one: only people who may see it can be chosen. */
   readonly issue?: string | undefined;
+  /** The ID of the type of the issue that is being made, while there is no issue yet. */
+  readonly issueType?: string | undefined;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */

@@ -13,6 +13,7 @@ export function ReferenceEditor({
   value,
   project,
   issue,
+  issueType,
   onCommit,
   isPending = false,
 }: ValueEditorProps) {
@@ -28,6 +29,7 @@ export function ReferenceEditor({
             value={value}
             project={project}
             issue={issue}
+            issueType={issueType}
             onCommit={onCommit}
           />
         )}
@@ -53,8 +55,9 @@ function Chooser({
   value,
   project,
   issue,
+  issueType,
   onCommit,
-}: Pick<ValueEditorProps, "field" | "value" | "issue" | "onCommit"> & {
+}: Pick<ValueEditorProps, "field" | "value" | "issue" | "issueType" | "onCommit"> & {
   readonly project: string;
 }) {
   const permissions = usePermissions();
@@ -69,6 +72,13 @@ function Chooser({
     return <IssueChoice field={field} onCommit={onCommit} />;
   }
   return (
-    <PeopleChoice field={field} value={value} project={project} issue={issue} onCommit={onCommit} />
+    <PeopleChoice
+      field={field}
+      value={value}
+      project={project}
+      issue={issue}
+      issueType={issueType}
+      onCommit={onCommit}
+    />
   );
 }
