@@ -244,6 +244,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue_type: Option<IssueTypeId>,
     ) -> Result<FieldFor, AppError> {
         let definitions = self.field_catalogue().await?;
+        // A project has no type of issue, so a field of projects is judged without one, as
+        // `plan_values` does for a change of a project.
+        let issue_type = definitions
+            .iter()
+            .find(|definition| definition.field.id == field)
+            .filter(|definition| definition.field.applies_to == FieldFor::Issues)
+            .and(issue_type);
         let definition = may_change(&definitions, viewer, field, issue_type)
             .ok_or(AppError::Refused(ErrorCode::Forbidden))?;
         let used_for = definition.field.applies_to;

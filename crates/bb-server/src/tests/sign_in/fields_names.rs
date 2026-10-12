@@ -105,6 +105,38 @@ async fn cf_06_the_list_for_a_field_follows_its_level_for_the_issue_type() -> Te
 }
 
 #[tokio::test]
+async fn cf_06_a_project_field_is_not_opened_by_an_issue_type() -> TestResult {
+    each_database("cf_06_project_field_no_type", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let sponsor = id_of(
+            &make_field(
+                &mut ada,
+                json!({"name": "Sponsor", "kind": "person", "applies_to": "projects"}),
+            )
+            .await?,
+        )?;
+        // A project has no type of issue: the level for Bug is no business of a project field.
+        let mut tim = reader_of(
+            &site,
+            &rig,
+            "tim@example.test",
+            &[Permission::SeeProjects, Permission::ChangeProjectSettings],
+            &[
+                (&sponsor, None, FieldLevel::CanChange),
+                (&sponsor, Some(&site.bug), FieldLevel::Hidden),
+            ],
+        )
+        .await?;
+        let query = format!("field={sponsor}&issue_type={}", site.bug);
+        let listed = people_for(&mut tim, &site, &query).await?;
+        assert_eq!(outcome(&listed), (StatusCode::OK, ""), "{}", listed.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people() -> TestResult {
     each_database("cf_01_people_list_fields", async |db| {
         let (rig, app) = rig_and_app(db).await?;
