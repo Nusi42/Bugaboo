@@ -222,3 +222,41 @@ async fn m3_f28_an_assignee_who_lost_access_does_not_stop_a_change() -> TestResu
     })
     .await
 }
+
+#[tokio::test]
+async fn adr_0027_who_is_shown_only_themselves_can_assign_only_themselves() -> TestResult {
+    each_database("adr_0027_assign_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tim, tim_id) = site.person(StartingRole::TeamMember, "tim").await?;
+        let (_, cora) = site.person(StartingRole::Contributor, "cora").await?;
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "project-members",
+            "role-only",
+        )
+        .await?;
+        // The list offers Tim only himself, and sending the ID of somebody else is no way round it.
+        let made = site.make(&mut ada, "Who does it").await?;
+        let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        assert_eq!(
+            assign(&mut tim, &issue, 1, &cora.to_string()).await?,
+            (StatusCode::BAD_REQUEST, "request.invalid".to_owned())
+        );
+        let own = assign(&mut tim, &issue, 1, &tim_id.to_string()).await?;
+        assert_eq!(own.0, StatusCode::OK);
+        // Where names are shown again, anybody who may see the issue can be assigned.
+        site.show_people(
+            &mut ada,
+            StartingRole::TeamMember,
+            "project-members",
+            "names",
+        )
+        .await?;
+        let named = assign(&mut tim, &issue, 2, &cora.to_string()).await?;
+        assert_eq!(named.0, StatusCode::OK);
+        Ok(())
+    })
+    .await
+}

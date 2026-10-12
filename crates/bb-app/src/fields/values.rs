@@ -29,7 +29,7 @@ use serde_json::Value;
 use super::manage::current_default;
 use super::pattern::Linear;
 use super::types::Definition;
-use crate::access::{Actor, names_other_people};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, entity, internal};
 use crate::issues::{IssueView, OwnHtml};
 
@@ -428,11 +428,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let Some(project) = item.chain.last() else {
                     return Ok(false);
                 };
-                (person == actor.person.id || names_other_people(viewer))
-                    && self.store().person(person).await.map_err(failed)?.is_some()
-                    && self
-                        .may_be_named(person, *project, item.reported_by)
-                        .await?
+                self.may_name(actor.person.id, viewer, person, *project, item.reported_by)
+                    .await?
             }
             FieldType::Group => match GroupId::from_bytes(bytes) {
                 Ok(group) => {

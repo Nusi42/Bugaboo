@@ -9,7 +9,7 @@ use bb_core::id::{ProjectId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::person::Person;
-use bb_policy::{Authorized, Masked, PeopleContext, Permission, PersonRef};
+use bb_policy::{Authorized, Evaluation, Masked, PeopleContext, Permission, PersonRef};
 use serde::Serialize;
 
 use super::Place;
@@ -139,6 +139,41 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
+    /// Whether `viewer` (the evaluation of `actor`) may name a person that exists: themselves, or
+    /// anybody when they are shown people by name (`names_other_people`). A viewer who is shown
+    /// others only as a role has no ID to name them by, so one sent anyway is refused alike for a
+    /// person who is there and one who is not. The part of `may_name` that holds without access.
+    pub(crate) async fn may_name_person(
+        &self,
+        actor: UserId,
+        viewer: &Evaluation,
+        person: UserId,
+    ) -> Result<bool, AppError> {
+        Ok((person == actor || names_other_people(viewer))
+            && self
+                .store()
+                .person(person)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+                .is_some())
+    }
+
+    /// Whether `viewer` may name `person` in a field of an item of the project: the person exists
+    /// and is one the viewer may name (`may_name_person`), and may be named there
+    /// (`may_be_named`). The one rule of *Assigned to* and of the own fields that hold people, so
+    /// the list to choose from, a change of *Assigned to* and a value of an own field agree.
+    pub(crate) async fn may_name(
+        &self,
+        actor: UserId,
+        viewer: &Evaluation,
+        person: UserId,
+        project: ProjectId,
+        reported_by: Option<UserId>,
+    ) -> Result<bool, AppError> {
+        Ok(self.may_name_person(actor, viewer, person).await?
+            && self.may_be_named(person, project, reported_by).await?)
+    }
+
     /// Whether a person has a role that reaches the place (and so is a member there).
     pub(crate) async fn has_a_role_at(
         &self,
@@ -214,7 +249,7 @@ pub(crate) fn position_of(person: &Person) -> PeoplePosition {
 /// Whether the viewer is shown other people by name where people are named in a field of an item
 /// (*Assigned to* and *Project members* both show names, ADR-0022): only then can they choose
 /// anybody but themselves, whose name they know.
-pub(crate) fn names_other_people(viewer: &bb_policy::Evaluation) -> bool {
+pub(crate) fn names_other_people(viewer: &Evaluation) -> bool {
     [PeopleKind::AssignedTo, PeopleKind::ProjectMembers]
         .into_iter()
         .all(|kind| viewer.people_level(kind, PeopleContext::Ordinary) == PeopleLevel::Names)
