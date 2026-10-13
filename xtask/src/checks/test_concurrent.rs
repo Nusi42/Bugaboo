@@ -1,0 +1,284 @@
+//! TEST-CONCURRENT: ten people working at once lose no text and never see a half-saved change
+//! (architecture §11, ADR-0019, M3 WP-10).
+//!
+//! The rule has three parts, and this check keeps each from being deleted or switched off unseen:
+//!
+//! - the browser scenarios in `web/app/e2e/concurrent/` (ten Playwright contexts) exist under the
+//!   names the work package gives them, and none is skipped, marked `fixme` or alone (`only`);
+//!   the one scenario that needs a route another package adds may skip itself with a condition
+//!   and a reason (`test.skip(condition, "reason")`), never without one;
+//! - the invariants test of the server (`test_concurrent_invariants_hold_after_a_run`, run on both
+//!   databases by `cargo xtask ci`) is a `#[tokio::test]` that is not switched off;
+//! - `cargo xtask ci` makes the short run of `cargo xtask load` (the API at speed, both databases).
+//!
+//! The long run is `cargo xtask load --nightly`, started by the nightly job.
+
+use super::{Check, Context, Finding};
+use crate::docs::source::sorted_files;
+use crate::rust_source::{strip, strip_comments};
+use crate::source::read_text;
+
+/// Where the browser scenarios are.
+pub(super) const SPEC_FOLDER: &str = "web/app/e2e/concurrent";
+/// The file of the server test.
+const SERVER_TEST_FILE: &str = "crates/bb-server/src/tests/sign_in/concurrent.rs";
+/// The test of the invariants after a run, against the database.
+const SERVER_TEST: &str = "test_concurrent_invariants_hold_after_a_run";
+/// The file that lists the steps of `cargo xtask ci`.
+const CI_FILE: &str = "xtask/src/ci.rs";
+/// What the step of the short run in `cargo xtask ci` must call.
+const LOAD_COMMAND: &str = "\"load\"";
+/// The only spec that may skip itself, with a condition and a reason.
+const MAY_SKIP: &str = "bulk.spec.ts";
+
+/// The browser scenarios the work package names (the work package, architecture §11).
+pub(super) const SCENARIOS: [&str; 5] = [
+    "iss_17_three_people_edit_one_description_and_the_first_text_is_kept",
+    "iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_and_save",
+    "iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_told",
+    "iss_17_ten_people_change_ten_fields_of_one_issue_and_every_change_lands_once",
+    "iss_09_changing_many_issues_skips_the_one_somebody_is_editing_and_names_it",
+];
+
+pub(crate) struct TestConcurrent;
+
+impl Check for TestConcurrent {
+    fn id(&self) -> &'static str {
+        "TEST-CONCURRENT"
+    }
+
+    fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
+        let repo = context.repo;
+        let specs = specs_of(repo)?;
+        let server = read_text(repo, SERVER_TEST_FILE).ok();
+        let ci = read_text(repo, CI_FILE)?;
+        let mut findings = scenarios(&specs);
+        findings.extend(server_test(server.as_deref()));
+        findings.extend(ci_runs_the_load(&ci));
+        Ok(findings)
+    }
+}
+
+/// The spec files of the folder with their code (comments blank, strings kept): name and text.
+pub(super) fn specs_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
+    let names =
+        sorted_files(repo, SPEC_FOLDER, |name| name.ends_with(".spec.ts")).unwrap_or_default();
+    let mut specs = Vec::new();
+    for name in names {
+        let text = read_text(repo, &format!("{SPEC_FOLDER}/{name}"))?;
+        specs.push((name, strip_comments(&text)));
+    }
+    Ok(specs)
+}
+
+/// Whether some spec declares a test of this name: `test("name"`.
+pub(super) fn declares(specs: &[(String, String)], name: &str) -> bool {
+    let declaration = format!("test(\"{name}\"");
+    specs.iter().any(|(_, text)| text.contains(&declaration))
+}
+
+/// The scenarios are there, and nothing in the folder is switched off.
+fn scenarios(specs: &[(String, String)]) -> Vec<Finding> {
+    let mut findings: Vec<Finding> = SCENARIOS
+        .iter()
+        .filter(|name| !declares(specs, name))
+        .map(|name| {
+            Finding::at(
+                SPEC_FOLDER,
+                format!("The scenario `{name}` is missing from the browser tests of ten people."),
+            )
+        })
+        .collect();
+    for (file, text) in specs {
+        findings.extend(switched_off(file, text));
+    }
+    findings
+}
+
+/// What switches a test of this file off: `.only`, `.fixme`, a skipped declaration, and a skip
+/// without a condition; a skip with a condition is allowed in the one spec that waits for a route.
+fn switched_off(file: &str, text: &str) -> Vec<Finding> {
+    let at = format!("{SPEC_FOLDER}/{file}");
+    let mut findings = Vec::new();
+    for banned in [
+        ".only(",
+        "test.fixme(",
+        ".describe.skip(",
+        ".describe.fixme(",
+    ] {
+        if text.contains(banned) {
+            findings.push(Finding::at(
+                at.clone(),
+                format!(
+                    "`{}` switches tests off or runs only some of them.",
+                    banned.trim_end_matches('(')
+                ),
+            ));
+        }
+    }
+    for (index, _) in text.match_indices("test.skip(") {
+        let argument = text[index + "test.skip(".len()..].trim_start();
+        let declares_a_skipped_test = argument.starts_with(['"', '\'', '`', ')']);
+        if file != MAY_SKIP || declares_a_skipped_test {
+            findings.push(Finding::at(
+                at.clone(),
+                "A test is skipped. Only the scenario that waits for a route of another package may skip itself, with `test.skip(condition, reason)`.",
+            ));
+        }
+    }
+    findings
+}
+
+/// The server test is a `#[tokio::test…]` that is not switched off.
+fn server_test(file: Option<&str>) -> Vec<Finding> {
+    let missing = || {
+        vec![Finding::at(
+            SERVER_TEST_FILE,
+            format!("The test `{SERVER_TEST}` is missing, or is no `#[tokio::test]` any more."),
+        )]
+    };
+    let Some(file) = file else {
+        return missing();
+    };
+    let code = strip(file);
+    let needle = format!("async fn {SERVER_TEST}(");
+    let on = code.match_indices(&needle).any(|(at, _)| {
+        let before = &code[..at];
+        let start = before.rfind(['}', ';', '{']).map_or(0, |end| end + 1);
+        let attributes = &before[start..];
+        attributes.contains("#[tokio::test")
+            && !attributes.contains("ignore")
+            && !attributes.contains("cfg(")
+    });
+    if on { Vec::new() } else { missing() }
+}
+
+/// `cargo xtask ci` runs `cargo xtask load` as a step.
+fn ci_runs_the_load(ci: &str) -> Vec<Finding> {
+    if strip_comments(ci).contains(LOAD_COMMAND) {
+        Vec::new()
+    } else {
+        vec![Finding::at(
+            CI_FILE,
+            "`cargo xtask ci` does not run the short run of `cargo xtask load` (both databases).",
+        )]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn all_scenarios() -> Vec<(String, String)> {
+        let text: String = SCENARIOS
+            .iter()
+            .map(|name| format!("test(\"{name}\", async () => {{}});\n"))
+            .collect();
+        vec![("scenarios.spec.ts".to_owned(), text)]
+    }
+
+    #[test]
+    fn good_example_every_scenario_is_declared_and_nothing_is_switched_off() {
+        assert!(scenarios(&all_scenarios()).is_empty());
+    }
+
+    #[test]
+    fn bad_example_a_scenario_is_missing() {
+        let mut specs = all_scenarios();
+        specs[0].1 = specs[0].1.replace(SCENARIOS[0], "another_name");
+        let found = scenarios(&specs);
+        assert_eq!(found.len(), 1);
+        assert!(
+            found[0].message.contains(SCENARIOS[0]),
+            "{}",
+            found[0].message
+        );
+    }
+
+    #[test]
+    fn bad_example_a_scenario_that_is_skipped_or_alone() {
+        for banned in [
+            "test.only(\"x\", () => {});",
+            "test.fixme(\"x\", () => {});",
+            "test.skip(\"x\", () => {});",
+            "test.skip();",
+            "test.describe.skip(\"x\", () => {});",
+        ] {
+            let mut specs = all_scenarios();
+            specs[0].1.push_str(banned);
+            assert!(!scenarios(&specs).is_empty(), "{banned}");
+        }
+    }
+
+    #[test]
+    fn good_example_the_scenario_that_waits_for_a_route_may_skip_with_a_condition() {
+        let mut specs = all_scenarios();
+        specs.push((
+            MAY_SKIP.to_owned(),
+            "test.skip(route === undefined, \"not in this build\");".to_owned(),
+        ));
+        assert!(scenarios(&specs).is_empty());
+    }
+
+    #[test]
+    fn bad_example_another_scenario_skips_itself_with_a_condition() {
+        let mut specs = all_scenarios();
+        specs[0].1.push_str("test.skip(slow, \"too slow\");");
+        assert_eq!(scenarios(&specs).len(), 1);
+    }
+
+    #[test]
+    fn bad_example_a_scenario_in_a_comment_does_not_count() {
+        let specs = vec![(
+            "a.spec.ts".to_owned(),
+            strip_comments(&format!("// test(\"{}\", () => {{}});", SCENARIOS[0])),
+        )];
+        assert!(!declares(&specs, SCENARIOS[0]));
+    }
+
+    #[test]
+    fn good_example_the_server_test_is_a_tokio_test_with_options() {
+        let code = format!(
+            "#[tokio::test(flavor = \"multi_thread\", worker_threads = 4)]\nasync fn {SERVER_TEST}() -> TestResult {{ Ok(()) }}"
+        );
+        assert!(server_test(Some(&code)).is_empty());
+    }
+
+    #[test]
+    fn bad_example_the_server_test_is_missing_ignored_or_no_test() {
+        assert_eq!(server_test(None).len(), 1);
+        for attributes in [
+            "#[tokio::test]\n#[ignore]",
+            "#[ignore]\n#[tokio::test]",
+            "#[tokio::test]\n#[cfg(any())]",
+            "",
+        ] {
+            let code = format!("{attributes}\nasync fn {SERVER_TEST}() {{}}");
+            assert_eq!(server_test(Some(&code)).len(), 1, "{attributes}");
+        }
+    }
+
+    #[test]
+    fn bad_example_ci_that_does_not_run_the_load() {
+        assert_eq!(
+            ci_runs_the_load("Step::new(\"x\", p, &[\"check\"])").len(),
+            1
+        );
+        assert!(ci_runs_the_load("Step::new(\"x\", p, &[\"load\"])").is_empty());
+    }
+
+    #[test]
+    fn the_repository_has_every_part_of_the_rule() {
+        let repo = crate::repo::Repo::discover().unwrap();
+        let specs = specs_of(&repo).unwrap();
+        let found: Vec<_> = scenarios(&specs)
+            .into_iter()
+            .chain(server_test(
+                read_text(&repo, SERVER_TEST_FILE).ok().as_deref(),
+            ))
+            .chain(ci_runs_the_load(&read_text(&repo, CI_FILE).unwrap()))
+            .map(|finding| finding.message)
+            .collect();
+        assert!(found.is_empty(), "{found:?}");
+    }
+}

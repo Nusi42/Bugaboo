@@ -28,6 +28,18 @@ fn linux_only(step: Step) -> Step {
     }
 }
 
+/// A step that needs the browser app (the load run serves it) is skipped while `web/app` does not exist.
+fn needs_browser_app(root: &Path, step: Step) -> Step {
+    if steps::web_app_exists(root) {
+        step
+    } else {
+        Step {
+            skip: Some("web/app does not exist yet"),
+            ..step
+        }
+    }
+}
+
 pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
     let xtask = std::env::current_exe().context("could not find the running xtask program")?;
     let target = static_linux_target();
@@ -57,6 +69,12 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             &["dataset", "sample"],
         ),
         Step::web(root, "browser end-to-end tests", &["run", "test:e2e"]),
+        // Ten people work on the same issues at speed for two minutes, on each database
+        // (TEST-CONCURRENT); the long run is `cargo xtask load --nightly`.
+        needs_browser_app(
+            root,
+            Step::new("ten people at once", xtask.to_string_lossy(), &["load"]),
+        ),
         linux_only(Step::new(
             "add the static Linux target",
             "rustup",
@@ -93,6 +111,7 @@ mod tests {
                 "build the bugaboo program",
                 "make the sample organization",
                 "browser end-to-end tests",
+                "ten people at once",
                 "add the static Linux target",
                 "build the static Linux program"
             ]
@@ -111,7 +130,7 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                true, false, false, false, true, false, false, true, on_linux, on_linux
+                true, false, false, false, true, false, false, true, true, on_linux, on_linux
             ]
         );
     }

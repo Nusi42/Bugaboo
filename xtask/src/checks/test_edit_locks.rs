@@ -9,8 +9,12 @@
 //! unseen. A named test counts as missing when it is switched off: `#[ignore]` in any form, a
 //! `#[cfg(…)]` on the function or on a module around it, or a file that the folder's `mod.rs`
 //! does not declare (or declares behind a `#[cfg(…)]`). The suite itself runs in
-//! `cargo xtask ci` (the Rust tests); the browser scenarios come with M3 WP-10.
+//! `cargo xtask ci` (the Rust tests). The browser part is the scenarios in
+//! `web/app/e2e/concurrent/` where several people edit one description and where a lock holder
+//! goes offline (`BROWSER`); they must be declared there and not switched off (TEST-CONCURRENT
+//! looks at the rest of that folder).
 
+use super::test_concurrent;
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
 use crate::docs::text::has_extension;
@@ -32,6 +36,9 @@ const REQUIRED: [&str; 8] = [
     "sec_17_releasing_a_stuck_lock_is_in_the_security_log",
 ];
 
+/// What the browser must show (M3 WP-10): the first two scenarios of ten people at once.
+const BROWSER: [&str; 2] = [test_concurrent::SCENARIOS[0], test_concurrent::SCENARIOS[1]];
+
 pub(crate) struct TestEditLocks;
 
 impl Check for TestEditLocks {
@@ -40,14 +47,16 @@ impl Check for TestEditLocks {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        Ok(match suite_text(context.repo) {
+        let mut findings = match suite_text(context.repo) {
             Some((suite, mut unused)) => {
                 let mut findings = evaluate(Some(&suite));
                 findings.append(&mut unused);
                 findings
             }
             None => evaluate(None),
-        })
+        };
+        findings.extend(browser(&test_concurrent::specs_of(context.repo)?));
+        Ok(findings)
     }
 }
 
@@ -138,6 +147,20 @@ fn is_a_test(code: &str, name: &str) -> bool {
             && !attributes.contains("cfg(")
             && !inside_switched_off_block(code, at)
     })
+}
+
+/// The browser scenarios of the locks are declared.
+fn browser(specs: &[(String, String)]) -> Vec<Finding> {
+    BROWSER
+        .iter()
+        .filter(|name| !test_concurrent::declares(specs, name))
+        .map(|name| {
+            Finding::at(
+                test_concurrent::SPEC_FOLDER,
+                format!("The browser scenario `{name}` of the edit locks is missing."),
+            )
+        })
+        .collect()
 }
 
 fn evaluate(suite: Option<&str>) -> Vec<Finding> {
@@ -317,6 +340,26 @@ mod inline {
 use x::mod_y;",
         ));
         assert_eq!(declared, ["drafts", "locks"]);
+    }
+
+    #[test]
+    fn bad_example_a_missing_browser_scenario() {
+        let specs = vec![(
+            "locks.spec.ts".to_owned(),
+            format!("test(\"{}\", () => {{}});", BROWSER[0]),
+        )];
+        let found = browser(&specs);
+        assert_eq!(found.len(), 1);
+        assert!(found[0].message.contains(BROWSER[1]));
+    }
+
+    #[test]
+    fn good_example_both_browser_scenarios_are_declared() {
+        let text: String = BROWSER
+            .iter()
+            .map(|name| format!("test(\"{name}\", () => {{}});"))
+            .collect();
+        assert!(browser(&[("locks.spec.ts".to_owned(), text)]).is_empty());
     }
 
     #[test]

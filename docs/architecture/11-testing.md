@@ -9,7 +9,7 @@
 | Use case | `cargo test` with in-memory fakes | Every `bb-app` use case: permissions, events, validation | every push |
 | Repository | `cargo test` against **SQLite and PostgreSQL** | SQL, migrations, search compiler | CI |
 | API | Rust integration tests against a running server | Endpoints, OpenAPI conformance, security headers, permission matrix | CI |
-| End to end | **Playwright** driving the real app (built with **Vite**) | Key journeys on desktop and phone sizes, all four themes, accessibility (axe) | CI |
+| End to end | **Playwright** driving the real app (built with **Vite**) | Key journeys on desktop and phone sizes, all four themes, accessibility (axe); the issue page, the new-issue dialog and the edit locks also on a phone in **WebKit** | CI |
 | Concurrency | Playwright (10 people) + `cargo xtask load` | Edit locks, conflicts, simultaneous changes, no lost text | CI (short), nightly (long) |
 | Performance | `cargo xtask dataset large` + benchmarks | PERF budgets on 1 M issues | nightly |
 
@@ -88,20 +88,35 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 
 ## Ten people at the same time
 
-Concurrency is tested with **10 simulated people** from the sample organization, each in their own browser context (Playwright) or API client (`cargo xtask load --people 10`):
+Concurrency is tested with **10 simulated people** (an administrator and Team members of one project, made for the run), each in their own browser context (Playwright) or API client (`cargo xtask load --people 10`):
 
 | Scenario | What must hold |
 |----------|----------------|
 | Three people try to edit the same description | One gets the lock; the others see *"… is editing"*; *Edit anyway* moves the lock and keeps the first person's draft |
 | Two people change the status of the same issue within a second | One wins; the other sees the conflict message; nothing is half-saved |
 | A lock holder's network drops | The lock frees itself within a minute; their text is kept as a draft and offered with *Compare and save* |
+| Ten people change different fields of one issue | All ten changes land (whoever was second presses *Use mine*); one event for each; the version counts up ten times |
+| Changing many issues while somebody edits one of them | The issue under edit is skipped and named; the others change; the editor keeps their text |
 | Everyone drags cards on the same board | Final board matches the event log; every person's screen shows the final state after refresh |
 | Timers and working hours start and stop at the same time | No double entries; working-time rules evaluated once per change |
 | Searches while others change data | Results respect permissions at every moment; no errors; latency within budget |
 
-Enforced by: TEST-CONCURRENT, TEST-EDIT-LOCKS.
-
 Each scenario runs against **both SQLite and PostgreSQL**. The short version (2 minutes) runs in CI; the long version (30 minutes, mixed workload) runs nightly and checks invariants afterwards: every change has an event, no lock outlives its lease, no text is lost.
+
+### The two ways to run them
+
+- **Ten browsers** (`web/app/e2e/concurrent/`): each person has a browser context of their own, signed in through the API (the sign-in has its own tests). The tests read what the people see (*Saved*, the *"… is editing"* note, *Edit anyway*, the conflict note with *Use mine*, *Compare and save*), never only timing, and wait for the answer of the server or for a note on the screen, not for a fixed time. The scenarios of the table above are `iss_17_three_people_edit_one_description_and_the_first_text_is_kept`, `iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_and_save`, `iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_told`, `iss_17_ten_people_change_ten_fields_of_one_issue_and_every_change_lands_once` and `iss_09_changing_many_issues_skips_the_one_somebody_is_editing_and_names_it`, which skips itself with its reason until the server has the route that changes many issues (M3 WP-08). A test that cuts the network on purpose says which lines of the console it expects (`tolerate`); the fixture fails any other console error or uncaught error of any of the ten contexts. The lock scenarios also run in the WebKit phone project.
+- **`cargo xtask load --people 10 [--minutes N | --nightly] [--database sqlite|postgres]`** (`xtask/src/load/`): the API at speed. xtask builds the program, starts the database of the run (the throwaway PostgreSQL for the second run) and runs the Node driver `web/app/e2e/concurrent/load/main.ts`, which starts a server on the port `loadTestServer`, makes an organization (one project, six shared issues, Team members), lets the people change titles, edit descriptions under their locks (some editors vanish without letting go, some take the editing over), write comments and read, and then checks the invariants of the next section. Without `--database` it runs on both databases; `tools/dev/load.json` holds the defaults (ten people, two minutes, thirty for `--nightly`) and the name of the variable that carries the database address. `cargo xtask ci` runs it.
+- **Against the database** (`test_concurrent_invariants_hold_after_a_run` in `bb-server`, both databases in `cargo test` under `cargo xtask db run`): ten people change four issues together over HTTP while the clock of the test runs on, so leases really run out, and then the invariants are read from the database.
+
+### Invariants after every run
+
+1. Every change has an event: the history of each issue holds one event for each change that was kept, plus the one that made it, and one for each comment.
+2. Versions only go up, one at a time: the versions of the kept changes of an issue are `2` up to its version, each once, and what one person reads of an issue never goes down.
+3. No lock outlives its lease: an editor who vanished has lost the lock within the lease (60 seconds) and a margin, and no lock is held when the run ends, because nobody starts to edit under a lock in the last 70 seconds of a run.
+4. No text is lost: a save that was refused (lock lost, taken over, text changed) is the draft of the person, and the description is the text of the last save that was kept.
+
+Enforced by: TEST-CONCURRENT (the scenarios, the invariants test and the load step of `cargo xtask ci` are there and not switched off), TEST-EDIT-LOCKS (the browser scenarios of the locks).
 
 ## Local ports (ADR-0023)
 
