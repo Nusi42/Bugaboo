@@ -1,10 +1,10 @@
-import { priorityWords, statusWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { known } from "../../shared/present.ts";
 import { AssignedFact } from "./AssignedFact.tsx";
 import { ChoiceFact } from "./Fact.tsx";
+import { priorityChoices, statusChoices } from "./issue-choices.ts";
 import type { IssueValues } from "./issue-values.ts";
 import type { IssueBlockProps, IssueFieldMask, IssueView } from "./slots.ts";
 
@@ -18,12 +18,6 @@ export interface FactsBarProps {
 
 /** The key that moves the focus to the status. */
 const statusShortcut = "change-status" as const;
-
-const statusChoices = statusWords.map((word) => ({ value: word, label: t(`status.${word}`) }));
-const priorityChoices = priorityWords.map((word) => ({
-  value: word,
-  label: t(`priority.${word}`),
-}));
 
 /**
  * The most used fields under the title (UX §3.4): status, assigned to and priority. A field the

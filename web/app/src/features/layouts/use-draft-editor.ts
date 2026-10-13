@@ -21,6 +21,8 @@ export interface DraftEditorState {
   readonly addSection: () => void;
   readonly save: () => void;
   readonly discard: () => void;
+  /** Puts the changes of a kept draft in place of the draft on screen. */
+  readonly restore: (draft: Draft) => void;
 }
 
 /** The IDs of the roles of the editor: a field that is added starts with all of them ticked. */
@@ -37,6 +39,7 @@ function contextOf(
   return {
     kind: editor.kind,
     roles: editor.roles,
+    chooseRoles: editor.choose_roles,
     canDrag,
     moves: draft.sections.map((section, at) => ({
       value: section.key,
@@ -94,5 +97,6 @@ export function useDraftEditor(
     discard: () => {
       setDraft(draftOf(editor));
     },
+    restore: setDraft,
   };
 }

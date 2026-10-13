@@ -37,7 +37,7 @@ export interface Target {
 let counter = 0;
 
 /** A key for a section that is not used by another. */
-function nextKey(): string {
+export function nextKey(): string {
   counter += 1;
   return `section-${String(counter)}`;
 }
@@ -70,7 +70,10 @@ export function bodyOf(draft: Draft): Schema<"SaveLayoutBody">["sections"] {
   return draft.sections.map((section) => ({
     tab: section.tab,
     title: section.title,
-    fields: section.rows.map((row) => ({ field: row.field, roles: [...row.roles] })),
+    fields: section.rows.map((row) => ({
+      field: row.field,
+      roles: [...row.roles],
+    })),
   }));
 }
 
@@ -98,7 +101,7 @@ function withRows(section: Section, rows: readonly Row[]): Section {
 }
 
 /** The row with other roles. */
-function withRoles(row: Row, roles: readonly string[]): Row {
+export function withRoles(row: Row, roles: readonly string[]): Row {
   return { ...row, roles };
 }
 

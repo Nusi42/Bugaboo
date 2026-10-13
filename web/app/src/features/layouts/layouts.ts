@@ -1,9 +1,20 @@
-import { dataOf, layoutKindWords, type Schema } from "@bugaboo/api-client";
+import {
+  dataOf,
+  layoutEditPart,
+  layoutKindWords,
+  readDraft,
+  readEditLock,
+  throwAwayDraft,
+  type DraftTarget,
+  type EditWhat,
+  type Schema,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { refreshLayouts } from "../../shared/query-keys.ts";
+import { codeOf } from "../../shared/errors.ts";
+import { queryKeys, refreshLayoutDraft, refreshLayouts } from "../../shared/query-keys.ts";
 
 /** What a layout is for: the issue page or the new-issue form. */
 export type FormKind = (typeof layoutKindWords)[number];
@@ -40,15 +51,52 @@ export interface FormQuery {
 
 /** The form for one person: its sections, and whether a field is on it. */
 export interface FormView {
-  /** The layout has been read; before that every field counts as shown, so nothing flashes away. */
+  /** The layout has been read (or could not be); before that every field counts as shown, so nothing flashes away. */
   readonly ready: boolean;
+  /** The layout could not be read: the form shows only the basics ([`basicFields`]). */
+  readonly failed: boolean;
   readonly sections: readonly FormSection[];
   /** Whether the layout shows the field to this person (a built-in word or the ID of an own field). */
   readonly shows: (field: string) => boolean;
 }
 
 /** Everything is shown: what a form is while its layout is on the way. */
-const everything: FormView = { ready: false, sections: [], shows: () => true };
+const loading: FormView = {
+  ready: false,
+  failed: false,
+  sections: [],
+  shows: () => true,
+};
+
+/**
+ * What a form shows when its layout could not be read: the description alone, which every form
+ * has. It never shows more than the layout would, because the layout cannot be asked.
+ */
+export const basicFields: readonly string[] = ["description"];
+
+/** The form while its layout is on the way, read, or could not be read. */
+export function formViewOf(
+  read: Pick<UseQueryResult<Schema<"FormLayoutBody">>, "data" | "isError">,
+): FormView {
+  if (read.data !== undefined) {
+    const fields = new Set(read.data.sections.flatMap((section) => section.fields));
+    return {
+      ready: true,
+      failed: false,
+      sections: read.data.sections,
+      shows: (field) => fields.has(field),
+    };
+  }
+  if (read.isError) {
+    return {
+      ready: true,
+      failed: true,
+      sections: [{ tab: "", title: "", fields: [...basicFields] }],
+      shows: (field) => basicFields.includes(field),
+    };
+  }
+  return loading;
+}
 
 /**
  * The one hook that the issue page and the new-issue form call to learn which fields they show
@@ -69,15 +117,7 @@ export function useFormLayout({ project, issueType, kind }: FormQuery): FormView
     select: (body: Schema<"FormLayoutBody">) => body,
     enabled: project !== undefined && project !== "",
   });
-  if (form.data === undefined) {
-    return everything;
-  }
-  const fields = new Set(form.data.sections.flatMap((section) => section.fields));
-  return {
-    ready: true,
-    sections: form.data.sections,
-    shows: (field) => fields.has(field),
-  };
+  return formViewOf(form);
 }
 
 /** Which layout to edit: a project (none for the whole organization), an issue type (none for all) and a form. */
@@ -147,6 +187,55 @@ export function useSaveLayout() {
         }),
       ),
     onSuccess: refreshLayouts,
+    // A refused save keeps the changes as the draft of the person: the editor reads the layout as it
+    // is now and the draft it was kept in.
+    onError: (error: unknown, input) => {
+      if (isKept(codeOf(error))) {
+        refreshLayouts();
+        refreshLayoutDraft(input.layout);
+      }
+    },
+  });
+}
+
+/** Whether a refusal of a save is one that keeps the changes as a draft. */
+function isKept(code: string | undefined): boolean {
+  return code === "edit.version_changed" || code === "edit.lock_lost" || code === "edit.taken_over";
+}
+
+/** What the lock on a layout, and its draft, are about: the thing being edited. */
+export function whatOf(layout: string): EditWhat {
+  return { record: { kind: "layout", id: layout }, part: layoutEditPart };
+}
+
+function targetOf(layout: string): DraftTarget {
+  return { kind: "layout", id: layout, part: layoutEditPart };
+}
+
+/** The draft that a refused save of the layout kept for this person, if there is one. */
+export function useKeptDraft(layout: string) {
+  return useQuery({
+    queryKey: queryKeys.layouts.draft(layout),
+    queryFn: () => readDraft(api.client, targetOf(layout)),
+  });
+}
+
+/** *Throw my changes away*: the draft is deleted. */
+export function useThrowAwayKeptDraft(layout: string) {
+  return useMutation({
+    mutationFn: () => throwAwayDraft(api.client, targetOf(layout)),
+    onSuccess: () => {
+      refreshLayoutDraft(layout);
+    },
+  });
+}
+
+/** Who is editing the layout now, as the person may see them; nothing when nobody is or while it is not asked. */
+export function useEditingNow(layout: string, asked: boolean) {
+  return useQuery({
+    queryKey: queryKeys.layouts.editing(layout),
+    queryFn: () => readEditLock(api.client, whatOf(layout)),
+    enabled: asked,
   });
 }
 
@@ -156,7 +245,10 @@ export function useDeleteLayout() {
     mutationFn: async (input: { readonly layout: string; readonly version: number }) =>
       dataOf(
         await api.client.DELETE("/api/v1/layouts/{layout}", {
-          params: { path: { layout: input.layout }, query: { version: input.version } },
+          params: {
+            path: { layout: input.layout },
+            query: { version: input.version },
+          },
         }),
       ),
     onSuccess: refreshLayouts,

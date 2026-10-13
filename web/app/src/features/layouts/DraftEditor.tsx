@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { Button, partOf, part } from "@bugaboo/ui";
 
 import { AvailableFields } from "./AvailableFields.tsx";
+import { KeptDraft } from "./KeptDraft.tsx";
 import { SaveBar } from "./SaveBar.tsx";
 import { SectionCard } from "./SectionCard.tsx";
 import { useDraftEditor } from "./use-draft-editor.ts";
@@ -26,30 +27,34 @@ export function DraftEditor({ editor, lock, saved, onSaved }: DraftEditorProps) 
   const state = useDraftEditor(editor, lock, onSaved);
   const { draft, context, actions } = state;
   return (
-    <fieldset disabled={!state.mine} {...partOf(part.layoutEditor)}>
-      {draft.sections.map((section, at) => (
-        <SectionCard
-          key={section.key}
-          section={section}
-          number={at + 1}
-          count={draft.sections.length}
-          context={context}
-          actions={actions}
+    <>
+      <KeptDraft editor={editor} layout={editor.layout?.id ?? ""} onRestore={state.restore} />
+      <fieldset disabled={!state.mine} {...partOf(part.layoutEditor)}>
+        {editor.choose_roles ? null : <p {...partOf(part.muted)}>{t("layouts.roles-hidden")}</p>}
+        {draft.sections.map((section, at) => (
+          <SectionCard
+            key={section.key}
+            section={section}
+            number={at + 1}
+            count={draft.sections.length}
+            context={context}
+            actions={actions}
+          />
+        ))}
+        <div {...partOf(part.row)}>
+          <Button onPress={state.addSection}>{t("layouts.add-section")}</Button>
+        </div>
+        <AvailableFields rows={draft.available} context={context} actions={actions} />
+        <SaveBar
+          dirty={state.dirty}
+          canSave={state.canSave}
+          pending={state.pending}
+          saved={saved}
+          error={state.error}
+          onSave={state.save}
+          onDiscard={state.discard}
         />
-      ))}
-      <div {...partOf(part.row)}>
-        <Button onPress={state.addSection}>{t("layouts.add-section")}</Button>
-      </div>
-      <AvailableFields rows={draft.available} context={context} actions={actions} />
-      <SaveBar
-        dirty={state.dirty}
-        canSave={state.canSave}
-        pending={state.pending}
-        saved={saved}
-        error={state.error}
-        onSave={state.save}
-        onDiscard={state.discard}
-      />
-    </fieldset>
+      </fieldset>
+    </>
   );
 }

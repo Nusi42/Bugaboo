@@ -1,14 +1,22 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { addressInProject, paths, projectIssuesAddress } from "../src/shared/paths.ts";
+import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { lea, roleName } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
-import { dueDate, editWhenYouCan, prepareLayouts } from "./support/layouts.ts";
-import { onThisLayout } from "./support/layout.ts";
+import {
+  addSectionWithKeyboard,
+  chooseByTyping,
+  dueDate,
+  editWhenYouCan,
+  openLayoutOfBugs,
+  prepareLayouts,
+  saveSectionInAnotherWindow,
+} from "./support/layouts.ts";
+import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 
 // Layouts and role-based forms (CFG-01, ISS-02, ISS-17, M3 WP-09): a project lead opens
 // *Customize this form* from the new-issue dialog, moves *Due date* into a section (by dragging on a
@@ -19,9 +27,6 @@ test.use({ preparation: { run: prepareLayouts } });
 test.describe.configure({ mode: "serial" });
 
 const dialogName = t("issues.new-title");
-
-/** The places where a dragged field can be dropped. */
-const slot = '[data-part="drop-slot"]';
 
 /** The dialog that makes an issue, opened with the button of the bar. */
 async function openNewIssue(page: Page) {
@@ -45,12 +50,6 @@ async function openedForm(page: Page) {
   return dialog;
 }
 
-/** Opens the editor of the new-issue form for the issue type *Bug*, which the dialog customized. */
-async function openLayoutOfBugs(page: Page): Promise<void> {
-  await page.goto(addressInProject(paths.projectLayouts, "WEB"));
-  await page.getByLabel(t("layouts.type"), { exact: true }).selectOption({ label: "Bug" });
-}
-
 /** The row of a field in the editor, by its name. */
 function rowOf(page: Page, name: string) {
   return page.getByRole("listitem").filter({ has: page.getByText(name, { exact: true }) });
@@ -67,7 +66,9 @@ async function customizeFromDialog(page: Page): Promise<void> {
     }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: t("layouts.customize-project", { project: "Website" }) })
+    .getByRole("button", {
+      name: t("layouts.customize-project", { project: "Website" }),
+    })
     .click();
   await expect(
     page.getByRole("heading", { name: t("layouts.section", { number: "1" }) }),
@@ -76,7 +77,10 @@ async function customizeFromDialog(page: Page): Promise<void> {
 
 /** Moves *Due date* into the first section: dragged on a computer, from its list elsewhere. */
 async function moveDueDateIntoSection(page: Page): Promise<void> {
-  const available = page.getByRole("list", { name: t("layouts.available"), exact: true });
+  const available = page.getByRole("list", {
+    name: t("layouts.available"),
+    exact: true,
+  });
   await expect(available.getByText(dueDate, { exact: true })).toBeVisible();
   const addTo = available.getByLabel(t("layouts.field-add-to", { name: dueDate }), {
     exact: true,
@@ -87,9 +91,9 @@ async function moveDueDateIntoSection(page: Page): Promise<void> {
         name: t("layouts.section", { number: "1" }),
         exact: true,
       });
-      await available
-        .getByRole("button", { name: t("layouts.field-drag", { name: dueDate }) })
-        .dragTo(section.locator(slot).last());
+      await handleIn(available, t("layouts.field-drag", { name: dueDate })).dragTo(
+        slotsIn(section).last(),
+      );
     },
     tablet: async () => {
       await addTo.selectOption({ index: 1 });
@@ -146,8 +150,12 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   const row = rowOf(page, dueDate).last();
   await expect(row).toBeVisible();
   // Up and down are buttons: the keyboard presses them with Enter.
-  const down = row.getByRole("button", { name: t("layouts.field-down", { name: dueDate }) });
-  const up = row.getByRole("button", { name: t("layouts.field-up", { name: dueDate }) });
+  const down = row.getByRole("button", {
+    name: t("layouts.field-down", { name: dueDate }),
+  });
+  const up = row.getByRole("button", {
+    name: t("layouts.field-up", { name: dueDate }),
+  });
   // The first test left its lock for a minute: the same person may take the editing over.
   await editWhenYouCan(page, up);
   await up.focus();
@@ -169,4 +177,82 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   await openLayoutOfBugs(other);
   await expect(other.getByText(/is editing this layout/u)).toBeVisible();
   await expect(other.getByRole("button", { name: t("layouts.save"), exact: true })).toBeDisabled();
+});
+
+test("cfg_01 a field is moved and added with the keyboard alone, and its drag handle is not announced", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openLayoutOfBugs(page);
+  const up = rowOf(page, dueDate)
+    .last()
+    .getByRole("button", { name: t("layouts.field-up", { name: dueDate }) });
+  await editWhenYouCan(page, up);
+  // The handle is for the mouse and the finger: a screen reader finds the buttons and the lists.
+  await expect(
+    page.getByRole("button", { name: t("layouts.field-drag", { name: dueDate }) }),
+  ).toHaveCount(0);
+
+  const sectionList = (number: string) =>
+    page.getByRole("list", { name: t("layouts.fields-of", { number }) });
+  await addSectionWithKeyboard(page);
+  await expect(sectionList("2")).toBeAttached();
+  // *Move to* the second section, then off the form, then *Add to* the first section.
+  const moveTo = page.getByLabel(t("layouts.field-move-to", { name: dueDate }), { exact: true });
+  await chooseByTyping(page, moveTo, t("layouts.section", { number: "2" }));
+  await expect(sectionList("2").getByText(dueDate, { exact: true })).toBeVisible();
+  await sectionList("2")
+    .getByRole("listitem")
+    .filter({ hasText: dueDate })
+    .getByRole("button", { name: t("layouts.field-remove", { name: dueDate }) })
+    .focus();
+  await page.keyboard.press("Enter");
+  const available = page.getByRole("list", { name: t("layouts.available"), exact: true });
+  await expect(available.getByText(dueDate, { exact: true })).toBeVisible();
+  const addTo = available.getByLabel(t("layouts.field-add-to", { name: dueDate }), {
+    exact: true,
+  });
+  await chooseByTyping(page, addTo, t("layouts.section", { number: "1" }));
+  await expect(sectionList("1").getByText(dueDate, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: t("layouts.discard"), exact: true }).click();
+});
+
+test("cfg_01 a layout that changed while it was edited shows the new one and keeps the changes as a draft", async ({
+  page,
+  browser,
+  server,
+}) => {
+  await signIn(page, ada);
+  await openLayoutOfBugs(page);
+  const add = page.getByRole("button", { name: t("layouts.add-section"), exact: true });
+  await editWhenYouCan(page, add);
+  const titles = page.getByLabel(t("layouts.section-title"), { exact: true });
+  const before = await titles.count();
+  await add.click();
+  await titles.last().fill("Mine");
+
+  // The same person in another window takes the editing over and saves another change.
+  await saveSectionInAnotherWindow(browser, server, "Theirs");
+
+  // The first window learns at its next heartbeat that it lost the lock, asks for it again and
+  // saves on the version it started from.
+  await expect(page.getByText(t("layouts.lost"), { exact: true })).toBeVisible({
+    timeout: 45_000,
+  });
+  await page.getByRole("button", { name: t("layouts.try-again"), exact: true }).click();
+  await editWhenYouCan(page, add);
+  await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
+
+  // It says plainly that the layout changed, shows the layout as it is now, and keeps the changes.
+  const changed = page.getByText(/This layout changed while you were editing/u);
+  await expect(changed).toBeVisible();
+  await expect(titles).toHaveCount(before + 1);
+  await expect(titles.last()).toHaveValue("Theirs");
+  await page.getByRole("button", { name: t("layouts.draft-restore"), exact: true }).click();
+  // Putting the changes back replaces the layout on screen with the draft; saving makes it the layout.
+  await expect(titles).toHaveCount(before + 1);
+  await expect(titles.last()).toHaveValue("Mine");
+  await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
+  await expect(page.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+  await expect(changed).toHaveCount(0);
 });

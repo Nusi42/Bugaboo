@@ -43,6 +43,12 @@ export const queryKeys = {
     one: (address: string) => ["projects", "one", address],
     movePreview: (project: string, to: string | null) => ["projects", "move-preview", project, to],
   },
+  layouts: {
+    /** The draft that a refused save of a layout kept, by layout. */
+    draft: (layout: string) => ["layouts", "draft", layout],
+    /** Who is editing a layout now. */
+    editing: (layout: string) => ["layouts", "editing", layout],
+  },
   issueTypes: {
     all: ["issue-types"],
     list: () => ["issue-types", "list"],
@@ -138,6 +144,13 @@ export function refreshLayouts(): void {
   }
 }
 
+/** A save of a layout was refused: the draft it kept is read again. */
+export function refreshLayoutDraft(layout: string): void {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.layouts.draft(layout),
+  });
+}
+
 /** An issue type was made or changed: the list of types is read again. */
 export function refreshIssueTypes(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.issueTypes.all });
@@ -163,7 +176,9 @@ function refreshRoutes(routes: readonly string[]): void {
 
 /** A sub-issue or a relation was added or taken away: what an issue stands among is read again. */
 export function refreshIssueRelations(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issueRelations.all });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.issueRelations.all,
+  });
   void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }

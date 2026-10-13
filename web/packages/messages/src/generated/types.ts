@@ -206,6 +206,8 @@ export interface MessageArguments {
   "issues.unassign-name": { name: string | number };
   "layouts.ask-finish": { name: string | number };
   "layouts.customize-project": { project: string | number };
+  "layouts.delete-held": { name: string | number };
+  "layouts.draft-changed": { when: string | number };
   "layouts.field-add-to": { name: string | number };
   "layouts.field-down": { name: string | number };
   "layouts.field-drag": { name: string | number };

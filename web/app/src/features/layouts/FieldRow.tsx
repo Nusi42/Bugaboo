@@ -4,8 +4,8 @@ import { Checkbox, IconButton, iconName, SelectField, partOf, part } from "@buga
 import type { Schema } from "@bugaboo/api-client";
 import type { ReactNode } from "react";
 import { DraggableHead } from "../../shared/drag-and-drop.tsx";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { fieldKind } from "./field-kind.ts";
-import { fieldLabel } from "./field-label.ts";
 import type { FormKind } from "./layouts.ts";
 import type { Row } from "./editor-model.ts";
 
@@ -22,6 +22,8 @@ export interface FieldRowProps {
   readonly row: Row;
   readonly kind: FormKind;
   readonly roles: readonly Role[];
+  /** Whether the roles of the field can be chosen and are shown. */
+  readonly chooseRoles: boolean;
   /** The sections the field can be moved to. */
   readonly sections: readonly MoveChoice[];
   readonly first: boolean;
@@ -43,7 +45,7 @@ function RoleBoxes({
   roles,
   onRole,
 }: Pick<FieldRowProps, "row" | "kind" | "roles" | "onRole">) {
-  const name = fieldLabel(row.field, row.name);
+  const name = fieldNameOf({ code: row.field, name: row.name });
   const limited = roles.filter((role) => row.limitedFor.includes(role.id));
   return (
     <>
@@ -137,15 +139,15 @@ function FieldHead({ props, name }: { readonly props: FieldRowProps; readonly na
 
 /** One field of a section: its name, the handle to drag it, the buttons for everything a drag does, and its roles. */
 export function FieldRow(props: FieldRowProps) {
-  const { row, kind, sections, onMoveTo, roles, onRole, before } = props;
-  const name = fieldLabel(row.field, row.name);
+  const { row, kind, sections, onMoveTo, roles, chooseRoles, onRole, before } = props;
+  const name = fieldNameOf({ code: row.field, name: row.name });
   return (
     <li {...partOf(part.layoutField)}>
       {before}
       <FieldHead props={props} name={name} />
-      {sections.length > 1 ? <MoveTo name={name} sections={sections} onMoveTo={onMoveTo} /> : null}
+      {sections.length > 0 ? <MoveTo name={name} sections={sections} onMoveTo={onMoveTo} /> : null}
       {row.required ? <p {...partOf(part.muted)}>{t("layouts.field-required")}</p> : null}
-      <RoleBoxes row={row} kind={kind} roles={roles} onRole={onRole} />
+      {chooseRoles ? <RoleBoxes row={row} kind={kind} roles={roles} onRole={onRole} /> : null}
     </li>
   );
 }

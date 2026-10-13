@@ -3,10 +3,9 @@ import { type Page } from "@playwright/test";
 
 import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
-import { handleIn, slotsIn } from "./support/drag.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
-import { onThisLayout } from "./support/layout.ts";
+import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 import { makeProject } from "./support/projects.ts";
 import { inOrder } from "./support/sequence.ts";
 

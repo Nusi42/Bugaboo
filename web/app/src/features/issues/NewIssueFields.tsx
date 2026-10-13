@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { SelectField, TextField } from "@bugaboo/ui";
 
-import { FormSections, type FormView } from "../layouts/index.ts";
+import { FormNotice, FormSections, type FormView } from "../layouts/index.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
 import { NewIssueField } from "./NewIssueField.tsx";
 
@@ -41,6 +41,7 @@ export function NewIssueFields({ values, types, project, layout, onChange }: New
           onChange({ ...values, title });
         }}
       />
+      <FormNotice form={layout} />
       <FormSections
         sections={layout.sections}
         titles

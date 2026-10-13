@@ -1505,5 +1505,11 @@
   "layouts.tab-other": "Other",
   "layouts.section-named": "Section {number}: {title}",
   "layouts.saving": "Saving …",
-  "layouts.inherited-hidden": "This form uses a layout that is set higher up."
+  "layouts.inherited-hidden": "This form uses a layout that is set higher up.",
+  "layouts.unreadable": "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
+  "layouts.draft-changed": "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
+  "layouts.draft-restore": "Put my changes back",
+  "layouts.draft-drop": "Throw my changes away",
+  "layouts.delete-held": "{name} is editing this layout. It can be taken away when they have finished.",
+  "layouts.roles-hidden": "Which roles see a field is set by people who may decide what roles see."
 }

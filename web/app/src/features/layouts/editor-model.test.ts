@@ -24,7 +24,12 @@ function row(field: string, roles: readonly string[] = everyone): Row {
 
 const start: Draft = {
   sections: [
-    { key: "a", tab: "", title: "Main", rows: [row("description"), row("priority")] },
+    {
+      key: "a",
+      tab: "",
+      title: "Main",
+      rows: [row("description"), row("priority")],
+    },
     { key: "b", tab: "", title: "More", rows: [] },
   ],
   available: [row("due-date", [])],

@@ -2,10 +2,10 @@ import { t } from "@bugaboo/messages";
 import { Card, SelectField, partOf, part } from "@bugaboo/ui";
 
 import { DraggableHead, DropSlot } from "../../shared/drag-and-drop.tsx";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { fieldKind } from "./field-kind.ts";
 import type { EditorActions, EditorContext } from "./editor-actions.ts";
 import type { Row } from "./editor-model.ts";
-import { fieldLabel } from "./field-label.ts";
 
 /** What a list that adds a field shows when nothing is picked, and what it holds then. */
 const noSection = "";
@@ -22,7 +22,7 @@ function AvailableRow({
   context,
   actions,
 }: Pick<AvailableProps, "context" | "actions"> & { readonly row: Row }) {
-  const name = fieldLabel(row.field, row.name);
+  const name = fieldNameOf({ code: row.field, name: row.name });
   return (
     <li {...partOf(part.layoutField)}>
       <DraggableHead
@@ -42,7 +42,10 @@ function AvailableRow({
         value={noSection}
         onChange={(section) => {
           if (section !== noSection) {
-            actions.place(row.field, { section, index: Number.MAX_SAFE_INTEGER });
+            actions.place(row.field, {
+              section,
+              index: Number.MAX_SAFE_INTEGER,
+            });
           }
         }}
       />

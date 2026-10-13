@@ -1,8 +1,11 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 
+import { addressInProject, paths } from "../../src/shared/paths.ts";
 import { roleId, roleName, setFieldLevel, signedInAdmin } from "./access.ts";
+import { ada } from "./accounts.ts";
+import { anotherBrowser, signIn } from "./flows.ts";
 import { prepareWeb } from "./issues.ts";
 import { type Instance } from "./server.ts";
 
@@ -44,4 +47,42 @@ export async function editWhenYouCan(page: Page, ready: Locator): Promise<void> 
     await takeOver.click();
   }
   await expect(ready).toBeEnabled();
+}
+
+/** Adds a section to the layout in the editor by pressing the button with the keyboard. */
+export async function addSectionWithKeyboard(page: Page): Promise<void> {
+  await page.getByRole("button", { name: t("layouts.add-section"), exact: true }).focus();
+  await page.keyboard.press("Enter");
+}
+
+/** Picks a choice of a list in the editor with the keyboard alone: the list has the focus and the choice is typed. */
+export async function chooseByTyping(page: Page, list: Locator, choice: string): Promise<void> {
+  await list.focus();
+  await page.keyboard.type(choice);
+}
+
+/**
+ * The same person, in another window, opens the layout of *Bug*, takes the editing over, adds a
+ * section with this title and saves.
+ */
+export async function saveSectionInAnotherWindow(
+  browser: Browser,
+  server: Instance,
+  title: string,
+): Promise<void> {
+  const other = await anotherBrowser(browser, server);
+  await signIn(other, ada);
+  await openLayoutOfBugs(other);
+  const add = other.getByRole("button", { name: t("layouts.add-section"), exact: true });
+  await editWhenYouCan(other, add);
+  await add.click();
+  await other.getByLabel(t("layouts.section-title"), { exact: true }).last().fill(title);
+  await other.getByRole("button", { name: t("layouts.save"), exact: true }).click();
+  await expect(other.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+}
+
+/** Opens the editor of the new-issue form for the issue type *Bug*, which the dialog customized. */
+export async function openLayoutOfBugs(page: Page): Promise<void> {
+  await page.goto(addressInProject(paths.projectLayouts, "WEB"));
+  await page.getByLabel(t("layouts.type"), { exact: true }).selectOption({ label: "Bug" });
 }

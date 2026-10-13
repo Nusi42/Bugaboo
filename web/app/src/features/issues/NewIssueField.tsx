@@ -1,4 +1,3 @@
-import { priorityWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, MarkdownEditor, SelectField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
@@ -7,12 +6,8 @@ import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 import { OwnFieldInput } from "../fields/index.ts";
 import { AssigneePicker } from "./AssigneePicker.tsx";
+import { priorityChoices } from "./issue-choices.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
-
-const priorityChoices = priorityWords.map((word) => ({
-  value: word,
-  label: t(`priority.${word}`),
-}));
 
 export interface NewIssueFieldProps {
   /** The key of the field: the word of a built-in field, or the ID of an own field. */
@@ -100,7 +95,10 @@ export function NewIssueField(props: NewIssueFieldProps) {
           issueType={values.issueType === "" ? undefined : values.issueType}
           value={values.fields[field]}
           onChange={(value) => {
-            onChange({ ...values, fields: { ...values.fields, [field]: value } });
+            onChange({
+              ...values,
+              fields: { ...values.fields, [field]: value },
+            });
           }}
         />
       );

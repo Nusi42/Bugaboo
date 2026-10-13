@@ -1,24 +1,18 @@
 import {
   askToFinish,
   editAnyway,
-  layoutEditPart,
   newEditorId,
   releaseEditLock,
   sendHeartbeat,
   startHeartbeats,
   takeEditLock,
-  type EditWhat,
 } from "@bugaboo/api-client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { api } from "../../shared/api.ts";
 import { personName } from "../../shared/person.ts";
+import { whatOf } from "./layouts.ts";
 import { LayoutLockController, type LockDeps, type LockState } from "./layout-lock.ts";
-
-/** What a layout is, for the lock: the thing being edited. */
-function whatOf(layout: string): EditWhat {
-  return { record: { kind: "layout", id: layout }, part: layoutEditPart };
-}
 
 /** The calls of the lock on one layout, with the real client behind them. */
 function depsOf(layout: string): LockDeps {
@@ -52,5 +46,10 @@ export function useLayoutLock(layout: string): LayoutLock {
     lock.start();
     return lock.dispose;
   }, [lock]);
-  return { state, retry: lock.start, editAnyway: lock.editAnyway, askToFinish: lock.askToFinish };
+  return {
+    state,
+    retry: lock.start,
+    editAnyway: lock.editAnyway,
+    askToFinish: lock.askToFinish,
+  };
 }

@@ -1950,6 +1950,12 @@ pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
 /// The message `layouts.discard`.
 pub const LAYOUTS_DISCARD: MessageKey = MessageKey::new("layouts.discard");
 
+/// The message `layouts.draft-drop`.
+pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop");
+
+/// The message `layouts.draft-restore`.
+pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
+
 /// The message `layouts.edit-anyway`.
 pub const LAYOUTS_EDIT_ANYWAY: MessageKey = MessageKey::new("layouts.edit-anyway");
 
@@ -1983,6 +1989,9 @@ pub const LAYOUTS_NOT_CUSTOMIZED: MessageKey = MessageKey::new("layouts.not-cust
 
 /// The message `layouts.organization-title`.
 pub const LAYOUTS_ORGANIZATION_TITLE: MessageKey = MessageKey::new("layouts.organization-title");
+
+/// The message `layouts.roles-hidden`.
+pub const LAYOUTS_ROLES_HIDDEN: MessageKey = MessageKey::new("layouts.roles-hidden");
 
 /// The message `layouts.save`.
 pub const LAYOUTS_SAVE: MessageKey = MessageKey::new("layouts.save");
@@ -2022,6 +2031,9 @@ pub const LAYOUTS_TYPE: MessageKey = MessageKey::new("layouts.type");
 
 /// The message `layouts.type-all`.
 pub const LAYOUTS_TYPE_ALL: MessageKey = MessageKey::new("layouts.type-all");
+
+/// The message `layouts.unreadable`.
+pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
 
 /// The message `layouts.unsaved`.
 pub const LAYOUTS_UNSAVED: MessageKey = MessageKey::new("layouts.unsaved");
@@ -5366,6 +5378,24 @@ pub fn layouts_customize_project(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `layouts.delete-held`.
+#[must_use]
+pub fn layouts_delete_held(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.delete-held"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.draft-changed`.
+#[must_use]
+pub fn layouts_draft_changed(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.draft-changed"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
 /// The message `layouts.field-add-to`.
 #[must_use]
 pub fn layouts_field_add_to(name: impl std::fmt::Display) -> Message {
@@ -8445,7 +8475,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Customize for the whole organization",
     ),
     ("layouts.customize-project", "Customize for {project}"),
+    (
+        "layouts.delete-held",
+        "{name} is editing this layout. It can be taken away when they have finished.",
+    ),
     ("layouts.discard", "Discard changes"),
+    (
+        "layouts.draft-changed",
+        "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
+    ),
+    ("layouts.draft-drop", "Throw my changes away"),
+    ("layouts.draft-restore", "Put my changes back"),
     ("layouts.edit-anyway", "Edit anyway"),
     ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
@@ -8507,6 +8547,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("layouts.project-title", "Layouts of {project}"),
     ("layouts.roles-form", "Who is asked for {name}"),
+    (
+        "layouts.roles-hidden",
+        "Which roles see a field is set by people who may decide what roles see.",
+    ),
     ("layouts.roles-page", "Who sees {name}"),
     ("layouts.save", "Save layout"),
     ("layouts.saved", "The layout is saved."),
@@ -8532,6 +8576,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.try-again", "Try again"),
     ("layouts.type", "Issue type"),
     ("layouts.type-all", "All issue types"),
+    (
+        "layouts.unreadable",
+        "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
+    ),
     ("layouts.unsaved", "You have changes that are not saved."),
     ("layouts.use-inherited", "Use the inherited layout again"),
     (

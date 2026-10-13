@@ -79,6 +79,7 @@ function RowAt({
       row={row}
       kind={context.kind}
       roles={context.roles}
+      chooseRoles={context.chooseRoles}
       sections={moves}
       first={at === 0}
       last={at === section.rows.length - 1}
@@ -96,7 +97,10 @@ function RowAt({
         actions.nudgeField(row.field, by);
       }}
       onMoveTo={(target) => {
-        actions.place(row.field, { section: target, index: Number.MAX_SAFE_INTEGER });
+        actions.place(row.field, {
+          section: target,
+          index: Number.MAX_SAFE_INTEGER,
+        });
       }}
       onRemove={() => {
         actions.unplace(row.field);
@@ -134,7 +138,10 @@ function Rows({ section, number, context, actions }: SectionCardProps) {
         kind={fieldKind}
         enabled={context.canDrag}
         onDrop={(field) => {
-          actions.place(field, { section: section.key, index: section.rows.length });
+          actions.place(field, {
+            section: section.key,
+            index: section.rows.length,
+          });
         }}
       />
     </>
