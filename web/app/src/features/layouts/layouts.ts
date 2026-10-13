@@ -128,7 +128,7 @@ export function useSaveLayout() {
       readonly version: number;
       readonly lockToken: string;
       readonly sections: Schema<"SaveLayoutBody">["sections"];
-    }) =>
+    }): Promise<LayoutEditor> =>
       dataOf(
         await api.client.PUT("/api/v1/layouts/{layout}", {
           params: { path: { layout: input.layout } },

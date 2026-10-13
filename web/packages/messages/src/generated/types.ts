@@ -130,6 +130,7 @@ export interface MessageArguments {
   "fields.choice-icon": { name: string | number };
   "fields.choice-up": { name: string | number };
   "fields.choose-title": { name: string | number };
+  "fields.chosen-count": { count: number };
   "fields.combine-name": { name: string | number };
   "fields.combine-text": { into: string | number; name: string | number };
   "fields.combine-title": { name: string | number };

@@ -43,7 +43,6 @@ export const messages = {
   "layouts.field-move-to": "Move {name} to",
   "layouts.field-remove": "Take {name} off this form",
   "layouts.field-drag": "Drag {name}",
-  "layouts.field-here": "Drop here",
   "layouts.field-required": "Required: it stays on the form for everybody who can fill it in.",
   "layouts.roles-page": "Who sees {name}",
   "layouts.roles-form": "Who is asked for {name}",

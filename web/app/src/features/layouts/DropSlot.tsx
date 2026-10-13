@@ -1,4 +1,3 @@
-import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { useRef } from "react";
@@ -7,9 +6,6 @@ import { useDrop } from "react-aria-components";
 
 import { dropOptions } from "./dnd.ts";
 
-/** The list item is no item of the list for a screen reader: it only holds the place. */
-const decorative = { role: "presentation" } as const;
-
 export interface DropSlotProps {
   /** Dropping is possible: not on a phone, where the buttons are the way. */
   readonly enabled: boolean;
@@ -17,18 +13,16 @@ export interface DropSlotProps {
   readonly onDrop: (field: string) => void;
 }
 
-/** A place between two fields of a section (or at its end) where a dragged field can be dropped. */
+/** A place before a field of a section (or at its end) where a dragged field can be dropped. */
 export function DropSlot({ enabled, onDrop }: DropSlotProps) {
   const ref = useRef<HTMLDivElement>(null);
   const drop = useDrop({ ref, ...dropOptions(enabled, onDrop) });
   return (
-    <li {...decorative}>
-      <div
-        ref={ref}
-        {...drop.dropProps}
-        {...partOf(part.layoutSlot, { states: [drop.isDropTarget && "over"] })}
-        aria-label={t("layouts.field-here")}
-      />
-    </li>
+    <div
+      ref={ref}
+      {...drop.dropProps}
+      {...partOf(part.layoutSlot, { states: [drop.isDropTarget && "over"] })}
+      aria-hidden
+    />
   );
 }

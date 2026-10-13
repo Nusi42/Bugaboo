@@ -1937,6 +1937,9 @@ pub const LAYOUTS_AVAILABLE: MessageKey = MessageKey::new("layouts.available");
 /// The message `layouts.available-none`.
 pub const LAYOUTS_AVAILABLE_NONE: MessageKey = MessageKey::new("layouts.available-none");
 
+/// The message `layouts.customize-form`.
+pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customize-form");
+
 /// The message `layouts.customize-organization`.
 pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("layouts.customize-organization");
@@ -1946,9 +1949,6 @@ pub const LAYOUTS_DISCARD: MessageKey = MessageKey::new("layouts.discard");
 
 /// The message `layouts.edit-anyway`.
 pub const LAYOUTS_EDIT_ANYWAY: MessageKey = MessageKey::new("layouts.edit-anyway");
-
-/// The message `layouts.field-here`.
-pub const LAYOUTS_FIELD_HERE: MessageKey = MessageKey::new("layouts.field-here");
 
 /// The message `layouts.field-required`.
 pub const LAYOUTS_FIELD_REQUIRED: MessageKey = MessageKey::new("layouts.field-required");
@@ -4579,6 +4579,15 @@ pub fn fields_choose_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.choose-title"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.chosen-count`.
+#[must_use]
+pub fn fields_chosen_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.chosen-count"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -7825,6 +7834,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.choose", "Choose"),
     ("fields.choose-title", "Choose for {name}"),
+    (
+        "fields.chosen-count",
+        "{count, plural, one {# chosen} other {# chosen}}",
+    ),
     ("fields.combine", "Combine"),
     ("fields.combine-into", "Combine with another choice"),
     ("fields.combine-name", "Combine {name} with another choice"),
@@ -8409,6 +8422,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.ask-finish", "Ask {name} to finish"),
     ("layouts.available", "Fields that are not on this form"),
     ("layouts.available-none", "Every field is on this form."),
+    ("layouts.customize-form", "Customize this form"),
     (
         "layouts.customize-organization",
         "Customize for the whole organization",
@@ -8419,7 +8433,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.field-add-to", "Add {name} to"),
     ("layouts.field-down", "Move {name} down"),
     ("layouts.field-drag", "Drag {name}"),
-    ("layouts.field-here", "Drop here"),
     ("layouts.field-move-to", "Move {name} to"),
     ("layouts.field-remove", "Take {name} off this form"),
     (

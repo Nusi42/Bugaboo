@@ -17,11 +17,15 @@ export interface DraftEditorState {
   readonly dirty: boolean;
   readonly canSave: boolean;
   readonly pending: boolean;
-  readonly saved: boolean;
   readonly error: unknown;
   readonly addSection: () => void;
   readonly save: () => void;
   readonly discard: () => void;
+}
+
+/** The IDs of the roles of the editor: a field that is added starts with all of them ticked. */
+function everyone(editor: Schema<"LayoutEditorBody">): readonly string[] {
+  return editor.roles.map((role) => role.id);
 }
 
 /** What the parts of the editor know about the editor they are in. */
@@ -49,6 +53,7 @@ function contextOf(
 export function useDraftEditor(
   editor: Schema<"LayoutEditorBody">,
   lock: LayoutLock,
+  onSaved: (version: number | undefined) => void,
 ): DraftEditorState {
   const [draft, setDraft] = useState(() => draftOf(editor));
   const send = useSaveLayout();
@@ -62,15 +67,9 @@ export function useDraftEditor(
     dirty: !sameLayout(draft, draftOf(editor)),
     canSave: slot !== null && mine,
     pending: send.isPending,
-    saved: send.isSuccess,
     error: send.error,
     context: contextOf(editor, draft, !phone && mine),
-    actions: actionsOn(
-      (change) => {
-        setDraft(change);
-      },
-      editor.roles.map((role) => role.id),
-    ),
+    actions: actionsOn(setDraft, everyone(editor)),
     addSection: () => {
       setDraft(addSection);
     },
@@ -83,7 +82,12 @@ export function useDraftEditor(
             lockToken: state.token,
             sections: bodyOf(draft),
           },
-          { onSettled: lock.retry },
+          {
+            onSuccess: (saved) => {
+              onSaved(saved.layout?.version);
+            },
+            onSettled: lock.retry,
+          },
         );
       }
     },

@@ -74,35 +74,35 @@ function RowAt({
 }) {
   const moves = context.moves.filter((move) => move.value !== section.key);
   return (
-    <>
-      <DropSlot
-        enabled={context.canDrag}
-        onDrop={(field) => {
-          actions.place(field, { section: section.key, index: at });
-        }}
-      />
-      <FieldRow
-        row={row}
-        kind={context.kind}
-        roles={context.roles}
-        sections={moves}
-        first={at === 0}
-        last={at === section.rows.length - 1}
-        canDrag={context.canDrag}
-        onNudge={(by) => {
-          actions.nudgeField(row.field, by);
-        }}
-        onMoveTo={(target) => {
-          actions.place(row.field, { section: target, index: Number.MAX_SAFE_INTEGER });
-        }}
-        onRemove={() => {
-          actions.unplace(row.field);
-        }}
-        onRole={(role, on) => {
-          actions.setRole(row.field, role, on);
-        }}
-      />
-    </>
+    <FieldRow
+      row={row}
+      kind={context.kind}
+      roles={context.roles}
+      sections={moves}
+      first={at === 0}
+      last={at === section.rows.length - 1}
+      canDrag={context.canDrag}
+      before={
+        <DropSlot
+          enabled={context.canDrag}
+          onDrop={(field) => {
+            actions.place(field, { section: section.key, index: at });
+          }}
+        />
+      }
+      onNudge={(by) => {
+        actions.nudgeField(row.field, by);
+      }}
+      onMoveTo={(target) => {
+        actions.place(row.field, { section: target, index: Number.MAX_SAFE_INTEGER });
+      }}
+      onRemove={() => {
+        actions.unplace(row.field);
+      }}
+      onRole={(role, on) => {
+        actions.setRole(row.field, role, on);
+      }}
+    />
   );
 }
 
@@ -127,13 +127,13 @@ function Rows({ section, number, context, actions }: SectionCardProps) {
             actions={actions}
           />
         ))}
-        <DropSlot
-          enabled={context.canDrag}
-          onDrop={(field) => {
-            actions.place(field, { section: section.key, index: section.rows.length });
-          }}
-        />
       </ul>
+      <DropSlot
+        enabled={context.canDrag}
+        onDrop={(field) => {
+          actions.place(field, { section: section.key, index: section.rows.length });
+        }}
+      />
     </>
   );
 }

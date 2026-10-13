@@ -61,7 +61,7 @@ export function AvailableFields({ rows, context, actions }: AvailableProps) {
         ref={ref}
         {...drop.dropProps}
         {...partOf(part.layoutSlot, { states: [drop.isDropTarget && "over"] })}
-        aria-label={t("layouts.available")}
+        aria-hidden
       />
       {rows.length === 0 ? <p {...partOf(part.muted)}>{t("layouts.available-none")}</p> : null}
       <ul {...partOf(part.layoutSectionFields)} aria-label={t("layouts.available")}>

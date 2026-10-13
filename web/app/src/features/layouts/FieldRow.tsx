@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Checkbox, IconButton, iconName, SelectField, partOf, part } from "@bugaboo/ui";
 
 import type { Schema } from "@bugaboo/api-client";
+import type { ReactNode } from "react";
 import { DraggableHead } from "./DraggableHead.tsx";
 import { fieldLabel } from "./field-label.ts";
 import type { FormKind } from "./layouts.ts";
@@ -30,6 +31,8 @@ export interface FieldRowProps {
   readonly onMoveTo: (section: string) => void;
   readonly onRemove: () => void;
   readonly onRole: (role: string, on: boolean) => void;
+  /** What comes first in the item: the place before it where a dragged field can be dropped. */
+  readonly before?: ReactNode;
 }
 
 /** The roles of a field with a box each, and the words that say where field permissions win. */
@@ -128,10 +131,11 @@ function FieldHead({ props, name }: { readonly props: FieldRowProps; readonly na
 
 /** One field of a section: its name, the handle to drag it, the buttons for everything a drag does, and its roles. */
 export function FieldRow(props: FieldRowProps) {
-  const { row, kind, sections, onMoveTo, roles, onRole } = props;
+  const { row, kind, sections, onMoveTo, roles, onRole, before } = props;
   const name = fieldLabel(row.field, row.name);
   return (
     <li {...partOf(part.layoutField)}>
+      {before}
       <FieldHead props={props} name={name} />
       {sections.length > 1 ? <MoveTo name={name} sections={sections} onMoveTo={onMoveTo} /> : null}
       {row.required ? <p {...partOf(part.muted)}>{t("layouts.field-required")}</p> : null}

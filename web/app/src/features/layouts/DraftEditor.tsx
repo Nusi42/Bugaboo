@@ -11,6 +11,10 @@ import type { LayoutLock } from "./use-layout-lock.ts";
 export interface DraftEditorProps {
   readonly editor: Schema<"LayoutEditorBody">;
   readonly lock: LayoutLock;
+  /** The layout on screen is the one that was just saved. */
+  readonly saved: boolean;
+  /** A save worked; says the version that was saved. */
+  readonly onSaved: (version: number | undefined) => void;
 }
 
 /**
@@ -18,8 +22,8 @@ export interface DraftEditorProps {
  * fields that are on no section. Everything is kept in the draft until *Save layout*. Without the
  * lock the whole editor is switched off, and the draft stays for when the lock comes back.
  */
-export function DraftEditor({ editor, lock }: DraftEditorProps) {
-  const state = useDraftEditor(editor, lock);
+export function DraftEditor({ editor, lock, saved, onSaved }: DraftEditorProps) {
+  const state = useDraftEditor(editor, lock, onSaved);
   const { draft, context, actions } = state;
   return (
     <fieldset disabled={!state.mine} {...partOf(part.layoutEditor)}>
@@ -41,7 +45,7 @@ export function DraftEditor({ editor, lock }: DraftEditorProps) {
         dirty={state.dirty}
         canSave={state.canSave}
         pending={state.pending}
-        saved={state.saved}
+        saved={saved}
         error={state.error}
         onSave={state.save}
         onDiscard={state.discard}

@@ -113,6 +113,7 @@ export const messages = {
   "fields.pick-issue-key": "ID of the issue, like WEB-12",
   "fields.pick-issue-find": "Find the issue",
   "fields.pick-no-issue": "No issue has that ID.",
+  "fields.chosen-count": "{count, plural, one {# chosen} other {# chosen}}",
 } as const;
 
 register(messages);
