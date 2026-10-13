@@ -1,18 +1,9 @@
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  Form,
-  SubmitButton,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Form, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { DraftOffer } from "./DraftOffer.tsx";
-import { canCreate } from "./new-issue-form.ts";
+import { NewIssueActions } from "./NewIssueActions.tsx";
 import { NewIssueFields } from "./NewIssueFields.tsx";
 import { ProjectChoice } from "./ProjectChoice.tsx";
 import { useNewIssue } from "./use-new-issue.ts";
@@ -53,25 +44,17 @@ export function NewIssueForm({ onMade, onClose }: NewIssueFormProps) {
         <Alert tone={alertTone.success}>{t("issues.created", { key: form.lastKey })}</Alert>
       )}
       {project === undefined ? null : (
-        <NewIssueFields values={values} types={form.types} onChange={form.change} />
+        <NewIssueFields
+          values={values}
+          types={form.types}
+          project={project.shortName}
+          layout={form.layout}
+          onChange={form.change}
+        />
       )}
       {form.error === null ? null : <Alert tone={alertTone.danger}>{messageOf(form.error)}</Alert>}
       <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
-      <div {...partOf(part.issueSectionActions)}>
-        <Button look={buttonLook.quiet} onPress={onClose}>
-          {t("common.cancel")}
-        </Button>
-        <Button
-          isDisabled={!canCreate(values) || project === undefined}
-          isPending={form.pending}
-          onPress={() => {
-            form.create(true, onMade);
-          }}
-        >
-          {t("issues.create-another")}
-        </Button>
-        <SubmitButton isPending={form.pending}>{t("issues.create")}</SubmitButton>
-      </div>
+      <NewIssueActions form={form} onMade={onMade} onClose={onClose} />
     </Form>
   );
 }

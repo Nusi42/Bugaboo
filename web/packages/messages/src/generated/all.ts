@@ -10,6 +10,7 @@ export { messages as home } from "./home.ts";
 export { messages as invitation } from "./invitation.ts";
 export { messages as issueTypes } from "./issue-types.ts";
 export { messages as issues } from "./issues.ts";
+export { messages as layouts } from "./layouts.ts";
 export { messages as mentions } from "./mentions.ts";
 export { messages as mySettings } from "./my-settings.ts";
 export { messages as people } from "./people.ts";

@@ -12,6 +12,7 @@ pub mod follow;
 pub mod history;
 mod input;
 pub mod issues;
+pub mod layouts;
 mod member;
 pub mod people;
 pub mod ports;

@@ -295,6 +295,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a layout of the issue page or the new-issue form (CFG-01).
+    LayoutId
+}
+
+define_ordered_id! {
     /// The ID of a comment (ISS-05).
     CommentId
 }
@@ -388,6 +393,7 @@ into_entity_id!(
     ChoiceId,
     RelationKindId,
     RelationId,
+    LayoutId,
     CommentId,
     EventId,
     JobId,

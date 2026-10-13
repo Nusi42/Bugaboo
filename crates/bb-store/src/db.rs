@@ -13,7 +13,7 @@ use std::time::Duration;
 use bb_core::event::DomainEvent;
 use bb_core::id::{
     AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
-    IdError, InvitationId, IssueId, IssueTypeId, JobId, LockToken, PasskeyId, ProjectId,
+    IdError, InvitationId, IssueId, IssueTypeId, JobId, LayoutId, LockToken, PasskeyId, ProjectId,
     RelationId, RelationKindId, RoleId, SessionId, UserId,
 };
 use jiff::Timestamp;
@@ -631,6 +631,7 @@ stored_ids!(
     IssueId => "an issue ID",
     IssueTypeId => "an issue type ID",
     JobId => "a job ID",
+    LayoutId => "a layout ID",
     LockToken => "an edit lock token",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",

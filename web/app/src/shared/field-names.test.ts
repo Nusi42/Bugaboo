@@ -17,6 +17,16 @@ describe("fieldNameOf", () => {
     expect(fieldNameOf({ code: "title" })).toBe(t("issue-field.title"));
   });
 
+  it("names the members the history adds", () => {
+    expect(fieldNameOf({ code: "issue-type" })).toBe("Issue type");
+    expect(fieldNameOf({ code: "parent" })).toBe("Part of");
+    expect(fieldNameOf({ code: "sub-issue" })).toBe("Sub-issue");
+  });
+
+  it("gives the fallback text of the caller for a field this version does not know", () => {
+    expect(fieldNameOf({ code: "from-the-future" }, "Other")).toBe("Other");
+  });
+
   it("gives the code of a field this version does not know", () => {
     expect(fieldNameOf({ code: "from-the-future" })).toBe("from-the-future");
   });

@@ -103,6 +103,7 @@ pub(crate) struct State {
     pub(crate) history_position: i64,
     pub(crate) field_definitions: Vec<crate::fields::Definition>,
     pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
+    pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

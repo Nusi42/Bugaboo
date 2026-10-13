@@ -150,6 +150,9 @@ error_codes! {
     /// Somebody took the editing over (*Edit anyway*), so the text cannot be saved with the
     /// lock. The text is kept as the person's draft (ADR-0019).
     EditTakenOver => ("edit.taken_over", 409),
+    /// Somebody else is editing the thing, so it cannot be taken away now. Nothing is lost: the
+    /// page names who is editing (ADR-0019).
+    EditInProgress => ("edit.in_progress", 409),
     /// Too many requests in a short time (SEC-14).
     TooManyRequests => ("rate_limit.exceeded", 429),
     /// The server cannot answer right now.

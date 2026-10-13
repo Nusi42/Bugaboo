@@ -1,30 +1,28 @@
-import { priorityWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { MarkdownEditor, SelectField, TextField } from "@bugaboo/ui";
+import { SelectField, TextField } from "@bugaboo/ui";
 
-import { useImageHosts } from "../../shared/image-hosts.ts";
-import { markdownLabels } from "../../shared/markdown-labels.ts";
+import { FormNotice, FormSections, type FormView } from "../layouts/index.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
-
-const priorityChoices = priorityWords.map((word) => ({
-  value: word,
-  label: t(`priority.${word}`),
-}));
+import { NewIssueField } from "./NewIssueField.tsx";
 
 export interface NewIssueFieldsProps {
   readonly values: NewIssueValues;
   /** The issue types that can be offered: the ones that are not retired. */
   readonly types: readonly { readonly id: string; readonly name: string }[];
+  /** The project it is made in: its short name. */
+  readonly project: string;
+  /** Which fields the layout of the form asks this person for. */
+  readonly layout: FormView;
   readonly onChange: (values: NewIssueValues) => void;
 }
 
 /**
- * The fields of the form of a new issue (UX §4.5): the type, the title (required, and it says so
- * in words), the description and the priority. Which fields a role gets is decided in the layout
- * editor (WP-09); until then every person sees these.
+ * The fields of the form of a new issue (UX §4.5): the type and the title, which every form has,
+ * and then the sections of the layout of the project and the type (CFG-01). A field is on the form
+ * only when the layout lists it for one of the person's roles and its level lets them fill it in
+ * (the server decides, so the form never asks for what would be refused).
  */
-export function NewIssueFields({ values, types, onChange }: NewIssueFieldsProps) {
-  const hosts = useImageHosts();
+export function NewIssueFields({ values, types, project, layout, onChange }: NewIssueFieldsProps) {
   return (
     <>
       <SelectField
@@ -43,22 +41,13 @@ export function NewIssueFields({ values, types, onChange }: NewIssueFieldsProps)
           onChange({ ...values, title });
         }}
       />
-      <MarkdownEditor
-        label={t("issue-field.description")}
-        labels={markdownLabels()}
-        value={values.description}
-        onChange={(description) => {
-          onChange({ ...values, description });
-        }}
-        imageHosts={hosts}
-      />
-      <SelectField
-        label={t("issue-field.priority")}
-        choices={priorityChoices}
-        value={values.priority}
-        onChange={(priority) => {
-          onChange({ ...values, priority });
-        }}
+      <FormNotice form={layout} />
+      <FormSections
+        sections={layout.sections}
+        titles
+        render={(field) => (
+          <NewIssueField field={field} values={values} project={project} onChange={onChange} />
+        )}
       />
     </>
   );

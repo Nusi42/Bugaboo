@@ -17,3 +17,6 @@ export const draftTextMax = 100000;
 
 /** The most records one check of versions asks about. */
 export const versionsMax = 50;
+
+/** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
+export const layoutEditPart = "layout";

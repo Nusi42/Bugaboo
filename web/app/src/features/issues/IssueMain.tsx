@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
+import { FormNotice } from "../layouts/index.ts";
 import { DescriptionBlock } from "./DescriptionBlock.tsx";
 import { historyId } from "./history-id.ts";
 import { SlotBlocks } from "./SlotBlocks.tsx";
@@ -17,12 +18,15 @@ export interface IssueMainProps {
 export function IssueMain({ detail, address, blocks }: IssueMainProps) {
   return (
     <div {...partOf(part.issueMain)}>
-      <DescriptionBlock
-        issue={detail.issue}
-        address={address}
-        html={detail.description_html}
-        canChange={blocks.mask.changes("description")}
-      />
+      <FormNotice form={blocks.form} />
+      {blocks.form.shows("description") ? (
+        <DescriptionBlock
+          issue={detail.issue}
+          address={address}
+          html={detail.description_html}
+          canChange={blocks.mask.changes("description")}
+        />
+      ) : null}
       <SlotBlocks slot={issueSlots.ownFieldSections} blocks={blocks} />
       <SlotBlocks slot={issueSlots.subIssues} blocks={blocks} />
       <SlotBlocks slot={issueSlots.relatedIssues} blocks={blocks} />

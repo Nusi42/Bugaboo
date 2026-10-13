@@ -3,6 +3,7 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { listText } from "../../shared/list-text.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName, personNameInside } from "../../shared/person.ts";
@@ -45,28 +46,6 @@ export function whoOf(entry: Schema<"HistoryEntryItem">): string {
   return entry.by === undefined || entry.by === null ? t("history.system") : personName(entry.by);
 }
 
-/**
- * The name of a field as people read it: the name of an own field, which the server sends, the
- * catalogue's own, or one of the members History adds.
- */
-export function fieldLabel(field: string, name?: string | null): string {
-  if (name !== undefined && name !== null) {
-    return name;
-  }
-  switch (field) {
-    case "issue-type":
-      return t("history.field-issue-type");
-    case "parent":
-      return t("history.field-parent");
-    case "sub-issue":
-      return t("history.field-sub-issue");
-    default: {
-      const key = `issue-field.${field}`;
-      return isMessageKey(key) ? t(key) : t("history.field-other", { field });
-    }
-  }
-}
-
 /** A word of a status or a priority as people read it; any other text as it is. */
 function wordOf(field: string, text: string): string {
   const key = field === "status" ? `status.${text}` : `priority.${text}`;
@@ -105,7 +84,10 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
 /** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
 export function changeSentence(entry: HistoryEntry): string {
   const who = whoOf(entry);
-  const field = fieldLabel(entry.field ?? "", entry.field_name);
+  const field = fieldNameOf(
+    { code: entry.field ?? "", name: entry.field_name },
+    t("history.field-other", { field: entry.field ?? "" }),
+  );
   const before = sideOf(entry, "before");
   const after = sideOf(entry, "after");
   if (before !== undefined && after !== undefined) {

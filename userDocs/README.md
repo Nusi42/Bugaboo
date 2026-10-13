@@ -8,6 +8,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Projects](projects/README.md): the tree, short names, making and moving projects
 - [Issues](issues/README.md): [the issue page](issues/issue-page.md), [making an issue](issues/new-issue.md), [issue IDs](issues/issue-ids.md) and [issue types](issues/issue-types.md)
 - [Fields](fields/README.md): own fields, their kinds, choices, rules and who sees them
+- [Layouts](layouts/README.md): which fields a form shows, in which sections, and for which roles
 - [People, groups and roles](people/README.md): the list of people and the invitations, groups, roles and permissions, and who has which role
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
 - [Writing text](writing/README.md): the marks, the buttons and the preview for descriptions and comments

@@ -10,7 +10,7 @@
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
-use super::Step;
+use super::{Step, id_column};
 use crate::schema::{
     FieldChoiceRow, FieldIssueTypeRow, FieldProjectRow, FieldRow, FieldValueRow, IssueTypeRow,
     ProjectRow, ProjectTypeFieldLevelRow, RoleRow, RoleTypeFieldLevelRow,
@@ -23,12 +23,6 @@ pub(super) fn steps() -> Vec<Step> {
     steps.extend(levels_per_type());
     steps.extend(project_levels_per_type());
     steps
-}
-
-fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
-    let mut column = ColumnDef::new(name);
-    column.blob().not_null();
-    column
 }
 
 fn definitions() -> Vec<Step> {

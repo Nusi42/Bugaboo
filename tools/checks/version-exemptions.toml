@@ -115,3 +115,11 @@ reason = "Accepted for now (M3-F31): each route sets one single value, one setti
 [[exempt]]
 routes = ["POST /api/v1/me/mentions/read"]
 reason = "The read marks of *Mentions* belong to the one person who reads them; marking a mention read twice is the same as once, and nobody else can change them."
+
+[[exempt]]
+routes = ["POST /api/v1/layouts"]
+reason = "Makes the layout of a place as a copy of the one in force (a new record); a place that has one is shown as it is, and two people who make it at the same moment get one (the second is told version_changed)."
+
+[[exempt]]
+routes = ["DELETE /api/v1/layouts/{layout}"]
+reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version_changed."

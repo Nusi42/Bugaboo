@@ -436,6 +436,18 @@ mixin "touch-row" {
     cursor pointer
 }
 
+// The name of a tab of a row of tabs: the editor of text, the sections of a form.
+mixin "tab-label" {
+    padding "$space-2 $space-3"
+    min-height "$size-target"
+    box-sizing border-box
+    color "$fg-muted"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    cursor pointer
+    border-bottom "$space-1 solid transparent"
+}
+
 // A button that is only its words.
 mixin "bare-button" {
     border 0
@@ -3125,14 +3137,7 @@ part "markdown.tabs" {
 }
 
 part "markdown.tab" {
-    padding "$space-2 $space-3"
-    min-height "$size-target"
-    box-sizing border-box
-    color "$fg-muted"
-    font-size "$fs-md"
-    font-weight "$weight-bold"
-    cursor pointer
-    border-bottom "$space-1 solid transparent"
+    use "tab-label"
 }
 
 part "markdown.tab[hovered]" {
@@ -9878,4 +9883,163 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         border-radius "$r-ctl"
         padding "$space-2"
     }
+}
+
+// ───────────── Layouts and the forms they make (M3 WP-09) ─────────────
+//
+// The editor of a layout: sections of fields, each field with the roles it is shown to, buttons for
+// everything a drag does and the places a field can be dropped. And the sections and tabs of a
+// form as a person sees them.
+
+part "layout-editor" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+part "layout-section" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$space-3"
+}
+
+part "layout-section.head" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "layout-section.fields" {
+    use "list-reset"
+    display flex
+    flex-direction column
+}
+
+part "layout-field" {
+    use "sunken-box"
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-2 $space-3"
+}
+
+part "draggable[state=dragging]" {
+    opacity "$opacity-busy"
+}
+
+part "draggable" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
+part "layout-field.name" {
+    flex 1
+    min-width 0
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+part "draggable.handle" {
+    border 0
+    background transparent
+    display inline-flex
+    align-items center
+    justify-content center
+    min-width "$size-target"
+    min-height "$size-target"
+    border-radius "$r-ctl"
+    color "$fg-muted"
+    cursor grab
+}
+
+part "draggable.handle:hover" {
+    background "$bg-hover"
+}
+
+part "draggable.handle[focus-visible]" {
+    use "ring"
+}
+
+part "layout-field.roles" {
+    use "fieldset-reset"
+    display flex
+    flex-wrap wrap
+    gap "$space-1 $space-4"
+}
+
+part "layout-field.limited" {
+    margin 0
+    color "$warning"
+    font-size "$fs-sm"
+}
+
+part "layout-field.actions" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-2"
+}
+
+// The thin place between two fields where a dragged field can be dropped.
+part "drop-slot" {
+    width "100%"
+    min-height "$space-2"
+    border-radius "$r-ctl"
+}
+
+part "drop-slot[state=over]" {
+    min-height "$size-target"
+    border "$border-width dashed $accent"
+    background "$accent-soft"
+}
+
+part "form-tabs" {
+    display flex
+    flex-wrap wrap
+    gap "$space-1"
+    border-bottom "$border-width solid $border"
+}
+
+part "form-tab" {
+    use "tab-label"
+}
+
+part "form-tab[hovered]" {
+    background "$bg-hover"
+}
+
+part "form-tab[selected]" {
+    color "$fg"
+    border-bottom-color "$accent"
+}
+
+part "form-tab[focus-visible]" {
+    use "ring-inside"
+}
+
+part "form-panel" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "form-section" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+}
+
+part "form-section.title" {
+    margin 0
+    color "$fg"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
 }

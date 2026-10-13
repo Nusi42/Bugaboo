@@ -45,13 +45,16 @@ function LongTextField({
 
 /** The long texts among the own fields of an issue, as sections under the description (CF-01). */
 export function OwnFieldSections(blocks: IssueBlockProps) {
-  const { issue, mask } = blocks;
+  const { issue, mask, form } = blocks;
   const fields = useFields({ project: issue.project?.short_name });
   return (
     <>
       {issueFieldsOf(fields.data?.fields ?? [], issue)
         .filter(
-          (field) => field.kind === "long-text" && (mask.sees(field.id) || mask.changes(field.id)),
+          (field) =>
+            field.kind === "long-text" &&
+            (mask.sees(field.id) || mask.changes(field.id)) &&
+            form.shows(field.id),
         )
         .map((field) => (
           <LongTextField key={field.id} field={field} blocks={blocks} />

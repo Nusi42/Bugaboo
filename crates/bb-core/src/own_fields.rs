@@ -467,9 +467,16 @@ impl Scope {
     pub fn reaches(&self, chain: &[ProjectId], issue_type: Option<IssueTypeId>) -> bool {
         let project_ok =
             self.projects.is_empty() || self.projects.iter().any(|project| chain.contains(project));
-        let type_ok = self.issue_types.is_empty()
-            || issue_type.is_some_and(|wanted| self.issue_types.contains(&wanted));
-        project_ok && type_ok
+        project_ok && self.reaches_type(issue_type)
+    }
+
+    /// Whether the field is offered for issues of the issue type `issue_type` in some project: the
+    /// half of [`Self::reaches`] that is about the type, for the whole organization, which has no
+    /// project.
+    #[must_use]
+    pub fn reaches_type(&self, issue_type: Option<IssueTypeId>) -> bool {
+        self.issue_types.is_empty()
+            || issue_type.is_some_and(|wanted| self.issue_types.contains(&wanted))
     }
 }
 
@@ -649,5 +656,10 @@ mod tests {
         assert!(!scope.reaches(&[other], Some(bug)));
         assert!(!scope.reaches(&[parent], Some(task)));
         assert!(!scope.reaches(&[parent], None));
+        // The whole organization has no project: only the type counts.
+        assert!(scope.reaches_type(Some(bug)));
+        assert!(!scope.reaches_type(Some(task)));
+        assert!(!scope.reaches_type(None));
+        assert!(everywhere.reaches_type(None));
     }
 }

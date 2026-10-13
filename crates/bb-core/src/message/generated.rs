@@ -757,6 +757,9 @@ pub const ERROR_AUTH_WRONG_SECOND_STEP_CODE: MessageKey =
 /// The message `error.auth.wrong-setup-code`.
 pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.wrong-setup-code");
 
+/// The message `error.edit.in-progress`.
+pub const ERROR_EDIT_IN_PROGRESS: MessageKey = MessageKey::new("error.edit.in-progress");
+
 /// The message `error.edit.lock-lost`.
 pub const ERROR_EDIT_LOCK_LOST: MessageKey = MessageKey::new("error.edit.lock-lost");
 
@@ -1468,15 +1471,6 @@ pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing
 /// The message `groups.used-whole`.
 pub const GROUPS_USED_WHOLE: MessageKey = MessageKey::new("groups.used-whole");
 
-/// The message `history.field-issue-type`.
-pub const HISTORY_FIELD_ISSUE_TYPE: MessageKey = MessageKey::new("history.field-issue-type");
-
-/// The message `history.field-parent`.
-pub const HISTORY_FIELD_PARENT: MessageKey = MessageKey::new("history.field-parent");
-
-/// The message `history.field-sub-issue`.
-pub const HISTORY_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("history.field-sub-issue");
-
 /// The message `history.more`.
 pub const HISTORY_MORE: MessageKey = MessageKey::new("history.more");
 
@@ -1586,8 +1580,14 @@ pub const ISSUE_FIELD_ESTIMATED_TIME: MessageKey = MessageKey::new("issue-field.
 pub const ISSUE_FIELD_FOUND_IN_RELEASE: MessageKey =
     MessageKey::new("issue-field.found-in-release");
 
+/// The message `issue-field.issue-type`.
+pub const ISSUE_FIELD_ISSUE_TYPE: MessageKey = MessageKey::new("issue-field.issue-type");
+
 /// The message `issue-field.labels`.
 pub const ISSUE_FIELD_LABELS: MessageKey = MessageKey::new("issue-field.labels");
+
+/// The message `issue-field.parent`.
+pub const ISSUE_FIELD_PARENT: MessageKey = MessageKey::new("issue-field.parent");
 
 /// The message `issue-field.planned-for-release`.
 pub const ISSUE_FIELD_PLANNED_FOR_RELEASE: MessageKey =
@@ -1601,6 +1601,9 @@ pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.rep
 
 /// The message `issue-field.status`.
 pub const ISSUE_FIELD_STATUS: MessageKey = MessageKey::new("issue-field.status");
+
+/// The message `issue-field.sub-issue`.
+pub const ISSUE_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("issue-field.sub-issue");
 
 /// The message `issue-field.tags`.
 pub const ISSUE_FIELD_TAGS: MessageKey = MessageKey::new("issue-field.tags");
@@ -1915,6 +1918,134 @@ pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database
 
 /// The message `keys.settings-placeholder`.
 pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
+
+/// The message `layout-kind.issue-page`.
+pub const LAYOUT_KIND_ISSUE_PAGE: MessageKey = MessageKey::new("layout-kind.issue-page");
+
+/// The message `layout-kind.new-issue`.
+pub const LAYOUT_KIND_NEW_ISSUE: MessageKey = MessageKey::new("layout-kind.new-issue");
+
+/// The message `layout.section-details`.
+pub const LAYOUT_SECTION_DETAILS: MessageKey = MessageKey::new("layout.section-details");
+
+/// The message `layout.section-main`.
+pub const LAYOUT_SECTION_MAIN: MessageKey = MessageKey::new("layout.section-main");
+
+/// The message `layouts.add-section`.
+pub const LAYOUTS_ADD_SECTION: MessageKey = MessageKey::new("layouts.add-section");
+
+/// The message `layouts.available`.
+pub const LAYOUTS_AVAILABLE: MessageKey = MessageKey::new("layouts.available");
+
+/// The message `layouts.available-none`.
+pub const LAYOUTS_AVAILABLE_NONE: MessageKey = MessageKey::new("layouts.available-none");
+
+/// The message `layouts.customize-form`.
+pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customize-form");
+
+/// The message `layouts.customize-organization`.
+pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
+    MessageKey::new("layouts.customize-organization");
+
+/// The message `layouts.discard`.
+pub const LAYOUTS_DISCARD: MessageKey = MessageKey::new("layouts.discard");
+
+/// The message `layouts.draft-drop`.
+pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop");
+
+/// The message `layouts.draft-restore`.
+pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
+
+/// The message `layouts.edit-anyway`.
+pub const LAYOUTS_EDIT_ANYWAY: MessageKey = MessageKey::new("layouts.edit-anyway");
+
+/// The message `layouts.field-required`.
+pub const LAYOUTS_FIELD_REQUIRED: MessageKey = MessageKey::new("layouts.field-required");
+
+/// The message `layouts.fixed`.
+pub const LAYOUTS_FIXED: MessageKey = MessageKey::new("layouts.fixed");
+
+/// The message `layouts.form`.
+pub const LAYOUTS_FORM: MessageKey = MessageKey::new("layouts.form");
+
+/// The message `layouts.inherited-hidden`.
+pub const LAYOUTS_INHERITED_HIDDEN: MessageKey = MessageKey::new("layouts.inherited-hidden");
+
+/// The message `layouts.inherited-organization`.
+pub const LAYOUTS_INHERITED_ORGANIZATION: MessageKey =
+    MessageKey::new("layouts.inherited-organization");
+
+/// The message `layouts.intro`.
+pub const LAYOUTS_INTRO: MessageKey = MessageKey::new("layouts.intro");
+
+/// The message `layouts.lost`.
+pub const LAYOUTS_LOST: MessageKey = MessageKey::new("layouts.lost");
+
+/// The message `layouts.nav`.
+pub const LAYOUTS_NAV: MessageKey = MessageKey::new("layouts.nav");
+
+/// The message `layouts.not-customized`.
+pub const LAYOUTS_NOT_CUSTOMIZED: MessageKey = MessageKey::new("layouts.not-customized");
+
+/// The message `layouts.organization-title`.
+pub const LAYOUTS_ORGANIZATION_TITLE: MessageKey = MessageKey::new("layouts.organization-title");
+
+/// The message `layouts.roles-hidden`.
+pub const LAYOUTS_ROLES_HIDDEN: MessageKey = MessageKey::new("layouts.roles-hidden");
+
+/// The message `layouts.save`.
+pub const LAYOUTS_SAVE: MessageKey = MessageKey::new("layouts.save");
+
+/// The message `layouts.saved`.
+pub const LAYOUTS_SAVED: MessageKey = MessageKey::new("layouts.saved");
+
+/// The message `layouts.saving`.
+pub const LAYOUTS_SAVING: MessageKey = MessageKey::new("layouts.saving");
+
+/// The message `layouts.section-empty`.
+pub const LAYOUTS_SECTION_EMPTY: MessageKey = MessageKey::new("layouts.section-empty");
+
+/// The message `layouts.section-tab`.
+pub const LAYOUTS_SECTION_TAB: MessageKey = MessageKey::new("layouts.section-tab");
+
+/// The message `layouts.section-tab-help`.
+pub const LAYOUTS_SECTION_TAB_HELP: MessageKey = MessageKey::new("layouts.section-tab-help");
+
+/// The message `layouts.section-title`.
+pub const LAYOUTS_SECTION_TITLE: MessageKey = MessageKey::new("layouts.section-title");
+
+/// The message `layouts.tab-other`.
+pub const LAYOUTS_TAB_OTHER: MessageKey = MessageKey::new("layouts.tab-other");
+
+/// The message `layouts.tabs`.
+pub const LAYOUTS_TABS: MessageKey = MessageKey::new("layouts.tabs");
+
+/// The message `layouts.taking`.
+pub const LAYOUTS_TAKING: MessageKey = MessageKey::new("layouts.taking");
+
+/// The message `layouts.try-again`.
+pub const LAYOUTS_TRY_AGAIN: MessageKey = MessageKey::new("layouts.try-again");
+
+/// The message `layouts.type`.
+pub const LAYOUTS_TYPE: MessageKey = MessageKey::new("layouts.type");
+
+/// The message `layouts.type-all`.
+pub const LAYOUTS_TYPE_ALL: MessageKey = MessageKey::new("layouts.type-all");
+
+/// The message `layouts.unreadable`.
+pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
+
+/// The message `layouts.unsaved`.
+pub const LAYOUTS_UNSAVED: MessageKey = MessageKey::new("layouts.unsaved");
+
+/// The message `layouts.use-inherited`.
+pub const LAYOUTS_USE_INHERITED: MessageKey = MessageKey::new("layouts.use-inherited");
+
+/// The message `layouts.use-inherited-text`.
+pub const LAYOUTS_USE_INHERITED_TEXT: MessageKey = MessageKey::new("layouts.use-inherited-text");
+
+/// The message `layouts.use-inherited-title`.
+pub const LAYOUTS_USE_INHERITED_TITLE: MessageKey = MessageKey::new("layouts.use-inherited-title");
 
 /// The message `list.next`.
 pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
@@ -4439,6 +4570,15 @@ pub fn fields_choice_down(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `fields.choice-drag`.
+#[must_use]
+pub fn fields_choice_drag(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-drag"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `fields.choice-icon`.
 #[must_use]
 pub fn fields_choice_icon(name: impl std::fmt::Display) -> Message {
@@ -4463,6 +4603,15 @@ pub fn fields_choose_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.choose-title"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.chosen-count`.
+#[must_use]
+pub fn fields_chosen_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.chosen-count"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -5208,6 +5357,243 @@ pub fn keys_rotated(secrets: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("keys.rotated"),
         vec![("secrets", Value::Number(secrets))],
+    )
+}
+
+/// The message `layouts.ask-finish`.
+#[must_use]
+pub fn layouts_ask_finish(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.ask-finish"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.customize-project`.
+#[must_use]
+pub fn layouts_customize_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.customize-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `layouts.delete-held`.
+#[must_use]
+pub fn layouts_delete_held(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.delete-held"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.draft-changed`.
+#[must_use]
+pub fn layouts_draft_changed(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.draft-changed"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `layouts.field-add-to`.
+#[must_use]
+pub fn layouts_field_add_to(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.field-add-to"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.field-down`.
+#[must_use]
+pub fn layouts_field_down(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.field-down"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.field-drag`.
+#[must_use]
+pub fn layouts_field_drag(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.field-drag"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.field-move-to`.
+#[must_use]
+pub fn layouts_field_move_to(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.field-move-to"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.field-remove`.
+#[must_use]
+pub fn layouts_field_remove(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.field-remove"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.field-up`.
+#[must_use]
+pub fn layouts_field_up(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.field-up"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.fields-of`.
+#[must_use]
+pub fn layouts_fields_of(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.fields-of"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `layouts.inherited-project`.
+#[must_use]
+pub fn layouts_inherited_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.inherited-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `layouts.inherited-type`.
+#[must_use]
+pub fn layouts_inherited_type(type_: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.inherited-type"),
+        vec![("type", Value::Text(type_.to_string()))],
+    )
+}
+
+/// The message `layouts.is-editing`.
+#[must_use]
+pub fn layouts_is_editing(name: impl std::fmt::Display, since: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.is-editing"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("since", Value::Text(since.to_string())),
+        ],
+    )
+}
+
+/// The message `layouts.limited-form`.
+#[must_use]
+pub fn layouts_limited_form(
+    field: impl std::fmt::Display,
+    role: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.limited-form"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("role", Value::Text(role.to_string())),
+        ],
+    )
+}
+
+/// The message `layouts.limited-page`.
+#[must_use]
+pub fn layouts_limited_page(
+    field: impl std::fmt::Display,
+    role: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.limited-page"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("role", Value::Text(role.to_string())),
+        ],
+    )
+}
+
+/// The message `layouts.project-title`.
+#[must_use]
+pub fn layouts_project_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.project-title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `layouts.roles-form`.
+#[must_use]
+pub fn layouts_roles_form(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.roles-form"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.roles-page`.
+#[must_use]
+pub fn layouts_roles_page(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.roles-page"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `layouts.section`.
+#[must_use]
+pub fn layouts_section(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.section"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `layouts.section-down`.
+#[must_use]
+pub fn layouts_section_down(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.section-down"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `layouts.section-named`.
+#[must_use]
+pub fn layouts_section_named(
+    number: impl std::fmt::Display,
+    title: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.section-named"),
+        vec![
+            ("number", Value::Text(number.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `layouts.section-remove`.
+#[must_use]
+pub fn layouts_section_remove(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.section-remove"),
+        vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `layouts.section-up`.
+#[must_use]
+pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.section-up"),
+        vec![("number", Value::Text(number.to_string()))],
     )
 }
 
@@ -7256,6 +7642,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That setup code is not right. Copy it again from the window where Bugaboo is running.",
     ),
     (
+        "error.edit.in-progress",
+        "Someone is editing this right now. Try again when they have finished.",
+    ),
+    (
         "error.edit.lock-lost",
         "Your editing time ran out. Your text is kept as a draft. Use Compare and save to keep your changes.",
     ),
@@ -7478,6 +7868,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.basics", "Basics"),
     ("fields.choice-color", "Color of {name}"),
     ("fields.choice-down", "Move {name} down"),
+    ("fields.choice-drag", "Drag {name}"),
     ("fields.choice-icon", "Icon of {name}"),
     ("fields.choice-name", "Name of the choice"),
     ("fields.choice-offer-again", "Offer this choice again"),
@@ -7490,6 +7881,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.choose", "Choose"),
     ("fields.choose-title", "Choose for {name}"),
+    (
+        "fields.chosen-count",
+        "{count, plural, one {# chosen} other {# chosen}}",
+    ),
     ("fields.combine", "Combine"),
     ("fields.combine-into", "Combine with another choice"),
     ("fields.combine-name", "Combine {name} with another choice"),
@@ -7753,10 +8148,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
-    ("history.field-issue-type", "Issue type"),
     ("history.field-other", "{field}"),
-    ("history.field-parent", "Part of"),
-    ("history.field-sub-issue", "Sub-issue"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),
@@ -7833,11 +8225,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.due-date", "Due date"),
     ("issue-field.estimated-time", "Estimated time"),
     ("issue-field.found-in-release", "Found in release"),
+    ("issue-field.issue-type", "Issue type"),
     ("issue-field.labels", "Labels"),
+    ("issue-field.parent", "Part of"),
     ("issue-field.planned-for-release", "Planned for release"),
     ("issue-field.priority", "Priority"),
     ("issue-field.reported-by", "Reported by"),
     ("issue-field.status", "Status"),
+    ("issue-field.sub-issue", "Sub-issue"),
     ("issue-field.tags", "Tags"),
     ("issue-field.time-left", "Time left"),
     ("issue-field.time-spent", "Time spent"),
@@ -8065,6 +8460,135 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "keys.settings-placeholder",
         "--config <the settings file of the service>",
+    ),
+    ("layout-kind.issue-page", "Issue page"),
+    ("layout-kind.new-issue", "New-issue form"),
+    ("layout.section-details", "Details"),
+    ("layout.section-main", "Main"),
+    ("layouts.add-section", "Add a section"),
+    ("layouts.ask-finish", "Ask {name} to finish"),
+    ("layouts.available", "Fields that are not on this form"),
+    ("layouts.available-none", "Every field is on this form."),
+    ("layouts.customize-form", "Customize this form"),
+    (
+        "layouts.customize-organization",
+        "Customize for the whole organization",
+    ),
+    ("layouts.customize-project", "Customize for {project}"),
+    (
+        "layouts.delete-held",
+        "{name} is editing this layout. It can be taken away when they have finished.",
+    ),
+    ("layouts.discard", "Discard changes"),
+    (
+        "layouts.draft-changed",
+        "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
+    ),
+    ("layouts.draft-drop", "Throw my changes away"),
+    ("layouts.draft-restore", "Put my changes back"),
+    ("layouts.edit-anyway", "Edit anyway"),
+    ("layouts.field-add-to", "Add {name} to a section"),
+    ("layouts.field-down", "Move {name} down"),
+    ("layouts.field-drag", "Drag {name}"),
+    ("layouts.field-move-to", "Move {name} to another section"),
+    ("layouts.field-remove", "Take {name} off this form"),
+    (
+        "layouts.field-required",
+        "Required: it stays on the form for everybody who can fill it in.",
+    ),
+    ("layouts.field-up", "Move {name} up"),
+    ("layouts.fields-of", "Fields of section {number}"),
+    (
+        "layouts.fixed",
+        "The title and the issue type are always asked for.",
+    ),
+    ("layouts.form", "Form"),
+    (
+        "layouts.inherited-hidden",
+        "This form uses a layout that is set higher up.",
+    ),
+    (
+        "layouts.inherited-organization",
+        "This form uses the layout of the whole organization.",
+    ),
+    (
+        "layouts.inherited-project",
+        "This form uses the layout of {project}.",
+    ),
+    ("layouts.inherited-type", "It is made for {type} only."),
+    (
+        "layouts.intro",
+        "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
+    ),
+    (
+        "layouts.is-editing",
+        "{name} is editing this layout · since {since}",
+    ),
+    (
+        "layouts.limited-form",
+        "{role} can't fill in {field}: Field permissions",
+    ),
+    (
+        "layouts.limited-page",
+        "{role} can't see {field}: Field permissions",
+    ),
+    (
+        "layouts.lost",
+        "You are no longer editing this layout. Your changes are kept here. Ask for the lock again to save them.",
+    ),
+    ("layouts.nav", "Layouts"),
+    (
+        "layouts.not-customized",
+        "This form has not been customized yet. It shows the usual fields to every role.",
+    ),
+    (
+        "layouts.organization-title",
+        "Layouts of the whole organization",
+    ),
+    ("layouts.project-title", "Layouts of {project}"),
+    ("layouts.roles-form", "Who is asked for {name}"),
+    (
+        "layouts.roles-hidden",
+        "Which roles see a field is set by people who may decide what roles see.",
+    ),
+    ("layouts.roles-page", "Who sees {name}"),
+    ("layouts.save", "Save layout"),
+    ("layouts.saved", "The layout is saved."),
+    ("layouts.saving", "Saving …"),
+    ("layouts.section", "Section {number}"),
+    ("layouts.section-down", "Move section {number} down"),
+    (
+        "layouts.section-empty",
+        "No fields in this section yet. Drag a field here or use its Add button.",
+    ),
+    ("layouts.section-named", "Section {number}: {title}"),
+    ("layouts.section-remove", "Remove section {number}"),
+    ("layouts.section-tab", "Tab of the section"),
+    (
+        "layouts.section-tab-help",
+        "Sections with the same tab are shown together under that tab. Leave it empty for no tabs.",
+    ),
+    ("layouts.section-title", "Title of the section"),
+    ("layouts.section-up", "Move section {number} up"),
+    ("layouts.tab-other", "Other"),
+    ("layouts.tabs", "Sections of the form"),
+    ("layouts.taking", "Getting ready to edit …"),
+    ("layouts.try-again", "Try again"),
+    ("layouts.type", "Issue type"),
+    ("layouts.type-all", "All issue types"),
+    (
+        "layouts.unreadable",
+        "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
+    ),
+    ("layouts.unsaved", "You have changes that are not saved."),
+    ("layouts.use-inherited", "Use the inherited layout again"),
+    (
+        "layouts.use-inherited-text",
+        "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+    ),
+    (
+        "layouts.use-inherited-title",
+        "Use the inherited layout again?",
     ),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
