@@ -36,6 +36,10 @@ The repository lives in a folder that a sync service (OneDrive or similar) keeps
 - **Git hooks in every work folder.** `cargo xtask setup` installs lefthook and the hooks; the master gets none, because nothing is committed there.
 - **If the sync service (for example OneDrive) turns the master's folders into cloud placeholders,** `git merge --ff-only WIN1` fails with "unable to unlink", "cannot create directory" or "Directory not empty", and `fsutil reparsepoint query <folder>` shows a tag instead of error 4390. Recovery, with nothing open in the master: move every top-level entry except `.git` into a backup folder outside the synced folder, run `git checkout HEAD -- .` in the master, then repeat the fast-forward. No `reset --hard`, no copying files by hand. Checked by review (the lead runs the `fsutil` query when a fast-forward fails).
 
+## Amendment (M3 WP-10)
+
+- **The browsers of the end-to-end tests.** `cargo xtask setup` also runs the pinned Playwright's `install` for Chromium and WebKit (the phone project in WebKit, M2-F12). Which revision of each browser is installed is decided by the Playwright version in `package-lock.json`, so the versions are pinned like the other tools. Playwright keeps the browsers in one cache of the user (`ms-playwright`), shared by all work folders, and skips what is there; they are the one thing `setup` does not put into `.tools/`, because each copy is several hundred megabytes.
+
 ## Enforced by
 
 BUILD-LOCATION and META-WIRING (see `tools/checks/catalog.toml`); the recovery steps by review.

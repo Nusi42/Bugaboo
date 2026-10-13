@@ -38,6 +38,7 @@ pub(crate) fn run(repo: &Repo) -> anyhow::Result<()> {
         }
     }
     install_npm(root)?;
+    install_browsers(root)?;
     install_git_hooks(root)
 }
 
@@ -345,6 +346,42 @@ fn install_npm(root: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// The browsers the end-to-end tests drive: the Chromium of the computer and tablet projects and the
+/// WebKit of the phone project (M2-F12). Which revision of each is decided by the pinned Playwright
+/// (`browsers.json` inside the package), so the versions are pinned by `package-lock.json`.
+const E2E_BROWSERS: [&str; 2] = ["chromium", "webkit"];
+
+/// The arguments of `npm` that install the browsers of the end-to-end tests.
+fn browser_install_arguments() -> Vec<&'static str> {
+    let mut arguments = vec!["exec", "--", "playwright", "install"];
+    arguments.extend(E2E_BROWSERS);
+    arguments
+}
+
+/// Installs the browsers of the end-to-end tests with the pinned Playwright. Playwright keeps them
+/// in one cache of the user (`ms-playwright`), shared by all work folders, and skips what is there,
+/// so running it again changes nothing. On Linux the system packages the browsers need are not
+/// installed here (that takes administrator rights): `npx playwright install-deps` does it.
+fn install_browsers(root: &Path) -> anyhow::Result<()> {
+    if !root.join("node_modules").join("playwright").is_dir() {
+        return Ok(());
+    }
+    output::info(&format!(
+        "install  browsers for the end-to-end tests ({})",
+        E2E_BROWSERS.join(", ")
+    ));
+    let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
+    let status = Command::new(npm)
+        .args(browser_install_arguments())
+        .current_dir(root)
+        .status()
+        .context("could not run npm; is Node.js installed?")?;
+    if !status.success() {
+        bail!("installing the browsers of the end-to-end tests failed (see the messages above).");
+    }
+    Ok(())
+}
+
 /// Whether npm's own record of what is installed (`node_modules/.package-lock.json`) has every
 /// package of `package-lock.json` at the same version and checksum.
 fn npm_is_current(root: &Path) -> bool {
@@ -403,6 +440,14 @@ mod tests {
         let text = error.to_string();
         assert!(text.contains("Checksum mismatch"), "{text}");
         assert!(text.contains("Nothing was installed"), "{text}");
+    }
+
+    #[test]
+    fn the_end_to_end_browsers_include_webkit_for_the_phone_project() {
+        let arguments = browser_install_arguments();
+        assert_eq!(arguments[..4], ["exec", "--", "playwright", "install"]);
+        assert!(arguments.contains(&"webkit"));
+        assert!(arguments.contains(&"chromium"));
     }
 
     #[test]

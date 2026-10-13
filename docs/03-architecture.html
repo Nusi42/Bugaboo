@@ -2272,6 +2272,10 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Git hooks in every work folder.</strong> <code>cargo xtask setup</code> installs lefthook and the hooks; the master gets none, because nothing is committed there.</li>
 <li><strong>If OneDrive turns the master's folders into cloud placeholders,</strong> <code>git merge --ff-only WIN1</code> fails with "unable to unlink", "cannot create directory" or "Directory not empty", and <code>fsutil reparsepoint query &lt;folder&gt;</code> shows a tag instead of error 4390. Recovery, with nothing open in the master: move every top-level entry except <code>.git</code> into a backup folder outside the synced folder, run <code>git checkout HEAD -- .</code> in the master, then repeat the fast-forward. No <code>reset --hard</code>, no copying files by hand. Checked by review (the lead runs the <code>fsutil</code> query when a fast-forward fails).</li>
 </ul>
+<h4>Amendment (M3 WP-10)</h4>
+<ul>
+<li><strong>The browsers of the end-to-end tests.</strong> <code>cargo xtask setup</code> also runs the pinned Playwright's <code>install</code> for Chromium and WebKit (the phone project in WebKit, M2-F12). Which revision of each browser is installed is decided by the Playwright version in <code>package-lock.json</code>, so the versions are pinned like the other tools. Playwright keeps the browsers in one cache of the user (<code>ms-playwright</code>), shared by all work folders, and skips what is there; they are the one thing <code>setup</code> does not put into <code>.tools/</code>, because each copy is several hundred megabytes.</li>
+</ul>
 <h4>Enforced by</h4>
 <p>BUILD-LOCATION and META-WIRING (see <code>tools/checks/catalog.toml</code>); the recovery steps by review.</p>
 
