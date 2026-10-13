@@ -3,13 +3,13 @@ import { Alert, alertTone, Card, Form, SubmitButton, TextField, partOf, part } f
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { durationText } from "../../shared/own-value-text.ts";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldTypes, type OwnField } from "./fields.ts";
 import { fieldChange, useChangeField } from "./use-change-field.ts";
 import {
   decimalToMillionths,
   durationSeconds,
-  durationText,
   isWholeNumberText,
   millionthsToDecimal,
 } from "./value-text.ts";

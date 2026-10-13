@@ -6,22 +6,23 @@
 //! is left out too. What a reader may see of a change of an issue is decided by the names of the
 //! members of the events (`issues::member`): a field of the catalogue or an own field by the mask of
 //! the reader in the project and for the issue type of the issue, the issue type, the parent and
-//! the sub-issues as open, everything else never. A person in a value is shown as the kind of the field says, an issue by a line that the
-//! reader may see, or not at all.
+//! the sub-issues as open, everything else never. A value of an own field is shown as the issue page
+//! shows it (`Ctx::display_value`); the parent and the sub-issues are a line that the reader may
+//! see, or nothing.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{HistoryEntry, HistoryKind, HistoryTab};
-use bb_core::id::{ChoiceId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
+use bb_core::id::{CommentId, FieldId, IssueId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::paging::page_len;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::relation::{Direction, RelationKind};
-use bb_policy::{Authorized, Evaluation, PeopleContext};
+use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
 use super::types::{
@@ -115,6 +116,15 @@ impl Batch<'_> {
     }
 }
 
+/// Who reads, and what is built up while the rows of a page are shaped for them: the people shown so
+/// far (one cache for the page) and the issue lines.
+struct Reading<'a> {
+    actor: &'a Actor,
+    held: &'a Evaluation,
+    people: HashMap<(PeopleKind, UserId), PersonRef>,
+    maker: LineMaker,
+}
+
 /// Whether the row is about a relation (the rest are about an issue).
 fn is_relation(row: &HistoryEntry) -> bool {
     row.record_kind.as_str() == RecordKind::Relation.code()
@@ -180,41 +190,65 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(ChangeValue::People { people })
     }
 
-    /// One value of a change of an own field as the reader may see it: the people as the kind
-    /// *Assigned to* says (the kind of people information own fields use), the names of the
-    /// choices, any other value as its text. `None` for a long text, and for a group or an issue,
-    /// which are not shown here (M3-F79).
+    /// One value of a change of an own field as the reader may see it. The one definition of how
+    /// an own-field value is shown to a viewer is `display_value` (the issue page and the project
+    /// page use it too); this only puts its answer into the words of a change: the names of the
+    /// choices, the people, a group by its name and an issue by its readable ID (when the reader
+    /// may see them), the values that a screen words itself (yes or no, a length of time, a
+    /// number, a day) as they are with the kind of the field. `None` for a long text and for
+    /// what the reader may not see.
     async fn own_value(
         &self,
+        actor: &Actor,
         held: &Evaluation,
+        people: &mut HashMap<(PeopleKind, UserId), PersonRef>,
         definition: &Definition,
         value: &Value,
     ) -> Result<Option<ChangeValue>, AppError> {
-        Ok(match definition.field.kind {
-            kind if kind.is_long_text() => None,
-            FieldType::Group | FieldType::Issue => None,
-            FieldType::Person | FieldType::People => {
-                Some(self.people_in(held, PeopleKind::AssignedTo, value).await?)
-            }
-            FieldType::PickOne | FieldType::PickSeveral => {
-                let ids = match value {
-                    Value::Array(items) => items.iter().filter_map(Value::as_str).collect(),
-                    Value::String(text) => vec![text.as_str()],
-                    _ => Vec::new(),
+        let kind = definition.field.kind;
+        if kind.is_long_text() {
+            return Ok(None);
+        }
+        if matches!(kind, FieldType::PickOne | FieldType::PickSeveral) {
+            let names = definition.choice_names(value);
+            return Ok((!names.is_empty()).then(|| ChangeValue::Text {
+                text: names.join(", "),
+            }));
+        }
+        let shown = self
+            .display_value(actor, held, people, kind, value.clone())
+            .await?;
+        let text = |text: &str| ChangeValue::Text {
+            text: text.to_owned(),
+        };
+        Ok(match (kind, shown) {
+            (_, Value::Null) => None,
+            (FieldType::Person | FieldType::People, shown) => {
+                let people = match shown {
+                    Value::Array(_) => serde_json::from_value(shown),
+                    one => serde_json::from_value(one).map(|one| vec![one]),
                 };
-                let names: Vec<&str> = ids
-                    .into_iter()
-                    .filter_map(|text| text.parse::<ChoiceId>().ok())
-                    .filter_map(|id| definition.choices.iter().find(|choice| choice.id == id))
-                    .map(|choice| choice.name.as_str())
-                    .collect();
-                (!names.is_empty()).then(|| ChangeValue::Text {
-                    text: names.join(", "),
+                Some(ChangeValue::People {
+                    people: people.map_err(|error| AppError::Internal(error.to_string()))?,
                 })
             }
-            _ => Some(ChangeValue::Text {
-                text: plain_text(value),
-            }),
+            (FieldType::Group, Value::Object(found)) => {
+                found.get("name").and_then(Value::as_str).map(text)
+            }
+            (FieldType::Issue, Value::Object(found)) => {
+                found.get("key").and_then(Value::as_str).map(text)
+            }
+            (
+                FieldType::YesNo
+                | FieldType::Duration
+                | FieldType::WholeNumber
+                | FieldType::Decimal
+                | FieldType::Date
+                | FieldType::DateTime,
+                value,
+            ) => Some(ChangeValue::Typed { kind, value }),
+            (_, Value::String(words)) => Some(text(&words)),
+            (_, other) => Some(text(&plain_text(&other))),
         })
     }
 
@@ -222,9 +256,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// is a long text, or it names an issue the reader may not see.
     async fn change_value(
         &self,
-        actor: &Actor,
-        held: &Evaluation,
-        maker: &mut LineMaker,
+        reading: &mut Reading<'_>,
         batch: &Batch<'_>,
         member: Member,
         value: Option<&Value>,
@@ -235,11 +267,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(match member {
             Member::Catalogue(Field::Description) | Member::Never => None,
             Member::Own(id) => match batch.field(id) {
-                Some(definition) => self.own_value(held, definition, value).await?,
+                Some(definition) => {
+                    self.own_value(
+                        reading.actor,
+                        reading.held,
+                        &mut reading.people,
+                        definition,
+                        value,
+                    )
+                    .await?
+                }
                 None => None,
             },
             Member::Catalogue(field) => match field.person_kind() {
-                Some(kind) => Some(self.people_in(held, kind, value).await?),
+                Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {
                     text: plain_text(value),
                 }),
@@ -247,7 +288,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Member::IssueType => value
                 .as_str()
                 .and_then(|text| text.parse::<IssueTypeId>().ok())
-                .and_then(|id| maker.type_name(id))
+                .and_then(|id| reading.maker.type_name(id))
                 .map(|name| ChangeValue::Text {
                     text: name.to_owned(),
                 }),
@@ -257,7 +298,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 };
                 match batch.issues.get(&id) {
                     Some(issue) => self
-                        .line_of(actor, maker, issue)
+                        .line_of(reading.actor, &mut reading.maker, issue)
                         .await?
                         .map(|issue| ChangeValue::Issue { issue }),
                     None => None,
@@ -269,24 +310,22 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The fields of a row of changes that the reader may see; `None` when none of them is.
     async fn field_changes(
         &self,
-        actor: &Actor,
-        held: &Evaluation,
+        reading: &mut Reading<'_>,
         issue_type: IssueTypeId,
-        maker: &mut LineMaker,
         batch: &Batch<'_>,
         row: &HistoryEntry,
     ) -> Result<Option<HistoryWhat>, AppError> {
         // The mask for the type of the issue now, built-in and own fields alike, so a field the
         // reader may not see on this type is in no row.
-        let mask = held.field_mask_for(Some(issue_type));
+        let mask = reading.held.field_mask_for(Some(issue_type));
         let mut fields = Vec::new();
         for change in visible_changes(&|field| mask.can_see(field), &row.changes) {
             let member = Member::of(&change.field);
             let before = self
-                .change_value(actor, held, maker, batch, member, change.before.as_ref())
+                .change_value(reading, batch, member, change.before.as_ref())
                 .await?;
             let after = self
-                .change_value(actor, held, maker, batch, member, change.after.as_ref())
+                .change_value(reading, batch, member, change.after.as_ref())
                 .await?;
             // A change of an issue that the reader may not see leaves nothing to show.
             if member == Member::Issue && before.is_none() && after.is_none() {
@@ -396,10 +435,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// One row of the history as the reader sees it; `None` when there is nothing in it for them.
     async fn history_item(
         &self,
-        actor: &Actor,
-        held: &Evaluation,
+        reading: &mut Reading<'_>,
         issue: &Issue,
-        maker: &mut LineMaker,
         batch: &Batch<'_>,
         row: &HistoryEntry,
     ) -> Result<Option<HistoryItem>, AppError> {
@@ -412,15 +449,17 @@ impl<S: AuthStore> Ctx<'_, S> {
                 else {
                     return Ok(None);
                 };
-                let view: CommentView = self.comment_view(actor, held, issue, comment).await?;
+                let view: CommentView = self
+                    .comment_view(reading.actor, reading.held, issue, comment)
+                    .await?;
                 Some(HistoryWhat::Comment { comment: view })
             }
             HistoryKind::Change => {
                 if is_relation(row) {
-                    self.relation_change(actor, maker, issue.id, batch, row)
+                    self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
                 } else {
-                    self.field_changes(actor, held, issue.issue_type, maker, batch, row)
+                    self.field_changes(reading, issue.issue_type, batch, row)
                         .await?
                 }
             }
@@ -430,8 +469,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let by = match row.by {
             Some(person) => Some(
-                self.person_ref(held, PeopleKind::Authors, PeopleContext::Ordinary, person)
-                    .await?,
+                self.person_ref(
+                    reading.held,
+                    PeopleKind::Authors,
+                    PeopleContext::Ordinary,
+                    person,
+                )
+                .await?,
             ),
             None => None,
         };
@@ -472,7 +516,13 @@ pub async fn history<S: AuthStore>(
     };
     let limit = page_len(Some(input.limit));
     let read = u64::try_from(limit).unwrap_or(u64::MAX).saturating_add(1);
-    let mut maker = ctx.line_maker().await?;
+    // The people of the values of the page are resolved once for every row of it.
+    let mut reading = Reading {
+        actor: &actor,
+        held: &held,
+        people: HashMap::new(),
+        maker: ctx.line_maker().await?,
+    };
     let kinds = ctx
         .store()
         .relation_kinds()
@@ -493,10 +543,7 @@ pub async fn history<S: AuthStore>(
         let exhausted = rows.len() < usize::try_from(read).unwrap_or(usize::MAX);
         let batch = ctx.batch_of(&rows, &kinds).await?;
         for row in &rows {
-            if let Some(item) = ctx
-                .history_item(&actor, &held, &issue, &mut maker, &batch, row)
-                .await?
-            {
+            if let Some(item) = ctx.history_item(&mut reading, &issue, &batch, row).await? {
                 if items.len() == limit {
                     resume = items.last().map(|(position, _)| *position);
                     break 'pages;

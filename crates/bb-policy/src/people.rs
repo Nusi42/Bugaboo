@@ -12,14 +12,14 @@ use bb_core::access::PeopleLevel;
 use bb_core::id::{IdSource, UserId};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::text::CodeDraws;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::catalogue::Permission;
 use crate::evaluate::Evaluation;
 use crate::mask::Masked;
 
 /// How a person is shown to one viewer.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(tag = "shown", rename_all = "lowercase")]
 pub enum PersonRef {

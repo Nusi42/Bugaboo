@@ -10,9 +10,11 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::history::{ChangeValue, HistoryItem, HistoryQuery, HistoryWhat};
 use bb_core::history::HistoryTab;
+use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -28,7 +30,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 22] = [
+const HISTORY_FIELDS: [FieldSpec; 25] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -42,8 +44,11 @@ const HISTORY_FIELDS: [FieldSpec; 22] = [
     FieldSpec::by_default("may_delete"),
     FieldSpec::by_default("field"),
     FieldSpec::by_default("field_name"),
+    FieldSpec::by_default("field_kind"),
     FieldSpec::by_default("before_text"),
     FieldSpec::by_default("after_text"),
+    FieldSpec::by_default("before_value"),
+    FieldSpec::by_default("after_value"),
     FieldSpec::by_default("before_people"),
     FieldSpec::by_default("after_people"),
     FieldSpec::by_default("before_issue"),
@@ -104,12 +109,23 @@ pub(crate) struct HistoryEntryItem {
     /// A change of an own field: its name.
     #[serde(skip_serializing_if = "Option::is_none")]
     field_name: Option<String>,
-    /// A change: what the field was, when it is a word, a name or a number.
+    /// A change of an own field: its kind, which says how `before_value` and `after_value` are
+    /// worded.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    field_kind: Option<FieldType>,
+    /// A change: what the field was, when it is a word or a name.
     #[serde(skip_serializing_if = "Option::is_none")]
     before_text: Option<String>,
-    /// A change: what the field is now, when it is a word, a name or a number.
+    /// A change: what the field is now, when it is a word or a name.
     #[serde(skip_serializing_if = "Option::is_none")]
     after_text: Option<String>,
+    /// A change of an own field that a screen words itself (yes or no, a length of time, a number,
+    /// a day): what the field was, as the JSON of its kind.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_value: Option<Value>,
+    /// The same for what the field is now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_value: Option<Value>,
     /// A change: the people the field held, as the kind of the field says.
     #[serde(skip_serializing_if = "Option::is_none")]
     before_people: Option<Vec<PersonRef>>,
@@ -151,8 +167,11 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         may_delete: None,
         field: None,
         field_name: None,
+        field_kind: None,
         before_text: None,
         after_text: None,
+        before_value: None,
+        after_value: None,
         before_people: None,
         after_people: None,
         before_issue: None,
@@ -163,18 +182,31 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
     }
 }
 
-/// Where a value of a change goes in an item.
-fn place_value(
-    value: Option<&ChangeValue>,
-    text: &mut Option<String>,
-    people: &mut Option<Vec<PersonRef>>,
-    issue: &mut Option<IssueRef>,
-) {
-    match value {
-        Some(ChangeValue::Text { text: shown }) => *text = Some(shown.clone()),
-        Some(ChangeValue::People { people: shown }) => *people = Some(shown.clone()),
-        Some(ChangeValue::Issue { issue: shown }) => *issue = Some(IssueRef::from(shown)),
-        None => {}
+/// The places in an item where one side of a change goes.
+#[derive(Default)]
+struct Side {
+    text: Option<String>,
+    value: Option<Value>,
+    people: Option<Vec<PersonRef>>,
+    issue: Option<IssueRef>,
+    kind: Option<FieldType>,
+}
+
+impl Side {
+    /// Where a value of a change goes in an item.
+    fn of(value: Option<&ChangeValue>) -> Self {
+        let mut side = Self::default();
+        match value {
+            Some(ChangeValue::Text { text }) => side.text = Some(text.clone()),
+            Some(ChangeValue::Typed { kind, value }) => {
+                side.kind = Some(*kind);
+                side.value = Some(value.clone());
+            }
+            Some(ChangeValue::People { people }) => side.people = Some(people.clone()),
+            Some(ChangeValue::Issue { issue }) => side.issue = Some(IssueRef::from(issue)),
+            None => {}
+        }
+        side
     }
 }
 
@@ -200,18 +232,15 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 let mut item = start(row, HistoryEntryKind::Change);
                 item.field = Some(change.field.clone());
                 item.field_name.clone_from(&change.name);
-                place_value(
-                    change.before.as_ref(),
-                    &mut item.before_text,
-                    &mut item.before_people,
-                    &mut item.before_issue,
+                let (before, after) = (
+                    Side::of(change.before.as_ref()),
+                    Side::of(change.after.as_ref()),
                 );
-                place_value(
-                    change.after.as_ref(),
-                    &mut item.after_text,
-                    &mut item.after_people,
-                    &mut item.after_issue,
-                );
+                item.field_kind = before.kind.or(after.kind);
+                (item.before_text, item.before_value) = (before.text, before.value);
+                (item.before_people, item.before_issue) = (before.people, before.issue);
+                (item.after_text, item.after_value) = (after.text, after.value);
+                (item.after_people, item.after_issue) = (after.people, after.issue);
                 item
             })
             .collect(),
@@ -338,8 +367,11 @@ mod tests {
             may_delete: Some(true),
             field: Some(String::new()),
             field_name: Some(String::new()),
+            field_kind: Some(FieldType::YesNo),
             before_text: Some(String::new()),
             after_text: Some(String::new()),
+            before_value: Some(Value::Null),
+            after_value: Some(Value::Null),
             before_people: Some(Vec::new()),
             after_people: Some(Vec::new()),
             before_issue: Some(line()),

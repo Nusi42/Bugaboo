@@ -2,16 +2,10 @@ import { t } from "@bugaboo/messages";
 import { FieldValue, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { formatDate, formatDateTime, formatNumber } from "../../shared/format.ts";
+import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName, type Person } from "../../shared/person.ts";
 import { choiceOf, plainText, type Choice, type OwnField, type KindWord } from "./fields.ts";
 import { memberOf } from "./reference.ts";
-import { durationText } from "./value-text.ts";
-
-/** A day from the API (`2026-10-10`) as a moment, for the way the person writes days. */
-function momentOfDay(day: string): string {
-  return `${day}T00:00:00Z`;
-}
 
 /** How far a number is between the lowest and the highest of the field, from 0 to 1 (a percent without a range). */
 function fractionOf(field: OwnField, value: number): number {
@@ -101,29 +95,16 @@ function viewPickSeveral({ field, value }: ViewProps): ReactNode {
 }
 
 function viewNumber({ field, value }: ViewProps): ReactNode {
-  return typeof value === "number" || typeof value === "string" ? (
-    <FieldValue
-      look={field.look}
-      text={typeof value === "number" ? formatNumber(value) : value}
-      fraction={fractionOf(field, Number(value))}
-    />
-  ) : null;
+  const text = ownValueText(field.kind, value);
+  return text === undefined ? null : (
+    <FieldValue look={field.look} text={text} fraction={fractionOf(field, Number(value))} />
+  );
 }
 
-function viewYesNo({ value }: ViewProps): ReactNode {
-  return plain(value === true ? t("fields.yes") : t("fields.no"));
-}
-
-function viewDuration({ value }: ViewProps): ReactNode {
-  return typeof value === "number" ? plain(durationText(value)) : null;
-}
-
-function viewDate({ value }: ViewProps): ReactNode {
-  return typeof value === "string" ? plain(formatDate(momentOfDay(value))) : null;
-}
-
-function viewDateTime({ value }: ViewProps): ReactNode {
-  return typeof value === "string" ? plain(formatDateTime(value)) : null;
+/** A value the screen words itself (yes or no, a length of time, a day, a moment) as plain text. */
+function viewWorded({ field, value }: ViewProps): ReactNode {
+  const text = ownValueText(field.kind, value);
+  return text === undefined ? null : plain(text);
 }
 
 function viewReference({ field, value }: ViewProps): ReactNode {
@@ -148,10 +129,10 @@ const views: Readonly<Record<KindWord, (props: ViewProps) => ReactNode>> = {
   "web-address": viewText,
   "whole-number": viewNumber,
   decimal: viewNumber,
-  "yes-no": viewYesNo,
-  date: viewDate,
-  "date-time": viewDateTime,
-  duration: viewDuration,
+  "yes-no": viewWorded,
+  date: viewWorded,
+  "date-time": viewWorded,
+  duration: viewWorded,
   "pick-one": viewPickOne,
   "pick-several": viewPickSeveral,
   person: viewReference,

@@ -312,3 +312,21 @@ pub struct Definition {
     /// Its choices, in order.
     pub choices: Vec<FieldChoice>,
 }
+
+impl Definition {
+    /// The names of the choices a value of a *Pick one* or *Pick several* field holds (an ID, or a
+    /// list of them), in the order of the value; an ID that is no choice of the field has no name.
+    #[must_use]
+    pub fn choice_names(&self, value: &Value) -> Vec<&str> {
+        let ids: Vec<&str> = match value {
+            Value::Array(items) => items.iter().filter_map(Value::as_str).collect(),
+            Value::String(text) => vec![text.as_str()],
+            _ => Vec::new(),
+        };
+        ids.into_iter()
+            .filter_map(|text| text.parse::<ChoiceId>().ok())
+            .filter_map(|id| self.choices.iter().find(|choice| choice.id == id))
+            .map(|choice| choice.name.as_str())
+            .collect()
+    }
+}

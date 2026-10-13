@@ -7,10 +7,12 @@
 
 use bb_core::history::HistoryTab;
 use bb_core::id::EventId;
+use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::comments::CommentView;
 use crate::relations::IssueLine;
@@ -42,6 +44,14 @@ pub enum ChangeValue {
     People {
         /// The people.
         people: Vec<PersonRef>,
+    },
+    /// A value that a screen words itself, as the kind of its own field says: yes or no, a
+    /// length of time, a number, a day (the JSON the issue page gets).
+    Typed {
+        /// The kind of the field.
+        kind: FieldType,
+        /// The value.
+        value: Value,
     },
     /// An issue the reader may see.
     Issue {

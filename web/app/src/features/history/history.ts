@@ -3,6 +3,7 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
+import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName, personNameInside } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -74,10 +75,19 @@ function wordOf(field: string, text: string): string {
 /** What one side of a change shows: a word, the people, or the issue; nothing for no value. */
 export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | undefined {
   const text = side === "before" ? entry.before_text : entry.after_text;
+  const value = side === "before" ? entry.before_value : entry.after_value;
   const people = side === "before" ? entry.before_people : entry.after_people;
   const issue = side === "before" ? entry.before_issue : entry.after_issue;
   if (text !== undefined && text !== null) {
     return wordOf(entry.field ?? "", text);
+  }
+  if (
+    value !== undefined &&
+    value !== null &&
+    entry.field_kind !== undefined &&
+    entry.field_kind !== null
+  ) {
+    return ownValueText(entry.field_kind, value);
   }
   if (people !== undefined && people !== null) {
     return people.length === 0

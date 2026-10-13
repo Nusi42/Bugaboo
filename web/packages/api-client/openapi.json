@@ -18310,7 +18310,10 @@
           },
           "after_text": {
             "type": ["string", "null"],
-            "description": "A change: what the field is now, when it is a word, a name or a number."
+            "description": "A change: what the field is now, when it is a word or a name."
+          },
+          "after_value": {
+            "description": "The same for what the field is now."
           },
           "at": {
             "type": "string",
@@ -18336,7 +18339,10 @@
           },
           "before_text": {
             "type": ["string", "null"],
-            "description": "A change: what the field was, when it is a word, a name or a number."
+            "description": "A change: what the field was, when it is a word or a name."
+          },
+          "before_value": {
+            "description": "A change of an own field that a screen words itself (yes or no, a length of time, a number,\na day): what the field was, as the JSON of its kind."
           },
           "by": {
             "oneOf": [
@@ -18375,6 +18381,17 @@
           "field": {
             "type": ["string", "null"],
             "description": "A change: the key of the field."
+          },
+          "field_kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldType",
+                "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "field_name": {
             "type": ["string", "null"],
@@ -20470,7 +20487,10 @@
                 },
                 "after_text": {
                   "type": ["string", "null"],
-                  "description": "A change: what the field is now, when it is a word, a name or a number."
+                  "description": "A change: what the field is now, when it is a word or a name."
+                },
+                "after_value": {
+                  "description": "The same for what the field is now."
                 },
                 "at": {
                   "type": "string",
@@ -20496,7 +20516,10 @@
                 },
                 "before_text": {
                   "type": ["string", "null"],
-                  "description": "A change: what the field was, when it is a word, a name or a number."
+                  "description": "A change: what the field was, when it is a word or a name."
+                },
+                "before_value": {
+                  "description": "A change of an own field that a screen words itself (yes or no, a length of time, a number,\na day): what the field was, as the JSON of its kind."
                 },
                 "by": {
                   "oneOf": [
@@ -20535,6 +20558,17 @@
                 "field": {
                   "type": ["string", "null"],
                   "description": "A change: the key of the field."
+                },
+                "field_kind": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldType",
+                      "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "field_name": {
                   "type": ["string", "null"],

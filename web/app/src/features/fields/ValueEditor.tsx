@@ -14,7 +14,8 @@ import { useState, type ReactNode } from "react";
 
 import type { OwnField, KindWord } from "./fields.ts";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
-import { durationSeconds, durationText, isDecimalText, isWholeNumberText } from "./value-text.ts";
+import { durationText } from "../../shared/own-value-text.ts";
+import { durationSeconds, isDecimalText, isWholeNumberText } from "./value-text.ts";
 
 /** The value the editor sends: what the API takes for this field, or `null` to take the value away. */
 export type Sent = string | number | boolean | readonly string[] | null;

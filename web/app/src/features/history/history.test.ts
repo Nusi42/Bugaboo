@@ -60,6 +60,20 @@ describe("iss_06 the history in plain sentences", () => {
   });
 });
 
+describe("iss_06 values the screen words itself", () => {
+  it("words yes or no, a length of time and a number as the issue page does", () => {
+    const own = { field: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c", field_name: "Billable" };
+    expect(
+      changeSentence(
+        change({ ...own, field_kind: "yes-no", before_value: false, after_value: true }),
+      ),
+    ).toBe("Ben changed Billable from No to Yes");
+    expect(changeSentence(change({ ...own, field_kind: "duration", after_value: 5400 }))).toBe(
+      "Ben set Billable to 1h 30m",
+    );
+  });
+});
+
 describe("iss_06 relations and the items of one event", () => {
   it("names the parent and the relations by their readable IDs", () => {
     expect(fieldLabel("parent")).toBe("Part of");

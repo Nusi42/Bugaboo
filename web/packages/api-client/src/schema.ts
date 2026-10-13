@@ -3178,15 +3178,22 @@ export interface components {
       after_issue?: components["schemas"]["IssueRef"] | null;
       /** @description A change: the people the field holds now. */
       after_people?: components["schemas"]["PersonRef"][] | null;
-      /** @description A change: what the field is now, when it is a word, a name or a number. */
+      /** @description A change: what the field is now, when it is a word or a name. */
       after_text?: string | null;
+      /** @description The same for what the field is now. */
+      after_value?: unknown;
       /** @description When it happened. */
       at: string;
       before_issue?: components["schemas"]["IssueRef"] | null;
       /** @description A change: the people the field held, as the kind of the field says. */
       before_people?: components["schemas"]["PersonRef"][] | null;
-      /** @description A change: what the field was, when it is a word, a name or a number. */
+      /** @description A change: what the field was, when it is a word or a name. */
       before_text?: string | null;
+      /**
+       * @description A change of an own field that a screen words itself (yes or no, a length of time, a number,
+       *     a day): what the field was, as the JSON of its kind.
+       */
+      before_value?: unknown;
       by?: components["schemas"]["PersonRef"] | null;
       /** @description A comment: its ID. */
       comment?: string | null;
@@ -3197,6 +3204,7 @@ export interface components {
       event: string;
       /** @description A change: the key of the field. */
       field?: string | null;
+      field_kind?: components["schemas"]["FieldType"] | null;
       /** @description A change of an own field: its name. */
       field_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this reader. */
@@ -4147,15 +4155,22 @@ export interface components {
         after_issue?: components["schemas"]["IssueRef"] | null;
         /** @description A change: the people the field holds now. */
         after_people?: components["schemas"]["PersonRef"][] | null;
-        /** @description A change: what the field is now, when it is a word, a name or a number. */
+        /** @description A change: what the field is now, when it is a word or a name. */
         after_text?: string | null;
+        /** @description The same for what the field is now. */
+        after_value?: unknown;
         /** @description When it happened. */
         at: string;
         before_issue?: components["schemas"]["IssueRef"] | null;
         /** @description A change: the people the field held, as the kind of the field says. */
         before_people?: components["schemas"]["PersonRef"][] | null;
-        /** @description A change: what the field was, when it is a word, a name or a number. */
+        /** @description A change: what the field was, when it is a word or a name. */
         before_text?: string | null;
+        /**
+         * @description A change of an own field that a screen words itself (yes or no, a length of time, a number,
+         *     a day): what the field was, as the JSON of its kind.
+         */
+        before_value?: unknown;
         by?: components["schemas"]["PersonRef"] | null;
         /** @description A comment: its ID. */
         comment?: string | null;
@@ -4166,6 +4181,7 @@ export interface components {
         event: string;
         /** @description A change: the key of the field. */
         field?: string | null;
+        field_kind?: components["schemas"]["FieldType"] | null;
         /** @description A change of an own field: its name. */
         field_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this reader. */

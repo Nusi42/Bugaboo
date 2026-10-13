@@ -6,20 +6,7 @@
 import { decimalDigits, decimalParts } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-const SECONDS_PER_MINUTE = 60;
-const MINUTES_PER_HOUR = 60;
-const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
-
-/** Seconds as "2h 5m", "45m" or "0m"; whole minutes (a duration is typed in minutes at the least). */
-export function durationText(seconds: number): string {
-  const hours = Math.floor(seconds / SECONDS_PER_HOUR);
-  const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-  const [hour, minute] = [t("fields.unit-hour"), t("fields.unit-minute")];
-  if (hours === 0) {
-    return `${minutes}${minute}`;
-  }
-  return minutes === 0 ? `${hours}${hour}` : `${hours}${hour} ${minutes}${minute}`;
-}
+import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "../../shared/own-value-text.ts";
 
 /** A unit as it is written in a pattern. */
 function escaped(unit: string): string {
