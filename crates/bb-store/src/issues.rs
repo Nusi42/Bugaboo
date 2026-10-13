@@ -119,6 +119,7 @@ impl Database {
     ///
     /// # Errors
     /// Fails when the database fails or the row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
     pub async fn stored_issue(&self, id: IssueId) -> Result<Option<Issue>, StoreError> {
         issue_in(&mut &*self, id).await
     }

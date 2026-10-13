@@ -81,6 +81,7 @@ impl Database {
     ///
     /// # Errors
     /// Fails when the database fails or a stored event is unreadable.
+    #[cfg(any(test, feature = "testing"))]
     pub async fn events_of_kind(
         &self,
         kind: &EntityKind,

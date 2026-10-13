@@ -24,6 +24,9 @@ pub(crate) struct Dependency {
     /// `None` for a normal dependency, else `dev` or `build`.
     #[serde(default)]
     pub(crate) kind: Option<String>,
+    /// The features the manifest switches on in the dependency.
+    #[serde(default)]
+    pub(crate) features: Vec<String>,
 }
 
 /// A library, binary or other target of a package.
@@ -169,6 +172,7 @@ pub(crate) mod fixtures {
                     name: (*dep).to_owned(),
                     path: Some(PathBuf::from(format!("crates/{dep}"))),
                     kind: None,
+                    features: Vec::new(),
                 })
                 .collect(),
             targets: vec![Target {

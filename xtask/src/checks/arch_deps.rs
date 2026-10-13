@@ -18,6 +18,14 @@ const OUTSIDE_THE_MAP: &[&str] = &["xtask"];
 /// The database test harness: allowed as a dev-dependency only.
 const TEST_SUPPORT: &str = "bb-testing";
 
+/// The feature of a crate that opens test hooks (`bb-store`, `bb-app`, `bb-api`).
+const TESTING_FEATURE: &str = "testing";
+
+/// The developer tools that may switch `testing` on in a normal dependency: they run without an
+/// attacker, on a database of their own. Every other crate switches it on in `[dev-dependencies]`
+/// only, so the program that ships never has the hooks.
+const TOOLS_WITH_TESTING: [&str; 2] = ["bb-sample", "bb-load-check"];
+
 pub(crate) struct ArchDeps;
 
 impl Check for ArchDeps {
@@ -64,6 +72,21 @@ fn evaluate(packages: &[Package], map: &Map) -> Vec<Finding> {
                     ));
                 }
                 continue;
+            }
+            if dependency.kind.is_none()
+                && dependency
+                    .features
+                    .iter()
+                    .any(|each| each == TESTING_FEATURE)
+                && !TOOLS_WITH_TESTING.contains(&name)
+            {
+                findings.push(Finding::at(
+                    name,
+                    format!(
+                        "switches on `{TESTING_FEATURE}` of `{}` outside `[dev-dependencies]`. The test hooks must not be in the program that ships; only the developer tools {TOOLS_WITH_TESTING:?} may.",
+                        dependency.name
+                    ),
+                ));
             }
             // A crate may name itself as a dev-dependency to switch on its own `testing` feature
             // for its integration tests. That is no edge between two crates.
@@ -155,6 +178,38 @@ mod tests {
             "{:?}",
             findings.iter().map(|f| &f.message).collect::<Vec<_>>()
         );
+    }
+
+    fn with_testing(name: &str, kind: Option<&str>) -> Vec<Package> {
+        let mut app = package(name, &["bb-core"]);
+        app.dependencies[0].features = vec![TESTING_FEATURE.to_owned()];
+        app.dependencies[0].kind = kind.map(str::to_owned);
+        let mut packages = crates(&[]);
+        packages.retain(|p| p.name != name);
+        packages.push(app);
+        packages
+    }
+
+    #[test]
+    fn bad_example_a_shipped_crate_switches_the_testing_hooks_on() {
+        let findings = evaluate(&with_testing("bb-app", None), &parse_map(MAP).unwrap());
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("switches on `testing`")),
+            "{:?}",
+            findings.iter().map(|f| &f.message).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn good_example_the_testing_hooks_in_dev_dependencies_and_in_tools() {
+        let map = parse_map(MAP).unwrap();
+        let in_dev = evaluate(&with_testing("bb-app", Some("dev")), &map);
+        assert!(in_dev.iter().all(|f| !f.message.contains("switches on")));
+        // A tool is not in this small map, so only the one rule is looked at.
+        let tool = evaluate(&with_testing("bb-sample", None), &map);
+        assert!(tool.iter().all(|f| !f.message.contains("switches on")));
     }
 
     #[test]

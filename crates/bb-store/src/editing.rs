@@ -88,6 +88,7 @@ impl Database {
     ///
     /// # Errors
     /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
     pub async fn edit_lock_rows(&self) -> Result<Vec<EditLock>, StoreError> {
         self.fetch_all(&lock_select())
             .await?
@@ -100,6 +101,7 @@ impl Database {
     ///
     /// # Errors
     /// Fails when the database fails or the row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
     pub async fn stored_draft(
         &self,
         author: UserId,
