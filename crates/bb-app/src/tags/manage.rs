@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::ProjectId;
+use bb_core::id::{ProjectId, TagId};
 use bb_core::paging::window;
 use bb_core::tags::{TAG_NAME_MAX, TAG_PROJECTS_MAX, Tag, TagProject, name_key};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
@@ -35,14 +35,14 @@ struct Catalogue {
 }
 
 impl Catalogue {
-    fn tag(&self, id: bb_core::id::TagId) -> Result<&Tag, ErrorCode> {
+    fn tag(&self, id: TagId) -> Result<&Tag, ErrorCode> {
         self.tags
             .iter()
             .find(|tag| tag.id == id)
             .ok_or(ErrorCode::NotFound)
     }
 
-    fn projects_of(&self, id: bb_core::id::TagId) -> BTreeSet<ProjectId> {
+    fn projects_of(&self, id: TagId) -> BTreeSet<ProjectId> {
         self.limits
             .iter()
             .filter(|limit| limit.tag == id)
@@ -51,7 +51,7 @@ impl Catalogue {
     }
 
     /// Whether another tag has this name.
-    fn name_taken(&self, name: &str, except: bb_core::id::TagId) -> bool {
+    fn name_taken(&self, name: &str, except: TagId) -> bool {
         let key = name_key(name);
         self.tags
             .iter()
@@ -83,18 +83,65 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// A tag as the person sees it: the projects it is limited to, as far as they see them.
     fn tag_view(catalogue: &Catalogue, shown: &crate::projects::Shown, tag: &Tag) -> TagView {
-        let limited = catalogue.projects_of(tag.id);
+        let projects = catalogue
+            .projects_of(tag.id)
+            .iter()
+            .filter_map(|project| shown.reference(*project))
+            .collect::<Vec<ProjectRef>>();
         TagView {
             id: tag.id,
             name: tag.name.clone(),
             color: tag.color,
-            whole_organization: limited.is_empty(),
-            projects: limited
-                .iter()
-                .filter_map(|project| shown.reference(*project))
-                .collect::<Vec<ProjectRef>>(),
+            // A limit to projects the person does not see is not shown, so such a tag reads as
+            // for every project to them (ADR-0027: names of hidden projects are not leaked).
+            whole_organization: projects.is_empty(),
+            projects,
             version: tag.version,
         }
+    }
+
+    /// The tags the person may know of: a tag without a limit, or one limited to or used in a
+    /// project they see. A tag only projects they do not see know is not there for them.
+    async fn known_tags(
+        &self,
+        catalogue: &Catalogue,
+        shown: &crate::projects::Shown,
+    ) -> Result<BTreeSet<TagId>, AppError> {
+        let seen: Vec<ProjectId> = shown
+            .everything()
+            .iter()
+            .map(|project| project.id)
+            .collect();
+        let used = self
+            .store()
+            .used_tags(&seen, "", catalogue.tags.len() as u64)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(catalogue
+            .tags
+            .iter()
+            .filter(|tag| {
+                let limited = catalogue.projects_of(tag.id);
+                limited.is_empty()
+                    || limited.iter().any(|project| shown.get(*project).is_some())
+                    || used.iter().any(|found| found.id == tag.id)
+            })
+            .map(|tag| tag.id)
+            .collect())
+    }
+
+    /// A tag the person may know of, or `resource.not_found`.
+    async fn known_tag<'a>(
+        &self,
+        catalogue: &'a Catalogue,
+        shown: &crate::projects::Shown,
+        id: TagId,
+    ) -> Result<&'a Tag, AppError> {
+        let known = self.known_tags(catalogue, shown).await?;
+        if !known.contains(&id) {
+            return Err(ErrorCode::NotFound.into());
+        }
+        Ok(catalogue.tag(id)?)
     }
 }
 
@@ -111,10 +158,16 @@ pub async fn tags<S: AuthStore>(
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let page = window(catalogue.tags.len(), input.cursor.as_deref(), input.limit)
+    let known = ctx.known_tags(&catalogue, &shown).await?;
+    let listed: Vec<&Tag> = catalogue
+        .tags
+        .iter()
+        .filter(|tag| known.contains(&tag.id))
+        .collect();
+    let page = window(listed.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(TagPage {
-        items: catalogue.tags[page.start..page.end]
+        items: listed[page.start..page.end]
             .iter()
             .map(|tag| Ctx::<S>::tag_view(&catalogue, &shown, tag))
             .collect(),
@@ -135,7 +188,8 @@ pub async fn tag_change_preview<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
-    let tag = catalogue.tag(input.tag)?;
+    let shown = ctx.shown_to(&actor).await?;
+    let tag = ctx.known_tag(&catalogue, &shown, input.tag).await?;
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
             let name = clean_text(name, TAG_NAME_MAX)?;
@@ -150,7 +204,7 @@ pub async fn tag_change_preview<S: AuthStore>(
             }
         }
         (None, Some(into)) => {
-            let into = catalogue.tag(into)?;
+            let into = ctx.known_tag(&catalogue, &shown, into).await?;
             if into.id == tag.id {
                 return Err(ErrorCode::InvalidRequest.into());
             }
@@ -224,7 +278,8 @@ pub async fn change_tag<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     let catalogue = ctx.tag_catalogue().await?;
-    let tag = catalogue.tag(input.tag)?.clone();
+    let shown = ctx.shown_to(&actor).await?;
+    let tag = ctx.known_tag(&catalogue, &shown, input.tag).await?.clone();
     if tag.version != input.version {
         return Err(ErrorCode::VersionChanged.into());
     }
@@ -238,15 +293,26 @@ pub async fn change_tag<S: AuthStore>(
     let color = input.color.unwrap_or(tag.color);
     let before = catalogue.projects_of(tag.id);
     let after: BTreeSet<ProjectId> = match &input.projects {
-        Some(projects) => projects.iter().copied().collect(),
+        Some(projects) => {
+            let wanted: BTreeSet<ProjectId> = projects.iter().copied().collect();
+            if wanted.iter().any(|project| shown.get(*project).is_none()) {
+                return Err(ErrorCode::NotFound.into());
+            }
+            // The limits on projects the person does not see stay, whatever they send.
+            wanted
+                .into_iter()
+                .chain(
+                    before
+                        .iter()
+                        .copied()
+                        .filter(|project| shown.get(*project).is_none()),
+                )
+                .collect()
+        }
         None => before.clone(),
     };
     if after.len() > TAG_PROJECTS_MAX {
         return Err(ErrorCode::InvalidRequest.into());
-    }
-    let shown = ctx.shown_to(&actor).await?;
-    if after.iter().any(|project| shown.get(*project).is_none()) {
-        return Err(ErrorCode::NotFound.into());
     }
     let changes = differences(&tag, &name, color, &before, &after);
     let rewrite = (tag.name != name).then(|| Rewrite {
@@ -311,9 +377,10 @@ pub async fn combine_tags<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
+    let shown = ctx.shown_to(&actor).await?;
     let (from, into) = (
-        catalogue.tag(input.tag)?.clone(),
-        catalogue.tag(input.into)?.clone(),
+        ctx.known_tag(&catalogue, &shown, input.tag).await?.clone(),
+        ctx.known_tag(&catalogue, &shown, input.into).await?.clone(),
     );
     if from.id == into.id {
         return Err(ErrorCode::InvalidRequest.into());
@@ -363,7 +430,6 @@ pub async fn combine_tags<S: AuthStore>(
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
     let catalogue = ctx.tag_catalogue().await?;
-    let shown = ctx.shown_to(&actor).await?;
     let kept = catalogue.tag(into.id)?;
     Ok(held.authorize(Ctx::<S>::tag_view(&catalogue, &shown, kept)))
 }

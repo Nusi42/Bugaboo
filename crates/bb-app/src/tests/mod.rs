@@ -29,4 +29,5 @@ mod scenarios_relations;
 mod scenarios_tags;
 mod settings;
 mod tags;
+mod tags_hidden;
 mod world;
