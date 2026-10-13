@@ -136,7 +136,7 @@ pub struct Ctx<'a, S> {
     pub(crate) via_key: AtomicBool,
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
-    pub(crate) image_hosts: Mutex<Option<Arc<Vec<String>>>>,
+    pub(crate) image_hosts: Mutex<Option<Vec<String>>>,
 }
 
 /// Makes IDs from the clock of the context and the secure random source.
