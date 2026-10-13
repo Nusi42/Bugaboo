@@ -46,4 +46,4 @@ pub use store::{IssueFound, IssueStore};
 pub use types::*;
 
 pub(crate) use fields::{ensure_may_change, member};
-pub(crate) use ids::{ModeChange, plan_renewals_in, renew_in};
+pub(crate) use ids::{ModeChange, plan_renewals_in, renew_or_queue_in};

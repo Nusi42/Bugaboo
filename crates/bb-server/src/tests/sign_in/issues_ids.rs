@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 use axum::http::StatusCode;
 use bb_app::auth::AuthApi as _;
 use bb_app::issues::MakeIssue;
+use bb_core::bulk::{BULK_JOB_ABOVE, BULK_STEP};
 use bb_core::event::{Actor, EntityKind, RecordKind};
 use bb_core::issue_key::IssueKey;
 use bb_core::technical::TechnicalName;
@@ -421,6 +422,101 @@ async fn iss_01a_a_second_switch_to_counting_continues_the_counter() -> TestResu
                 .await?;
             assert_eq!(ok(&found)?["issue"]["title"], "First", "{address}");
         }
+        Ok(())
+    })
+    .await
+}
+
+/// How many issues of ACME still have a counting ID, read page by page.
+async fn counting_ids(ada: &mut Browser) -> Result<usize, Failure> {
+    let (mut counting, mut cursor) = (0, String::new());
+    loop {
+        let page = ada
+            .send(
+                "GET",
+                &format!("/api/v1/projects/ACME/issues?limit=100{cursor}"),
+                None,
+            )
+            .await?;
+        counting += ok(&page)?["items"].as_array().map_or(0, |items| {
+            items
+                .iter()
+                .filter(|item| {
+                    item["key"]
+                        .as_str()
+                        .and_then(|key| key.split('-').nth(1))
+                        .is_some_and(|code| code.bytes().all(|byte| byte.is_ascii_digit()))
+                })
+                .count()
+        });
+        match page.body["next_cursor"].as_str() {
+            Some(next) => cursor = format!("&cursor={next}"),
+            None => return Ok(counting),
+        }
+    }
+}
+
+#[tokio::test]
+async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background() -> TestResult {
+    each_database("iss_01a_renewal_job", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        mode(&mut ada, Some("counting")).await?;
+        let total = BULK_JOB_ABOVE + 101;
+        let mut old = Vec::new();
+        for number in 0..total {
+            let made = rig
+                .api()
+                .make_issue(
+                    Rig::info(),
+                    MakeIssue {
+                        session_token: site.org.admin.session.clone(),
+                        project: site.acme.clone(),
+                        issue_type: site.bug.parse().map_err(|_| "no type")?,
+                        title: format!("Issue {number}"),
+                        description: None,
+                        status: None,
+                        priority: None,
+                        assigned_to: None,
+                        fields: std::collections::BTreeMap::new(),
+                    },
+                )
+                .await
+                .map_err(|error| error.to_string())?;
+            old.push(
+                made.masked_value()?["key"]
+                    .as_str()
+                    .ok_or("no key")?
+                    .to_owned(),
+            );
+        }
+        // Changing the mode renews a first step now and leaves the rest to a job.
+        mode(&mut ada, Some("random")).await?;
+        let counting = counting_ids(&mut ada).await?;
+        assert_eq!(
+            counting,
+            total - BULK_STEP,
+            "a step is renewed in the change itself"
+        );
+        // The job goes on until none is left.
+        for _ in 0..40 {
+            let taken = rig
+                .services
+                .ctx(Rig::info())
+                .run_due_jobs()
+                .await
+                .map_err(|error| error.to_string())?;
+            if taken == 0 {
+                break;
+            }
+        }
+        let counting = counting_ids(&mut ada).await?;
+        assert_eq!(counting, 0, "every issue has a random ID in the end");
+        // An old ID still finds its issue.
+        let found = ada
+            .send("GET", &format!("{ISSUES}/{}", old[0]), None)
+            .await?;
+        assert_eq!(ok(&found)?["issue"]["title"], "Issue 0");
         Ok(())
     })
     .await

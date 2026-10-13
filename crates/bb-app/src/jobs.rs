@@ -24,6 +24,9 @@ pub const JOB_ATTEMPTS_MAX: u32 = 5;
 pub mod kind {
     /// One step of a change to many issues (`bulk`); the payload names the run.
     pub const BULK_STEP: &str = "bulk.step";
+    /// One step of giving the issues of a project new IDs after its mode of IDs changed
+    /// (`issues::ids`); the payload names the project and the person who changed the mode.
+    pub const RENEW_IDS: &str = "issues.renew-ids";
 }
 
 /// How long a worker holds the jobs it took before another may take them: a step of a job is far
@@ -101,6 +104,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         match job.kind.as_str() {
             kind::BULK_STEP => self.run_bulk_step(&job.payload).await.map_err(|error| {
                 tracing::warn!(cause = %error, "a step of a change to many issues failed");
+                failed(FAILED)
+            }),
+            kind::RENEW_IDS => self.renew_ids_step(&job.payload).await.map_err(|error| {
+                tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
                 failed(FAILED)
             }),
             other => {
