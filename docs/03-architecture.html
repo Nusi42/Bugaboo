@@ -2068,7 +2068,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>Housekeeping.</strong> Until the job runner exists, <code>bb-server</code> runs <code>purge_drafts</code> (drafts, old notes, lock rows that ran out) when it starts and once a day (M3-F30).</li>
 <li><strong>Locks and drafts belong to a tab of a signed-in person.</strong> Every lock and draft route needs the session of a browser (<code>ctx.session_actor</code>), so an access key is turned away from them, whatever it may change elsewhere.</li>
 <li><strong>Nothing typed is dropped.</strong> The heartbeat keeps the text so far as the person's draft even when the lock is gone; a save that is refused (<code>edit.lock_lost</code>, <code>edit.taken_over</code>, <code>edit.version_changed</code>) keeps its text as the draft. The notes for the person who was editing are handed over once at their next heartbeat.</li>
-<li><strong>Enforced by:</strong> ARCH-VERSIONED (every change takes a version, or is named in <code>tools/checks/version-exemptions.toml</code>; a save of long text also takes <code>lock_token</code>; both are required in the body), TEST-EDIT-LOCKS (server part, both databases; WP-10 adds the browser scenarios).</li>
+<li><strong>Enforced by:</strong> ARCH-VERSIONED (every change takes a version, or is named in <code>tools/checks/version-exemptions.toml</code>; a save of long text also takes <code>lock_token</code>; both are required in the body), TEST-EDIT-LOCKS (server part, both databases; the browser scenarios of WP-10 are in <code>web/app/e2e/concurrent/</code>).</li>
 </ul>
 <h4>Amendment (M3 WP-05)</h4>
 <ul>
@@ -2088,6 +2088,12 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>A change never carries long text.</strong> <code>PATCH /issues/{issue}</code> takes no <code>description</code>; a body that names it is refused. ARCH-VERSIONED refuses any change of a record (a body with <code>version</code>) that holds a long-text property (<code>LONG_TEXT_PROPERTIES</code> in <code>bb-api-words</code>) unless the route is marked <code>x-long-text</code>. Making a new record has no version and no lock, so it may take the text.</li>
 <li><strong>Who is editing is asked when the box opens.</strong> <code>GET /edit-locks?kind&amp;id&amp;part</code> says who holds the lock, without taking it (the same rules as taking it); the box shows <em>Ana is editing</em> before the first key and opens when the holder lets go.</li>
 <li><strong>Drafts in the browser belong to a person who is known and are gone after <em>Sign out</em>.</strong> None is read or written before the page knows who is signed in; a sign-out on purpose forgets them all, a session that is lost keeps them.</li>
+</ul>
+<h4>Amendment (M3 WP-10)</h4>
+<ul>
+<li><strong>A refused save for a changed text lets go of the lock.</strong> When a save finds that the text changed since (<code>edit.version_changed</code>) the page stops the heartbeat, so it also releases the lock; otherwise others would read that the person is editing until the lease ran out. A lock that ran out or was taken over is not the person's any more and is left alone. The load run found it: locks were still held when it ended.</li>
+<li><strong><em>Show changes</em> marks the words and names who</strong> (M3-F54): the comparison underlines and fills the words the other text does not have, and the note that the text changed after the person started says who changed it, from the history and the way the reader may see people.</li>
+<li><strong>The scenarios of ten people</strong> are in <code>web/app/e2e/concurrent/</code> (ten Playwright contexts) and in <code>cargo xtask load --people 10</code> (the API at speed, both databases, two minutes in <code>cargo xtask ci</code>, <code>--nightly</code> for thirty); the invariants after a run are listed in architecture §11. A lock must also end by itself within the lease for an editor who vanished, which the run checks while it goes on. Enforced by TEST-CONCURRENT and, for the browser part of the locks, TEST-EDIT-LOCKS.</li>
 </ul>
 
 <!-- 0020-architecture-checks.md -->

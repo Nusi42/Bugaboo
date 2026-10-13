@@ -61,7 +61,7 @@ ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
 - **Housekeeping.** Until the job runner exists, `bb-server` runs `purge_drafts` (drafts, old notes, lock rows that ran out) when it starts and once a day (M3-F30).
 - **Locks and drafts belong to a tab of a signed-in person.** Every lock and draft route needs the session of a browser (`ctx.session_actor`), so an access key is turned away from them, whatever it may change elsewhere.
 - **Nothing typed is dropped.** The heartbeat keeps the text so far as the person's draft even when the lock is gone; a save that is refused (`edit.lock_lost`, `edit.taken_over`, `edit.version_changed`) keeps its text as the draft. The notes for the person who was editing are handed over once at their next heartbeat.
-- **Enforced by:** ARCH-VERSIONED (every change takes a version, or is named in `tools/checks/version-exemptions.toml`; a save of long text also takes `lock_token`; both are required in the body), TEST-EDIT-LOCKS (server part, both databases; WP-10 adds the browser scenarios).
+- **Enforced by:** ARCH-VERSIONED (every change takes a version, or is named in `tools/checks/version-exemptions.toml`; a save of long text also takes `lock_token`; both are required in the body), TEST-EDIT-LOCKS (server part, both databases; the browser scenarios of WP-10 are in `web/app/e2e/concurrent/`).
 
 ## Amendment (M3 WP-05)
 
@@ -81,3 +81,9 @@ ARCH-VERSIONED, TEST-EDIT-LOCKS (see `tools/checks/catalog.toml`).
 - **A change never carries long text.** `PATCH /issues/{issue}` takes no `description`; a body that names it is refused. ARCH-VERSIONED refuses any change of a record (a body with `version`) that holds a long-text property (`LONG_TEXT_PROPERTIES` in `bb-api-words`) unless the route is marked `x-long-text`. Making a new record has no version and no lock, so it may take the text.
 - **Who is editing is asked when the box opens.** `GET /edit-locks?kind&id&part` says who holds the lock, without taking it (the same rules as taking it); the box shows *Ana is editing* before the first key and opens when the holder lets go.
 - **Drafts in the browser belong to a person who is known and are gone after *Sign out*.** None is read or written before the page knows who is signed in; a sign-out on purpose forgets them all, a session that is lost keeps them.
+
+## Amendment (M3 WP-10)
+
+- **A refused save for a changed text lets go of the lock.** When a save finds that the text changed since (`edit.version_changed`) the page stops the heartbeat, so it also releases the lock; otherwise others would read that the person is editing until the lease ran out. A lock that ran out or was taken over is not the person's any more and is left alone. The load run found it: locks were still held when it ended.
+- ***Show changes* marks the words and names who** (M3-F54): the comparison underlines and fills the words the other text does not have, and the note that the text changed after the person started says who changed it, from the history and the way the reader may see people.
+- **The scenarios of ten people** are in `web/app/e2e/concurrent/` (ten Playwright contexts) and in `cargo xtask load --people 10` (the API at speed, both databases, two minutes in `cargo xtask ci`, `--nightly` for thirty); the invariants after a run are listed in architecture §11. A lock must also end by itself within the lease for an editor who vanished, which the run checks while it goes on. Enforced by TEST-CONCURRENT and, for the browser part of the locks, TEST-EDIT-LOCKS.
