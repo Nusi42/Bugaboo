@@ -32,6 +32,7 @@ export const relationKindsRoute = createRoute({
   validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
+  loader: loadsScreen(RelationKindsScreen),
   component: function RelationKinds() {
     const { open } = useSearch({ strict: false });
     const navigate = useNavigate();
