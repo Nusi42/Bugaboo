@@ -7,6 +7,7 @@ import {
   newEditorId,
   readDraft,
   readEditLock,
+  releaseEditLock,
   sendHeartbeat,
   takeEditLock,
   type Client,
@@ -211,6 +212,10 @@ async function save(context: Context, work: Work, token: string, version: number
       throw error;
     }
     await keptAsDraft(context, work, text, code);
+    if (code === "edit.version_changed") {
+      // The lock is still the person's: the page lets it go, as the browser does.
+      await releaseEditLock(context.client, whatOf(work), token);
+    }
   }
 }
 

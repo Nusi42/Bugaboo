@@ -196,7 +196,13 @@ export class LongTextEditor extends WatchingEditor {
       return;
     }
     this.stopHeartbeats();
+    const held = this.token;
     this.token = null;
+    if (reason === "version-changed" && held !== null) {
+      // The lock is still the person's, but nothing renews it any more: let it go, so others
+      // do not read *… is editing* for a minute about a person who has stopped.
+      void this.deps.release(held).catch(ignore);
+    }
     const by = conflictOf(error)?.changed_by;
     this.set({
       phase: { kind: "lost", reason, ...(by === null || by === undefined ? {} : { by }) },

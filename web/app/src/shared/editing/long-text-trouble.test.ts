@@ -69,6 +69,22 @@ describe("iss_17 nothing is lost when the save is refused", () => {
   });
 });
 
+/** What the editor did, in order, after a save that the server refused with this code. */
+async function logAfter(code: ErrorCode): Promise<readonly string[]> {
+  return (await refusedWith(code)).log;
+}
+
+describe("iss_17 a refused save lets go of the lock only when the lock is still the person's", () => {
+  it("lets go when the text changed since, so nobody waits for the lease to run out", async () => {
+    expect(await logAfter("edit.version_changed")).toContain("release t1");
+  });
+
+  it("does not let go of a lock that ran out or was taken over: it is not the person's any more", async () => {
+    const log = [...(await logAfter("edit.lock_lost")), ...(await logAfter("edit.taken_over"))];
+    expect(log.some((line) => line.startsWith("release"))).toBe(false);
+  });
+});
+
 describe("iss_17 what the heartbeat brings back", () => {
   it("tells that somebody asked to finish", async () => {
     const w = world({
