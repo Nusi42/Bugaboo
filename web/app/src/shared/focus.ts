@@ -1,4 +1,4 @@
-import { useLocation } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, type RefObject } from "react";
 
 /**
@@ -21,10 +21,13 @@ export function useFocusHeading(key: string): RefObject<HTMLDivElement | null> {
 /**
  * When the person goes to another page, the focus moves to the heading of the new page (or to the
  * content), so a screen reader reads the new page instead of staying on the link that was pressed.
- * Not on the first showing, and not when only the search of the address changes.
+ * Not on the first showing, and not when only the search of the address changes. The address that
+ * counts is the one whose page is on screen: a page that is loaded when it is first opened is not
+ * there yet when the address changes, and the focus would land on the page that is leaving.
  */
 export function usePageFocus(contentId: string): void {
-  const { pathname } = useLocation();
+  const { resolvedLocation, location } = useRouterState();
+  const pathname = (resolvedLocation ?? location).pathname;
   const shownPage = useRef(pathname);
   useEffect(() => {
     const changed = shownPage.current !== pathname;
