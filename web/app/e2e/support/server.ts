@@ -19,7 +19,7 @@ export interface Instance {
    * from the outside, like an administrator would. Fails when the program says the log is broken.
    */
   readonly verifySecurityLog: () => Promise<string>;
-  /** Stops the server and deletes its data. */
+  /** Stops the server and deletes its data (unless the data folder was given to `startServer`). */
   readonly stop: () => Promise<void>;
 }
 
@@ -153,13 +153,16 @@ function verifySecurityLog(executable: string, dataDir: string): Promise<string>
  * Starts the real program on `port` with an empty data folder, or with a fresh copy of the sample
  * organization (`sample`, made by `cargo xtask dataset sample`), and waits until it answers. The
  * program is the one `cargo build` made and the app is the one `npm run build` made: the tests
- * drive what people get (ADR-0023). `label` names the data folder, to tell leftovers apart.
+ * drive what people get (ADR-0023). `label` names the data folder, to tell leftovers apart. A
+ * `dataDir` that is given is used as it is and left in place when the server stops: the load run
+ * reads its database afterwards (`cargo xtask load`).
  */
 export async function startServer(
   port: number,
   label: string,
   settings: Settings = {},
   sample = false,
+  dataDir?: string,
 ): Promise<Instance> {
   const executable = program();
   if (!existsSync(executable) || !existsSync(join(appFolder(), "index.html"))) {
@@ -168,18 +171,21 @@ export async function startServer(
         "(cargo build -p bb-server, npm run build, or cargo xtask build).",
     );
   }
-  const dataDir = mkdtempSync(join(tmpdir(), `bugaboo-e2e-${label}-`));
+  const given = dataDir !== undefined;
+  const folder = dataDir ?? mkdtempSync(join(tmpdir(), `bugaboo-e2e-${label}-`));
   if (sample) {
-    copySampleInto(dataDir);
+    copySampleInto(folder);
   }
   const server = launch(
     executable,
-    ["serve", "--port", String(port), "--data-dir", dataDir, "--web", appFolder()],
+    ["serve", "--port", String(port), "--data-dir", folder, "--web", appFolder()],
     { ...generousLimits, ...settings },
   );
   const stop = async (): Promise<void> => {
     await server.end();
-    await remove(dataDir);
+    if (!given) {
+      await remove(folder);
+    }
   };
   await waitUntilReady(port, server).catch(async (error: unknown) => {
     await stop();
@@ -187,8 +193,8 @@ export async function startServer(
   });
   return {
     url: `https://localhost:${String(port)}`,
-    setupCode: () => readFileSync(join(dataDir, SETUP_CODE_FILE), "utf8").trim(),
-    verifySecurityLog: () => verifySecurityLog(executable, dataDir),
+    setupCode: () => readFileSync(join(folder, SETUP_CODE_FILE), "utf8").trim(),
+    verifySecurityLog: () => verifySecurityLog(executable, folder),
     stop,
   };
 }

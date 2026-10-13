@@ -4,7 +4,8 @@
 //! `cargo xtask load` both end here.
 //!
 //! - Every change has its event: the versions of an issue run from 2 up to the one it has, each
-//!   kept by exactly one person, and its events are its making and one for each kept change.
+//!   kept by exactly one person and counted by exactly one event. (Other events about the issue, a
+//!   lock taken over or let go, count no version and are no changes.)
 //! - Every comment has its event.
 //! - The description is the text of the last save that went through.
 //! - What a person read of an issue only goes up.
@@ -50,17 +51,9 @@ fn events_and_versions(book: &Book, issue: &IssueFacts) -> Vec<String> {
             issue.version
         ));
     }
-    // The first event is the one that made the issue.
-    if issue.events != kept.len() + 1 {
-        found.push(format!(
-            "{key}: {} events for {} changes and its making",
-            issue.events,
-            kept.len()
-        ));
-    }
     if issue.event_versions != counting(2, issue.version) {
         found.push(format!(
-            "{key}: the events count the versions {:?}, not 2 up to {}",
+            "{key}: the events of its changes have the versions {:?}, not 2 up to {}",
             issue.event_versions, issue.version
         ));
     }
@@ -260,7 +253,6 @@ mod tests {
             issues: vec![IssueFacts {
                 key: "A-1".to_owned(),
                 event_versions: vec![2, 3],
-                events: 3,
                 comment_events: 1,
                 version: 3,
                 description: "Last text".to_owned(),
@@ -284,7 +276,7 @@ mod tests {
     #[test]
     fn test_concurrent_a_change_without_its_event_or_a_skipped_version_is_found() {
         let (book, mut facts) = good_run();
-        facts.issues[0].events = 2;
+        facts.issues[0].event_versions = vec![2];
         assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
         let (mut book, facts) = good_run();
         book.kept[0].version = 4;

@@ -172,6 +172,7 @@
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
+│   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
@@ -208,6 +209,7 @@
   wasm["bb-wasm"]
   testing["bb-testing&lt;br/&gt;database test harness"]
   sample["bb-sample&lt;br/&gt;sample organization"]
+  loadcheck["bb-load-check&lt;br/&gt;invariants after a run"]
 
   server --&gt; api &amp; jobs &amp; store &amp; files &amp; ai &amp; notify &amp; auth &amp; app &amp; core
   api --&gt; app &amp; auth &amp; mcp &amp; core &amp; policy &amp; words
@@ -232,7 +234,9 @@
   auth -. tests only .-&gt; devwords
   app -. tests only .-&gt; devwords
   server -. tests only .-&gt; devwords
-  sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords</pre>
+  sample --&gt; app &amp; store &amp; core &amp; policy &amp; auth &amp; devwords
+  loadcheck --&gt; app &amp; store &amp; core
+  server -. tests only .-&gt; loadcheck</pre>
 <h4>Dependency rules (checked by <code>cargo xtask check only ARCH-DEPS</code>)</h4>
 <ol>
 <li><code>bb-core</code>, <code>bb-searchlang</code> and <code>bb-markdown</code> do no I/O and depend on no other Bugaboo crate except <code>bb-core</code> (searchlang and markdown not even that; <code>bb-core</code> and <code>bb-policy</code> use <code>bb-macros</code> for derives at compile time only), so they compile to WebAssembly.</li>
@@ -287,6 +291,12 @@
 <ul>
 <li><strong>May depend on:</strong> <code>bb-app</code>, <code>bb-store</code>, <code>bb-core</code>, <code>bb-policy</code>, <code>bb-auth</code>, <code>bb-dev-words</code> (and <code>bb-testing</code> as a dev dependency only). Nothing depends on it except, from OPS-12 on, <code>bb-server</code>.</li>
 <li><strong>It wires an adapter:</strong> like <code>bb-server</code>, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (<code>bb-server</code>, <code>bb-sample</code>) is in <code>xtask/src/checks/arch_http_edge.rs</code>.</li>
+<li><strong>In the layout and the diagram:</strong> ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.</li>
+</ul>
+<h4>bb-load-check</h4>
+<p>The invariants after a run of many people at once (architecture §11, TEST-CONCURRENT), written once. Two things end in it: the invariants test of the server (<code>test_concurrent_invariants_hold_after_a_run</code>, on both databases, in memory) and <code>cargo xtask load</code> (the Node driver writes its <strong>book</strong>, a JSON file of what each person kept, was refused and read, and <code>xtask</code> runs the small program <code>bb-load-check</code> on that book and the database of the run). Both call the same function, <code>check</code>, which reads the database through <code>bb-store</code> and judges it against the book in <code>judge.rs</code>, the only file in the repository that says what must hold. It is a separate crate so that <code>xtask</code> does not link the store (it runs the program as a process, as it runs <code>bb-sample</code>), and so that <code>bb-server</code> can use it in its tests without the program depending on test code.</p>
+<ul>
+<li><strong>May depend on:</strong> <code>bb-app</code> (the name of the member of a comment event), <code>bb-store</code>, <code>bb-core</code>. <code>bb-server</code> uses it in <code>[dev-dependencies]</code> only; nothing else depends on it.</li>
 <li><strong>In the layout and the diagram:</strong> ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.</li>
 </ul>
 <h3 id="s4-4"><button class="sec" data-sec>§4.4</button>Browser app (web/app)</h3>
@@ -1324,19 +1334,20 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td>Searches while others change data</td><td>Results respect permissions at every moment; no errors; latency within budget</td></tr>
 </tbody></table>
 </div>
-<p>Each scenario runs against <strong>both SQLite and PostgreSQL</strong>. The short version (2 minutes) runs in CI; the long version (30 minutes, mixed workload) runs nightly and checks invariants afterwards: every change has an event, no lock outlives its lease, no text is lost.</p>
+<p>The load run and the invariants test run against <strong>both SQLite and PostgreSQL</strong>; the browser scenarios of ten Playwright contexts run on SQLite only, because each worker of the end-to-end tests starts its own server on its own data folder (ADR-0023) and a PostgreSQL database for each of them is not worth what it would add: the behaviour that differs between the databases (the conditional writes of the locks, the order of events) is what the load run and the invariants test cover on both. The short version (2 minutes) runs in CI; the long version (30 minutes, mixed workload) runs nightly and checks invariants afterwards: every change has an event, no lock outlives its lease, no text is lost.</p>
 <h4>The two ways to run them</h4>
 <ul>
 <li><strong>Ten browsers</strong> (<code>web/app/e2e/concurrent/</code>): each person has a browser context of their own, signed in through the API (the sign-in has its own tests). The tests read what the people see (<em>Saved</em>, the <em>"… is editing"</em> note, <em>Edit anyway</em>, the conflict note with <em>Use mine</em>, <em>Compare and save</em>), never only timing, and wait for the answer of the server or for a note on the screen, not for a fixed time. The scenarios of the table above are <code>iss_17_three_people_edit_one_description_and_the_first_text_is_kept</code>, <code>iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_and_save</code>, <code>iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_told</code>, <code>iss_17_ten_people_change_ten_fields_of_one_issue_and_every_change_lands_once</code> and <code>iss_09_changing_many_issues_skips_the_one_somebody_is_editing_and_names_it</code>, which skips itself with its reason until the server has the route that changes many issues (M3 WP-08). A test that cuts the network on purpose says which lines of the console it expects (<code>tolerate</code>); the fixture fails any other console error or uncaught error of any of the ten contexts. The lock scenarios also run in the WebKit phone project.</li>
-<li><strong><code>cargo xtask load --people 10 [--minutes N | --nightly] [--database sqlite|postgres]</code></strong> (<code>xtask/src/load/</code>): the API at speed. xtask builds the program, starts the database of the run (the throwaway PostgreSQL for the second run) and runs the Node driver <code>web/app/e2e/concurrent/load/main.ts</code>, which starts a server on the port <code>loadTestServer</code>, makes an organization (one project, six shared issues, Team members), lets the people change titles, edit descriptions under their locks (some editors vanish without letting go, some take the editing over), write comments and read, and then checks the invariants of the next section. Without <code>--database</code> it runs on both databases; <code>tools/dev/load.json</code> holds the defaults (ten people, two minutes, thirty for <code>--nightly</code>) and the name of the variable that carries the database address. <code>cargo xtask ci</code> runs it.</li>
-<li><strong>Against the database</strong> (<code>test_concurrent_invariants_hold_after_a_run</code> in <code>bb-server</code>, both databases in <code>cargo test</code> under <code>cargo xtask db run</code>): ten people change four issues together over HTTP while the clock of the test runs on, so leases really run out, and then the invariants are read from the database.</li>
+<li><strong><code>cargo xtask load --people 10 [--minutes N | --nightly] [--database sqlite|postgres]</code></strong> (<code>xtask/src/load/</code>): the API at speed. xtask builds the program, starts the database of the run (the throwaway PostgreSQL for the second run) and runs the Node driver <code>web/tooling/load/main.ts</code>, which starts a server on the port <code>loadTestServer</code> and a data folder that xtask gave it, makes an organization (one project, six shared issues, Team members), lets the people change titles, edit descriptions under their locks (some editors vanish without letting go, some take the editing over), write comments and read, and writes what each person kept, was refused and read to a <strong>book</strong> (a JSON file). When the server has stopped, xtask runs <code>bb-load-check</code> on the book and the database of the run, which judges the invariants of the next section. The driver defines no invariant. Without <code>--database</code> it runs on both databases; <code>tools/dev/load.json</code> holds the defaults (ten people, two minutes, thirty for <code>--nightly</code>) and the name of the variable that carries the database address. <code>cargo xtask ci</code> runs it.</li>
+<li><strong>Against the database</strong> (<code>test_concurrent_invariants_hold_after_a_run</code> in <code>bb-server</code>, both databases in <code>cargo test</code> under <code>cargo xtask db run</code>): ten people change four issues together over HTTP while the clock of the test runs on until the last person is done, so leases really run out (a person who types for longer than the lease waits for the clock, not for real time), and then the invariants are read from the database by the same function the load run ends in.</li>
 </ul>
 <h4>Invariants after every run</h4>
+<p>They are written once, as the function <code>check</code> of the crate <code>bb-load-check</code> (<code>judge.rs</code>): the test of the server builds its book in memory and calls it, <code>cargo xtask load</code> calls it through the program <code>bb-load-check</code> with the book of the driver. Nothing else defines them (SSOT).</p>
 <ol>
-<li>Every change has an event: the history of each issue holds one event for each change that was kept, plus the one that made it, and one for each comment.</li>
+<li>Every change has an event: the events about each issue count each version from <code>2</code> up to its version once, one event for each change that was kept (events about a lock taken over or let go count no version), and there is one event for each comment.</li>
 <li>Versions only go up, one at a time: the versions of the kept changes of an issue are <code>2</code> up to its version, each once, and what one person reads of an issue never goes down.</li>
-<li>No lock outlives its lease: an editor who vanished has lost the lock within the lease (60 seconds) and a margin, and no lock is held when the run ends, because nobody starts to edit under a lock in the last 70 seconds of a run.</li>
-<li>No text is lost: a save that was refused (lock lost, taken over, text changed) is the draft of the person, and the description is the text of the last save that was kept.</li>
+<li>No lock outlives its lease: no lock row ends later than the lease (60 seconds) from now, nobody holds a lock when the leases are over (in a load run nobody starts to edit under a lock in the last 70 seconds), and after the purge no row of a lock is left. One definition, used while the people work (the test of the server) and at the end (both).</li>
+<li>No text is lost: a save that was refused (lock lost, taken over, text changed) is the draft of the person at once, the heartbeat draft of an editor who vanished is still there after the lease, and the description is the text of the last save that was kept.</li>
 </ol>
 <p>Enforced by: TEST-CONCURRENT (the scenarios, the invariants test and the load step of <code>cargo xtask ci</code> are there and not switched off), TEST-EDIT-LOCKS (the browser scenarios of the locks).</p>
 <h3 id="s11-5"><button class="sec" data-sec>§11.5</button>Local ports (ADR-0023)</h3>
@@ -2093,7 +2104,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <ul>
 <li><strong>A refused save for a changed text lets go of the lock.</strong> When a save finds that the text changed since (<code>edit.version_changed</code>) the page stops the heartbeat, so it also releases the lock; otherwise others would read that the person is editing until the lease ran out. A lock that ran out or was taken over is not the person's any more and is left alone. The load run found it: locks were still held when it ended.</li>
 <li><strong><em>Show changes</em> marks the words and names who</strong> (M3-F54): the comparison underlines and fills the words the other text does not have, and the note that the text changed after the person started says who changed it, from the history and the way the reader may see people.</li>
-<li><strong>The scenarios of ten people</strong> are in <code>web/app/e2e/concurrent/</code> (ten Playwright contexts) and in <code>cargo xtask load --people 10</code> (the API at speed, both databases, two minutes in <code>cargo xtask ci</code>, <code>--nightly</code> for thirty); the invariants after a run are listed in architecture §11. A lock must also end by itself within the lease for an editor who vanished, which the run checks while it goes on. Enforced by TEST-CONCURRENT and, for the browser part of the locks, TEST-EDIT-LOCKS.</li>
+<li><strong>The scenarios of ten people</strong> are in <code>web/app/e2e/concurrent/</code> (ten Playwright contexts) and in <code>cargo xtask load --people 10</code> (the API at speed, both databases, two minutes in <code>cargo xtask ci</code>, <code>--nightly</code> for thirty); the invariants after a run are listed in architecture §11. A lock must also end by itself within the lease for an editor who vanished: no lock row ends later than the lease from now, nobody holds a lock once the leases are over, and the draft of the vanished editor is still there. These rules are written once, in <code>bb-load-check</code>. Enforced by TEST-CONCURRENT and, for the browser part of the locks, TEST-EDIT-LOCKS.</li>
 </ul>
 
 <!-- 0020-architecture-checks.md -->

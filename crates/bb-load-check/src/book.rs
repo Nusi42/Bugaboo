@@ -21,7 +21,7 @@ pub struct Kept {
     /// The version the issue had after the change.
     pub version: i64,
     /// The description, when the change was a save of the description.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }
 
@@ -60,7 +60,7 @@ pub struct Drafted {
     /// What became of it.
     pub ending: DraftEnd,
     /// For a refused save: whether the person found the text as their draft at once.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub found_as_draft: Option<bool>,
 }
 
@@ -107,4 +107,23 @@ pub(crate) fn last_drafts(book: &Book) -> Vec<&Drafted> {
         }
     }
     last
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The file that the test of the driver reads too (`web/tooling/load/book.test.ts`): the two
+    /// sides write the book in the same shape.
+    const EXAMPLE: &str = include_str!("../../../tools/dev/load-book.example.json");
+
+    #[test]
+    fn test_concurrent_the_book_of_the_driver_reads_and_writes_the_same_shape() {
+        let book: Book = serde_json::from_str(EXAMPLE).unwrap();
+        assert_eq!(book.kept.len(), 2);
+        assert_eq!(book.drafted[1].ending, DraftEnd::Vanished);
+        let written = serde_json::to_value(&book).unwrap();
+        let example: serde_json::Value = serde_json::from_str(EXAMPLE).unwrap();
+        assert_eq!(written, example);
+    }
 }

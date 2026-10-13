@@ -6,7 +6,6 @@ import {
   heartbeatSeconds,
   newEditorId,
   readDraft,
-  readEditLock,
   releaseEditLock,
   sendHeartbeat,
   takeEditLock,
@@ -57,10 +56,7 @@ function codeOf(error: unknown): string | undefined {
 /** Writes down what broke a rule, with who was doing what. */
 export function broke(context: Context, doing: string, error: unknown): void {
   const said = error instanceof Error ? error.message : String(error);
-  context.book.note({
-    kind: "broken",
-    message: `person ${String(context.number)} ${doing}: ${said}`,
-  });
+  context.book.broken(`person ${String(context.number)} ${doing}: ${said}`);
 }
 
 /** A number for a title or a text, so that no two are the same. */
@@ -74,7 +70,7 @@ async function read(context: Context, work: Work): Promise<number> {
     await context.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: work.key } } }),
   );
   const version = found.issue.version ?? 0;
-  context.book.note({ kind: "seen", person: context.number, key: work.key, version });
+  context.book.seen({ person: context.number, key: work.key, version });
   return version;
 }
 
@@ -97,13 +93,13 @@ async function changeOn(
         body: { version, title },
       }),
     );
-    context.book.note({ kind: "kept", key: work.key, version: changed.version ?? 0 });
+    context.book.kept({ key: work.key, version: changed.version ?? 0 });
   } catch (error) {
     const newer = conflictOf(error);
     if (newer === undefined) {
       throw error;
     }
-    context.book.note({ kind: "conflict" });
+    context.book.conflict();
     await changeOn(context, work, title, newer.version ?? version, tries + 1);
   }
 }
@@ -119,7 +115,7 @@ async function comment(context: Context, work: Work): Promise<void> {
       body: { text: `Comment ${tag(context)}` },
     }),
   );
-  context.book.note({ kind: "comment", key: work.key });
+  context.book.comment(work.key);
 }
 
 /** Looks around: the issue and its history. */
@@ -142,44 +138,24 @@ async function lockOn(context: Context, work: Work, editor: string): Promise<str
     return undefined;
   }
   const over = await editAnyway(context.client, whatOf(work), editor);
-  context.book.note({ kind: "took-over" });
+  context.book.tookOver();
   return over.status === "taken" ? over.lock_token : undefined;
 }
 
-/** Writes down that the editor went away: the lock must end by itself within the lease. */
-async function vanish(context: Context, work: Work): Promise<void> {
-  const held = await readEditLock(context.client, whatOf(work));
-  if (held?.yours_elsewhere === true) {
-    context.book.note({
-      kind: "abandoned",
-      work,
-      holder: context.holder,
-      since: held.since,
-      at: Date.now(),
-    });
-  }
-}
-
-/** A refused save keeps the text: it has to be the draft of the person. */
-async function keptAsDraft(
-  context: Context,
-  work: Work,
-  text: string,
-  code: string,
-): Promise<void> {
+/** A refused save keeps the text: whether it is the draft of the person is written in the book. */
+async function keptAsDraft(context: Context, work: Work, text: string): Promise<void> {
   const draft = await readDraft(context.client, {
     kind: "issue",
     id: work.id,
     part: "description",
   });
-  if (draft?.text === text) {
-    context.book.note({ kind: "refused", code });
-  } else {
-    context.book.note({
-      kind: "broken",
-      message: `the text of a refused save is not the draft: ${text}`,
-    });
-  }
+  context.book.drafted({
+    holder: context.holder,
+    key: work.key,
+    text,
+    ending: "refused",
+    found_as_draft: draft?.text === text,
+  });
 }
 
 function pause(milliseconds: number): Promise<void> {
@@ -193,7 +169,8 @@ async function save(context: Context, work: Work, token: string, version: number
   const text = `Text ${tag(context)} on ${work.key}`;
   await sendHeartbeat(context.client, whatOf(work), token, { text, base_version: version });
   if (pick(context.random, 6) === 0) {
-    await vanish(context, work);
+    // The editor goes away without letting go: the lease has to end the lock, the draft stays.
+    context.book.drafted({ holder: context.holder, key: work.key, text, ending: "vanished" });
     return;
   }
   // The person types for a moment, in which others read and change the issue.
@@ -205,13 +182,14 @@ async function save(context: Context, work: Work, token: string, version: number
         body: { text, version, lock_token: token },
       }),
     );
-    context.book.note({ kind: "kept", key: work.key, version: saved.version ?? 0, text });
+    context.book.kept({ key: work.key, version: saved.version ?? 0, text });
+    context.book.drafted({ holder: context.holder, key: work.key, text, ending: "saved" });
   } catch (error) {
     const code = codeOf(error);
     if (code === undefined || !KEPT_AS_DRAFT.has(code)) {
       throw error;
     }
-    await keptAsDraft(context, work, text, code);
+    await keptAsDraft(context, work, text);
     if (code === "edit.version_changed") {
       // The lock is still the person's: the page lets it go, as the browser does.
       await releaseEditLock(context.client, whatOf(work), token);

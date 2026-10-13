@@ -17,6 +17,8 @@ pub(crate) const WEB_APP: &str = "web/app";
 const SERVER_BINARY: &str = "bugaboo";
 /// The name of the sample program that `cargo build` makes (`[[bin]]` of bb-sample).
 const SAMPLE_BINARY: &str = "bb-sample";
+/// The name of the program that judges a load run (`[[bin]]` of bb-load-check).
+const LOAD_CHECK_BINARY: &str = "bb-load-check";
 
 /// Which cargo profile to build.
 #[derive(Clone, Copy)]
@@ -88,6 +90,16 @@ pub(crate) fn sample_build(profile: Profile) -> Step {
         "build the sample program",
         "bb-sample",
         SAMPLE_BINARY,
+    )
+}
+
+/// Builds the `bb-load-check` program, which judges a run of `cargo xtask load`.
+pub(crate) fn load_check_build(profile: Profile) -> Step {
+    program_build(
+        profile,
+        "build the load check program",
+        "bb-load-check",
+        LOAD_CHECK_BINARY,
     )
 }
 
@@ -213,6 +225,13 @@ mod tests {
                 .args
                 .contains(&"--release".to_owned())
         );
+    }
+
+    #[test]
+    fn the_load_check_program_is_built_the_same_way() {
+        let step = load_check_build(Profile::Debug);
+        assert!(step.args.contains(&"bb-load-check".to_owned()));
+        assert_eq!(step.executable, Some("bb-load-check"));
     }
 
     #[test]

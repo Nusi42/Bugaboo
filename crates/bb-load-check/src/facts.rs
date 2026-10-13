@@ -26,8 +26,6 @@ pub struct IssueFacts {
     pub key: String,
     /// The version after each event about the issue that counted one, oldest first.
     pub event_versions: Vec<i64>,
-    /// How many events are about the issue.
-    pub events: usize,
     /// How many events wrote a comment on the issue.
     pub comment_events: usize,
     /// The version the issue row has.
@@ -138,7 +136,6 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
         facts.issues.push(IssueFacts {
             key: work.key.clone(),
             event_versions: events.iter().filter_map(version_after).collect(),
-            events: events.len(),
             comment_events: comments
                 .iter()
                 .filter(|event| is_comment_on(event, &work.id))

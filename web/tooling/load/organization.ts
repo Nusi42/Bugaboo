@@ -1,12 +1,12 @@
 import { settingKeys } from "@bugaboo/api-client";
 
-import { giveRole, roleName } from "../../support/access.ts";
-import { ada, makeAdmin, makePerson, ownId, type Person } from "../../support/accounts.ts";
-import { type ApiSession } from "../../support/api.ts";
-import { makeIssue } from "../../support/issues.ts";
-import { makeProject } from "../../support/projects.ts";
-import { inOrder } from "../../support/sequence.ts";
-import { type Instance } from "../../support/server.ts";
+import { giveRole, roleName } from "../../app/e2e/support/access.ts";
+import { ada, makeAdmin, makePerson, ownId, type Person } from "../../app/e2e/support/accounts.ts";
+import { type ApiSession } from "../../app/e2e/support/api.ts";
+import { makeIssue } from "../../app/e2e/support/issues.ts";
+import { makeProject } from "../../app/e2e/support/projects.ts";
+import { inOrder } from "../../app/e2e/support/sequence.ts";
+import { type Instance } from "../../app/e2e/support/server.ts";
 import { type Work } from "./book.ts";
 
 /** How many issues the people share: few, so that they meet. */

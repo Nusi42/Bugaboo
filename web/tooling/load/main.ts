@@ -1,12 +1,13 @@
-import { readPorts } from "../../../../tooling/ports.ts";
-import { startServer } from "../../support/server.ts";
+import { readPorts } from "../ports.ts";
+import { startServer } from "../../app/e2e/support/server.ts";
 import { DATABASE_URL_VARIABLE, type LoadOptions, parseOptions } from "./options.ts";
 import { run } from "./run.ts";
 
 // `cargo xtask load --people 10` (architecture §11, TEST-CONCURRENT): starts the server of the
-// load test on the database of the run, lets the people work, checks what must hold afterwards and
-// says what did not. The exit code is 1 when anything did not hold. xtask passes the address of
-// the PostgreSQL database in the variable named in `options.ts`.
+// load test on the database of the run and lets the people work. It writes the book of the run to
+// a file and leaves the data folder in place; xtask then runs `bb-load-check`, which judges the
+// database against the book. xtask passes the address of the PostgreSQL database in the variable
+// named in `options.ts`.
 
 /** The settings that point the server at the database of the run (SQLite is the default). */
 function databaseSettings(options: LoadOptions): Readonly<Record<string, string>> {
@@ -28,16 +29,12 @@ async function main(): Promise<void> {
     readPorts().loadTestServer,
     `load-${options.database}`,
     databaseSettings(options),
+    false,
+    options.dataDir,
   );
   try {
-    const { said, failures } = await run(server, options);
-    process.stdout.write(`${said}\n`);
-    if (failures.length > 0) {
-      process.stderr.write(
-        `${String(failures.length)} things did not hold:\n${failures.join("\n")}\n`,
-      );
-      process.exitCode = 1;
-    }
+    process.stdout.write(`${await run(server, options)}
+`);
   } finally {
     await server.stop();
   }

@@ -1,6 +1,6 @@
 import { leaseSeconds } from "@bugaboo/api-client";
 
-import layout from "../../../../../tools/dev/load.json" with { type: "json" };
+import layout from "../../../tools/dev/load.json" with { type: "json" };
 
 /**
  * The seconds at the end of a run in which nobody starts to edit under a lock: the lease, and ten
@@ -24,6 +24,10 @@ export interface LoadOptions {
   readonly database: LoadDatabase;
   /** The number the choices of the people are made from, so a failure can be run again. */
   readonly seed: number;
+  /** The data folder of the server, which is left in place for the check after the run. */
+  readonly dataDir: string;
+  /** The file the book of the run is written to. */
+  readonly bookFile: string;
 }
 
 /** The name of the variable that carries the address of the PostgreSQL database (tools/dev/load.json). */
@@ -45,7 +49,19 @@ function numberOf(flags: readonly string[], name: string, fallback: number): num
   return number;
 }
 
-/** The options from the arguments `cargo xtask load` passes: `--people`, `--seconds`, `--database`, `--seed`. */
+/** A text flag that must be there. */
+function requiredOf(flags: readonly string[], name: string): string {
+  const text = valueOf(flags, name);
+  if (text === undefined || text === "") {
+    throw new TypeError(`${name} needs a value: the check after the run reads what it names.`);
+  }
+  return text;
+}
+
+/**
+ * The options from the arguments `cargo xtask load` passes: `--people`, `--seconds`, `--database`,
+ * `--seed`, `--data-dir` and `--book`.
+ */
 export function parseOptions(flags: readonly string[]): LoadOptions {
   const database = valueOf(flags, "--database") ?? "sqlite";
   if (database !== "sqlite" && database !== "postgres") {
@@ -62,5 +78,7 @@ export function parseOptions(flags: readonly string[]): LoadOptions {
     seconds,
     database,
     seed: numberOf(flags, "--seed", 42),
+    dataDir: requiredOf(flags, "--data-dir"),
+    bookFile: requiredOf(flags, "--book"),
   };
 }
