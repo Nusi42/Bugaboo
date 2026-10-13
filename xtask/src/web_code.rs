@@ -9,10 +9,37 @@ enum Inside {
     Quoted(char),
     /// A template literal (backticks); it may span lines.
     Template,
+    /// A regular expression literal (`/…/`); the flag says whether the scanner is inside a
+    /// character class `[…]`, where a `/` does not end it. It ends at the line end too.
+    Regex {
+        in_class: bool,
+    },
 }
 
-/// The code with its comments (`//` and `/* */`) replaced by spaces; strings and template
-/// literals stay as they are, so a `//` inside `"https://…"` is not a comment. New lines stay,
+/// Words after which a `/` starts a regular expression and is not a division.
+const BEFORE_REGEX: [&str; 8] = ["return", "typeof", "case", "do", "else", "in", "of", "void"];
+
+/// Whether a `/` that comes after `before` (the code so far) starts a regular expression: it does
+/// after an operator or an opening bracket or at the start, and it is a division after a name, a
+/// number or a closing bracket.
+fn starts_regex(before: &str) -> bool {
+    let trimmed = before.trim_end();
+    let Some(last) = trimmed.chars().next_back() else {
+        return true;
+    };
+    if last.is_alphanumeric() || last == '_' || last == '$' {
+        let word_start = trimmed
+            .rfind(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$'))
+            .map_or(0, |at| at + 1);
+        return BEFORE_REGEX.contains(&&trimmed[word_start..]);
+    }
+    !matches!(last, ')' | ']' | '}' | '"' | '\'' | '`')
+}
+
+/// The code with its comments (`//` and `/* */`) replaced by spaces; strings, template
+/// literals and regular expression literals stay as they are, so a `//` inside `"https://…"` or
+/// in `/\/\//` is not a comment. A `/` is told from a division by what comes before it
+/// ([`starts_regex`]); after a `)` or a `}` it counts as a division. New lines stay,
 /// so line numbers still fit.
 pub(crate) fn strip_comments(text: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
@@ -43,6 +70,9 @@ pub(crate) fn strip_comments(text: &str) -> String {
                 }
                 continue;
             }
+            Inside::Code if c == '/' && starts_regex(&out) => {
+                inside = Inside::Regex { in_class: false }
+            }
             Inside::Code => {
                 inside = match c {
                     '"' | '\'' => Inside::Quoted(c),
@@ -50,7 +80,7 @@ pub(crate) fn strip_comments(text: &str) -> String {
                     _ => Inside::Code,
                 };
             }
-            Inside::Quoted(_) | Inside::Template if c == '\\' => {
+            Inside::Quoted(_) | Inside::Template | Inside::Regex { .. } if c == '\\' => {
                 out.push(c);
                 out.extend(next);
                 at += 2;
@@ -58,7 +88,14 @@ pub(crate) fn strip_comments(text: &str) -> String {
             }
             Inside::Quoted(quote) if c == quote || c == '\n' => inside = Inside::Code,
             Inside::Template if c == '`' => inside = Inside::Code,
-            Inside::Quoted(_) | Inside::Template => {}
+            Inside::Regex { .. } if c == '\n' => inside = Inside::Code,
+            Inside::Regex { in_class: false } if c == '/' => inside = Inside::Code,
+            Inside::Regex { in_class } if c == '[' || c == ']' => {
+                inside = Inside::Regex {
+                    in_class: c == '[' || (in_class && c != ']'),
+                };
+            }
+            Inside::Quoted(_) | Inside::Template | Inside::Regex { .. } => {}
         }
         out.push(c);
         at += 1;
@@ -80,6 +117,28 @@ mod tests {
         assert!(out.contains("\"x.y\"") && out.contains("'g.h'"));
         assert!(!out.contains("c.d") && !out.contains("e.f") && !out.contains("still"));
         assert!(out.contains("\"http://z\"") && out.contains("`//k`"));
+    }
+
+    #[test]
+    fn a_regular_expression_is_not_a_comment() {
+        let code = r"const r = /\/\//; // gone
+x.split(/[/]x/); // gone too
+const q = a / b; // c";
+        let out = strip_comments(code);
+        assert!(out.contains(r"/\/\//;") && out.contains("/[/]x/"));
+        assert!(!out.contains("gone") && !out.contains("// c"));
+        assert!(out.contains("a / b;"));
+        assert_eq!(out.len(), code.len());
+    }
+
+    #[test]
+    fn a_slash_after_a_closing_bracket_is_a_division() {
+        let out = strip_comments(
+            "f(a) / 2; // gone
+return /x/.test(y); // gone",
+        );
+        assert!(!out.contains("gone"));
+        assert!(out.contains("/x/.test(y);"));
     }
 
     #[test]
