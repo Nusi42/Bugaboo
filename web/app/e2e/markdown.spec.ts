@@ -38,7 +38,11 @@ test.afterEach(async ({ page }) => {
 });
 
 async function openPreview(page: Page): Promise<void> {
-  await page.getByRole("tab", { name: t("markdown.preview"), exact: true }).click();
+  // The comment editor of the page has a Preview tab too: this is the one of the description.
+  await page
+    .getByRole("tablist", { name: t("issue-field.description"), exact: true })
+    .getByRole("tab", { name: t("markdown.preview"), exact: true })
+    .click();
 }
 
 test("sec_13 a pasted script shows as text in the preview and never runs", async ({ page }) => {
@@ -61,7 +65,11 @@ test("cf_01 the toolbar writes Markdown and the preview shows what others will s
   const box = await openEditor(page);
   await box.fill("one two");
   await box.selectText();
-  await page.getByRole("button", { name: t("markdown.bold"), exact: true }).click();
+  // The comment editor of the page has a toolbar too: this is the one around the description.
+  await box
+    .locator("xpath=ancestor::*[@data-part='markdown.editor'][1]")
+    .getByRole("button", { name: t("markdown.bold"), exact: true })
+    .click();
   await expect(box).toHaveValue("**one two**");
   await box.press("End");
   await page.keyboard.type(" and WEB-142 for @ana");
