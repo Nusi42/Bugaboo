@@ -10,9 +10,9 @@
 
 use super::web_source::code_of;
 use super::{Check, Context, Finding};
+use crate::generate::messages::FEATURES_FOLDER;
 use crate::source::{Kind, Source};
 
-const FEATURES: &str = "web/app/src/features/";
 const SHARED: &str = "web/app/src/shared/";
 const APP: &str = "web/app/";
 const PACKAGES: &str = "web/packages/";
@@ -57,10 +57,10 @@ fn scan(path: &str, text: &str) -> Vec<Finding> {
 
 /// What is wrong with the file at `path` importing `target` (both repository-relative), if anything.
 fn problem_with(path: &str, target: &str) -> Option<String> {
-    if let Some(inside) = target.strip_prefix(FEATURES) {
+    if let Some(inside) = target.strip_prefix(FEATURES_FOLDER) {
         let (feature, rest) = inside.split_once('/').unwrap_or((inside, ""));
         let same_feature = path
-            .strip_prefix(FEATURES)
+            .strip_prefix(FEATURES_FOLDER)
             .is_some_and(|own| own.split('/').next() == Some(feature));
         if path.starts_with(SHARED) {
             return Some(format!(
@@ -69,7 +69,7 @@ fn problem_with(path: &str, target: &str) -> Option<String> {
         }
         if !same_feature && !ENTRIES.contains(&rest) {
             return Some(format!(
-                "`{target}` is inside the feature `{feature}`. Import from `{FEATURES}{feature}/index.ts`, the feature's public entry."
+                "`{target}` is inside the feature `{feature}`. Import from `{FEATURES_FOLDER}{feature}/index.ts`, the feature's public entry."
             ));
         }
     }
