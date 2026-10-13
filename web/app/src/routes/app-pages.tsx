@@ -7,6 +7,7 @@ import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.
 import { OnlyWith } from "./OnlyWith.tsx";
 import { loadsScreen } from "./preload.ts";
 import { ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
+import { StartScreen } from "./start-screen.ts";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
 // stays small (coding-standards section 6).
@@ -59,6 +60,7 @@ export const regionRoute = createRoute({
 export const startPageRoute = createRoute({
   getParentRoute: () => mySettingsRoute,
   path: paths.startPage,
+  loader: loadsScreen(StartScreen),
   component: StartPageRoute,
 });
 

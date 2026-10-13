@@ -1,12 +1,8 @@
-import { lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 
 import { ShortcutsPage, useQuickResults } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
-
-const StartScreen = lazyRouteComponent(
-  () => import("../features/my-settings/index.ts"),
-  "StartPage",
-);
+import { StartScreen } from "./start-screen.ts";
 
 /** The page of the keyboard shortcuts, with the address saying which one is open. */
 export function ShortcutsRoute() {

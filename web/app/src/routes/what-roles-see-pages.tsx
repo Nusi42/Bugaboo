@@ -60,6 +60,7 @@ export const checkAccessRoute = createRoute({
 export const projectFieldsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectFields,
+  loader: loadsScreen(ProjectFieldsScreen),
   component: function ProjectFields() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectFieldsScreen address={project} />;
@@ -69,6 +70,7 @@ export const projectFieldsRoute = createRoute({
 export const projectPeopleRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectPeople,
+  loader: loadsScreen(ProjectPeopleScreen),
   component: function ProjectPeople() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectPeopleScreen address={project} />;
@@ -78,6 +80,7 @@ export const projectPeopleRoute = createRoute({
 export const projectCheckAccessRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectCheckAccess,
+  loader: loadsScreen(ProjectCheckScreen),
   component: function ProjectCheckAccess() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectCheckScreen address={project} />;

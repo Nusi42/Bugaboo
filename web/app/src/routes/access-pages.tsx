@@ -104,6 +104,7 @@ export const roleRoute = createRoute({
 export const projectRolesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectRoles,
+  loader: loadsScreen(ProjectRolesScreen),
   component: function ProjectRoles() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectRolesScreen address={project} />;

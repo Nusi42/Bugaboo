@@ -93,6 +93,7 @@ const IssueScreen = lazyRouteComponent(
 export const projectIssuesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectIssues,
+  loader: loadsScreen(ProjectIssuesScreen),
   validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
@@ -119,6 +120,7 @@ export const projectIssuesRoute = createRoute({
 export const issueRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.issue,
+  loader: loadsScreen(IssueScreen),
   component: function Issue() {
     const issue = useAddressPart(routeParam.issue);
     const navigate = useNavigate();
