@@ -18,6 +18,12 @@ export function useFocusHeading(key: string): RefObject<HTMLDivElement | null> {
   return container;
 }
 
+/** The path of the page on screen; selecting it re-renders the layout only when it changes. */
+const shownPathname = (state: {
+  readonly resolvedLocation?: { readonly pathname: string } | undefined;
+  readonly location: { readonly pathname: string };
+}): string => (state.resolvedLocation ?? state.location).pathname;
+
 /**
  * When the person goes to another page, the focus moves to the heading of the new page (or to the
  * content), so a screen reader reads the new page instead of staying on the link that was pressed.
@@ -26,8 +32,7 @@ export function useFocusHeading(key: string): RefObject<HTMLDivElement | null> {
  * there yet when the address changes, and the focus would land on the page that is leaving.
  */
 export function usePageFocus(contentId: string): void {
-  const { resolvedLocation, location } = useRouterState();
-  const pathname = (resolvedLocation ?? location).pathname;
+  const pathname = useRouterState({ select: shownPathname });
   const shownPage = useRef(pathname);
   useEffect(() => {
     const changed = shownPage.current !== pathname;
