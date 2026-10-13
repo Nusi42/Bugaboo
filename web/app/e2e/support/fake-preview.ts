@@ -22,6 +22,7 @@ function previewWithEverything() {
     preview: "made up for the test",
     blocked: true,
     truncated: false,
+    summary: { will_change: 1, skipped: 0 },
     people: [
       {
         person: cleo,
