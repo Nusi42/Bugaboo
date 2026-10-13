@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { openIssueWithDetails, signIn } from "./support/flows.ts";
+import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
@@ -80,13 +80,24 @@ test("iss_06 a change shows in the history under Changes", async ({ page }) => {
   await expect(page.getByText(/changed Priority from/u)).toBeVisible();
 });
 
-test("iss_07 following can be stopped and started again", async ({ page }) => {
+test("iss_07 following can be stopped and started again, and the server keeps it", async ({
+  page,
+}) => {
   await signIn(page, ada);
   await openIssueWithDetails(page, "WEB-1");
-  await page.getByRole("button", { name: t("followers.stop"), exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: t("followers.follow"), exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: t("followers.follow"), exact: true }).click();
-  await expect(page.getByRole("button", { name: t("followers.stop"), exact: true })).toBeVisible();
+  const stop = () => page.getByRole("button", { name: t("followers.stop"), exact: true });
+  const follow = () => page.getByRole("button", { name: t("followers.follow"), exact: true });
+  const stopped = serverKeptFollow(page, "DELETE");
+  await stop().click();
+  await expect(follow()).toBeVisible();
+  await stopped;
+  // Opened afresh, the page asks the server, so the state shown is the one that was kept.
+  await openIssueWithDetails(page, "WEB-1");
+  await expect(follow()).toBeVisible();
+  const started = serverKeptFollow(page, "PUT");
+  await follow().click();
+  await expect(stop()).toBeVisible();
+  await started;
+  await openIssueWithDetails(page, "WEB-1");
+  await expect(stop()).toBeVisible();
 });

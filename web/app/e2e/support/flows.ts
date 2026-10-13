@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { type Browser, expect, type Page } from "@playwright/test";
+import { type Browser, expect, type Page, type Response } from "@playwright/test";
 
 import { type Person } from "./accounts.ts";
 import { layoutOf } from "./layout.ts";
@@ -278,4 +278,12 @@ export async function openIssueWithDetails(page: Page, key: string): Promise<voi
   if (layoutOf(page) !== "computer") {
     await page.getByRole("button", { name: t("issues.all-details"), exact: true }).click();
   }
+}
+
+/** Waits until the server has answered a request to follow (`PUT`) or to stop following (`DELETE`). */
+export async function serverKeptFollow(page: Page, method: "PUT" | "DELETE"): Promise<void> {
+  await page.waitForResponse(
+    (response: Readonly<Response>) =>
+      response.request().method() === method && response.url().includes("/follow") && response.ok(),
+  );
 }
