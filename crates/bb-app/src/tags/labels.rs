@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{EntityId, IssueId, LabelGroupId, LabelId};
+use bb_core::id::{IssueId, LabelGroupId, LabelId};
 use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::{LABEL_GROUPS_MAX, LABELS_MAX, Label, LabelGroup, TAG_NAME_MAX, name_key};
 use bb_core::version::FIRST_VERSION;
@@ -20,7 +20,7 @@ use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::rewrite::{Replacement, Rewrite, Sorted};
+use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeLabel, ChangeLabelGroup, CombineLabels, LabelChangePreviewQuery, LabelGroupView,
     LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, TagChangePreview,
@@ -675,20 +675,9 @@ pub async fn combine_labels<S: AuthStore>(
             name: into.name.clone(),
         }),
     };
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::Label, from.id),
-        vec![set_to(
-            member::COMBINED_INTO,
-            json!(EntityId::from(into.id).to_string()),
-        )],
-    )?;
-    let events = ctx.event_maker(by(actor.person.id));
-    let (ids, versions, why) = (
-        (from.id, into.id),
-        (from.version, into.version),
-        Why::default(),
-    );
+    let Combining { event, events, why } =
+        ctx.combine_events(&actor, Sorted::Label, from.id.into(), into.id.into())?;
+    let (ids, versions) = ((from.id, into.id), (from.version, into.version));
     let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {

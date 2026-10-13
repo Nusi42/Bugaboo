@@ -15,9 +15,11 @@ use serde_json::json;
 
 use super::types::{CHANGE_PREVIEW_ISSUES_MAX, ChangedIssue, TagChangePreview};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, EventMaker, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
 use crate::issues::{Where, member};
+use crate::member::{label as label_member, tag as tag_member};
 use crate::preview::PreviewSummary;
+use crate::projects::Why;
 
 /// How many issues are read at a time while a change walks through every issue that has a tag or a
 /// label.
@@ -39,6 +41,46 @@ impl Sorted {
             Self::Tag => member::TAGS,
             Self::Label => member::LABELS,
         }
+    }
+}
+
+/// What a combination of tags or labels starts with.
+pub(super) struct Combining {
+    /// The event of the thing that goes away.
+    pub(super) event: DomainEvent,
+    /// Makes the events of the issues that change with it.
+    pub(super) events: EventMaker,
+    /// Carries the reason a refusal inside the change gives.
+    pub(super) why: Why,
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The event of combining `from` into `into`, and the maker of the events of the issues that
+    /// change with it: the start of every combination of tags or labels.
+    ///
+    /// # Errors
+    /// An internal error when an event cannot be made.
+    pub(super) fn combine_events(
+        &self,
+        actor: &Actor,
+        sorted: Sorted,
+        from: EntityId,
+        into: EntityId,
+    ) -> Result<Combining, AppError> {
+        let (kind, member) = match sorted {
+            Sorted::Tag => (RecordKind::Tag, tag_member::COMBINED_INTO),
+            Sorted::Label => (RecordKind::Label, label_member::COMBINED_INTO),
+        };
+        let event = self.event(
+            by(actor.person.id),
+            entity(kind, from),
+            vec![set_to(member, json!(into.to_string()))],
+        )?;
+        Ok(Combining {
+            event,
+            events: self.event_maker(by(actor.person.id)),
+            why: Why::default(),
+        })
     }
 }
 

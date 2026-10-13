@@ -1962,6 +1962,12 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>review; every job type has an idempotency test (part of ARCH-EVENTS test harness) (see <code>tools/checks/catalog.toml</code>).</p>
+<h4>Amendment (M3 WP-08)</h4>
+<ul>
+<li><strong>The runner exists (<code>bb-jobs</code>).</strong> It depends on <code>bb-app</code> only (ARCH-DEPS): <code>spawn(services, every)</code> calls <code>Ctx::run_due_jobs()</code> on a timer, and <code>bb-server</code> starts it. The queue is behind the port <code>JobStore</code>; a round takes up to five due jobs under a lease of 120 seconds, runs each, reports it done (it leaves the queue) or failed, and a job that did a step queues the next one when more is left. A job that failed five starts goes to the dead-letter list.</li>
+<li><strong>Kinds so far:</strong> <code>bulk.step</code> (changing many issues: 100 issues in a step, progress kept in the table <code>bulk_run</code> after each issue, so a step that stops half way goes on at the next issue and no issue is changed twice) and <code>issues.renew-ids</code> (ADR-0021). Both judge again at run time what they do, with the permissions of the person who started them (<code>Ctx::acting</code>), and are idempotent.</li>
+<li><strong>When a change is a job:</strong> more than 1,000 issues (<code>BULK_JOB_ABOVE</code>); an access key may not start one (<code>auth.access_key_not_allowed</code>, M3-F121).</li>
+</ul>
 
 <!-- 0018-settings-registry.md -->
 <h3 id="adr-0018"><button class="sec" data-sec>§13.18</button>ADR-0018: One settings registry drives storage, API and dialogs</h3>
@@ -2158,6 +2164,11 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li>Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.</li>
 <li><code>bb-core</code> does no I/O and builds for WebAssembly, so it never reads the clock or the system's random source. An ID is made from a time and random bytes that the caller passes in (<code>from_parts</code>, <code>IdSource</code>); the server's context supplies the real ones (WP-05).</li>
 <li>Checked by ARCH-WASM (<code>bb-core</code> builds for <code>wasm32-unknown-unknown</code>) and the tests <code>person_ids_are_random_version_4</code> and <code>from_parts_puts_the_time_into_the_id</code> in <code>crates/bb-core/src/id.rs</code>.</li>
+</ul>
+<h4>Amendment (M3 WP-08)</h4>
+<ul>
+<li><strong>Renewal is a job after the first step (M3-F27).</strong> Changing the mode of a project with at most 1,000 issues (<code>BULK_JOB_ABOVE</code>) renews all of them inside the change, as before. A bigger project renews the first 100 issues (<code>BULK_STEP</code>) inside the change and queues the job <code>issues.renew-ids</code>, which renews 100 more in each step, one change per step, until none is left. The payload names the project and the person who changed the mode, whose name stays on the event of each renewed ID. Issues made meanwhile already get codes of the new mode; a project whose mode changes again meanwhile is renewed to the mode it has now. Each step is idempotent (it renews only issues whose code is not of the mode).</li>
+<li><strong>Moving an issue into another project</strong> (ISS-09, WP-08) gives it a code of the new project's mode and short name in the same change, keeps the old key in <code>issue_alias</code>, and writes a second event (the key changed) next to the event of the project change, so the history names both.</li>
 </ul>
 
 <!-- 0022-who-sees-people.md -->

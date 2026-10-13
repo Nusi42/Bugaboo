@@ -11,18 +11,18 @@ use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{EntityId, ProjectId};
+use bb_core::id::ProjectId;
 use bb_core::paging::window;
 use bb_core::tags::{TAG_NAME_MAX, TAG_PROJECTS_MAX, Tag, TagProject, name_key};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
-use super::rewrite::{Replacement, Rewrite, Sorted};
+use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeTag, CombineTags, TagChangePreview, TagChangePreviewQuery, TagPage, TagView, TagsQuery,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::input::clean_text;
 use crate::member::tag as member;
 use crate::projects::{ProjectRef, Why};
@@ -339,20 +339,9 @@ pub async fn combine_tags<S: AuthStore>(
     } else {
         limited_from.union(&limited_into).copied().collect()
     };
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::Tag, from.id),
-        vec![set_to(
-            member::COMBINED_INTO,
-            json!(EntityId::from(into.id).to_string()),
-        )],
-    )?;
-    let events = ctx.event_maker(by(actor.person.id));
-    let (ids, versions, why) = (
-        (from.id, into.id),
-        (from.version, into.version),
-        Why::default(),
-    );
+    let Combining { event, events, why } =
+        ctx.combine_events(&actor, Sorted::Tag, from.id.into(), into.id.into())?;
+    let (ids, versions) = ((from.id, into.id), (from.version, into.version));
     let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {

@@ -21,6 +21,10 @@ fn get_routes() -> Vec<String> {
     operations()
         .iter()
         .filter(|operation| operation.method == Method::GET)
+        // The run of a change to many issues exists only after more than a thousand issues were
+        // changed at once; `iss_09_more_than_a_thousand_run_as_a_job` reads it, and the tag is
+        // made for every GET by the same layer.
+        .filter(|operation| operation.path != "/api/v1/bulk/runs/{run}")
         .map(|operation| operation.path.clone())
         .collect()
 }
