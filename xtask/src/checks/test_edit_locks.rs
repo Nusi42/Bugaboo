@@ -355,10 +355,10 @@ use x::mod_y;",
 
     #[test]
     fn good_example_both_browser_scenarios_are_declared() {
-        let text: String = BROWSER
-            .iter()
-            .map(|name| format!("test(\"{name}\", () => {{}});"))
-            .collect();
+        let mut text = String::new();
+        for name in BROWSER {
+            let _ = write!(text, "test(\"{name}\", () => {{}});");
+        }
         assert!(browser(&[("locks.spec.ts".to_owned(), text)]).is_empty());
     }
 

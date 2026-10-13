@@ -347,7 +347,7 @@ fn install_npm(root: &Path) -> anyhow::Result<()> {
 }
 
 /// The browsers the end-to-end tests drive: the Chromium of the computer and tablet projects and the
-/// WebKit of the phone project (M2-F12). Which revision of each is decided by the pinned Playwright
+/// `WebKit` of the phone project (M2-F12). Which revision of each is decided by the pinned Playwright
 /// (`browsers.json` inside the package), so the versions are pinned by `package-lock.json`.
 const E2E_BROWSERS: [&str; 2] = ["chromium", "webkit"];
 

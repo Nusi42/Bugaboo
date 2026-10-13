@@ -167,13 +167,15 @@ fn ci_runs_the_load(ci: &str) -> Vec<Finding> {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
+
     use super::*;
 
     fn all_scenarios() -> Vec<(String, String)> {
-        let text: String = SCENARIOS
-            .iter()
-            .map(|name| format!("test(\"{name}\", async () => {{}});\n"))
-            .collect();
+        let mut text = String::new();
+        for name in SCENARIOS {
+            let _ = writeln!(text, "test(\"{name}\", async () => {{}});");
+        }
         vec![("scenarios.spec.ts".to_owned(), text)]
     }
 

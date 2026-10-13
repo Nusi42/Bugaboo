@@ -13,7 +13,7 @@ use std::path::Path;
 use std::process::Command;
 
 use anyhow::Context as _;
-use bb_dev_words::database::DatabaseKind;
+use bb_dev_words::database::{DatabaseKind, parse as parse_database};
 
 use crate::db;
 use crate::output;
@@ -21,6 +21,39 @@ use crate::repo::Repo;
 use crate::steps::{self, Profile};
 
 use layout::Layout;
+
+/// The command line of `cargo xtask load`.
+#[derive(clap::Args)]
+pub(crate) struct Arguments {
+    /// How many people work at the same time (default: tools/dev/load.json).
+    #[arg(long)]
+    people: Option<u32>,
+    /// How long they work, in minutes (default: the short run of tools/dev/load.json).
+    #[arg(long, conflicts_with = "nightly")]
+    minutes: Option<u32>,
+    /// The long run of the nightly job instead of the short one.
+    #[arg(long)]
+    nightly: bool,
+    /// Only this database (default: both).
+    #[arg(long, value_parser = parse_database)]
+    database: Option<DatabaseKind>,
+    /// The number the choices of the people are made from, to run a failure again.
+    #[arg(long)]
+    seed: Option<u64>,
+}
+
+impl Arguments {
+    /// What the command line asks for.
+    pub(crate) fn request(&self) -> Request {
+        Request {
+            people: self.people,
+            minutes: self.minutes,
+            nightly: self.nightly,
+            databases: self.database.into_iter().collect(),
+            seed: self.seed,
+        }
+    }
+}
 
 /// What `cargo xtask load` was asked to do.
 pub(crate) struct Request {

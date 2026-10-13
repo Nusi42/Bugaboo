@@ -196,12 +196,12 @@ impl Person {
             .await?;
         ok(&beat)?;
         // Every fifth editor closes the laptop and never lets go: the lease has to end it.
-        if (self.number + round) % 5 == 0 {
+        if (self.number + round).is_multiple_of(5) {
             book(&self.book)?.abandoned += 1;
             return Ok(());
         }
         // Every third one types for longer than the lease lasts.
-        if (self.number + round) % 3 == 0 {
+        if (self.number + round).is_multiple_of(3) {
             tokio::time::sleep(SLOW_TYPIST).await;
         }
         let saved = self
@@ -371,6 +371,21 @@ async fn events_of(admin: &mut Browser, work: &Work, tab: &str) -> Result<usize,
     }
 }
 
+/// The versions of the changes that were kept on an issue, and how many comments were written.
+fn kept_of(shared: &Shared, key: &str) -> Result<(Vec<i64>, usize), Failure> {
+    let book = book(shared)?;
+    let versions = book
+        .kept
+        .iter()
+        .filter(|each| each.key == key)
+        .map(|each| each.version)
+        .collect();
+    Ok((
+        versions,
+        book.comments.get(key).copied().unwrap_or_default(),
+    ))
+}
+
 /// Every change has an event, and versions only go up by one at a time.
 async fn check_events_and_versions(
     admin: &mut Browser,
@@ -382,13 +397,7 @@ async fn check_events_and_versions(
             .send("GET", &format!("{ISSUES}/{}", work.key), None)
             .await?;
         let now = version_in(ok(&read)?)?;
-        let book = book(shared)?;
-        let mut versions: Vec<i64> = book
-            .kept
-            .iter()
-            .filter(|each| each.key == work.key)
-            .map(|each| each.version)
-            .collect();
+        let (mut versions, comments) = kept_of(shared, &work.key)?;
         versions.sort_unstable();
         let expected: Vec<i64> = (2..=now).collect();
         assert_eq!(
@@ -396,8 +405,6 @@ async fn check_events_and_versions(
             "{}: versions go up one by one",
             work.key
         );
-        let comments = book.comments.get(&work.key).copied().unwrap_or_default();
-        drop(book);
         // The first event is the one that made the issue.
         assert_eq!(
             events_of(admin, work, "changes").await?,
@@ -504,9 +511,10 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
         let (people, issues) = the_crowd(&site, &mut admin, &shared).await?;
         work_together(&rig, people, &issues, &shared).await?;
         check_events_and_versions(&mut admin, &issues, &shared).await?;
-        let guard = book(&shared)?;
-        check_reads_and_texts(&guard, &issues);
-        drop(guard);
+        {
+            let guard = book(&shared)?;
+            check_reads_and_texts(&guard, &issues);
+        }
         check_descriptions(&mut admin, &issues, &shared).await?;
         check_locks_are_gone(&rig, &app, &issues).await
     })

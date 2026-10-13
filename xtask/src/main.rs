@@ -89,23 +89,7 @@ enum Command {
     },
     /// Ten people work on the same issues through the API at speed, and the invariants of
     /// architecture §11 are checked afterwards (TEST-CONCURRENT). Both databases unless one is named.
-    Load {
-        /// How many people work at the same time (default: tools/dev/load.json).
-        #[arg(long)]
-        people: Option<u32>,
-        /// How long they work, in minutes (default: the short run of tools/dev/load.json).
-        #[arg(long, conflicts_with = "nightly")]
-        minutes: Option<u32>,
-        /// The long run of the nightly job instead of the short one.
-        #[arg(long)]
-        nightly: bool,
-        /// Only this database (default: both).
-        #[arg(long, value_parser = parse_database)]
-        database: Option<DatabaseKind>,
-        /// The number the choices of the people are made from, to run a failure again.
-        #[arg(long)]
-        seed: Option<u64>,
-    },
+    Load(load::Arguments),
     /// Entry points for Claude Code hooks.
     Hook {
         #[command(subcommand)]
@@ -261,22 +245,7 @@ fn run() -> anyhow::Result<ExitCode> {
             };
             Ok(steps::exit_code(dataset::run(&repo, &request)?))
         }
-        Command::Load {
-            people,
-            minutes,
-            nightly,
-            database,
-            seed,
-        } => {
-            let request = load::Request {
-                people,
-                minutes,
-                nightly,
-                databases: database.into_iter().collect(),
-                seed,
-            };
-            Ok(steps::exit_code(load::run(&repo, &request)?))
-        }
+        Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),
