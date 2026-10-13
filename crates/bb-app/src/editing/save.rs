@@ -4,7 +4,7 @@
 //! as the draft of the person with a plain reason: it is never dropped.
 
 use bb_core::ErrorCode;
-use bb_core::edit::{DraftTarget, EditWhat, Hold};
+use bb_core::edit::{DRAFT_KEPT_BY, DraftTarget, EditWhat, Hold};
 use bb_core::event::DomainEvent;
 use bb_core::id::{LockToken, UserId};
 use bb_policy::Place;
@@ -97,14 +97,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
                     None => change_failed::<S>(&error, Stops::NONE),
                 };
-                if matches!(
-                    refused.code(),
-                    Some(
-                        ErrorCode::EditLockLost
-                            | ErrorCode::EditTakenOver
-                            | ErrorCode::VersionChanged
-                    )
-                ) {
+                if refused
+                    .code()
+                    .is_some_and(|code| DRAFT_KEPT_BY.contains(&code))
+                {
                     self.keep_draft(
                         me,
                         &DraftTarget::Editing(save.what.clone()),

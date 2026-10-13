@@ -14,7 +14,7 @@ use std::time::Duration;
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
 use bb_app::context::Clock as _;
-use bb_core::edit::LEASE_SECONDS;
+use bb_core::edit::{DRAFT_KEPT_BY, LEASE_SECONDS};
 use bb_load_check::{
     Afterwards, Book, DraftEnd, Drafted, Kept, Seen, Work, check, lock_rows, locks_beyond_lease,
 };
@@ -209,10 +209,7 @@ impl Person {
             });
             return self.drafted(work, &text, DraftEnd::Saved, None);
         }
-        if !matches!(
-            saved.code(),
-            "edit.lock_lost" | "edit.taken_over" | "edit.version_changed"
-        ) {
+        if !DRAFT_KEPT_BY.iter().any(|code| code.code() == saved.code()) {
             return Err(format!("{}: {}", saved.status, saved.body).into());
         }
         let found = self.is_draft(work, &text).await?;

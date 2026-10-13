@@ -17,3 +17,13 @@ export const draftTextMax = 100000;
 
 /** The most records one check of versions asks about. */
 export const versionsMax = 50;
+
+/** The codes of the refusals of a save that keep the text as the person's draft. */
+export const draftKeptCodes = [
+  "edit.lock_lost",
+  "edit.taken_over",
+  "edit.version_changed",
+] as const;
+
+/** One code of `draftKeptCodes`. */
+export type DraftKeptCode = (typeof draftKeptCodes)[number];

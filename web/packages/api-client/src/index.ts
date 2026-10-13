@@ -7,11 +7,13 @@ export { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
 export type { ReadonlyDeep, Schema } from "./readonly.ts";
 export {
   draftKeepDays,
+  draftKeptCodes,
   draftTextMax,
   heartbeatSeconds,
   leaseSeconds,
   versionsMax,
   watchSeconds,
+  type DraftKeptCode,
 } from "./editing.generated.ts";
 export {
   askToFinish,

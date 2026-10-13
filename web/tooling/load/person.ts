@@ -2,6 +2,7 @@ import {
   ApiError,
   conflictOf,
   dataOf,
+  draftKeptCodes,
   editAnyway,
   heartbeatSeconds,
   newEditorId,
@@ -34,12 +35,8 @@ export interface Context {
   readonly editUntil: number;
 }
 
-/** The refusals of a save that keep the text as a draft. */
-const KEPT_AS_DRAFT: ReadonlySet<string> = new Set([
-  "edit.lock_lost",
-  "edit.taken_over",
-  "edit.version_changed",
-]);
+/** The refusals of a save that keep the text as a draft: the list of the server. */
+const KEPT_AS_DRAFT: ReadonlySet<string> = new Set(draftKeptCodes);
 
 /** How often a stale change is sent again on the newer version before it is called stuck. */
 const MOST_TRIES = 40;

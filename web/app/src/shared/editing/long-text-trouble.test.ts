@@ -1,4 +1,4 @@
-import { ApiError, type ErrorCode } from "@bugaboo/api-client";
+import { ApiError, draftKeptCodes, type ErrorCode } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -12,6 +12,7 @@ import {
   taken,
   world,
 } from "./long-text-testing.ts";
+import { lostReasonOf } from "./long-text-model.ts";
 
 /** A text that is typed, with a save that the server refuses with this code. */
 async function refusedWith(code: ErrorCode) {
@@ -22,6 +23,15 @@ async function refusedWith(code: ErrorCode) {
   await w.editor.save();
   return w;
 }
+
+describe("iss_17 every refusal that keeps a draft has a reason", () => {
+  it("is known for each code of the list of the server", () => {
+    for (const code of draftKeptCodes) {
+      expect(lostReasonOf(code)).toBeDefined();
+    }
+    expect(lostReasonOf("resource.not_found")).toBeUndefined();
+  });
+});
 
 describe("iss_17 nothing is lost when the save is refused", () => {
   it("says the editing time ran out and keeps the text", async () => {
