@@ -16,7 +16,7 @@ use bb_app::status::DataFolderRights;
 use bb_core::message::{self, Message};
 use tokio::net::TcpListener;
 
-use super::{ServeArgs, housekeeping, load_settings, renewal};
+use super::{ServeArgs, load_settings, renewal};
 use crate::config::{Settings, TlsMode};
 use crate::data_folder::{DataFolder, Existing, write_private};
 use crate::wiring::Serving;
@@ -98,13 +98,11 @@ pub(super) async fn serve_settings(
             renewal::CHECK_EVERY,
         )
     });
-    // Old drafts, notes and lock rows are cleared at the start and once a day (M3-F30).
-    let clearing = housekeeping::spawn(wired.housekeeping, housekeeping::CLEAR_EVERY);
-    // The jobs that are queued (a change to many issues) are done in the background (ADR-0017).
+    // The jobs that are queued are done in the background (ADR-0017): a change to many issues, and
+    // the daily clearing of old drafts and catching up of the history (M3-F30, M3-F71).
     let working = bb_jobs::spawn(wired.jobs, bb_jobs::POLL_EVERY);
     let served = bb_api::serve(incoming, options, shutdown).await;
     working.abort();
-    clearing.abort();
     if let Some(timer) = renewal {
         timer.abort();
     }

@@ -96,6 +96,19 @@ impl JobStore for FakeStore {
         Ok(true)
     }
 
+    async fn later_job_waits(
+        &self,
+        kind: &TechnicalName,
+        after: Timestamp,
+    ) -> Result<bool, FakeError> {
+        Ok(self
+            .lock()
+            .state
+            .jobs
+            .iter()
+            .any(|job| job.kind == *kind && job.state == JobState::Queued && job.run_at > after))
+    }
+
     async fn queue_job(
         &self,
         id: JobId,

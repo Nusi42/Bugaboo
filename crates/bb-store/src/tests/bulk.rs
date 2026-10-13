@@ -142,3 +142,29 @@ async fn iss_09_a_job_queued_on_its_own_waits_for_its_time() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn iss_09_a_job_that_waits_for_later_is_told_by_its_kind() -> TestResult {
+    each_database("iss_09_later_job_waits", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let kind = TechnicalName::new("editing.purge_drafts")?;
+        let other = TechnicalName::new("history.catch-up")?;
+        assert!(!storage.later_job_waits(&kind, at(10)).await?);
+        storage
+            .queue_job(
+                JobId::generate(&mut source).unwrap(),
+                &kind,
+                &json!({}),
+                at(100),
+                at(1),
+            )
+            .await?;
+        assert!(storage.later_job_waits(&kind, at(10)).await?);
+        assert!(!storage.later_job_waits(&kind, at(100)).await?);
+        assert!(!storage.later_job_waits(&other, at(10)).await?);
+        Ok(())
+    })
+    .await
+}

@@ -14,6 +14,7 @@ use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::editing::{PurgeDraftsQuery, purge_drafts};
 use crate::ports::ChangeStore;
 use crate::store_macros::{reads, writes};
 
@@ -27,7 +28,18 @@ pub mod kind {
     /// One step of giving the issues of a project new IDs after its mode of IDs changed
     /// (`issues::ids`); the payload names the project and the person who changed the mode.
     pub const RENEW_IDS: &str = "issues.renew-ids";
+    /// Clearing what outlived its keep period (drafts, notes for people who were editing, lock
+    /// rows that ran out): the use case `purge_drafts`. It comes back every day.
+    pub const PURGE_DRAFTS: &str = bb_core::edit::PURGE_DRAFTS_JOB;
+    /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`. It comes back
+    /// every day.
+    pub const CATCH_UP_HISTORY: &str = "history.catch-up";
+    /// The kinds that come back every day, see [`super::DAILY`].
+    pub const DAILY_JOBS: [&str; 2] = [CATCH_UP_HISTORY, PURGE_DRAFTS];
 }
+
+/// How long after a daily job its next round is due.
+pub const DAILY: SignedDuration = SignedDuration::from_hours(24);
 
 /// How long a worker holds the jobs it took before another may take them: a step of a job is far
 /// shorter, and a worker that stops loses its jobs to another after this.
@@ -63,6 +75,8 @@ pub trait JobStore: ChangeStore + 'static {
             failure: &TechnicalName,
             now: Timestamp
         ) -> bool;
+        /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
+        fn later_job_waits(kind: &TechnicalName, after: Timestamp) -> bool;
         /// Puts a job in the queue on its own: for the rest of a piece of work that a job did a
         /// step of (the step is bookkeeping of a run that is stored already, not a domain change).
         fn queue_job(
@@ -110,11 +124,80 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
                 failed(FAILED)
             }),
+            kind::PURGE_DRAFTS => self
+                .run_daily(kind::PURGE_DRAFTS, async {
+                    purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
+                        tracing::info!(drafts, "old drafts were cleared");
+                    })
+                })
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "old drafts could not be cleared");
+                    failed(FAILED)
+                }),
+            kind::CATCH_UP_HISTORY => self
+                .run_daily(kind::CATCH_UP_HISTORY, async {
+                    self.catch_up_history().await.map(|events| {
+                        tracing::info!(events, "the history caught up with the events");
+                    })
+                })
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "the history could not catch up");
+                    failed(FAILED)
+                }),
             other => {
                 tracing::error!(kind = other, "a job of a kind nobody knows");
                 Err(failed(UNKNOWN_KIND))
             }
         }
+    }
+
+    /// Does the work of a job of a daily kind. Its next round is queued first, so a round that
+    /// fails (and is tried again by the queue) or a worker that stops does not end the daily
+    /// rounds; nothing is queued when a round for a later time waits already, so a server that
+    /// starts again within the day (see [`Ctx::start_daily_jobs`]) does not add a second chain.
+    async fn run_daily(
+        &self,
+        name: &str,
+        work: impl Future<Output = Result<(), AppError>>,
+    ) -> Result<(), AppError> {
+        let kind = kind_name(name)?;
+        let now = self.now();
+        let waits = self
+            .store()
+            .later_job_waits(&kind, now)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if !waits {
+            let next = now
+                .checked_add(DAILY)
+                .map_err(|error| AppError::Internal(error.to_string()))?;
+            self.queue_daily(&kind, next).await?;
+        }
+        work.await
+    }
+
+    async fn queue_daily(&self, kind: &TechnicalName, at: Timestamp) -> Result<(), AppError> {
+        let id = JobId::generate(&mut self.ids())
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        self.store()
+            .queue_job(id, kind, &Value::Null, at, self.now())
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
+    /// Queues a round of every daily job at once: the server calls it when it starts, so old drafts
+    /// are cleared and the history is caught up at every start, and the rounds after that come
+    /// every [`DAILY`] from the jobs themselves.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub async fn start_daily_jobs(&self) -> Result<(), AppError> {
+        for name in kind::DAILY_JOBS {
+            self.queue_daily(&kind_name(name)?, self.now()).await?;
+        }
+        Ok(())
     }
 
     /// Runs the due jobs once: takes up to [`JOBS_AT_A_TIME`] jobs for a worker that has a name of

@@ -97,6 +97,14 @@ impl JobStore for AuthStorage {
             .is_some())
     }
 
+    async fn later_job_waits(
+        &self,
+        kind: &TechnicalName,
+        after: Timestamp,
+    ) -> Result<bool, StoreError> {
+        self.database().later_job_waits(kind, after).await
+    }
+
     async fn queue_job(
         &self,
         id: JobId,

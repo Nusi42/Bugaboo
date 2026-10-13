@@ -22,6 +22,7 @@ mod key_scope;
 mod keys;
 mod limits;
 mod moving;
+mod recurring_jobs;
 mod scenarios;
 mod scenarios_fields;
 mod scenarios_issues;
