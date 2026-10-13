@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import example from "../../../tools/dev/load-book.example.json" with { type: "json" };
 import { newBook } from "./book.ts";
 import { parseOptions, QUIET_SECONDS } from "./options.ts";
 import { pick, randomFrom } from "./random.ts";
@@ -57,8 +56,8 @@ describe("test_concurrent the same seed makes the same choices", () => {
   });
 });
 
-describe("test_concurrent the book of a run has the shape bb-load-check reads", () => {
-  it("writes the file that the Rust side reads and writes back unchanged", () => {
+describe("test_concurrent the book of a run is what the people wrote", () => {
+  it("holds every note in the file for bb-load-check and counts them for the summary", () => {
     const issue = { id: "00000000-0000-4000-8000-000000000001", key: "LOAD-1" };
     const book = newBook();
     book.kept({ key: "LOAD-1", version: 2 });
@@ -78,7 +77,13 @@ describe("test_concurrent the book of a run has the shape bb-load-check reads", 
       text: "A text that was left behind",
       ending: "vanished",
     });
-    expect(JSON.parse(JSON.stringify(book.file([issue])))).toEqual(example);
+    const file = book.file([issue]);
+    expect(file.issues).toEqual([issue]);
+    expect(file.kept.map((note) => note.version)).toEqual([2, 3]);
+    expect(file.comments).toEqual(["LOAD-1"]);
+    expect(file.seen).toHaveLength(1);
+    expect(file.drafted.map((note) => note.ending)).toEqual(["refused", "vanished"]);
+    expect(file.broken).toEqual([]);
     expect(book.counts()).toMatchObject({ kept: 2, comments: 1, refused: 1, vanished: 1 });
   });
 });

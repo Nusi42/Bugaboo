@@ -1,53 +1,14 @@
 // The book of a run: what each person kept, was refused and read. The driver writes it as JSON,
 // and `bb-load-check` (crates/bb-load-check) judges it: the rules are there and nowhere else. The
-// shape is the one of `bb_load_check::Book`; `tools/dev/load-book.example.json` is read by a test
-// of each side, so the two cannot drift apart unseen.
+// shape of the file is declared once, in Rust (`book.rs`); `book.generated.ts` is made from it by
+// `cargo xtask gen load-book`. This file holds what is not a declaration of that shape.
 
-/** An issue the people work on. */
-export interface Work {
-  readonly id: string;
-  readonly key: string;
-}
+import type { Book, Drafted, Kept, Seen, Work } from "./book.generated.ts";
 
-/** A change the server kept: the version the issue had after it, and the text of a save of the description. */
-export interface Kept {
-  readonly key: string;
-  readonly version: number;
-  readonly text?: string;
-}
-
-/** A version of an issue that a person read. */
-export interface Seen {
-  readonly person: number;
-  readonly key: string;
-  readonly version: number;
-}
-
-/** What became of the text of a draft: saved, refused (it stays as the draft), or the editor vanished. */
-export type DraftEnd = "saved" | "refused" | "vanished";
-
-/** A text sent as a draft with a heartbeat, and what became of it. */
-export interface Drafted {
-  readonly holder: string;
-  readonly key: string;
-  readonly text: string;
-  readonly ending: DraftEnd;
-  /** For a refused save: whether the person found the text as their draft at once. */
-  readonly found_as_draft?: boolean;
-}
-
-/** What goes into the file for `bb-load-check`. */
-export interface BookFile {
-  readonly issues: readonly Work[];
-  readonly kept: readonly Kept[];
-  readonly comments: readonly string[];
-  readonly seen: readonly Seen[];
-  readonly drafted: readonly Drafted[];
-  readonly broken: readonly string[];
-}
+export type { Book, DraftEnd, Drafted, Kept, Seen, Work } from "./book.generated.ts";
 
 /** The book, written by everybody at once, and two counts for the summary of the run. */
-export interface Book {
+export interface BookWriter {
   readonly kept: (note: Kept) => void;
   readonly comment: (key: string) => void;
   readonly seen: (note: Seen) => void;
@@ -58,7 +19,7 @@ export interface Book {
   /** A person took the editing over (*Edit anyway*). */
   readonly tookOver: () => void;
   /** The file for `bb-load-check`. */
-  readonly file: (issues: readonly Work[]) => BookFile;
+  readonly file: (issues: readonly Work[]) => Book;
   /** How many of each there are, for the summary. */
   readonly counts: () => Counts;
 }
@@ -74,7 +35,7 @@ export interface Counts {
 }
 
 /** An empty book. */
-export function newBook(): Book {
+export function newBook(): BookWriter {
   const kept: Kept[] = [];
   const comments: string[] = [];
   const seen: Seen[] = [];

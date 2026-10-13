@@ -14,7 +14,7 @@ import {
   type EditWhat,
 } from "@bugaboo/api-client";
 
-import { type Book, type Work } from "./book.ts";
+import { type BookWriter, type Work } from "./book.ts";
 import { pick } from "./random.ts";
 
 /** One person at work: who they are, what they work on, and when to stop. */
@@ -23,7 +23,7 @@ export interface Context {
   /** The ID of the person. */
   readonly holder: string;
   readonly client: Client;
-  readonly book: Book;
+  readonly book: BookWriter;
   readonly issues: readonly Work[];
   readonly random: () => number;
   /** When to stop, as milliseconds since 1970. */

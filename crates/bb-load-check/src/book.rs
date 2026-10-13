@@ -113,17 +113,38 @@ pub(crate) fn last_drafts(book: &Book) -> Vec<&Drafted> {
 mod tests {
     use super::*;
 
-    /// The file that the test of the driver reads too (`web/tooling/load/book.test.ts`): the two
-    /// sides write the book in the same shape.
-    const EXAMPLE: &str = include_str!("../../../tools/dev/load-book.example.json");
-
+    /// A file of the book in the shape the driver writes (its types are generated from the ones
+    /// above, `cargo xtask gen load-book`): read, and written back unchanged.
     #[test]
-    fn test_concurrent_the_book_of_the_driver_reads_and_writes_the_same_shape() {
-        let book: Book = serde_json::from_str(EXAMPLE).unwrap();
+    fn test_concurrent_the_book_of_the_driver_is_read_and_written_back_unchanged() {
+        let example = serde_json::json!({
+            "issues": [{"id": "00000000-0000-4000-8000-000000000001", "key": "LOAD-1"}],
+            "kept": [
+                {"key": "LOAD-1", "version": 2},
+                {"key": "LOAD-1", "version": 3, "text": "A text that was kept"}
+            ],
+            "comments": ["LOAD-1"],
+            "seen": [{"person": 1, "key": "LOAD-1", "version": 2}],
+            "drafted": [
+                {
+                    "holder": "00000000-0000-4000-8000-000000000002",
+                    "key": "LOAD-1",
+                    "text": "A text that was refused",
+                    "ending": "refused",
+                    "found_as_draft": true
+                },
+                {
+                    "holder": "00000000-0000-4000-8000-000000000003",
+                    "key": "LOAD-1",
+                    "text": "A text that was left behind",
+                    "ending": "vanished"
+                }
+            ],
+            "broken": []
+        });
+        let book: Book = serde_json::from_value(example.clone()).unwrap();
         assert_eq!(book.kept.len(), 2);
         assert_eq!(book.drafted[1].ending, DraftEnd::Vanished);
-        let written = serde_json::to_value(&book).unwrap();
-        let example: serde_json::Value = serde_json::from_str(EXAMPLE).unwrap();
-        assert_eq!(written, example);
+        assert_eq!(serde_json::to_value(&book).unwrap(), example);
     }
 }

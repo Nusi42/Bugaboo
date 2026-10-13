@@ -1,14 +1,14 @@
 import { writeFileSync } from "node:fs";
 
 import { type Instance } from "../../app/e2e/support/server.ts";
-import { type Book, newBook } from "./book.ts";
+import { type BookWriter, newBook } from "./book.ts";
 import { prepare } from "./organization.ts";
 import { type LoadOptions, QUIET_SECONDS } from "./options.ts";
 import { keepWorking, type Context } from "./person.ts";
 import { randomFrom } from "./random.ts";
 
 /** What a run did, in a few lines. */
-function summary(book: Book, options: LoadOptions): string {
+function summary(book: BookWriter, options: LoadOptions): string {
   const count = book.counts();
   return [
     `${String(options.people)} people for ${String(options.seconds)} seconds on ${options.database}:`,

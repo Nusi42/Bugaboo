@@ -8,6 +8,7 @@ pub(crate) mod clippy;
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;
 pub(crate) mod kdl_reader;
+pub(crate) mod load_book;
 pub(crate) mod made_keys;
 pub(crate) mod messages;
 pub(crate) mod messages_rust;
@@ -54,7 +55,7 @@ pub(crate) const DOCS: &str = "docs";
 /// Every generator, once. A generated file in the repository is written by one of these;
 /// DOC-GENERATED compares all of them with the disk, `cargo xtask gen <name>` writes one, and
 /// META-COVERAGE counts their paths as generated.
-pub(crate) const GENERATORS: [Generator; 7] = [
+pub(crate) const GENERATORS: [Generator; 8] = [
     Generator {
         name: DOCS,
         help: "The commentable HTML pages from the Markdown sources and the check catalogue.",
@@ -96,6 +97,12 @@ pub(crate) const GENERATORS: [Generator; 7] = [
         help: "The API description, the browser client's types and the cookie list, from bb-api.",
         paths: api::output_paths,
         generate: |repo, _| api::generate(repo),
+    },
+    Generator {
+        name: "load-book",
+        help: "The TypeScript types of the book of a load run, from its Rust types in bb-load-check.",
+        paths: || vec![load_book::OUTPUT],
+        generate: |repo, _| load_book::generate(repo),
     },
 ];
 
