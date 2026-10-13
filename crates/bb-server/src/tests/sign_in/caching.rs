@@ -76,6 +76,20 @@ async fn a_comment_and_a_field(
     Ok((a_comment_on(ada, issue_key).await?, a_field(ada).await?))
 }
 
+/// The address of a route that is about something named in its query: the draft and lock routes
+/// name a record (the example project), the layout routes the project and a kind of form.
+fn with_query(template: &str, filled: String, project: &str, project_id: &str) -> String {
+    match template {
+        "/api/v1/drafts" | "/api/v1/edit-locks" => {
+            format!("{filled}?kind=project&id={project_id}&part=description")
+        }
+        "/api/v1/layouts/form" | "/api/v1/layouts/editor" => {
+            format!("{filled}?project={project}&kind=new-issue")
+        }
+        _ => filled,
+    }
+}
+
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
@@ -143,15 +157,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
                 .replace("{project}", project);
-            // The draft and the lock routes are about a record named in the query: the example
-            // project.
-            let filled = if template == "/api/v1/drafts" || template == "/api/v1/edit-locks" {
-                format!("{filled}?kind=project&id={project_id}&part=description")
-            } else if template == "/api/v1/layouts/form" || template == "/api/v1/layouts/editor" {
-                format!("{filled}?project={project}&kind=new-issue")
-            } else {
-                filled
-            };
+            let filled = with_query(template, filled, project, &project_id);
             let path = &filled;
             assert!(
                 !path.contains('{'),
