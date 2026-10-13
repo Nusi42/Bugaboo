@@ -3,10 +3,8 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
-import { wordOf } from "../../shared/change-value.ts";
-import { listText } from "../../shared/list-text.ts";
-import { ownValueText } from "../../shared/own-value-text.ts";
-import { personName, personNameInside } from "../../shared/person.ts";
+import { changeValueText } from "../../shared/change-value.ts";
+import { personName } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** One item of the history of an issue: a comment, one field that changed, or a relation. */
@@ -70,16 +68,17 @@ export function fieldLabel(field: string, name?: string | null): string {
   }
 }
 
-/** What one side of a change shows: a word, the people, or the issue; nothing for no value. */
-export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | undefined {
-  const text = side === "before" ? entry.before_text : entry.after_text;
-  const value = side === "before" ? entry.before_value : entry.after_value;
-  const names = side === "before" ? entry.before_names : entry.after_names;
-  const people = side === "before" ? entry.before_people : entry.after_people;
-  const issue = side === "before" ? entry.before_issue : entry.after_issue;
-  const project = side === "before" ? entry.before_project : entry.after_project;
+/** The value of one side of a history entry in the one shape of a change's value, if it has any. */
+function valueOf(entry: HistoryEntry, side: "before" | "after"): Schema<"ChangeValueBody"> | null {
+  const before = side === "before";
+  const text = before ? entry.before_text : entry.after_text;
+  const value = before ? entry.before_value : entry.after_value;
+  const names = before ? entry.before_names : entry.after_names;
+  const people = before ? entry.before_people : entry.after_people;
+  const issue = before ? entry.before_issue : entry.after_issue;
+  const project = before ? entry.before_project : entry.after_project;
   if (text !== undefined && text !== null) {
-    return wordOf(entry.field ?? "", text);
+    return { shown: "text", text };
   }
   if (
     value !== undefined &&
@@ -87,21 +86,23 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
     entry.field_kind !== undefined &&
     entry.field_kind !== null
   ) {
-    return ownValueText(entry.field_kind, value);
+    return { shown: "typed", kind: entry.field_kind, value };
   }
   if (names !== undefined && names !== null) {
-    // No tags or labels before: nothing was there, so the sentence says it was set.
-    return names.length === 0 ? undefined : listText(names);
+    return { shown: "names", names };
   }
   if (people !== undefined && people !== null) {
-    return people.length === 0
-      ? t("history.people-none")
-      : listText(people.map((person) => personNameInside(person)));
+    return { shown: "people", people };
   }
   if (project !== undefined && project !== null) {
-    return project.name;
+    return { shown: "project", project };
   }
-  return issue === undefined || issue === null ? undefined : issue.key;
+  return issue === undefined || issue === null ? null : { shown: "issue", issue };
+}
+
+/** What one side of a change shows: a word, the people, or the issue; nothing for no value. */
+export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | undefined {
+  return changeValueText(entry.field ?? "", valueOf(entry, side));
 }
 
 /** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */

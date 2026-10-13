@@ -6,7 +6,7 @@ import { ownValueText } from "./own-value-text.ts";
 import { personNameInside } from "./person.ts";
 
 /** A word of a status or a priority as people read it; any other text as it is. */
-export function wordOf(field: string, text: string): string {
+function wordOf(field: string, text: string): string {
   const key = field === "status" ? `status.${text}` : `priority.${text}`;
   return (field === "status" || field === "priority") && isMessageKey(key) ? t(key) : text;
 }
