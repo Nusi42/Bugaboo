@@ -21,6 +21,8 @@ const webkitPhoneFiles = [
 
 export default defineConfig({
   testDir: resolve(import.meta.dirname, "../app/e2e"),
+  // Playwright's default also takes `*.test.ts`, which are Vitest files; only specs are run here.
+  testMatch: "**/*.spec.ts",
   outputDir: resolve(repoRoot, "test-results"),
   // The tests of a file go one after the other, on one server; files run side by side.
   fullyParallel: false,
