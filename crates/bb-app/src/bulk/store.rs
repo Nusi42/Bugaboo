@@ -22,7 +22,7 @@ pub trait BulkStore: JobStore + 'static {
     }
 
     reads! {
-        /// Saves how far a run is (its state, the number of issues looked at, the number changed,
+        /// Saves how far a run is (its status, the number of issues looked at, the number changed,
         /// the issues left alone, the end) if it is still at `expected_done`, and says whether it
         /// was. Two workers that took the same step cannot both count it.
         fn save_bulk_progress(run: &BulkRun, expected_done: i64) -> bool;

@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::access::AppliesTo;
-use bb_core::bulk::{BULK_JOB_ABOVE, BulkState, SkipReason};
+use bb_core::bulk::{BULK_JOB_ABOVE, BulkStatus, SkipReason};
 use bb_core::id::{IssueId, ProjectId};
 use bb_core::issue::Status;
 use bb_core::technical::TechnicalName;
@@ -315,7 +315,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     let events_before = world.store.event_count();
     let result = apply(&world, &admin, targets(&asked), &done()).await?;
     let started = result.run.ok_or("a big change must start a run")?;
-    assert_eq!((started.state, started.done), (BulkState::Queued, 0));
+    assert_eq!((started.status, started.done), (BulkStatus::Queued, 0));
     // Only the run is written before a worker takes the first step.
     assert_eq!(world.store.event_count(), events_before + 1);
     let worker = TechnicalName::new("worker.test")?;
@@ -340,7 +340,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     )
     .await?
     .into_value();
-    assert_eq!(finished.state, BulkState::Done);
+    assert_eq!(finished.status, BulkStatus::Done);
     assert_eq!((finished.done, finished.changed), (1001, 1001));
     assert_eq!(finished.skipped_count, 0);
     // One event for each issue, and the one of the run.

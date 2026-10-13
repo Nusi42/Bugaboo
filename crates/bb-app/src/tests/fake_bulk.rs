@@ -143,7 +143,7 @@ impl BulkStore for FakeStore {
         else {
             return Ok(false);
         };
-        found.state = run.state;
+        found.status = run.status;
         found.done = run.done;
         found.changed = run.changed;
         found.skipped.clone_from(&run.skipped);

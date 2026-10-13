@@ -342,17 +342,17 @@ pub const BULK_SKIP_SAME_ISSUE: MessageKey = MessageKey::new("bulk-skip.same-iss
 /// The message `bulk-skip.type-missing`.
 pub const BULK_SKIP_TYPE_MISSING: MessageKey = MessageKey::new("bulk-skip.type-missing");
 
-/// The message `bulk-state.done`.
-pub const BULK_STATE_DONE: MessageKey = MessageKey::new("bulk-state.done");
+/// The message `bulk-status.done`.
+pub const BULK_STATUS_DONE: MessageKey = MessageKey::new("bulk-status.done");
 
-/// The message `bulk-state.failed`.
-pub const BULK_STATE_FAILED: MessageKey = MessageKey::new("bulk-state.failed");
+/// The message `bulk-status.failed`.
+pub const BULK_STATUS_FAILED: MessageKey = MessageKey::new("bulk-status.failed");
 
-/// The message `bulk-state.queued`.
-pub const BULK_STATE_QUEUED: MessageKey = MessageKey::new("bulk-state.queued");
+/// The message `bulk-status.queued`.
+pub const BULK_STATUS_QUEUED: MessageKey = MessageKey::new("bulk-status.queued");
 
-/// The message `bulk-state.running`.
-pub const BULK_STATE_RUNNING: MessageKey = MessageKey::new("bulk-state.running");
+/// The message `bulk-status.running`.
+pub const BULK_STATUS_RUNNING: MessageKey = MessageKey::new("bulk-status.running");
 
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
@@ -6842,10 +6842,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "bulk-skip.type-missing",
         "The other project does not offer its issue type",
     ),
-    ("bulk-state.done", "Done"),
-    ("bulk-state.failed", "Stopped"),
-    ("bulk-state.queued", "Waiting"),
-    ("bulk-state.running", "Working"),
+    ("bulk-status.done", "Done"),
+    ("bulk-status.failed", "Stopped"),
+    ("bulk-status.queued", "Waiting"),
+    ("bulk-status.running", "Working"),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),

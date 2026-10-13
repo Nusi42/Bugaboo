@@ -8,7 +8,7 @@
 
 use bb_app::bulk::BulkStore;
 use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
-use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkState};
+use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus};
 use bb_core::id::{BulkRunId, JobId, UserId};
 use bb_core::job::Job;
 use bb_core::technical::TechnicalName;
@@ -30,7 +30,7 @@ fn run_select() -> SelectStatement {
             BulkRunRow::Person,
             BulkRunRow::Action,
             BulkRunRow::Items,
-            BulkRunRow::State,
+            BulkRunRow::Status,
             BulkRunRow::Done,
             BulkRunRow::Changed,
             BulkRunRow::Skipped,
@@ -49,8 +49,8 @@ fn read_run(row: &Row) -> Result<BulkRun, StoreError> {
         person: row.id::<UserId>(BulkRunRow::Person)?,
         action: serde_json::from_str(&row.get::<String>(BulkRunRow::Action)?)?,
         items,
-        state: BulkState::from_code(&row.get::<String>(BulkRunRow::State)?)
-            .ok_or(StoreError::Corrupt("the state of a run"))?,
+        status: BulkStatus::from_code(&row.get::<String>(BulkRunRow::Status)?)
+            .ok_or(StoreError::Corrupt("the status of a run"))?,
         done: row.get(BulkRunRow::Done)?,
         changed: row.get(BulkRunRow::Changed)?,
         skipped,
@@ -145,7 +145,7 @@ impl BulkStore for AuthStorage {
         let mut update = Query::update();
         update
             .table(BulkRunRow::Table)
-            .value(BulkRunRow::State, run.state.code())
+            .value(BulkRunRow::Status, run.status.code())
             .value(BulkRunRow::Done, run.done)
             .value(BulkRunRow::Changed, run.changed)
             .value(BulkRunRow::Skipped, serde_json::to_string(&run.skipped)?)
@@ -167,7 +167,7 @@ impl BulkStore for AuthStorage {
                 BulkRunRow::Person,
                 BulkRunRow::Action,
                 BulkRunRow::Items,
-                BulkRunRow::State,
+                BulkRunRow::Status,
                 BulkRunRow::Done,
                 BulkRunRow::Changed,
                 BulkRunRow::Skipped,
@@ -179,7 +179,7 @@ impl BulkStore for AuthStorage {
                 Expr::val(run.person.stored()),
                 Expr::val(serde_json::to_string(&run.action)?),
                 Expr::val(serde_json::to_string(&run.items)?),
-                Expr::val(run.state.code()),
+                Expr::val(run.status.code()),
                 Expr::val(run.done),
                 Expr::val(run.changed),
                 Expr::val(serde_json::to_string(&run.skipped)?),

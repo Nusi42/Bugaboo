@@ -78,3 +78,73 @@ reason = "The same progress as GET /api/v1/issues/{issue}/relations: it counts o
 route = "GET /api/v1/fields/{field}/used-by"
 property = "project_count"
 reason = "Counts only the projects the viewer may see: every project is checked for the viewer before it is counted, and the answer needs Manage fields (CF-03, M3 WP-05)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/preview"
+property = "will_change"
+reason = "Counts the issues the person named themselves in the request; an issue they may not see counts as skipped, exactly as one that does not exist does, so it tells them nothing they did not send (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/preview"
+property = "skipped"
+reason = "Counts the issues the person named themselves in the request; an issue they may not see counts as skipped, exactly as one that does not exist does, so it tells them nothing they did not send (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/changes"
+property = "changed"
+reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/changes"
+property = "done"
+reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/changes"
+property = "skipped_count"
+reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/changes"
+property = "total"
+reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/bulk/runs/{run}"
+property = "changed"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/bulk/runs/{run}"
+property = "done"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/bulk/runs/{run}"
+property = "skipped_count"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
+
+[[exempt]]
+route = "GET /api/v1/bulk/runs/{run}"
+property = "total"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/tags/{tag}/preview"
+property = "will_change"
+reason = "Counts only the issues the person sees: an issue they may not see is not counted (PRIV-13, M3-Q8)."
+
+[[exempt]]
+route = "POST /api/v1/tags/{tag}/preview"
+property = "skipped"
+reason = "Counts only the issues the person sees: an issue they may not see is not counted (PRIV-13, M3-Q8)."
+
+[[exempt]]
+route = "POST /api/v1/labels/{label}/preview"
+property = "will_change"
+reason = "Counts only the issues the person sees: an issue they may not see is not counted (PRIV-13, M3-Q8)."
+
+[[exempt]]
+route = "POST /api/v1/labels/{label}/preview"
+property = "skipped"
+reason = "Counts only the issues the person sees: an issue they may not see is not counted (PRIV-13, M3-Q8)."

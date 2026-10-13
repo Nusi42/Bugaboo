@@ -9,7 +9,7 @@
 //! job (ADR-0017) that goes on a step at a time, and a person reads how far it is (`run.rs`).
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_ISSUES_MAX, BULK_JOB_ABOVE, BulkItem, BulkRun, BulkState, SkipReason};
+use bb_core::bulk::{BULK_ISSUES_MAX, BULK_JOB_ABOVE, BulkItem, BulkRun, BulkStatus, SkipReason};
 use bb_core::event::RecordKind;
 use bb_core::id::{BulkRunId, JobId};
 use bb_policy::{Authorized, Place};
@@ -179,7 +179,7 @@ pub async fn apply_bulk<S: AuthStore>(
                     .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))
             })
             .collect::<Result<Vec<_>, _>>()?,
-        state: BulkState::Queued,
+        status: BulkStatus::Queued,
         done: 0,
         changed: 0,
         skipped: Vec::new(),

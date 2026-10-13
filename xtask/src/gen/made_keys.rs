@@ -5,7 +5,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::bulk::{BulkState, SkipReason};
+use bb_core::bulk::{BulkStatus, SkipReason};
 use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
 use bb_core::issue_key::IdMode;
@@ -97,11 +97,11 @@ pub(crate) fn made_keys() -> Vec<Made> {
             reason.name(),
         ));
     }
-    for state in BulkState::ALL {
+    for status in BulkStatus::ALL {
         keys.push(made(
-            "the state of a run of many changes",
-            state.code(),
-            state.name(),
+            "the status of a run of many changes",
+            status.code(),
+            status.name(),
         ));
     }
     keys

@@ -6,7 +6,7 @@
 use bb_app::bulk::BulkStore;
 use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use bb_app::ports::{BoxFuture, ChangeStore};
-use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkState, SkipReason};
+use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus, SkipReason};
 use bb_core::id::{BulkRunId, IdSource, IssueId, JobId, UserId};
 use bb_core::technical::TechnicalName;
 use bb_testing::{TestResult, each_database};
@@ -35,7 +35,7 @@ fn a_run(source: &mut impl IdSource, issues: usize) -> BulkRun {
                 version: 1,
             })
             .collect(),
-        state: BulkState::Queued,
+        status: BulkStatus::Queued,
         done: 0,
         changed: 0,
         skipped: Vec::new(),
@@ -84,7 +84,7 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         );
         // Counting an issue: only the worker that is at that issue counts it.
         let mut progress = run.clone();
-        progress.state = BulkState::Running;
+        progress.status = BulkStatus::Running;
         progress.done = 1;
         progress.changed = 1;
         assert!(storage.save_bulk_progress(&progress, 0).await?);
@@ -92,7 +92,7 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         assert!(!late, "the same issue is not counted twice");
         progress.done = 3;
         progress.changed = 2;
-        progress.state = BulkState::Done;
+        progress.status = BulkStatus::Done;
         progress.skipped = vec![BulkSkip {
             issue: run.items[2].issue,
             reason: SkipReason::ChangedSince,

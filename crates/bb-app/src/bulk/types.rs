@@ -8,7 +8,7 @@
 
 use std::collections::BTreeMap;
 
-use bb_core::bulk::{BulkState, SkipReason};
+use bb_core::bulk::{BulkStatus, SkipReason};
 use bb_core::id::{BulkRunId, LabelId, RelationKindId, UserId};
 use bb_core::issue::{Priority, Status};
 use bb_core::relation::Direction;
@@ -190,7 +190,7 @@ pub struct BulkRunView {
     /// The run.
     pub id: BulkRunId,
     /// Where it is.
-    pub state: BulkState,
+    pub status: BulkStatus,
     /// How many issues it has.
     pub total: u32,
     /// How many it has looked at.

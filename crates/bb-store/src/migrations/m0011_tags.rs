@@ -222,7 +222,7 @@ fn runs() -> Vec<Step> {
             .col(ColumnDef::new(BulkRunRow::Person).blob().not_null())
             .col(ColumnDef::new(BulkRunRow::Action).text().not_null())
             .col(ColumnDef::new(BulkRunRow::Items).text().not_null())
-            .col(ColumnDef::new(BulkRunRow::State).text().not_null())
+            .col(ColumnDef::new(BulkRunRow::Status).text().not_null())
             .col(ColumnDef::new(BulkRunRow::Done).big_integer().not_null())
             .col(ColumnDef::new(BulkRunRow::Changed).big_integer().not_null())
             .col(ColumnDef::new(BulkRunRow::Skipped).text().not_null())

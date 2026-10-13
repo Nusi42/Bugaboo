@@ -356,6 +356,95 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
+        "getIssueSorting",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "addTag",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "removeTag",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "addLabel",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "removeLabel",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "listTagSuggestions",
+        Declared::Permission(Permission::SeeProjects),
+        Answer::NeverStored,
+    ),
+    route(
+        "listTags",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::NeverStored,
+    ),
+    route(
+        "previewTagChange",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeTag",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "combineTags",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route("listLabels", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "makeLabelGroup",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeLabelGroup",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "makeLabel",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "previewLabelChange",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "changeLabel",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "combineLabels",
+        Declared::Permission(Permission::ManageLabels),
+        Answer::Ordinary,
+    ),
+    route(
+        "moveIssue",
+        Declared::Permission(Permission::MoveIssues),
+        Answer::Ordinary,
+    ),
+    route("previewBulkChange", Declared::ByRecord, Answer::Ordinary),
+    route("applyBulkChange", Declared::ByRecord, Answer::Ordinary),
+    route("getBulkRun", Declared::SignedIn, Answer::NeverStored),
+    route(
         "addComment",
         Declared::Permission(Permission::Comment),
         Answer::Ordinary,

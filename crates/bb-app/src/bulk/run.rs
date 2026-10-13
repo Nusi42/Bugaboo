@@ -7,7 +7,7 @@
 //! is not counted. When issues are left, the step queues the next one.
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkState};
+use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus};
 use bb_core::id::BulkRunId;
 use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
@@ -46,7 +46,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let count = |number: usize| u32::try_from(number).unwrap_or(u32::MAX);
         Ok(BulkRunView {
             id: run.id,
-            state: run.state,
+            status: run.status,
             total: count(run.items.len()),
             done: u32::try_from(run.done).unwrap_or(u32::MAX),
             changed: u32::try_from(run.changed).unwrap_or(u32::MAX),
@@ -75,7 +75,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        if matches!(run.state, BulkState::Done | BulkState::Failed) {
+        if matches!(run.status, BulkStatus::Done | BulkStatus::Failed) {
             return Ok(());
         }
         let Some(person) = self
@@ -85,7 +85,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
         else {
             // The person who asked is gone: nobody to change things as.
-            return self.end_run(&mut run, BulkState::Failed).await;
+            return self.end_run(&mut run, BulkStatus::Failed).await;
         };
         let actor = Actor { person, key: None };
         let acting = self.services.ctx_acting_as(actor.clone());
@@ -96,7 +96,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Ok(selection) => selection,
             Err(AppError::Refused(_)) => {
                 // What the action names is gone since it was asked for (the project, the label).
-                return self.end_run(&mut run, BulkState::Failed).await;
+                return self.end_run(&mut run, BulkStatus::Failed).await;
             }
             Err(other) => return Err(other),
         };
@@ -105,7 +105,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .items
             .len()
             .min(usize::try_from(run.done).unwrap_or(usize::MAX) + BULK_STEP);
-        run.state = BulkState::Running;
+        run.status = BulkStatus::Running;
         while usize::try_from(run.done).unwrap_or(usize::MAX) < end {
             let at = run.done;
             let item = run.items[usize::try_from(at).unwrap_or(usize::MAX)];
@@ -124,12 +124,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Err(error) => {
                     // The store broke: the run stops where it is, and says so.
                     tracing::error!(cause = %error, "a change to many issues stopped");
-                    return self.end_run(&mut run, BulkState::Failed).await;
+                    return self.end_run(&mut run, BulkStatus::Failed).await;
                 }
             }
             run.done += 1;
             if usize::try_from(run.done).unwrap_or(usize::MAX) >= run.items.len() {
-                run.state = BulkState::Done;
+                run.status = BulkStatus::Done;
                 run.finished_at = Some(self.now());
             }
             if !self
@@ -142,16 +142,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                 return Ok(());
             }
         }
-        if run.state != BulkState::Done {
+        if run.status != BulkStatus::Done {
             self.queue_next_step(id).await?;
         }
         Ok(())
     }
 
     /// Ends a run that cannot go on, with what it did so far.
-    async fn end_run(&self, run: &mut BulkRun, state: BulkState) -> Result<(), AppError> {
+    async fn end_run(&self, run: &mut BulkRun, status: BulkStatus) -> Result<(), AppError> {
         let at = run.done;
-        run.state = state;
+        run.status = status;
         run.finished_at = Some(self.now());
         self.store()
             .save_bulk_progress(run, at)

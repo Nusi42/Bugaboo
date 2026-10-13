@@ -111,7 +111,7 @@ Defined in `crates/bb-core/src/bulk.rs`.
 | `person`      | Yes           | `activity` | `contract`             | Who asked for it: the changes are made as this person.                                   |
 | `action`      | Yes           | `content`  | `legitimate_interests` | What the change is, as the use case wrote it. It can hold what a person typed (a value). |
 | `items`       | No            | –          | –                      | The issues and the versions the preview read.                                            |
-| `state`       | No            | –          | –                      | Where the run is.                                                                        |
+| `status`      | No            | –          | –                      | Where the run is.                                                                        |
 | `done`        | No            | –          | –                      | How many issues have been looked at (changed or skipped): the next one is at this place. |
 | `changed`     | No            | –          | –                      | How many of them were changed.                                                           |
 | `skipped`     | No            | –          | –                      | The issues left alone with why.                                                          |

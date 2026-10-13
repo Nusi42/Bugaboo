@@ -12,7 +12,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
     AssignablePeopleQuery, ChangeIssue, DeleteIssue, IssueDetail, IssueQuery,
-    IssueTypeRef as AppIssueTypeRef, IssueView, IssuesQuery, MakeIssue, RestoreIssue,
+    IssueTypeRef as AppIssueTypeRef, IssueView, IssuesQuery, MakeIssue, MoveIssue, RestoreIssue,
     SaveDescription,
 };
 use bb_core::ErrorCode;
@@ -676,6 +676,57 @@ async fn restore_issue(
     answer_authorized(&restored.map(|issue| IssueItem::from(&issue)))
 }
 
+/// The project an issue goes into.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct MoveIssueBody {
+    /// The version of the issue the person looked at.
+    version: i64,
+    /// The project it goes into, by its ID or its short name.
+    project: String,
+}
+
+/// Moves an issue into another project, on the version the person looked at. The issue gets a
+/// readable ID of that project and the old one keeps working. It moves only where the project
+/// offers its issue type, uses every own field it has a value in and allows its tags. Needs the
+/// permission *Move issues* in both projects.
+#[utoipa::path(
+    post,
+    path = "/api/v1/issues/{issue}/move",
+    operation_id = "moveIssue",
+    tag = "issues",
+    params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
+    request_body = MoveIssueBody,
+    responses(
+        (status = 200, description = "The issue, in its new project.", body = IssueItem),
+        InvalidAnswer,
+        NotSignedInAnswer,
+        ForbiddenAnswer,
+        NotFoundAnswer,
+        ConflictAnswer
+    )
+)]
+async fn move_issue(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(issue): ApiPath<String>,
+    ApiJson(body): ApiJson<MoveIssueBody>,
+) -> Result<Response, ApiError> {
+    let moved = auth
+        .api()?
+        .move_issue(
+            info,
+            MoveIssue {
+                session_token,
+                issue,
+                version: body.version,
+                project: body.project,
+            },
+        )
+        .await?;
+    answer_authorized(&moved.map(|issue| IssueItem::from(&issue)))
+}
+
 /// The routes of the issues.
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
@@ -687,6 +738,7 @@ where
         .routes(routes!(list_assignable_people))
         .routes(routes!(get_issue, change_issue, delete_issue))
         .routes(routes!(restore_issue))
+        .routes(routes!(move_issue))
         .routes(routes!(save_issue_description))
 }
 

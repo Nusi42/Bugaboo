@@ -54,7 +54,7 @@ words_in_api!(SkipReason, "Why an issue of the selection is left alone.");
 
 words! {
     /// Where a run of a change to many issues is.
-    pub enum BulkState {
+    pub enum BulkStatus {
         /// Waiting for a worker.
         Queued => "queued",
         /// A worker is changing the issues.
@@ -64,10 +64,10 @@ words! {
         /// The run stopped before it was done.
         Failed => "failed",
     }
-    messages name = "bulk-state."
+    messages name = "bulk-status."
 }
 
-words_in_api!(BulkState, "Where a run of a change to many issues is.");
+words_in_api!(BulkStatus, "Where a run of a change to many issues is.");
 
 /// One issue of a selection with the version the person looked at.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -108,7 +108,7 @@ pub struct BulkRun {
     pub items: Vec<BulkItem>,
     /// Where the run is.
     #[not_personal]
-    pub state: BulkState,
+    pub status: BulkStatus,
     /// How many issues have been looked at (changed or skipped): the next one is at this place.
     #[not_personal]
     pub done: i64,
