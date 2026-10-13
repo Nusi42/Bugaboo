@@ -25,7 +25,7 @@ use super::types::{
     ChangeLabel, ChangeLabelGroup, CombineLabels, LabelChangePreviewQuery, LabelGroupView,
     LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, TagChangePreview,
 };
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
 use crate::input::clean_text;
 use crate::member::{label as member, label_group as group_member};
 use crate::projects::Why;
@@ -556,33 +556,22 @@ pub async fn change_label<S: AuthStore>(
         changes,
     )?;
     let events = ctx.event_maker(by(actor.person.id));
-    let (id, version, why) = (label.id, label.version, Why::default());
-    let (stopped, written) = (why.clone(), name.clone());
+    let write = LabelWrite {
+        id: label.id,
+        version: label.version,
+        name: name.clone(),
+        color,
+        group,
+        retired_at,
+        joins_pick_one,
+        crowd_ids,
+        rewrite,
+    };
+    let (id, why) = (label.id, Why::default());
+    let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                S::lock_tags_and_labels(transaction).await?;
-                let labels = S::labels_in(transaction).await?;
-                let key = name_key(&written);
-                if labels.iter().any(|other| {
-                    other.id != id && other.group == group && name_key(&other.name) == key
-                }) {
-                    return Err(stopped.stop::<S>(ErrorCode::NameTaken));
-                }
-                if joins_pick_one && two_of_in::<S>(transaction, &crowd_ids).await? {
-                    return Err(stopped.stop::<S>(ErrorCode::PickOneConflict));
-                }
-                if let Some(rewrite) = &rewrite {
-                    rewrite.append_events::<S>(transaction, &events).await?;
-                }
-                if S::update_label(transaction, id, &written, color, group, retired_at, version)
-                    .await?
-                {
-                    Ok(())
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
-                }
-            })
+            Box::pin(async move { write.run::<S>(transaction, &events, &stopped).await })
         })
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
@@ -721,4 +710,59 @@ pub async fn combine_labels<S: AuthStore>(
         .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
     let stored = ctx.label_catalogue().await?;
     Ok(held.authorize(LabelView::from(stored.label(into.id)?)))
+}
+
+/// What the change of a label writes.
+struct LabelWrite {
+    id: LabelId,
+    version: i64,
+    name: String,
+    color: ChoiceColor,
+    group: Option<LabelGroupId>,
+    retired_at: Option<Timestamp>,
+    joins_pick_one: bool,
+    crowd_ids: Vec<LabelId>,
+    rewrite: Option<Rewrite>,
+}
+
+impl LabelWrite {
+    /// Writes the change inside it, after the lock: judged again on what is stored now (another
+    /// label may have taken the name, an issue may have got a second label of the group), with the
+    /// event of every issue the new name touches.
+    async fn run<S: AuthStore>(
+        self,
+        transaction: &mut S::Transaction,
+        events: &EventMaker,
+        stopped: &Why,
+    ) -> Result<(), S::Error> {
+        S::lock_tags_and_labels(transaction).await?;
+        let labels = S::labels_in(transaction).await?;
+        let key = name_key(&self.name);
+        if labels.iter().any(|other| {
+            other.id != self.id && other.group == self.group && name_key(&other.name) == key
+        }) {
+            return Err(stopped.stop::<S>(ErrorCode::NameTaken));
+        }
+        if self.joins_pick_one && two_of_in::<S>(transaction, &self.crowd_ids).await? {
+            return Err(stopped.stop::<S>(ErrorCode::PickOneConflict));
+        }
+        if let Some(rewrite) = &self.rewrite {
+            rewrite.append_events::<S>(transaction, events).await?;
+        }
+        if S::update_label(
+            transaction,
+            self.id,
+            &self.name,
+            self.color,
+            self.group,
+            self.retired_at,
+            self.version,
+        )
+        .await?
+        {
+            Ok(())
+        } else {
+            Err(stopped.stop::<S>(ErrorCode::VersionChanged))
+        }
+    }
 }

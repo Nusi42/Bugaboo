@@ -11,18 +11,19 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias};
-use bb_core::issue_key::IssueCode;
-use bb_core::project::Project;
+use bb_core::issue_key::{IssueCode, IssueKey};
+use bb_core::project::{Project, ShortName};
 use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
+use jiff::Timestamp;
 use serde_json::json;
 
 use super::ids::{code_plan_in, new_code_in};
 use super::types::{IssueView, MoveIssue};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::issues::member;
 use crate::projects::Why;
 
@@ -170,60 +171,9 @@ pub async fn move_issue<S: AuthStore>(
             .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    // The codes of the project the issue goes to are given out one change at a
-                    // time, and the type is judged again on what is stored now.
-                    S::lock_issue_codes(transaction, writer.to).await?;
-                    let offered = S::issue_types_in(transaction)
-                        .await?
-                        .iter()
-                        .find(|found| found.id == writer.issue_type)
-                        .is_some_and(|found| found.retired_at.is_none());
-                    if !offered {
-                        return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
-                    }
-                    let plan = code_plan_in::<S>(transaction, writer.to).await?;
-                    let code = new_code_in::<S>(transaction, writer.to, plan, &mut ids).await?;
-                    if !S::move_issue(
-                        transaction,
-                        writer.id,
-                        writer.to,
-                        &code,
-                        writer.version,
-                        now,
-                    )
-                    .await?
-                    {
-                        return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
-                    }
-                    S::insert_issue_alias(
-                        transaction,
-                        &IssueAlias {
-                            project: writer.from,
-                            code: writer.from_code.clone(),
-                            issue: writer.id,
-                            retired_at: now,
-                        },
-                    )
-                    .await?;
-                    // The new ID is a second event of the issue: the first one could not name a
-                    // code that is given out inside the change.
-                    let key =
-                        |short_name: &str, code: &IssueCode| json!(format!("{short_name}-{code}"));
-                    let old_short = S::project_in(transaction, writer.from)
-                        .await?
-                        .map_or_else(String::new, |found| found.short_name.to_string());
-                    let followed = events
-                        .make(
-                            entity(RecordKind::Issue, writer.id),
-                            vec![FieldChange {
-                                field: member::KEY.to_owned(),
-                                before: Some(key(&old_short, &writer.from_code)),
-                                after: Some(key(writer.to_short_name.as_str(), &code)),
-                            }],
-                        )
-                        .map_err(|_| S::aborted())?;
-                    S::append_follow_up_event(transaction, &followed).await?;
-                    Ok(code)
+                    writer
+                        .run::<S>(transaction, &events, &mut ids, now, &stopped)
+                        .await
                 })
             })
             .await
@@ -262,6 +212,65 @@ struct MoveWrite {
     from: ProjectId,
     from_code: IssueCode,
     to: ProjectId,
-    to_short_name: bb_core::project::ShortName,
+    to_short_name: ShortName,
     version: i64,
+}
+
+impl MoveWrite {
+    /// Writes the move inside the change: the codes of the project it goes to are given out one
+    /// change at a time, the type is judged again on what is stored now, the issue gets a code of
+    /// the new project, the old code is kept as a redirect, and the new readable ID is a second
+    /// event of the issue (the first one could not name a code that is given out in the change).
+    async fn run<S: AuthStore>(
+        self,
+        transaction: &mut S::Transaction,
+        events: &EventMaker,
+        ids: &mut impl IdSource,
+        now: Timestamp,
+        stopped: &Why,
+    ) -> Result<IssueCode, S::Error> {
+        S::lock_issue_codes(transaction, self.to).await?;
+        let offered = S::issue_types_in(transaction)
+            .await?
+            .iter()
+            .find(|found| found.id == self.issue_type)
+            .is_some_and(|found| found.retired_at.is_none());
+        if !offered {
+            return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
+        }
+        let plan = code_plan_in::<S>(transaction, self.to).await?;
+        let code = new_code_in::<S>(transaction, self.to, plan, ids).await?;
+        if !S::move_issue(transaction, self.id, self.to, &code, self.version, now).await? {
+            return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+        }
+        S::insert_issue_alias(
+            transaction,
+            &IssueAlias {
+                project: self.from,
+                code: self.from_code.clone(),
+                issue: self.id,
+                retired_at: now,
+            },
+        )
+        .await?;
+        let old_short = S::project_in(transaction, self.from)
+            .await?
+            .ok_or_else(S::aborted)?
+            .short_name;
+        let key = |short_name: &ShortName, code: &IssueCode| {
+            json!(IssueKey::new(short_name.clone(), code.clone()).to_string())
+        };
+        let followed = events
+            .make(
+                entity(RecordKind::Issue, self.id),
+                vec![FieldChange {
+                    field: member::KEY.to_owned(),
+                    before: Some(key(&old_short, &self.from_code)),
+                    after: Some(key(&self.to_short_name, &code)),
+                }],
+            )
+            .map_err(|_| S::aborted())?;
+        S::append_follow_up_event(transaction, &followed).await?;
+        Ok(code)
+    }
 }
