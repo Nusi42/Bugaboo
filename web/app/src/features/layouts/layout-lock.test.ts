@@ -24,7 +24,11 @@ const stillHeld: Heartbeat = {
   notices: [],
   draft_saved: false,
 };
-const ranOut: Heartbeat = { lock: { status: "ran_out" }, notices: [], draft_saved: false };
+const ranOut: Heartbeat = {
+  lock: { status: "ran_out" },
+  notices: [],
+  draft_saved: false,
+};
 
 /** The calls of the lock, recorded; the first answer to asking for the lock is `first`. */
 function rig(first: LockOutcome, beat: Heartbeat) {
@@ -49,6 +53,40 @@ function rig(first: LockOutcome, beat: Heartbeat) {
     nameOf: () => "Ada",
   };
   return { lock: new LayoutLockController(deps), released, beats };
+}
+
+/** A lock that answers each `take` when the test says so, to start twice while one is in flight. */
+function slowRig() {
+  const released: string[] = [];
+  let beats = 0;
+  const answers: ((outcome: LockOutcome) => void)[] = [];
+  const deps: LockDeps = {
+    take: () =>
+      new Promise<LockOutcome>((answer) => {
+        answers.push(answer);
+      }),
+    editAnyway: () => Promise.resolve(taken),
+    askToFinish: () => Promise.resolve(),
+    heartbeat: () => Promise.resolve(stillHeld),
+    release: (token) => {
+      released.push(token);
+      return Promise.resolve();
+    },
+    startHeartbeats: () => {
+      beats += 1;
+      return () => {
+        beats -= 1;
+      };
+    },
+    newEditorId: () => "editor-1",
+    nameOf: () => "Ada",
+  };
+  return {
+    lock: new LayoutLockController(deps),
+    released,
+    answers,
+    beats: () => beats,
+  };
 }
 
 /** Lets the answers of the doubles arrive. */
@@ -91,6 +129,37 @@ describe("iss_17 the edit lock on a layout", () => {
     await beat?.();
     expect(lock.snapshot()).toEqual({ phase: "lost" });
     expect(beats).toEqual([]);
+    expect(released).toEqual(["token-1"]);
+  });
+});
+
+describe("iss_17 asking for the lock more than once", () => {
+  it("takes only the answer of the last ask when it is asked twice, and lets go of the other", async () => {
+    const { lock, released, answers, beats } = slowRig();
+    // Strict mode, a second *Try again*, or a retry after a save: asked while one is in flight.
+    lock.start();
+    lock.start();
+    expect(answers).toHaveLength(2);
+    const [first, second] = answers;
+    second?.({ ...taken, lock_token: "token-2" });
+    await settle();
+    first?.({ ...taken, lock_token: "token-1" });
+    await settle();
+    expect(lock.snapshot()).toEqual({ phase: "mine", token: "token-2" });
+    expect(beats()).toBe(1);
+    expect(released).toEqual(["token-1"]);
+    lock.dispose();
+    expect(beats()).toBe(0);
+    expect(released).toEqual(["token-1", "token-2"]);
+  });
+
+  it("does not take a lock for an editor that was closed while the answer was on its way", async () => {
+    const { lock, released, answers, beats } = slowRig();
+    lock.start();
+    lock.dispose();
+    answers[0]?.(taken);
+    await settle();
+    expect(beats()).toBe(0);
     expect(released).toEqual(["token-1"]);
   });
 });

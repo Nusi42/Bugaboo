@@ -43,6 +43,7 @@ export class LayoutLockController {
   private stop: (() => void) | undefined;
   private token: string | undefined;
   private closed = false;
+  private generation = 0;
 
   constructor(deps: LockDeps) {
     this.deps = deps;
@@ -65,18 +66,39 @@ export class LayoutLockController {
     }
   }
 
-  /** Asks for the lock; called when the editor opens and again by *Try again*. */
+  /**
+   * Asks for the lock; called when the editor opens and again by *Try again*. Every ask makes a
+   * new generation, and only the answer of the latest one counts (as in the long text editor):
+   * a lock an older ask took is let go, so no heartbeat runs for it and no token is left behind.
+   */
   readonly start = (): void => {
     this.release();
     this.closed = false;
     this.set(taking);
-    void this.deps.take(this.editor).then(this.holds, () => {
-      this.set(lost);
-    });
+    this.ask(this.deps.take);
   };
 
-  private readonly holds = (outcome: LockOutcome): void => {
-    if (this.closed) {
+  /** Asks `how` for the lock and takes the answer if nobody asked again meanwhile. */
+  private ask(how: (editor: string) => Promise<LockOutcome>): void {
+    this.generation += 1;
+    const asked = this.generation;
+    void how(this.editor).then(
+      (outcome) => {
+        this.holds(outcome, asked);
+      },
+      () => {
+        if (asked === this.generation && !this.closed) {
+          this.set(lost);
+        }
+      },
+    );
+  }
+
+  private holds(outcome: LockOutcome, asked: number): void {
+    if (this.closed || asked !== this.generation) {
+      if (outcome.status === "taken") {
+        void this.deps.release(outcome.lock_token);
+      }
       return;
     }
     if (outcome.status === "held") {
@@ -93,12 +115,12 @@ export class LayoutLockController {
     this.set({ phase: "mine", token: mine });
     this.stop = this.deps.startHeartbeats(async () => {
       const answer = await this.deps.heartbeat(mine);
-      if (answer.lock.status !== "held" && !this.closed) {
+      if (answer.lock.status !== "held" && !this.closed && asked === this.generation) {
         this.release();
         this.set(lost);
       }
     });
-  };
+  }
 
   private release(): void {
     this.stop?.();
@@ -113,14 +135,13 @@ export class LayoutLockController {
   /** The editor is closed: the heartbeat stops and the lock is let go. */
   readonly dispose = (): void => {
     this.closed = true;
+    this.generation += 1;
     this.release();
   };
 
   /** *Edit anyway*: the lock becomes the caller's. */
   readonly editAnyway = (): void => {
-    void this.deps.editAnyway(this.editor).then(this.holds, () => {
-      this.set(lost);
-    });
+    this.ask(this.deps.editAnyway);
   };
 
   readonly askToFinish = (): void => {
