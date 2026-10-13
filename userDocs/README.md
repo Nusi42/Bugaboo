@@ -7,6 +7,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [My settings](my-settings/README.md): appearance, region, start page and keyboard shortcuts, kept with you
 - [Projects](projects/README.md): the tree, short names, making and moving projects
 - [Issues](issues/README.md): [the issue page](issues/issue-page.md), [making an issue](issues/new-issue.md), [issue IDs](issues/issue-ids.md) and [issue types](issues/issue-types.md)
+- [Tags and labels](labels/README.md): free tags, labels in groups, renaming and combining with a preview
 - [Fields](fields/README.md): own fields, their kinds, choices, rules and who sees them
 - [People, groups and roles](people/README.md): the list of people and the invitations, groups, roles and permissions, and who has which role
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
