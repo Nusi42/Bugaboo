@@ -522,8 +522,6 @@ name = "bb-jobs"
 version = "0.0.0"
 dependencies = [
  "bb-app",
- "bb-core",
- "jiff",
  "tokio",
  "tracing",
 ]

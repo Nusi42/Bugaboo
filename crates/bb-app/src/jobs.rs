@@ -26,6 +26,13 @@ pub mod kind {
     pub const BULK_STEP: &str = "bulk.step";
 }
 
+/// How long a worker holds the jobs it took before another may take them: a step of a job is far
+/// shorter, and a worker that stops loses its jobs to another after this.
+const LEASE: SignedDuration = SignedDuration::from_secs(120);
+
+/// How many jobs a round takes.
+const JOBS_AT_A_TIME: u64 = 5;
+
 /// The code a job reports when its kind is not one any use case does.
 const UNKNOWN_KIND: &str = "job.unknown_kind";
 
@@ -103,29 +110,25 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// Runs the due jobs once: takes up to `limit` jobs for `worker`, does each, and reports it
-    /// done or failed. Returns how many it took.
+    /// Runs the due jobs once: takes up to [`JOBS_AT_A_TIME`] jobs for a worker that has a name of
+    /// its own for this round, does each, and reports it done or failed. Returns how many it took.
     ///
     /// # Errors
     /// The error of the store while jobs are taken.
-    pub async fn run_due_jobs(
-        &self,
-        worker: &TechnicalName,
-        lease: SignedDuration,
-        limit: u64,
-    ) -> Result<usize, AppError> {
+    pub async fn run_due_jobs(&self) -> Result<usize, AppError> {
+        let worker = self.worker_name()?;
         let jobs = self
             .store()
-            .lease_jobs(worker, self.now(), lease, limit)
+            .lease_jobs(&worker, self.now(), LEASE, JOBS_AT_A_TIME)
             .await
             .map_err(|error| internal::<S>(&error))?;
         let taken = jobs.len();
         for job in jobs {
             let reported = match self.do_job(&job).await {
-                Ok(()) => self.store().complete_job(job.id, worker).await,
+                Ok(()) => self.store().complete_job(job.id, &worker).await,
                 Err(failure) => {
                     self.store()
-                        .fail_job(job.id, worker, &failure, self.now())
+                        .fail_job(job.id, &worker, &failure, self.now())
                         .await
                 }
             };
@@ -134,5 +137,13 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         Ok(taken)
+    }
+
+    /// The name a worker holds jobs under for one round: a new one each time, so two rounds, also
+    /// of two servers on one database, never report each other's jobs.
+    fn worker_name(&self) -> Result<TechnicalName, AppError> {
+        let id = JobId::generate(&mut self.ids())
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        kind_name(&format!("worker.{}", id.to_string().replace('-', "_")))
     }
 }

@@ -9,9 +9,7 @@ use bb_core::access::AppliesTo;
 use bb_core::bulk::{BULK_JOB_ABOVE, BulkStatus, SkipReason};
 use bb_core::id::{IssueId, ProjectId};
 use bb_core::issue::Status;
-use bb_core::technical::TechnicalName;
 use bb_policy::Permission;
-use jiff::SignedDuration;
 use proptest::prelude::*;
 
 use super::scenarios::{a_project, token};
@@ -318,13 +316,9 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     assert_eq!((started.status, started.done), (BulkStatus::Queued, 0));
     // Only the run is written before a worker takes the first step.
     assert_eq!(world.store.event_count(), events_before + 1);
-    let worker = TechnicalName::new("worker.test")?;
     let mut rounds = 0;
     loop {
-        let taken = world
-            .ctx()
-            .run_due_jobs(&worker, SignedDuration::from_secs(60), 5)
-            .await?;
+        let taken = world.ctx().run_due_jobs().await?;
         if taken == 0 {
             break;
         }

@@ -8,9 +8,7 @@ use std::collections::BTreeMap;
 use bb_app::access::StartingRole;
 use bb_app::issues::MakeIssue;
 use bb_core::bulk::BULK_JOB_ABOVE;
-use bb_core::technical::TechnicalName;
 use bb_testing::{Failure, TestResult, each_database};
-use jiff::SignedDuration;
 use serde_json::{Value, json};
 
 use super::http::{Reply, rig_and_app};
@@ -308,12 +306,11 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> TestResult {
         assert_eq!(run["total"], 1001);
         let id = run["id"].as_str().ok_or("no run ID")?.to_owned();
         // A worker takes the steps.
-        let worker = TechnicalName::new("worker.test")?;
         for _ in 0..40 {
             let taken = rig
                 .services
                 .ctx(Rig::info())
-                .run_due_jobs(&worker, SignedDuration::from_secs(60), 5)
+                .run_due_jobs()
                 .await
                 .map_err(|error| error.to_string())?;
             if taken == 0 {
