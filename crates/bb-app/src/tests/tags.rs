@@ -14,12 +14,14 @@ use super::scenarios_issues::an_issue;
 use super::scenarios_tags::{a_label, a_label_group, labelled, tagged};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
+use crate::issues::IssueStore;
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeTag, CombineLabels, CombineTags, IssueSortingQuery,
     LabelChangePreviewQuery, MakeLabel, TagChangePreviewQuery, add_label, add_tag, change_label,
     change_tag, combine_labels, combine_tags, issue_sorting, label_change_preview, make_label,
     tag_change_preview,
 };
+use crate::tags::{RemoveLabel, RemoveTag, remove_label, remove_tag};
 
 /// The events about issues that say something about `member`, oldest first.
 fn about_issues(world: &World, member: &str) -> Vec<DomainEvent> {
@@ -416,5 +418,52 @@ async fn tag_02_a_retired_label_is_not_put_on_an_issue() -> Outcome {
     .await
     .err();
     assert_eq!(refused, Some(AppError::Refused(ErrorCode::InvalidRequest)));
+    Ok(())
+}
+
+async fn version_of(world: &World, issue: IssueId) -> Result<i64, String> {
+    world
+        .ctx()
+        .store()
+        .issue(issue)
+        .await
+        .map_err(|error| error.to_string())?
+        .map(|found| found.version)
+        .ok_or_else(|| "no issue".to_owned())
+}
+
+#[tokio::test]
+async fn tag_01_putting_a_tag_or_label_on_or_off_counts_the_version_of_the_issue() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    let start = version_of(&world, issue).await?;
+    let tag = tagged(&world, issue, "login").await?;
+    assert_eq!(version_of(&world, issue).await?, start + 1);
+    // The same tag again changes nothing, and so does not count.
+    tagged(&world, issue, "LOGIN").await?;
+    assert_eq!(version_of(&world, issue).await?, start + 1);
+    let label = a_label(&world, "urgent", None).await?;
+    labelled(&world, issue, label).await?;
+    assert_eq!(version_of(&world, issue).await?, start + 2);
+    remove_label(
+        &world.ctx(),
+        RemoveLabel {
+            session_token: token(&world),
+            issue: issue.to_string(),
+            label,
+        },
+    )
+    .await?;
+    remove_tag(
+        &world.ctx(),
+        RemoveTag {
+            session_token: token(&world),
+            issue: issue.to_string(),
+            tag,
+        },
+    )
+    .await?;
+    assert_eq!(version_of(&world, issue).await?, start + 4);
     Ok(())
 }

@@ -14,7 +14,7 @@ use proptest::prelude::*;
 
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
-use super::scenarios_tags::{a_label, labelled};
+use super::scenarios_tags::{a_label, a_label_group, labelled};
 use super::world::{Outcome, World};
 use crate::bulk::{
     ApplyBulk, BulkAction, BulkChange, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery,
@@ -276,6 +276,37 @@ async fn iss_09_adding_a_label_names_the_issues_that_have_it_already() -> Outcom
     let asked = preview(&world, &token(&world), &[has_it, lacks_it], &action).await?;
     let reasons: Vec<Option<SkipReason>> = asked.rows.iter().map(|row| row.skipped).collect();
     assert_eq!(reasons, vec![Some(SkipReason::NothingToChange), None]);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_09_a_label_put_on_after_the_preview_makes_the_change_skip_and_name_the_issue()
+-> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let (first, second) = (
+        an_issue(&world, project).await?,
+        an_issue(&world, project).await?,
+    );
+    let group = a_label_group(&world, "Severity", true).await?;
+    let (low, high, urgent) = (
+        a_label(&world, "low", Some(group)).await?,
+        a_label(&world, "high", Some(group)).await?,
+        a_label(&world, "urgent", Some(group)).await?,
+    );
+    labelled(&world, first, low).await?;
+    let action = BulkAction::AddLabel { label: high };
+    let asked = preview(&world, &admin, &[first, second], &action).await?;
+    assert_eq!(asked.summary.will_change, 2);
+    // Somebody takes another label of the Pick one group meanwhile: apply would replace it, not
+    // the one the preview named.
+    labelled(&world, first, urgent).await?;
+    let result = apply(&world, &admin, targets(&asked), &action).await?;
+    let skipped: Vec<Option<SkipReason>> =
+        result.outcomes.iter().map(|each| each.skipped).collect();
+    assert_eq!(skipped, vec![Some(SkipReason::ChangedSince), None]);
+    assert!(result.outcomes[0].issue.is_some(), "the issue is named");
     Ok(())
 }
 

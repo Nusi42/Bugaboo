@@ -93,9 +93,13 @@ export function useTagSuggestions(project: string, text: string) {
   );
 }
 
-/** A label or tag was made, changed, combined or put on an issue: what shows them is read again. */
+/**
+ * A label or tag was made, changed, combined or put on an issue: what shows them is read again,
+ * and so are the issues, because putting one on or taking one off counts the version of an issue.
+ */
 export function refreshLabels(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
   for (const route of [
     "/api/v1/labels",
     "/api/v1/issues/{issue}/sorting",

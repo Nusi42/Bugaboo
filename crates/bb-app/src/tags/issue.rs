@@ -18,7 +18,9 @@ use bb_core::id::{IssueId, LabelId, TagId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::ChoiceColor;
 use bb_core::tags::{IssueLabel, IssueTag, Label, TAG_NAME_MAX, Tag, tag_allowed_in};
+use bb_core::version::counted_up;
 use bb_policy::{Authorized, Evaluation};
+use jiff::Timestamp;
 use serde_json::json;
 
 use super::judge::{LabelAddition, TagAddition, judge_label, judge_tag, label_names, tag_names};
@@ -199,6 +201,24 @@ impl LabelPlan {
     }
 }
 
+/// Counts the version of an issue up inside the change that puts a tag or a label on it or takes
+/// one off, on the version stored now, so a preview of a change to many issues that read the
+/// version before sees that the issue changed in between (ADR-0019, ISS-09).
+async fn count_version_up<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    issue: IssueId,
+    now: Timestamp,
+) -> Result<(), S::Error> {
+    let Some(stored) = S::issue_in(transaction, issue).await? else {
+        return Err(S::aborted());
+    };
+    if S::count_issue_version_up(transaction, issue, stored.version, now).await? {
+        Ok(())
+    } else {
+        Err(S::aborted())
+    }
+}
+
 /// Shows the tags and labels of an issue and what the person may do with them.
 ///
 /// # Errors
@@ -243,7 +263,10 @@ pub async fn add_tag<S: AuthStore>(
         let event = ctx.event(
             by(actor.person.id),
             entity(RecordKind::Issue, issue.id),
-            vec![names_changed(member::TAGS, &before, &after)],
+            vec![
+                names_changed(member::TAGS, &before, &after),
+                counted_up(issue.version),
+            ],
         )?;
         let (id, person, now) = (issue.id, actor.person.id, ctx.now());
         let (why, mut ids) = (Why::default(), ctx.owned_ids());
@@ -278,6 +301,7 @@ pub async fn add_tag<S: AuthStore>(
                         S::insert_tag(transaction, &made).await?;
                         made.id
                     };
+                    count_version_up::<S>(transaction, id, now).await?;
                     S::insert_issue_tag(
                         transaction,
                         &IssueTag {
@@ -324,15 +348,18 @@ pub async fn remove_tag<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Issue, issue.id),
-        vec![names_changed(member::TAGS, &before, &after)],
+        vec![
+            names_changed(member::TAGS, &before, &after),
+            counted_up(issue.version),
+        ],
     )?;
-    let (id, tag, why) = (issue.id, input.tag, Why::default());
+    let (id, tag, why, now) = (issue.id, input.tag, Why::default(), ctx.now());
     let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if S::delete_issue_tag(transaction, id, tag).await? {
-                    Ok(())
+                    count_version_up::<S>(transaction, id, now).await
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::NotFound))
                 }
@@ -363,7 +390,10 @@ pub async fn add_label<S: AuthStore>(
         let event = ctx.event(
             by(actor.person.id),
             entity(RecordKind::Issue, plan.issue.id),
-            vec![names_changed(member::LABELS, &plan.before, &plan.after)],
+            vec![
+                names_changed(member::LABELS, &plan.before, &plan.after),
+                counted_up(plan.issue.version),
+            ],
         )?;
         let (id, label, person, now) = (plan.issue.id, input.label, actor.person.id, ctx.now());
         let why = Why::default();
@@ -383,6 +413,7 @@ pub async fn add_label<S: AuthStore>(
                     if judged.already {
                         return Ok(());
                     }
+                    count_version_up::<S>(transaction, id, now).await?;
                     for replaced in &judged.replaces {
                         S::delete_issue_label(transaction, id, *replaced).await?;
                     }
@@ -434,15 +465,18 @@ pub async fn remove_label<S: AuthStore>(
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::Issue, issue.id),
-        vec![names_changed(member::LABELS, &before, &after)],
+        vec![
+            names_changed(member::LABELS, &before, &after),
+            counted_up(issue.version),
+        ],
     )?;
-    let (id, label, why) = (issue.id, input.label, Why::default());
+    let (id, label, why, now) = (issue.id, input.label, Why::default(), ctx.now());
     let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if S::delete_issue_label(transaction, id, label).await? {
-                    Ok(())
+                    count_version_up::<S>(transaction, id, now).await
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::NotFound))
                 }
