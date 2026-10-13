@@ -8,7 +8,7 @@ import { type Book, type Work, ofKind } from "./book.ts";
 // no lock outlives its lease, no text that was typed is lost.
 
 /** The numbers from `from` up to and including `to`. */
-function counting(from: number, to: number): readonly number[] {
+export function counting(from: number, to: number): readonly number[] {
   return Array.from({ length: Math.max(0, to - from + 1) }, (_, at) => from + at);
 }
 
@@ -64,7 +64,7 @@ async function lastDescription(
 }
 
 /** What each person read of an issue only went up. */
-function readsWentUp(book: Book): readonly string[] {
+export function readsWentUp(book: Book): readonly string[] {
   const last = new Map<string, number>();
   const found: string[] = [];
   for (const note of ofKind(book, "seen")) {
