@@ -2196,6 +2196,9 @@ pub const LABELS_SAVED: MessageKey = MessageKey::new("labels.saved");
 /// The message `labels.show-changes`.
 pub const LABELS_SHOW_CHANGES: MessageKey = MessageKey::new("labels.show-changes");
 
+/// The message `labels.show-combine`.
+pub const LABELS_SHOW_COMBINE: MessageKey = MessageKey::new("labels.show-combine");
+
 /// The message `labels.sorting-title`.
 pub const LABELS_SORTING_TITLE: MessageKey = MessageKey::new("labels.sorting-title");
 
@@ -4209,24 +4212,6 @@ pub fn bulk_line_changes(after: impl std::fmt::Display, field: impl std::fmt::Di
             ("after", Value::Text(after.to_string())),
             ("field", Value::Text(field.to_string())),
         ],
-    )
-}
-
-/// The message `bulk.line-label`.
-#[must_use]
-pub fn bulk_line_label(label: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.line-label"),
-        vec![("label", Value::Text(label.to_string()))],
-    )
-}
-
-/// The message `bulk.line-move`.
-#[must_use]
-pub fn bulk_line_move(project: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.line-move"),
-        vec![("project", Value::Text(project.to_string()))],
     )
 }
 
@@ -7397,8 +7382,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk.keep", "Leave as it is"),
     ("bulk.line-changes", "{field}: {after}"),
     ("bulk.line-delete", "Is deleted"),
-    ("bulk.line-label", "Gets the label {label}"),
-    ("bulk.line-move", "Moves to {project}"),
     ("bulk.line-relation", "This issue {name} {issue}"),
     ("bulk.nothing", "None of the issues would change."),
     ("bulk.preview-label", "Issues in this change"),
@@ -8821,7 +8804,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.retired", "Retired"),
     ("labels.save", "Save"),
     ("labels.saved", "Saved."),
-    ("labels.show-changes", "Show what changes"),
+    ("labels.show-changes", "Show what the new name changes"),
+    ("labels.show-combine", "Show what combining changes"),
     ("labels.sorting-title", "Labels and tags"),
     ("labels.tag-everywhere", "All projects"),
     ("labels.tag-everywhere-switch", "Use in all projects"),

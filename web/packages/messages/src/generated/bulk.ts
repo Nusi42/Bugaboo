@@ -32,8 +32,6 @@ export const messages = {
   "bulk.value-none": "nothing",
   "bulk.line-changes": "{field}: {after}",
   "bulk.line-relation": "This issue {name} {issue}",
-  "bulk.line-move": "Moves to {project}",
-  "bulk.line-label": "Gets the label {label}",
   "bulk.line-delete": "Is deleted",
   "bulk.background-note":
     "These are many issues, so Bugaboo makes the change in the background. You can go on working.",

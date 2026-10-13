@@ -1,10 +1,7 @@
 import { selectionBars, type SelectionBarProps } from "./selection-bars.ts";
 
-/** The bars other packages put under the list, while some issues are ticked. */
+/** The bars other packages put under the list; each decides when it shows (while issues are ticked, or what it did). */
 export function SelectionBars({ selection }: SelectionBarProps) {
-  if (selection.ids.length === 0) {
-    return null;
-  }
   return (
     <>
       {selectionBars().map((entry) => (

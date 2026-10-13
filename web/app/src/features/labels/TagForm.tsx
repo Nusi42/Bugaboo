@@ -46,6 +46,7 @@ export function TagForm({ tag }: { readonly tag: TagLine }) {
         key={draft.name.trim()}
         kind={sortingKind.tag}
         id={tag.id}
+        button={t("labels.show-changes")}
         asked={renamed ? { name: draft.name.trim() } : null}
       />
     </>

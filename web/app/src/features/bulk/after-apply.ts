@@ -1,9 +1,8 @@
 import { t } from "@bugaboo/messages";
 
 import { refreshLabels } from "../labels/index.ts";
-import { refreshIssues } from "./bulk.ts";
+import { refreshIssues, type BulkApplied } from "./bulk.ts";
 import { changedIssues, offerUndo } from "./undo.ts";
-import type { BulkApplied } from "./use-bulk-dialog.ts";
 
 /**
  * What follows applying a change: the lists are read again, the ticks go away when it worked, and

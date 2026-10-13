@@ -4,9 +4,9 @@ import { Alert, alertTone, AskDialog, Button } from "@bugaboo/ui";
 import { messageOf } from "../../shared/errors.ts";
 import { actionName } from "./action-names.ts";
 import { ActionFields } from "./ActionFields.tsx";
-import type { BulkKind } from "./bulk.ts";
+import type { BulkApplied, BulkKind } from "./bulk.ts";
 import { BulkPreviewView } from "./BulkPreviewView.tsx";
-import { useBulkDialog, type BulkApplied } from "./use-bulk-dialog.ts";
+import { useBulkDialog } from "./use-bulk-dialog.ts";
 
 export interface BulkDialogProps {
   readonly kind: BulkKind;

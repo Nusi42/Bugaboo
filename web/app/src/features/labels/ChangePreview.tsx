@@ -44,10 +44,12 @@ export interface ShowChangesProps {
   readonly id: string;
   /** What the preview is asked about; nothing when there is nothing to ask yet. */
   readonly asked: ChangeAsked | null;
+  /** The name of the button, which says what is previewed. */
+  readonly button: string;
 }
 
 /** *Show what changes*: asks for the preview of a rename or a combination and shows the answer. */
-export function ShowChanges({ kind, id, asked }: ShowChangesProps) {
+export function ShowChanges({ kind, id, asked, button }: ShowChangesProps) {
   const { preview, pending, error, ask } = useChangePreview(kind);
   return (
     <div {...partOf(part.stack)}>
@@ -61,7 +63,7 @@ export function ShowChanges({ kind, id, asked }: ShowChangesProps) {
             }
           }}
         >
-          {t("labels.show-changes")}
+          {button}
         </Button>
       </div>
       {error === null ? null : <Alert tone={alertTone.danger}>{error}</Alert>}

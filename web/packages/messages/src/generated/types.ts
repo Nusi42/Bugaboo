@@ -77,8 +77,6 @@ export interface MessageArguments {
   "backup.left": { count: number };
   "bulk.finished": { changed: number; skipped: number };
   "bulk.line-changes": { after: string | number; field: string | number };
-  "bulk.line-label": { label: string | number };
-  "bulk.line-move": { project: string | number };
   "bulk.line-relation": { issue: string | number; name: string | number };
   "bulk.progress": { done: string | number; total: string | number };
   "bulk.project-picked": { name: string | number };

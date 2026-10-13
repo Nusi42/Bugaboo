@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
+import type { BulkApplied } from "./bulk.ts";
 import { RunProgress, SkippedList } from "./BulkResultView.tsx";
 import { changedIssues } from "./undo.ts";
-import type { BulkApplied } from "./use-bulk-dialog.ts";
 
 /** What the last change did: it failed, it goes on in the background, or it is done and what it skipped. */
 export function BulkOutcome({ applied }: { readonly applied: BulkApplied }) {

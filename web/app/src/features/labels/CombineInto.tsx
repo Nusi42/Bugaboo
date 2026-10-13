@@ -76,6 +76,7 @@ export function CombineInto(props: CombineIntoProps) {
         key={pickedId}
         kind={kind}
         id={id}
+        button={t("labels.show-combine")}
         asked={picked === undefined ? null : { into: picked.id }}
       />
       {combine.error === null ? null : <Alert tone={alertTone.danger}>{combine.error}</Alert>}

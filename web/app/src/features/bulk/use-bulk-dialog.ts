@@ -1,8 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
-import { messageOf } from "../../shared/errors.ts";
-import { useLabels } from "../labels/index.ts";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
 import { relationChoices } from "../relations/index.ts";
 import {
@@ -10,45 +8,22 @@ import {
   targetsOf,
   useApplyBulk,
   usePreviewBulk,
-  type BulkAction,
+  type BulkApplied,
   type BulkKind,
-  type BulkPreview,
-  type BulkResult,
 } from "./bulk.ts";
 import { actionOf, emptyDraft, type Draft } from "./draft.ts";
-
-/** What came of applying a change: what the server answered, or why it did not work. */
-export interface BulkApplied {
-  readonly action: BulkAction;
-  readonly preview: BulkPreview;
-  readonly result: BulkResult | null;
-  readonly failed: string | null;
-}
-
-/** The line under an issue that changes when there is no more to say than the thing itself. */
-function plainLine(kind: BulkKind, draft: Draft, labelName: string | undefined): string {
-  if (kind === bulkKind.move && draft.project !== null) {
-    return t("bulk.line-move", { project: draft.project.name });
-  }
-  if (kind === bulkKind.label && labelName !== undefined) {
-    return t("bulk.line-label", { label: labelName });
-  }
-  return kind === bulkKind.delete ? t("bulk.line-delete") : "";
-}
 
 /** What is filled in for one of the five things, and the request it makes (nothing while it is not complete). */
 function useBulkDraft(kind: BulkKind) {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const labels = useLabels();
   const kinds = useRelationKinds();
   const relations = relationChoices(relationKindLinesOf(kinds.data?.pages));
-  const labelName = labels.data?.labels.find((each) => each.id === draft.label)?.name;
   return {
     draft,
     setDraft,
     relations,
     action: actionOf(kind, draft, relations),
-    plain: plainLine(kind, draft, labelName),
+    plain: kind === bulkKind.delete ? t("bulk.line-delete") : "",
   };
 }
 
@@ -63,7 +38,7 @@ export function useBulkDialog(
 ) {
   const { draft, setDraft, relations, action, plain } = useBulkDraft(kind);
   const preview = usePreviewBulk();
-  const apply = useApplyBulk();
+  const apply = useApplyBulk(onApplied);
   const changes = preview.data === undefined ? [] : targetsOf(preview.data);
   return {
     draft,
@@ -79,7 +54,6 @@ export function useBulkDialog(
     forget: (): void => {
       setDraft(emptyDraft);
       preview.reset();
-      apply.reset();
     },
     ask: (): void => {
       if (action !== null) {
@@ -87,21 +61,9 @@ export function useBulkDialog(
       }
     },
     send: (): void => {
-      const shown = preview.data;
-      if (action === null || shown === undefined) {
-        return;
+      if (action !== null && preview.data !== undefined) {
+        apply.mutate({ body: { action, issues: changes } });
       }
-      apply.mutate(
-        { body: { action, issues: changes } },
-        {
-          onSuccess: (result: BulkResult) => {
-            onApplied({ action, preview: shown, result, failed: null });
-          },
-          onError: (error: unknown) => {
-            onApplied({ action, preview: shown, result: null, failed: messageOf(error) });
-          },
-        },
-      );
     },
   };
 }

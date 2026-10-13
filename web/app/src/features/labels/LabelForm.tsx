@@ -40,6 +40,7 @@ export function LabelForm({
         key={draft.name.trim()}
         kind={sortingKind.label}
         id={label.id}
+        button={t("labels.show-changes")}
         asked={renamed ? { name: draft.name.trim() } : null}
       />
     </>

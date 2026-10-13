@@ -2,6 +2,7 @@ import type { components, Schema } from "@bugaboo/api-client";
 import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
+import { messageOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -30,9 +31,29 @@ export function usePreviewBulk() {
   return api.query.useMutation("post", "/api/v1/bulk/preview");
 }
 
-/** Changes the issues the preview showed, each on the version the preview was made from. */
-export function useApplyBulk() {
-  return api.query.useMutation("post", "/api/v1/bulk/changes");
+/** What was sent when a change was applied: the thing that was done. */
+type SentBulk = Readonly<{ body: Readonly<{ action: BulkAction }> }>;
+
+/** What came of applying a change: what the server answered, or why it did not work. */
+export interface BulkApplied {
+  readonly action: BulkAction;
+  readonly result: BulkResult | null;
+  readonly failed: string | null;
+}
+
+/**
+ * Changes the issues the preview showed, each on the version the preview was made from. What came
+ * of it is reported to `onApplied` also when the dialog that asked is gone by then.
+ */
+export function useApplyBulk(onApplied: (applied: BulkApplied) => void) {
+  return api.query.useMutation("post", "/api/v1/bulk/changes", {
+    onSuccess: (result: BulkResult, sent: SentBulk) => {
+      onApplied({ action: sent.body.action, result, failed: null });
+    },
+    onError: (error: unknown, sent: SentBulk) => {
+      onApplied({ action: sent.body.action, result: null, failed: messageOf(error) });
+    },
+  });
 }
 
 /** Whether a change that goes on in the background is still going. */

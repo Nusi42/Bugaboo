@@ -5,10 +5,9 @@ import { useState } from "react";
 import type { SelectionBarProps } from "../issues/index.ts";
 import { actionName } from "./action-names.ts";
 import { afterApply } from "./after-apply.ts";
-import { bulkKind, type BulkKind } from "./bulk.ts";
+import { bulkKind, type BulkApplied, type BulkKind } from "./bulk.ts";
 import { BulkDialog } from "./BulkDialog.tsx";
 import { BulkOutcome } from "./BulkOutcome.tsx";
-import type { BulkApplied } from "./use-bulk-dialog.ts";
 
 /** The five things, in the order of the buttons. */
 const kinds: readonly BulkKind[] = [
@@ -28,18 +27,21 @@ export function BulkBar({ selection }: SelectionBarProps) {
   const [applied, setApplied] = useState<BulkApplied | null>(null);
   return (
     <div {...partOf(part.stack)}>
-      <section {...partOf(part.bulkBar)} aria-label={t("bulk.bar")}>
-        {kinds.map((kind) => (
-          <Button
-            key={kind}
-            onPress={() => {
-              setOpen(kind);
-            }}
-          >
-            {actionName(kind)}
-          </Button>
-        ))}
-      </section>
+      {selection.ids.length === 0 ? null : (
+        <section {...partOf(part.bulkBar)} aria-label={t("bulk.bar")}>
+          {kinds.map((kind) => (
+            <Button
+              key={kind}
+              onPress={() => {
+                setApplied(null);
+                setOpen(kind);
+              }}
+            >
+              {actionName(kind)}
+            </Button>
+          ))}
+        </section>
+      )}
       {open === null ? null : (
         <BulkDialog
           kind={open}
