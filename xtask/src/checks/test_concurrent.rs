@@ -18,6 +18,7 @@
 
 use super::{Check, Context, Finding};
 use crate::docs::source::sorted_files;
+use crate::docs::text::has_extension;
 use crate::rust_source::{strip, strip_comments};
 use crate::source::read_text;
 
@@ -94,14 +95,14 @@ pub(super) fn specs_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, 
 
 /// The names of the migration files.
 fn migrations_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<String>> {
-    sorted_files(repo, MIGRATIONS_FOLDER, |name| name.ends_with(".rs"))
+    sorted_files(repo, MIGRATIONS_FOLDER, |name| has_extension(name, "rs"))
 }
 
 /// Every TypeScript file of the browser tests and their helpers: path and code (comments blank).
 fn e2e_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
     let mut files = Vec::new();
     for folder in E2E_FOLDERS {
-        for name in sorted_files(repo, folder, |name| name.ends_with(".ts"))? {
+        for name in sorted_files(repo, folder, |name| has_extension(name, "ts"))? {
             let path = format!("{folder}/{name}");
             let code = strip_comments(&read_text(repo, &path)?);
             files.push((path, code));

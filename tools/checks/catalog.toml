@@ -282,7 +282,7 @@ status = "active"
 
 [[check]]
 id = "ARCH-HTTP-EDGE"
-title = "Only bb-api and bb-mcp use HTTP crates; only bb-server and bb-sample wire adapters"
+title = "Only bb-api and bb-mcp use HTTP crates; only bb-server, bb-sample and bb-load-check depend on the adapters"
 rule = "architecture §4"
 tool = "xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)"
 when = ["push", "ci"]

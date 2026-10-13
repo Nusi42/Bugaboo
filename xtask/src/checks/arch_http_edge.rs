@@ -1,5 +1,6 @@
 //! ARCH-HTTP-EDGE: only `bb-api` and `bb-mcp` use HTTP crates, and only `bb-server` and
-//! `bb-sample` wire the adapters (architecture §4, dependency rule 4).
+//! `bb-sample` wire the adapters, and `bb-load-check` reads through them (architecture §4,
+//! dependency rule 4).
 //!
 //! ARCH-DEPS keeps crates to the edges of the module map. This check adds the two rules about the
 //! edge of the system by crate names, so they hold even if the map is edited:
@@ -8,8 +9,10 @@
 //!   dependency of `bb-api` and `bb-mcp` only. Tests may use them anywhere, and `xtask` is the
 //!   developer's tool, not part of the product;
 //! - the adapter crates (they implement the ports of `bb-app`) are normal dependencies of the
-//!   wiring crates only: `bb-server`, and the developer program `bb-sample` that makes the sample
-//!   organization through the same use cases (M2 WP-06). Every other crate knows only the ports.
+//!   wiring crates only: `bb-server`, the developer program `bb-sample` that makes the sample
+//!   organization through the same use cases (M2 WP-06), and the developer program
+//!   `bb-load-check` that reads the database of a load run (M3 WP-10). Every other crate knows
+//!   only the ports.
 
 use super::{Check, Context, Finding};
 use crate::metadata::{self, Package};
@@ -49,9 +52,10 @@ const HTTP_CRATES_ALLOWED_IN: [&str; 3] = ["bb-api", "bb-mcp", "xtask"];
 /// Crates that implement the ports of `bb-app`.
 const ADAPTERS: [&str; 4] = ["bb-store", "bb-files", "bb-ai", "bb-notify"];
 
-/// The only crates that may depend on the adapters: the program, and the developer tool that
-/// makes the sample organization (not shipped before OPS-12).
-const WIRING_CRATES: [&str; 2] = ["bb-server", "bb-sample"];
+/// The only crates that may depend on the adapters: the program, the developer tool that makes
+/// the sample organization (not shipped before OPS-12), and the developer tool that reads the
+/// database after a run of many people (it wires no use case; it reads through the store).
+const WIRING_CRATES: [&str; 3] = ["bb-server", "bb-sample", "bb-load-check"];
 
 pub(crate) struct ArchHttpEdge;
 
@@ -146,6 +150,12 @@ mod tests {
     fn bad_example_a_crate_that_only_looks_like_the_sample_tool_wires_nothing() {
         let packages = [with("bb-sample-extras", &[("bb-store", None)])];
         assert_eq!(evaluate(&packages).len(), 1);
+    }
+
+    #[test]
+    fn good_example_the_load_check_reads_through_the_store() {
+        let packages = [with("bb-load-check", &[("bb-store", None)])];
+        assert!(evaluate(&packages).is_empty());
     }
 
     #[test]
