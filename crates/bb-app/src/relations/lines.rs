@@ -8,7 +8,6 @@
 
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
@@ -16,7 +15,7 @@ use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::Issue;
 use bb_core::issue_key::IssueKey;
 use bb_core::project::Project;
-use bb_policy::{Evaluation, Place};
+use bb_policy::Place;
 
 use super::types::IssueLine;
 use crate::access::Actor;
@@ -39,27 +38,6 @@ impl LineMaker {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// An issue the actor may see, by its readable or internal ID, with what they may do in its
-    /// project. An issue that does not exist, is in the trash or that they may not see answers
-    /// `resource.not_found`: the three cannot be told apart.
-    pub(crate) async fn visible_issue(
-        &self,
-        actor: &Actor,
-        address: &str,
-    ) -> Result<(Issue, Arc<Evaluation>), AppError> {
-        let not_found = || AppError::Refused(ErrorCode::NotFound);
-        let found = self.find_issue(address).await?;
-        let place = found.as_ref().map_or(Place::Organization, |found| {
-            Place::Project(found.issue.project)
-        });
-        let held = self.evaluation_of(actor, place).await?;
-        let issue = found
-            .map(|found| found.issue)
-            .filter(|issue| issue.deleted_at.is_none() && held.sees_issue(issue.reported_by))
-            .ok_or_else(not_found)?;
-        Ok((issue, held))
-    }
-
     /// The maker of lines for a request.
     pub(crate) async fn line_maker(&self) -> Result<LineMaker, AppError> {
         let types = self

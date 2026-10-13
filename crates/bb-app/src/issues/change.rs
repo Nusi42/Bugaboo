@@ -101,17 +101,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         issue: &str,
     ) -> Result<(Arc<Evaluation>, Issue), AppError> {
-        let found = self.find_issue(issue).await?;
-        let place = found.as_ref().map_or(Place::Organization, |found| {
-            Place::Project(found.issue.project)
-        });
-        let held = self.evaluation_of(actor, place).await?;
-        let Some(current) = found
-            .map(|found| found.issue)
-            .filter(|issue| issue.deleted_at.is_none() && held.sees_issue(issue.reported_by))
-        else {
-            return Err(AppError::Refused(ErrorCode::NotFound));
-        };
+        let (current, held) = self.visible_issue(actor, issue).await?;
         if !held.may_change_issue(current.reported_by) {
             return Err(ErrorCode::Forbidden.into());
         }

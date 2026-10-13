@@ -65,17 +65,7 @@ pub async fn issue<S: AuthStore>(
     input: IssueQuery,
 ) -> Result<Authorized<IssueDetail>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let found = ctx.find_issue(&input.issue).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.issue.project)
-    });
-    let held = ctx.evaluation_of(&actor, place).await?;
-    let Some(found) = found.filter(|found| {
-        found.issue.deleted_at.is_none() && held.sees_issue(found.issue.reported_by)
-    }) else {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    };
-    let issue = found.issue;
+    let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
     let project = ctx
         .store()
         .project(issue.project)

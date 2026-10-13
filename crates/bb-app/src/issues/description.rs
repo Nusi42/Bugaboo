@@ -33,17 +33,7 @@ pub async fn save_description<S: AuthStore>(
     input: SaveDescription,
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let found = ctx.find_issue(&input.issue).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.issue.project)
-    });
-    let held = ctx.evaluation_of(&actor, place).await?;
-    let Some(current) = found
-        .map(|found| found.issue)
-        .filter(|issue| issue.deleted_at.is_none() && held.sees_issue(issue.reported_by))
-    else {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    };
+    let (current, held) = ctx.visible_issue(&actor, &input.issue).await?;
     if !held.may_change_issue(current.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }
@@ -92,21 +82,27 @@ pub async fn save_description<S: AuthStore>(
     };
     let version = input.version;
     let written = next.clone();
-    ctx.save_text(actor.person.id, place, &save, &event, move |transaction| {
-        Box::pin(async move {
-            let Some(stored) = S::issue_in(transaction, id).await? else {
-                return Ok(Written::Stale);
-            };
-            if stored.deleted_at.is_some() || stored.version != version {
-                return Ok(Written::Stale);
-            }
-            if S::update_issue(transaction, &written, version).await? {
-                Ok(Written::Saved(()))
-            } else {
-                Ok(Written::Stale)
-            }
-        })
-    })
+    ctx.save_text(
+        actor.person.id,
+        Place::Project(current.project),
+        &save,
+        &event,
+        move |transaction| {
+            Box::pin(async move {
+                let Some(stored) = S::issue_in(transaction, id).await? else {
+                    return Ok(Written::Stale);
+                };
+                if stored.deleted_at.is_some() || stored.version != version {
+                    return Ok(Written::Stale);
+                }
+                if S::update_issue(transaction, &written, version).await? {
+                    Ok(Written::Saved(()))
+                } else {
+                    Ok(Written::Stale)
+                }
+            })
+        },
+    )
     .await?;
     next.version = next_version(version);
     let view = ctx.issue_view(&mut views, &next, &assigned).await?;

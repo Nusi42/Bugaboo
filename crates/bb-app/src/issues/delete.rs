@@ -5,7 +5,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::UserId;
 use bb_core::version::counted_up;
-use bb_policy::{Authorized, Place};
+use bb_policy::Authorized;
 use serde_json::json;
 
 use super::fields::member;
@@ -24,17 +24,7 @@ pub async fn delete_issue<S: AuthStore>(
     input: DeleteIssue,
 ) -> Result<Done, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let found = ctx.find_issue(&input.issue).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.issue.project)
-    });
-    let held = ctx.evaluation_of(&actor, place).await?;
-    let Some(issue) = found
-        .map(|found| found.issue)
-        .filter(|issue| issue.deleted_at.is_none() && held.sees_issue(issue.reported_by))
-    else {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    };
+    let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
     if !held.may_delete_issue(issue.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }
@@ -80,17 +70,7 @@ pub async fn restore_issue<S: AuthStore>(
     input: RestoreIssue,
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let found = ctx.find_issue(&input.issue).await?;
-    let place = found.as_ref().map_or(Place::Organization, |found| {
-        Place::Project(found.issue.project)
-    });
-    let held = ctx.evaluation_of(&actor, place).await?;
-    let Some(issue) = found
-        .map(|found| found.issue)
-        .filter(|issue| issue.deleted_at.is_some() && held.sees_issue(issue.reported_by))
-    else {
-        return Err(AppError::Refused(ErrorCode::NotFound));
-    };
+    let (issue, held) = ctx.trashed_issue(&actor, &input.issue).await?;
     if !held.may_delete_issue(issue.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }

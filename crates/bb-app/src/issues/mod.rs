@@ -27,6 +27,7 @@ mod read;
 mod store;
 mod types;
 mod views;
+mod visible;
 
 pub use assignees::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
 pub use change::change_issue;
