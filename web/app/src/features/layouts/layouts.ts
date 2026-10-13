@@ -217,6 +217,7 @@ export function useKeptDraft(layout: string) {
   return useQuery({
     queryKey: queryKeys.layouts.draft(layout),
     queryFn: () => readDraft(api.client, targetOf(layout)),
+    enabled: layout !== "",
   });
 }
 
