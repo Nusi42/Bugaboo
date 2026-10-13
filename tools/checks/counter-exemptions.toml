@@ -148,3 +148,13 @@ reason = "Counts only the issues the person sees: an issue they may not see is n
 route = "POST /api/v1/labels/{label}/preview"
 property = "skipped"
 reason = "Counts only the issues the person sees: an issue they may not see is not counted (PRIV-13, M3-Q8)."
+
+[[exempt]]
+route = "POST /api/v1/projects/{project}/move-preview"
+property = "will_change"
+reason = "Counts only the people in the projects the person sees: the answer says so (PRIV-13, M2C-F80)."
+
+[[exempt]]
+route = "POST /api/v1/projects/{project}/move-preview"
+property = "skipped"
+reason = "Counts only the people in the projects the person sees: the answer says so (PRIV-13, M2C-F80)."

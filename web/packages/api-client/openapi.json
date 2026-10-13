@@ -23041,6 +23041,7 @@
           "preview",
           "blocked",
           "blocked_out_of_sight",
+          "summary",
           "people",
           "lifts",
           "truncated"
@@ -23075,6 +23076,10 @@
           "project": {
             "$ref": "#/components/schemas/ProjectRef",
             "description": "The project that would move."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PreviewSummaryBody",
+            "description": "How many people the move changes something for, the sentence on top of the preview."
           },
           "to": {
             "oneOf": [

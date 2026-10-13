@@ -4566,6 +4566,8 @@ export interface components {
       preview: string;
       /** @description The project that would move. */
       project: components["schemas"]["ProjectRef"];
+      /** @description How many people the move changes something for, the sentence on top of the preview. */
+      summary: components["schemas"]["PreviewSummaryBody"];
       to?: components["schemas"]["ProjectRef"] | null;
       /** @description The list was cut: it names the first people it found. */
       truncated: boolean;

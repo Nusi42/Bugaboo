@@ -22,6 +22,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
+use super::previews::PreviewSummaryBody;
 use super::projects::{ProjectBody, ProjectRef, project_id};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
@@ -217,6 +218,8 @@ pub(crate) struct MovePreviewBody {
     blocked: bool,
     /// Something in a project the person cannot see also stops the move.
     blocked_out_of_sight: bool,
+    /// How many people the move changes something for, the sentence on top of the preview.
+    summary: PreviewSummaryBody,
     /// Who gains or loses access or changes role, in the projects the person sees.
     people: Vec<PersonChangeBody>,
     /// Who could take away a *No access* after the move and could not before.
@@ -235,6 +238,7 @@ impl From<MovePreview> for MovePreviewBody {
             preview: preview.preview,
             blocked: preview.blocked,
             blocked_out_of_sight: preview.blocked_out_of_sight,
+            summary: PreviewSummaryBody::from(preview.summary),
             people: preview.people.iter().map(Into::into).collect(),
             lifts: preview.lifts.iter().map(Into::into).collect(),
             truncated: preview.truncated,
