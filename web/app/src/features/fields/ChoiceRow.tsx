@@ -17,10 +17,11 @@ import {
   partOf,
   part,
 } from "@bugaboo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
+import { DraggableHead } from "../../shared/drag-and-drop.tsx";
 import { messageOf } from "../../shared/errors.ts";
-import { badgeLook, plainText, type Choice, type OwnField } from "./fields.ts";
+import { badgeLook, choiceKind, plainText, type Choice, type OwnField } from "./fields.ts";
 import { useChangeChoice } from "./use-change-field.ts";
 
 /** Words of the HTML standard and marks that are not text for people. */
@@ -45,6 +46,10 @@ export interface ChoiceRowProps {
   readonly first: boolean;
   readonly last: boolean;
   readonly onMove: (by: -1 | 1) => void;
+  /** Whether the choice can be dragged to another place: not on a phone, where the buttons are the way. */
+  readonly canDrag: boolean;
+  /** What comes first in the item: the place before it where a dragged choice can be dropped. */
+  readonly before: ReactNode;
   /** The other choices a value can be combined into. */
   readonly others: readonly Choice[];
   readonly onCombine: (into: string) => void;
@@ -56,10 +61,16 @@ function ChoiceTitle({
   choice,
   first,
   last,
+  canDrag,
   onMove,
-}: Pick<ChoiceRowProps, "field" | "choice" | "first" | "last" | "onMove">) {
+}: Pick<ChoiceRowProps, "field" | "choice" | "first" | "last" | "canDrag" | "onMove">) {
   return (
-    <>
+    <DraggableHead
+      kind={choiceKind}
+      id={choice.id}
+      label={t("fields.choice-drag", { name: choice.name })}
+      canDrag={canDrag}
+    >
       <FieldValue
         look={field.look === plainText ? badgeLook : field.look}
         text={choice.name}
@@ -82,7 +93,7 @@ function ChoiceTitle({
           onMove(1);
         }}
       />
-    </>
+    </DraggableHead>
   );
 }
 
@@ -196,6 +207,7 @@ export function ChoiceRow(props: ChoiceRowProps) {
   };
   return (
     <li {...partOf(part.fieldChoice)}>
+      {props.before}
       <ChoiceTitle {...props} />
       <ChoiceName choice={choice} send={send} pending={change.isPending} />
       <ChoiceLook choice={choice} send={send} />

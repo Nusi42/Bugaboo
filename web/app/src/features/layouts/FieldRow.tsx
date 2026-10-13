@@ -3,7 +3,8 @@ import { Checkbox, IconButton, iconName, SelectField, partOf, part } from "@buga
 
 import type { Schema } from "@bugaboo/api-client";
 import type { ReactNode } from "react";
-import { DraggableHead } from "./DraggableHead.tsx";
+import { DraggableHead } from "../../shared/drag-and-drop.tsx";
+import { fieldKind } from "./field-kind.ts";
 import { fieldLabel } from "./field-label.ts";
 import type { FormKind } from "./layouts.ts";
 import type { Row } from "./editor-model.ts";
@@ -102,7 +103,12 @@ function MoveTo({
 function FieldHead({ props, name }: { readonly props: FieldRowProps; readonly name: string }) {
   const { row, first, last, canDrag, onNudge, onRemove } = props;
   return (
-    <DraggableHead field={row.field} name={name} canDrag={canDrag}>
+    <DraggableHead
+      kind={fieldKind}
+      id={row.field}
+      label={t("layouts.field-drag", { name })}
+      canDrag={canDrag}
+    >
       <span {...partOf(part.layoutFieldName)}>{name}</span>
       <IconButton
         icon={iconName.up}

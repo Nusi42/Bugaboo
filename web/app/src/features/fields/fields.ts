@@ -24,6 +24,9 @@ export function editPartOf(field: string): string {
   return [ownFieldPartPrefix, field].join("");
 }
 
+/** What a choice of a field is when it is dragged: only a choice can be dropped among the choices. */
+export const choiceKind = "field-choice";
+
 /** The look of plain text, which has no color or icon of its own. */
 export const plainText = "plain-text" satisfies LookWord;
 

@@ -34,6 +34,7 @@ export const messages = {
   "fields.add-choice-button": "Add the choice",
   "fields.choice-up": "Move {name} up",
   "fields.choice-down": "Move {name} down",
+  "fields.choice-drag": "Drag {name}",
   "fields.choice-name": "Name of the choice",
   "fields.choice-color": "Color of {name}",
   "fields.choice-icon": "Icon of {name}",

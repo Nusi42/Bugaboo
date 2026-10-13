@@ -127,6 +127,7 @@ export interface MessageArguments {
   "field-permissions.project-title": { project: string | number };
   "fields.choice-color": { name: string | number };
   "fields.choice-down": { name: string | number };
+  "fields.choice-drag": { name: string | number };
   "fields.choice-icon": { name: string | number };
   "fields.choice-up": { name: string | number };
   "fields.choose-title": { name: string | number };

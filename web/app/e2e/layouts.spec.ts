@@ -21,7 +21,7 @@ test.describe.configure({ mode: "serial" });
 const dialogName = t("issues.new-title");
 
 /** The places where a dragged field can be dropped. */
-const slot = '[data-part="layout-slot"]';
+const slot = '[data-part="drop-slot"]';
 
 /** The dialog that makes an issue, opened with the button of the bar. */
 async function openNewIssue(page: Page) {

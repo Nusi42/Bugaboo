@@ -1,10 +1,21 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card, Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Card,
+  Form,
+  SubmitButton,
+  TextField,
+  useLayout,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
+import { DropSlot } from "../../shared/drag-and-drop.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { ChoiceRow } from "./ChoiceRow.tsx";
-import type { OwnField } from "./fields.ts";
+import { choiceKind, type OwnField } from "./fields.ts";
 import { useAddChoice, useCombineChoices, useReorderChoices } from "./use-change-field.ts";
 
 /** The new order after the choice at `from` goes to `to`. */
@@ -23,10 +34,26 @@ function useChoiceOrder(field: OwnField) {
   const ids = field.choices.map((choice) => choice.id);
   return {
     error: reorder.error,
+    /** Choices can be dragged: not on a phone, where the buttons are the way. */
+    canDrag: useLayout() !== "phone",
     move: (at: number, by: number) => {
       reorder.mutate({
         params: { path: { field: field.id } },
         body: { version: field.version, order: moved(ids, at, at + by) },
+      });
+    },
+    /** A choice was dropped before the choice at `before` (the end of the list when it is `ids.length`). */
+    drop: (dropped: string, before: number) => {
+      const from = ids.indexOf(dropped);
+      if (from < 0) {
+        return;
+      }
+      reorder.mutate({
+        params: { path: { field: field.id } },
+        body: {
+          version: field.version,
+          order: moved(ids, from, from < before ? before - 1 : before),
+        },
       });
     },
   };
@@ -87,6 +114,16 @@ export function ChoicesSection({ field }: { readonly field: OwnField }) {
             choice={choice}
             first={at === 0}
             last={at === field.choices.length - 1}
+            canDrag={order.canDrag}
+            before={
+              <DropSlot
+                kind={choiceKind}
+                enabled={order.canDrag}
+                onDrop={(dropped) => {
+                  order.drop(dropped, at);
+                }}
+              />
+            }
             others={field.choices.filter((other) => other.id !== choice.id && !other.retired)}
             onMove={(by) => {
               order.move(at, by);
@@ -100,6 +137,13 @@ export function ChoicesSection({ field }: { readonly field: OwnField }) {
           />
         ))}
       </ul>
+      <DropSlot
+        kind={choiceKind}
+        enabled={order.canDrag}
+        onDrop={(dropped) => {
+          order.drop(dropped, field.choices.length);
+        }}
+      />
       <AddChoice field={field} />
     </Card>
   );

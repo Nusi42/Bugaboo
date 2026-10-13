@@ -9927,11 +9927,11 @@ part "layout-field" {
     padding "$space-2 $space-3"
 }
 
-part "layout-field.head[state=dragging]" {
+part "draggable[state=dragging]" {
     opacity "$opacity-busy"
 }
 
-part "layout-field.head" {
+part "draggable" {
     display flex
     flex-wrap wrap
     align-items center
@@ -9945,7 +9945,7 @@ part "layout-field.name" {
     overflow-wrap anywhere
 }
 
-part "layout-field.handle" {
+part "draggable.handle" {
     border 0
     background transparent
     display inline-flex
@@ -9958,11 +9958,11 @@ part "layout-field.handle" {
     cursor grab
 }
 
-part "layout-field.handle:hover" {
+part "draggable.handle:hover" {
     background "$bg-hover"
 }
 
-part "layout-field.handle[focus-visible]" {
+part "draggable.handle[focus-visible]" {
     use "ring"
 }
 
@@ -9987,12 +9987,13 @@ part "layout-field.actions" {
 }
 
 // The thin place between two fields where a dragged field can be dropped.
-part "layout-slot" {
+part "drop-slot" {
+    width "100%"
     min-height "$space-2"
     border-radius "$r-ctl"
 }
 
-part "layout-slot[state=over]" {
+part "drop-slot[state=over]" {
     min-height "$size-target"
     border "$border-width dashed $accent"
     background "$accent-soft"

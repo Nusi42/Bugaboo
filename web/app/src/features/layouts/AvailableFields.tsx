@@ -1,11 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { Card, SelectField, partOf, part } from "@bugaboo/ui";
-import { useRef } from "react";
 
-import { useDrop } from "react-aria-components";
-
-import { dropOptions } from "./dnd.ts";
-import { DraggableHead } from "./DraggableHead.tsx";
+import { DraggableHead, DropSlot } from "../../shared/drag-and-drop.tsx";
+import { fieldKind } from "./field-kind.ts";
 import type { EditorActions, EditorContext } from "./editor-actions.ts";
 import type { Row } from "./editor-model.ts";
 import { fieldLabel } from "./field-label.ts";
@@ -28,7 +25,12 @@ function AvailableRow({
   const name = fieldLabel(row.field, row.name);
   return (
     <li {...partOf(part.layoutField)}>
-      <DraggableHead field={row.field} name={name} canDrag={context.canDrag}>
+      <DraggableHead
+        kind={fieldKind}
+        id={row.field}
+        label={t("layouts.field-drag", { name })}
+        canDrag={context.canDrag}
+      >
         <span {...partOf(part.layoutFieldName)}>{name}</span>
       </DraggableHead>
       <SelectField
@@ -53,16 +55,9 @@ function AvailableRow({
  * a field is added to a section with its list or by dragging it onto the section.
  */
 export function AvailableFields({ rows, context, actions }: AvailableProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const drop = useDrop({ ref, ...dropOptions(context.canDrag, actions.unplace) });
   return (
     <Card heading={t("layouts.available")}>
-      <div
-        ref={ref}
-        {...drop.dropProps}
-        {...partOf(part.layoutSlot, { states: [drop.isDropTarget && "over"] })}
-        aria-hidden
-      />
+      <DropSlot kind={fieldKind} enabled={context.canDrag} onDrop={actions.unplace} />
       {rows.length === 0 ? <p {...partOf(part.muted)}>{t("layouts.available-none")}</p> : null}
       <ul {...partOf(part.layoutSectionFields)} aria-label={t("layouts.available")}>
         {rows.map((row) => (

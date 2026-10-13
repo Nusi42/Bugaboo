@@ -4555,6 +4555,15 @@ pub fn fields_choice_down(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `fields.choice-drag`.
+#[must_use]
+pub fn fields_choice_drag(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.choice-drag"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `fields.choice-icon`.
 #[must_use]
 pub fn fields_choice_icon(name: impl std::fmt::Display) -> Message {
@@ -7822,6 +7831,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.basics", "Basics"),
     ("fields.choice-color", "Color of {name}"),
     ("fields.choice-down", "Move {name} down"),
+    ("fields.choice-drag", "Drag {name}"),
     ("fields.choice-icon", "Icon of {name}"),
     ("fields.choice-name", "Name of the choice"),
     ("fields.choice-offer-again", "Offer this choice again"),

@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Card, IconButton, iconName, TextField, partOf, part } from "@bugaboo/ui";
-import { DropSlot } from "./DropSlot.tsx";
+import { DropSlot } from "../../shared/drag-and-drop.tsx";
+import { fieldKind } from "./field-kind.ts";
 import type { EditorActions, EditorContext } from "./editor-actions.ts";
 import type { Row, Section } from "./editor-model.ts";
 import { FieldRow } from "./FieldRow.tsx";
@@ -84,6 +85,7 @@ function RowAt({
       canDrag={context.canDrag}
       before={
         <DropSlot
+          kind={fieldKind}
           enabled={context.canDrag}
           onDrop={(field) => {
             actions.place(field, { section: section.key, index: at });
@@ -129,6 +131,7 @@ function Rows({ section, number, context, actions }: SectionCardProps) {
         ))}
       </ul>
       <DropSlot
+        kind={fieldKind}
         enabled={context.canDrag}
         onDrop={(field) => {
           actions.place(field, { section: section.key, index: section.rows.length });
