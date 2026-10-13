@@ -40,11 +40,11 @@
       "rules": { "max-lines": "off" }
     },
     {
-      // `cargo xtask gen messages` writes one line per message of the catalog into this file,
-      // longer with every screen. Nobody edits it, and a file over about 400 lines needs a reason
+      // `cargo xtask gen messages` writes one line per message of the catalog into these files,
+      // longer with every screen. Nobody edits them, and a file over about 400 lines needs a reason
       // (coding-standards section 2): this is it.
-      "files": ["web/packages/messages/src/generated.ts"],
-      "rules": { "max-lines": "off" }
+      "files": ["web/packages/messages/src/generated/*.ts"],
+      "rules": { "max-lines": "off", "import/max-dependencies": "off" }
     },
     {
       // `cargo xtask gen theme` writes the names of the tokens, the parts and the words of each
@@ -148,6 +148,18 @@
     // the modern JSX transform (tsconfig "jsx": "react-jsx") needs no React in scope, and
     // the one style sheet (generated from design/theme.kdl) is imported only for its effect.
     "react/react-in-jsx-scope": "off",
-    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }]
+    // The same for the message parts: an area imports its part for the texts it registers (UX-07),
+    // and the messages package imports the part of the first page (or every part, for Node).
+    "import/no-unassigned-import": [
+      "error",
+      {
+        "allow": [
+          "**/*.css",
+          "@bugaboo/messages/parts/*",
+          "./generated/shared.ts",
+          "./generated/all.ts"
+        ]
+      }
+    ]
   }
 }

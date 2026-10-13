@@ -70,7 +70,7 @@ impl Check for ArchSettings {
 
 /// Web files that are not the app's own code: tests, end-to-end tests and generated files. The app
 /// must not read settings by key text either.
-const NOT_APP_CODE: [&str; 4] = [".test.", ".spec.", "/e2e/", "generated."];
+const NOT_APP_CODE: [&str; 5] = [".test.", ".spec.", "/e2e/", "generated.", "/generated/"];
 
 /// What comes before a string that names a message of the catalog, not a setting: messages and
 /// settings are separate namespaces, so a message may have the same text as the key of a setting

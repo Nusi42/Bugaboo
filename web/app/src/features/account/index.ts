@@ -1,3 +1,6 @@
+// The texts of this area come along with its chunk (UX-07).
+import "@bugaboo/messages/parts/account";
+
 export { CodeAppSection } from "./CodeAppSection.tsx";
 export { PasskeysSection } from "./PasskeysSection.tsx";
 export { SecurityPage } from "./SecurityPage.tsx";

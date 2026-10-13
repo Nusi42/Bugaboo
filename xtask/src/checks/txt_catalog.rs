@@ -24,24 +24,18 @@ use bb_policy::{Permission, StartingRole, Topic};
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
-use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use crate::generate::messages::{
+    PART_IMPORT, SHARED, SOURCE_LOCALE_PATH, feature_entries, is_generated_catalog, is_server_only,
+    is_test_or_generated, parse_pairs, parts_of, string_literals,
+};
 use crate::generate::messages_rust::{constant_name, function_name};
 use crate::rust_source::{strip_comments, without_tests};
 use crate::source::read_text;
 
 const MESSAGES_FOLDER: &str = "messages/";
 
-/// Test files check behavior; their strings must not keep a key alive.
-const TEST_MARKERS: [&str; 6] = [
-    ".test.",
-    ".spec.",
-    "/e2e/",
-    "/tests/",
-    "generated.ts",
-    "generated.rs",
-];
-
 /// One piece of code: where it is and what it says.
+#[derive(Clone)]
 struct Source {
     path: String,
     text: String,
@@ -179,7 +173,62 @@ fn evaluate(locales: &[(String, String)], sources: &[Source], made: &[Made]) -> 
         }
     }
     check_usage(source, sources, made, &mut findings);
+    check_parts(source, sources, &mut findings);
     findings
+}
+
+/// The browser catalog is split into parts (PERF-04, ADR-0009): the first page loads `shared`, and
+/// an area brings its own part along with its chunk. `t()` fails for a text whose part is not
+/// loaded, so the entry of every feature that has a part imports it, and nothing else does.
+fn check_parts(
+    source: &BTreeMap<String, Placeholders>,
+    sources: &[Source],
+    findings: &mut Vec<Finding>,
+) {
+    let keys = source
+        .keys()
+        .map(String::as_str)
+        .filter(|key| !is_server_only(key));
+    let code: Vec<crate::source::Source> = sources
+        .iter()
+        .map(|file| (file.path.clone(), file.text.clone()))
+        .collect();
+    let filled: HashSet<&str> = parts_of(keys, &code).into_values().collect();
+    let import_of = |part: &str| format!("{PART_IMPORT}{part}");
+    for part in filled.iter().filter(|part| **part != SHARED) {
+        let entries = feature_entries(part);
+        let imported = sources.iter().any(|file| {
+            entries.contains(&file.path)
+                && string_literals(&file.text, false).contains(&import_of(part))
+        });
+        if !imported {
+            findings.push(Finding::at(
+                &entries[0],
+                format!(
+                    "Its texts are in their own part. Add `import \"{}\";` so they are loaded with this area; without it `t()` fails.",
+                    import_of(part)
+                ),
+            ));
+        }
+    }
+    for file in sources
+        .iter()
+        .filter(|file| !is_generated_catalog(&file.path))
+    {
+        for literal in string_literals(&file.text, false) {
+            let Some(part) = literal.strip_prefix(PART_IMPORT) else {
+                continue;
+            };
+            if !feature_entries(part).contains(&file.path) {
+                findings.push(Finding::at(
+                    &file.path,
+                    format!(
+                        "Only the entry of the feature `{part}` (`index.ts`) imports its message part. `shared` is loaded by the messages package itself."
+                    ),
+                ));
+            }
+        }
+    }
 }
 
 /// Parses one catalog; returns its keys with their placeholders and the problems found inside.
@@ -287,7 +336,7 @@ fn check_usage(
         }
     }
     for file in sources {
-        let is_test = TEST_MARKERS.iter().any(|marker| file.path.contains(marker));
+        let is_test = is_test_or_generated(&file.path);
         let text = if is_rust(&file.path) {
             product_code(&file.text)
         } else {
@@ -308,7 +357,7 @@ fn check_usage(
                 }
             }
         }
-        if is_rust(&file.path) || file.path.contains("generated.ts") {
+        if is_rust(&file.path) || is_generated_catalog(&file.path) {
             continue;
         }
         for key in called_keys(&text) {
@@ -363,35 +412,6 @@ fn identifiers(code: &str) -> HashSet<&str> {
     code.split(|c: char| !(c.is_alphanumeric() || c == '_'))
         .filter(|word| !word.is_empty())
         .collect()
-}
-
-/// Every `"…"` (and, for TypeScript, `'…'`) on a single line.
-fn string_literals(code: &str, double_only: bool) -> Vec<String> {
-    let mut literals = Vec::new();
-    for line in code.lines() {
-        let mut chars = line.chars().peekable();
-        while let Some(c) = chars.next() {
-            if c != '"' && (double_only || c != '\'') {
-                continue;
-            }
-            let mut text = String::new();
-            let mut closed = false;
-            while let Some(next) = chars.next() {
-                if next == '\\' {
-                    chars.next();
-                } else if next == c {
-                    closed = true;
-                    break;
-                } else {
-                    text.push(next);
-                }
-            }
-            if closed {
-                literals.push(text);
-            }
-        }
-    }
-    literals
 }
 
 #[cfg(test)]
@@ -508,6 +528,61 @@ mod tests {
         assert!(text.contains("`a.in-test` is never used"), "{text}");
         assert!(text.contains("`a.in-comment` is never used"), "{text}");
         assert!(!text.contains("`a.real`"), "{text}");
+    }
+
+    #[test]
+    fn an_area_must_import_its_message_part() {
+        let locales = [locale(r#"{"fields.list": "Fields", "nav.home": "Home"}"#)];
+        let page = source(
+            "web/app/src/features/fields/Page.tsx",
+            r#"t("fields.list"); t("nav.home")"#,
+        );
+        let shell = source("web/app/src/routes/Root.tsx", r#"t("nav.home")"#);
+        let without = source("web/app/src/features/fields/index.ts", "export {};");
+        let text = messages(&evaluate(
+            &locales,
+            &[page.clone(), shell.clone(), without],
+            &[],
+        ));
+        assert!(text.contains("@bugaboo/messages/parts/fields"), "{text}");
+        let with = source(
+            "web/app/src/features/fields/index.ts",
+            r#"import "@bugaboo/messages/parts/fields";"#,
+        );
+        assert!(evaluate(&locales, &[page, shell, with], &[]).is_empty());
+    }
+
+    #[test]
+    fn only_the_entry_of_a_feature_imports_its_part() {
+        let locales = [locale(r#"{"fields.list": "Fields"}"#)];
+        let entry = source(
+            "web/app/src/features/fields/index.ts",
+            r#"import "@bugaboo/messages/parts/fields";"#,
+        );
+        let page = source(
+            "web/app/src/features/fields/Page.tsx",
+            r#"import "@bugaboo/messages/parts/fields"; t("fields.list")"#,
+        );
+        let other = source(
+            "web/app/src/features/people/index.ts",
+            r#"import "@bugaboo/messages/parts/fields";"#,
+        );
+        let shared = source(
+            "web/app/src/routes/Root.tsx",
+            r#"import "@bugaboo/messages/parts/shared";"#,
+        );
+        let places: Vec<String> = evaluate(&locales, &[entry, page, other, shared], &[])
+            .into_iter()
+            .filter_map(|finding| finding.location)
+            .collect();
+        assert_eq!(
+            places,
+            [
+                "web/app/src/features/fields/Page.tsx",
+                "web/app/src/features/people/index.ts",
+                "web/app/src/routes/Root.tsx",
+            ]
+        );
     }
 
     #[test]

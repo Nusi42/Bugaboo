@@ -1,3 +1,6 @@
+// The texts of this area come along with its chunk (UX-07).
+import "@bugaboo/messages/parts/projects";
+
 export { ProjectOverviewPage } from "./ProjectOverviewPage.tsx";
 export { ProjectRolesPage } from "./ProjectRolesPage.tsx";
 export { ProjectSettingsPage } from "./ProjectSettingsPage.tsx";
