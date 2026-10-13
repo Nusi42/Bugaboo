@@ -442,3 +442,26 @@ async fn cfg_06_unlocking_a_setting_that_is_not_locked_changes_nothing() -> Outc
     assert_eq!(world.store.event_count(), events);
     Ok(())
 }
+
+#[tokio::test]
+async fn m3_f72_the_image_hosts_are_read_once_for_a_request() -> Outcome {
+    let world = World::new().await?;
+    let request = world.ctx();
+    assert!(request.image_hosts().await?.is_empty());
+    change(
+        &world,
+        SettingsScope::Organization,
+        "content.image-hosts",
+        text("images.example.com"),
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+    // The same request asks again (one more comment on the page): it does not read the store again.
+    assert!(request.image_hosts().await?.is_empty());
+    // The next request reads the setting as it is now.
+    assert_eq!(
+        world.ctx().image_hosts().await?,
+        ["images.example.com".to_owned()]
+    );
+    Ok(())
+}
