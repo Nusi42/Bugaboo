@@ -35,6 +35,7 @@ use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
+use crate::tags::TagStore;
 
 /// A person with the password hash they sign in with.
 #[derive(Clone)]
@@ -318,6 +319,7 @@ pub trait AuthStore:
     + ProjectStore
     + IssueStore
     + RelationStore
+    + TagStore
     + CommentStore
     + FollowStore
     + HistoryStore

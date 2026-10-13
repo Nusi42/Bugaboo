@@ -103,6 +103,12 @@ pub(crate) struct State {
     pub(crate) history_position: i64,
     pub(crate) field_definitions: Vec<crate::fields::Definition>,
     pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
+    pub(crate) tags: Vec<bb_core::tags::Tag>,
+    pub(crate) tag_projects: Vec<bb_core::tags::TagProject>,
+    pub(crate) issue_tags: Vec<bb_core::tags::IssueTag>,
+    pub(crate) label_groups: Vec<bb_core::tags::LabelGroup>,
+    pub(crate) labels: Vec<bb_core::tags::Label>,
+    pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

@@ -15,6 +15,7 @@ pub mod issues;
 mod member;
 pub mod people;
 pub mod ports;
+pub mod preview;
 pub mod projects;
 pub mod relations;
 pub mod roles;

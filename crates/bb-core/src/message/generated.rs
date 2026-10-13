@@ -849,6 +849,10 @@ pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.p
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
 
+/// The message `error.label.pick-one-conflict`.
+pub const ERROR_LABEL_PICK_ONE_CONFLICT: MessageKey =
+    MessageKey::new("error.label.pick-one-conflict");
+
 /// The message `error.limit.reached`.
 pub const ERROR_LIMIT_REACHED: MessageKey = MessageKey::new("error.limit.reached");
 
@@ -919,6 +923,9 @@ pub const ERROR_SETTING_HOSTS_NOT_BARE: MessageKey =
 
 /// The message `error.setting.locked`.
 pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.locked");
+
+/// The message `error.tag.not-here`.
+pub const ERROR_TAG_NOT_HERE: MessageKey = MessageKey::new("error.tag.not-here");
 
 /// The message `field-example.date`.
 pub const FIELD_EXAMPLE_DATE: MessageKey = MessageKey::new("field-example.date");
@@ -7386,6 +7393,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That issue type is retired, so no new issues can be made with it. Choose another type.",
     ),
     (
+        "error.label.pick-one-conflict",
+        "Some issues have more than one label of this group already, so it cannot be a group to pick one from. Take the extra labels off first.",
+    ),
+    (
         "error.limit.reached",
         "That is as many as one issue can hold. Take some away first.",
     ),
@@ -7466,6 +7477,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.setting.locked",
         "An administrator locked this setting, so it can't be changed here.",
+    ),
+    (
+        "error.tag.not-here",
+        "That tag is only for other projects. Choose another tag or ask who looks after tags.",
     ),
     ("field-example.date", "For example: Promised by"),
     ("field-example.date-time", "For example: Seen at"),

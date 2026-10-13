@@ -35,13 +35,13 @@ pub trait TagStore: IssueStore + 'static {
         /// at most `limit`.
         fn issues_with_label(label: LabelId, after: Option<IssueId>, limit: u64) -> Vec<IssueId>
             = issues_with_label_in;
+        /// The tags on these issues.
+        fn tags_of_issues(issues: Vec<IssueId>) -> Vec<IssueTag> = tags_of_issues_in;
+        /// The labels on these issues.
+        fn labels_of_issues(issues: Vec<IssueId>) -> Vec<IssueLabel> = labels_of_issues_in;
     }
 
     reads! {
-        /// The tags on these issues.
-        fn tags_of_issues(issues: &[IssueId]) -> Vec<IssueTag>;
-        /// The labels on these issues.
-        fn labels_of_issues(issues: &[IssueId]) -> Vec<IssueLabel>;
         /// The tags used on issues that are not in the trash, in these projects, whose key holds
         /// `part`, by key, at most `limit`.
         fn used_tags(projects: &[ProjectId], part: &str, limit: u64) -> Vec<Tag>;

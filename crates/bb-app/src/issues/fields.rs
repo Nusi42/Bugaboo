@@ -66,8 +66,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// The fields of the catalogue that an issue holds now and that a person can change: the others
-/// (dates, labels, tags, time) come with the packages that store them.
+/// The fields of the catalogue that a request to make or change an issue names: the others (dates,
+/// time) come with the packages that store them, and tags and labels are put on and taken off on
+/// their own routes (`tags`).
 pub(crate) const CHANGEABLE: [Field; 5] = [
     Field::Title,
     Field::Description,
@@ -136,6 +137,8 @@ pub(crate) mod member {
     pub(crate) const PRIORITY: &str = Field::Priority.code();
     pub(crate) const REPORTED_BY: &str = Field::ReportedBy.code();
     pub(crate) const ASSIGNED_TO: &str = Field::AssignedTo.code();
+    pub(crate) const TAGS: &str = Field::Tags.code();
+    pub(crate) const LABELS: &str = Field::Labels.code();
     pub(crate) const DELETED_AT: &str = "deleted-at";
     /// The issue it sits under (the ID of the parent), in the event of the sub-issue.
     pub(crate) const PARENT: &str = "parent";

@@ -1457,5 +1457,7 @@
   "bulk-state.queued": "Waiting",
   "bulk-state.running": "Working",
   "bulk-state.done": "Done",
-  "bulk-state.failed": "Stopped"
+  "bulk-state.failed": "Stopped",
+  "error.tag.not-here": "That tag is only for other projects. Choose another tag or ask who looks after tags.",
+  "error.label.pick-one-conflict": "Some issues have more than one label of this group already, so it cannot be a group to pick one from. Take the extra labels off first."
 }

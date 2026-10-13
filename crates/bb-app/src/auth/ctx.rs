@@ -19,6 +19,7 @@ use jiff::Timestamp;
 use super::error::{AppError, internal};
 use super::limit::FailureLimit;
 use super::store::{AuthSettings, AuthStore, SecurityEvent};
+use crate::access::Actor as ActingPerson;
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
 use crate::ports::SetupCodeFile;
@@ -106,6 +107,7 @@ impl<S> AuthServices<S> {
             request,
             evaluations: Mutex::default(),
             via_key: AtomicBool::new(false),
+            acting: None,
         }
     }
 
@@ -133,6 +135,9 @@ pub struct Ctx<'a, S> {
     /// The request came with an access key, so what it changes is recorded as made through the
     /// API (the channel of its events).
     pub(crate) via_key: AtomicBool,
+    /// The person a background job makes its changes as; none for a request, which has a session or
+    /// an access key to tell who asks.
+    pub(crate) acting: Option<ActingPerson>,
 }
 
 /// Makes IDs from the clock of the context and the secure random source.

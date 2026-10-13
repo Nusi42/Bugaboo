@@ -284,6 +284,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 None => None,
             },
+            Member::Catalogue(Field::Tags | Field::Labels) => Some(ChangeValue::Names {
+                names: value
+                    .as_array()
+                    .map(|items| {
+                        items
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .map(str::to_owned)
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            }),
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {

@@ -91,6 +91,15 @@ use crate::settings::{
     SettingList, SettingView, SettingsQuery, change_setting, document_image_hosts, image_hosts,
     lock_setting, reset_setting, settings,
 };
+use crate::tags::{
+    AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
+    IssueSorting, IssueSortingQuery, LabelChangePreviewQuery, LabelGroupView, LabelView, Labels,
+    LabelsQuery, MakeLabel, MakeLabelGroup, RemoveLabel, RemoveTag, TagChangePreview,
+    TagChangePreviewQuery, TagPage, TagSuggestions, TagSuggestionsQuery, TagView, TagsQuery,
+    add_label, add_tag, change_label, change_label_group, change_tag, combine_labels, combine_tags,
+    issue_sorting, label_change_preview, labels, make_label, make_label_group, remove_label,
+    remove_tag, tag_change_preview, tag_suggestions, tags,
+};
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
@@ -463,4 +472,38 @@ use_cases! {
     combine_choices(CombineChoices) -> Authorized<FieldView>;
     /// Saves the long text of an own field of an issue, under its edit lock.
     save_field_text(SaveFieldText) -> Authorized<IssueView>;
+    /// Shows the tags and labels of an issue.
+    issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
+    /// Puts a tag on an issue by its name.
+    add_tag(AddTag) -> Authorized<IssueSorting>;
+    /// Takes a tag off an issue.
+    remove_tag(RemoveTag) -> Authorized<IssueSorting>;
+    /// Puts a label on an issue.
+    add_label(AddLabel) -> Authorized<IssueSorting>;
+    /// Takes a label off an issue.
+    remove_label(RemoveLabel) -> Authorized<IssueSorting>;
+    /// Lists the tags to offer while a person types.
+    tag_suggestions(TagSuggestionsQuery) -> Authorized<TagSuggestions>;
+    /// Lists the tags of the organization for the people who look after them.
+    tags(TagsQuery) -> Authorized<TagPage>;
+    /// Says what renaming or combining a tag would do.
+    tag_change_preview(TagChangePreviewQuery) -> Authorized<TagChangePreview>;
+    /// Changes the name, color or projects of a tag.
+    change_tag(ChangeTag) -> Authorized<TagView>;
+    /// Moves every issue from a tag to another and takes the first away.
+    combine_tags(CombineTags) -> Authorized<TagView>;
+    /// Lists the labels of the organization with their groups.
+    labels(LabelsQuery) -> Authorized<Labels>;
+    /// Makes a group of labels.
+    make_label_group(MakeLabelGroup) -> Authorized<LabelGroupView>;
+    /// Changes a group of labels.
+    change_label_group(ChangeLabelGroup) -> Authorized<LabelGroupView>;
+    /// Makes a label.
+    make_label(MakeLabel) -> Authorized<LabelView>;
+    /// Changes a label.
+    change_label(ChangeLabel) -> Authorized<LabelView>;
+    /// Says what renaming or combining a label would do.
+    label_change_preview(LabelChangePreviewQuery) -> Authorized<TagChangePreview>;
+    /// Moves every issue from a label to another and takes the first away.
+    combine_labels(CombineLabels) -> Authorized<LabelView>;
 }

@@ -15,6 +15,7 @@ use super::scenarios::{self as s, Added};
 use super::scenarios_fields as sf;
 use super::scenarios_issues as si;
 use super::scenarios_relations as sr;
+use super::scenarios_tags as st;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
 
@@ -115,6 +116,17 @@ table! {
     "reorder_choices" => sf::reorder_choices_scenario,
     "combine_choices" => sf::combine_choices_scenario,
     "save_field_text" => sf::save_field_text_scenario,
+    "add_tag" => st::add_tag_scenario,
+    "remove_tag" => st::remove_tag_scenario,
+    "change_tag" => st::change_tag_scenario,
+    "combine_tags" => st::combine_tags_scenario,
+    "make_label_group" => st::make_label_group_scenario,
+    "change_label_group" => st::change_label_group_scenario,
+    "make_label" => st::make_label_scenario,
+    "change_label" => st::change_label_scenario,
+    "combine_labels" => st::combine_labels_scenario,
+    "add_label" => st::add_label_scenario,
+    "remove_label" => st::remove_label_scenario,
 }
 
 #[test]

@@ -315,17 +315,20 @@ impl TagStore for AuthStorage {
             .collect()
     }
 
-    async fn tags_of_issues(&self, issues: &[IssueId]) -> Result<Vec<IssueTag>, StoreError> {
+    async fn tags_of_issues_in(
+        transaction: &mut Transaction,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<IssueTag>, StoreError> {
         if issues.is_empty() {
             return Ok(Vec::new());
         }
         let mut select = issue_tag_select();
         select
-            .and_where(Expr::col(IssueTagRow::Issue).is_in(ids_of(issues)))
+            .and_where(Expr::col(IssueTagRow::Issue).is_in(ids_of(&issues)))
             .order_by(IssueTagRow::Issue, Order::Asc)
             .order_by(IssueTagRow::AddedAt, Order::Asc)
             .order_by(IssueTagRow::Tag, Order::Asc);
-        self.database()
+        transaction
             .fetch_all(&select)
             .await?
             .iter()
@@ -333,17 +336,20 @@ impl TagStore for AuthStorage {
             .collect()
     }
 
-    async fn labels_of_issues(&self, issues: &[IssueId]) -> Result<Vec<IssueLabel>, StoreError> {
+    async fn labels_of_issues_in(
+        transaction: &mut Transaction,
+        issues: Vec<IssueId>,
+    ) -> Result<Vec<IssueLabel>, StoreError> {
         if issues.is_empty() {
             return Ok(Vec::new());
         }
         let mut select = issue_label_select();
         select
-            .and_where(Expr::col(IssueLabelRow::Issue).is_in(ids_of(issues)))
+            .and_where(Expr::col(IssueLabelRow::Issue).is_in(ids_of(&issues)))
             .order_by(IssueLabelRow::Issue, Order::Asc)
             .order_by(IssueLabelRow::AddedAt, Order::Asc)
             .order_by(IssueLabelRow::Label, Order::Asc);
-        self.database()
+        transaction
             .fetch_all(&select)
             .await?
             .iter()

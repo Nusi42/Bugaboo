@@ -483,6 +483,10 @@ export const messages = {
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
   "shortcut.on-issue": "On an open issue",
+  "error.tag.not-here":
+    "That tag is only for other projects. Choose another tag or ask who looks after tags.",
+  "error.label.pick-one-conflict":
+    "Some issues have more than one label of this group already, so it cannot be a group to pick one from. Take the extra labels off first.",
 } as const;
 
 register(messages);
