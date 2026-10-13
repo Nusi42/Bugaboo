@@ -115,7 +115,8 @@
               "Browser",
               "BrowserContext",
               "Locator",
-              "Page"
+              "Page",
+              "Response"
             ]
           }
         ]
