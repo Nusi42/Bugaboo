@@ -10,6 +10,7 @@ import type { messages as home } from "./home.ts";
 import type { messages as invitation } from "./invitation.ts";
 import type { messages as issueTypes } from "./issue-types.ts";
 import type { messages as issues } from "./issues.ts";
+import type { messages as layouts } from "./layouts.ts";
 import type { messages as mentions } from "./mentions.ts";
 import type { messages as mySettings } from "./my-settings.ts";
 import type { messages as people } from "./people.ts";
@@ -35,6 +36,7 @@ export type MessageKey =
   | keyof typeof invitation
   | keyof typeof issueTypes
   | keyof typeof issues
+  | keyof typeof layouts
   | keyof typeof mentions
   | keyof typeof mySettings
   | keyof typeof people
@@ -200,6 +202,28 @@ export interface MessageArguments {
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
+  "layouts.ask-finish": { name: string | number };
+  "layouts.customize-project": { project: string | number };
+  "layouts.field-add-to": { name: string | number };
+  "layouts.field-down": { name: string | number };
+  "layouts.field-drag": { name: string | number };
+  "layouts.field-move-to": { name: string | number };
+  "layouts.field-remove": { name: string | number };
+  "layouts.field-up": { name: string | number };
+  "layouts.fields-of": { number: string | number };
+  "layouts.inherited-project": { project: string | number };
+  "layouts.inherited-type": { type: string | number };
+  "layouts.is-editing": { name: string | number; since: string | number };
+  "layouts.limited-form": { field: string | number; role: string | number };
+  "layouts.limited-page": { field: string | number; role: string | number };
+  "layouts.project-title": { project: string | number };
+  "layouts.roles-form": { name: string | number };
+  "layouts.roles-page": { name: string | number };
+  "layouts.section": { number: string | number };
+  "layouts.section-down": { number: string | number };
+  "layouts.section-named": { number: string | number; title: string | number };
+  "layouts.section-remove": { number: string | number };
+  "layouts.section-up": { number: string | number };
   "mentions.in": { issue: string | number; who: string | number };
   "mentions.unread": { count: number };
   "own.ask-text": { lost: string | number };

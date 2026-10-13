@@ -5,6 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 
+/** The values of the own fields of an item, by the key of the field, as the server sent them. */
+export type FieldValues = Readonly<Record<string, unknown>>;
+
 /** An own field as the server shows it to this person (`FieldBody`). */
 export type OwnField = Schema<"FieldBody">;
 /** A choice of a *Pick one* or *Pick several* field. */

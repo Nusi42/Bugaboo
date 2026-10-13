@@ -116,6 +116,8 @@ const FIELD_READS = [
   "/api/v1/fields/{field}/used-by",
   "/api/v1/field-types",
   "/api/v1/field-permissions",
+  "/api/v1/layouts/form",
+  "/api/v1/layouts/editor",
   "/api/v1/issues",
   "/api/v1/issues/{issue}",
   "/api/v1/projects",
@@ -125,6 +127,13 @@ const FIELD_READS = [
 /** An own field or one of its choices changed: every answer that holds fields is read again. */
 export function refreshFields(): void {
   for (const path of FIELD_READS) {
+    void queryClient.invalidateQueries({ queryKey: ["get", path] });
+  }
+}
+
+/** A layout was made, saved or taken away: the forms and the editor read it again. */
+export function refreshLayouts(): void {
+  for (const path of ["/api/v1/layouts/form", "/api/v1/layouts/editor"] as const) {
     void queryClient.invalidateQueries({ queryKey: ["get", path] });
   }
 }

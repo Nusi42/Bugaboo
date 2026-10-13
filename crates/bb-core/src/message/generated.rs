@@ -1937,9 +1937,6 @@ pub const LAYOUTS_AVAILABLE: MessageKey = MessageKey::new("layouts.available");
 /// The message `layouts.available-none`.
 pub const LAYOUTS_AVAILABLE_NONE: MessageKey = MessageKey::new("layouts.available-none");
 
-/// The message `layouts.customize-form`.
-pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customize-form");
-
 /// The message `layouts.customize-organization`.
 pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("layouts.customize-organization");
@@ -8412,7 +8409,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.ask-finish", "Ask {name} to finish"),
     ("layouts.available", "Fields that are not on this form"),
     ("layouts.available-none", "Every field is on this form."),
-    ("layouts.customize-form", "Customize this form"),
     (
         "layouts.customize-organization",
         "Customize for the whole organization",

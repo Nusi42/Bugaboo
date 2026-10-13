@@ -32,7 +32,7 @@ export function FieldsPanel({ blocks, stacked }: FieldsPanelProps) {
       aria-label={t("issues.details")}
     >
       <h2 {...partOf(part.issueDetailsHeading)}>{t("issues.details")}</h2>
-      {reportedBy === undefined ? null : (
+      {reportedBy === undefined || !blocks.form.shows("reported-by") ? null : (
         <Fact name={t("issue-field.reported-by")}>{personName(reportedBy)}</Fact>
       )}
       {createdAt === undefined ? null : (

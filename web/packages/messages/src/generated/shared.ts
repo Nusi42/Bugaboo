@@ -483,6 +483,8 @@ export const messages = {
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
   "shortcut.on-issue": "On an open issue",
+  "layouts.nav": "Layouts",
+  "layouts.project-title": "Layouts of {project}",
 } as const;
 
 register(messages);

@@ -1,6 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import type { ReactNode } from "react";
 
+import type { FormView } from "../layouts/index.ts";
+
 /**
  * The slots of the issue page (UX design §4.4): the places where packages other than the issue page
  * itself put their blocks. The page owns the layout (focus view, side panel, phone) and the rules of
@@ -65,6 +67,11 @@ export interface IssueBlockProps {
   readonly ownFieldsHtml: IssueDetail["own_fields_html"];
   /** What the person may change in this issue. */
   readonly mask: IssueFieldMask;
+  /**
+   * Which fields the layout of the issue page shows to this person, and in which sections (CFG-01).
+   * A block draws a field only when `form.shows` says so; the mask still decides what may be changed.
+   */
+  readonly form: FormView;
   /** The version of the issue now: a block that saves sends the one it read. */
   readonly version: number;
   /** Changes values of the issue against the version; the page shows *Saving…* and *Saved*. */
