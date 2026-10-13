@@ -75,11 +75,11 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
         let all = changes(ok(&all)?);
         let severity_change = all
             .iter()
-            .find(|item| item["field"] == json!(severity_id) && item["before_text"].is_string())
+            .find(|item| item["field"] == json!(severity_id) && item["before_names"].is_array())
             .ok_or("no change of the severity")?;
         assert_eq!(severity_change["field_name"], "Severity");
-        assert_eq!(severity_change["before_text"], "Minor");
-        assert_eq!(severity_change["after_text"], "Critical");
+        assert_eq!(severity_change["before_names"], json!(["Minor"]));
+        assert_eq!(severity_change["after_names"], json!(["Critical"]));
         let salary_change = all
             .iter()
             .find(|item| item["field"] == json!(salary_id) && item["before_text"].is_string())
@@ -164,8 +164,15 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
             )
             .await?,
         )?;
+        let approved = id_of(
+            &make_field(
+                &mut ada,
+                json!({"name": "Approved", "kind": "yes-no", "applies_to": "issues"}),
+            )
+            .await?,
+        )?;
         let question = question_type(&mut ada).await?;
-        // The reader sees the field in general, but not on a Bug.
+        // The reader sees the fields in general, but not on a Bug.
         let mut reader = reader_of(
             &site,
             &rig,
@@ -174,6 +181,8 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
             &[
                 (&centre, None, FieldLevel::CanSee),
                 (&centre, Some(&site.bug), FieldLevel::Hidden),
+                (&approved, None, FieldLevel::CanSee),
+                (&approved, Some(&site.bug), FieldLevel::Hidden),
                 ("title", None, FieldLevel::CanSee),
             ],
         )
@@ -193,21 +202,46 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
         );
         // A change that touches only the field: on the Bug the reader gets no item for it at all.
         for issue in [&in_bug, &in_question] {
-            change_fields(&mut ada, issue, json!({ &centre: "Secret-1" })).await?;
+            change_fields(
+                &mut ada,
+                issue,
+                json!({ &centre: "Secret-1", &approved: true }),
+            )
+            .await?;
         }
         let bug = history_of(&mut reader, &in_bug).await?;
         assert_eq!(bug.len(), before.0, "{bug:?}");
         assert!(!bug.iter().any(|item| is_change_of(item, &centre)));
-        assert!(!json!(bug).to_string().contains("Secret-1"));
-        // On the other type the same change is there, with the name of the field.
+        assert!(!bug.iter().any(|item| is_change_of(item, &approved)));
+        // Nothing of the typed field is there either: no kind, no value, on either side.
+        let bug_text = json!(bug).to_string();
+        for leak in [
+            "Secret-1",
+            "Approved",
+            "field_kind",
+            "before_value",
+            "after_value",
+        ] {
+            assert!(
+                !bug_text.contains(leak),
+                "{leak} is in the history: {bug_text}"
+            );
+        }
+        // On the other type the same changes are there (one for each field), with the names of the fields.
         let other = history_of(&mut reader, &in_question).await?;
-        assert_eq!(other.len(), before.1 + 1, "{other:?}");
+        assert_eq!(other.len(), before.1 + 2, "{other:?}");
         let shown = other
             .iter()
             .find(|item| is_change_of(item, &centre))
             .ok_or("no change of the cost centre on a Question")?;
         assert_eq!(shown["field_name"], "Cost centre");
         assert_eq!(shown["after_text"], "Secret-1");
+        let typed = other
+            .iter()
+            .find(|item| is_change_of(item, &approved))
+            .ok_or("no change of the typed field on a Question")?;
+        assert_eq!(typed["field_kind"], "yes-no", "{typed}");
+        assert_eq!(typed["after_value"], true, "{typed}");
         // Ada sees it on both.
         let all = history_of(&mut ada, &in_bug).await?;
         assert!(all.iter().any(|item| is_change_of(item, &centre)));
@@ -222,11 +256,52 @@ fn change_to<'a>(items: &'a [Value], field: &str) -> Result<&'a Value, Failure> 
         .iter()
         .find(|item| {
             is_change_of(item, field)
-                && ["after_text", "after_value", "after_people"]
+                && ["after_text", "after_names", "after_value", "after_people"]
                     .iter()
                     .any(|side| !item[*side].is_null())
         })
         .ok_or_else(|| format!("no change to {field}: {items:?}").into())
+}
+
+/// The change of the field `twin` is in the items, since the reader may see the field, and holds
+/// no value; none of the `secrets` is anywhere in them.
+fn assert_twin_is_empty(items: &[Value], twin: &str, secrets: &[&str]) -> TestResult {
+    let text = json!(items).to_string();
+    for secret in secrets {
+        assert!(!text.contains(secret), "{text}");
+    }
+    let change = items
+        .iter()
+        .find(|item| is_change_of(item, twin))
+        .ok_or_else(|| format!("no change of Twin: {text}"))?;
+    let sides = ["before_text", "after_text", "before_issue", "after_issue"];
+    assert!(sides.iter().all(|side| change[*side].is_null()), "{change}");
+    Ok(())
+}
+
+/// Makes one field of each kind the history words by itself; their IDs, in this order: yes-no,
+/// duration, whole number, decimal, date, person, people, group, issue.
+async fn make_value_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
+    let mut fields = Vec::new();
+    for (name, kind) in [
+        ("Billable", "yes-no"),
+        ("Effort", "duration"),
+        ("Points", "whole-number"),
+        ("Cost", "decimal"),
+        ("Due", "date"),
+        ("Owner", "person"),
+        ("Owners", "people"),
+        ("Team", "group"),
+        ("Twin", "issue"),
+    ] {
+        let made = make_field(
+            ada,
+            json!({"name": name, "kind": kind, "applies_to": "issues"}),
+        )
+        .await?;
+        fields.push(id_of(&made)?);
+    }
+    Ok(fields)
 }
 
 #[tokio::test]
@@ -235,24 +310,20 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
     each_database("iss_06_own_fields_values", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let mut fields = Vec::new();
-        for (name, kind) in [
-            ("Billable", "yes-no"),
-            ("Effort", "duration"),
-            ("Owner", "person"),
-            ("Owners", "people"),
-            ("Team", "group"),
-            ("Twin", "issue"),
-        ] {
-            let made = make_field(
-                &mut ada,
-                json!({"name": name, "kind": kind, "applies_to": "issues"}),
-            )
-            .await?;
-            fields.push(id_of(&made)?);
-        }
-        let [billable, effort, owner, owners, team, twin] = fields.as_slice() else {
-            return Err("six fields".into());
+        let fields = make_value_fields(&mut ada).await?;
+        let [
+            billable,
+            effort,
+            points,
+            cost,
+            due,
+            owner,
+            owners,
+            team,
+            twin,
+        ] = fields.as_slice()
+        else {
+            return Err("nine fields".into());
         };
         let (mut vic, vic_id) = site
             .person_called(StartingRole::Viewer, "vic", "Vic Viewer")
@@ -286,6 +357,9 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
         let values = json!({
             billable: true,
             effort: 5400,
+            points: 8,
+            cost: "12.5",
+            due: "2026-03-01",
             owner: vic_id.to_string(),
             owners: [vic_id.to_string()],
             team: &group,
@@ -296,13 +370,18 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
         // Ada: typed values for the screen to word, people by name, a group by its name and an
         // issue by its readable ID.
         let seen = history_of(&mut ada, &issue).await?;
-        let flag = change_to(&seen, billable)?;
-        assert_eq!(flag["field_kind"], "yes-no", "{flag}");
-        assert_eq!(flag["after_value"], true, "{flag}");
-        assert!(flag["after_text"].is_null(), "{flag}");
-        let time = change_to(&seen, effort)?;
-        assert_eq!(time["field_kind"], "duration", "{time}");
-        assert_eq!(time["after_value"], 5400, "{time}");
+        for (field, kind, value) in [
+            (billable, "yes-no", json!(true)),
+            (effort, "duration", json!(5400)),
+            (points, "whole-number", json!(8)),
+            (cost, "decimal", json!("12.5")),
+            (due, "date", json!("2026-03-01")),
+        ] {
+            let typed = change_to(&seen, field)?;
+            assert_eq!(typed["field_kind"], kind, "{typed}");
+            assert_eq!(typed["after_value"], value, "{typed}");
+            assert!(typed["after_text"].is_null(), "{typed}");
+        }
         for field in [owner, owners] {
             let people = &change_to(&seen, field)?["after_people"];
             assert_eq!(people[0]["name"], "Vic Viewer", "{people}");
@@ -311,16 +390,7 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
         assert_eq!(change_to(&seen, twin)?["after_text"], hidden_key.as_str());
         // Max cannot see the issue Twin names: no key, no value, and the ID is nowhere.
         let theirs_seen = history_of(&mut max, &theirs).await?;
-        let text = json!(theirs_seen).to_string();
-        assert!(!text.contains(&hidden_key), "{text}");
-        assert!(!text.contains(&hidden_id), "{text}");
-        assert!(
-            theirs_seen
-                .iter()
-                .filter(|item| is_change_of(item, twin))
-                .all(|item| item["after_text"].is_null()),
-            "{text}"
-        );
+        assert_twin_is_empty(&theirs_seen, twin, &[&hidden_key, &hidden_id])?;
         // A viewer who may not see group names does not get the name of the group; with names, does.
         site.show_people(&mut ada, StartingRole::Viewer, "mentions", "hidden")
             .await?;

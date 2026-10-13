@@ -40,6 +40,11 @@ pub enum ChangeValue {
         /// The text.
         text: String,
     },
+    /// The names of the choices of a pick field; the screen joins them.
+    Names {
+        /// The names, in the order of the choices.
+        names: Vec<String>,
+    },
     /// People, each as the kind of the field says.
     People {
         /// The people.

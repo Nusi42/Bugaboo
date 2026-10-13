@@ -30,7 +30,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 25] = [
+const HISTORY_FIELDS: [FieldSpec; 27] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -49,6 +49,8 @@ const HISTORY_FIELDS: [FieldSpec; 25] = [
     FieldSpec::by_default("after_text"),
     FieldSpec::by_default("before_value"),
     FieldSpec::by_default("after_value"),
+    FieldSpec::by_default("before_names"),
+    FieldSpec::by_default("after_names"),
     FieldSpec::by_default("before_people"),
     FieldSpec::by_default("after_people"),
     FieldSpec::by_default("before_issue"),
@@ -126,6 +128,12 @@ pub(crate) struct HistoryEntryItem {
     /// The same for what the field is now.
     #[serde(skip_serializing_if = "Option::is_none")]
     after_value: Option<Value>,
+    /// A change: the names of the choices the field held, in order.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_names: Option<Vec<String>>,
+    /// A change: the names of the choices the field holds now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_names: Option<Vec<String>>,
     /// A change: the people the field held, as the kind of the field says.
     #[serde(skip_serializing_if = "Option::is_none")]
     before_people: Option<Vec<PersonRef>>,
@@ -172,6 +180,8 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         after_text: None,
         before_value: None,
         after_value: None,
+        before_names: None,
+        after_names: None,
         before_people: None,
         after_people: None,
         before_issue: None,
@@ -187,6 +197,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
 struct Side {
     text: Option<String>,
     value: Option<Value>,
+    names: Option<Vec<String>>,
     people: Option<Vec<PersonRef>>,
     issue: Option<IssueRef>,
     kind: Option<FieldType>,
@@ -202,6 +213,7 @@ impl Side {
                 side.kind = Some(*kind);
                 side.value = Some(value.clone());
             }
+            Some(ChangeValue::Names { names }) => side.names = Some(names.clone()),
             Some(ChangeValue::People { people }) => side.people = Some(people.clone()),
             Some(ChangeValue::Issue { issue }) => side.issue = Some(IssueRef::from(issue)),
             None => {}
@@ -238,9 +250,11 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 );
                 item.field_kind = before.kind.or(after.kind);
                 (item.before_text, item.before_value) = (before.text, before.value);
-                (item.before_people, item.before_issue) = (before.people, before.issue);
+                (item.before_names, item.before_people) = (before.names, before.people);
+                item.before_issue = before.issue;
                 (item.after_text, item.after_value) = (after.text, after.value);
-                (item.after_people, item.after_issue) = (after.people, after.issue);
+                (item.after_names, item.after_people) = (after.names, after.people);
+                item.after_issue = after.issue;
                 item
             })
             .collect(),
@@ -372,6 +386,8 @@ mod tests {
             after_text: Some(String::new()),
             before_value: Some(Value::Null),
             after_value: Some(Value::Null),
+            before_names: Some(Vec::new()),
+            after_names: Some(Vec::new()),
             before_people: Some(Vec::new()),
             after_people: Some(Vec::new()),
             before_issue: Some(line()),

@@ -3176,6 +3176,8 @@ export interface components {
     /** @description One item of the history of an issue. */
     HistoryEntryItem: {
       after_issue?: components["schemas"]["IssueRef"] | null;
+      /** @description A change: the names of the choices the field holds now. */
+      after_names?: string[] | null;
       /** @description A change: the people the field holds now. */
       after_people?: components["schemas"]["PersonRef"][] | null;
       /** @description A change: what the field is now, when it is a word or a name. */
@@ -3185,6 +3187,8 @@ export interface components {
       /** @description When it happened. */
       at: string;
       before_issue?: components["schemas"]["IssueRef"] | null;
+      /** @description A change: the names of the choices the field held, in order. */
+      before_names?: string[] | null;
       /** @description A change: the people the field held, as the kind of the field says. */
       before_people?: components["schemas"]["PersonRef"][] | null;
       /** @description A change: what the field was, when it is a word or a name. */
@@ -4153,6 +4157,8 @@ export interface components {
       /** @description The items of this page. */
       items: {
         after_issue?: components["schemas"]["IssueRef"] | null;
+        /** @description A change: the names of the choices the field holds now. */
+        after_names?: string[] | null;
         /** @description A change: the people the field holds now. */
         after_people?: components["schemas"]["PersonRef"][] | null;
         /** @description A change: what the field is now, when it is a word or a name. */
@@ -4162,6 +4168,8 @@ export interface components {
         /** @description When it happened. */
         at: string;
         before_issue?: components["schemas"]["IssueRef"] | null;
+        /** @description A change: the names of the choices the field held, in order. */
+        before_names?: string[] | null;
         /** @description A change: the people the field held, as the kind of the field says. */
         before_people?: components["schemas"]["PersonRef"][] | null;
         /** @description A change: what the field was, when it is a word or a name. */

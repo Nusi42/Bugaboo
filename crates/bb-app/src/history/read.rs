@@ -211,8 +211,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         if matches!(kind, FieldType::PickOne | FieldType::PickSeveral) {
             let names = definition.choice_names(value);
-            return Ok((!names.is_empty()).then(|| ChangeValue::Text {
-                text: names.join(", "),
+            return Ok((!names.is_empty()).then(|| ChangeValue::Names {
+                names: names.into_iter().map(str::to_owned).collect(),
             }));
         }
         let shown = self
@@ -228,9 +228,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Value::Array(_) => serde_json::from_value(shown),
                     one => serde_json::from_value(one).map(|one| vec![one]),
                 };
-                Some(ChangeValue::People {
-                    people: people.map_err(|error| AppError::Internal(error.to_string()))?,
-                })
+                match people {
+                    Ok(people) => Some(ChangeValue::People { people }),
+                    Err(error) => {
+                        // A stored value that cannot be read is no value for the reader.
+                        tracing::warn!(%error, "a value of a person field in the history cannot be read");
+                        None
+                    }
+                }
             }
             (FieldType::Group, Value::Object(found)) => {
                 found.get("name").and_then(Value::as_str).map(text)

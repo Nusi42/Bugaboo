@@ -3,6 +3,7 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
+import { listText } from "../../shared/list-text.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName, personNameInside } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
@@ -76,6 +77,7 @@ function wordOf(field: string, text: string): string {
 export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | undefined {
   const text = side === "before" ? entry.before_text : entry.after_text;
   const value = side === "before" ? entry.before_value : entry.after_value;
+  const names = side === "before" ? entry.before_names : entry.after_names;
   const people = side === "before" ? entry.before_people : entry.after_people;
   const issue = side === "before" ? entry.before_issue : entry.after_issue;
   if (text !== undefined && text !== null) {
@@ -89,10 +91,13 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
   ) {
     return ownValueText(entry.field_kind, value);
   }
+  if (names !== undefined && names !== null) {
+    return listText(names);
+  }
   if (people !== undefined && people !== null) {
     return people.length === 0
       ? t("history.people-none")
-      : people.map((person) => personNameInside(person)).join(", ");
+      : listText(people.map((person) => personNameInside(person)));
   }
   return issue === undefined || issue === null ? undefined : issue.key;
 }

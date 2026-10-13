@@ -18301,6 +18301,13 @@
               }
             ]
           },
+          "after_names": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "A change: the names of the choices the field holds now."
+          },
           "after_people": {
             "type": ["array", "null"],
             "items": {
@@ -18329,6 +18336,13 @@
                 "type": "null"
               }
             ]
+          },
+          "before_names": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "A change: the names of the choices the field held, in order."
           },
           "before_people": {
             "type": ["array", "null"],
@@ -20478,6 +20492,13 @@
                     }
                   ]
                 },
+                "after_names": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A change: the names of the choices the field holds now."
+                },
                 "after_people": {
                   "type": ["array", "null"],
                   "items": {
@@ -20506,6 +20527,13 @@
                       "type": "null"
                     }
                   ]
+                },
+                "before_names": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A change: the names of the choices the field held, in order."
                 },
                 "before_people": {
                   "type": ["array", "null"],

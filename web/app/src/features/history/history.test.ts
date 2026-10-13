@@ -17,6 +17,21 @@ function change(overrides: Partial<Schema<"HistoryEntryItem">>): HistoryEntry {
   return { event: "e1", at: "2027-01-15T08:00:00Z", by: ben, kind: "change", ...overrides };
 }
 
+describe("iss_06 the history lists choices", () => {
+  it("joins the names of the choices of a pick field", () => {
+    expect(
+      changeSentence(
+        change({
+          field: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c",
+          field_name: "Browsers",
+          before_names: ["Firefox"],
+          after_names: ["Firefox", "Safari"],
+        }),
+      ),
+    ).toBe("Ben changed Browsers from Firefox to Firefox, Safari");
+  });
+});
+
 describe("iss_06 the history in plain sentences", () => {
   it("says what a field was and is, with the words of status and priority", () => {
     expect(
