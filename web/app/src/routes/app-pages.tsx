@@ -1,8 +1,6 @@
 import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { HomePage } from "../features/home/index.ts";
-import { AppearancePage, RegionPage } from "../features/my-settings/index.ts";
-import { SecurityPage, SignInRulesPage, ThemesPage } from "../features/settings/index.ts";
 import { paths } from "../shared/paths.ts";
 import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
 import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.tsx";
@@ -11,6 +9,27 @@ import { ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
 // stays small (coding-standards section 6).
+
+const AppearanceScreen = lazyRouteComponent(
+  () => import("../features/my-settings/index.ts"),
+  "AppearancePage",
+);
+const RegionScreen = lazyRouteComponent(
+  () => import("../features/my-settings/index.ts"),
+  "RegionPage",
+);
+const SecurityScreen = lazyRouteComponent(
+  () => import("../features/settings/index.ts"),
+  "SecurityPage",
+);
+const SignInRulesScreen = lazyRouteComponent(
+  () => import("../features/settings/index.ts"),
+  "SignInRulesPage",
+);
+const ThemesScreen = lazyRouteComponent(
+  () => import("../features/settings/index.ts"),
+  "ThemesPage",
+);
 
 export const homeRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -27,13 +46,13 @@ export const mySettingsIndexRoute = createRoute({
 export const appearanceRoute = createRoute({
   getParentRoute: () => mySettingsRoute,
   path: paths.appearance,
-  component: AppearancePage,
+  component: AppearanceScreen,
 });
 
 export const regionRoute = createRoute({
   getParentRoute: () => mySettingsRoute,
   path: paths.region,
-  component: RegionPage,
+  component: RegionScreen,
 });
 
 export const startPageRoute = createRoute({
@@ -125,7 +144,7 @@ export const organizationSecurityRoute = createRoute({
   component: function OrganizationSecurity() {
     return (
       <OnlyWith path={paths.organizationSecurity}>
-        <SecurityPage />
+        <SecurityScreen />
       </OnlyWith>
     );
   },
@@ -137,7 +156,7 @@ export const signInRulesRoute = createRoute({
   component: function SignInRules() {
     return (
       <OnlyWith path={paths.signInRules}>
-        <SignInRulesPage />
+        <SignInRulesScreen />
       </OnlyWith>
     );
   },
@@ -149,7 +168,7 @@ export const themesRoute = createRoute({
   component: function Themes() {
     return (
       <OnlyWith path={paths.themes}>
-        <ThemesPage />
+        <ThemesScreen />
       </OnlyWith>
     );
   },
