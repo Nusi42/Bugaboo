@@ -1916,6 +1916,12 @@ pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database
 /// The message `keys.settings-placeholder`.
 pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
 
+/// The message `layout.section-details`.
+pub const LAYOUT_SECTION_DETAILS: MessageKey = MessageKey::new("layout.section-details");
+
+/// The message `layout.section-main`.
+pub const LAYOUT_SECTION_MAIN: MessageKey = MessageKey::new("layout.section-main");
+
 /// The message `list.next`.
 pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
@@ -8066,6 +8072,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "keys.settings-placeholder",
         "--config <the settings file of the service>",
     ),
+    ("layout.section-details", "Details"),
+    ("layout.section-main", "Main"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     ("markdown.bold", "Bold"),

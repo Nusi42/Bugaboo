@@ -23,6 +23,7 @@ pub mod id;
 pub mod issue;
 pub mod issue_key;
 pub mod job;
+pub mod layout;
 pub mod lookup;
 pub mod message;
 pub mod migration;
