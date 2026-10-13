@@ -8,6 +8,7 @@ pub(crate) mod clippy;
 pub(crate) mod contrast_spec;
 pub(crate) mod icu;
 pub(crate) mod kdl_reader;
+pub(crate) mod made_keys;
 pub(crate) mod messages;
 pub(crate) mod messages_rust;
 pub(crate) mod privacy;

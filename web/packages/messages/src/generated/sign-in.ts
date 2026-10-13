@@ -3,9 +3,6 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "error.request.wrong-token":
-    "Your sign-in does not fit this page any more. Sign in again and then try again.",
-  "error.auth.not-signed-in": "Please sign in to continue.",
   "sign-in.title": "Sign in to Bugaboo",
   "sign-in.submit": "Sign in",
   "sign-in.passkey": "Sign in with a passkey",

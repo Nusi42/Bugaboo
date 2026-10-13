@@ -7,9 +7,11 @@ use anyhow::bail;
 
 use super::Generated;
 use super::icu::{ArgKind, placeholders};
+use super::made_keys::made_keys;
 use super::messages_rust;
 use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources, read_text};
+use crate::web_code::strip_comments;
 
 /// The source catalogue, relative to the repository root.
 pub(crate) const SOURCE_LOCALE_PATH: &str = "messages/en.json";
@@ -46,7 +48,7 @@ pub(crate) fn feature_entries(feature: &str) -> [String; 2] {
 }
 
 /// Where the app's features are; each is an area that loads on its own (ADR-0009).
-const FEATURES_FOLDER: &str = "web/app/src/features/";
+pub(crate) const FEATURES_FOLDER: &str = "web/app/src/features/";
 
 /// One part of the browser catalog: a file of texts that a chunk of the app brings along.
 struct Part {
@@ -205,7 +207,7 @@ pub(crate) fn is_generated_catalog(path: &str) -> bool {
 /// Whether a file is a test or generated, so that its strings say nothing about what the product
 /// shows.
 pub(crate) fn is_test_or_generated(path: &str) -> bool {
-    const MARKERS: [&str; 5] = [".test.", ".spec.", "/e2e/", "/tests/", "generated.rs"];
+    const MARKERS: [&str; 5] = [".test.", ".spec.", "/e2e/", "/tests/", "generated."];
     is_generated_catalog(path) || MARKERS.iter().any(|marker| path.contains(marker))
 }
 
@@ -241,41 +243,87 @@ enum Users {
 }
 
 /// The part of every key of the browser catalog, from one rule: a key goes to the part of a
-/// feature when that feature is the only code that names the key as a string, and to `shared`
-/// otherwise. A key that no code names is `shared` too: the server sends it by key, or a word of an
-/// enum makes it, and then any page may show it. The first page loads `shared` only, and a feature
-/// brings its own part along with its chunk.
+/// feature when that feature is the only code that names the key, and to `shared` otherwise. Code
+/// names a key as a string, or builds it from a template (`` `issue-field.${code}` ``): then it
+/// names every key that starts with the text of the template. A key that no code names is
+/// `shared` too: the server sends it by key, or a word of an enum makes it, and then any page may
+/// show it. `made` are the keys that the words of the enums make: the server sends them and shared
+/// code looks them up, so they are `shared` whatever the code says. The first page loads `shared`
+/// only, and a feature brings its own part along with its chunk.
 pub(crate) fn parts_of<'a>(
     keys: impl IntoIterator<Item = &'a str>,
     sources: &[Source],
+    made: &[&str],
 ) -> BTreeMap<&'a str, &'static str> {
     let keys: Vec<&str> = keys.into_iter().collect();
     let known: HashSet<&str> = keys.iter().copied().collect();
     let mut users: BTreeMap<&str, Users> = BTreeMap::new();
+    let mut name = |key: &'a str, here: Users| {
+        let merged = match users.get(key) {
+            Some(before) if *before != here => Users::Several,
+            _ => here,
+        };
+        users.insert(key, merged);
+    };
     for (path, text) in sources {
         if is_test_or_generated(path) {
             continue;
         }
         let here = feature_of(path).map_or(Users::Several, Users::Feature);
-        for literal in string_literals(text, false) {
+        let code = strip_comments(text);
+        for literal in string_literals(&code, false) {
             if let Some(key) = known.get(literal.as_str()) {
-                let merged = match users.get(key) {
-                    Some(before) if *before != here => Users::Several,
-                    _ => here,
-                };
-                users.insert(key, merged);
+                name(key, here);
+            }
+        }
+        for prefix in template_prefixes(&code) {
+            for key in keys.iter().filter(|key| key.starts_with(prefix.as_str())) {
+                name(key, here);
             }
         }
     }
     keys.into_iter()
         .map(|key| {
             let part = match users.get(key) {
-                Some(Users::Feature(feature)) => feature,
+                Some(Users::Feature(feature)) if !made.contains(&key) => feature,
                 _ => SHARED,
             };
             (key, part)
         })
         .collect()
+}
+
+/// The beginnings of keys that the code builds at run time: `` `prefix.${…}` `` and
+/// `"prefix." + …`. A prefix ends with a dot and is made of the letters of a key.
+pub(crate) fn template_prefixes(code: &str) -> Vec<String> {
+    let of_a_key = |text: &str| {
+        text.ends_with('.')
+            && text
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '.')
+    };
+    let mut prefixes = Vec::new();
+    for (at, _) in code.match_indices("${") {
+        let before = &code[..at];
+        if let Some(start) = before.rfind('`')
+            && of_a_key(&before[start + 1..])
+        {
+            prefixes.push(before[start + 1..].to_owned());
+        }
+    }
+    for quote in ['"', '\''] {
+        for (at, _) in code.match_indices(&format!(".{quote}")) {
+            let after = code[at + 2..].trim_start_matches([' ', '\t']);
+            let before = &code[..=at];
+            if after.starts_with('+')
+                && let Some(start) = before.rfind(quote)
+                && of_a_key(&before[start + 1..])
+            {
+                prefixes.push(before[start + 1..].to_owned());
+            }
+        }
+    }
+    prefixes
 }
 
 /// Every `"…"` (and, for TypeScript, `'…'`) on a single line.
@@ -332,7 +380,9 @@ fn generate_from(
         .filter(|(key, _)| !is_server_only(key))
         .cloned()
         .collect();
-    let part_of = parts_of(messages.iter().map(|(key, _)| key.as_str()), sources);
+    let made = made_keys();
+    let made: Vec<&str> = made.iter().map(|made| made.key.as_str()).collect();
+    let part_of = parts_of(messages.iter().map(|(key, _)| key.as_str()), sources, &made);
     let mut generated = vec![
         Generated::new(TYPES_OUTPUT, types_file(&messages)?),
         Generated::new(ALL_OUTPUT, all_file()),
@@ -660,6 +710,7 @@ mod tests {
         let parts = parts_of(
             ["fields.title", "save.label", "nav.fields", "people.title"],
             &sources,
+            &[],
         );
         assert_eq!(parts["fields.title"], "fields");
         assert_eq!(parts["people.title"], "people");
@@ -674,7 +725,7 @@ mod tests {
             "web/app/src/features/fields/A.tsx",
             r#"t("fields.a")"#,
         )];
-        let parts = parts_of(["fields.a", "error.resource.not-found"], &sources);
+        let parts = parts_of(["fields.a", "error.resource.not-found"], &sources, &[]);
         assert_eq!(parts["error.resource.not-found"], "shared");
     }
 
@@ -686,7 +737,7 @@ mod tests {
             code("web/app/e2e/a.spec.ts", r#"t("fields.a")"#),
             code(generated_folder!("shared.ts"), r#""fields.a": "A","#),
         ];
-        assert_eq!(parts_of(["fields.a"], &sources)["fields.a"], "fields");
+        assert_eq!(parts_of(["fields.a"], &sources, &[])["fields.a"], "fields");
     }
 
     #[test]
@@ -695,7 +746,111 @@ mod tests {
             "web/app/src/features/brand-new/A.tsx",
             r#"t("fields.a")"#,
         )];
-        assert_eq!(parts_of(["fields.a"], &sources)["fields.a"], "shared");
+        assert_eq!(parts_of(["fields.a"], &sources, &[])["fields.a"], "shared");
+    }
+
+    #[test]
+    fn a_key_that_a_word_of_an_enum_makes_is_shared_even_if_one_feature_names_it() {
+        let sources = [code(
+            "web/app/src/features/issues/A.tsx",
+            r#"t("issue-field.title"); t("issues.list")"#,
+        )];
+        let parts = parts_of(
+            ["issue-field.title", "issues.list"],
+            &sources,
+            &["issue-field.title"],
+        );
+        assert_eq!(parts["issue-field.title"], "shared");
+        assert_eq!(parts["issues.list"], "issues");
+    }
+
+    #[test]
+    fn the_keys_of_the_enums_are_shared_in_the_repository() {
+        let repo = Repo::discover().unwrap();
+        let text = read_text(&repo, SOURCE_LOCALE_PATH).unwrap();
+        let output = generate(&repo, &text).unwrap();
+        let shared = file(&output, generated_folder!("shared.ts"));
+        for made in made_keys() {
+            let quoted = json_string(made.key.as_str()).unwrap();
+            if !is_server_only(made.key.as_str()) {
+                assert!(shared.contains(&format!("  {quoted}:")), "{}", made.key);
+            }
+        }
+    }
+
+    #[test]
+    fn a_template_of_shared_code_puts_every_key_it_can_build_in_shared() {
+        let sources = [
+            code(
+                "web/app/src/shared/names.ts",
+                "t(`issue-field.${code}`); const k = \"markdown.\" + name;",
+            ),
+            code(
+                "web/app/src/features/issues/A.tsx",
+                r#"t("issue-field.title")"#,
+            ),
+            code("web/app/src/features/people/A.tsx", r#"t("markdown.bold")"#),
+        ];
+        let keys = ["issue-field.title", "issue-field.priority", "markdown.bold"];
+        let parts = parts_of(keys, &sources, &[]);
+        assert_eq!(parts["issue-field.title"], "shared");
+        assert_eq!(parts["issue-field.priority"], "shared");
+        assert_eq!(parts["markdown.bold"], "shared");
+    }
+
+    #[test]
+    fn a_template_inside_one_feature_leaves_its_keys_in_that_feature() {
+        let sources = [
+            code(
+                "web/app/src/features/fields/A.tsx",
+                "t(`field-type.${kind}`); t('field-type.text')",
+            ),
+            code("web/app/src/features/people/A.tsx", r#"t("people.title")"#),
+        ];
+        let parts = parts_of(
+            ["field-type.text", "field-type.date", "people.title"],
+            &sources,
+            &[],
+        );
+        assert_eq!(parts["field-type.text"], "fields");
+        assert_eq!(parts["field-type.date"], "fields");
+        assert_eq!(parts["people.title"], "people");
+        // The same template in a second feature makes them shared.
+        let more = [
+            code(
+                "web/app/src/features/fields/A.tsx",
+                "t(`field-type.${kind}`)",
+            ),
+            code(
+                "web/app/src/features/people/B.tsx",
+                "t(`field-type.${kind}`)",
+            ),
+        ];
+        assert_eq!(
+            parts_of(["field-type.date"], &more, &[])["field-type.date"],
+            "shared"
+        );
+    }
+
+    #[test]
+    fn template_prefixes_are_the_text_before_the_dollar_brace_or_the_plus() {
+        let found = template_prefixes(
+            "t(`a.b-c.${x}`); k(\"d.\" + y); k('e.f.' +z); `${x}.no`; `plain ${x}`; \"g.h\" + 1",
+        );
+        assert_eq!(found, ["a.b-c.", "d.", "e.f."]);
+    }
+
+    #[test]
+    fn a_key_in_a_comment_is_not_a_use() {
+        let sources = [
+            code(
+                "web/app/src/features/fields/A.tsx",
+                "t(\"fields.a\"); // t(\"people.b\")\n/* t(`people.${c}`)\n t('people.b') */",
+            ),
+            code("web/app/src/features/people/A.tsx", r#"t("people.b")"#),
+        ];
+        let parts = parts_of(["fields.a", "people.b"], &sources, &[]);
+        assert_eq!(parts["people.b"], "people");
     }
 
     #[test]

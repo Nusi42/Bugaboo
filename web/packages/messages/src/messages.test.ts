@@ -33,7 +33,21 @@ describe("perf_04 message parts", () => {
 
   it("keeps the texts of the first page apart from the texts of an area", () => {
     expect(isMessageKey("app.name")).toBe(true);
-    expect(isMessageKey("issue-field.title")).toBe(false);
+    expect(isMessageKey("roles.intro")).toBe(false);
+  });
+
+  it("has the texts that the server sends by key, and that shared code looks up, on the first page", () => {
+    const keys = [
+      "error.auth.not-signed-in",
+      "error.request.wrong-token",
+      "error.server.internal",
+      "issue-field.title",
+      "issue-field.description",
+      "issue-field.priority",
+      "issue-field.reported-by",
+      "starting-role.guest",
+    ];
+    expect(keys.filter((key) => !isMessageKey(key))).toEqual([]);
   });
 
   it("holds every key in exactly one part, and finds all of them once all are loaded", async () => {

@@ -3,8 +3,6 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "theme.legend": "Theme",
-  "error.server.internal": "Something went wrong on our side. Nothing you did caused this.",
   "common.try-again": "Try again",
   "shell.skip": "Skip to the content",
   "shell.menu": "Main menu",

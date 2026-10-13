@@ -3,8 +3,6 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "starting-role.team-member": "Team member",
-  "starting-role.guest": "Guest",
   "access.field": "Field",
   "access.kind": "Kind of people information",
   "access.cell-label": "{subject} for {role}",
