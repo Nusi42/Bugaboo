@@ -589,6 +589,7 @@ pub const WATCH_SECONDS: i64 = 30;
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
+pub const LAYOUT_PART: &str = \"layout\";
 "
             .to_owned(),
         );
@@ -599,6 +600,7 @@ pub const VERSIONS_MAX: u32 = 50;
         assert!(text.contains("draftKeepDays = 30;"), "{text}");
         assert!(text.contains("draftTextMax = 100000;"), "{text}");
         assert!(text.contains("versionsMax = 50;"), "{text}");
+        assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
         assert!(editing(&[]).is_err());
     }
 
