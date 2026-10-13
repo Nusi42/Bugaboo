@@ -13,7 +13,7 @@ use bb_policy::Permission;
 
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
-use super::scenarios_tags::{a_label, a_label_group, labelled};
+use super::scenarios_tags::{a_label, a_label_group, labelled, tagged};
 use super::world::{Outcome, World};
 use crate::bulk::{
     ApplyBulk, BulkAction, BulkChange, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery,
@@ -258,6 +258,39 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
         .map(|each| each.skipped.map(|reason| reason.code().to_owned()))
         .collect();
     assert_eq!(moved, vec![None, Some("type-missing".to_owned())]);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_09_a_move_skips_an_issue_with_a_tag_the_other_project_does_not_allow() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let (from, to) = (
+        a_project(&world, "FROM").await?,
+        a_project(&world, "INTO").await?,
+    );
+    let (limited, free) = (an_issue(&world, from).await?, an_issue(&world, from).await?);
+    let tag = tagged(&world, limited, "billing").await?;
+    crate::tags::change_tag(
+        &world.ctx(),
+        crate::tags::ChangeTag {
+            session_token: admin.clone(),
+            tag,
+            version: 1,
+            name: None,
+            color: None,
+            projects: Some(vec![from]),
+        },
+    )
+    .await?;
+    let action = BulkAction::Move {
+        project: to.to_string(),
+    };
+    let asked = preview(&world, &admin, &[limited, free], &action).await?;
+    let reasons: Vec<Option<SkipReason>> = asked.rows.iter().map(|row| row.skipped).collect();
+    assert_eq!(reasons, vec![Some(SkipReason::TagNotHere), None]);
+    let result = apply(&world, &admin, targets(&asked), &action).await?;
+    assert_eq!(result.outcomes[0].skipped, Some(SkipReason::TagNotHere));
     Ok(())
 }
 

@@ -339,6 +339,9 @@ pub const BULK_SKIP_RELATION_EXISTS: MessageKey = MessageKey::new("bulk-skip.rel
 /// The message `bulk-skip.same-issue`.
 pub const BULK_SKIP_SAME_ISSUE: MessageKey = MessageKey::new("bulk-skip.same-issue");
 
+/// The message `bulk-skip.tag-not-here`.
+pub const BULK_SKIP_TAG_NOT_HERE: MessageKey = MessageKey::new("bulk-skip.tag-not-here");
+
 /// The message `bulk-skip.type-missing`.
 pub const BULK_SKIP_TYPE_MISSING: MessageKey = MessageKey::new("bulk-skip.type-missing");
 
@@ -7342,6 +7345,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "bulk-skip.same-issue",
         "An issue cannot be related to itself",
+    ),
+    (
+        "bulk-skip.tag-not-here",
+        "It has a tag that is not for the other project",
     ),
     (
         "bulk-skip.type-missing",

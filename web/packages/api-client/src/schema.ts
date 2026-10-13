@@ -6340,6 +6340,7 @@ export interface components {
       | "changed-since"
       | "type-missing"
       | "field-missing"
+      | "tag-not-here"
       | "relation-exists"
       | "same-issue"
       | "limit-reached"

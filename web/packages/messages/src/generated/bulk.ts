@@ -3,6 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "bulk-skip.tag-not-here": "It has a tag that is not for the other project",
   "bulk.bar": "Change the issues you ticked",
   "bulk.action-change": "Change status or priority",
   "bulk.action-move": "Move to a project",

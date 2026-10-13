@@ -42,16 +42,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
             }
             BulkAction::Move { project } => {
-                let found = self
-                    .find_project(project)
-                    .await?
-                    .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-                let held = self
-                    .evaluation_of(actor, Place::Project(found.project.id))
-                    .await?;
-                if !held.sees_project() {
-                    return Err(ErrorCode::NotFound.into());
-                }
+                self.move_target(actor, project).await?;
             }
             BulkAction::AddLabel { label } => {
                 self.label_exists(*label).await?;

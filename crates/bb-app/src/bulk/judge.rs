@@ -97,6 +97,7 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::Forbidden => SkipReason::NotAllowed,
             ErrorCode::IssueTypeRetired => SkipReason::TypeMissing,
             ErrorCode::FieldNotHere => SkipReason::FieldMissing,
+            ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
             _ => SkipReason::NotValid,

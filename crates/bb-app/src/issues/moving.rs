@@ -63,6 +63,29 @@ impl<S: AuthStore> Ctx<'_, S> {
             .is_some_and(|found| found.retired_at.is_none()))
     }
 
+    /// The project issues are moved into, as the person asks for it, and what they hold there: it
+    /// is not there for a person who does not see it. The one check of the target that moving an
+    /// issue and a change to many issues (the whole selection) make.
+    ///
+    /// # Errors
+    /// `resource.not_found` for a project that is not there for the person.
+    pub(crate) async fn move_target(
+        &self,
+        actor: &Actor,
+        project: &str,
+    ) -> Result<(Project, Arc<Evaluation>), AppError> {
+        let target = self
+            .find_project(project)
+            .await?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?
+            .project;
+        let held = self.evaluation_of(actor, Place::Project(target.id)).await?;
+        if !held.sees_project() {
+            return Err(ErrorCode::NotFound.into());
+        }
+        Ok((target, held))
+    }
+
     /// Judges moving an issue into a project: what the preview of a change to many issues shows,
     /// and what moving judges first.
     ///
@@ -78,15 +101,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !from.allows(Permission::MoveIssues) {
             return Err(ErrorCode::Forbidden.into());
         }
-        let target = self
-            .find_project(project)
-            .await?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?
-            .project;
-        let held = self.evaluation_of(actor, Place::Project(target.id)).await?;
-        if !held.sees_project() {
-            return Err(ErrorCode::NotFound.into());
-        }
+        let (target, held) = self.move_target(actor, project).await?;
         if !held.allows(Permission::MoveIssues) {
             return Err(ErrorCode::Forbidden.into());
         }

@@ -38,6 +38,8 @@ words! {
         TypeMissing => "type-missing",
         /// The project it would move to does not use an own field the issue has a value in.
         FieldMissing => "field-missing",
+        /// The issue has a tag that is not for the project it would move to.
+        TagNotHere => "tag-not-here",
         /// The relation is there already.
         RelationExists => "relation-exists",
         /// An issue cannot be related to itself.
