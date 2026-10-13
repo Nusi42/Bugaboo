@@ -55,9 +55,9 @@ use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
     AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
     IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView, IssueTypesQuery, IssueView,
-    IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue, SaveDescription, assignable_people,
-    change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
-    make_issue_type, restore_issue, save_description,
+    IssuesQuery, MakeIssue, MakeIssueType, MoveIssue, RestoreIssue, SaveDescription,
+    assignable_people, change_issue, change_issue_type, delete_issue, issue, issue_types, issues,
+    make_issue, make_issue_type, move_issue, restore_issue, save_description,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
@@ -404,6 +404,8 @@ use_cases! {
     save_description(SaveDescription) -> Authorized<IssueView>;
     /// Puts an issue into the trash.
     delete_issue(DeleteIssue) -> Done;
+    /// Moves an issue into another project.
+    move_issue(MoveIssue) -> Authorized<IssueView>;
     /// Takes an issue out of the trash.
     restore_issue(RestoreIssue) -> Authorized<IssueView>;
     /// Lists the kinds of relation.

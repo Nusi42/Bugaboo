@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{EntityId, IssueId, LabelGroupId, LabelId};
-use bb_core::own_fields::ChoiceColor;
+use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::{LABEL_GROUPS_MAX, LABELS_MAX, Label, LabelGroup, TAG_NAME_MAX, name_key};
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Place};
@@ -499,7 +499,7 @@ pub async fn change_label<S: AuthStore>(
         .await?;
     if input.name.is_none()
         && input.color.is_none()
-        && input.group.is_none()
+        && input.group.is_keep()
         && input.retired.is_none()
     {
         return Err(ErrorCode::InvalidRequest.into());
@@ -514,7 +514,11 @@ pub async fn change_label<S: AuthStore>(
         None => label.name.clone(),
     };
     let color = input.color.unwrap_or(label.color);
-    let group = input.group.unwrap_or(label.group);
+    let group = match input.group {
+        Edit::Keep => label.group,
+        Edit::Clear => None,
+        Edit::Set(target) => Some(target),
+    };
     if group != label.group
         && let Some(target) = group
         && catalogue.group(target)?.retired_at.is_some()

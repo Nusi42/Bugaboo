@@ -15,6 +15,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::comments::CommentView;
+use crate::projects::ProjectRef;
 use crate::relations::IssueLine;
 
 /// The history of an issue.
@@ -62,6 +63,11 @@ pub enum ChangeValue {
     Issue {
         /// The issue.
         issue: IssueLine,
+    },
+    /// A project the reader may see.
+    Project {
+        /// The project.
+        project: ProjectRef,
     },
 }
 

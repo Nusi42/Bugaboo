@@ -6,7 +6,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::id::IssueId;
-use bb_core::own_fields::ChoiceColor;
+use bb_core::own_fields::{ChoiceColor, Edit};
 use serde_json::json;
 
 use super::scenarios::{a_project, token};
@@ -376,7 +376,7 @@ async fn tag_02_only_the_people_who_look_after_labels_make_and_change_them() -> 
             version: 1,
             name: Some("x".to_owned()),
             color: None,
-            group: None,
+            group: Edit::Keep,
             retired: None,
         },
     )
@@ -400,7 +400,7 @@ async fn tag_02_a_retired_label_is_not_put_on_an_issue() -> Outcome {
             version: 1,
             name: None,
             color: None,
-            group: None,
+            group: Edit::Keep,
             retired: Some(true),
         },
     )

@@ -115,6 +115,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// Whether every tag an issue has is allowed in a project whose projects from the top down are
+    /// `chain`: whether the issue can move there without a tag that is not for that project.
+    pub(crate) async fn tags_follow(
+        &self,
+        issue: IssueId,
+        chain: &[bb_core::id::ProjectId],
+    ) -> Result<bool, AppError> {
+        let state = self.tag_state(issue).await?;
+        Ok(state.held.iter().all(|link| {
+            let mut limits = state
+                .limits
+                .iter()
+                .filter(|limit| limit.tag == link.tag)
+                .peekable();
+            limits.peek().is_none() || limits.any(|limit| chain.contains(&limit.project))
+        }))
+    }
+
     /// Judges putting a label on an issue: what the preview of a change to many issues shows, and
     /// what putting it on judges first.
     ///

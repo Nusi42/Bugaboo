@@ -13,9 +13,9 @@ use super::world::World;
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
     ChangeIssue, ChangeIssueType, DeleteIssue, IssueTypesQuery, MakeIssue, MakeIssueType,
-    MakeStartingIssueTypes, RestoreIssue, SaveDescription, change_issue, change_issue_type,
-    delete_issue, issue_types, make_issue, make_issue_type, make_starting_issue_types,
-    restore_issue, save_description,
+    MakeStartingIssueTypes, MoveIssue, RestoreIssue, SaveDescription, change_issue,
+    change_issue_type, delete_issue, issue_types, make_issue, make_issue_type,
+    make_starting_issue_types, move_issue, restore_issue, save_description,
 };
 
 /// The first issue type of the first start (*Bug*).
@@ -225,6 +225,27 @@ pub(crate) async fn make_starting_issue_types_scenario(_world: &World) -> Added 
     measured(
         store,
         make_starting_issue_types(&bare.ctx(), MakeStartingIssueTypes),
+    )
+    .await
+}
+
+pub(crate) async fn move_issue_scenario(world: &World) -> Added {
+    let (acme, other) = (
+        a_project(world, "ACME").await?,
+        a_project(world, "ELSE").await?,
+    );
+    let issue = an_issue(world, acme).await?;
+    measured(
+        &world.store,
+        move_issue(
+            &world.ctx(),
+            MoveIssue {
+                session_token: token(world),
+                issue: issue.to_string(),
+                version: 1,
+                project: other.to_string(),
+            },
+        ),
     )
     .await
 }

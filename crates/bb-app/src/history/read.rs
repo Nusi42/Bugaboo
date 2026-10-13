@@ -34,6 +34,7 @@ use crate::comments::CommentView;
 use crate::fields::Definition;
 use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
+use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
 use bb_core::comment::Comment;
 use bb_core::issue::Issue;
@@ -47,6 +48,8 @@ pub(crate) enum Member {
     Own(FieldId),
     /// The issue type: shown to everyone who sees the issue.
     IssueType,
+    /// The project the issue was in or went to: shown where the reader sees that project.
+    Project,
     /// The issue it sits under, or an issue that sits under it: shown as a line the reader may
     /// see.
     Issue,
@@ -65,6 +68,7 @@ impl Member {
         }
         match name {
             issue_member::ISSUE_TYPE => Self::IssueType,
+            issue_member::PROJECT => Self::Project,
             issue_member::PARENT | issue_member::SUB_ISSUE => Self::Issue,
             _ => Self::Never,
         }
@@ -76,7 +80,7 @@ impl Member {
         match self {
             Self::Catalogue(field) => can_see(field.into()),
             Self::Own(field) => can_see(field.into()),
-            Self::IssueType | Self::Issue => true,
+            Self::IssueType | Self::Issue | Self::Project => true,
             Self::Never => false,
         }
     }
@@ -309,6 +313,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|name| ChangeValue::Text {
                     text: name.to_owned(),
                 }),
+            Member::Project => match value
+                .as_str()
+                .and_then(|text| text.parse::<bb_core::id::ProjectId>().ok())
+            {
+                Some(id) => self
+                    .project_seen(reading.actor, id)
+                    .await?
+                    .map(|project| ChangeValue::Project { project }),
+                None => None,
+            },
             Member::Issue => {
                 let Some(id) = value.as_str().and_then(|text| text.parse::<IssueId>().ok()) else {
                     return Ok(None);
@@ -345,7 +359,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .change_value(reading, batch, member, change.after.as_ref())
                 .await?;
             // A change of an issue that the reader may not see leaves nothing to show.
-            if member == Member::Issue && before.is_none() && after.is_none() {
+            if matches!(member, Member::Issue | Member::Project)
+                && before.is_none()
+                && after.is_none()
+            {
                 continue;
             }
             let name = match member {
@@ -414,6 +431,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             name: kind.name(direction).to_owned(),
             issue: line,
         }))
+    }
+
+    /// The project, when the reader sees it.
+    async fn project_seen(
+        &self,
+        actor: &Actor,
+        id: bb_core::id::ProjectId,
+    ) -> Result<Option<ProjectRef>, AppError> {
+        let Some(found) = self
+            .store()
+            .project(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(None);
+        };
+        let held = self
+            .evaluation_of(actor, bb_policy::Place::Project(id))
+            .await?;
+        Ok(held.sees_project().then(|| ProjectRef::from(&found)))
     }
 
     /// The comments and the issues that the rows of a batch name, read once for the batch.

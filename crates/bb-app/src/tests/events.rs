@@ -89,6 +89,7 @@ table! {
     "edit_anyway" => s::edit_anyway_scenario,
     "release_stuck_lock" => s::release_stuck_lock_scenario,
     "make_issue" => si::make_issue_scenario,
+    "move_issue" => si::move_issue_scenario,
     "change_issue" => si::change_issue_scenario,
     "save_description" => si::save_description_scenario,
     "delete_issue" => si::delete_issue_scenario,
@@ -154,9 +155,13 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             .await
             .map_err(|error| format!("{name}: {error}"))?;
         assert!(added >= 1, "{name} appended no event");
-        // A change is one event; only the start of the program may make several changes at once.
-        if *name != "make_starting_roles" {
-            assert_eq!(added, 1, "{name} appended {added} events");
+        // A change is one event; only the start of the program may make several changes at once,
+        // and a move, which also writes the event of the new readable ID (a code that is given
+        // out inside the change cannot be in the event written before it).
+        match *name {
+            "make_starting_roles" => {}
+            "move_issue" => assert_eq!(added, 2, "{name} appended {added} events"),
+            _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }
     }
     Ok(())

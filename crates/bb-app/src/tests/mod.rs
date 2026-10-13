@@ -19,6 +19,7 @@ mod hidden;
 mod key_scope;
 mod keys;
 mod limits;
+mod moving;
 mod scenarios;
 mod scenarios_fields;
 mod scenarios_issues;

@@ -3,7 +3,7 @@
 //! Everything that is given back is wrapped in `Authorized<T>` by the use case.
 
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
-use bb_core::own_fields::ChoiceColor;
+use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::{Label, LabelGroup, Tag};
 use bb_policy::Masked;
 use serde::Serialize;
@@ -387,8 +387,8 @@ pub struct ChangeLabel {
     pub name: Option<String>,
     /// A new color.
     pub color: Option<ChoiceColor>,
-    /// A new group; the inner `None` takes the label out of its group.
-    pub group: Option<Option<LabelGroupId>>,
+    /// A new group, or none to take the label out of its group.
+    pub group: Edit<LabelGroupId>,
     /// `true` retires the label, `false` offers it again.
     pub retired: Option<bool>,
 }

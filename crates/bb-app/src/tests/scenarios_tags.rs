@@ -2,7 +2,7 @@
 //! how many events the call added. `events.rs` names each use case once and runs them.
 
 use bb_core::id::{IssueId, LabelGroupId, LabelId, TagId};
-use bb_core::own_fields::ChoiceColor;
+use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::name_key;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -249,7 +249,7 @@ pub(crate) async fn change_label_scenario(world: &World) -> Added {
                 version: 1,
                 name: Some("sign-in".to_owned()),
                 color: None,
-                group: None,
+                group: Edit::Keep,
                 retired: None,
             },
         ),
