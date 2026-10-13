@@ -35,19 +35,43 @@ function formOf(page: Page, label: string) {
   return page.locator("form").filter({ has: page.getByLabel(label, { exact: true }) });
 }
 
+/**
+ * Starts waiting for the server's answer to the next change of the issue; the returned promise is
+ * done when it has answered and the page says it is saved. The value in an input only shows the
+ * change was made on screen, not that it was kept, so a test that reads the issue through the API
+ * must wait for this first. Start it before the step that changes the issue, wait for it after.
+ */
+function keptAfter(page: Page): Promise<void> {
+  const answered = page.waitForResponse(
+    (response) => response.request().method() === "PATCH" && response.url().includes("/issues/"),
+  );
+  return answered.then(async (response) => {
+    expect(response.ok()).toBe(true);
+    await expect(page.getByText(/^Saved/u)).toBeVisible();
+  });
+}
+
 /** Fills in the three fields on the issue page, one after the other, and waits for each to be kept. */
 async function fillIn(page: Page, critical: string): Promise<void> {
   const labelled = (label: string) => page.getByLabel(label, { exact: true });
+  let kept = keptAfter(page);
   await labelled("Severity").selectOption({ label: "Critical" });
+  await kept;
   await expect(labelled("Severity")).toHaveValue(critical);
+  kept = keptAfter(page);
   await page.getByText("Windows", { exact: true }).click();
+  await kept;
   await expect(labelled("Windows")).toBeChecked();
+  kept = keptAfter(page);
   await page.getByText("Mac", { exact: true }).click();
+  await kept;
   await expect(labelled("Mac")).toBeChecked();
   await labelled("Customer").fill("Acme");
+  kept = keptAfter(page);
   await formOf(page, "Customer")
     .getByRole("button", { name: t("common.save") })
     .click();
+  await kept;
   await expect(labelled("Customer")).toHaveValue("Acme");
 }
 

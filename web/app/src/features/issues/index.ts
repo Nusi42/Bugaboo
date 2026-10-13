@@ -1,3 +1,6 @@
+// The texts of this area come along with its chunk (UX-07).
+import "@bugaboo/messages/parts/issues";
+
 export { IssueFocusPage, type IssueFocusPageProps } from "./IssueFocusPage.tsx";
 export { ProjectIssuesPage, type ProjectIssuesPageProps } from "./ProjectIssuesPage.tsx";
 export { IssueLongText, type IssueLongTextProps } from "./IssueLongText.tsx";

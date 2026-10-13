@@ -10,6 +10,7 @@ import {
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { loadsScreen } from "./preload.ts";
 
 // The screens of work (issue types) are loaded when they are first opened, so the first page stays
 // small (coding-standards section 6).
@@ -57,6 +58,7 @@ const FieldScreen = lazyRouteComponent(() => import("../features/fields/index.ts
 export const fieldsRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.fields,
+  loader: loadsScreen(FieldsScreen),
   component: function Fields() {
     return (
       <OnlyWith path={paths.fields}>
@@ -70,6 +72,7 @@ export const fieldsRoute = createRoute({
 export const fieldRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.field,
+  loader: loadsScreen(FieldScreen),
   component: function FieldOfTheAddress() {
     const id = useAddressPart(routeParam.field);
     return (
@@ -85,6 +88,7 @@ export const issueTypesRoute = createRoute({
   validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
+  loader: loadsScreen(IssueTypesScreen),
   component: function IssueTypes() {
     const { open } = useSearch({ strict: false });
     const navigate = useNavigate();
@@ -120,6 +124,7 @@ const IssueScreen = lazyRouteComponent(
 export const projectIssuesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectIssues,
+  loader: loadsScreen(ProjectIssuesScreen),
   validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
@@ -146,6 +151,7 @@ export const projectIssuesRoute = createRoute({
 export const issueRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.issue,
+  loader: loadsScreen(IssueScreen),
   component: function Issue() {
     const issue = useAddressPart(routeParam.issue);
     const navigate = useNavigate();

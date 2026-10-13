@@ -1,3 +1,4 @@
+import "@bugaboo/messages/parts/mentions";
 import { lazyRouteComponent } from "@tanstack/react-router";
 
 /** *Mentions* of the start page, loaded when the start page is first shown. */

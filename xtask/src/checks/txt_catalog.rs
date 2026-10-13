@@ -11,37 +11,24 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use bb_core::ErrorCode;
-use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
-use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
-use bb_core::issue_key::IdMode;
-use bb_core::message::MessageKey;
-use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
-use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Permission, StartingRole, Topic};
-
 use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
-use crate::generate::messages::{SOURCE_LOCALE_PATH, parse_pairs};
+use crate::generate::made_keys::{Made, made_keys};
+use crate::generate::messages::{
+    FEATURES_FOLDER, PART_IMPORT, SHARED, SOURCE_LOCALE_PATH, feature_entries,
+    features_without_part, is_generated_catalog, is_server_only, is_test_or_generated, parse_pairs,
+    parts_of, string_literals,
+};
 use crate::generate::messages_rust::{constant_name, function_name};
 use crate::rust_source::{strip_comments, without_tests};
 use crate::source::read_text;
+use crate::web_code::strip_comments as strip_web_comments;
 
 const MESSAGES_FOLDER: &str = "messages/";
 
-/// Test files check behavior; their strings must not keep a key alive.
-const TEST_MARKERS: [&str; 6] = [
-    ".test.",
-    ".spec.",
-    "/e2e/",
-    "/tests/",
-    "generated.ts",
-    "generated.rs",
-];
-
 /// One piece of code: where it is and what it says.
+#[derive(Clone)]
 struct Source {
     path: String,
     text: String,
@@ -72,85 +59,6 @@ impl Check for TxtCatalog {
     }
 }
 
-/// A message that the word of an enum makes, and the word.
-struct Made {
-    key: MessageKey,
-    word: String,
-}
-
-/// Every message that the words of the enums make (`derived_key!` in `bb-core`): the code
-/// does not write these keys, so the check finds them here.
-fn made_keys() -> Vec<Made> {
-    fn made(kind: &str, word: &str, key: MessageKey) -> Made {
-        Made {
-            key,
-            word: format!("{kind} `{word}`"),
-        }
-    }
-    let mut keys = Vec::new();
-    for code in ErrorCode::ALL {
-        keys.push(made("the error code", code.code(), code.message()));
-    }
-    for permission in Permission::ALL {
-        keys.push(made(
-            "the permission",
-            permission.code(),
-            permission.sentence(),
-        ));
-    }
-    for topic in Topic::ALL {
-        keys.push(made("the topic", topic.code(), topic.name()));
-    }
-    for role in StartingRole::ALL {
-        keys.push(made("the starting role", role.code(), role.name()));
-    }
-    for kind in PeopleKind::ALL {
-        keys.push(made(
-            "the kind of people information",
-            kind.code(),
-            kind.name(),
-        ));
-    }
-    for field in Field::ALL {
-        keys.push(made("the field", field.code(), field.name()));
-    }
-    for status in Status::ALL {
-        keys.push(made("the status", status.code(), status.name()));
-    }
-    for group in StatusGroup::ALL {
-        keys.push(made("the status group", group.code(), group.name()));
-    }
-    for priority in Priority::ALL {
-        keys.push(made("the priority", priority.code(), priority.name()));
-    }
-    for icon in IssueIcon::ALL {
-        keys.push(made("the icon of an issue type", icon.code(), icon.name()));
-    }
-    for mode in IdMode::ALL {
-        keys.push(made("the mode of issue IDs", mode.code(), mode.name()));
-    }
-    for level in FieldLevel::ALL {
-        keys.push(made("the field level", level.code(), level.name()));
-    }
-    for kind in FieldType::ALL {
-        keys.push(made("the example of the kind", kind.code(), kind.example()));
-        keys.push(made("the kind of an own field", kind.code(), kind.name()));
-    }
-    for what in FieldFor::ALL {
-        keys.push(made("what an own field is for", what.code(), what.name()));
-    }
-    for color in ChoiceColor::ALL {
-        keys.push(made("the color of a choice", color.code(), color.name()));
-    }
-    for look in Look::ALL {
-        keys.push(made("the look of an own field", look.code(), look.name()));
-    }
-    for level in PeopleLevel::ALL {
-        keys.push(made("the people level", level.code(), level.name()));
-    }
-    keys
-}
-
 fn evaluate(locales: &[(String, String)], sources: &[Source], made: &[Made]) -> Vec<Finding> {
     let mut findings = Vec::new();
     let mut catalogs: Vec<(&str, BTreeMap<String, Placeholders>)> = Vec::new();
@@ -179,7 +87,80 @@ fn evaluate(locales: &[(String, String)], sources: &[Source], made: &[Made]) -> 
         }
     }
     check_usage(source, sources, made, &mut findings);
+    check_parts(source, sources, made, &mut findings);
     findings
+}
+
+/// The browser catalog is split into parts (PERF-04, ADR-0009): the first page loads `shared`, and
+/// an area brings its own part along with its chunk. `t()` fails for a text whose part is not
+/// loaded, so the entry of every feature that has a part imports it, and nothing else does.
+fn check_parts(
+    source: &BTreeMap<String, Placeholders>,
+    sources: &[Source],
+    made: &[Made],
+    findings: &mut Vec<Finding>,
+) {
+    let keys = source
+        .keys()
+        .map(String::as_str)
+        .filter(|key| !is_server_only(key));
+    let code: Vec<crate::source::Source> = sources
+        .iter()
+        .map(|file| (file.path.clone(), file.text.clone()))
+        .collect();
+    let made: Vec<&str> = made.iter().map(|made| made.key.as_str()).collect();
+    let filled: HashSet<&str> = parts_of(keys, &code, &made).into_values().collect();
+    for feature in features_without_part(sources.iter().map(|file| file.path.as_str())) {
+        findings.push(Finding::at(
+            format!("{FEATURES_FOLDER}{feature}"),
+            "This feature has no message part, so its texts would stay on the first page. Add `part!(\"…\")` with its folder name to PARTS in xtask/src/gen/messages.rs, run `cargo xtask gen messages`, and import the part in its index.ts.",
+        ));
+    }
+    let import_of = |part: &str| format!("{PART_IMPORT}{part}");
+    for part in filled.iter().filter(|part| **part != SHARED) {
+        let entries = feature_entries(part);
+        let imported = sources.iter().any(|file| {
+            entries.contains(&file.path) && starts_with_import(&file.text, &import_of(part))
+        });
+        if !imported {
+            findings.push(Finding::at(
+                &entries[0],
+                format!(
+                    "Its texts are in their own part. Make `import \"{}\";` the first import of this file (in code, not in a comment), so they are loaded with this area before anything of it runs; without it `t()` fails.",
+                    import_of(part)
+                ),
+            ));
+        }
+    }
+    for file in sources
+        .iter()
+        .filter(|file| !is_generated_catalog(&file.path))
+    {
+        for literal in string_literals(&file.text, false) {
+            let Some(part) = literal.strip_prefix(PART_IMPORT) else {
+                continue;
+            };
+            if !feature_entries(part).contains(&file.path) {
+                findings.push(Finding::at(
+                    &file.path,
+                    format!(
+                        "Only the entry of the feature `{part}` (`index.ts`) imports its message part. `shared` is loaded by the messages package itself."
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+/// Whether the first statement of the code of `text` (comments do not count) is the side-effect
+/// import of `module`: the part must be evaluated before anything else of the area is.
+fn starts_with_import(text: &str, module: &str) -> bool {
+    let code = strip_web_comments(text);
+    let first = code.trim_start().split(';').next().unwrap_or_default();
+    first
+        .strip_prefix("import")
+        .is_some_and(|rest| rest.trim_start().starts_with(['"', '\'']))
+        && string_literals(first, false) == [module]
 }
 
 /// Parses one catalog; returns its keys with their placeholders and the problems found inside.
@@ -287,11 +268,11 @@ fn check_usage(
         }
     }
     for file in sources {
-        let is_test = TEST_MARKERS.iter().any(|marker| file.path.contains(marker));
+        let is_test = is_test_or_generated(&file.path);
         let text = if is_rust(&file.path) {
             product_code(&file.text)
         } else {
-            file.text.clone()
+            strip_web_comments(&file.text)
         };
         for literal in string_literals(&text, is_rust(&file.path)) {
             if !is_test && let Some((key, _)) = source.get_key_value(literal.as_str()) {
@@ -308,7 +289,7 @@ fn check_usage(
                 }
             }
         }
-        if is_rust(&file.path) || file.path.contains("generated.ts") {
+        if is_rust(&file.path) || is_generated_catalog(&file.path) {
             continue;
         }
         for key in called_keys(&text) {
@@ -365,37 +346,10 @@ fn identifiers(code: &str) -> HashSet<&str> {
         .collect()
 }
 
-/// Every `"…"` (and, for TypeScript, `'…'`) on a single line.
-fn string_literals(code: &str, double_only: bool) -> Vec<String> {
-    let mut literals = Vec::new();
-    for line in code.lines() {
-        let mut chars = line.chars().peekable();
-        while let Some(c) = chars.next() {
-            if c != '"' && (double_only || c != '\'') {
-                continue;
-            }
-            let mut text = String::new();
-            let mut closed = false;
-            while let Some(next) = chars.next() {
-                if next == '\\' {
-                    chars.next();
-                } else if next == c {
-                    closed = true;
-                    break;
-                } else {
-                    text.push(next);
-                }
-            }
-            if closed {
-                literals.push(text);
-            }
-        }
-    }
-    literals
-}
-
 #[cfg(test)]
 mod tests {
+    use bb_core::ErrorCode;
+
     use super::*;
 
     fn source(path: &str, text: &str) -> Source {
@@ -508,6 +462,122 @@ mod tests {
         assert!(text.contains("`a.in-test` is never used"), "{text}");
         assert!(text.contains("`a.in-comment` is never used"), "{text}");
         assert!(!text.contains("`a.real`"), "{text}");
+    }
+
+    #[test]
+    fn an_area_must_import_its_message_part() {
+        let locales = [locale(r#"{"fields.list": "Fields", "nav.home": "Home"}"#)];
+        let page = source(
+            "web/app/src/features/fields/Page.tsx",
+            r#"t("fields.list"); t("nav.home")"#,
+        );
+        let shell = source("web/app/src/routes/Root.tsx", r#"t("nav.home")"#);
+        let without = source("web/app/src/features/fields/index.ts", "export {};");
+        let text = messages(&evaluate(
+            &locales,
+            &[page.clone(), shell.clone(), without],
+            &[],
+        ));
+        assert!(text.contains("@bugaboo/messages/parts/fields"), "{text}");
+        let with = source(
+            "web/app/src/features/fields/index.ts",
+            r#"import "@bugaboo/messages/parts/fields";"#,
+        );
+        assert!(evaluate(&locales, &[page, shell, with], &[]).is_empty());
+    }
+
+    #[test]
+    fn the_part_must_be_the_first_import_of_the_entry_and_in_code() {
+        let locales = [locale(r#"{"fields.list": "Fields"}"#)];
+        let page = source(
+            "web/app/src/features/fields/Page.tsx",
+            r#"t("fields.list")"#,
+        );
+        let entry = |text: &str| source("web/app/src/features/fields/index.ts", text);
+        let part = r#"import "@bugaboo/messages/parts/fields";"#;
+        let places =
+            |entry: Source| -> usize { evaluate(&locales, &[page.clone(), entry], &[]).len() };
+        assert_eq!(places(entry(part)), 0);
+        assert_eq!(
+            places(entry(&format!(
+                "// the texts\n/* more */\n{part}\nexport {{}};"
+            ))),
+            0
+        );
+        // After another import, the part is evaluated too late.
+        let late = format!("import {{ A }} from \"./A.tsx\";\n{part}");
+        assert_eq!(places(entry(&late)), 1);
+        // In a comment, it is not there.
+        let commented = format!("// {part}\nexport {{}};");
+        assert_eq!(places(entry(&commented)), 1);
+        let block = format!("/*\n{part}\n*/\nexport {{}};");
+        assert_eq!(places(entry(&block)), 1);
+        // A named import of the module is no side-effect import.
+        assert_eq!(
+            places(entry(
+                "import { x } from \"@bugaboo/messages/parts/fields\";"
+            )),
+            1
+        );
+    }
+
+    #[test]
+    fn typescript_comments_are_not_code() {
+        let locales = [locale(r#"{"a.used": "x", "a.only-commented": "y"}"#)];
+        let code = [source(
+            "web/app/src/A.tsx",
+            "t(\"a.used\"); // t(\"a.only-commented\") t(\"a.missing\")\n/* t(\"a.also-missing\") */",
+        )];
+        let text = messages(&evaluate(&locales, &code, &[]));
+        assert!(text.contains("`a.only-commented` is never used"), "{text}");
+        assert!(!text.contains("missing"), "{text}");
+    }
+
+    #[test]
+    fn a_feature_folder_without_a_part_is_found() {
+        let locales = [locale(r#"{"fields.list": "Fields"}"#)];
+        let code = [source(
+            "web/app/src/features/brand-new/Page.tsx",
+            r#"t("fields.list")"#,
+        )];
+        let places: Vec<String> = evaluate(&locales, &code, &[])
+            .into_iter()
+            .filter_map(|finding| finding.location)
+            .collect();
+        assert_eq!(places, ["web/app/src/features/brand-new"]);
+    }
+
+    #[test]
+    fn only_the_entry_of_a_feature_imports_its_part() {
+        let locales = [locale(r#"{"fields.list": "Fields"}"#)];
+        let entry = source(
+            "web/app/src/features/fields/index.ts",
+            r#"import "@bugaboo/messages/parts/fields";"#,
+        );
+        let page = source(
+            "web/app/src/features/fields/Page.tsx",
+            r#"import "@bugaboo/messages/parts/fields"; t("fields.list")"#,
+        );
+        let other = source(
+            "web/app/src/features/people/index.ts",
+            r#"import "@bugaboo/messages/parts/fields";"#,
+        );
+        let shared = source(
+            "web/app/src/routes/Root.tsx",
+            r#"import "@bugaboo/messages/parts/shared";"#,
+        );
+        let places: Vec<String> = evaluate(&locales, &[entry, page, other, shared], &[])
+            .into_iter()
+            .filter_map(|finding| finding.location)
+            .collect();
+        assert_eq!(
+            places,
+            [
+                "web/app/src/features/fields/Page.tsx",
+                "web/app/src/features/people/index.ts",
+                "web/app/src/routes/Root.tsx",
+            ]
+        );
     }
 
     #[test]

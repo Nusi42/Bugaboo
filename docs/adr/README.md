@@ -31,6 +31,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0025](0025-roles-groups-and-assignments.md) | Roles, groups and assignments on the project tree |
 | [0026](0026-one-theme-file.md) | One theme file for everything about how the app looks |
 | [0027](0027-layouts-and-rules-per-issue-type.md) | Layouts, rules per issue type and the starting workflow |
+| [0028](0028-message-parts.md) | The message catalog is split into parts; the first page loads one |
 
 ## Template
 

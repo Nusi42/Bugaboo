@@ -97,7 +97,7 @@ async function theAdministratorsPages(page: Page): Promise<string> {
   await shoot(page, "12-invitations");
   const link = (await page.getByLabel(t("invitations.link")).textContent()) ?? "";
   await openFromMenu(page, t("nav.status"));
-  await expect(page.getByText(t("status.database.ok"))).toBeVisible();
+  await expect(page.getByText(t("server-status.database.ok"))).toBeVisible();
   await shoot(page, "15-status");
   return link;
 }

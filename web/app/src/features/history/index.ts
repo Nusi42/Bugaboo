@@ -1,3 +1,4 @@
+import "@bugaboo/messages/parts/history";
 import { lazyRouteComponent } from "@tanstack/react-router";
 
 import { addIssueBlock, issueSlots } from "../issues/index.ts";

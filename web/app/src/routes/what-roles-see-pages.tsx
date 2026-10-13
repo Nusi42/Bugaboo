@@ -4,6 +4,7 @@ import { paths, routeParam } from "../shared/paths.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { loadsScreen } from "./preload.ts";
 
 // What roles see and what a person can do and why: three pages in *Organization settings* and the
 // same three below the settings of a project. Loaded when first opened (coding-standards section 6).
@@ -19,6 +20,7 @@ const ProjectCheckScreen = lazyRouteComponent(access, "ProjectCheckAccessScreen"
 export const fieldPermissionsRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.fieldPermissions,
+  loader: loadsScreen(FieldPermissionsScreen),
   component: function FieldPermissions() {
     return (
       <OnlyWith path={paths.fieldPermissions}>
@@ -31,6 +33,7 @@ export const fieldPermissionsRoute = createRoute({
 export const peopleVisibilityRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.peopleVisibility,
+  loader: loadsScreen(PeopleVisibilityScreen),
   component: function PeopleVisibility() {
     return (
       <OnlyWith path={paths.peopleVisibility}>
@@ -43,6 +46,7 @@ export const peopleVisibilityRoute = createRoute({
 export const checkAccessRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.checkAccess,
+  loader: loadsScreen(CheckAccessScreen),
   component: function CheckAccess() {
     return (
       <OnlyWith path={paths.checkAccess}>
@@ -56,6 +60,7 @@ export const checkAccessRoute = createRoute({
 export const projectFieldsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectFields,
+  loader: loadsScreen(ProjectFieldsScreen),
   component: function ProjectFields() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectFieldsScreen address={project} />;
@@ -65,6 +70,7 @@ export const projectFieldsRoute = createRoute({
 export const projectPeopleRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectPeople,
+  loader: loadsScreen(ProjectPeopleScreen),
   component: function ProjectPeople() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectPeopleScreen address={project} />;
@@ -74,6 +80,7 @@ export const projectPeopleRoute = createRoute({
 export const projectCheckAccessRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.projectCheckAccess,
+  loader: loadsScreen(ProjectCheckScreen),
   component: function ProjectCheckAccess() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectCheckScreen address={project} />;

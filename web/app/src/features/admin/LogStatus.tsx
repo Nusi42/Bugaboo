@@ -59,7 +59,7 @@ export function LogStatus({ log }: { readonly log: SecurityLog }) {
       <Result log={log} />
       {hasWriteFailures(log) ? (
         <Alert tone={alertTone.warning}>
-          {t("status.log-failures", { count: log.write_failures })}
+          {t("server-status.log-failures", { count: log.write_failures })}
         </Alert>
       ) : null}
     </div>

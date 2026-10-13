@@ -10,9 +10,9 @@ import { CERTIFICATE_WARNING_DAYS, openParts, serverNow, unknownParts } from "./
 type State = Schema<"ServerStatusBody">;
 
 const databaseKinds: Readonly<Record<State["database"]["kind"], MessageKey>> = {
-  built_in: "status.database.built-in",
-  sqlite: "status.database.sqlite",
-  postgres: "status.database.postgres",
+  built_in: "server-status.database.built-in",
+  sqlite: "server-status.database.sqlite",
+  postgres: "server-status.database.postgres",
 };
 
 /** One line of the status: what it is, and what it says. */
@@ -58,13 +58,15 @@ function DataFolderRights({ open }: { readonly open: State["data_folder_open"] }
   const opened = openParts(open);
   const unknown = unknownParts(open);
   if (opened.length === 0 && unknown.length === 0) {
-    return <span>{t("status.data-folder.closed")}</span>;
+    return <span>{t("server-status.data-folder.closed")}</span>;
   }
   return (
     <>
-      {opened.length === 0 ? null : <Parts parts={opened} heading={t("status.data-folder.open")} />}
+      {opened.length === 0 ? null : (
+        <Parts parts={opened} heading={t("server-status.data-folder.open")} />
+      )}
       {unknown.length === 0 ? null : (
-        <Parts parts={unknown} heading={t("status.data-folder.unknown")} />
+        <Parts parts={unknown} heading={t("server-status.data-folder.unknown")} />
       )}
     </>
   );
@@ -78,45 +80,49 @@ interface CertificateProps {
 /** The state of the HTTPS certificate: how long it is valid, in words. */
 function Certificate({ certificate, nowMs }: CertificateProps) {
   if (certificate === null || certificate === undefined) {
-    return <span>{t("status.certificate.none")}</span>;
+    return <span>{t("server-status.certificate.none")}</span>;
   }
   const date = formatDate(certificate.expires_at);
   const days = daysUntil(certificate.expires_at, nowMs);
   if (days < 0) {
-    return <Alert tone={alertTone.danger}>{t("status.certificate.expired", { date })}</Alert>;
+    return (
+      <Alert tone={alertTone.danger}>{t("server-status.certificate.expired", { date })}</Alert>
+    );
   }
   if (days < CERTIFICATE_WARNING_DAYS) {
-    return <Alert tone={alertTone.warning}>{t("status.certificate.soon", { date, days })}</Alert>;
+    return (
+      <Alert tone={alertTone.warning}>{t("server-status.certificate.soon", { date, days })}</Alert>
+    );
   }
-  return <span>{t("status.certificate.valid", { date, days })}</span>;
+  return <span>{t("server-status.certificate.valid", { date, days })}</span>;
 }
 
 /** The facts of the server: version, running time, database, certificate and security log. */
 export function StatusRows({ state }: { readonly state: State }) {
   return (
     <dl {...partOf(part.facts)}>
-      <Fact term={t("status.version")}>{state.version}</Fact>
-      <Fact term={t("status.running")}>
-        <span>{t("status.uptime", splitUptime(state.uptime_seconds))}</span>
+      <Fact term={t("server-status.version")}>{state.version}</Fact>
+      <Fact term={t("server-status.running")}>
+        <span>{t("server-status.uptime", splitUptime(state.uptime_seconds))}</span>
         <span {...partOf(part.muted)}>
-          {t("status.started", { when: formatDateTime(state.started_at) })}
+          {t("server-status.started", { when: formatDateTime(state.started_at) })}
         </span>
       </Fact>
-      <Fact term={t("status.database")}>
+      <Fact term={t("server-status.database")}>
         <span>{t(databaseKinds[state.database.kind])}</span>
         {state.database.ok ? (
-          <span>{t("status.database.ok")}</span>
+          <span>{t("server-status.database.ok")}</span>
         ) : (
-          <Alert tone={alertTone.danger}>{t("status.database.failed")}</Alert>
+          <Alert tone={alertTone.danger}>{t("server-status.database.failed")}</Alert>
         )}
       </Fact>
-      <Fact term={t("status.certificate")}>
+      <Fact term={t("server-status.certificate")}>
         <Certificate certificate={state.certificate} nowMs={serverNow(state)} />
       </Fact>
-      <Fact term={t("status.log")}>
+      <Fact term={t("server-status.log")}>
         <LogStatus log={state.security_log} />
       </Fact>
-      <Fact term={t("status.data-folder")}>
+      <Fact term={t("server-status.data-folder")}>
         <DataFolderRights open={state.data_folder_open} />
       </Fact>
     </dl>
