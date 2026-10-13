@@ -16,7 +16,7 @@ Each field has a handle. Drag it into a section or onto the list *Fields that ar
 
 ## Roles
 
-Under each field is a list of roles with a box each: the roles the field is shown to (on the new-issue form: asked from). A field you add starts with every role ticked. Choosing roles needs the permission "Decide what roles see" as well: without it you move fields, but you see no role names, a field keeps the roles it has, and a field you add is shown to every role.
+Under each field is a list of roles with a box each: the roles the field is shown to (on the new-issue form: asked from). A field you add starts with every role ticked. Choosing roles needs the permission "Decide what roles see" as well: without it you move fields, but you see no role names, a field keeps the roles it has, and a field you add is shown to every role. So if you take a field off the form and add it again, it is shown to every role, even if somebody had unticked one before.
 
 ## Saving
 
