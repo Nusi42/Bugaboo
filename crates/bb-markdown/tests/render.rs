@@ -141,6 +141,7 @@ mod corpus {
         let hosts = fs::read_to_string(case.with_extension("hosts")).unwrap_or_default();
         Options {
             image_hosts: hosts.lines().map(str::to_owned).collect(),
+            ..Options::default()
         }
     }
 
@@ -193,6 +194,7 @@ fn sec_13_links_open_outside_and_say_nothing_about_us() {
 fn sec_13_only_our_own_origin_and_allowed_hosts_show_images() {
     let allowed = Options {
         image_hosts: vec!["images.example.com".to_owned()],
+        ..Options::default()
     };
     let with_host = render("![a](https://images.example.com/a.png)", &allowed).html;
     assert!(with_host.contains("<img"), "{with_host}");
@@ -230,6 +232,21 @@ fn more_tokens_than_the_limit_stay_plain_text() {
     assert_eq!(rendered.html.matches("data-token=").count(), MAX_TOKENS);
     // The cost of the tokens is bounded by their number, not by how short the text is.
     assert!(rendered.html.len() < text.len() + MAX_TOKENS * 100);
+}
+
+#[test]
+fn iss_05_a_token_listed_as_plain_keeps_its_place_but_is_text() {
+    let text = "see WEB-1 and WEB-2";
+    let all = render(text, &Options::default());
+    assert_eq!(all.tokens.len(), 2);
+    let options = Options {
+        plain_tokens: vec![0],
+        ..Options::default()
+    };
+    let some = render(text, &options);
+    assert_eq!(some.tokens.len(), 2, "the places do not move");
+    assert_eq!(some.html.matches("data-token=").count(), 1);
+    assert!(some.html.contains("WEB-1"));
 }
 
 #[test]
@@ -310,7 +327,7 @@ proptest! {
         text in mixed(),
         arbitrary in "\\PC{0,400}",
     ) {
-        let options = Options { image_hosts: vec!["images.example.com".to_owned()] };
+        let options = Options { image_hosts: vec!["images.example.com".to_owned()], ..Options::default() };
         for input in [text, arbitrary] {
             let html = render(&input, &options).html;
             prop_assert_eq!(problems_in(&html), Vec::<String>::new(), "{}", input);

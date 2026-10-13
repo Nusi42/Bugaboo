@@ -4,13 +4,18 @@ import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
 import type { messages as fields } from "./fields.ts";
+import type { messages as follow } from "./follow.ts";
+import type { messages as history } from "./history.ts";
 import type { messages as home } from "./home.ts";
 import type { messages as invitation } from "./invitation.ts";
 import type { messages as issueTypes } from "./issue-types.ts";
 import type { messages as issues } from "./issues.ts";
+import type { messages as mentions } from "./mentions.ts";
 import type { messages as mySettings } from "./my-settings.ts";
 import type { messages as people } from "./people.ts";
 import type { messages as projects } from "./projects.ts";
+import type { messages as relationKinds } from "./relation-kinds.ts";
+import type { messages as relations } from "./relations.ts";
 import type { messages as roles } from "./roles.ts";
 import type { messages as settings } from "./settings.ts";
 import type { messages as setup } from "./setup.ts";
@@ -24,13 +29,18 @@ export type MessageKey =
   | keyof typeof account
   | keyof typeof admin
   | keyof typeof fields
+  | keyof typeof follow
+  | keyof typeof history
   | keyof typeof home
   | keyof typeof invitation
   | keyof typeof issueTypes
   | keyof typeof issues
+  | keyof typeof mentions
   | keyof typeof mySettings
   | keyof typeof people
   | keyof typeof projects
+  | keyof typeof relationKinds
+  | keyof typeof relations
   | keyof typeof roles
   | keyof typeof settings
   | keyof typeof setup
@@ -100,6 +110,7 @@ export interface MessageArguments {
     role: string | number;
   };
   "check-access.result-heading": { person: string | number; place: string | number };
+  "comments.version-saved": { version: string | number; when: string | number };
   "conflict.change": { field: string | number; value: string | number };
   "conflict.field-only": { field: string | number };
   "conflict.sentence": { ago: string | number; changes: string | number; who: string | number };
@@ -129,6 +140,7 @@ export interface MessageArguments {
   "fields.used-more": { count: number };
   "fields.used-types": { names: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
+  "followers.count": { count: string | number };
   "groups.add-name": { name: string | number };
   "groups.added": { group: string | number; name: string | number };
   "groups.delete-name": { name: string | number };
@@ -139,6 +151,23 @@ export interface MessageArguments {
   "groups.removed": { group: string | number; name: string | number };
   "groups.used": { places: string | number };
   "groups.used-projects": { count: number };
+  "history.by": { when: string | number; who: string | number };
+  "history.changed": {
+    after: string | number;
+    before: string | number;
+    field: string | number;
+    who: string | number;
+  };
+  "history.changed-long-text": { field: string | number; who: string | number };
+  "history.cleared": { field: string | number; who: string | number };
+  "history.field-other": { field: string | number };
+  "history.relation-added": { issue: string | number; name: string | number; who: string | number };
+  "history.relation-removed": {
+    issue: string | number;
+    name: string | number;
+    who: string | number;
+  };
+  "history.set": { after: string | number; field: string | number; who: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -171,6 +200,8 @@ export interface MessageArguments {
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
+  "mentions.in": { issue: string | number; who: string | number };
+  "mentions.unread": { count: number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
@@ -234,6 +265,10 @@ export interface MessageArguments {
   "projects.person-role": { role: string | number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
+  "related-issues.added": { key: string | number; name: string | number; other: string | number };
+  "related-issues.take-away": { name: string | number; other: string | number };
+  "relation-kinds.made": { name: string | number };
+  "relation-kinds.reads": { backward: string | number; forward: string | number };
   "roles.badge-used": { badge: string | number; used: string | number };
   "roles.copy-of": { name: string | number };
   "roles.delete-name": { name: string | number };
@@ -275,5 +310,9 @@ export interface MessageArguments {
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
   "shortcuts.conflict": { action: string | number; keys: string | number };
+  "sub-issues.added": { key: string | number };
+  "sub-issues.not-part-of": { key: string | number };
+  "sub-issues.progress": { done: string | number; total: string | number };
+  "sub-issues.take-out": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
 }

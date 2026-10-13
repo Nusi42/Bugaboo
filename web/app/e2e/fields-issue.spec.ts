@@ -104,8 +104,9 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
   const other = await anotherBrowser(browser, server);
   await signIn(other, bob);
   await openIssueWithDetails(other, made.key);
-  await expect(other.getByText("Acme")).toBeVisible();
-  await expect(other.getByText("Windows")).toBeVisible();
+  // The history lists the changes in sentences too, so the values are looked for as a whole text.
+  await expect(other.getByText("Acme", { exact: true })).toBeVisible();
+  await expect(other.getByText("Windows", { exact: true })).toBeVisible();
   await expect(other.getByText("Severity")).toHaveCount(0);
   const asGuest = dataOf(await guest.client.GET("/api/v1/issues/{issue}", path));
   expect(ownKeys(asGuest)).toEqual([platforms.id, customer.id].toSorted());

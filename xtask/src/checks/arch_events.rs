@@ -236,6 +236,19 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_command_that_saves_long_text_and_the_table_does_not_name() {
+        let text = "pub async fn save_comment_text(ctx: &Ctx, cmd: SaveCommentText) -> Result<(), AppError> {
+    ctx.save_text(person, place, &save, &event, write).await?;
+    Ok(())
+}
+";
+        let messages = found(text);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("`save_comment_text`"), "{messages:?}");
+        assert!(messages[0].contains("not in the table"), "{messages:?}");
+    }
+
+    #[test]
     fn good_example_a_private_part_of_a_command_needs_no_line_of_its_own() {
         let text = "async fn part(ctx: &Ctx) {\n    ctx.store().record_change(&event, async |tx| Ok(())).await?;\n}\n";
         assert!(found(text).is_empty());

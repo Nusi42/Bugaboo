@@ -3167,6 +3167,95 @@ part "markdown.preview" {
     padding "$space-3"
 }
 
+// ───────────── Sub-issues, related issues, history and followers (M3 WP-07) ─────────────
+//
+// The blocks of the issue page that WP-07 adds: a line for an issue with its status, how far the
+// sub-issues are, the tabs of the history and one entry of it. The rest uses the shared parts.
+
+part "issue-ref" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2 $space-3"
+    min-width 0
+}
+
+part "issue-ref.status" {
+    padding "0 $space-2"
+    border-radius "$r-ctl"
+    font-size "$fs-xs"
+    font-weight "$weight-bold"
+    white-space nowrap
+}
+
+part "issue-ref.status[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "issue-ref.status[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "issue-ref.status[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+// How far the sub-issues are: the browser's own bar, in the accent color.
+part "progress" {
+    inline-size "$size-line-medium"
+    max-inline-size "100%"
+    accent-color "$accent"
+}
+
+part "history.tabs" {
+    display flex
+    gap "$space-1"
+    border-bottom "$border-width solid $border"
+}
+
+part "history.tab" {
+    padding "$space-2 $space-3"
+    min-height "$size-target"
+    box-sizing border-box
+    color "$fg-muted"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    cursor pointer
+    border-bottom "$space-1 solid transparent"
+}
+
+part "history.tab[hovered]" {
+    background "$bg-hover"
+}
+
+part "history.tab[selected]" {
+    color "$fg"
+    border-bottom-color "$accent"
+}
+
+part "history.tab[focus-visible]" {
+    use "ring-inside"
+}
+
+// One entry of the history: who, when, and what happened.
+part "history.entry" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding "$space-3"
+    use "surface-box"
+}
+
+part "history.entry[variant=comment]" {
+    background "$bg-raised"
+}
+
+part "history.when" {
+    use "quiet-text"
+}
 
 // ───────────── Own fields (features/fields, packages/ui: FieldValue) ─────────────
 //

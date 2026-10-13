@@ -76,17 +76,13 @@ pub async fn assignable_people<S: AuthStore>(
     }
     let you = actor.person.id;
     let issue = match &input.issue {
-        Some(address) => Some(
-            ctx.find_issue(address)
-                .await?
-                .map(|found| found.issue)
-                .filter(|issue| {
-                    place == Place::Project(issue.project)
-                        && issue.deleted_at.is_none()
-                        && held.sees_issue(issue.reported_by)
-                })
-                .ok_or(AppError::Refused(ErrorCode::NotFound))?,
-        ),
+        Some(address) => {
+            let (issue, _) = ctx.visible_issue(&actor, address).await?;
+            if place != Place::Project(issue.project) {
+                return Err(AppError::Refused(ErrorCode::NotFound));
+            }
+            Some(issue)
+        }
         None => None,
     };
     let issue_type = issue

@@ -22,6 +22,7 @@ import {
   issueRoute,
   issueTypesRoute,
   projectIssuesRoute,
+  relationKindsRoute,
 } from "./work-pages.tsx";
 import {
   accessKeysRoute,
@@ -84,6 +85,7 @@ const routeTree = rootRoute.addChildren([
       rolesRoute,
       roleRoute,
       issueTypesRoute,
+      relationKindsRoute,
       fieldsRoute,
       fieldRoute,
       fieldPermissionsRoute,

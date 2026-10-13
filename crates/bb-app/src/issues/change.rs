@@ -15,6 +15,7 @@ use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, PlannedValues};
+use crate::follow::started_following;
 use crate::projects::Why;
 use std::sync::Arc;
 
@@ -100,17 +101,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         issue: &str,
     ) -> Result<(Arc<Evaluation>, Issue), AppError> {
-        let found = self.find_issue(issue).await?;
-        let place = found.as_ref().map_or(Place::Organization, |found| {
-            Place::Project(found.issue.project)
-        });
-        let held = self.evaluation_of(actor, place).await?;
-        let Some(current) = found
-            .map(|found| found.issue)
-            .filter(|issue| issue.deleted_at.is_none() && held.sees_issue(issue.reported_by))
-        else {
-            return Err(AppError::Refused(ErrorCode::NotFound));
-        };
+        let (current, held) = self.visible_issue(actor, issue).await?;
         if !held.may_change_issue(current.reported_by) {
             return Err(ErrorCode::Forbidden.into());
         }
@@ -260,6 +251,7 @@ pub async fn change_issue<S: AuthStore>(
     let Plan {
         current,
         mut next,
+        assigned_now,
         assigned_next,
         own,
         ..
@@ -288,6 +280,11 @@ pub async fn change_issue<S: AuthStore>(
         .collect();
     let version = current.version;
     let why = Why::default();
+    let newly_assigned: Vec<UserId> = assigned_next
+        .iter()
+        .filter(|person| !assigned_now.contains(person))
+        .copied()
+        .collect();
     let (stopped, written, new_people) = (why.clone(), next.clone(), people);
     let kind = EntityKind::from(RecordKind::Issue);
     ctx.store()
@@ -321,7 +318,9 @@ pub async fn change_issue<S: AuthStore>(
                 for (field, cells) in &own_writes {
                     S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
                 }
-                Ok(())
+                // Whoever the issue is assigned to now follows it (ISS-07).
+                let followers = started_following(id, None, &newly_assigned, None, now);
+                S::add_followers(transaction, &followers).await
             })
         })
         .await

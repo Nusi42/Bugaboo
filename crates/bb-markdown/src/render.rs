@@ -92,7 +92,7 @@ impl State {
                 if plain_place || *text != *source {
                     out.push(Item::Event(Event::Text(text.into_string().into())));
                 } else {
-                    self.with_tokens(&text, offset, out);
+                    self.with_tokens(&text, offset, &options.plain_tokens, out);
                 }
             }
             Event::Code(code) => {
@@ -220,7 +220,7 @@ impl State {
     }
 
     /// Splits a piece of text around its tokens: the token is a `span` the page can find.
-    fn with_tokens(&mut self, text: &str, offset: usize, out: &mut Vec<Item>) {
+    fn with_tokens(&mut self, text: &str, offset: usize, plain: &[usize], out: &mut Vec<Item>) {
         let mut done = 0;
         let room = MAX_TOKENS.saturating_sub(self.tokens.len());
         for token in tokens::find(text, offset, room) {
@@ -231,11 +231,16 @@ impl State {
                     text[done..start].to_owned().into(),
                 )));
             }
-            out.push(Item::Token {
-                index: self.tokens.len(),
-                kind: token.kind,
-                text: text[start..end].to_owned(),
-            });
+            let index = self.tokens.len();
+            if plain.contains(&index) {
+                out.push(Item::Event(Event::Text(text[start..end].to_owned().into())));
+            } else {
+                out.push(Item::Token {
+                    index,
+                    kind: token.kind,
+                    text: text[start..end].to_owned(),
+                });
+            }
             self.tokens.push(token);
             done = end;
         }

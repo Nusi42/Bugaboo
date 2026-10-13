@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { formatNumber } from "../../shared/format.ts";
+import { durationText, ownValueText } from "../../shared/own-value-text.ts";
 import {
   durationSeconds,
-  durationText,
   isDecimalText,
   decimalToMillionths,
   isWholeNumberText,
@@ -43,5 +44,19 @@ describe("value-text", () => {
 
   it("cf_04_choices_are_typed_one_to_a_line", () => {
     expect(wordsOfLines("Minor\n\n  Major \nCritical")).toEqual(["Minor", "Major", "Critical"]);
+  });
+});
+
+describe("ownValueText", () => {
+  it("iss_06_a_value_the_screen_words_itself_is_worded_as_the_issue_page_does", () => {
+    expect(ownValueText("yes-no", true)).toBe("Yes");
+    expect(ownValueText("yes-no", false)).toBe("No");
+    expect(ownValueText("duration", 5400)).toBe("1h 30m");
+    expect(ownValueText("whole-number", 1234)).toBe(formatNumber(1234));
+    expect(ownValueText("decimal", "12.5")).toBe("12.5");
+    expect(ownValueText("date", "2026-10-10")).toMatch(/2026/u);
+    expect(ownValueText("date-time", "2026-10-10T08:00:00Z")).toMatch(/2026/u);
+    expect(ownValueText("yes-no", "maybe")).toBeUndefined();
+    expect(ownValueText("duration", null)).toBeUndefined();
   });
 });

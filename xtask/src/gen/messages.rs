@@ -70,18 +70,23 @@ macro_rules! part {
 
 /// Every part, in the order of the files: `shared` and one per feature folder. A test compares the
 /// list with the folders, so a new feature cannot be left out.
-const PARTS: [Part; 18] = [
+const PARTS: [Part; 23] = [
     part!("access"),
     part!("account"),
     part!("admin"),
     part!("fields"),
+    part!("follow"),
+    part!("history"),
     part!("home"),
     part!("invitation"),
     part!("issue-types"),
     part!("issues"),
+    part!("mentions"),
     part!("my-settings"),
     part!("people"),
     part!("projects"),
+    part!("relation-kinds"),
+    part!("relations"),
     part!("roles"),
     part!("settings"),
     part!("setup"),
@@ -94,7 +99,7 @@ const PARTS: [Part; 18] = [
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 72] = [
+const BROWSER_AREAS: [&str; 80] = [
     "access",
     "access-keys",
     "app",
@@ -104,6 +109,7 @@ const BROWSER_AREAS: [&str; 72] = [
     "check-access",
     "choice-color",
     "code-app",
+    "comments",
     "common",
     "conflict",
     "data-folder",
@@ -119,18 +125,22 @@ const BROWSER_AREAS: [&str; 72] = [
     "fields",
     "first-run",
     "focus",
+    "followers",
     "groups",
+    "history",
     "home",
     "invitation",
     "invitations",
     "issue-field",
     "issue-icon",
     "issue-id-mode",
+    "issue-ref",
     "issue-type",
     "issue-types",
     "issues",
     "list",
     "markdown",
+    "mentions",
     "nav",
     "own",
     "page",
@@ -145,6 +155,8 @@ const BROWSER_AREAS: [&str; 72] = [
     "person",
     "priority",
     "projects",
+    "related-issues",
+    "relation-kinds",
     "roles",
     "save",
     "search",
@@ -165,6 +177,7 @@ const BROWSER_AREAS: [&str; 72] = [
     "starting-role",
     "status",
     "status-group",
+    "sub-issues",
     "theme",
     "validation",
 ];

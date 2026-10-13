@@ -15,10 +15,12 @@ use bb_api::tls::ServedCertificate;
 use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
 use bb_app::access::{MakeStartingRoles, make_starting_roles};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
+use bb_app::comments::CommentRecords;
 use bb_app::context::SystemClock;
 use bb_app::editing::{PurgeDraftsQuery, purge_drafts};
 use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
 use bb_app::ports::SetupCodeFile;
+use bb_app::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
 use bb_store::{AuthStorage, Database, LogSeal};
@@ -46,9 +48,9 @@ pub(crate) struct Wired {
     pub(crate) housekeeping: Housekeeping,
 }
 
-/// The clearing of what outlived its keep period: drafts, notes for people who were editing and
-/// lock rows that ran out. It stands in for the job `editing.purge_drafts` until the job runner
-/// exists (M3-F30).
+/// The clearing of what outlived its keep period (drafts, notes for people who were editing and
+/// lock rows that ran out) and the catching up of the history with the events. It stands in for
+/// the jobs `editing.purge_drafts` and `history` until the job runner exists (M3-F30, M3-F71).
 #[derive(Clone)]
 pub(crate) struct Housekeeping(Arc<AuthServices<AuthStorage>>);
 
@@ -56,6 +58,11 @@ impl Housekeeping {
     /// One round of clearing; returns how many drafts went.
     pub(crate) async fn clear_old(&self) -> Result<u64, bb_app::auth::AppError> {
         purge_drafts(&self.0.ctx(RequestInfo::default()), PurgeDraftsQuery).await
+    }
+
+    /// One round of catching the history up; returns how many events it read.
+    pub(crate) async fn catch_up_history(&self) -> Result<u64, bb_app::auth::AppError> {
+        self.0.ctx(RequestInfo::default()).catch_up_history().await
     }
 }
 
@@ -138,6 +145,8 @@ pub(crate) async fn wire(
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
     let storage = AuthStorage::new(database.clone(), keys, seal.clone());
+    // The kinds of record that can be locked, drafted and watched besides the ones bb-app keeps.
+    let records = Arc::new(CommentRecords::new(storage.clone()));
 
     let name = Message::from(message::APP_NAME).render();
     // Passkeys are tied to a host name; a server reached by an IP address cannot offer them.
@@ -156,6 +165,7 @@ pub(crate) async fn wire(
         FailureLimits::new(settings.limits.sign_in_failures_per_minute),
         name,
     )
+    .with_records(records)
     .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())));
     let probe = Probe::new(
         database,
@@ -175,6 +185,13 @@ pub(crate) async fn wire(
     make_starting_issue_types(
         &services.ctx(RequestInfo::default()),
         MakeStartingIssueTypes,
+    )
+    .await
+    .map_err(|error| anyhow!(error.to_string()))?;
+    // So are the kinds of relation (blocks, duplicate of, causes, related to; ISS-04).
+    make_starting_relation_kinds(
+        &services.ctx(RequestInfo::default()),
+        MakeStartingRelationKinds,
     )
     .await
     .map_err(|error| anyhow!(error.to_string()))?;

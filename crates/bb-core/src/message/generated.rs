@@ -584,6 +584,51 @@ pub const CODE_APP_TURN_OFF_TITLE: MessageKey = MessageKey::new("code-app.turn-o
 /// The message `code-app.turned-off`.
 pub const CODE_APP_TURNED_OFF: MessageKey = MessageKey::new("code-app.turned-off");
 
+/// The message `comments.add`.
+pub const COMMENTS_ADD: MessageKey = MessageKey::new("comments.add");
+
+/// The message `comments.cancel`.
+pub const COMMENTS_CANCEL: MessageKey = MessageKey::new("comments.cancel");
+
+/// The message `comments.delete`.
+pub const COMMENTS_DELETE: MessageKey = MessageKey::new("comments.delete");
+
+/// The message `comments.deleted`.
+pub const COMMENTS_DELETED: MessageKey = MessageKey::new("comments.deleted");
+
+/// The message `comments.edit`.
+pub const COMMENTS_EDIT: MessageKey = MessageKey::new("comments.edit");
+
+/// The message `comments.edited`.
+pub const COMMENTS_EDITED: MessageKey = MessageKey::new("comments.edited");
+
+/// The message `comments.editing`.
+pub const COMMENTS_EDITING: MessageKey = MessageKey::new("comments.editing");
+
+/// The message `comments.lock-held`.
+pub const COMMENTS_LOCK_HELD: MessageKey = MessageKey::new("comments.lock-held");
+
+/// The message `comments.mention-choices`.
+pub const COMMENTS_MENTION_CHOICES: MessageKey = MessageKey::new("comments.mention-choices");
+
+/// The message `comments.save`.
+pub const COMMENTS_SAVE: MessageKey = MessageKey::new("comments.save");
+
+/// The message `comments.undo`.
+pub const COMMENTS_UNDO: MessageKey = MessageKey::new("comments.undo");
+
+/// The message `comments.versions`.
+pub const COMMENTS_VERSIONS: MessageKey = MessageKey::new("comments.versions");
+
+/// The message `comments.versions-hide`.
+pub const COMMENTS_VERSIONS_HIDE: MessageKey = MessageKey::new("comments.versions-hide");
+
+/// The message `comments.write`.
+pub const COMMENTS_WRITE: MessageKey = MessageKey::new("comments.write");
+
+/// The message `comments.write-help`.
+pub const COMMENTS_WRITE_HELP: MessageKey = MessageKey::new("comments.write-help");
+
 /// The message `common.cancel`.
 pub const COMMON_CANCEL: MessageKey = MessageKey::new("common.cancel");
 
@@ -752,8 +797,14 @@ pub const ERROR_FIELD_UNKNOWN_REFERENCE: MessageKey =
 /// The message `error.field.wrong-value`.
 pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
 
+/// The message `error.issue.parent-circle`.
+pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
+
 /// The message `error.issue.type-retired`.
 pub const ERROR_ISSUE_TYPE_RETIRED: MessageKey = MessageKey::new("error.issue.type-retired");
+
+/// The message `error.limit.reached`.
+pub const ERROR_LIMIT_REACHED: MessageKey = MessageKey::new("error.limit.reached");
 
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
@@ -775,6 +826,9 @@ pub const ERROR_PROJECT_TOO_DEEP: MessageKey = MessageKey::new("error.project.to
 
 /// The message `error.rate-limit.exceeded`.
 pub const ERROR_RATE_LIMIT_EXCEEDED: MessageKey = MessageKey::new("error.rate-limit.exceeded");
+
+/// The message `error.relation.exists`.
+pub const ERROR_RELATION_EXISTS: MessageKey = MessageKey::new("error.relation.exists");
 
 /// The message `error.request.bad-cursor`.
 pub const ERROR_REQUEST_BAD_CURSOR: MessageKey = MessageKey::new("error.request.bad-cursor");
@@ -1315,6 +1369,30 @@ pub const FOCUS_HIDE_LIST: MessageKey = MessageKey::new("focus.hide-list");
 /// The message `focus.show-list`.
 pub const FOCUS_SHOW_LIST: MessageKey = MessageKey::new("focus.show-list");
 
+/// The message `followers.follow`.
+pub const FOLLOWERS_FOLLOW: MessageKey = MessageKey::new("followers.follow");
+
+/// The message `followers.following`.
+pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following");
+
+/// The message `followers.more`.
+pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
+
+/// The message `followers.reason-assigned`.
+pub const FOLLOWERS_REASON_ASSIGNED: MessageKey = MessageKey::new("followers.reason-assigned");
+
+/// The message `followers.reason-chose`.
+pub const FOLLOWERS_REASON_CHOSE: MessageKey = MessageKey::new("followers.reason-chose");
+
+/// The message `followers.reason-commented`.
+pub const FOLLOWERS_REASON_COMMENTED: MessageKey = MessageKey::new("followers.reason-commented");
+
+/// The message `followers.reason-reported`.
+pub const FOLLOWERS_REASON_REPORTED: MessageKey = MessageKey::new("followers.reason-reported");
+
+/// The message `followers.stop`.
+pub const FOLLOWERS_STOP: MessageKey = MessageKey::new("followers.stop");
+
 /// The message `groups.add`.
 pub const GROUPS_ADD: MessageKey = MessageKey::new("groups.add");
 
@@ -1389,6 +1467,42 @@ pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing
 
 /// The message `groups.used-whole`.
 pub const GROUPS_USED_WHOLE: MessageKey = MessageKey::new("groups.used-whole");
+
+/// The message `history.field-issue-type`.
+pub const HISTORY_FIELD_ISSUE_TYPE: MessageKey = MessageKey::new("history.field-issue-type");
+
+/// The message `history.field-parent`.
+pub const HISTORY_FIELD_PARENT: MessageKey = MessageKey::new("history.field-parent");
+
+/// The message `history.field-sub-issue`.
+pub const HISTORY_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("history.field-sub-issue");
+
+/// The message `history.more`.
+pub const HISTORY_MORE: MessageKey = MessageKey::new("history.more");
+
+/// The message `history.nothing`.
+pub const HISTORY_NOTHING: MessageKey = MessageKey::new("history.nothing");
+
+/// The message `history.people-none`.
+pub const HISTORY_PEOPLE_NONE: MessageKey = MessageKey::new("history.people-none");
+
+/// The message `history.system`.
+pub const HISTORY_SYSTEM: MessageKey = MessageKey::new("history.system");
+
+/// The message `history.tab-changes`.
+pub const HISTORY_TAB_CHANGES: MessageKey = MessageKey::new("history.tab-changes");
+
+/// The message `history.tab-comments`.
+pub const HISTORY_TAB_COMMENTS: MessageKey = MessageKey::new("history.tab-comments");
+
+/// The message `history.tab-everything`.
+pub const HISTORY_TAB_EVERYTHING: MessageKey = MessageKey::new("history.tab-everything");
+
+/// The message `history.tabs`.
+pub const HISTORY_TABS: MessageKey = MessageKey::new("history.tabs");
+
+/// The message `history.title`.
+pub const HISTORY_TITLE: MessageKey = MessageKey::new("history.title");
 
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
@@ -1553,6 +1667,17 @@ pub const ISSUE_ID_MODE_COUNTING: MessageKey = MessageKey::new("issue-id-mode.co
 
 /// The message `issue-id-mode.random`.
 pub const ISSUE_ID_MODE_RANDOM: MessageKey = MessageKey::new("issue-id-mode.random");
+
+/// The message `issue-ref.status-done`.
+pub const ISSUE_REF_STATUS_DONE: MessageKey = MessageKey::new("issue-ref.status-done");
+
+/// The message `issue-ref.status-in-progress`.
+pub const ISSUE_REF_STATUS_IN_PROGRESS: MessageKey =
+    MessageKey::new("issue-ref.status-in-progress");
+
+/// The message `issue-ref.status-not-started`.
+pub const ISSUE_REF_STATUS_NOT_STARTED: MessageKey =
+    MessageKey::new("issue-ref.status-not-started");
 
 /// The message `issue-type.bug`.
 pub const ISSUE_TYPE_BUG: MessageKey = MessageKey::new("issue-type.bug");
@@ -1833,6 +1958,18 @@ pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
 /// The message `markdown.write`.
 pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
 
+/// The message `mentions.mark-read`.
+pub const MENTIONS_MARK_READ: MessageKey = MessageKey::new("mentions.mark-read");
+
+/// The message `mentions.new`.
+pub const MENTIONS_NEW: MessageKey = MessageKey::new("mentions.new");
+
+/// The message `mentions.nothing`.
+pub const MENTIONS_NOTHING: MessageKey = MessageKey::new("mentions.nothing");
+
+/// The message `mentions.title`.
+pub const MENTIONS_TITLE: MessageKey = MessageKey::new("mentions.title");
+
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
@@ -1895,6 +2032,9 @@ pub const NAV_PROJECTS: MessageKey = MessageKey::new("nav.projects");
 
 /// The message `nav.region`.
 pub const NAV_REGION: MessageKey = MessageKey::new("nav.region");
+
+/// The message `nav.relation-kinds`.
+pub const NAV_RELATION_KINDS: MessageKey = MessageKey::new("nav.relation-kinds");
 
 /// The message `nav.roles`.
 pub const NAV_ROLES: MessageKey = MessageKey::new("nav.roles");
@@ -2360,6 +2500,105 @@ pub const PROJECTS_TREE_EMPTY: MessageKey = MessageKey::new("projects.tree-empty
 
 /// The message `projects.tree-more`.
 pub const PROJECTS_TREE_MORE: MessageKey = MessageKey::new("projects.tree-more");
+
+/// The message `related-issues.add`.
+pub const RELATED_ISSUES_ADD: MessageKey = MessageKey::new("related-issues.add");
+
+/// The message `related-issues.add-it`.
+pub const RELATED_ISSUES_ADD_IT: MessageKey = MessageKey::new("related-issues.add-it");
+
+/// The message `related-issues.back`.
+pub const RELATED_ISSUES_BACK: MessageKey = MessageKey::new("related-issues.back");
+
+/// The message `related-issues.cancel`.
+pub const RELATED_ISSUES_CANCEL: MessageKey = MessageKey::new("related-issues.cancel");
+
+/// The message `related-issues.issue-field`.
+pub const RELATED_ISSUES_ISSUE_FIELD: MessageKey = MessageKey::new("related-issues.issue-field");
+
+/// The message `related-issues.kind-field`.
+pub const RELATED_ISSUES_KIND_FIELD: MessageKey = MessageKey::new("related-issues.kind-field");
+
+/// The message `related-issues.more`.
+pub const RELATED_ISSUES_MORE: MessageKey = MessageKey::new("related-issues.more");
+
+/// The message `related-issues.none`.
+pub const RELATED_ISSUES_NONE: MessageKey = MessageKey::new("related-issues.none");
+
+/// The message `related-issues.nothing-to-pick`.
+pub const RELATED_ISSUES_NOTHING_TO_PICK: MessageKey =
+    MessageKey::new("related-issues.nothing-to-pick");
+
+/// The message `related-issues.title`.
+pub const RELATED_ISSUES_TITLE: MessageKey = MessageKey::new("related-issues.title");
+
+/// The message `related-issues.undo`.
+pub const RELATED_ISSUES_UNDO: MessageKey = MessageKey::new("related-issues.undo");
+
+/// The message `relation-kind.blocks`.
+pub const RELATION_KIND_BLOCKS: MessageKey = MessageKey::new("relation-kind.blocks");
+
+/// The message `relation-kind.causes`.
+pub const RELATION_KIND_CAUSES: MessageKey = MessageKey::new("relation-kind.causes");
+
+/// The message `relation-kind.duplicate-of`.
+pub const RELATION_KIND_DUPLICATE_OF: MessageKey = MessageKey::new("relation-kind.duplicate-of");
+
+/// The message `relation-kind.has-duplicate`.
+pub const RELATION_KIND_HAS_DUPLICATE: MessageKey = MessageKey::new("relation-kind.has-duplicate");
+
+/// The message `relation-kind.is-blocked-by`.
+pub const RELATION_KIND_IS_BLOCKED_BY: MessageKey = MessageKey::new("relation-kind.is-blocked-by");
+
+/// The message `relation-kind.is-caused-by`.
+pub const RELATION_KIND_IS_CAUSED_BY: MessageKey = MessageKey::new("relation-kind.is-caused-by");
+
+/// The message `relation-kind.related-to`.
+pub const RELATION_KIND_RELATED_TO: MessageKey = MessageKey::new("relation-kind.related-to");
+
+/// The message `relation-kinds.field-backward`.
+pub const RELATION_KINDS_FIELD_BACKWARD: MessageKey =
+    MessageKey::new("relation-kinds.field-backward");
+
+/// The message `relation-kinds.field-forward`.
+pub const RELATION_KINDS_FIELD_FORWARD: MessageKey =
+    MessageKey::new("relation-kinds.field-forward");
+
+/// The message `relation-kinds.intro`.
+pub const RELATION_KINDS_INTRO: MessageKey = MessageKey::new("relation-kinds.intro");
+
+/// The message `relation-kinds.make`.
+pub const RELATION_KINDS_MAKE: MessageKey = MessageKey::new("relation-kinds.make");
+
+/// The message `relation-kinds.make-intro`.
+pub const RELATION_KINDS_MAKE_INTRO: MessageKey = MessageKey::new("relation-kinds.make-intro");
+
+/// The message `relation-kinds.make-title`.
+pub const RELATION_KINDS_MAKE_TITLE: MessageKey = MessageKey::new("relation-kinds.make-title");
+
+/// The message `relation-kinds.more`.
+pub const RELATION_KINDS_MORE: MessageKey = MessageKey::new("relation-kinds.more");
+
+/// The message `relation-kinds.nothing`.
+pub const RELATION_KINDS_NOTHING: MessageKey = MessageKey::new("relation-kinds.nothing");
+
+/// The message `relation-kinds.offer-again`.
+pub const RELATION_KINDS_OFFER_AGAIN: MessageKey = MessageKey::new("relation-kinds.offer-again");
+
+/// The message `relation-kinds.retire`.
+pub const RELATION_KINDS_RETIRE: MessageKey = MessageKey::new("relation-kinds.retire");
+
+/// The message `relation-kinds.retire-help`.
+pub const RELATION_KINDS_RETIRE_HELP: MessageKey = MessageKey::new("relation-kinds.retire-help");
+
+/// The message `relation-kinds.retired`.
+pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.retired");
+
+/// The message `relation-kinds.saved`.
+pub const RELATION_KINDS_SAVED: MessageKey = MessageKey::new("relation-kinds.saved");
+
+/// The message `relation-kinds.search`.
+pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
 
 /// The message `roles.actions-title`.
 pub const ROLES_ACTIONS_TITLE: MessageKey = MessageKey::new("roles.actions-title");
@@ -3365,6 +3604,30 @@ pub const STATUS_IN_PROGRESS: MessageKey = MessageKey::new("status.in-progress")
 /// The message `status.open`.
 pub const STATUS_OPEN: MessageKey = MessageKey::new("status.open");
 
+/// The message `sub-issues.add-it`.
+pub const SUB_ISSUES_ADD_IT: MessageKey = MessageKey::new("sub-issues.add-it");
+
+/// The message `sub-issues.field`.
+pub const SUB_ISSUES_FIELD: MessageKey = MessageKey::new("sub-issues.field");
+
+/// The message `sub-issues.more`.
+pub const SUB_ISSUES_MORE: MessageKey = MessageKey::new("sub-issues.more");
+
+/// The message `sub-issues.none`.
+pub const SUB_ISSUES_NONE: MessageKey = MessageKey::new("sub-issues.none");
+
+/// The message `sub-issues.part-of`.
+pub const SUB_ISSUES_PART_OF: MessageKey = MessageKey::new("sub-issues.part-of");
+
+/// The message `sub-issues.progress-label`.
+pub const SUB_ISSUES_PROGRESS_LABEL: MessageKey = MessageKey::new("sub-issues.progress-label");
+
+/// The message `sub-issues.title`.
+pub const SUB_ISSUES_TITLE: MessageKey = MessageKey::new("sub-issues.title");
+
+/// The message `sub-issues.undo`.
+pub const SUB_ISSUES_UNDO: MessageKey = MessageKey::new("sub-issues.undo");
+
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
 
@@ -3845,6 +4108,21 @@ pub fn cli_no_data(path: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `comments.version-saved`.
+#[must_use]
+pub fn comments_version_saved(
+    version: impl std::fmt::Display,
+    when: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("comments.version-saved"),
+        vec![
+            ("version", Value::Text(version.to_string())),
+            ("when", Value::Text(when.to_string())),
+        ],
+    )
+}
+
 /// The message `config.address-invalid`.
 #[must_use]
 pub fn config_address_invalid(value: impl std::fmt::Display) -> Message {
@@ -4307,6 +4585,15 @@ pub fn first_run_step_of(
     )
 }
 
+/// The message `followers.count`.
+#[must_use]
+pub fn followers_count(count: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("followers.count"),
+        vec![("count", Value::Text(count.to_string()))],
+    )
+}
+
 /// The message `groups.add-name`.
 #[must_use]
 pub fn groups_add_name(name: impl std::fmt::Display) -> Message {
@@ -4400,6 +4687,124 @@ pub fn groups_used_projects(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("groups.used-projects"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `history.by`.
+#[must_use]
+pub fn history_by(when: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.by"),
+        vec![
+            ("when", Value::Text(when.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.changed`.
+#[must_use]
+pub fn history_changed(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.changed"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.changed-long-text`.
+#[must_use]
+pub fn history_changed_long_text(
+    field: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.changed-long-text"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.cleared`.
+#[must_use]
+pub fn history_cleared(field: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.cleared"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.field-other`.
+#[must_use]
+pub fn history_field_other(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.field-other"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `history.relation-added`.
+#[must_use]
+pub fn history_relation_added(
+    issue: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.relation-added"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.relation-removed`.
+#[must_use]
+pub fn history_relation_removed(
+    issue: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.relation-removed"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.set`.
+#[must_use]
+pub fn history_set(
+    after: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.set"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
     )
 }
 
@@ -4806,6 +5211,27 @@ pub fn keys_rotated(secrets: i64) -> Message {
     )
 }
 
+/// The message `mentions.in`.
+#[must_use]
+pub fn mentions_in(issue: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mentions.in"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `mentions.unread`.
+#[must_use]
+pub fn mentions_unread(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mentions.unread"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
 /// The message `own.ask-text`.
 #[must_use]
 pub fn own_ask_text(lost: impl std::fmt::Display) -> Message {
@@ -5191,6 +5617,62 @@ pub fn projects_toggle_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.toggle-name"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `related-issues.added`.
+#[must_use]
+pub fn related_issues_added(
+    key: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+    other: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("related-issues.added"),
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("name", Value::Text(name.to_string())),
+            ("other", Value::Text(other.to_string())),
+        ],
+    )
+}
+
+/// The message `related-issues.take-away`.
+#[must_use]
+pub fn related_issues_take_away(
+    name: impl std::fmt::Display,
+    other: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("related-issues.take-away"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("other", Value::Text(other.to_string())),
+        ],
+    )
+}
+
+/// The message `relation-kinds.made`.
+#[must_use]
+pub fn relation_kinds_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-kinds.made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `relation-kinds.reads`.
+#[must_use]
+pub fn relation_kinds_reads(
+    backward: impl std::fmt::Display,
+    forward: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-kinds.reads"),
+        vec![
+            ("backward", Value::Text(backward.to_string())),
+            ("forward", Value::Text(forward.to_string())),
+        ],
     )
 }
 
@@ -5959,6 +6441,45 @@ pub fn shortcuts_conflict(action: impl std::fmt::Display, keys: impl std::fmt::D
     )
 }
 
+/// The message `sub-issues.added`.
+#[must_use]
+pub fn sub_issues_added(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sub-issues.added"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `sub-issues.not-part-of`.
+#[must_use]
+pub fn sub_issues_not_part_of(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sub-issues.not-part-of"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `sub-issues.progress`.
+#[must_use]
+pub fn sub_issues_progress(done: impl std::fmt::Display, total: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sub-issues.progress"),
+        vec![
+            ("done", Value::Text(done.to_string())),
+            ("total", Value::Text(total.to_string())),
+        ],
+    )
+}
+
+/// The message `sub-issues.take-out`.
+#[must_use]
+pub fn sub_issues_take_out(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sub-issues.take-out"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `theme.device-resolved`.
 #[must_use]
 pub fn theme_device_resolved(
@@ -6523,6 +7044,28 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("code-app.turn-off-title", "Switch off the code app?"),
     ("code-app.turned-off", "The code app is switched off."),
+    ("comments.add", "Comment"),
+    ("comments.cancel", "Cancel"),
+    ("comments.delete", "Delete"),
+    ("comments.deleted", "The comment is deleted."),
+    ("comments.edit", "Edit"),
+    ("comments.edited", "edited"),
+    ("comments.editing", "Edit the comment"),
+    (
+        "comments.lock-held",
+        "Someone else is editing this comment.",
+    ),
+    ("comments.mention-choices", "Who you can mention"),
+    ("comments.save", "Save"),
+    ("comments.undo", "Undo"),
+    ("comments.version-saved", "Version {version} · {when}"),
+    ("comments.versions", "Earlier versions"),
+    ("comments.versions-hide", "Hide earlier versions"),
+    ("comments.write", "Write a comment"),
+    (
+        "comments.write-help",
+        "Type @ and a name to mention someone.",
+    ),
     ("common.cancel", "Cancel"),
     ("common.close", "Close"),
     ("common.continue", "Continue"),
@@ -6759,8 +7302,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That is not a value this field can hold.",
     ),
     (
+        "error.issue.parent-circle",
+        "That would make a circle of issues or a chain that is too long. Choose another issue.",
+    ),
+    (
         "error.issue.type-retired",
         "That issue type is retired, so no new issues can be made with it. Choose another type.",
+    ),
+    (
+        "error.limit.reached",
+        "That is as many as one issue can hold. Take some away first.",
     ),
     (
         "error.name.taken",
@@ -6785,6 +7336,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.rate-limit.exceeded",
         "Too many tries. Please wait a little and try again.",
+    ),
+    (
+        "error.relation.exists",
+        "Those two issues are related in that way already.",
     ),
     (
         "error.request.bad-cursor",
@@ -7126,6 +7681,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("focus.back", "Back to list"),
     ("focus.hide-list", "Hide list"),
     ("focus.show-list", "Show list"),
+    ("followers.count", "Followers {count}"),
+    ("followers.follow", "Follow"),
+    ("followers.following", "Following"),
+    ("followers.more", "Show more followers"),
+    ("followers.reason-assigned", "It is assigned to you"),
+    ("followers.reason-chose", "You chose to follow it"),
+    ("followers.reason-commented", "You commented on it"),
+    ("followers.reason-reported", "You reported it"),
+    ("followers.stop", "Stop following"),
     ("groups.add", "Put in"),
     ("groups.add-list", "People you can put into the group"),
     ("groups.add-more", "Show more people"),
@@ -7182,6 +7746,35 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {in # project you can see} other {in # projects you can see}}",
     ),
     ("groups.used-whole", "for the whole organization"),
+    ("history.by", "{who} · {when}"),
+    (
+        "history.changed",
+        "{who} changed {field} from {before} to {after}",
+    ),
+    ("history.changed-long-text", "{who} changed {field}"),
+    ("history.cleared", "{who} cleared {field}"),
+    ("history.field-issue-type", "Issue type"),
+    ("history.field-other", "{field}"),
+    ("history.field-parent", "Part of"),
+    ("history.field-sub-issue", "Sub-issue"),
+    ("history.more", "Show earlier"),
+    ("history.nothing", "Nothing here yet."),
+    ("history.people-none", "nobody"),
+    (
+        "history.relation-added",
+        "{who} added a relation: this issue {name} {issue}",
+    ),
+    (
+        "history.relation-removed",
+        "{who} took away a relation: this issue {name} {issue}",
+    ),
+    ("history.set", "{who} set {field} to {after}"),
+    ("history.system", "Bugaboo"),
+    ("history.tab-changes", "Changes"),
+    ("history.tab-comments", "Comments"),
+    ("history.tab-everything", "Everything"),
+    ("history.tabs", "What to show"),
+    ("history.title", "History"),
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
@@ -7267,6 +7860,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-icon.zap", "Lightning"),
     ("issue-id-mode.counting", "Counting IDs"),
     ("issue-id-mode.random", "Random IDs"),
+    ("issue-ref.status-done", "Done"),
+    ("issue-ref.status-in-progress", "In progress"),
+    ("issue-ref.status-not-started", "Not started"),
     ("issue-type.bug", "Bug"),
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
@@ -7487,6 +8083,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("markdown.quote", "Quote"),
     ("markdown.toolbar", "Formatting"),
     ("markdown.write", "Write"),
+    ("mentions.in", "{who} in {issue}"),
+    ("mentions.mark-read", "Mark as read"),
+    ("mentions.new", "New"),
+    ("mentions.nothing", "Nobody has mentioned you."),
+    ("mentions.title", "Mentions"),
+    (
+        "mentions.unread",
+        "{count, plural, one {# unread} other {# unread}}",
+    ),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
@@ -7508,6 +8113,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.people-visibility", "Who sees people"),
     ("nav.projects", "Projects"),
     ("nav.region", "Region"),
+    ("nav.relation-kinds", "Kinds of relation"),
     ("nav.roles", "Roles & permissions"),
     ("nav.security", "Sign-in & security"),
     ("nav.sessions", "Where you're signed in"),
@@ -7878,6 +8484,72 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.toggle-name", "Sub-projects of {name}"),
     ("projects.tree-empty", "You do not see any project yet."),
     ("projects.tree-more", "Show more projects"),
+    ("related-issues.add", "Add relation"),
+    ("related-issues.add-it", "Add the relation"),
+    ("related-issues.added", "{key} now {name} {other}."),
+    ("related-issues.back", "Back"),
+    ("related-issues.cancel", "Cancel"),
+    (
+        "related-issues.issue-field",
+        "The other issue (for example WEB-142)",
+    ),
+    ("related-issues.kind-field", "What the relation means"),
+    ("related-issues.more", "Show more related issues"),
+    ("related-issues.none", "No related issues yet."),
+    (
+        "related-issues.nothing-to-pick",
+        "There is no kind of relation to pick. Someone who manages kinds of relation can make one.",
+    ),
+    (
+        "related-issues.take-away",
+        "Take away the relation: {name} {other}",
+    ),
+    ("related-issues.title", "Related issues"),
+    ("related-issues.undo", "Undo"),
+    ("relation-kind.blocks", "blocks"),
+    ("relation-kind.causes", "causes"),
+    ("relation-kind.duplicate-of", "duplicate of"),
+    ("relation-kind.has-duplicate", "has duplicate"),
+    ("relation-kind.is-blocked-by", "is blocked by"),
+    ("relation-kind.is-caused-by", "is caused by"),
+    ("relation-kind.related-to", "related to"),
+    (
+        "relation-kinds.field-backward",
+        "Words for the second issue",
+    ),
+    ("relation-kinds.field-forward", "Words for the first issue"),
+    (
+        "relation-kinds.intro",
+        "A kind of relation says what a connection between two issues means, in words for both ends: blocks and is blocked by. Retire a kind to stop new relations of it; the relations that have it keep it.",
+    ),
+    (
+        "relation-kinds.made",
+        "The kind of relation {name} is made.",
+    ),
+    ("relation-kinds.make", "Make the kind of relation"),
+    (
+        "relation-kinds.make-intro",
+        "Write what the first issue reads and what the second one reads, like blocks and is blocked by. Use the same words twice for a kind that reads alike from both ends.",
+    ),
+    ("relation-kinds.make-title", "Make a kind of relation"),
+    ("relation-kinds.more", "Show more kinds of relation"),
+    (
+        "relation-kinds.nothing",
+        "No kind of relation has that name.",
+    ),
+    (
+        "relation-kinds.offer-again",
+        "Offer the kind of relation again",
+    ),
+    ("relation-kinds.reads", "{forward} / {backward}"),
+    ("relation-kinds.retire", "Retire the kind of relation"),
+    (
+        "relation-kinds.retire-help",
+        "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
+    ),
+    ("relation-kinds.retired", "Retired"),
+    ("relation-kinds.saved", "Saved."),
+    ("relation-kinds.search", "Search kinds of relation"),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),
     ("roles.applies.project", "Only this project"),
@@ -8786,6 +9458,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.done", "Done"),
     ("status.in-progress", "In progress"),
     ("status.open", "Open"),
+    ("sub-issues.add-it", "Add"),
+    ("sub-issues.added", "{key} is now a sub-issue."),
+    ("sub-issues.field", "Issue to add (for example WEB-142)"),
+    ("sub-issues.more", "Show more sub-issues"),
+    ("sub-issues.none", "No sub-issues yet."),
+    ("sub-issues.not-part-of", "Take this issue out of {key}"),
+    ("sub-issues.part-of", "Part of"),
+    ("sub-issues.progress", "{done} of {total} done"),
+    ("sub-issues.progress-label", "How far the sub-issues are"),
+    ("sub-issues.take-out", "Take {key} out of the sub-issues"),
+    ("sub-issues.title", "Sub-issues"),
+    ("sub-issues.undo", "Undo"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),

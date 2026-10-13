@@ -65,6 +65,16 @@ property = "groups"
 reason = "Counts only the groups named by rows in the whole organization and in projects the viewer can see (PRIV-13)."
 
 [[exempt]]
+route = "GET /api/v1/issues/{issue}/relations"
+property = "total"
+reason = "Counts only the sub-issues the viewer may see, in the projects where the viewer may see them: an issue they may not see is left out of the list and of this number alike (PRIV-13, ISS-03, test iss_03_progress_counts_only_the_sub_issues_you_see)."
+
+[[exempt]]
+route = "PUT /api/v1/issues/{issue}/parent"
+property = "total"
+reason = "The same progress as GET /api/v1/issues/{issue}/relations: it counts only the sub-issues the viewer may see (PRIV-13, ISS-03)."
+
+[[exempt]]
 route = "GET /api/v1/fields/{field}/used-by"
 property = "project_count"
 reason = "Counts only the projects the viewer may see: every project is checked for the viewer before it is counted, and the answer needs Manage fields (CF-03, M3 WP-05)."

@@ -217,8 +217,9 @@ pub(super) fn held_exactly_all(permissions: &[Permission]) -> Vec<Permission> {
 
 /// The permissions that act on an issue the person sees: the person of `Actor::Exactly` holds
 /// *See issues* beside them, as they hold *See projects* beside a permission of a project.
-const ACTS_ON_ISSUES_SEEN: [Permission; 3] = [
+const ACTS_ON_ISSUES_SEEN: [Permission; 4] = [
     Permission::ChangeIssues,
+    Permission::Comment,
     Permission::ChangeOwnIssues,
     Permission::DeleteIssues,
 ];

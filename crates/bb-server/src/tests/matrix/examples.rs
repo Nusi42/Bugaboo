@@ -295,6 +295,49 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("saveIssueDescription", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listRelationKinds", &[Quirk::KeysActAsThePerson]),
+    Example::route("makeRelationKind"),
+    Example::route("changeRelationKind"),
+    Example::with("getIssueRelations", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listSubIssues", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listRelatedIssues", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("setIssueParent", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("addRelation", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("removeRelation", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("addComment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("saveComment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("deleteComment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("restoreComment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listCommentVersions", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
+    Example::route("listMentions"),
+    Example::route("readMentions"),
+    Example::with("listIssueHistory", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("listFollowers", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "getFollowing",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with(
+        "followIssue",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with(
+        "unfollowIssue",
+        &[
+            Quirk::AnIssueOfTheTarget,
+            SEES_THE_ISSUE,
+            Quirk::SessionOnly,
+        ],
+    ),
     Example::with("listFieldTypes", &[Quirk::KeysActAsThePerson]),
     Example::with("listFields", &[Quirk::KeysActAsThePerson]),
     Example::with(
@@ -320,6 +363,9 @@ pub(super) const EXAMPLES: &[Example] = &[
 
 /// A route that judges the record it names, as the example names the target project.
 const ON_THE_TARGET: Quirk = Quirk::OnTheTargetProject(Permission::ChangeProjectSettings);
+
+/// A route of the person's own state about an issue: the issue must be one they may see.
+const SEES_THE_ISSUE: Quirk = Quirk::OnTheTargetProject(Permission::SeeIssues);
 
 /// An ID that no invitation, session, passkey or access key has (the random kind: a time-ordered
 /// one would not be an ID of these, and the route would say "not found" before it looked at
@@ -694,6 +740,11 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) =
+        super::examples_relations::relation_request(fixture, operation, browser).await?
+    {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

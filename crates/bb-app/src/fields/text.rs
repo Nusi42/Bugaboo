@@ -11,7 +11,6 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{FieldId, LockToken};
 use bb_core::own_fields::{FieldFor, edit_part};
 use bb_core::own_fields_value::FieldValue;
-use bb_core::text::{LONG_TEXT_MAX, clean_long};
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Place};
 
@@ -25,6 +24,7 @@ use super::types::Definition;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::editing::{DraftText, TextSave, Written};
 use crate::fields::Item;
+use crate::input::clean_long_text;
 use crate::issues::IssueView;
 
 /// Save the long text of an own field of an issue.
@@ -122,9 +122,7 @@ pub async fn save_field_text<S: AuthStore>(
     let actor = ctx.session_actor(&input.session_token).await?;
     let (held, current, definition) = ctx.text_target(&actor, &input).await?;
     let (key, field) = (FieldKey::Own(input.field), &definition.field);
-    let text = clean_long(&input.text, LONG_TEXT_MAX)
-        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?
-        .to_owned();
+    let text = clean_long_text(&input.text)?;
     let new = (!text.is_empty()).then(|| FieldValue::Text(text.clone()));
     let save = TextSave {
         what: EditWhat {

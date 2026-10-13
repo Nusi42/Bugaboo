@@ -68,16 +68,16 @@ const ASSIGNABLE_LIST: &str = "assignable-people";
 pub(crate) struct IssueTypeRef {
     /// The ID of the type.
     #[masked(open)]
-    id: String,
+    pub(crate) id: String,
     /// What it is called.
     #[masked(open)]
-    name: String,
+    pub(crate) name: String,
     /// Its icon.
     #[masked(open)]
-    icon: IssueIcon,
+    pub(crate) icon: IssueIcon,
     /// Whether it is retired: old issues keep it, new ones cannot have it.
     #[masked(open)]
-    retired: bool,
+    pub(crate) retired: bool,
 }
 
 impl From<&AppIssueTypeRef> for IssueTypeRef {

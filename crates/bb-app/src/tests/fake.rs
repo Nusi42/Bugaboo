@@ -10,12 +10,16 @@ use std::fmt;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use bb_core::access::{Assignment, Group, GroupMember};
+use bb_core::comment::{Comment, CommentVersion, Mention};
 use bb_core::edit::{Draft, EditLock, EditNotice};
 use bb_core::event::DomainEvent;
+use bb_core::follow::Follower;
+use bb_core::history::HistoryEntry;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueType};
 use bb_core::person::Person;
 use bb_core::project::{Project, ProjectAlias};
+use bb_core::relation::{IssueParent, Relation, RelationKind};
 use bb_core::security_log::Digest;
 use bb_core::sign_in::{Invitation, SetupCode, SignInSession, StoredPasskey, TwoStep};
 use bb_policy::LevelRules;
@@ -87,6 +91,16 @@ pub(crate) struct State {
     pub(crate) assignees: Vec<IssueAssignee>,
     pub(crate) issue_aliases: Vec<IssueAlias>,
     pub(crate) counters: Vec<(ProjectId, i64)>,
+    pub(crate) relation_kinds: Vec<RelationKind>,
+    pub(crate) relations: Vec<Relation>,
+    pub(crate) parents: Vec<IssueParent>,
+    pub(crate) comments: Vec<Comment>,
+    pub(crate) comment_versions: Vec<CommentVersion>,
+    pub(crate) mentions: Vec<Mention>,
+    pub(crate) followers: Vec<Follower>,
+    pub(crate) history: Vec<HistoryEntry>,
+    /// How many events the history has finished (their place in the outbox).
+    pub(crate) history_position: i64,
     pub(crate) field_definitions: Vec<crate::fields::Definition>,
     pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
 }

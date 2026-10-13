@@ -14,6 +14,7 @@ use std::pin::Pin;
 use super::scenarios::{self as s, Added};
 use super::scenarios_fields as sf;
 use super::scenarios_issues as si;
+use super::scenarios_relations as sr;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
 
@@ -22,10 +23,11 @@ use crate::auth::USE_CASES;
 type Scenario = for<'a> fn(&'a World) -> Pin<Box<dyn Future<Output = Added> + 'a>>;
 
 /// The use cases the server calls itself, at every start, and not through `AuthApi`.
-const SYSTEM_USE_CASES: [&str; 3] = [
+const SYSTEM_USE_CASES: [&str; 4] = [
     "issue_setup_code",
     "make_starting_roles",
     "make_starting_issue_types",
+    "make_starting_relation_kinds",
 ];
 
 /// The table: the name of the use case and its scenario. One line per command use case.
@@ -93,6 +95,19 @@ table! {
     "make_issue_type" => si::make_issue_type_scenario,
     "change_issue_type" => si::change_issue_type_scenario,
     "make_starting_issue_types" => si::make_starting_issue_types_scenario,
+    "make_relation_kind" => sr::make_relation_kind_scenario,
+    "change_relation_kind" => sr::change_relation_kind_scenario,
+    "make_starting_relation_kinds" => sr::make_starting_relation_kinds_scenario,
+    "add_relation" => sr::add_relation_scenario,
+    "remove_relation" => sr::remove_relation_scenario,
+    "set_parent" => sr::set_parent_scenario,
+    "add_comment" => sr::add_comment_scenario,
+    "save_comment" => sr::save_comment_scenario,
+    "delete_comment" => sr::delete_comment_scenario,
+    "restore_comment" => sr::restore_comment_scenario,
+    "read_mentions" => sr::read_mentions_scenario,
+    "follow_issue" => sr::follow_issue_scenario,
+    "unfollow_issue" => sr::unfollow_issue_scenario,
     "make_field" => sf::make_field_scenario,
     "change_field" => sf::change_field_scenario,
     "add_choice" => sf::add_choice_scenario,

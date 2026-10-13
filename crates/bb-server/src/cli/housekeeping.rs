@@ -1,6 +1,7 @@
 //! Clears what outlived its keep period while the server runs (M3-F30).
 //!
-//! A timer runs the use case `purge_drafts` when the server starts and once a day after that:
+//! A timer runs the use case `purge_drafts` and the history's catching up with the events when
+//! the server starts and once a day after that. `purge_drafts` clears:
 //! drafts past their 30 days, notes for people who were editing, and lock rows that ran out. It
 //! stands in for the job `editing.purge_drafts` until the job runner exists, and then moves into
 //! it. A round that fails is reported in the log and tried again at the next tick.
@@ -28,6 +29,13 @@ pub(super) fn spawn(housekeeping: Housekeeping, every: Duration) -> JoinHandle<(
                 Err(error) => tracing::warn!(
                     cause = %error,
                     "old drafts could not be cleared; the next round tries again"
+                ),
+            }
+            match housekeeping.catch_up_history().await {
+                Ok(events) => tracing::info!(events, "the history caught up with the events"),
+                Err(error) => tracing::warn!(
+                    cause = %error,
+                    "the history could not catch up; the next round tries again"
                 ),
             }
         }

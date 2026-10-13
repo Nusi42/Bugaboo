@@ -25,6 +25,19 @@ fn get_routes() -> Vec<String> {
         .collect()
 }
 
+/// The ID of a comment written on the issue, for the routes that name a comment.
+async fn a_comment_on(ada: &mut Browser, issue_key: &str) -> Result<String, Failure> {
+    let written = ada
+        .send(
+            "POST",
+            &format!("/api/v1/issues/{issue_key}/comments"),
+            Some(json!({"text": "A comment to read the versions of."})),
+        )
+        .await?;
+    assert_eq!(written.status, StatusCode::OK);
+    Ok(written.body["id"].as_str().ok_or("no comment")?.to_owned())
+}
+
 /// An issue in the project EXAMPLE, for the route that names one: its readable ID.
 async fn an_issue_in_example(ada: &mut Browser) -> Result<String, Failure> {
     let types = ada.send("GET", "/api/v1/issue-types", None).await?;
@@ -53,6 +66,14 @@ async fn a_field(ada: &mut Browser) -> Result<String, Failure> {
         .await?;
     assert_eq!(field.status, StatusCode::OK, "{}", field.body);
     Ok(field.body["id"].as_str().ok_or("no field")?.to_owned())
+}
+
+/// The IDs of a comment on the issue and of an own field.
+async fn a_comment_and_a_field(
+    ada: &mut Browser,
+    issue_key: &str,
+) -> Result<(String, String), Failure> {
+    Ok((a_comment_on(ada, issue_key).await?, a_field(ada).await?))
 }
 
 #[tokio::test]
@@ -99,8 +120,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .to_owned(),
         );
         let issue_key = an_issue_in_example(&mut ada).await?;
-        // An own field, for the routes that name one.
-        let field_id = a_field(&mut ada).await?;
+        // A comment and an own field, for the routes that name one.
+        let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &issue_key).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -119,6 +140,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
                 .replace("{issue}", &issue_key)
+                .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
                 .replace("{project}", project);
             // The draft and the lock routes are about a record named in the query: the example

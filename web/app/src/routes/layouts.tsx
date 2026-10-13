@@ -75,14 +75,21 @@ async function joinIssues(): Promise<void> {
   if (issuesJoined) {
     return;
   }
-  const [issues, fields] = await Promise.all([
+  const [issues, fields, relations, history, follow] = await Promise.all([
     import("../features/issues/index.ts"),
     import("../features/fields/index.ts"),
+    import("../features/relations/index.ts"),
+    import("../features/history/index.ts"),
+    import("../features/follow/index.ts"),
   ]);
   if (!issuesJoined) {
     issuesJoined = true;
     issues.registerIssues();
+    // The blocks of the issue page, all put into the slots of `features/issues/slots.ts`.
     fields.registerFields();
+    relations.registerRelationBlocks();
+    history.registerHistoryBlock();
+    follow.registerFollowersBlock();
   }
 }
 

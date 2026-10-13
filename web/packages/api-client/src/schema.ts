@@ -680,6 +680,68 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/comments/{comment}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Puts a comment into the trash (*Undo* takes it out again). The author may, and whoever may
+     *     change issues.
+     */
+    delete: operations["deleteComment"];
+    options?: never;
+    head?: never;
+    /**
+     * Saves the new text of a comment. Only the author changes a text. The editor holds the lock on
+     *     the text (`edit-locks`, the part `text`) and sends its token and the version it started from;
+     *     every earlier text is kept.
+     */
+    patch: operations["saveComment"];
+    trace?: never;
+  };
+  "/api/v1/comments/{comment}/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Takes a comment out of the trash (*Undo*). */
+    post: operations["restoreComment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/comments/{comment}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Every text a comment had, the current one last, a page at a time. Whoever may see the comment
+     *     may see its earlier texts.
+     */
+    get: operations["listCommentVersions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/content/image-hosts": {
     parameters: {
       query?: never;
@@ -1240,6 +1302,23 @@ export interface paths {
     patch: operations["changeIssue"];
     trace?: never;
   };
+  "/api/v1/issues/{issue}/comments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Writes a comment under an issue. Needs the permission *Comment* and the right to see the issue. */
+    post: operations["addComment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/description": {
     parameters: {
       query?: never;
@@ -1284,6 +1363,148 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/follow": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Whether the person follows the issue (*Follow* or *Following*). */
+    get: operations["getFollowing"];
+    /** Makes the person a follower of the issue. Following it already changes nothing. */
+    put: operations["followIssue"];
+    post?: never;
+    /** Takes the person out of the followers of the issue. Not following changes nothing. */
+    delete: operations["unfollowIssue"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/followers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Who follows an issue, a page at a time, each as the kind *Followers* says for the reader. */
+    get: operations["listFollowers"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The history of an issue, newest first, a page at a time: the comments and the changes, in three
+     *     tabs. A change to a field the person may not see is not in it. A row's changes stay together, so
+     *     a page may hold a few items more than `limit`.
+     */
+    get: operations["listIssueHistory"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/mention-choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the writer of a comment under this issue may name after `@`: people and groups for someone
+     *     who sees names, groups and roles for someone who sees roles only, nobody for someone who sees no
+     *     people. Needs the permission *Comment*.
+     */
+    get: operations["listMentionChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/parent": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Puts an issue under another one, or takes it out from under its parent. Needs the right to
+     *     change both issues. No issue sits under itself or under one of its own sub-issues.
+     */
+    put: operations["setIssueParent"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/related-issues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The issues related to an issue, whose other end the person may see, a page at a time, by kind
+     *     and then oldest first. Each relation reads in the words of this issue's end.
+     */
+    get: operations["listRelatedIssues"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/relations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * How an issue stands among the others: the issue it sits under and the progress of its
+     *     sub-issues. The lists are `sub-issues` and `related-issues`.
+     */
+    get: operations["getIssueRelations"];
+    put?: never;
+    /**
+     * Adds a relation between this issue and another. Needs the right to change this issue and to see
+     *     the other. The relation shows on both issues, each in its own words.
+     */
+    post: operations["addRelation"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/restore": {
     parameters: {
       query?: never;
@@ -1298,6 +1519,63 @@ export interface paths {
      *     trash*.
      */
     post: operations["restoreIssue"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/sub-issues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The sub-issues of an issue that the person may see, a page at a time, in the order they were
+     *     put there.
+     */
+    get: operations["listSubIssues"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/mentions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The comments that mention the person, unread first and then the newest: the *Mentions* block of
+     *     the start page. Only comments under issues the person may see.
+     */
+    get: operations["listMentions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/mentions/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Marks the mentions of the person in these comments as read. */
+    post: operations["readMentions"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1728,6 +2006,67 @@ export interface paths {
      */
     post: operations["makeSubProject"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/relation-kinds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The kinds of relation in the order they are offered in, a page at a time, retired ones too.
+     *     Open to everybody who is signed in.
+     */
+    get: operations["listRelationKinds"];
+    put?: never;
+    /**
+     * Makes a kind of relation. Needs the permission *Manage issue types, kinds of relation and
+     *     layouts*.
+     */
+    post: operations["makeRelationKind"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/relation-kinds/{kind}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Changes the names of a kind of relation, or retires it (or offers it again). Needs the
+     *     permission *Manage issue types, kinds of relation and layouts*.
+     */
+    patch: operations["changeRelationKind"];
+    trace?: never;
+  };
+  "/api/v1/relations/{relation}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Takes a relation away (*Undo* adds it again). Needs the right to change one of its issues. */
+    delete: operations["removeRelation"];
     options?: never;
     head?: never;
     patch?: never;
@@ -2209,6 +2548,20 @@ export interface components {
        */
       version: number;
     };
+    /** @description What to change about a kind of relation: what is left out stays as it is. */
+    ChangeRelationKindBody: {
+      /** @description A new backward name. */
+      backward?: string | null;
+      /** @description A new forward name. */
+      forward?: string | null;
+      /** @description `true` retires the kind (no new relations of it), `false` offers it again. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
     /** @description What to change about a role: what is left out stays as it is. */
     ChangeRoleBody: {
       /** @description A new name. */
@@ -2294,6 +2647,46 @@ export interface components {
       /**
        * Format: int64
        * @description The version of the field the person looked at.
+       */
+      version: number;
+    };
+    /** @description A comment as the reader sees it. */
+    CommentItem: {
+      /** @description Who wrote it, as the reader may see people of the kind *Authors*. */
+      author: components["schemas"]["PersonRef"];
+      /** @description When it was written. */
+      created_at: string;
+      /** @description When its text was last changed, if it was. */
+      edited_at?: string | null;
+      /** @description The text as safe HTML, made on the server for this reader. */
+      html: SafeHtml;
+      /** @description The ID of the comment. */
+      id: string;
+      /** @description The ID of the issue it is under. */
+      issue: string;
+      /** @description Whether the reader may put it into the trash. */
+      may_delete: boolean;
+      /** @description Whether the reader may change the text (they wrote it). */
+      may_edit: boolean;
+      /** @description The text, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
+    };
+    /** @description One text a comment had. */
+    CommentTextItem: {
+      /** @description The text as safe HTML, made on the server for this reader. */
+      html: SafeHtml;
+      /** @description When it was saved. */
+      saved_at: string;
+      /** @description The text, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description The version of the comment this text belonged to.
        */
       version: number;
     };
@@ -2384,6 +2777,11 @@ export interface components {
      * @enum {string}
      */
     DatabaseKindBody: "built_in" | "sqlite" | "postgres";
+    /**
+     * @description Which end of a relation a person starts from: the forward name or the backward one.
+     * @enum {string}
+     */
+    Direction: "forward" | "backward";
     /** @description A draft as its author sees it. */
     DraftBody: {
       /**
@@ -2472,6 +2870,9 @@ export interface components {
       | "project.too_deep"
       | "project.preview_changed"
       | "issue.type_retired"
+      | "issue.parent_circle"
+      | "relation.exists"
+      | "limit.reached"
       | "field.required"
       | "field.too_short"
       | "field.too_long"
@@ -2663,6 +3064,17 @@ export interface components {
       whole_organization: boolean;
     };
     /**
+     * @description Why a person follows an issue: they reported it, were assigned to it, commented on it or chose to.
+     * @enum {string}
+     */
+    FollowReason: "reported" | "assigned" | "commented" | "chose";
+    /** @description Whether the person follows an issue. */
+    FollowingBody: {
+      /** @description Whether the person follows the issue. */
+      following: boolean;
+      reason?: components["schemas"]["FollowReason"] | null;
+    };
+    /**
      * @description What kind of text a text setting holds.
      * @enum {string}
      */
@@ -2761,6 +3173,68 @@ export interface components {
       /** @description The holder is the person who asks, in another window. */
       yours_elsewhere: boolean;
     };
+    /** @description One item of the history of an issue. */
+    HistoryEntryItem: {
+      after_issue?: components["schemas"]["IssueRef"] | null;
+      /** @description A change: the names of the choices the field holds now. */
+      after_names?: string[] | null;
+      /** @description A change: the people the field holds now. */
+      after_people?: components["schemas"]["PersonRef"][] | null;
+      /** @description A change: what the field is now, when it is a word or a name. */
+      after_text?: string | null;
+      /** @description The same for what the field is now. */
+      after_value?: unknown;
+      /** @description When it happened. */
+      at: string;
+      before_issue?: components["schemas"]["IssueRef"] | null;
+      /** @description A change: the names of the choices the field held, in order. */
+      before_names?: string[] | null;
+      /** @description A change: the people the field held, as the kind of the field says. */
+      before_people?: components["schemas"]["PersonRef"][] | null;
+      /** @description A change: what the field was, when it is a word or a name. */
+      before_text?: string | null;
+      /**
+       * @description A change of an own field that a screen words itself (yes or no, a length of time, a number,
+       *     a day): what the field was, as the JSON of its kind.
+       */
+      before_value?: unknown;
+      by?: components["schemas"]["PersonRef"] | null;
+      /** @description A comment: its ID. */
+      comment?: string | null;
+      direction?: components["schemas"]["Direction"] | null;
+      /** @description A comment: when its text was last changed. */
+      edited_at?: string | null;
+      /** @description The event the item was made from; the items of one event share it. */
+      event: string;
+      /** @description A change: the key of the field. */
+      field?: string | null;
+      field_kind?: components["schemas"]["FieldType"] | null;
+      /** @description A change of an own field: its name. */
+      field_name?: string | null;
+      /** @description A comment: the text as safe HTML, made on the server for this reader. */
+      html?: SafeHtml;
+      issue?: components["schemas"]["IssueRef"] | null;
+      /** @description What it is. */
+      kind: components["schemas"]["HistoryEntryKind"];
+      /** @description A comment: whether the reader may put it into the trash. */
+      may_delete?: boolean | null;
+      /** @description A comment: whether the reader may change its text. */
+      may_edit?: boolean | null;
+      /** @description A relation: `added` or `removed`. */
+      relation?: string | null;
+      /** @description A comment: the text, in Markdown. */
+      text?: string | null;
+      /**
+       * Format: int64
+       * @description A comment: the version, which a change of it is made on.
+       */
+      version?: number | null;
+    };
+    /**
+     * @description What an item of the history is.
+     * @enum {string}
+     */
+    HistoryEntryKind: "comment" | "change" | "relation";
     /** @description The hosts that images in text may come from, already split into one host for each item. */
     ImageHostsBody: {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
@@ -2877,6 +3351,38 @@ export interface components {
        * @description Counts up with every change. A change is made on the version that was looked at.
        */
       version?: number | null;
+    };
+    /**
+     * @description An issue as a small reference: its readable ID and what the viewer may see of it in its own
+     *     project. A title or a status that the viewer's role hides there is left out.
+     */
+    IssueRef: {
+      /** @description The internal ID of the issue. */
+      id: string;
+      /** @description Its issue type. */
+      issue_type: components["schemas"]["IssueTypeRef"];
+      /** @description The readable ID now (`WEB-142`). */
+      key: string;
+      /** @description The project it is in. */
+      project: components["schemas"]["ProjectRef"];
+      status?: components["schemas"]["Status"] | null;
+      status_group?: components["schemas"]["StatusGroup"] | null;
+      /** @description What it is about. */
+      title?: string | null;
+    };
+    /** @description Where an issue stands among the others. */
+    IssueRelationsBody: {
+      /** @description The internal ID of the issue. */
+      issue: string;
+      /** @description Whether the viewer may add and take away sub-issues and relations here. */
+      may_change: boolean;
+      part_of?: components["schemas"]["IssueRef"] | null;
+      progress?: components["schemas"]["ProgressBody"] | null;
+      /**
+       * Format: int64
+       * @description The version of the issue: what *Part of* is changed from.
+       */
+      version: number;
     };
     /** @description An issue type: the fields that can be asked for. */
     IssueTypeItem: {
@@ -3247,6 +3753,35 @@ export interface components {
       added_at?: string | null;
       person?: components["schemas"]["PersonRef"] | null;
     };
+    /** @description One thing the writer may name after `@`. */
+    MentionChoiceItem: {
+      /** @description What is written after `@`. */
+      handle: string;
+      /** @description The name as people read it. */
+      name: string;
+      /** @description What it is. */
+      target: components["schemas"]["MentionTarget"];
+    };
+    /**
+     * @description What a mention names: a person, a group or a role.
+     * @enum {string}
+     */
+    MentionTarget: "person" | "group" | "role";
+    /** @description A comment that mentions the person. */
+    MentionedComment: {
+      /** @description When it was written. */
+      at: string;
+      /** @description Who wrote it, as the person may see people of the kind *Authors*. */
+      author: components["schemas"]["PersonRef"];
+      /** @description The ID of the comment. */
+      comment: string;
+      /** @description The text as safe HTML, made on the server for this reader. */
+      html: SafeHtml;
+      /** @description The issue it is under. */
+      issue: components["schemas"]["IssueRef"];
+      /** @description Whether the person has not looked at it under *Mentions* yet. */
+      unread: boolean;
+    };
     /** @description Where a project goes, and the version of the preview that was looked at. */
     MoveBody: {
       /** @description The `preview` of the answer to the preview that was looked at. */
@@ -3280,6 +3815,11 @@ export interface components {
      * @enum {string}
      */
     MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
+    /** @description A comment to write. */
+    NewCommentBody: {
+      /** @description The text, in Markdown. */
+      text: string;
+    };
     /** @description An own field to make. */
     NewFieldBody: {
       /** @description What it is added to. */
@@ -3379,6 +3919,25 @@ export interface components {
       role?: string | null;
       /** @description Whom the row is for. */
       who: components["schemas"]["WhoBody"];
+    };
+    /** @description A relation to add. */
+    NewRelationBody: {
+      /** @description Which end the issue of the route is: *this issue blocks the other* is `forward`. */
+      direction: components["schemas"]["Direction"];
+      /** @description What the relation means (the ID of its kind). */
+      kind: string;
+      /** @description The issue at the other end, by its readable or internal ID. */
+      other: string;
+    };
+    /** @description A kind of relation to make. */
+    NewRelationKindBody: {
+      /**
+       * @description What the other issue reads (*is blocked by*). The same words for a kind that reads alike
+       *     from both ends (*related to*).
+       */
+      backward: string;
+      /** @description What the issue it starts from reads (*blocks*). */
+      forward: string;
     };
     /** @description A role to make. */
     NewRoleBody: {
@@ -3552,6 +4111,28 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
+    Page_CommentTextItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The text as safe HTML, made on the server for this reader. */
+        html: SafeHtml;
+        /** @description When it was saved. */
+        saved_at: string;
+        /** @description The text, in Markdown. */
+        text: string;
+        /**
+         * Format: int64
+         * @description The version of the comment this text belonged to.
+         */
+        version: number;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
     Page_GroupItem: {
       /** @description The items of this page. */
       items: {
@@ -3562,6 +4143,71 @@ export interface components {
         /**
          * Format: int64
          * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_HistoryEntryItem: {
+      /** @description The items of this page. */
+      items: {
+        after_issue?: components["schemas"]["IssueRef"] | null;
+        /** @description A change: the names of the choices the field holds now. */
+        after_names?: string[] | null;
+        /** @description A change: the people the field holds now. */
+        after_people?: components["schemas"]["PersonRef"][] | null;
+        /** @description A change: what the field is now, when it is a word or a name. */
+        after_text?: string | null;
+        /** @description The same for what the field is now. */
+        after_value?: unknown;
+        /** @description When it happened. */
+        at: string;
+        before_issue?: components["schemas"]["IssueRef"] | null;
+        /** @description A change: the names of the choices the field held, in order. */
+        before_names?: string[] | null;
+        /** @description A change: the people the field held, as the kind of the field says. */
+        before_people?: components["schemas"]["PersonRef"][] | null;
+        /** @description A change: what the field was, when it is a word or a name. */
+        before_text?: string | null;
+        /**
+         * @description A change of an own field that a screen words itself (yes or no, a length of time, a number,
+         *     a day): what the field was, as the JSON of its kind.
+         */
+        before_value?: unknown;
+        by?: components["schemas"]["PersonRef"] | null;
+        /** @description A comment: its ID. */
+        comment?: string | null;
+        direction?: components["schemas"]["Direction"] | null;
+        /** @description A comment: when its text was last changed. */
+        edited_at?: string | null;
+        /** @description The event the item was made from; the items of one event share it. */
+        event: string;
+        /** @description A change: the key of the field. */
+        field?: string | null;
+        field_kind?: components["schemas"]["FieldType"] | null;
+        /** @description A change of an own field: its name. */
+        field_name?: string | null;
+        /** @description A comment: the text as safe HTML, made on the server for this reader. */
+        html?: SafeHtml;
+        issue?: components["schemas"]["IssueRef"] | null;
+        /** @description What it is. */
+        kind: components["schemas"]["HistoryEntryKind"];
+        /** @description A comment: whether the reader may put it into the trash. */
+        may_delete?: boolean | null;
+        /** @description A comment: whether the reader may change its text. */
+        may_edit?: boolean | null;
+        /** @description A relation: `added` or `removed`. */
+        relation?: string | null;
+        /** @description A comment: the text, in Markdown. */
+        text?: string | null;
+        /**
+         * Format: int64
+         * @description A comment: the version, which a change of it is made on.
          */
         version?: number | null;
       }[];
@@ -3630,6 +4276,29 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
+    Page_IssueRef: {
+      /** @description The items of this page. */
+      items: {
+        /** @description The internal ID of the issue. */
+        id: string;
+        /** @description Its issue type. */
+        issue_type: components["schemas"]["IssueTypeRef"];
+        /** @description The readable ID now (`WEB-142`). */
+        key: string;
+        /** @description The project it is in. */
+        project: components["schemas"]["ProjectRef"];
+        status?: components["schemas"]["Status"] | null;
+        status_group?: components["schemas"]["StatusGroup"] | null;
+        /** @description What it is about. */
+        title?: string | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
     Page_IssueTypeItem: {
       /** @description The items of this page. */
       items: {
@@ -3659,6 +4328,46 @@ export interface components {
         /** @description When the person was put into the group. */
         added_at?: string | null;
         person?: components["schemas"]["PersonRef"] | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_MentionChoiceItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description What is written after `@`. */
+        handle: string;
+        /** @description The name as people read it. */
+        name: string;
+        /** @description What it is. */
+        target: components["schemas"]["MentionTarget"];
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_MentionedComment: {
+      /** @description The items of this page. */
+      items: {
+        /** @description When it was written. */
+        at: string;
+        /** @description Who wrote it, as the person may see people of the kind *Authors*. */
+        author: components["schemas"]["PersonRef"];
+        /** @description The ID of the comment. */
+        comment: string;
+        /** @description The text as safe HTML, made on the server for this reader. */
+        html: SafeHtml;
+        /** @description The issue it is under. */
+        issue: components["schemas"]["IssueRef"];
+        /** @description Whether the person has not looked at it under *Mentions* yet. */
+        unread: boolean;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -3760,6 +4469,51 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
+    Page_RelatedIssueItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description Which end the issue asked about is at. */
+        direction: components["schemas"]["Direction"];
+        /** @description The ID of the relation, to take it away again. */
+        id: string;
+        /** @description The issue at the other end. */
+        issue: components["schemas"]["IssueRef"];
+        /** @description What it means (the ID of its kind). */
+        kind: string;
+        /** @description What that end reads (*blocks*, *is blocked by*). */
+        name: string;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_RelationKindItem: {
+      /** @description The items of this page. */
+      items: {
+        /** @description What the other issue reads. */
+        backward?: string | null;
+        /** @description What the issue it starts from reads. */
+        forward?: string | null;
+        /** @description The ID of the kind. */
+        id?: string | null;
+        /** @description Whether it is retired: old relations keep it, new ones cannot have it. */
+        retired?: boolean | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
     Page_RoleItem: {
       /** @description The items of this page. */
       items: {
@@ -3786,6 +4540,19 @@ export interface components {
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
+    };
+    /** @description An issue to put under another one, or to take out. */
+    ParentBody: {
+      /**
+       * @description The issue it goes under, by its readable or internal ID; `null` takes it out from under its
+       *     parent.
+       */
+      parent?: string | null;
+      /**
+       * Format: int64
+       * @description The version of the sub-issue the person looked at.
+       */
+      version: number;
     };
     /** @description What the device answered to a passkey challenge. */
     PasskeyAnswerBody: {
@@ -4036,6 +4803,19 @@ export interface components {
       /** @description A stable address of the kind of error, `urn:bugaboo:error:<code>`. */
       type: string;
     };
+    /** @description How far the sub-issues of an issue are. Only the sub-issues the viewer may see are in it. */
+    ProgressBody: {
+      /**
+       * Format: int32
+       * @description The sub-issues in the group *Done*.
+       */
+      done: number;
+      /**
+       * Format: int32
+       * @description All the sub-issues the viewer sees.
+       */
+      total: number;
+    };
     /** @description A project after it was made, changed or moved. */
     ProjectBody: {
       /** @description The ID of the project. */
@@ -4141,6 +4921,11 @@ export interface components {
      * @enum {string}
      */
     ProjectShown: "visible" | "hidden";
+    /** @description The mentions to mark as read. */
+    ReadMentionsBody: {
+      /** @description The IDs of the comments. */
+      comments: string[];
+    };
     /** @description Why a permission is given or not. */
     ReasonBody:
       | {
@@ -4230,6 +5015,35 @@ export interface components {
        * Format: int64
        * @description Its version now; nothing when it is gone or the person may not know about it (the two look
        *     the same).
+       */
+      version?: number | null;
+    };
+    /** @description One relation as one end of it reads it. */
+    RelatedIssueItem: {
+      /** @description Which end the issue asked about is at. */
+      direction: components["schemas"]["Direction"];
+      /** @description The ID of the relation, to take it away again. */
+      id: string;
+      /** @description The issue at the other end. */
+      issue: components["schemas"]["IssueRef"];
+      /** @description What it means (the ID of its kind). */
+      kind: string;
+      /** @description What that end reads (*blocks*, *is blocked by*). */
+      name: string;
+    };
+    /** @description A kind of relation: the fields that can be asked for. */
+    RelationKindItem: {
+      /** @description What the other issue reads. */
+      backward?: string | null;
+      /** @description What the issue it starts from reads. */
+      forward?: string | null;
+      /** @description The ID of the kind. */
+      id?: string | null;
+      /** @description Whether it is retired: old relations keep it, new ones cannot have it. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
        */
       version?: number | null;
     };
@@ -4425,6 +5239,18 @@ export interface components {
       pattern?: string | null;
       /** @description The value has to be there. */
       required?: boolean;
+    };
+    /** @description The new text of a comment, saved under the lock the editor holds. */
+    SaveCommentBody: {
+      /** @description The token the lock on the text was taken with. */
+      lock_token: string;
+      /** @description The new text, in Markdown. */
+      text: string;
+      /**
+       * Format: int64
+       * @description The version of the comment the person started from.
+       */
+      version: number;
     };
     /** @description The description to save under the lock the person holds. */
     SaveDescriptionBody: {
@@ -7998,6 +8824,351 @@ export interface operations {
       };
     };
   };
+  deleteComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the comment. */
+        comment: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The comment is in the trash. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  saveComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the comment. */
+        comment: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveCommentBody"];
+      };
+    };
+    responses: {
+      /** @description The comment as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommentItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  restoreComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the comment. */
+        comment: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The comment, out of the trash. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommentItem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listCommentVersions: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the comment. */
+        comment: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The texts, oldest first. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_CommentTextItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   getImageHosts: {
     parameters: {
       query?: never;
@@ -11406,6 +12577,98 @@ export interface operations {
       };
     };
   };
+  addComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewCommentBody"];
+      };
+    };
+    responses: {
+      /** @description The comment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommentItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   saveIssueDescription: {
     parameters: {
       query?: never;
@@ -11610,6 +12873,871 @@ export interface operations {
       };
     };
   };
+  getFollowing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Whether the person follows it. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FollowingBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  followIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person follows the issue. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  unfollowIssue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person does not follow the issue. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listFollowers: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The followers. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_PersonRef"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listIssueHistory: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description Everything (the default), only the comments, or only the changes. */
+        tab?: "everything" | "comments" | "changes";
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The history. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_HistoryEntryItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listMentionChoices: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description The start of a name; every choice when left out. */
+        search?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What may be named. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_MentionChoiceItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  setIssueParent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the sub-issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ParentBody"];
+      };
+    };
+    responses: {
+      /** @description How the issue stands now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueRelationsBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listRelatedIssues: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The related issues. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_RelatedIssueItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getIssueRelations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description How the issue stands. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueRelationsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  addRelation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewRelationBody"];
+      };
+    };
+    responses: {
+      /** @description The relation as this issue reads it. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelatedIssueItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   restoreIssue: {
     parameters: {
       query?: never;
@@ -11651,6 +13779,239 @@ export interface operations {
       };
       /** @description There is no such thing (resource.not_found). */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listSubIssues: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The sub-issues. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_IssueRef"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listMentions: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The comments. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_MentionedComment"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  readMentions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReadMentionsBody"];
+      };
+    };
+    responses: {
+      /** @description They are marked. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -14077,6 +16438,349 @@ export interface operations {
       };
       /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listRelationKinds: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The kinds of relation. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_RelationKindItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeRelationKind: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewRelationKindBody"];
+      };
+    };
+    responses: {
+      /** @description The kind of relation. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationKindItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  changeRelationKind: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the kind of relation. */
+        kind: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeRelationKindBody"];
+      };
+    };
+    responses: {
+      /** @description The kind of relation as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationKindItem"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  removeRelation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the relation. */
+        relation: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The relation is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

@@ -20,6 +20,38 @@ const IssueTypesScreen = lazyRouteComponent(
   "IssueTypesPage",
 );
 
+const RelationKindsScreen = lazyRouteComponent(
+  () => import("../features/relation-kinds/index.ts"),
+  "RelationKindsPage",
+);
+
+/** *Organization settings › Kinds of relation*: the address says which kind is open in the side panel. */
+export const relationKindsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.relationKinds,
+  validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
+    open: typeof search["open"] === "string" ? search["open"] : undefined,
+  }),
+  loader: loadsScreen(RelationKindsScreen),
+  component: function RelationKinds() {
+    const { open } = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return (
+      <OnlyWith path={paths.relationKinds}>
+        <RelationKindsScreen
+          open={open}
+          onOpen={(id: string) => {
+            void navigate({ to: paths.relationKinds, search: { open: id } });
+          }}
+          onClose={() => {
+            void navigate({ to: paths.relationKinds, search: {} });
+          }}
+        />
+      </OnlyWith>
+    );
+  },
+});
+
 const FieldsScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldsPage");
 const FieldScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldPage");
 

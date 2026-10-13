@@ -92,6 +92,14 @@ error_codes! {
     MovePreviewChanged => ("project.preview_changed", 409),
     /// An issue type that was retired takes no new issues (ISS-02).
     IssueTypeRetired => ("issue.type_retired", 409),
+    /// An issue would sit under itself or under one of its own sub-issues, or the chain of
+    /// sub-issues would get too long (ISS-03).
+    ParentCircle => ("issue.parent_circle", 409),
+    /// Those two issues are related in that way already (ISS-04).
+    RelationExists => ("relation.exists", 409),
+    /// An issue holds as many relations or sub-issues as it may. The count includes what the
+    /// person may not see, as it is a limit of storage, so the answer names no issue.
+    LimitReached => ("limit.reached", 409),
     /// A required own field has no value (CF-03).
     FieldRequired => ("field.required", 400),
     /// A text, or a list of values, is shorter than the rules of the own field allow (CF-03).

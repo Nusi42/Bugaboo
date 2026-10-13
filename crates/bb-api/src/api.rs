@@ -48,10 +48,13 @@ mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
 mod check_access;
+mod comments;
 mod editing;
 mod field_permissions;
 mod fields;
+mod follow;
 mod groups;
+mod history;
 mod issue_types;
 mod issues;
 mod own_access;
@@ -59,6 +62,7 @@ mod people;
 mod people_visibility;
 mod projects;
 mod projects_move;
+mod relations;
 mod roles;
 mod second_step_gap;
 mod settings;
@@ -148,6 +152,10 @@ where
         .merge(fields::routes())
         .merge(issue_types::routes())
         .merge(issues::routes())
+        .merge(relations::routes())
+        .merge(comments::routes())
+        .merge(history::routes())
+        .merge(follow::routes())
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())

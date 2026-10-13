@@ -86,8 +86,6 @@ export const messages = {
   "fields.project-heading": "Project fields",
   "fields.unknown-choice": "A choice that is gone",
   "fields.hidden-reference": "Not shown",
-  "fields.yes": "Yes",
-  "fields.no": "No",
   "fields.not-a-whole-number": "Type a whole number.",
   "fields.not-a-decimal": "Type a number, with a point for the decimal part.",
   "fields.not-a-duration": "Type a length of time like 1h 30m.",
@@ -99,8 +97,6 @@ export const messages = {
   "fields.combine-text":
     "Every value of {name} becomes {into}, in every issue and project that has it, and {name} is retired. Each of those issues gets a record in its history. This cannot be taken back.",
   "fields.used-more": "{count, plural, one {And # more project.} other {And # more projects.}}",
-  "fields.unit-hour": "h",
-  "fields.unit-minute": "m",
   "fields.long-empty": "Nothing is written here yet.",
   "fields.choose": "Choose",
   "fields.choose-title": "Choose for {name}",

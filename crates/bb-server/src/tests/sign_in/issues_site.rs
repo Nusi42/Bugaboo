@@ -69,8 +69,22 @@ impl<'a> Site<'a> {
         role: StartingRole,
         name: &str,
     ) -> Result<(Browser, UserId), Failure> {
+        self.person_called(role, name, "Bob Builder").await
+    }
+
+    /// The same, for a person who goes by this name.
+    pub(super) async fn person_called(
+        &self,
+        role: StartingRole,
+        name: &str,
+        display_name: &str,
+    ) -> Result<(Browser, UserId), Failure> {
         let email = format!("{name}@example.test");
-        let started = self.org.rig.person(&self.org.admin.session, &email).await?;
+        let started = self
+            .org
+            .rig
+            .person_called(&self.org.admin.session, &email, display_name)
+            .await?;
         let member = super::policy_rig::Member {
             id: started.person.id,
             session: started.session_token,

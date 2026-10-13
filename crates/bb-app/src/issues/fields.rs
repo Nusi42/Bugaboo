@@ -6,7 +6,7 @@ use bb_core::ErrorCode;
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNEES_MAX;
-use bb_core::text::{LONG_TEXT_MAX, TITLE_MAX, clean_long};
+use bb_core::text::TITLE_MAX;
 use bb_policy::{Evaluation, FieldMask};
 
 use super::types::{ChangeIssue, MakeIssue};
@@ -17,13 +17,6 @@ use crate::input::clean_text;
 /// The title as it is kept, or `request.invalid`.
 pub(crate) fn clean_title(title: &str) -> Result<String, AppError> {
     clean_text(title, TITLE_MAX)
-}
-
-/// The description as it is kept, or `request.invalid`.
-pub(crate) fn clean_description(text: &str) -> Result<String, AppError> {
-    clean_long(text, LONG_TEXT_MAX)
-        .map(str::to_owned)
-        .ok_or_else(|| ErrorCode::InvalidRequest.into())
 }
 
 /// Refuses (`access.forbidden`) unless the mask lets the person change every one of the fields.
@@ -144,6 +137,10 @@ pub(crate) mod member {
     pub(crate) const REPORTED_BY: &str = Field::ReportedBy.code();
     pub(crate) const ASSIGNED_TO: &str = Field::AssignedTo.code();
     pub(crate) const DELETED_AT: &str = "deleted-at";
+    /// The issue it sits under (the ID of the parent), in the event of the sub-issue.
+    pub(crate) const PARENT: &str = "parent";
+    /// A sub-issue that was added or taken away, in the event of the parent as History writes it.
+    pub(crate) const SUB_ISSUE: &str = "sub-issue";
 
     /// The members of an issue type.
     pub(crate) mod issue_type {

@@ -285,6 +285,21 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a kind of relation (ISS-04).
+    RelationKindId
+}
+
+define_ordered_id! {
+    /// The ID of a relation between two issues (ISS-04).
+    RelationId
+}
+
+define_ordered_id! {
+    /// The ID of a comment (ISS-05).
+    CommentId
+}
+
+define_ordered_id! {
     /// The ID of a domain event (ADR-0007).
     EventId
 }
@@ -371,6 +386,9 @@ into_entity_id!(
     IssueTypeId,
     FieldId,
     ChoiceId,
+    RelationKindId,
+    RelationId,
+    CommentId,
     EventId,
     JobId,
     SessionId,

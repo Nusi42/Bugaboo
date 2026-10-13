@@ -13,12 +13,14 @@ use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
-use super::fields::{Given, clean_description, clean_title, ensure_may_change, member};
+use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::ids::{code_plan_in, new_code_in};
 use super::types::{IssueView, MakeIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::fields::{Item, PlannedValues};
+use crate::follow::started_following;
+use crate::input::clean_long_text;
 use crate::projects::Why;
 
 /// How often a change is tried again when two writers drew the same random code at the same
@@ -80,7 +82,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let description = input
             .description
             .as_deref()
-            .map(clean_description)
+            .map(clean_long_text)
             .transpose()?;
         let assignees = match &input.assigned_to {
             Some(people) => {
@@ -224,7 +226,17 @@ pub async fn make_issue<S: AuthStore>(
                         )
                         .await?;
                     }
-                    Ok(())
+                    // Whoever reports an issue, or is assigned to it, follows it (ISS-07).
+                    let assigned: Vec<UserId> =
+                        people.iter().map(|assignee| assignee.person).collect();
+                    let followers = started_following(
+                        issue.id,
+                        Some(issue.reported_by),
+                        &assigned,
+                        None,
+                        issue.created_at,
+                    );
+                    S::add_followers(transaction, &followers).await
                 })
             })
             .await;

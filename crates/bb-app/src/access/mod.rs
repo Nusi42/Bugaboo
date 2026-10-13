@@ -83,6 +83,22 @@ impl From<Refusal> for AppError {
     }
 }
 
+/// What `person` may do at `place`, read from the store and decided by the policy engine; `None`
+/// when the place is a project that does not exist. The one place that loads what the engine needs
+/// and asks it: `Ctx::evaluate` keeps the answer for the request, and the kinds of record that
+/// the editing use cases know (`EditableRecords`) have no context and ask here.
+pub(crate) async fn evaluation_in<S: AuthStore>(
+    store: &S,
+    person: UserId,
+    place: Place,
+) -> Result<Option<Evaluation>, AppError> {
+    Ok(store
+        .policy_inputs(person, place)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .map(|inputs| evaluate(&inputs)))
+}
+
 /// A project as a person who may see it, or who decides who has which role there, sees it; a
 /// project they may not know about is not named (ADR-0025, decision 12).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -138,6 +154,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(owners.narrowed_by(actor.key_scope()))
     }
 
+    /// Whether `person` may see `issue` in the project it is in: the question of who may be told
+    /// about it (a mention, a notice), judged on the person and not on the actor of the request.
+    /// It is the same rule as for naming a person on the issue (`may_be_assigned`, which
+    /// `may_be_named` and `may_name` build on), so there is one statement of who may see an issue.
+    /// It does not ask whether the writer may name the person (`may_name_person`): a mention is a
+    /// name the writer typed already, and only the people who may see the issue are told.
+    ///
+    /// # Errors
+    /// An internal error when the engine fails.
+    pub(crate) async fn person_sees_issue(
+        &self,
+        person: UserId,
+        issue: &bb_core::issue::Issue,
+    ) -> Result<bool, AppError> {
+        self.may_be_assigned(person, issue.project, issue.reported_by)
+            .await
+    }
+
     /// What `person` may do at `place`, from the policy engine. The result is kept for the rest
     /// of the request, so asking again costs nothing; the next request asks again.
     ///
@@ -151,13 +185,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(found) = self.cached_evaluation(person, place) {
             return Ok(found);
         }
-        let inputs = self
-            .store()
-            .policy_inputs(person, place)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        let evaluation = Arc::new(evaluate(&inputs));
+        let evaluation = Arc::new(
+            evaluation_in(self.store(), person, place)
+                .await?
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?,
+        );
         self.remember_evaluation(person, place, &evaluation);
         Ok(evaluation)
     }

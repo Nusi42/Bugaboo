@@ -11,10 +11,12 @@ use bb_app::auth::{
     AcceptInvitation, AppError, AuthApi, AuthServices, AuthenticateQuery, CompleteSetup,
     CreateInvitation, IssueSetupCode, RequestInfo, SignIn, Started, issue_setup_code,
 };
+use bb_app::comments::CommentRecords;
 use bb_app::context::Clock;
 use bb_app::context::SystemIds;
-use bb_app::editing::EditableRecords;
+use bb_app::editing::{ChainedRecords, EditableRecords};
 use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
+use bb_app::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
@@ -209,10 +211,12 @@ impl Rig {
             FailureLimits::new(shape.tries.per_minute()),
             "Bugaboo".to_owned(),
         );
-        let services = Arc::new(match records {
-            Some(records) => services.with_records(records),
-            None => services,
-        });
+        // The comments are always known as records; a test adds the kinds of its own.
+        let comments: Arc<dyn EditableRecords> = Arc::new(CommentRecords::new(storage.clone()));
+        let services = Arc::new(services.with_records(match records {
+            Some(records) => Arc::new(ChainedRecords::new(vec![records, comments])),
+            None => comments,
+        }));
         // The first start, as the wiring does it: the starting roles first, then the setup code.
         let code = if shape.first_start == FirstStart::Made {
             make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
@@ -221,6 +225,12 @@ impl Rig {
             make_starting_issue_types(
                 &services.ctx(RequestInfo::default()),
                 MakeStartingIssueTypes,
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+            make_starting_relation_kinds(
+                &services.ctx(RequestInfo::default()),
+                MakeStartingRelationKinds,
             )
             .await
             .map_err(|error| error.to_string())?;
@@ -326,6 +336,17 @@ impl Rig {
         admin_session: &str,
         email: &str,
     ) -> Result<Started, AppError> {
+        self.person_called(admin_session, email, "Bob Builder")
+            .await
+    }
+
+    /// The same, for a person who gives this name when they accept.
+    pub(super) async fn person_called(
+        &self,
+        admin_session: &str,
+        email: &str,
+        display_name: &str,
+    ) -> Result<Started, AppError> {
         let created = self
             .api()
             .create_invitation(
@@ -342,7 +363,7 @@ impl Rig {
                 Self::info(),
                 AcceptInvitation {
                     secret: secret_of(&created.link_path),
-                    display_name: "Bob Builder".to_owned(),
+                    display_name: display_name.to_owned(),
                     password: PASSWORD.to_owned(),
                     previous_session: None,
                 },

@@ -33,6 +33,7 @@ mod m0006_access_keys;
 mod m0007_issues;
 mod m0008_editing;
 mod m0009_fields;
+mod m0010_relations;
 
 /// One step of a migration.
 pub(crate) enum Step {
@@ -144,6 +145,11 @@ const ALL: &[Definition] = &[
         version: 9,
         name: "fields",
         steps: || Ok(m0009_fields::steps()),
+    },
+    Definition {
+        version: 10,
+        name: "relations",
+        steps: || Ok(m0010_relations::steps()),
     },
 ];
 

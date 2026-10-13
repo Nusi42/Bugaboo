@@ -434,6 +434,107 @@ pub(crate) enum IssueCounterRow {
     Last,
 }
 
+/// Kinds of relation (ISS-04).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RelationKindRow {
+    #[iden = "relation_kind"]
+    Table,
+    Id,
+    Forward,
+    Backward,
+    Position,
+    RetiredAt,
+    Version,
+}
+
+/// Relations between two issues, stored once from the issue that reads the forward name (ISS-04).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum RelationRow {
+    #[iden = "relation"]
+    Table,
+    Id,
+    Kind,
+    FromIssue,
+    ToIssue,
+    AddedBy,
+    AddedAt,
+}
+
+/// The issue another issue sits under (ISS-03).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueParentRow {
+    #[iden = "issue_parent"]
+    Table,
+    Child,
+    Parent,
+    SetBy,
+    SetAt,
+}
+
+/// Comments under issues (ISS-05).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum CommentRow {
+    #[iden = "comment"]
+    Table,
+    Id,
+    Issue,
+    Author,
+    Text,
+    CreatedAt,
+    EditedAt,
+    DeletedAt,
+    Version,
+}
+
+/// The earlier texts of edited comments (ISS-05).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum CommentVersionRow {
+    #[iden = "comment_version"]
+    Table,
+    Comment,
+    Version,
+    Text,
+    SavedAt,
+}
+
+/// The people a comment puts into *Mentions* (ISS-05).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum MentionRow {
+    #[iden = "mention"]
+    Table,
+    Comment,
+    Recipient,
+    Via,
+    ReadAt,
+}
+
+/// The people who follow an issue (ISS-07).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum FollowerRow {
+    #[iden = "follower"]
+    Table,
+    Issue,
+    Person,
+    Reason,
+    Since,
+}
+
+/// The history of issues, built from the events by an outbox consumer (ISS-06).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum HistoryEntryRow {
+    #[iden = "history_entry"]
+    Table,
+    Event,
+    Issue,
+    Position,
+    At,
+    By,
+    Kind,
+    Record,
+    RecordKind,
+    Changes,
+}
+
 /// Groups of people. The table is called `person_group`: `group` is a word of SQL.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum GroupRow {
@@ -803,6 +904,14 @@ stored_tables! {
         Project => project,
         Last => last,
     },
+    RelationKindRow => bb_core::relation::RelationKind {
+        Id => id,
+        Forward => forward,
+        Backward => backward,
+        Position => position,
+        RetiredAt => retired_at,
+        Version => version,
+    },
     FieldRow => bb_core::own_fields::OwnField {
         Id => id,
         Name => name,
@@ -816,6 +925,59 @@ stored_tables! {
         Position => position,
         RetiredAt => retired_at,
         Version => version,
+    },
+    RelationRow => bb_core::relation::Relation {
+        Id => id,
+        Kind => kind,
+        FromIssue => from,
+        ToIssue => to,
+        AddedBy => added_by,
+        AddedAt => added_at,
+    },
+    IssueParentRow => bb_core::relation::IssueParent {
+        Child => child,
+        Parent => parent,
+        SetBy => set_by,
+        SetAt => set_at,
+    },
+    CommentRow => bb_core::comment::Comment {
+        Id => id,
+        Issue => issue,
+        Author => author,
+        Text => text,
+        CreatedAt => created_at,
+        EditedAt => edited_at,
+        DeletedAt => deleted_at,
+        Version => version,
+    },
+    CommentVersionRow => bb_core::comment::CommentVersion {
+        Comment => comment,
+        Version => version,
+        Text => text,
+        SavedAt => saved_at,
+    },
+    MentionRow => bb_core::comment::Mention {
+        Comment => comment,
+        Recipient => recipient,
+        Via => via,
+        ReadAt => read_at,
+    },
+    FollowerRow => bb_core::follow::Follower {
+        Issue => issue,
+        Person => person,
+        Reason => reason,
+        Since => since,
+    },
+    HistoryEntryRow => bb_core::history::HistoryEntry {
+        Event => event,
+        Issue => issue,
+        Position => position,
+        At => at,
+        By => by,
+        Kind => kind,
+        Record => record,
+        RecordKind => record_kind,
+        Changes => changes,
     },
     FieldProjectRow => bb_core::own_fields::FieldProject {
         Field => field,

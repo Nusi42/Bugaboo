@@ -3538,6 +3538,93 @@ body {
   padding: var(--space-3);
 }
 
+[data-part="issue-ref"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+[data-part="issue-ref.status"] {
+  padding: 0 var(--space-2);
+  border-radius: var(--r-ctl);
+  font-size: var(--fs-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+[data-part="issue-ref.status"][data-variant~="not-started"] {
+  background: var(--st-ns-soft);
+  color: var(--st-ns);
+}
+
+[data-part="issue-ref.status"][data-variant~="in-progress"] {
+  background: var(--st-ip-soft);
+  color: var(--st-ip);
+}
+
+[data-part="issue-ref.status"][data-variant~="done"] {
+  background: var(--st-done-soft);
+  color: var(--st-done);
+}
+
+[data-part="progress"] {
+  inline-size: var(--size-line-medium);
+  max-inline-size: 100%;
+  accent-color: var(--accent);
+}
+
+[data-part="history.tabs"] {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+[data-part="history.tab"] {
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--size-target);
+  box-sizing: border-box;
+  color: var(--fg-muted);
+  font-size: var(--fs-md);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  border-bottom: var(--space-1) solid transparent;
+}
+
+[data-part="history.tab"][data-hovered] {
+  background: var(--bg-hover);
+}
+
+[data-part="history.tab"][data-selected] {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+[data-part="history.tab"][data-focus-visible] {
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
+}
+
+[data-part="history.entry"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+}
+
+[data-part="history.entry"][data-variant~="comment"] {
+  background: var(--bg-raised);
+}
+
+[data-part="history.when"] {
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}
+
 [data-part="field-badge"] {
   display: inline-flex;
   align-items: center;
