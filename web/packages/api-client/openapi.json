@@ -11237,7 +11237,7 @@
           }
         },
         "x-never-stored": true,
-        "x-permission": "see-issues"
+        "x-permission": "see-projects"
       }
     },
     "/api/v1/layouts/{layout}": {
@@ -19789,7 +19789,7 @@
       "LayoutKind": {
         "type": "string",
         "description": "What a layout is for: the issue page or the new-issue form.",
-        "enum": ["issue-page", "new-issue"]
+        "enum": ["new-issue", "issue-page"]
       },
       "LayoutSlotBody": {
         "type": "object",

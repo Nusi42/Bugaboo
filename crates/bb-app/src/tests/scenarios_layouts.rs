@@ -47,7 +47,8 @@ pub(crate) fn lock_the_layout(world: &World, slot: LayoutSlot) -> LockToken {
             kind: RecordKind::Layout.into(),
             id: slot.id.into(),
         },
-        part: bb_core::technical::TechnicalName::new("layout").unwrap_or_else(|_| unreachable!()),
+        part: bb_core::technical::TechnicalName::new(bb_core::edit::LAYOUT_PART)
+            .unwrap_or_else(|_| unreachable!()),
         holder: world.admin.person.id,
         editor: EditorId::from_random([6; 16]),
         token,

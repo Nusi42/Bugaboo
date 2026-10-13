@@ -3618,7 +3618,7 @@ export interface components {
      * @description What a layout is for: the issue page or the new-issue form.
      * @enum {string}
      */
-    LayoutKind: "issue-page" | "new-issue";
+    LayoutKind: "new-issue" | "issue-page";
     /** @description The layout set at exactly the place that was asked about. */
     LayoutSlotBody: {
       /** @description The ID of the layout, which the edit lock is about. */

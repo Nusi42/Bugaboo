@@ -89,3 +89,6 @@ export const choiceColorWords = [
   "cat11",
   "cat12",
 ] as const;
+
+/** Every word of `LayoutKind`, in the order the server lists them. */
+export const layoutKindWords = ["new-issue", "issue-page"] as const;

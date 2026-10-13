@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 
 use bb_core::ErrorCode;
-use bb_core::edit::EditWhat;
+use bb_core::edit::{EditWhat, LAYOUT_PART};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, LayoutId, RoleId};
@@ -23,9 +23,6 @@ use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::editing::{TextSave, Written};
 use crate::member::layout as member;
 use crate::projects::Why;
-
-/// The part of a layout the edit lock is about: a layout is edited as a whole.
-const LOCK_PART: &str = "layout";
 
 /// The sections of a layout as an event and a draft write them: the one text of the content.
 fn summary(content: &LayoutContent) -> Value {
@@ -273,7 +270,7 @@ pub async fn save_layout<S: AuthStore>(
     let save = TextSave {
         what: EditWhat {
             record,
-            part: TechnicalName::new(LOCK_PART)
+            part: TechnicalName::new(LAYOUT_PART)
                 .map_err(|error| AppError::Internal(error.to_string()))?,
         },
         token: input.lock_token,

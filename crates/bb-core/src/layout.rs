@@ -30,10 +30,10 @@ pub const TITLE_MAX: usize = 60;
 words! {
     /// What a layout is for.
     pub enum LayoutKind {
-        /// The issue page: which fields it shows and for whom.
-        IssuePage => "issue-page",
         /// The new-issue form: which fields it asks for and from whom.
         NewIssue => "new-issue",
+        /// The issue page: which fields it shows and for whom.
+        IssuePage => "issue-page",
     }
 }
 
