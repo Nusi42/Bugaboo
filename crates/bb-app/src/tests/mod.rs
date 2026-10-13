@@ -3,6 +3,7 @@
 //! server on it; the files below are the tests.
 
 mod bulk;
+mod bulk_property;
 mod editing;
 mod events;
 mod failures;

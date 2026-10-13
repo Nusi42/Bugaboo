@@ -7,10 +7,9 @@ use std::collections::BTreeMap;
 
 use bb_core::access::AppliesTo;
 use bb_core::bulk::{BULK_JOB_ABOVE, BulkStatus, SkipReason};
-use bb_core::id::{IssueId, ProjectId};
+use bb_core::id::IssueId;
 use bb_core::issue::Status;
 use bb_policy::Permission;
-use proptest::prelude::*;
 
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
@@ -25,7 +24,7 @@ use crate::issues::{
 };
 use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
 
-fn done() -> BulkAction {
+pub(super) fn done() -> BulkAction {
     BulkAction::Change {
         change: BulkChange {
             status: Some(Status::Done),
@@ -34,7 +33,7 @@ fn done() -> BulkAction {
     }
 }
 
-async fn preview(
+pub(super) async fn preview(
     world: &World,
     session: &str,
     issues: &[IssueId],
@@ -53,7 +52,7 @@ async fn preview(
 }
 
 /// What the preview read, as the targets the change takes back.
-fn targets(preview: &BulkPreview) -> Vec<BulkTarget> {
+pub(super) fn targets(preview: &BulkPreview) -> Vec<BulkTarget> {
     preview
         .rows
         .iter()
@@ -66,7 +65,7 @@ fn targets(preview: &BulkPreview) -> Vec<BulkTarget> {
         .collect()
 }
 
-async fn apply(
+pub(super) async fn apply(
     world: &World,
     session: &str,
     targets: Vec<BulkTarget>,
@@ -500,58 +499,6 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
         Some(crate::auth::AppError::Refused(bb_core::ErrorCode::NotFound))
     );
     Ok(())
-}
-
-proptest! {
-    #![proptest_config(ProptestConfig::with_cases(24))]
-
-    /// The preview says, for each issue, what the change then does to it: the same issues are
-    /// skipped for the same reasons and the others change.
-    #[test]
-    fn iss_09_the_preview_equals_what_happens(
-        statuses in proptest::collection::vec(0_usize..3, 1..8),
-        move_instead in any::<bool>(),
-    ) {
-        let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
-        runtime.block_on(async {
-            let world = World::new().await.unwrap();
-            let admin = token(&world);
-            let (from, to): (ProjectId, ProjectId) = (
-                a_project(&world, "FROM").await.unwrap(),
-                a_project(&world, "INTO").await.unwrap(),
-            );
-            let mut issues = Vec::new();
-            for status in &statuses {
-                let id = an_issue(&world, from).await.unwrap();
-                let wanted = Status::ALL[*status];
-                if wanted != Status::Open {
-                    change_issue(&world.ctx(), ChangeIssue {
-                        session_token: admin.clone(),
-                        issue: id.to_string(),
-                        version: 1,
-                        issue_type: None,
-                        title: None,
-                        status: Some(wanted),
-                        priority: None,
-                        assigned_to: None,
-                        fields: BTreeMap::new(),
-                    }).await.unwrap();
-                }
-                issues.push(id);
-            }
-            let action = if move_instead {
-                BulkAction::Move { project: to.to_string() }
-            } else {
-                done()
-            };
-            let asked = preview(&world, &admin, &issues, &action).await.unwrap();
-            let result = apply(&world, &admin, targets(&asked), &action).await.unwrap();
-            let seen: Vec<Option<SkipReason>> = asked.rows.iter().map(|row| row.skipped).collect();
-            let did: Vec<Option<SkipReason>> = result.outcomes.iter().map(|each| each.skipped).collect();
-            prop_assert_eq!(seen, did);
-            Ok(())
-        })?;
-    }
 }
 
 #[tokio::test]
