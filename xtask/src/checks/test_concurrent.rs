@@ -35,15 +35,14 @@ const LOAD_COMMAND: &str = "\"load\"";
 /// The only spec that may skip itself, with a condition and a reason.
 const MAY_SKIP: &str = "bulk.spec.ts";
 /// Where the migrations are, and the one of the package that adds the route the skipping spec
-/// waits for (WP-08, the README of M3): once it exists the scenario must run.
+/// waits for (WP-08, the README of M3): once it exists the scenario must run. The file name is the
+/// sign, and not the route in `openapi.json`, because the rule that finds the route (`findBulkRoute`
+/// in `web/app/e2e/support/bulk.ts`) is TypeScript code that runs against the live server; a copy of
+/// its pattern in Rust would be a second definition of it (coding-standards §1).
 const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations";
 const ROUTE_MIGRATION: &str = "m0011";
-/// The folders with the browser tests and their helpers.
-const E2E_FOLDERS: [&str; 3] = [
-    "web/app/e2e",
-    "web/app/e2e/support",
-    "web/app/e2e/concurrent",
-];
+/// The folder with the browser tests and their helpers, with every folder below it.
+const E2E_FOLDER: &str = "web/app/e2e";
 /// The files that may name `tolerate(`: the spec of the locks, which uses it, and the fixtures,
 /// which define it.
 const MAY_TOLERATE: [&str; 2] = [
@@ -98,15 +97,24 @@ fn migrations_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<String>> {
     sorted_files(repo, MIGRATIONS_FOLDER, |name| has_extension(name, "rs"))
 }
 
+/// The TypeScript files of the browser tests and their helpers, in any folder below
+/// [`E2E_FOLDER`], among all the files of the repository.
+fn e2e_paths(all: &[String]) -> Vec<&String> {
+    all.iter()
+        .filter(|path| {
+            path.strip_prefix(E2E_FOLDER)
+                .is_some_and(|rest| rest.starts_with('/'))
+                && has_extension(path, "ts")
+        })
+        .collect()
+}
+
 /// Every TypeScript file of the browser tests and their helpers: path and code (comments blank).
 fn e2e_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
     let mut files = Vec::new();
-    for folder in E2E_FOLDERS {
-        for name in sorted_files(repo, folder, |name| has_extension(name, "ts"))? {
-            let path = format!("{folder}/{name}");
-            let code = strip_comments(&read_text(repo, &path)?);
-            files.push((path, code));
-        }
+    for path in e2e_paths(&repo.all_files()?) {
+        let code = strip_comments(&read_text(repo, path)?);
+        files.push((path.clone(), code));
     }
     Ok(files)
 }
@@ -365,6 +373,30 @@ mod tests {
             ),
         ];
         assert!(tolerated_elsewhere(&files).is_empty());
+    }
+
+    #[test]
+    fn bad_example_tolerate_in_a_folder_that_did_not_exist_before() {
+        let all = [
+            "web/app/e2e/deeper/new/crowd.spec.ts".to_owned(),
+            "web/app/e2e/support/more/helper.ts".to_owned(),
+            "web/app/e2e/notes.md".to_owned(),
+            "web/app/src/e2e/other.ts".to_owned(),
+            "web/app/e2e-other/x.ts".to_owned(),
+        ];
+        let found = e2e_paths(&all);
+        assert_eq!(
+            found,
+            [
+                "web/app/e2e/deeper/new/crowd.spec.ts",
+                "web/app/e2e/support/more/helper.ts"
+            ]
+        );
+        let files: Vec<(String, String)> = found
+            .into_iter()
+            .map(|path| (path.clone(), "tolerate(page.context(), /x/u);".to_owned()))
+            .collect();
+        assert_eq!(tolerated_elsewhere(&files).len(), 2);
     }
 
     #[test]
