@@ -23,7 +23,7 @@ use bb_core::id::{ChoiceId, EntityId, FieldId, GroupId, IssueId, IssueTypeId, Pr
 use bb_core::own_fields::{FieldFor, FieldType};
 use bb_core::own_fields_value::{Cell, FieldValue, OwnValues, Violation};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
+use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
 use super::manage::current_default;
@@ -397,21 +397,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         issue: IssueId,
     ) -> Result<Option<String>, AppError> {
-        let Some(found) = self
-            .store()
-            .issue(issue)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .filter(|found| found.deleted_at.is_none())
-        else {
+        let Some((found, _)) = self.seen_issue_by_id(actor, issue).await? else {
             return Ok(None);
         };
-        let held = self
-            .evaluation_of(actor, Place::Project(found.project))
-            .await?;
-        if !held.sees_issue(found.reported_by) {
-            return Ok(None);
-        }
         let Some(project) = self
             .store()
             .project(found.project)
@@ -514,16 +502,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Err(_) => false,
             },
             FieldType::Issue => match IssueId::from_bytes(bytes) {
-                Ok(id) => match self.store().issue(id).await.map_err(failed)? {
-                    Some(issue) if issue.deleted_at.is_none() => {
-                        // The viewer may only name an issue they see.
-                        let held = self
-                            .evaluation_of(actor, Place::Project(issue.project))
-                            .await?;
-                        held.sees_issue(issue.reported_by)
-                    }
-                    _ => false,
-                },
+                // The viewer may only name an issue they see.
+                Ok(id) => self.seen_issue_by_id(actor, id).await?.is_some(),
                 Err(_) => false,
             },
             _ => true,

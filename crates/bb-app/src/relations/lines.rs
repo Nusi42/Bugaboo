@@ -9,18 +9,16 @@
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 
-use bb_core::ErrorCode;
 use bb_core::fields::Field;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::Issue;
 use bb_core::issue_key::IssueKey;
 use bb_core::project::Project;
-use bb_policy::Place;
 
 use super::types::IssueLine;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::issues::IssueTypeRef;
+use crate::issues::{IssueTypeRef, Where};
 use crate::projects::ProjectRef;
 
 /// What turns issues into lines for one viewer: the issue types and the projects are read once
@@ -61,20 +59,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         maker: &mut LineMaker,
         issue: &Issue,
     ) -> Result<Option<IssueLine>, AppError> {
-        if issue.deleted_at.is_some() {
+        let Some(held) = self.seen_in(actor, issue, Where::Live).await? else {
             return Ok(None);
-        }
-        let held = match self
-            .evaluation_of(actor, Place::Project(issue.project))
-            .await
-        {
-            Ok(held) => held,
-            Err(AppError::Refused(ErrorCode::NotFound)) => return Ok(None),
-            Err(error) => return Err(error),
         };
-        if !held.sees_issue(issue.reported_by) {
-            return Ok(None);
-        }
         if let Entry::Vacant(slot) = maker.projects.entry(issue.project) {
             let project = self
                 .store()

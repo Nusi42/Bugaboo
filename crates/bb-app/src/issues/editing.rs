@@ -11,7 +11,7 @@ use bb_core::id::IssueId;
 use bb_policy::{Permission, Place};
 
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx};
 use crate::editing::RecordFacts;
 
 /// What a person needs to make an issue in a project (the form behind a draft of a new issue).
@@ -35,20 +35,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Ok(id) = IssueId::from_bytes(record.id.to_bytes()) else {
             return Ok(None);
         };
-        let Some(issue) = self
-            .store()
-            .issue(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .filter(|issue| issue.deleted_at.is_none())
-        else {
+        let Some((issue, held)) = self.seen_issue_by_id(actor, id).await? else {
             return Ok(None);
         };
         let place = Place::Project(issue.project);
-        let held = self.evaluation_of(actor, place).await?;
-        if !held.sees_issue(issue.reported_by) {
-            return Ok(None);
-        }
         let own = !held.allows(Permission::ChangeIssues)
             && held.allows(Permission::ChangeOwnIssues)
             && issue.reported_by == actor.person.id;
