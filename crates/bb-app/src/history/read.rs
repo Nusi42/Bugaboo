@@ -412,9 +412,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 else {
                     return Ok(None);
                 };
-                let view: CommentView = self
-                    .comment_view(actor, held, issue.project, comment)
-                    .await?;
+                let view: CommentView = self.comment_view(actor, held, issue, comment).await?;
                 Some(HistoryWhat::Comment { comment: view })
             }
             HistoryKind::Change => {

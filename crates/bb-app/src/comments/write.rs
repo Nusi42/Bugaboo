@@ -40,7 +40,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &bb_policy::Evaluation,
-        project: bb_core::id::ProjectId,
+        issue: &bb_core::issue::Issue,
         comment: &Comment,
     ) -> Result<CommentView, AppError> {
         let author = self
@@ -57,7 +57,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             issue: comment.issue,
             author,
             text: comment.text.clone(),
-            html: self.html_of(actor, held, project, &comment.text).await?,
+            html: self.html_of(actor, held, issue, &comment.text).await?,
             created_at: comment.created_at,
             edited_at: comment.edited_at,
             version: comment.version,
@@ -116,7 +116,7 @@ pub async fn add_comment<S: AuthStore>(
     let text = clean_comment(&input.text)?;
     let tokens = bb_markdown::render(&text, &bb_markdown::Options::default()).tokens;
     let resolution = ctx
-        .resolve_tokens(&actor, &held, issue.project, &text, &tokens)
+        .resolve_tokens(&actor, &held, &issue, &text, &tokens)
         .await?;
     let now = ctx.now();
     let comment = Comment {
@@ -153,9 +153,7 @@ pub async fn add_comment<S: AuthStore>(
         })
         .await
         .map_err(|error| crate::auth::change_failed::<S>(&error, crate::auth::Stops::NONE))?;
-    let view = ctx
-        .comment_view(&actor, &held, issue.project, &comment)
-        .await?;
+    let view = ctx.comment_view(&actor, &held, &issue, &comment).await?;
     Ok(held.authorize(view))
 }
 
@@ -180,7 +178,7 @@ pub async fn save_comment<S: AuthStore>(
     let text = clean_comment(&input.text)?;
     let tokens = bb_markdown::render(&text, &bb_markdown::Options::default()).tokens;
     let resolution = ctx
-        .resolve_tokens(&actor, &held, issue.project, &text, &tokens)
+        .resolve_tokens(&actor, &held, &issue, &text, &tokens)
         .await?;
     let mentions = ctx
         .mentions_of_text(comment.id, comment.author, &issue, &resolution.named)
@@ -255,9 +253,7 @@ pub async fn save_comment<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .unwrap_or(saved);
-    let view = ctx
-        .comment_view(&actor, &held, issue.project, &fresh)
-        .await?;
+    let view = ctx.comment_view(&actor, &held, &issue, &fresh).await?;
     Ok(held.authorize(view))
 }
 
@@ -376,7 +372,7 @@ pub async fn restore_comment<S: AuthStore>(
         ..plan.comment
     };
     let view = ctx
-        .comment_view(&plan.actor, &plan.held, plan.issue.project, &restored)
+        .comment_view(&plan.actor, &plan.held, &plan.issue, &restored)
         .await?;
     Ok(plan.held.authorize(view))
 }

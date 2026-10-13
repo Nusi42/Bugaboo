@@ -633,6 +633,12 @@ async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> 
         let issue = key_of(&site.make(&mut ada, "Budget plan").await?)?;
         let written = comment(&mut ada, &issue, "Please ask @gus.guest and @bob.builder.").await?;
         let comment_id: CommentId = ok(&written)?["id"].as_str().ok_or("no id")?.parse()?;
+        // A name is a chip only for a person who may see the issue (the one rule of every list of
+        // people on it), so a chip never tells that Gus belongs to the project: Bob is a chip,
+        // Gus stays text.
+        let html = ok(&written)?["html"].as_str().ok_or("no html")?;
+        assert_eq!(html.matches("data-kind=\"mention\"").count(), 1, "{html}");
+        assert!(html.contains("@gus.guest"), "{html}");
         // The rows that are stored: Bob has one, Gus has none.
         let rows = rig.storage.mentions_in_comment(comment_id).await?;
         let people: Vec<_> = rows.iter().map(|row| row.recipient).collect();

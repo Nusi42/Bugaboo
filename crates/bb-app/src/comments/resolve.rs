@@ -12,12 +12,12 @@
 
 use bb_core::access::PeopleLevel;
 use bb_core::comment::{MENTION_RECIPIENTS_MAX, Mention, MentionTarget, names_the_handle};
-use bb_core::id::{CommentId, GroupId, ProjectId, RoleId, UserId};
+use bb_core::id::{CommentId, GroupId, RoleId, UserId};
 use bb_core::issue::Issue;
 use bb_core::issue_key::IssueKey;
 use bb_core::people_kinds::PeopleKind;
 use bb_markdown::{Options, Token, TokenKind, render};
-use bb_policy::{Evaluation, PeopleContext, Place, row_reaches};
+use bb_policy::{Evaluation, PeopleContext, row_reaches};
 
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
@@ -57,17 +57,14 @@ pub(crate) struct Resolution {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Whether the person has a role that reaches the project: they are one of its members.
-    async fn is_member(&self, person: UserId, project: ProjectId) -> Result<bool, AppError> {
-        self.has_a_role_at(person, Place::Project(project)).await
-    }
-
     /// What the handle names for a writer or reader who sees people of the kind *Mentions* at
-    /// `level` in `project`: exactly one thing, or nothing.
+    /// `level` in the project of `issue`: exactly one thing, or nothing. A person is named only if
+    /// they may see the issue (`person_sees_issue`, the rule of every list of people on an issue),
+    /// so a name never tells who belongs to a project whose members the writer may not see.
     async fn name_behind(
         &self,
         level: PeopleLevel,
-        project: ProjectId,
+        issue: &Issue,
         handle: &str,
     ) -> Result<Option<Named>, AppError> {
         let mut found: Vec<Named> = Vec::new();
@@ -81,7 +78,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(failed)?;
             for person in people {
                 if names_the_handle(handle, &person.display_name)
-                    && self.is_member(person.id, project).await?
+                    && self.person_sees_issue(person.id, issue).await?
                 {
                     found.push(Named::Person(person.id));
                 }
@@ -113,7 +110,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
-        project: ProjectId,
+        issue: &Issue,
         text: &str,
         tokens: &[Token],
     ) -> Result<Resolution, AppError> {
@@ -148,7 +145,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 TokenKind::Mention => {
                     let handle = written.trim_start_matches('@');
-                    self.name_behind(level, project, handle).await?
+                    self.name_behind(level, issue, handle).await?
                 }
             };
             match named {
@@ -168,7 +165,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
-        project: ProjectId,
+        issue: &Issue,
         text: &str,
     ) -> Result<String, AppError> {
         let image_hosts = self.image_hosts().await?;
@@ -183,7 +180,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(first.html);
         }
         let resolution = self
-            .resolve_tokens(actor, held, project, text, &first.tokens)
+            .resolve_tokens(actor, held, issue, text, &first.tokens)
             .await?;
         if resolution.plain.is_empty() {
             return Ok(first.html);

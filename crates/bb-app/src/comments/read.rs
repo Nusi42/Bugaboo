@@ -51,14 +51,10 @@ pub async fn comment_versions<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let mut items = Vec::with_capacity(earlier.len() + 1);
     for version in &earlier {
-        let html = ctx
-            .html_of(&actor, &held, issue.project, &version.text)
-            .await?;
+        let html = ctx.html_of(&actor, &held, &issue, &version.text).await?;
         items.push(CommentTextView::of(version, html));
     }
-    let html = ctx
-        .html_of(&actor, &held, issue.project, &comment.text)
-        .await?;
+    let html = ctx.html_of(&actor, &held, &issue, &comment.text).await?;
     items.push(CommentTextView::current(&comment, html));
     let page = window(items.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
@@ -233,9 +229,7 @@ pub async fn mentions<S: AuthStore>(
                     comment: comment.id,
                     issue: line,
                     author,
-                    html: ctx
-                        .html_of(&actor, &held, issue.project, &comment.text)
-                        .await?,
+                    html: ctx.html_of(&actor, &held, &issue, &comment.text).await?,
                     at: comment.created_at,
                     unread,
                 });
