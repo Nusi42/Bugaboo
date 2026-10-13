@@ -27,6 +27,14 @@ pub(crate) mod sign_up_policy {
     pub(crate) const DOMAINS: &str = "auth_sign_up_domains";
 }
 
+/// The members of a layout.
+pub(crate) mod layout {
+    pub(crate) const KIND: &str = "kind";
+    pub(crate) const PROJECT: &str = "project";
+    pub(crate) const ISSUE_TYPE: &str = "issue_type";
+    pub(crate) const SECTIONS: &str = "sections";
+}
+
 /// The members of a kind of relation.
 pub(crate) mod relation_kind {
     pub(crate) const FORWARD: &str = "forward";

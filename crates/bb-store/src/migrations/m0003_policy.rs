@@ -10,7 +10,7 @@
 
 use sea_query::{ColumnDef, Expr, ExprTrait as _, ForeignKey, Index, Query, Table};
 
-use super::Step;
+use super::{Step, id_column};
 use crate::schema::{
     AssignmentRow, GroupMemberRow, GroupRow, LegacyAdministratorRow, PersonRow,
     ProjectFieldLevelRow, ProjectPeopleLevelRow, ProjectRow, Retired, RoleFieldLevelRow,
@@ -31,12 +31,6 @@ pub(super) fn steps() -> Result<Vec<Step>, sea_query::error::Error> {
     steps.extend(starting_roles_and_old_administrators());
     steps.extend(retire_the_flag_and_the_setting()?);
     Ok(steps)
-}
-
-fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
-    let mut column = ColumnDef::new(name);
-    column.blob().not_null();
-    column
 }
 
 fn projects() -> Vec<Step> {

@@ -23,6 +23,7 @@ mod issues;
 mod jobs;
 mod keys;
 mod layout;
+mod layouts;
 mod migrations;
 mod paging;
 mod policy;

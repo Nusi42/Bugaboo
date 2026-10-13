@@ -216,6 +216,26 @@ impl<S: AuthStore> Ctx<'_, S> {
         mask: &bb_policy::FieldMask,
         item: &Item,
     ) -> Result<Vec<FieldKey>, AppError> {
+        self.own_fields_at(item, |field| mask.can_change(field))
+            .await
+    }
+
+    /// The own fields of an item that the mask lets the person see: used for the item and not
+    /// retired. The layouts of the issue page ask it, next to `changeable_own_fields`.
+    pub(crate) async fn visible_own_fields(
+        &self,
+        mask: &bb_policy::FieldMask,
+        item: &Item,
+    ) -> Result<Vec<FieldKey>, AppError> {
+        self.own_fields_at(item, |field| mask.can_see(field)).await
+    }
+
+    /// The own fields that reach an item and that `level_allows`: the one filter of the two reads.
+    pub(crate) async fn own_fields_at(
+        &self,
+        item: &Item,
+        level_allows: impl Fn(FieldKey) -> bool,
+    ) -> Result<Vec<FieldKey>, AppError> {
         Ok(self
             .field_catalogue()
             .await?
@@ -225,7 +245,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 field.applies_to == item.field_for()
                     && field.retired_at.is_none()
                     && definition.scope.reaches(&item.chain, item.issue_type)
-                    && mask.can_change(FieldKey::Own(field.id))
+                    && level_allows(FieldKey::Own(field.id))
             })
             .map(|definition| FieldKey::Own(definition.field.id))
             .collect())

@@ -1,0 +1,421 @@
+//! Reading layouts: the form one person sees (`form_layout`) and the layout an editor changes
+//! (`layout_editor`). Both start from the layout that counts at the place (ADR-0027, decision 2).
+
+use std::collections::{BTreeSet, HashMap};
+
+use bb_core::ErrorCode;
+use bb_core::access::FieldLevel;
+use bb_core::event::RecordKind;
+use bb_core::fields::FieldKey;
+use bb_core::id::{IssueTypeId, ProjectId, RoleId};
+use bb_core::layout::{Layout, LayoutContent, LayoutKind, LayoutPlace, built_in_fields, find};
+use bb_policy::{Authorized, Evaluation, LevelSubject as _, Permission, Place};
+
+use super::effective::{Viewer, effective};
+use super::types::{
+    EditorField, EditorRole, EditorSection, FormLayout, FormLayoutQuery, InheritedFrom,
+    LayoutEditor, LayoutEditorQuery, LayoutSlot,
+};
+use crate::access::Actor;
+use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::fields::{Definition, Item};
+use crate::issues::IssueTypeRef;
+use crate::projects::ProjectRef;
+
+/// The place a layout is asked for: the whole organization, or a project with its chain.
+pub(super) struct Where {
+    /// The project; none for the whole organization.
+    pub(super) project: Option<ProjectRef>,
+    /// The projects from the top down to the place; empty for the organization.
+    pub(super) chain: Vec<ProjectId>,
+    /// The issue type; none for all types.
+    pub(super) issue_type: Option<IssueTypeId>,
+    /// The issue page or the new-issue form.
+    pub(super) kind: LayoutKind,
+}
+
+impl Where {
+    /// Where a layout for exactly this place is set.
+    pub(super) fn layout_place(&self) -> LayoutPlace {
+        LayoutPlace {
+            project: self.project.as_ref().map(|project| project.id),
+            issue_type: self.issue_type,
+            kind: self.kind,
+        }
+    }
+
+    /// The place for the permissions.
+    pub(super) fn place(&self) -> Place {
+        self.project
+            .as_ref()
+            .map_or(Place::Organization, |project| Place::Project(project.id))
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The place of a request for an editor: the project must exist for the person.
+    pub(super) async fn layout_where(
+        &self,
+        project: Option<&str>,
+        issue_type: Option<IssueTypeId>,
+        kind: LayoutKind,
+    ) -> Result<Where, AppError> {
+        let found = match project {
+            Some(address) => Some(
+                self.find_project(address)
+                    .await?
+                    .map(|found| found.project)
+                    .ok_or(AppError::Refused(ErrorCode::NotFound))?,
+            ),
+            None => None,
+        };
+        let chain = match &found {
+            Some(project) => self.chain_of(project.id).await?,
+            None => Vec::new(),
+        };
+        Ok(Where {
+            project: found.as_ref().map(ProjectRef::from),
+            chain,
+            issue_type,
+            kind,
+        })
+    }
+
+    /// The own fields of issues that reach the place and the issue type, retired ones left out, in
+    /// the order they are offered in. The organization has no project, so only the issue type
+    /// limits what reaches it.
+    pub(super) async fn own_fields_for(&self, at: &Where) -> Result<Vec<FieldKey>, AppError> {
+        let issues = Item {
+            kind: RecordKind::Issue,
+            id: None,
+            chain: at.chain.clone(),
+            issue_type: at.issue_type,
+            reported_by: None,
+        };
+        if at.project.is_some() {
+            return self.own_fields_at(&issues, |_| true).await;
+        }
+        Ok(self
+            .field_catalogue()
+            .await?
+            .iter()
+            .filter(|definition| {
+                let field = &definition.field;
+                let types = &definition.scope.issue_types;
+                field.applies_to == bb_core::own_fields::FieldFor::Issues
+                    && field.retired_at.is_none()
+                    && (types.is_empty()
+                        || at.issue_type.is_some_and(|wanted| types.contains(&wanted)))
+            })
+            .map(|definition| FieldKey::Own(definition.field.id))
+            .collect())
+    }
+
+    /// Every role, in the order of roles.
+    pub(super) async fn all_roles(&self) -> Result<Vec<EditorRole>, AppError> {
+        Ok(self
+            .store()
+            .roles()
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|record| EditorRole {
+                id: record.role.id,
+                name: record.role.name,
+            })
+            .collect())
+    }
+
+    /// The layout that counts at the place: the nearest one (ADR-0027), else the starting layout.
+    /// Also the header it was found by, when there is one.
+    pub(super) async fn layout_in_force(
+        &self,
+        at: &Where,
+        roles: &[RoleId],
+    ) -> Result<(Option<Layout>, LayoutContent), AppError> {
+        let headers = self
+            .store()
+            .layout_headers(at.kind)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if let Some(header) = find(&at.chain, at.issue_type, &headers) {
+            let stored = self
+                .store()
+                .stored_layout(header.id)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+            return Ok((Some(header.clone()), stored.content));
+        }
+        let own = self.own_fields_for(at).await?;
+        Ok((None, LayoutContent::starting(at.kind, &own, roles)))
+    }
+}
+
+/// Which fields a form shows to the person who asks, in which sections: what the issue page and
+/// the new-issue form read through the one hook of the browser.
+///
+/// # Errors
+/// `resource.not_found` for a project the person may not know about.
+pub async fn form_layout<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: FormLayoutQuery,
+) -> Result<Authorized<FormLayout>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let at = ctx
+        .layout_where(Some(&input.project), input.issue_type, input.kind)
+        .await?;
+    let held = ctx.evaluation_of(&actor, at.place()).await?;
+    if !held.sees_project() {
+        return Err(AppError::Refused(ErrorCode::NotFound));
+    }
+    let everyone: Vec<RoleId> = ctx.all_roles().await?.iter().map(|role| role.id).collect();
+    let (_, content) = ctx.layout_in_force(&at, &everyone).await?;
+    let mask = held.field_mask_for(at.issue_type);
+    let item = Item {
+        kind: RecordKind::Issue,
+        id: None,
+        chain: at.chain.clone(),
+        issue_type: at.issue_type,
+        reported_by: None,
+    };
+    let own: BTreeSet<FieldKey> = match at.kind {
+        LayoutKind::IssuePage => ctx.visible_own_fields(&mask, &item).await?,
+        LayoutKind::NewIssue => ctx.changeable_own_fields(&mask, &item).await?,
+    }
+    .into_iter()
+    .collect();
+    let required = required_among(&ctx.field_catalogue().await?, &own);
+    let roles: Vec<RoleId> = held.roles().iter().map(|role| role.id).collect();
+    let sections = effective(
+        &content,
+        at.kind,
+        &Viewer {
+            roles: &roles,
+            mask: &mask,
+            own: &own,
+            required: &required,
+        },
+    );
+    Ok(held.authorize(FormLayout {
+        kind: at.kind,
+        sections,
+    }))
+}
+
+/// The own fields of `among` that must be filled in.
+fn required_among(definitions: &[Definition], among: &BTreeSet<FieldKey>) -> Vec<FieldKey> {
+    definitions
+        .iter()
+        .filter(|definition| definition.field.rules.required)
+        .map(|definition| FieldKey::Own(definition.field.id))
+        .filter(|field| among.contains(field))
+        .collect()
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Whether the roles' level for a field is too low for this kind of form: they may not see it
+    /// (on the new-issue form: not change it). Field permissions win over the layout.
+    async fn roles_limited(
+        &self,
+        at: &Where,
+        roles: &[EditorRole],
+        fields: &[FieldKey],
+    ) -> Result<HashMap<FieldKey, Vec<RoleId>>, AppError> {
+        let ids: Vec<RoleId> = roles.iter().map(|role| role.id).collect();
+        let levels = self
+            .store()
+            .level_rules(ids.clone(), at.project.as_ref().map(|project| project.id))
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let needed = match at.kind {
+            LayoutKind::IssuePage => FieldLevel::CanSee,
+            LayoutKind::NewIssue => FieldLevel::CanChange,
+        };
+        Ok(fields
+            .iter()
+            .map(|field| {
+                let limited = ids
+                    .iter()
+                    .copied()
+                    .filter(|role| {
+                        FieldKey::level_for(
+                            &levels.rules,
+                            &levels.chain,
+                            *role,
+                            *field,
+                            at.issue_type,
+                        )
+                        .is_none_or(|(_, _, level)| level < needed)
+                    })
+                    .collect();
+                (*field, limited)
+            })
+            .collect())
+    }
+
+    /// The editor view of a place: the layout in force, with the marks "field permissions win" and
+    /// the fields that could be added. Own fields the editor may not know are left out.
+    pub(super) async fn editor_view(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        at: &Where,
+    ) -> Result<LayoutEditor, AppError> {
+        let roles = self.all_roles().await?;
+        let ids: Vec<RoleId> = roles.iter().map(|role| role.id).collect();
+        let (header, content) = self.layout_in_force(at, &ids).await?;
+        let names = self
+            .known_field_names(actor, held, at.project.as_ref().map(|project| project.id))
+            .await?;
+        let definitions = self.field_catalogue().await?;
+        let required: BTreeSet<FieldKey> = required_among(
+            &definitions,
+            &names.keys().copied().collect::<BTreeSet<FieldKey>>(),
+        )
+        .into_iter()
+        .collect();
+        let reachable: BTreeSet<FieldKey> = self.own_fields_for(at).await?.into_iter().collect();
+        let known = |field: FieldKey| match field {
+            FieldKey::BuiltIn(_) => true,
+            FieldKey::Own(_) => names.contains_key(&field),
+        };
+        let placed: BTreeSet<FieldKey> = content.placed().map(|placed| placed.field).collect();
+        let offered: Vec<FieldKey> = built_in_fields(at.kind)
+            .iter()
+            .copied()
+            .map(FieldKey::BuiltIn)
+            .chain(
+                self.own_fields_for(at)
+                    .await?
+                    .into_iter()
+                    .filter(|field| names.contains_key(field)),
+            )
+            .filter(|field| !placed.contains(field))
+            .collect();
+        let every: Vec<FieldKey> = placed
+            .iter()
+            .copied()
+            .chain(offered.iter().copied())
+            .collect();
+        let limited = self.roles_limited(at, &roles, &every).await?;
+        let field_of = |field: FieldKey, shown_to: Vec<RoleId>| EditorField {
+            field,
+            name: names.get(&field).cloned(),
+            roles: shown_to,
+            limited_for: limited.get(&field).cloned().unwrap_or_default(),
+            required: at.kind == LayoutKind::NewIssue && required.contains(&field),
+        };
+        let sections = content
+            .sections
+            .iter()
+            .map(|section| EditorSection {
+                tab: section.tab.clone(),
+                title: section.title.clone(),
+                fields: section
+                    .fields
+                    .iter()
+                    .filter(|placed| known(placed.field))
+                    // An own field the layout lists but that no longer reaches the place (retired,
+                    // or limited elsewhere) is not offered for editing.
+                    .filter(|placed| {
+                        placed.field.own().is_none() || reachable.contains(&placed.field)
+                    })
+                    .map(|placed| field_of(placed.field, placed.roles.clone()))
+                    .collect(),
+            })
+            .collect();
+        let exact = header
+            .as_ref()
+            .filter(|found| found.place() == at.layout_place());
+        let inherited_from = match (&header, exact) {
+            (Some(found), None) => Some(self.inherited_from(actor, found).await?),
+            _ => None,
+        };
+        Ok(LayoutEditor {
+            kind: at.kind,
+            project: at.project.clone(),
+            issue_type: match at.issue_type {
+                Some(id) => self.issue_type_ref(id).await?,
+                None => None,
+            },
+            layout: exact.map(|found| LayoutSlot {
+                id: found.id,
+                version: found.version,
+            }),
+            inherited_from,
+            sections,
+            available: offered
+                .into_iter()
+                .map(|field| field_of(field, Vec::new()))
+                .collect(),
+            roles,
+        })
+    }
+
+    async fn issue_type_ref(&self, id: IssueTypeId) -> Result<Option<IssueTypeRef>, AppError> {
+        Ok(self
+            .store()
+            .issue_type(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .as_ref()
+            .map(IssueTypeRef::from))
+    }
+
+    /// Where an inherited layout is set, as the editor may know it: a project they cannot see is
+    /// not named.
+    async fn inherited_from(
+        &self,
+        actor: &Actor,
+        header: &Layout,
+    ) -> Result<InheritedFrom, AppError> {
+        let project = match header.project {
+            Some(id) => {
+                let held = self.evaluation_of(actor, Place::Project(id)).await?;
+                if held.sees_project() {
+                    self.store()
+                        .project(id)
+                        .await
+                        .map_err(|error| internal::<S>(&error))?
+                        .as_ref()
+                        .map(ProjectRef::from)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        };
+        Ok(InheritedFrom {
+            whole_organization: header.project.is_none(),
+            project,
+            issue_type: match header.issue_type {
+                Some(id) => self.issue_type_ref(id).await?,
+                None => None,
+            },
+        })
+    }
+}
+
+/// Shows the layout of a place to somebody who may change it: the layout that counts there, with
+/// the roles it is shown to, the marks where field permissions win, and the fields that could be
+/// added. Needs *Manage issue types, kinds of relation and layouts* at the place.
+///
+/// # Errors
+/// `resource.not_found` for a project the person may not know about, `access.forbidden` without
+/// the permission.
+pub async fn layout_editor<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: LayoutEditorQuery,
+) -> Result<Authorized<LayoutEditor>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let at = ctx
+        .layout_where(input.project.as_deref(), input.issue_type, input.kind)
+        .await?;
+    let held = ctx
+        .require(&actor, Permission::ManageIssueTypes, at.place())
+        .await?;
+    let view = ctx.editor_view(&actor, &held, &at).await?;
+    Ok(held.authorize(view))
+}
