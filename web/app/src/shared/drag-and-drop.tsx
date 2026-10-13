@@ -4,9 +4,11 @@ import { Button as AriaButton, useDrag, useDrop } from "react-aria-components";
 
 /**
  * Dragging things of a list to another place in the list (or in another list), with a mouse or a
- * finger, and the handle that starts a drag with the keyboard. Every drag is also possible with
- * buttons that the screen offers next to it (*Move up*, *Move to …*): this is the quick way, never
- * the only one. What is dragged is named by a `kind` (a word of the screen: `layout-field`), so
+ * finger. Every drag is also possible with buttons that the screen offers next to it (*Move up*,
+ * *Move to …*): this is the quick way, never the only one, and the way for the keyboard and for
+ * screen readers. The handle and the places to drop are therefore hidden from assistive technology
+ * together: a drag with a screen reader could be started at the handle and not finished at a
+ * place. What is dragged is named by a `kind` (a word of the screen: `layout-field`), so
  * only a thing of that kind can be dropped on a place made for it.
  */
 
@@ -41,7 +43,7 @@ export interface DraggableHeadProps {
   readonly kind: string;
   /** Which one: the key of the thing. */
   readonly id: string;
-  /** The name of the handle for screen readers, like *Drag Due date*. */
+  /** The name of the handle, like *Drag Due date*: not announced, the handle is for the pointer. */
   readonly label: string;
   /** Whether it can be dragged at all: on a phone there is no handle. */
   readonly canDrag: boolean;
@@ -50,8 +52,9 @@ export interface DraggableHeadProps {
 }
 
 /**
- * The top line of a thing that can be dragged: a mouse or a finger drags it from here, the handle
- * starts a drag with the keyboard, and the buttons next to it do the same things without a drag.
+ * The top line of a thing that can be dragged: a mouse or a finger drags it from here, and the
+ * buttons next to it do the same things without a drag (the way for the keyboard and for screen
+ * readers; the handle is hidden from them and left out of the tab order).
  */
 export function DraggableHead({ kind, id, label, canDrag, children }: DraggableHeadProps) {
   const drag = useDrag({
@@ -66,9 +69,17 @@ export function DraggableHead({ kind, id, label, canDrag, children }: DraggableH
       {...drag.dragProps}
     >
       {canDrag ? (
-        <AriaButton {...drag.dragButtonProps} {...partOf(part.draggableHandle)} aria-label={label}>
-          <Icon name={iconName.menu} />
-        </AriaButton>
+        // The button drops `aria-hidden`, so the wrapper hides it from assistive technology.
+        <span aria-hidden>
+          <AriaButton
+            {...drag.dragButtonProps}
+            {...partOf(part.draggableHandle)}
+            aria-label={label}
+            excludeFromTabOrder
+          >
+            <Icon name={iconName.menu} />
+          </AriaButton>
+        </span>
       ) : null}
       {children}
     </div>
