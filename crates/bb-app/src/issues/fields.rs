@@ -142,6 +142,8 @@ pub(crate) mod member {
     pub(crate) const DELETED_AT: &str = "deleted-at";
     /// The issue it sits under (the ID of the parent), in the event of the sub-issue.
     pub(crate) const PARENT: &str = "parent";
+    /// The project says its issues got the IDs of the mode it has now, in the event of the project.
+    pub(crate) const ISSUE_IDS: &str = "issue-ids";
     /// A sub-issue that was added or taken away, in the event of the parent as History writes it.
     pub(crate) const SUB_ISSUE: &str = "sub-issue";
 

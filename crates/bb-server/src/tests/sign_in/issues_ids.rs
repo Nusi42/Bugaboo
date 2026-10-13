@@ -491,6 +491,8 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
             );
         }
         // Changing the mode renews a first step now and leaves the rest to a job.
+        let consumer = TechnicalName::new("test-reader")?;
+        let seen = rig.database.outbox_after(&consumer, 1_000_000).await?.len();
         mode(&mut ada, Some("random")).await?;
         let counting = counting_ids(&mut ada).await?;
         assert_eq!(
@@ -512,6 +514,20 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
         }
         let counting = counting_ids(&mut ada).await?;
         assert_eq!(counting, 0, "every issue has a random ID in the end");
+        // The project says once that its IDs were renewed, not once for each step.
+        let events = rig.database.outbox_after(&consumer, 1_000_000).await?;
+        let project_events = events
+            .iter()
+            .skip(seen)
+            .filter(|(_, event)| event.entity.kind == EntityKind::from(RecordKind::Project))
+            .filter(|(_, event)| {
+                event
+                    .changes
+                    .iter()
+                    .any(|change| change.field == "issue-ids")
+            })
+            .count();
+        assert_eq!(project_events, 1);
         // An old ID still finds its issue.
         let found = ada
             .send("GET", &format!("{ISSUES}/{}", old[0]), None)

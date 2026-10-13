@@ -199,9 +199,9 @@ impl ChangeStore for FakeStore {
     type Transaction = Tx;
     type Error = FakeError;
 
-    async fn record_change<'a, T: Send + 'a>(
+    async fn record_changes<'a, T: Send + 'a>(
         &'a self,
-        event: &'a DomainEvent,
+        events: &'a [DomainEvent],
         change: impl for<'t> FnOnce(&'t mut Tx) -> BoxFuture<'t, Result<T, FakeError>> + Send + 'a,
     ) -> Result<T, FakeError> {
         let state = {
@@ -218,7 +218,7 @@ impl ChangeStore for FakeStore {
         let result = change(&mut tx).await?;
         let mut shared = self.lock();
         shared.state = tx.state;
-        shared.events.push(event.clone());
+        shared.events.extend(events.iter().cloned());
         shared.events.extend(tx.follow_ups);
         Ok(result)
     }

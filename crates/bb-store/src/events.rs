@@ -41,9 +41,22 @@ impl Database {
         event: &DomainEvent,
         change: impl AsyncFnOnce(&mut Transaction) -> Result<T, StoreError>,
     ) -> Result<T, StoreError> {
+        self.record_changes(std::slice::from_ref(event), change)
+            .await
+    }
+
+    /// The same for any number of events of its own, also none.
+    ///
+    /// # Errors
+    /// Returns the error of `change`, or a database error.
+    pub async fn record_changes<T>(
+        &self,
+        events: &[DomainEvent],
+        change: impl AsyncFnOnce(&mut Transaction) -> Result<T, StoreError>,
+    ) -> Result<T, StoreError> {
         let mut transaction = self.begin().await?;
         let result = change(&mut transaction).await?;
-        append_events(&mut transaction, std::slice::from_ref(event)).await?;
+        append_events(&mut transaction, events).await?;
         // The events the change added besides its own come last, so the lock on the outbox is
         // the last lock of the transaction and no writer waits on it while holding a row.
         let follow_ups = std::mem::take(&mut transaction.follow_ups);
@@ -247,16 +260,16 @@ impl bb_app::ports::ChangeStore for Database {
     type Transaction = Transaction;
     type Error = StoreError;
 
-    fn record_change<'a, T: Send + 'a>(
+    fn record_changes<'a, T: Send + 'a>(
         &'a self,
-        event: &'a DomainEvent,
+        events: &'a [DomainEvent],
         change: impl for<'t> FnOnce(
             &'t mut Transaction,
         ) -> bb_app::ports::BoxFuture<'t, Result<T, StoreError>>
         + Send
         + 'a,
     ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
-        Self::record_change(self, event, async move |transaction| {
+        Self::record_changes(self, events, async move |transaction| {
             change(transaction).await
         })
     }

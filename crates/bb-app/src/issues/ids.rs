@@ -385,22 +385,29 @@ impl<S: AuthStore> Ctx<'_, S> {
         if left == 0 {
             return Ok(());
         }
-        let event = self.event(
-            Actor::Person(person),
-            entity(RecordKind::Project, project),
-            vec![FieldChange {
-                field: "issue-ids".to_owned(),
-                before: None,
-                after: Some(serde_json::json!(renewal.plan.mode.code())),
-            }],
-        )?;
+        // The project says once that its IDs were renewed, in the step that renews the last; the
+        // steps before write the events of the issues they renew and nothing else.
+        let finishing = left <= BULK_STEP;
+        let said = if finishing {
+            vec![self.event(
+                Actor::Person(person),
+                entity(RecordKind::Project, project),
+                vec![FieldChange {
+                    field: member::ISSUE_IDS.to_owned(),
+                    before: None,
+                    after: Some(serde_json::json!(renewal.plan.mode.code())),
+                }],
+            )?]
+        } else {
+            Vec::new()
+        };
         let (mut source, events, now) = (
             self.owned_ids(),
             self.event_maker(Actor::Person(person)),
             self.now(),
         );
         self.store()
-            .record_change(&event, move |transaction| {
+            .record_changes(&said, move |transaction| {
                 Box::pin(async move {
                     S::lock_issue_codes(transaction, renewal.project).await?;
                     renew_step_in::<S>(transaction, &renewal, &mut source, &events, now, BULK_STEP)
@@ -410,7 +417,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .await
             .map_err(|error| internal::<S>(&error))?;
-        if left > BULK_STEP {
+        if !finishing {
             let job = JobId::generate(&mut self.ids())
                 .map_err(|error| AppError::Internal(error.to_string()))?;
             self.store()
