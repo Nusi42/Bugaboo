@@ -21,9 +21,9 @@ use std::sync::Arc;
 
 /// What a change of an issue asks for, checked against what the person may do and what is
 /// stored.
-struct Plan {
+pub(crate) struct Plan {
     /// The issue as it is.
-    current: Issue,
+    pub(crate) current: Issue,
     /// The people it is assigned to now, in order.
     assigned_now: Vec<UserId>,
     /// The issue as it will be (the version is the one it has now).
@@ -36,7 +36,7 @@ struct Plan {
 
 impl Plan {
     /// The fields that change, before and after, for the event.
-    fn field_changes(&self) -> Vec<FieldChange> {
+    pub(crate) fn field_changes(&self) -> Vec<FieldChange> {
         let (before, after) = (&self.current, &self.next);
         let mut changes = Vec::new();
         let mut add = |name: &str, was: Value, now: Value| {
@@ -113,7 +113,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// What the person asks for, when they may ask it: they see the issue (or it answers like a
     /// missing one), may change it, may change each field they touch, and looked at the version
     /// that is stored.
-    async fn plan_issue_change(
+    pub(crate) async fn plan_issue_change(
         &self,
         actor: &Actor,
         input: &ChangeIssue,
