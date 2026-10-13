@@ -14,11 +14,22 @@ export interface ProjectChoice {
   readonly shortName: string;
 }
 
+/** The words of the picker, for a place where the projects are not those *a field is used in*. */
+export interface ProjectsToUseWords {
+  readonly legend: string;
+  readonly search: string;
+  readonly list: string;
+  readonly nothing: string;
+  readonly more: string;
+}
+
 export interface ProjectsToUseProps {
   /** The IDs of the projects that are in the list already: they are not offered again. */
   readonly picked: readonly string[];
   /** A project was picked: it is added to the projects the field is used in. */
   readonly onPick: (project: ProjectChoice) => void;
+  /** What the picker says; the words of *Where it's used* when left out. */
+  readonly words?: ProjectsToUseWords | undefined;
 }
 
 /** The projects the person sees, found by words, a few at a time. */
@@ -43,9 +54,16 @@ function useProjectChoices(search: string) {
 }
 
 /** *Where it's used*: the projects a field can be limited to, found by words; picking one adds it. */
-export function ProjectsToUse({ picked, onPick }: ProjectsToUseProps) {
+export function ProjectsToUse({ picked, onPick, words: said }: ProjectsToUseProps) {
   const { words, group, frame } = usePickerFrame();
   const found = useProjectChoices(words);
+  const text = said ?? {
+    legend: t("fields.projects-legend"),
+    search: t("fields.projects-search"),
+    list: t("fields.projects-list"),
+    nothing: t("fields.projects-nothing"),
+    more: t("fields.projects-more"),
+  };
   const projects = linesFrom(found.data?.pages, (item): ProjectChoice | undefined => {
     const { id, short_name: shortName, name } = item;
     return id === undefined || id === null || shortName === undefined || shortName === null
@@ -55,13 +73,13 @@ export function ProjectsToUse({ picked, onPick }: ProjectsToUseProps) {
   return (
     <SearchPicker
       look={pickerLook.boxed}
-      legend={t("fields.projects-legend")}
-      searchLabel={t("fields.projects-search")}
-      listLabel={t("fields.projects-list")}
+      legend={text.legend}
+      searchLabel={text.search}
+      listLabel={text.list}
       {...frame}
       {...pickerStatus(found, projects.length, {
-        nothing: t("fields.projects-nothing"),
-        more: t("fields.projects-more"),
+        nothing: text.nothing,
+        more: text.more,
       })}
     >
       {projects.map((project) => (

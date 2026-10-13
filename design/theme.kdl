@@ -1735,11 +1735,6 @@ part "projects.preview" {
     min-width 0
 }
 
-part "projects.sentences" {
-    use "quiet-column"
-    padding-inline-start "$space-5"
-}
-
 part "projects.alert-line" {
     margin 0
 }
@@ -1749,6 +1744,92 @@ part "projects.tabs" {
     flex-wrap wrap
     gap "$space-4"
     use "list-reset"
+}
+
+// ───────────── Long previews (M2C-F80) ─────────────
+
+// The preview of a change that touches many things: the sentence on top, then the things grouped
+// by issue or by person, a few at a time, with *Show all*.
+part "long-preview" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "long-preview.summary" {
+    display block
+    margin 0
+    font-weight "$weight-bold"
+}
+
+part "long-preview.groups" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "long-preview.group" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-1"
+    padding "$space-2" "$space-3"
+    min-width 0
+}
+
+part "long-preview.group[state=skipped]" {
+    background "$bg-sunken"
+}
+
+part "long-preview.group-head" {
+    display flex
+    flex-wrap wrap
+    align-items baseline
+    gap "$space-1" "$space-3"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "long-preview.lines" {
+    use "quiet-column"
+    padding-inline-start "$space-4"
+}
+
+// ───────────── Tags and labels, and changing many issues ─────────────
+
+// The tags and labels of an issue, side by side.
+part "chips" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    use "list-reset"
+}
+
+// A tag or label with the button that takes it off.
+part "chip" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+}
+
+// The bar of the list that acts on the issues ticked.
+part "bulk-bar" {
+    use "surface-box"
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-3"
+    padding "$space-2" "$space-3"
+}
+
+// How far a change that goes on in the background is.
+part "bulk-progress" {
+    display flex
+    flex-direction column
+    gap "$space-2"
 }
 
 // ───────────── Project tree (sidebar) ─────────────

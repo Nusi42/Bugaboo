@@ -140,6 +140,30 @@ export function keyedSentencesOfPreview(preview: Preview): readonly Sentence[] {
   );
 }
 
+/** The sentences about one person, in all the projects the person sees. */
+export interface PersonSentences {
+  readonly key: string;
+  /** Who the sentences are about. */
+  readonly person: string;
+  readonly lines: readonly Sentence[];
+}
+
+/** The sentences of the preview grouped by person, for the long preview; a person with none is left out. */
+export function personSentencesOfPreview(preview: Preview): readonly PersonSentences[] {
+  return preview.people
+    .map((entry, person): PersonSentences => ({
+      key: String(person),
+      person: personName(entry.person),
+      lines: entry.projects.flatMap((change) =>
+        sentencesOf(personName(entry.person), change).map((text, line) => ({
+          key: `${change.project.id}:${String(line)}`,
+          text,
+        })),
+      ),
+    }))
+    .filter((group) => group.lines.length > 0);
+}
+
 /** Every sentence of the preview: who gains or loses access or changes role, and what else changes. */
 export function sentencesOfPreview(preview: Preview): readonly string[] {
   return keyedSentencesOfPreview(preview).map((sentence) => sentence.text);

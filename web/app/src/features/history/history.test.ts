@@ -133,3 +133,31 @@ describe("iss_05 the name being typed after an @", () => {
     expect(withMention("@a", "ana.silva")).toBe("@ana.silva ");
   });
 });
+
+/** A project as the history names it. */
+function project(name: string) {
+  return { id: name, short_name: name, name };
+}
+
+describe("tag_01 tags, labels and a move in the history", () => {
+  it("says a tag was set when there were none, and cleared when the last one went", () => {
+    expect(
+      changeSentence(change({ field: "tags", before_names: [], after_names: ["login"] })),
+    ).toBe("Ben set Tags to login");
+    expect(
+      changeSentence(change({ field: "tags", before_names: ["login"], after_names: [] })),
+    ).toBe("Ben cleared Tags");
+  });
+
+  it("names the project an issue moved from and to", () => {
+    expect(
+      changeSentence(
+        change({
+          field: "project",
+          before_project: project("Website"),
+          after_project: project("Shop"),
+        }),
+      ),
+    ).toBe("Ben changed Project from Website to Shop");
+  });
+});

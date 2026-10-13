@@ -3,6 +3,7 @@
 import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
+import type { messages as bulk } from "./bulk.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as follow } from "./follow.ts";
 import type { messages as history } from "./history.ts";
@@ -10,6 +11,7 @@ import type { messages as home } from "./home.ts";
 import type { messages as invitation } from "./invitation.ts";
 import type { messages as issueTypes } from "./issue-types.ts";
 import type { messages as issues } from "./issues.ts";
+import type { messages as labels } from "./labels.ts";
 import type { messages as mentions } from "./mentions.ts";
 import type { messages as mySettings } from "./my-settings.ts";
 import type { messages as people } from "./people.ts";
@@ -28,6 +30,7 @@ export type MessageKey =
   | keyof typeof access
   | keyof typeof account
   | keyof typeof admin
+  | keyof typeof bulk
   | keyof typeof fields
   | keyof typeof follow
   | keyof typeof history
@@ -35,6 +38,7 @@ export type MessageKey =
   | keyof typeof invitation
   | keyof typeof issueTypes
   | keyof typeof issues
+  | keyof typeof labels
   | keyof typeof mentions
   | keyof typeof mySettings
   | keyof typeof people
@@ -71,6 +75,17 @@ export interface MessageArguments {
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
+  "bulk.finished": { changed: number; skipped: number };
+  "bulk.line-changes": { after: string | number; field: string | number };
+  "bulk.line-label": { label: string | number };
+  "bulk.line-move": { project: string | number };
+  "bulk.line-relation": { issue: string | number; name: string | number };
+  "bulk.progress": { done: string | number; total: string | number };
+  "bulk.project-picked": { name: string | number };
+  "bulk.result-done": { changed: number; skipped: number };
+  "bulk.skipped-line": { issue: string | number; reason: string | number };
+  "bulk.summary": { changed: number; skipped: number };
+  "bulk.title": { action: string | number; count: number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
   "check-access.level.role-project": {
@@ -111,6 +126,7 @@ export interface MessageArguments {
   };
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
+  "common.show-all": { count: string | number };
   "conflict.change": { field: string | number; value: string | number };
   "conflict.field-only": { field: string | number };
   "conflict.sentence": { ago: string | number; changes: string | number; who: string | number };
@@ -200,6 +216,16 @@ export interface MessageArguments {
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
+  "labels.combine-dialog-text": { name: string | number; other: string | number };
+  "labels.combine-dialog-title": { name: string | number; other: string | number };
+  "labels.field-color": { name: string | number };
+  "labels.group-made": { name: string | number };
+  "labels.label-made": { name: string | number };
+  "labels.preview-line": { after: string | number; before: string | number };
+  "labels.preview-summary": { changed: number };
+  "labels.tag-in-projects": { count: number };
+  "labels.take-off": { name: string | number };
+  "labels.take-project-off": { name: string | number };
   "mentions.in": { issue: string | number; who: string | number };
   "mentions.unread": { count: number };
   "own.ask-text": { lost: string | number };
@@ -263,6 +289,7 @@ export interface MessageArguments {
   "projects.moved": { name: string | number };
   "projects.person-former": { label: string | number };
   "projects.person-role": { role: string | number };
+  "projects.preview-summary": { changed: number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
   "related-issues.added": { key: string | number; name: string | number; other: string | number };

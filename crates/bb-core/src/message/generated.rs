@@ -354,6 +354,93 @@ pub const BULK_STATUS_QUEUED: MessageKey = MessageKey::new("bulk-status.queued")
 /// The message `bulk-status.running`.
 pub const BULK_STATUS_RUNNING: MessageKey = MessageKey::new("bulk-status.running");
 
+/// The message `bulk.action-change`.
+pub const BULK_ACTION_CHANGE: MessageKey = MessageKey::new("bulk.action-change");
+
+/// The message `bulk.action-delete`.
+pub const BULK_ACTION_DELETE: MessageKey = MessageKey::new("bulk.action-delete");
+
+/// The message `bulk.action-label`.
+pub const BULK_ACTION_LABEL: MessageKey = MessageKey::new("bulk.action-label");
+
+/// The message `bulk.action-move`.
+pub const BULK_ACTION_MOVE: MessageKey = MessageKey::new("bulk.action-move");
+
+/// The message `bulk.action-relation`.
+pub const BULK_ACTION_RELATION: MessageKey = MessageKey::new("bulk.action-relation");
+
+/// The message `bulk.apply`.
+pub const BULK_APPLY: MessageKey = MessageKey::new("bulk.apply");
+
+/// The message `bulk.background-note`.
+pub const BULK_BACKGROUND_NOTE: MessageKey = MessageKey::new("bulk.background-note");
+
+/// The message `bulk.bar`.
+pub const BULK_BAR: MessageKey = MessageKey::new("bulk.bar");
+
+/// The message `bulk.delete-text`.
+pub const BULK_DELETE_TEXT: MessageKey = MessageKey::new("bulk.delete-text");
+
+/// The message `bulk.field-kind`.
+pub const BULK_FIELD_KIND: MessageKey = MessageKey::new("bulk.field-kind");
+
+/// The message `bulk.field-label`.
+pub const BULK_FIELD_LABEL: MessageKey = MessageKey::new("bulk.field-label");
+
+/// The message `bulk.field-other`.
+pub const BULK_FIELD_OTHER: MessageKey = MessageKey::new("bulk.field-other");
+
+/// The message `bulk.field-priority`.
+pub const BULK_FIELD_PRIORITY: MessageKey = MessageKey::new("bulk.field-priority");
+
+/// The message `bulk.field-status`.
+pub const BULK_FIELD_STATUS: MessageKey = MessageKey::new("bulk.field-status");
+
+/// The message `bulk.issue-unknown`.
+pub const BULK_ISSUE_UNKNOWN: MessageKey = MessageKey::new("bulk.issue-unknown");
+
+/// The message `bulk.keep`.
+pub const BULK_KEEP: MessageKey = MessageKey::new("bulk.keep");
+
+/// The message `bulk.line-delete`.
+pub const BULK_LINE_DELETE: MessageKey = MessageKey::new("bulk.line-delete");
+
+/// The message `bulk.nothing`.
+pub const BULK_NOTHING: MessageKey = MessageKey::new("bulk.nothing");
+
+/// The message `bulk.preview-label`.
+pub const BULK_PREVIEW_LABEL: MessageKey = MessageKey::new("bulk.preview-label");
+
+/// The message `bulk.progress-label`.
+pub const BULK_PROGRESS_LABEL: MessageKey = MessageKey::new("bulk.progress-label");
+
+/// The message `bulk.project-legend`.
+pub const BULK_PROJECT_LEGEND: MessageKey = MessageKey::new("bulk.project-legend");
+
+/// The message `bulk.project-list`.
+pub const BULK_PROJECT_LIST: MessageKey = MessageKey::new("bulk.project-list");
+
+/// The message `bulk.project-more`.
+pub const BULK_PROJECT_MORE: MessageKey = MessageKey::new("bulk.project-more");
+
+/// The message `bulk.project-nothing`.
+pub const BULK_PROJECT_NOTHING: MessageKey = MessageKey::new("bulk.project-nothing");
+
+/// The message `bulk.project-search`.
+pub const BULK_PROJECT_SEARCH: MessageKey = MessageKey::new("bulk.project-search");
+
+/// The message `bulk.show-changes`.
+pub const BULK_SHOW_CHANGES: MessageKey = MessageKey::new("bulk.show-changes");
+
+/// The message `bulk.skipped-list`.
+pub const BULK_SKIPPED_LIST: MessageKey = MessageKey::new("bulk.skipped-list");
+
+/// The message `bulk.stopped`.
+pub const BULK_STOPPED: MessageKey = MessageKey::new("bulk.stopped");
+
+/// The message `bulk.value-none`.
+pub const BULK_VALUE_NONE: MessageKey = MessageKey::new("bulk.value-none");
+
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
 
@@ -694,6 +781,9 @@ pub const COMMON_ON: MessageKey = MessageKey::new("common.on");
 
 /// The message `common.save`.
 pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
+
+/// The message `common.show-fewer`.
+pub const COMMON_SHOW_FEWER: MessageKey = MessageKey::new("common.show-fewer");
 
 /// The message `common.try-again`.
 pub const COMMON_TRY_AGAIN: MessageKey = MessageKey::new("common.try-again");
@@ -1523,6 +1613,9 @@ pub const HISTORY_FIELD_ISSUE_TYPE: MessageKey = MessageKey::new("history.field-
 /// The message `history.field-parent`.
 pub const HISTORY_FIELD_PARENT: MessageKey = MessageKey::new("history.field-parent");
 
+/// The message `history.field-project`.
+pub const HISTORY_FIELD_PROJECT: MessageKey = MessageKey::new("history.field-project");
+
 /// The message `history.field-sub-issue`.
 pub const HISTORY_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("history.field-sub-issue");
 
@@ -1965,6 +2058,181 @@ pub const KEYS_DATABASE_PLACEHOLDER: MessageKey = MessageKey::new("keys.database
 /// The message `keys.settings-placeholder`.
 pub const KEYS_SETTINGS_PLACEHOLDER: MessageKey = MessageKey::new("keys.settings-placeholder");
 
+/// The message `labels.add-label`.
+pub const LABELS_ADD_LABEL: MessageKey = MessageKey::new("labels.add-label");
+
+/// The message `labels.add-label-button`.
+pub const LABELS_ADD_LABEL_BUTTON: MessageKey = MessageKey::new("labels.add-label-button");
+
+/// The message `labels.add-tag`.
+pub const LABELS_ADD_TAG: MessageKey = MessageKey::new("labels.add-tag");
+
+/// The message `labels.add-tag-button`.
+pub const LABELS_ADD_TAG_BUTTON: MessageKey = MessageKey::new("labels.add-tag-button");
+
+/// The message `labels.combine`.
+pub const LABELS_COMBINE: MessageKey = MessageKey::new("labels.combine");
+
+/// The message `labels.combine-help`.
+pub const LABELS_COMBINE_HELP: MessageKey = MessageKey::new("labels.combine-help");
+
+/// The message `labels.combine-into`.
+pub const LABELS_COMBINE_INTO: MessageKey = MessageKey::new("labels.combine-into");
+
+/// The message `labels.combine-pick`.
+pub const LABELS_COMBINE_PICK: MessageKey = MessageKey::new("labels.combine-pick");
+
+/// The message `labels.combine-title`.
+pub const LABELS_COMBINE_TITLE: MessageKey = MessageKey::new("labels.combine-title");
+
+/// The message `labels.combined`.
+pub const LABELS_COMBINED: MessageKey = MessageKey::new("labels.combined");
+
+/// The message `labels.field-group-name`.
+pub const LABELS_FIELD_GROUP_NAME: MessageKey = MessageKey::new("labels.field-group-name");
+
+/// The message `labels.field-label-group`.
+pub const LABELS_FIELD_LABEL_GROUP: MessageKey = MessageKey::new("labels.field-label-group");
+
+/// The message `labels.field-label-name`.
+pub const LABELS_FIELD_LABEL_NAME: MessageKey = MessageKey::new("labels.field-label-name");
+
+/// The message `labels.field-name`.
+pub const LABELS_FIELD_NAME: MessageKey = MessageKey::new("labels.field-name");
+
+/// The message `labels.field-pick-one`.
+pub const LABELS_FIELD_PICK_ONE: MessageKey = MessageKey::new("labels.field-pick-one");
+
+/// The message `labels.group-pick-one`.
+pub const LABELS_GROUP_PICK_ONE: MessageKey = MessageKey::new("labels.group-pick-one");
+
+/// The message `labels.groups-nothing`.
+pub const LABELS_GROUPS_NOTHING: MessageKey = MessageKey::new("labels.groups-nothing");
+
+/// The message `labels.groups-search`.
+pub const LABELS_GROUPS_SEARCH: MessageKey = MessageKey::new("labels.groups-search");
+
+/// The message `labels.groups-title`.
+pub const LABELS_GROUPS_TITLE: MessageKey = MessageKey::new("labels.groups-title");
+
+/// The message `labels.intro`.
+pub const LABELS_INTRO: MessageKey = MessageKey::new("labels.intro");
+
+/// The message `labels.labels-heading`.
+pub const LABELS_LABELS_HEADING: MessageKey = MessageKey::new("labels.labels-heading");
+
+/// The message `labels.labels-nothing`.
+pub const LABELS_LABELS_NOTHING: MessageKey = MessageKey::new("labels.labels-nothing");
+
+/// The message `labels.labels-search`.
+pub const LABELS_LABELS_SEARCH: MessageKey = MessageKey::new("labels.labels-search");
+
+/// The message `labels.labels-title`.
+pub const LABELS_LABELS_TITLE: MessageKey = MessageKey::new("labels.labels-title");
+
+/// The message `labels.make-group`.
+pub const LABELS_MAKE_GROUP: MessageKey = MessageKey::new("labels.make-group");
+
+/// The message `labels.make-group-intro`.
+pub const LABELS_MAKE_GROUP_INTRO: MessageKey = MessageKey::new("labels.make-group-intro");
+
+/// The message `labels.make-group-title`.
+pub const LABELS_MAKE_GROUP_TITLE: MessageKey = MessageKey::new("labels.make-group-title");
+
+/// The message `labels.make-label`.
+pub const LABELS_MAKE_LABEL: MessageKey = MessageKey::new("labels.make-label");
+
+/// The message `labels.make-label-intro`.
+pub const LABELS_MAKE_LABEL_INTRO: MessageKey = MessageKey::new("labels.make-label-intro");
+
+/// The message `labels.make-label-title`.
+pub const LABELS_MAKE_LABEL_TITLE: MessageKey = MessageKey::new("labels.make-label-title");
+
+/// The message `labels.no-group`.
+pub const LABELS_NO_GROUP: MessageKey = MessageKey::new("labels.no-group");
+
+/// The message `labels.none-labels`.
+pub const LABELS_NONE_LABELS: MessageKey = MessageKey::new("labels.none-labels");
+
+/// The message `labels.none-tags`.
+pub const LABELS_NONE_TAGS: MessageKey = MessageKey::new("labels.none-tags");
+
+/// The message `labels.nothing-to-add`.
+pub const LABELS_NOTHING_TO_ADD: MessageKey = MessageKey::new("labels.nothing-to-add");
+
+/// The message `labels.offer-again`.
+pub const LABELS_OFFER_AGAIN: MessageKey = MessageKey::new("labels.offer-again");
+
+/// The message `labels.pick-label`.
+pub const LABELS_PICK_LABEL: MessageKey = MessageKey::new("labels.pick-label");
+
+/// The message `labels.preview-label`.
+pub const LABELS_PREVIEW_LABEL: MessageKey = MessageKey::new("labels.preview-label");
+
+/// The message `labels.preview-no-names`.
+pub const LABELS_PREVIEW_NO_NAMES: MessageKey = MessageKey::new("labels.preview-no-names");
+
+/// The message `labels.preview-nothing`.
+pub const LABELS_PREVIEW_NOTHING: MessageKey = MessageKey::new("labels.preview-nothing");
+
+/// The message `labels.preview-truncated`.
+pub const LABELS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("labels.preview-truncated");
+
+/// The message `labels.retire`.
+pub const LABELS_RETIRE: MessageKey = MessageKey::new("labels.retire");
+
+/// The message `labels.retire-help`.
+pub const LABELS_RETIRE_HELP: MessageKey = MessageKey::new("labels.retire-help");
+
+/// The message `labels.retired`.
+pub const LABELS_RETIRED: MessageKey = MessageKey::new("labels.retired");
+
+/// The message `labels.save`.
+pub const LABELS_SAVE: MessageKey = MessageKey::new("labels.save");
+
+/// The message `labels.saved`.
+pub const LABELS_SAVED: MessageKey = MessageKey::new("labels.saved");
+
+/// The message `labels.show-changes`.
+pub const LABELS_SHOW_CHANGES: MessageKey = MessageKey::new("labels.show-changes");
+
+/// The message `labels.sorting-title`.
+pub const LABELS_SORTING_TITLE: MessageKey = MessageKey::new("labels.sorting-title");
+
+/// The message `labels.tag-everywhere`.
+pub const LABELS_TAG_EVERYWHERE: MessageKey = MessageKey::new("labels.tag-everywhere");
+
+/// The message `labels.tag-everywhere-switch`.
+pub const LABELS_TAG_EVERYWHERE_SWITCH: MessageKey =
+    MessageKey::new("labels.tag-everywhere-switch");
+
+/// The message `labels.tag-projects-help`.
+pub const LABELS_TAG_PROJECTS_HELP: MessageKey = MessageKey::new("labels.tag-projects-help");
+
+/// The message `labels.tag-projects-list`.
+pub const LABELS_TAG_PROJECTS_LIST: MessageKey = MessageKey::new("labels.tag-projects-list");
+
+/// The message `labels.tag-suggestions`.
+pub const LABELS_TAG_SUGGESTIONS: MessageKey = MessageKey::new("labels.tag-suggestions");
+
+/// The message `labels.tags-heading`.
+pub const LABELS_TAGS_HEADING: MessageKey = MessageKey::new("labels.tags-heading");
+
+/// The message `labels.tags-more`.
+pub const LABELS_TAGS_MORE: MessageKey = MessageKey::new("labels.tags-more");
+
+/// The message `labels.tags-nothing`.
+pub const LABELS_TAGS_NOTHING: MessageKey = MessageKey::new("labels.tags-nothing");
+
+/// The message `labels.tags-search`.
+pub const LABELS_TAGS_SEARCH: MessageKey = MessageKey::new("labels.tags-search");
+
+/// The message `labels.tags-title`.
+pub const LABELS_TAGS_TITLE: MessageKey = MessageKey::new("labels.tags-title");
+
+/// The message `labels.take-off-short`.
+pub const LABELS_TAKE_OFF_SHORT: MessageKey = MessageKey::new("labels.take-off-short");
+
 /// The message `list.next`.
 pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
@@ -2060,6 +2328,9 @@ pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
 /// The message `nav.issue-types`.
 pub const NAV_ISSUE_TYPES: MessageKey = MessageKey::new("nav.issue-types");
+
+/// The message `nav.labels`.
+pub const NAV_LABELS: MessageKey = MessageKey::new("nav.labels");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
@@ -3917,6 +4188,129 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
+/// The message `bulk.finished`.
+#[must_use]
+pub fn bulk_finished(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.finished"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
+    )
+}
+
+/// The message `bulk.line-changes`.
+#[must_use]
+pub fn bulk_line_changes(after: impl std::fmt::Display, field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.line-changes"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("field", Value::Text(field.to_string())),
+        ],
+    )
+}
+
+/// The message `bulk.line-label`.
+#[must_use]
+pub fn bulk_line_label(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.line-label"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `bulk.line-move`.
+#[must_use]
+pub fn bulk_line_move(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.line-move"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `bulk.line-relation`.
+#[must_use]
+pub fn bulk_line_relation(issue: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.line-relation"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `bulk.progress`.
+#[must_use]
+pub fn bulk_progress(done: impl std::fmt::Display, total: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.progress"),
+        vec![
+            ("done", Value::Text(done.to_string())),
+            ("total", Value::Text(total.to_string())),
+        ],
+    )
+}
+
+/// The message `bulk.project-picked`.
+#[must_use]
+pub fn bulk_project_picked(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.project-picked"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `bulk.result-done`.
+#[must_use]
+pub fn bulk_result_done(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.result-done"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
+    )
+}
+
+/// The message `bulk.skipped-line`.
+#[must_use]
+pub fn bulk_skipped_line(issue: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.skipped-line"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `bulk.summary`.
+#[must_use]
+pub fn bulk_summary(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.summary"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
+    )
+}
+
+/// The message `bulk.title`.
+#[must_use]
+pub fn bulk_title(action: impl std::fmt::Display, count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.title"),
+        vec![
+            ("action", Value::Text(action.to_string())),
+            ("count", Value::Number(count)),
+        ],
+    )
+}
+
 /// The message `check-access.level.no-role`.
 #[must_use]
 pub fn check_access_level_no_role(person: impl std::fmt::Display) -> Message {
@@ -4169,6 +4563,15 @@ pub fn comments_version_saved(
             ("version", Value::Text(version.to_string())),
             ("when", Value::Text(when.to_string())),
         ],
+    )
+}
+
+/// The message `common.show-all`.
+#[must_use]
+pub fn common_show_all(count: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.show-all"),
+        vec![("count", Value::Text(count.to_string()))],
     )
 }
 
@@ -5260,6 +5663,114 @@ pub fn keys_rotated(secrets: i64) -> Message {
     )
 }
 
+/// The message `labels.combine-dialog-text`.
+#[must_use]
+pub fn labels_combine_dialog_text(
+    name: impl std::fmt::Display,
+    other: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.combine-dialog-text"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("other", Value::Text(other.to_string())),
+        ],
+    )
+}
+
+/// The message `labels.combine-dialog-title`.
+#[must_use]
+pub fn labels_combine_dialog_title(
+    name: impl std::fmt::Display,
+    other: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.combine-dialog-title"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("other", Value::Text(other.to_string())),
+        ],
+    )
+}
+
+/// The message `labels.field-color`.
+#[must_use]
+pub fn labels_field_color(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.field-color"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `labels.group-made`.
+#[must_use]
+pub fn labels_group_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.group-made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `labels.label-made`.
+#[must_use]
+pub fn labels_label_made(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.label-made"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `labels.preview-line`.
+#[must_use]
+pub fn labels_preview_line(
+    after: impl std::fmt::Display,
+    before: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.preview-line"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("before", Value::Text(before.to_string())),
+        ],
+    )
+}
+
+/// The message `labels.preview-summary`.
+#[must_use]
+pub fn labels_preview_summary(changed: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.preview-summary"),
+        vec![("changed", Value::Number(changed))],
+    )
+}
+
+/// The message `labels.tag-in-projects`.
+#[must_use]
+pub fn labels_tag_in_projects(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.tag-in-projects"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `labels.take-off`.
+#[must_use]
+pub fn labels_take_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.take-off"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `labels.take-project-off`.
+#[must_use]
+pub fn labels_take_project_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.take-project-off"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `mentions.in`.
 #[must_use]
 pub fn mentions_in(issue: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -5648,6 +6159,15 @@ pub fn projects_person_role(role: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.person-role"),
         vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
+/// The message `projects.preview-summary`.
+#[must_use]
+pub fn projects_preview_summary(changed: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.preview-summary"),
+        vec![("changed", Value::Number(changed))],
     )
 }
 
@@ -6846,6 +7366,70 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk-status.failed", "Stopped"),
     ("bulk-status.queued", "Waiting"),
     ("bulk-status.running", "Working"),
+    ("bulk.action-change", "Change status or priority"),
+    ("bulk.action-delete", "Delete"),
+    ("bulk.action-label", "Add a label"),
+    ("bulk.action-move", "Move to a project"),
+    ("bulk.action-relation", "Add a relation"),
+    ("bulk.apply", "Apply"),
+    (
+        "bulk.background-note",
+        "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
+    ),
+    ("bulk.bar", "Change the issues you ticked"),
+    (
+        "bulk.delete-text",
+        "The issues are deleted. You can undo this right after.",
+    ),
+    ("bulk.field-kind", "Relation"),
+    ("bulk.field-label", "Label"),
+    (
+        "bulk.field-other",
+        "The other issue, by its ID such as WEB-12",
+    ),
+    ("bulk.field-priority", "Priority"),
+    ("bulk.field-status", "Status"),
+    (
+        "bulk.finished",
+        "Done. {changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
+    ),
+    ("bulk.issue-unknown", "an issue you cannot see"),
+    ("bulk.keep", "Leave as it is"),
+    ("bulk.line-changes", "{field}: {after}"),
+    ("bulk.line-delete", "Is deleted"),
+    ("bulk.line-label", "Gets the label {label}"),
+    ("bulk.line-move", "Moves to {project}"),
+    ("bulk.line-relation", "This issue {name} {issue}"),
+    ("bulk.nothing", "None of the issues would change."),
+    ("bulk.preview-label", "Issues in this change"),
+    ("bulk.progress", "{done} of {total} issues done"),
+    ("bulk.progress-label", "How far the change is"),
+    ("bulk.project-legend", "Move to"),
+    ("bulk.project-list", "Projects to move the issues to"),
+    ("bulk.project-more", "Show more projects"),
+    ("bulk.project-nothing", "No project has that name."),
+    ("bulk.project-picked", "Move to {name}"),
+    ("bulk.project-search", "Search projects"),
+    (
+        "bulk.result-done",
+        "{changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
+    ),
+    ("bulk.show-changes", "Show what changes"),
+    ("bulk.skipped-line", "{issue}: {reason}"),
+    ("bulk.skipped-list", "Issues that were skipped"),
+    (
+        "bulk.stopped",
+        "The change stopped. Some issues are changed and the rest are not.",
+    ),
+    (
+        "bulk.summary",
+        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
+    ),
+    (
+        "bulk.title",
+        "{action}: {count, plural, one {# issue} other {# issues}}",
+    ),
+    ("bulk.value-none", "nothing"),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),
@@ -7149,6 +7733,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.off", "Off"),
     ("common.on", "On"),
     ("common.save", "Save"),
+    ("common.show-all", "Show all {count}"),
+    ("common.show-fewer", "Show fewer"),
     ("common.try-again", "Try again"),
     ("common.undo", "Undo"),
     (
@@ -7839,6 +8425,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.field-issue-type", "Issue type"),
     ("history.field-other", "{field}"),
     ("history.field-parent", "Part of"),
+    ("history.field-project", "Project"),
     ("history.field-sub-issue", "Sub-issue"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
@@ -8149,6 +8736,113 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "keys.settings-placeholder",
         "--config <the settings file of the service>",
     ),
+    ("labels.add-label", "Add a label"),
+    ("labels.add-label-button", "Add label"),
+    ("labels.add-tag", "Add a tag"),
+    ("labels.add-tag-button", "Add tag"),
+    ("labels.combine", "Combine"),
+    (
+        "labels.combine-dialog-text",
+        "The issues that have {name} get {other}, and {name} is gone.",
+    ),
+    (
+        "labels.combine-dialog-title",
+        "Combine {name} into {other}?",
+    ),
+    (
+        "labels.combine-help",
+        "Every issue that has this one gets the other one instead, and this one is gone. This cannot be taken back.",
+    ),
+    ("labels.combine-into", "Combine into"),
+    ("labels.combine-pick", "Choose one"),
+    ("labels.combine-title", "Combine into another"),
+    ("labels.combined", "Combined."),
+    ("labels.field-color", "Color of {name}"),
+    ("labels.field-group-name", "Name of the group"),
+    ("labels.field-label-group", "Group"),
+    ("labels.field-label-name", "Name of the label"),
+    ("labels.field-name", "Name"),
+    (
+        "labels.field-pick-one",
+        "An issue gets at most one label of this group",
+    ),
+    ("labels.group-made", "Made the group {name}."),
+    ("labels.group-pick-one", "Pick one"),
+    ("labels.groups-nothing", "No group has that name."),
+    ("labels.groups-search", "Search groups of labels"),
+    ("labels.groups-title", "Groups of labels"),
+    (
+        "labels.intro",
+        "Labels sort issues by groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
+    ),
+    ("labels.label-made", "Made the label {name}."),
+    ("labels.labels-heading", "Labels"),
+    ("labels.labels-nothing", "No label has that name."),
+    ("labels.labels-search", "Search labels"),
+    ("labels.labels-title", "Labels"),
+    ("labels.make-group", "Make group"),
+    (
+        "labels.make-group-intro",
+        "A group keeps labels that belong together. Tick the box when an issue may have only one label of the group.",
+    ),
+    ("labels.make-group-title", "Make a group of labels"),
+    ("labels.make-label", "Make label"),
+    (
+        "labels.make-label-intro",
+        "A label has a name, a color and, if you like, a group.",
+    ),
+    ("labels.make-label-title", "Make a label"),
+    ("labels.no-group", "No group"),
+    ("labels.none-labels", "No labels."),
+    ("labels.none-tags", "No tags."),
+    (
+        "labels.nothing-to-add",
+        "Every label is on this issue already.",
+    ),
+    ("labels.offer-again", "Offer again"),
+    ("labels.pick-label", "Choose a label"),
+    ("labels.preview-label", "Issues that change"),
+    ("labels.preview-line", "From {before} to {after}"),
+    ("labels.preview-no-names", "nothing"),
+    ("labels.preview-nothing", "No issue changes."),
+    (
+        "labels.preview-summary",
+        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change.",
+    ),
+    (
+        "labels.preview-truncated",
+        "More issues change than this list shows.",
+    ),
+    ("labels.retire", "Retire"),
+    (
+        "labels.retire-help",
+        "A retired one can no longer be put on issues. The issues that have it keep it.",
+    ),
+    ("labels.retired", "Retired"),
+    ("labels.save", "Save"),
+    ("labels.saved", "Saved."),
+    ("labels.show-changes", "Show what changes"),
+    ("labels.sorting-title", "Labels and tags"),
+    ("labels.tag-everywhere", "All projects"),
+    ("labels.tag-everywhere-switch", "Use in all projects"),
+    (
+        "labels.tag-in-projects",
+        "{count, plural, one {# project} other {# projects}}",
+    ),
+    (
+        "labels.tag-projects-help",
+        "Without this, the tag is offered only in the projects below. With no project below, it is offered in all of them.",
+    ),
+    ("labels.tag-projects-list", "Projects of the tag"),
+    ("labels.tag-suggestions", "Tags to choose from"),
+    ("labels.tags-heading", "Tags"),
+    ("labels.tags-more", "Show more tags"),
+    ("labels.tags-nothing", "No tag has that name."),
+    ("labels.tags-search", "Search tags"),
+    ("labels.tags-title", "Tags"),
+    ("labels.take-off", "Take {name} off"),
+    ("labels.take-off-short", "Take off"),
+    ("labels.take-project-off", "Take {name} off the list"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     ("markdown.bold", "Bold"),
@@ -8189,6 +8883,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.groups", "Groups"),
     ("nav.home", "Home"),
     ("nav.issue-types", "Issue types"),
+    ("nav.labels", "Labels and tags"),
     ("nav.my-settings", "My settings"),
     ("nav.organization-security", "Security"),
     ("nav.organization-settings", "Organization settings"),
@@ -8533,6 +9228,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "projects.preview-nothing",
         "Nobody gains or loses access, and nobody changes role.",
+    ),
+    (
+        "projects.preview-summary",
+        "{changed, plural, =0 {Nobody} one {# person} other {# people}} will gain or lose access or change role in the projects you can see.",
     ),
     (
         "projects.preview-truncated",

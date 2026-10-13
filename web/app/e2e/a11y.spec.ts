@@ -159,6 +159,7 @@ const visits: readonly Visit[] = [
   { address: paths.groups, open: signedIn(paths.groups), guest: false },
   { address: paths.issueTypes, open: signedIn(paths.issueTypes), guest: false },
   { address: paths.relationKinds, open: signedIn(paths.relationKinds), guest: false },
+  { address: paths.labels, open: signedIn(paths.labels), guest: false },
   { address: paths.fields, open: signedIn(paths.fields), guest: false },
   { address: paths.field, open: signedInAt(() => fieldAddress(someField)), guest: false },
   { address: paths.roles, open: signedIn(paths.roles), guest: false },

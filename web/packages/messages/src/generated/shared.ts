@@ -364,6 +364,7 @@ export const messages = {
   "issue-type.goal": "Goal",
   "nav.relation-kinds": "Kinds of relation",
   "history.tabs": "What to show",
+  "history.people-none": "nobody",
   "error.issue.parent-circle":
     "That would make a circle of issues or a chain that is too long. Choose another issue.",
   "error.limit.reached": "That is as many as one issue can hold. Take some away first.",
@@ -438,6 +439,10 @@ export const messages = {
   "error.field.unknown-reference": "That person, group or issue cannot be chosen here.",
   "error.field.not-here": "This field is not used here.",
   "nav.fields": "Fields",
+  "fields.projects-search": "Find a project",
+  "fields.projects-list": "Projects",
+  "fields.projects-nothing": "No project found.",
+  "fields.projects-more": "Show more projects",
   "fields.yes": "Yes",
   "fields.no": "No",
   "field-example.text": "For example: Customer name",
@@ -483,10 +488,28 @@ export const messages = {
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
   "shortcut.on-issue": "On an open issue",
+  "bulk-skip.not-found": "It is not there for you",
+  "bulk-skip.not-allowed": "You may not make this change to it",
+  "bulk-skip.nothing-to-change": "It is like that already",
+  "bulk-skip.changed-since": "It changed after the preview",
+  "bulk-skip.type-missing": "The other project does not offer its issue type",
+  "bulk-skip.field-missing": "The other project does not use a field it has a value in",
+  "bulk-skip.relation-exists": "The relation is there already",
+  "bulk-skip.same-issue": "An issue cannot be related to itself",
+  "bulk-skip.limit-reached": "It has as many as it may",
+  "bulk-skip.not-valid": "The change does not fit this issue",
+  "bulk-status.queued": "Waiting",
+  "bulk-status.running": "Working",
+  "bulk-status.done": "Done",
+  "bulk-status.failed": "Stopped",
   "error.tag.not-here":
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
   "error.label.pick-one-conflict":
     "Some issues have more than one label of this group already, so it cannot be a group to pick one from. Take the extra labels off first.",
+  "common.show-all": "Show all {count}",
+  "common.show-fewer": "Show fewer",
+  "nav.labels": "Labels and tags",
+  "labels.pick-label": "Choose a label",
 } as const;
 
 register(messages);

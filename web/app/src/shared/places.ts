@@ -5,6 +5,7 @@ import { paths, type Path } from "./paths.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Place } from "./place.ts";
 import { fieldPlaces } from "./field-places.ts";
+import { labelPlaces } from "./label-places.ts";
 import { projectPlaces } from "./project-places.ts";
 import { relationPlaces } from "./relation-places.ts";
 
@@ -190,6 +191,7 @@ const organizationTopics: readonly Place[] = [
   },
   ...fieldPlaces,
   ...relationPlaces,
+  ...labelPlaces,
   {
     path: paths.organizationSecurity,
     name: "nav.organization-security",

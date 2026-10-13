@@ -5,6 +5,7 @@ import {
   keyedLiftSentencesOfPreview,
   keyedSentencesOfPreview,
   liftSentencesOfPreview,
+  personSentencesOfPreview,
   sentencesOfPreview,
 } from "./preview-sentences.ts";
 import { asShortName } from "./short-name.ts";
@@ -30,6 +31,7 @@ function preview(people: Preview["people"], lifts: Preview["lifts"] = []): Previ
     blocked: lifts.length > 0,
     blocked_out_of_sight: false,
     truncated: false,
+    summary: { will_change: people.length, skipped: 0 },
     people,
     lifts,
   };
@@ -161,5 +163,23 @@ describe("prj_01 the short name form", () => {
   it("turns the letters typed into capitals", () => {
     expect(asShortName("web2")).toBe("WEB2");
     expect(asShortName("Web")).toBe("WEB");
+  });
+});
+
+describe("m2c_f80 the preview grouped by person for the long preview", () => {
+  it("makes a group for each person with a sentence and leaves out a person with none", () => {
+    const groups = personSentencesOfPreview(
+      preview([
+        { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
+        {
+          person: { shown: "former", label: "K7Q2" },
+          projects: [{ project: web, now: viewer, after: viewer, ...none }],
+        },
+      ]),
+    );
+    expect(groups.map((group) => group.person)).toEqual(["Cleo"]);
+    expect(groups[0]?.lines.map((line) => line.text)).toEqual([
+      t("projects.line-gains", { person: "Cleo", project: "Website", roles: "Viewer" }),
+    ]);
   });
 });

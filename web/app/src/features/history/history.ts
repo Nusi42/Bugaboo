@@ -3,6 +3,7 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
+import { wordOf } from "../../shared/change-value.ts";
 import { listText } from "../../shared/list-text.ts";
 import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName, personNameInside } from "../../shared/person.ts";
@@ -60,17 +61,13 @@ export function fieldLabel(field: string, name?: string | null): string {
       return t("history.field-parent");
     case "sub-issue":
       return t("history.field-sub-issue");
+    case "project":
+      return t("history.field-project");
     default: {
       const key = `issue-field.${field}`;
       return isMessageKey(key) ? t(key) : t("history.field-other", { field });
     }
   }
-}
-
-/** A word of a status or a priority as people read it; any other text as it is. */
-function wordOf(field: string, text: string): string {
-  const key = field === "status" ? `status.${text}` : `priority.${text}`;
-  return (field === "status" || field === "priority") && isMessageKey(key) ? t(key) : text;
 }
 
 /** What one side of a change shows: a word, the people, or the issue; nothing for no value. */
@@ -80,6 +77,7 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
   const names = side === "before" ? entry.before_names : entry.after_names;
   const people = side === "before" ? entry.before_people : entry.after_people;
   const issue = side === "before" ? entry.before_issue : entry.after_issue;
+  const project = side === "before" ? entry.before_project : entry.after_project;
   if (text !== undefined && text !== null) {
     return wordOf(entry.field ?? "", text);
   }
@@ -92,12 +90,16 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
     return ownValueText(entry.field_kind, value);
   }
   if (names !== undefined && names !== null) {
-    return listText(names);
+    // No tags or labels before: nothing was there, so the sentence says it was set.
+    return names.length === 0 ? undefined : listText(names);
   }
   if (people !== undefined && people !== null) {
     return people.length === 0
       ? t("history.people-none")
       : listText(people.map((person) => personNameInside(person)));
+  }
+  if (project !== undefined && project !== null) {
+    return project.name;
   }
   return issue === undefined || issue === null ? undefined : issue.key;
 }
