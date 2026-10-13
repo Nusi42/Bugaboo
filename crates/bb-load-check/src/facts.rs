@@ -8,7 +8,6 @@ use bb_core::event::{DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{EntityId, IssueId, UserId};
 use bb_core::technical::TechnicalName;
-use bb_core::version;
 use bb_store::Database;
 
 use crate::book::{Book, DraftEnd, last_drafts};
@@ -69,17 +68,6 @@ fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
     format!("{what}: {error}").into()
 }
 
-/// The version an event counted its record up to.
-fn version_after(event: &DomainEvent) -> Option<i64> {
-    event
-        .changes
-        .iter()
-        .find(|change| change.field == version::FIELD)?
-        .after
-        .as_ref()?
-        .as_i64()
-}
-
 /// Whether a comment event names this issue.
 fn is_comment_on(event: &DomainEvent, issue: &str) -> bool {
     !event.counted_version()
@@ -135,7 +123,10 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
             .ok_or_else(|| describe(&work.key, "the issue row is missing"))?;
         facts.issues.push(IssueFacts {
             key: work.key.clone(),
-            event_versions: events.iter().filter_map(version_after).collect(),
+            event_versions: events
+                .iter()
+                .filter_map(DomainEvent::version_after)
+                .collect(),
             comment_events: comments
                 .iter()
                 .filter(|event| is_comment_on(event, &work.id))
