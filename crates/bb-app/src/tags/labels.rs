@@ -183,13 +183,7 @@ pub async fn make_label_group<S: AuthStore>(
     input: MakeLabelGroup,
 ) -> Result<Authorized<LabelGroupView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(
-            &actor,
-            bb_policy::Permission::ManageLabels,
-            Place::Organization,
-        )
-        .await?;
+    let held = ctx.tag_manager(&actor).await?;
     let name = clean_text(&input.name, TAG_NAME_MAX)?;
     let catalogue = ctx.label_catalogue().await?;
     if catalogue.groups.len() >= LABEL_GROUPS_MAX {
@@ -252,13 +246,7 @@ pub async fn change_label_group<S: AuthStore>(
     input: ChangeLabelGroup,
 ) -> Result<Authorized<LabelGroupView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(
-            &actor,
-            bb_policy::Permission::ManageLabels,
-            Place::Organization,
-        )
-        .await?;
+    let held = ctx.tag_manager(&actor).await?;
     if input.name.is_none() && input.pick_one.is_none() && input.retired.is_none() {
         return Err(ErrorCode::InvalidRequest.into());
     }
@@ -361,13 +349,7 @@ pub async fn make_label<S: AuthStore>(
     input: MakeLabel,
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(
-            &actor,
-            bb_policy::Permission::ManageLabels,
-            Place::Organization,
-        )
-        .await?;
+    let held = ctx.tag_manager(&actor).await?;
     let name = clean_text(&input.name, TAG_NAME_MAX)?;
     let catalogue = ctx.label_catalogue().await?;
     if catalogue.labels.len() >= LABELS_MAX {
@@ -439,13 +421,7 @@ pub async fn label_change_preview<S: AuthStore>(
     input: LabelChangePreviewQuery,
 ) -> Result<Authorized<TagChangePreview>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(
-            &actor,
-            bb_policy::Permission::ManageLabels,
-            Place::Organization,
-        )
-        .await?;
+    let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.label_catalogue().await?;
     let label = catalogue.label(input.label)?;
     let rewrite = match (&input.name, input.into) {
@@ -496,13 +472,7 @@ pub async fn change_label<S: AuthStore>(
     input: ChangeLabel,
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(
-            &actor,
-            bb_policy::Permission::ManageLabels,
-            Place::Organization,
-        )
-        .await?;
+    let held = ctx.tag_manager(&actor).await?;
     if input.name.is_none()
         && input.color.is_none()
         && input.group.is_keep()
@@ -637,13 +607,7 @@ pub async fn combine_labels<S: AuthStore>(
     input: CombineLabels,
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let held = ctx
-        .require(
-            &actor,
-            bb_policy::Permission::ManageLabels,
-            Place::Organization,
-        )
-        .await?;
+    let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.label_catalogue().await?;
     let (from, into) = (
         catalogue.label(input.label)?.clone(),

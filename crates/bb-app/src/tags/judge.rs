@@ -7,7 +7,7 @@ use bb_core::ErrorCode;
 use bb_core::id::{LabelId, ProjectId, TagId};
 use bb_core::tags::{
     IssueLabel, IssueTag, LABELS_PER_ISSUE_MAX, Label, LabelGroup, TAGS_PER_ISSUE_MAX, Tag,
-    TagProject, name_key,
+    TagProject, name_key, tag_allowed_in,
 };
 
 /// The names of the tags an issue has, in the order it got them.
@@ -61,8 +61,7 @@ pub(super) fn judge_tag(
             })
         };
     };
-    let mut limited = limits.iter().filter(|limit| limit.tag == tag.id).peekable();
-    if limited.peek().is_some() && !limited.any(|limit| chain.contains(&limit.project)) {
+    if !tag_allowed_in(tag.id, limits, chain) {
         return Err(ErrorCode::TagNotHere);
     }
     let already = held.iter().any(|link| link.tag == tag.id);

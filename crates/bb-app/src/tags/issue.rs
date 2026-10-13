@@ -17,7 +17,7 @@ use bb_core::fields::Field;
 use bb_core::id::{IssueId, LabelId, TagId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{IssueLabel, IssueTag, Label, TAG_NAME_MAX, Tag};
+use bb_core::tags::{IssueLabel, IssueTag, Label, TAG_NAME_MAX, Tag, tag_allowed_in};
 use bb_policy::{Authorized, Evaluation};
 use serde_json::json;
 
@@ -123,14 +123,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         chain: &[bb_core::id::ProjectId],
     ) -> Result<bool, AppError> {
         let state = self.tag_state(issue).await?;
-        Ok(state.held.iter().all(|link| {
-            let mut limits = state
-                .limits
-                .iter()
-                .filter(|limit| limit.tag == link.tag)
-                .peekable();
-            limits.peek().is_none() || limits.any(|limit| chain.contains(&limit.project))
-        }))
+        Ok(state
+            .held
+            .iter()
+            .all(|link| tag_allowed_in(link.tag, &state.limits, chain)))
     }
 
     /// Judges putting a label on an issue: what the preview of a change to many issues shows, and

@@ -6,8 +6,8 @@
 //! because it would be refused.
 
 use bb_core::ErrorCode;
-use bb_core::id::{ProjectId, TagId};
-use bb_core::tags::TAG_SUGGESTIONS_MAX;
+use bb_core::id::ProjectId;
+use bb_core::tags::{TAG_SUGGESTIONS_MAX, tag_allowed_in};
 use bb_policy::{Authorized, Place};
 
 use super::types::{TagRef, TagSuggestions, TagSuggestionsQuery};
@@ -52,14 +52,10 @@ pub async fn tag_suggestions<S: AuthStore>(
         .tag_projects()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let fits = |tag: TagId| {
-        let mut own = limits.iter().filter(|limit| limit.tag == tag).peekable();
-        own.peek().is_none() || own.any(|limit| chain.contains(&limit.project))
-    };
     Ok(held.authorize(TagSuggestions {
         tags: candidates
             .iter()
-            .filter(|tag| fits(tag.id))
+            .filter(|tag| tag_allowed_in(tag.id, &limits, &chain))
             .take(TAG_SUGGESTIONS_MAX)
             .map(TagRef::from)
             .collect(),

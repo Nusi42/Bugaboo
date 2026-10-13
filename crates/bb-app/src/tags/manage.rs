@@ -62,7 +62,7 @@ impl Catalogue {
 impl<S: AuthStore> Ctx<'_, S> {
     /// What the person who looks after tags needs to judge a change: they hold *Manage labels and
     /// tags* for the whole organization.
-    async fn tag_manager(&self, actor: &Actor) -> Result<Arc<Evaluation>, AppError> {
+    pub(super) async fn tag_manager(&self, actor: &Actor) -> Result<Arc<Evaluation>, AppError> {
         self.require(actor, Permission::ManageLabels, Place::Organization)
             .await
     }

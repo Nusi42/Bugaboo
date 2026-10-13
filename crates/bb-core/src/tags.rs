@@ -74,6 +74,14 @@ pub struct TagProject {
     pub project: ProjectId,
 }
 
+/// Whether a tag is allowed in a project whose projects from the top down are `chain`: a tag
+/// without a limit is allowed everywhere, a limited one only in (the sub-projects of) its projects.
+#[must_use]
+pub fn tag_allowed_in(tag: TagId, limits: &[TagProject], chain: &[ProjectId]) -> bool {
+    let mut own = limits.iter().filter(|limit| limit.tag == tag).peekable();
+    own.peek().is_none() || own.any(|limit| chain.contains(&limit.project))
+}
+
 /// A tag on an issue.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct IssueTag {
@@ -159,11 +167,23 @@ pub struct IssueLabel {
 
 #[cfg(test)]
 mod tests {
-    use super::name_key;
+    use super::{TagProject, name_key, tag_allowed_in};
+    use crate::id::{IdSource, SequentialIds};
 
     #[test]
     fn tag_01_two_spellings_of_a_name_have_one_key() {
         assert_eq!(name_key("  Login  Page "), name_key("login page"));
         assert_ne!(name_key("login"), name_key("logins"));
+    }
+
+    #[test]
+    fn tag_01_a_limited_tag_is_allowed_only_in_its_projects() {
+        let mut ids = SequentialIds::default();
+        let (tag, other) = (ids.next_id(), ids.next_id());
+        let (here, there) = (ids.next_id(), ids.next_id());
+        let limits = [TagProject { tag, project: here }];
+        assert!(tag_allowed_in(tag, &limits, &[there, here]));
+        assert!(!tag_allowed_in(tag, &limits, &[there]));
+        assert!(tag_allowed_in(other, &limits, &[there]));
     }
 }
