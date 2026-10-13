@@ -1,9 +1,10 @@
 //! The roles of a saved layout: the editor offers at most `ROLES_MAX` roles, so a save never
 //! changes the others; and the draft holds only what the person sent (M3 WP-09).
 
-use bb_core::access::Role;
+use bb_core::access::{AppliesTo, Role};
 use bb_core::id::{LayoutId, RoleId};
 use bb_core::layout::LayoutContent;
+use bb_policy::Permission;
 use jiff::Timestamp;
 
 use super::scenarios::{a_project, token};
@@ -11,6 +12,7 @@ use super::scenarios_layouts::{a_layout, lock_the_layout_for, slot_of};
 use super::world::{Outcome, World};
 use crate::access::{ROLES_MAX, RoleRecord};
 use crate::layouts::{FieldInput, SaveLayout, SectionInput, save_layout};
+use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
 
 /// Roles beyond the first `ROLES_MAX`, as the last in the order.
 fn more_roles(world: &World, count: usize) -> Result<Vec<RoleId>, String> {
@@ -127,6 +129,68 @@ async fn a_save_never_takes_the_roles_the_editor_did_not_offer_off_a_field() -> 
                 .filter(|r| !placed.roles.contains(r))
                 .map(|r| ordered.iter().position(|(_, o)| o == r))
                 .collect::<Vec<_>>()
+        );
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn the_draft_of_somebody_who_may_not_decide_roles_holds_no_role() -> Outcome {
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let editor = a_layout(&world, "ACME").await?;
+    let slot = slot_of(&editor)?;
+    let role = make_role(
+        &world.ctx(),
+        MakeRole {
+            session_token: admin.clone(),
+            name: "Layout manager".to_owned(),
+            permissions: vec![Permission::SeeProjects, Permission::ManageIssueTypes],
+            two_step: false,
+        },
+    )
+    .await?
+    .into_value();
+    let bob = world.person("bob@example.test").await?;
+    assign_role(
+        &world.ctx(),
+        AssignRole {
+            session_token: admin,
+            subject: Subject::Person(bob.person.id),
+            given: Given::Role(role.id),
+            project: None,
+            applies_to: AppliesTo::Organization,
+        },
+    )
+    .await?;
+    let _ = project;
+    let content = stored(&world, slot.id)?;
+    let lock = lock_the_layout_for(&world, slot, bob.person.id);
+    // Somebody saved meanwhile, so this save is stale and its changes are kept as a draft.
+    for found in &mut world.store.lock().state.layouts {
+        found.layout.version += 1;
+    }
+    let stale = save_layout(
+        &world.ctx(),
+        SaveLayout {
+            session_token: bob.session_token.clone(),
+            layout: slot.id,
+            version: slot.version,
+            lock_token: lock,
+            sections: inputs(&content, &|_| Vec::new()),
+        },
+    )
+    .await;
+    assert!(stale.is_err());
+    let kept = world.store.lock();
+    assert_eq!(kept.state.drafts.len(), 1);
+    let draft = &kept.state.drafts[0].text;
+    for record in &kept.state.roles {
+        assert!(
+            !draft.contains(&record.role.id.to_string()),
+            "the draft names role {}",
+            record.role.name
         );
     }
     Ok(())

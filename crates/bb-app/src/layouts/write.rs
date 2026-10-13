@@ -147,7 +147,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 });
                 shown.push(PlacedField {
                     field: input.field,
-                    roles: fields[fields.len() - 1].roles.clone(),
+                    roles: asked,
                 });
             }
             sent.sections.push(SectionContent {
