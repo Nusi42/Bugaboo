@@ -218,6 +218,19 @@ fn feature_of(path: &str) -> Option<&'static str> {
         .find(|part| *part == name && *part != SHARED)
 }
 
+/// The feature folders among `paths` that have no part, so their texts would stay on the first
+/// page. A new feature is added to [`PARTS`].
+pub(crate) fn features_without_part<'a>(paths: impl Iterator<Item = &'a str>) -> Vec<&'a str> {
+    let mut missing: Vec<&str> = paths
+        .filter_map(|path| path.strip_prefix(FEATURES_FOLDER)?.split_once('/'))
+        .map(|(name, _)| name)
+        .filter(|name| !PARTS.iter().any(|part| part.name == *name))
+        .collect();
+    missing.sort_unstable();
+    missing.dedup();
+    missing
+}
+
 /// Who names a key in the code.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Users {

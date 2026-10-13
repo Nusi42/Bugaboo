@@ -25,8 +25,9 @@ use super::{Check, Context, Finding};
 use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::messages::{
-    PART_IMPORT, SHARED, SOURCE_LOCALE_PATH, feature_entries, is_generated_catalog, is_server_only,
-    is_test_or_generated, parse_pairs, parts_of, string_literals,
+    PART_IMPORT, SHARED, SOURCE_LOCALE_PATH, feature_entries, features_without_part,
+    is_generated_catalog, is_server_only, is_test_or_generated, parse_pairs, parts_of,
+    string_literals,
 };
 use crate::generate::messages_rust::{constant_name, function_name};
 use crate::rust_source::{strip_comments, without_tests};
@@ -194,6 +195,12 @@ fn check_parts(
         .map(|file| (file.path.clone(), file.text.clone()))
         .collect();
     let filled: HashSet<&str> = parts_of(keys, &code).into_values().collect();
+    for feature in features_without_part(sources.iter().map(|file| file.path.as_str())) {
+        findings.push(Finding::at(
+            format!("web/app/src/features/{feature}"),
+            "This feature has no message part, so its texts would stay on the first page. Add `part!(\"…\")` with its folder name to PARTS in xtask/src/gen/messages.rs, run `cargo xtask gen messages`, and import the part in its index.ts.",
+        ));
+    }
     let import_of = |part: &str| format!("{PART_IMPORT}{part}");
     for part in filled.iter().filter(|part| **part != SHARED) {
         let entries = feature_entries(part);
@@ -550,6 +557,20 @@ mod tests {
             r#"import "@bugaboo/messages/parts/fields";"#,
         );
         assert!(evaluate(&locales, &[page, shell, with], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_feature_folder_without_a_part_is_found() {
+        let locales = [locale(r#"{"fields.list": "Fields"}"#)];
+        let code = [source(
+            "web/app/src/features/brand-new/Page.tsx",
+            r#"t("fields.list")"#,
+        )];
+        let places: Vec<String> = evaluate(&locales, &code, &[])
+            .into_iter()
+            .filter_map(|finding| finding.location)
+            .collect();
+        assert_eq!(places, ["web/app/src/features/brand-new"]);
     }
 
     #[test]
