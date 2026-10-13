@@ -251,6 +251,12 @@ export interface MessageArguments {
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };
+  "server-status.certificate.expired": { date: string | number };
+  "server-status.certificate.soon": { date: string | number; days: number };
+  "server-status.certificate.valid": { date: string | number; days: number };
+  "server-status.log-failures": { count: number };
+  "server-status.started": { when: string | number };
+  "server-status.uptime": { days: number; hours: number; minutes: number };
   "sessions.device": { browser: string | number; system: string | number };
   "sessions.end-name": { device: string | number };
   "sessions.last-seen": { when: string | number };
@@ -269,11 +275,5 @@ export interface MessageArguments {
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
   "shortcuts.conflict": { action: string | number; keys: string | number };
-  "status.certificate.expired": { date: string | number };
-  "status.certificate.soon": { date: string | number; days: number };
-  "status.certificate.valid": { date: string | number; days: number };
-  "status.log-failures": { count: number };
-  "status.started": { when: string | number };
-  "status.uptime": { days: number; hours: number; minutes: number };
   "theme.device-resolved": { device: string | number; theme: string | number };
 }

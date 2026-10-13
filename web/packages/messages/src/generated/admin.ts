@@ -20,11 +20,46 @@ export const messages = {
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
   "security-log.reason.behind":
     "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
+  "server-status.title": "Server status",
+  "server-status.intro": "How this Bugaboo server is doing.",
+  "server-status.refresh": "Check again",
+  "server-status.state.ok": "All good",
+  "server-status.state.warning": "Needs attention",
+  "server-status.state.problem": "Problem",
+  "server-status.version": "Version",
+  "server-status.running": "Running for",
+  "server-status.uptime":
+    "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}}, {minutes, plural, one {# minute} other {# minutes}}",
+  "server-status.started": "Started {when}",
+  "server-status.database": "Database",
+  "server-status.database.built-in": "The built-in database in the data folder",
+  "server-status.database.sqlite": "A SQLite file",
+  "server-status.database.postgres": "A PostgreSQL server",
+  "server-status.database.ok": "Working.",
+  "server-status.database.failed": "Not answering.",
+  "server-status.certificate": "HTTPS certificate",
+  "server-status.certificate.valid":
+    "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
+  "server-status.certificate.soon":
+    "Valid until {date}, which is only {days, plural, one {# day} other {# days}} from now. Renew it soon.",
+  "server-status.certificate.expired": "This certificate ran out on {date}. Browsers refuse it.",
+  "server-status.certificate.none":
+    "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
+  "server-status.log": "Security log",
+  "server-status.log-failures":
+    "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
   "data-folder.part.folder": "The data folder",
   "data-folder.part.database": "The database file",
   "data-folder.part.files": "The folder for attachments",
   "data-folder.part.backups": "The folder for backups",
   "data-folder.part.setup-code-file": "The setup code file",
+  "server-status.data-folder": "Data folder rights",
+  "server-status.data-folder.closed":
+    "Only the account that runs Bugaboo can open the parts of the data folder.",
+  "server-status.data-folder.open":
+    "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
+  "server-status.data-folder.unknown":
+    "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
 } as const;
 
 register(messages);

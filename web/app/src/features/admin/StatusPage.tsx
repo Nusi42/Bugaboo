@@ -12,9 +12,9 @@ import { StatusRows } from "./StatusRows.tsx";
 type State = Schema<"ServerStatusBody">;
 
 const levelMessages: Readonly<Record<Level, MessageKey>> = {
-  ok: "status.state.ok",
-  warning: "status.state.warning",
-  problem: "status.state.problem",
+  ok: "server-status.state.ok",
+  warning: "server-status.state.warning",
+  problem: "server-status.state.problem",
 };
 
 const levelTones: Readonly<Record<Level, AlertTone>> = {
@@ -31,11 +31,11 @@ function Summary({ state }: { readonly state: State }) {
 
 /** The status page for administrators: how the server is doing (OPS-08). */
 export function StatusPage() {
-  usePageTitle(t("status.title"));
+  usePageTitle(t("server-status.title"));
   const status = useQuery(api.query.queryOptions("get", "/api/v1/admin/status"));
   return (
-    <Card heading={t("status.title")} level={1}>
-      <p {...partOf(part.text)}>{t("status.intro")}</p>
+    <Card heading={t("server-status.title")} level={1}>
+      <p {...partOf(part.text)}>{t("server-status.intro")}</p>
       {status.isError ? <Alert tone={alertTone.danger}>{messageOf(status.error)}</Alert> : null}
       {status.data === undefined ? null : <Summary state={status.data} />}
       {status.data === undefined ? null : <StatusRows state={status.data} />}
@@ -46,7 +46,7 @@ export function StatusPage() {
             void status.refetch();
           }}
         >
-          {t("status.refresh")}
+          {t("server-status.refresh")}
         </Button>
       </div>
     </Card>

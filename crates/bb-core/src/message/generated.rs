@@ -2682,6 +2682,77 @@ pub const SECURITY_PASSWORD_TITLE: MessageKey = MessageKey::new("security.passwo
 /// The message `security.title`.
 pub const SECURITY_TITLE: MessageKey = MessageKey::new("security.title");
 
+/// The message `server-status.certificate`.
+pub const SERVER_STATUS_CERTIFICATE: MessageKey = MessageKey::new("server-status.certificate");
+
+/// The message `server-status.certificate.none`.
+pub const SERVER_STATUS_CERTIFICATE_NONE: MessageKey =
+    MessageKey::new("server-status.certificate.none");
+
+/// The message `server-status.data-folder`.
+pub const SERVER_STATUS_DATA_FOLDER: MessageKey = MessageKey::new("server-status.data-folder");
+
+/// The message `server-status.data-folder.closed`.
+pub const SERVER_STATUS_DATA_FOLDER_CLOSED: MessageKey =
+    MessageKey::new("server-status.data-folder.closed");
+
+/// The message `server-status.data-folder.open`.
+pub const SERVER_STATUS_DATA_FOLDER_OPEN: MessageKey =
+    MessageKey::new("server-status.data-folder.open");
+
+/// The message `server-status.data-folder.unknown`.
+pub const SERVER_STATUS_DATA_FOLDER_UNKNOWN: MessageKey =
+    MessageKey::new("server-status.data-folder.unknown");
+
+/// The message `server-status.database`.
+pub const SERVER_STATUS_DATABASE: MessageKey = MessageKey::new("server-status.database");
+
+/// The message `server-status.database.built-in`.
+pub const SERVER_STATUS_DATABASE_BUILT_IN: MessageKey =
+    MessageKey::new("server-status.database.built-in");
+
+/// The message `server-status.database.failed`.
+pub const SERVER_STATUS_DATABASE_FAILED: MessageKey =
+    MessageKey::new("server-status.database.failed");
+
+/// The message `server-status.database.ok`.
+pub const SERVER_STATUS_DATABASE_OK: MessageKey = MessageKey::new("server-status.database.ok");
+
+/// The message `server-status.database.postgres`.
+pub const SERVER_STATUS_DATABASE_POSTGRES: MessageKey =
+    MessageKey::new("server-status.database.postgres");
+
+/// The message `server-status.database.sqlite`.
+pub const SERVER_STATUS_DATABASE_SQLITE: MessageKey =
+    MessageKey::new("server-status.database.sqlite");
+
+/// The message `server-status.intro`.
+pub const SERVER_STATUS_INTRO: MessageKey = MessageKey::new("server-status.intro");
+
+/// The message `server-status.log`.
+pub const SERVER_STATUS_LOG: MessageKey = MessageKey::new("server-status.log");
+
+/// The message `server-status.refresh`.
+pub const SERVER_STATUS_REFRESH: MessageKey = MessageKey::new("server-status.refresh");
+
+/// The message `server-status.running`.
+pub const SERVER_STATUS_RUNNING: MessageKey = MessageKey::new("server-status.running");
+
+/// The message `server-status.state.ok`.
+pub const SERVER_STATUS_STATE_OK: MessageKey = MessageKey::new("server-status.state.ok");
+
+/// The message `server-status.state.problem`.
+pub const SERVER_STATUS_STATE_PROBLEM: MessageKey = MessageKey::new("server-status.state.problem");
+
+/// The message `server-status.state.warning`.
+pub const SERVER_STATUS_STATE_WARNING: MessageKey = MessageKey::new("server-status.state.warning");
+
+/// The message `server-status.title`.
+pub const SERVER_STATUS_TITLE: MessageKey = MessageKey::new("server-status.title");
+
+/// The message `server-status.version`.
+pub const SERVER_STATUS_VERSION: MessageKey = MessageKey::new("server-status.version");
+
 /// The message `server.about`.
 pub const SERVER_ABOUT: MessageKey = MessageKey::new("server.about");
 
@@ -3285,77 +3356,14 @@ pub const STATUS_GROUP_IN_PROGRESS: MessageKey = MessageKey::new("status-group.i
 /// The message `status-group.not-started`.
 pub const STATUS_GROUP_NOT_STARTED: MessageKey = MessageKey::new("status-group.not-started");
 
-/// The message `status.certificate`.
-pub const STATUS_CERTIFICATE: MessageKey = MessageKey::new("status.certificate");
-
-/// The message `status.certificate.none`.
-pub const STATUS_CERTIFICATE_NONE: MessageKey = MessageKey::new("status.certificate.none");
-
-/// The message `status.data-folder`.
-pub const STATUS_DATA_FOLDER: MessageKey = MessageKey::new("status.data-folder");
-
-/// The message `status.data-folder.closed`.
-pub const STATUS_DATA_FOLDER_CLOSED: MessageKey = MessageKey::new("status.data-folder.closed");
-
-/// The message `status.data-folder.open`.
-pub const STATUS_DATA_FOLDER_OPEN: MessageKey = MessageKey::new("status.data-folder.open");
-
-/// The message `status.data-folder.unknown`.
-pub const STATUS_DATA_FOLDER_UNKNOWN: MessageKey = MessageKey::new("status.data-folder.unknown");
-
-/// The message `status.database`.
-pub const STATUS_DATABASE: MessageKey = MessageKey::new("status.database");
-
-/// The message `status.database.built-in`.
-pub const STATUS_DATABASE_BUILT_IN: MessageKey = MessageKey::new("status.database.built-in");
-
-/// The message `status.database.failed`.
-pub const STATUS_DATABASE_FAILED: MessageKey = MessageKey::new("status.database.failed");
-
-/// The message `status.database.ok`.
-pub const STATUS_DATABASE_OK: MessageKey = MessageKey::new("status.database.ok");
-
-/// The message `status.database.postgres`.
-pub const STATUS_DATABASE_POSTGRES: MessageKey = MessageKey::new("status.database.postgres");
-
-/// The message `status.database.sqlite`.
-pub const STATUS_DATABASE_SQLITE: MessageKey = MessageKey::new("status.database.sqlite");
-
 /// The message `status.done`.
 pub const STATUS_DONE: MessageKey = MessageKey::new("status.done");
 
 /// The message `status.in-progress`.
 pub const STATUS_IN_PROGRESS: MessageKey = MessageKey::new("status.in-progress");
 
-/// The message `status.intro`.
-pub const STATUS_INTRO: MessageKey = MessageKey::new("status.intro");
-
-/// The message `status.log`.
-pub const STATUS_LOG: MessageKey = MessageKey::new("status.log");
-
 /// The message `status.open`.
 pub const STATUS_OPEN: MessageKey = MessageKey::new("status.open");
-
-/// The message `status.refresh`.
-pub const STATUS_REFRESH: MessageKey = MessageKey::new("status.refresh");
-
-/// The message `status.running`.
-pub const STATUS_RUNNING: MessageKey = MessageKey::new("status.running");
-
-/// The message `status.state.ok`.
-pub const STATUS_STATE_OK: MessageKey = MessageKey::new("status.state.ok");
-
-/// The message `status.state.problem`.
-pub const STATUS_STATE_PROBLEM: MessageKey = MessageKey::new("status.state.problem");
-
-/// The message `status.state.warning`.
-pub const STATUS_STATE_WARNING: MessageKey = MessageKey::new("status.state.warning");
-
-/// The message `status.title`.
-pub const STATUS_TITLE: MessageKey = MessageKey::new("status.title");
-
-/// The message `status.version`.
-pub const STATUS_VERSION: MessageKey = MessageKey::new("status.version");
 
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
@@ -5497,6 +5505,70 @@ pub fn security_log_valid(entries: i64) -> Message {
     )
 }
 
+/// The message `server-status.certificate.expired`.
+#[must_use]
+pub fn server_status_certificate_expired(date: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.certificate.expired"),
+        vec![("date", Value::Text(date.to_string()))],
+    )
+}
+
+/// The message `server-status.certificate.soon`.
+#[must_use]
+pub fn server_status_certificate_soon(date: impl std::fmt::Display, days: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.certificate.soon"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("days", Value::Number(days)),
+        ],
+    )
+}
+
+/// The message `server-status.certificate.valid`.
+#[must_use]
+pub fn server_status_certificate_valid(date: impl std::fmt::Display, days: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.certificate.valid"),
+        vec![
+            ("date", Value::Text(date.to_string())),
+            ("days", Value::Number(days)),
+        ],
+    )
+}
+
+/// The message `server-status.log-failures`.
+#[must_use]
+pub fn server_status_log_failures(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.log-failures"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `server-status.started`.
+#[must_use]
+pub fn server_status_started(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.started"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `server-status.uptime`.
+#[must_use]
+pub fn server_status_uptime(days: i64, hours: i64, minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("server-status.uptime"),
+        vec![
+            ("days", Value::Number(days)),
+            ("hours", Value::Number(hours)),
+            ("minutes", Value::Number(minutes)),
+        ],
+    )
+}
+
 /// The message `server.database-failed`.
 #[must_use]
 pub fn server_database_failed(reason: impl std::fmt::Display) -> Message {
@@ -5883,70 +5955,6 @@ pub fn shortcuts_conflict(action: impl std::fmt::Display, keys: impl std::fmt::D
         vec![
             ("action", Value::Text(action.to_string())),
             ("keys", Value::Text(keys.to_string())),
-        ],
-    )
-}
-
-/// The message `status.certificate.expired`.
-#[must_use]
-pub fn status_certificate_expired(date: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("status.certificate.expired"),
-        vec![("date", Value::Text(date.to_string()))],
-    )
-}
-
-/// The message `status.certificate.soon`.
-#[must_use]
-pub fn status_certificate_soon(date: impl std::fmt::Display, days: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("status.certificate.soon"),
-        vec![
-            ("date", Value::Text(date.to_string())),
-            ("days", Value::Number(days)),
-        ],
-    )
-}
-
-/// The message `status.certificate.valid`.
-#[must_use]
-pub fn status_certificate_valid(date: impl std::fmt::Display, days: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("status.certificate.valid"),
-        vec![
-            ("date", Value::Text(date.to_string())),
-            ("days", Value::Number(days)),
-        ],
-    )
-}
-
-/// The message `status.log-failures`.
-#[must_use]
-pub fn status_log_failures(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("status.log-failures"),
-        vec![("count", Value::Number(count))],
-    )
-}
-
-/// The message `status.started`.
-#[must_use]
-pub fn status_started(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("status.started"),
-        vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
-/// The message `status.uptime`.
-#[must_use]
-pub fn status_uptime(days: i64, hours: i64, minutes: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("status.uptime"),
-        vec![
-            ("days", Value::Number(days)),
-            ("hours", Value::Number(hours)),
-            ("minutes", Value::Number(minutes)),
         ],
     )
 }
@@ -8181,6 +8189,63 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("security.password.submit", "Change password"),
     ("security.password.title", "Password"),
     ("security.title", "Sign-in & security"),
+    ("server-status.certificate", "HTTPS certificate"),
+    (
+        "server-status.certificate.expired",
+        "This certificate ran out on {date}. Browsers refuse it.",
+    ),
+    (
+        "server-status.certificate.none",
+        "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
+    ),
+    (
+        "server-status.certificate.soon",
+        "Valid until {date}, which is only {days, plural, one {# day} other {# days}} from now. Renew it soon.",
+    ),
+    (
+        "server-status.certificate.valid",
+        "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
+    ),
+    ("server-status.data-folder", "Data folder rights"),
+    (
+        "server-status.data-folder.closed",
+        "Only the account that runs Bugaboo can open the parts of the data folder.",
+    ),
+    (
+        "server-status.data-folder.open",
+        "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
+    ),
+    (
+        "server-status.data-folder.unknown",
+        "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
+    ),
+    ("server-status.database", "Database"),
+    (
+        "server-status.database.built-in",
+        "The built-in database in the data folder",
+    ),
+    ("server-status.database.failed", "Not answering."),
+    ("server-status.database.ok", "Working."),
+    ("server-status.database.postgres", "A PostgreSQL server"),
+    ("server-status.database.sqlite", "A SQLite file"),
+    ("server-status.intro", "How this Bugaboo server is doing."),
+    ("server-status.log", "Security log"),
+    (
+        "server-status.log-failures",
+        "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
+    ),
+    ("server-status.refresh", "Check again"),
+    ("server-status.running", "Running for"),
+    ("server-status.started", "Started {when}"),
+    ("server-status.state.ok", "All good"),
+    ("server-status.state.problem", "Problem"),
+    ("server-status.state.warning", "Needs attention"),
+    ("server-status.title", "Server status"),
+    (
+        "server-status.uptime",
+        "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}}, {minutes, plural, one {# minute} other {# minutes}}",
+    ),
+    ("server-status.version", "Version"),
     ("server.about", "Bugaboo: the issue tracker in one file"),
     (
         "server.database-built-in",
@@ -8718,66 +8783,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status-group.done", "Done"),
     ("status-group.in-progress", "In progress"),
     ("status-group.not-started", "Not started"),
-    ("status.certificate", "HTTPS certificate"),
-    (
-        "status.certificate.expired",
-        "This certificate ran out on {date}. Browsers refuse it.",
-    ),
-    (
-        "status.certificate.none",
-        "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
-    ),
-    (
-        "status.certificate.soon",
-        "Valid until {date}, which is only {days, plural, one {# day} other {# days}} from now. Renew it soon.",
-    ),
-    (
-        "status.certificate.valid",
-        "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
-    ),
-    ("status.data-folder", "Data folder rights"),
-    (
-        "status.data-folder.closed",
-        "Only the account that runs Bugaboo can open the parts of the data folder.",
-    ),
-    (
-        "status.data-folder.open",
-        "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
-    ),
-    (
-        "status.data-folder.unknown",
-        "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
-    ),
-    ("status.database", "Database"),
-    (
-        "status.database.built-in",
-        "The built-in database in the data folder",
-    ),
-    ("status.database.failed", "Not answering."),
-    ("status.database.ok", "Working."),
-    ("status.database.postgres", "A PostgreSQL server"),
-    ("status.database.sqlite", "A SQLite file"),
     ("status.done", "Done"),
     ("status.in-progress", "In progress"),
-    ("status.intro", "How this Bugaboo server is doing."),
-    ("status.log", "Security log"),
-    (
-        "status.log-failures",
-        "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
-    ),
     ("status.open", "Open"),
-    ("status.refresh", "Check again"),
-    ("status.running", "Running for"),
-    ("status.started", "Started {when}"),
-    ("status.state.ok", "All good"),
-    ("status.state.problem", "Problem"),
-    ("status.state.warning", "Needs attention"),
-    ("status.title", "Server status"),
-    (
-        "status.uptime",
-        "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}}, {minutes, plural, one {# minute} other {# minutes}}",
-    ),
-    ("status.version", "Version"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),

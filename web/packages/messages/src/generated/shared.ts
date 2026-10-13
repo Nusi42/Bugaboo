@@ -169,32 +169,6 @@ export const messages = {
   "nav.status": "Server status",
   "nav.sign-out": "Sign out",
   "passkeys.cancelled": "The passkey was not used. You can try again.",
-  "status.title": "Server status",
-  "status.intro": "How this Bugaboo server is doing.",
-  "status.refresh": "Check again",
-  "status.state.ok": "All good",
-  "status.state.warning": "Needs attention",
-  "status.state.problem": "Problem",
-  "status.version": "Version",
-  "status.running": "Running for",
-  "status.uptime":
-    "{days, plural, one {# day} other {# days}}, {hours, plural, one {# hour} other {# hours}}, {minutes, plural, one {# minute} other {# minutes}}",
-  "status.started": "Started {when}",
-  "status.database": "Database",
-  "status.database.built-in": "The built-in database in the data folder",
-  "status.database.sqlite": "A SQLite file",
-  "status.database.postgres": "A PostgreSQL server",
-  "status.database.ok": "Working.",
-  "status.database.failed": "Not answering.",
-  "status.certificate": "HTTPS certificate",
-  "status.certificate.valid":
-    "Valid until {date}, which is {days, plural, one {# day} other {# days}} from now.",
-  "status.certificate.soon":
-    "Valid until {date}, which is only {days, plural, one {# day} other {# days}} from now. Renew it soon.",
-  "status.certificate.expired": "This certificate ran out on {date}. Browsers refuse it.",
-  "status.certificate.none":
-    "Not shown. Either another program in front of Bugaboo handles HTTPS, or the certificate file cannot be read.",
-  "status.log": "Security log",
   "data-folder.not-a-data-folder":
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
@@ -245,23 +219,14 @@ export const messages = {
   "save.saving": "Saving…",
   "save.saved": "Saved",
   "save.not-saved": "Not saved yet",
-  "status.log-failures":
-    "{count, plural, one {# entry} other {# entries}} of the security log could not be written since the server started. Check that the disk is not full and that the account that runs Bugaboo can write in the data folder, then look at the server log.",
   "data-folder.open":
     "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
-  "status.data-folder": "Data folder rights",
-  "status.data-folder.closed":
-    "Only the account that runs Bugaboo can open the parts of the data folder.",
-  "status.data-folder.open":
-    "Other accounts on this computer can open these. Bugaboo leaves them as they are, in case you set these rights on purpose. If nobody else should read them, remove the rights of the other accounts.",
   "data-folder.own-certificate":
     "The folder {path} holds only files of your own in its tls folder, such as a certificate. Installing the service would change who owns them. If this folder is meant to become the data folder of Bugaboo, run the command again with {flag}.",
   "setup.database-url-password":
     "The database address on the command line has a password in it, and other people on this computer can read the command line, for example in the list of running programs. This time the address is saved in {file}. Next time answer the database question of setup instead of using the option, or set the environment variable {variable}.",
   "data-folder.unknown":
     "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
-  "status.data-folder.unknown":
-    "Bugaboo could not read the rights of these, so it cannot say whether other accounts can open them. Check them yourself:",
   "error.access.would-lock-out":
     "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
   "error.access.cannot-lift":

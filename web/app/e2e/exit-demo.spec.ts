@@ -37,7 +37,9 @@ const entriesAfter = {
 /** Opens the status page and expects the security log to be intact with exactly `entries` entries. */
 async function expectLogIntact(page: Page, entries: number): Promise<void> {
   await openFromMenu(page, t("nav.status"));
-  await expect(page.getByRole("heading", { level: 1, name: t("status.title") })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("server-status.title") }),
+  ).toBeVisible();
   await expect(page.getByText(t("security-log.valid", { entries }))).toBeVisible();
   await expect(page.getByText(t("security-log.unanchored"))).toHaveCount(0);
 }
