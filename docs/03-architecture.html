@@ -890,7 +890,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <ul>
 <li><strong>Server data:</strong> only in the TanStack Query cache. <strong>URL:</strong> the search, the presentation and the open issue live in typed URL parameters, so every screen is shareable.</li>
 <li><strong>Lean requests:</strong> each screen asks for the fields its layout shows (<code>?fields=</code>); lists use cursor pagination and are virtualized.</li>
-<li><strong>Text:</strong> every user-facing string is a key in <code>messages/en.json</code> (ICU message format), typed via generated keys. The hooks reject literal text in components.</li>
+<li><strong>Text:</strong> every user-facing string is a key in <code>messages/en.json</code> (ICU message format), typed via generated keys. The hooks reject literal text in components. The browser catalog is split into parts (ADR-0028): the first page loads <code>shared</code>, and the entry of each feature imports its own part, so the texts of a lazy area arrive with its chunk; <code>t()</code> of a text whose part is not loaded fails. Enforced by: TXT-CATALOG, DOC-GENERATED.</li>
 <li><strong>Text in Rust:</strong> the server uses the constants and functions generated into <code>bb_core::message</code> (<code>SERVER_NOT_FOUND</code>, <code>server_port_busy(port)</code>), whose placeholders are typed arguments; a key that does not exist does not compile. Keys that nothing uses are found. Enforced by: TXT-CATALOG.</li>
 <li><strong>Styles:</strong> one theme file (<code>design/theme.kdl</code>): tokens per theme and mode, and the rules of every component as <code>part</code> rules that use token variables only; one generated style sheet; no inline styles and no class names (CSP, THEME-ONLY).</li>
 <li><strong>Accessibility:</strong> React Aria Components for focus, keyboard and screen-reader behavior; axe checks in CI.</li>
@@ -1165,7 +1165,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>LINT-HYGIENE</code></td><td>No console.log, no any, no non-null !, no @ts-ignore, no TODO without an issue number, no dbg!/println!</td><td>coding-standards §2, §3, §4</td><td>oxlint rules + ast-grep</td><td>edit · commit · ci</td></tr>
 <tr><td><code>LINT-API-TYPES</code></td><td>No hand-written API response types in the browser app</td><td>ADR-0008</td><td>xtask (type and interface names in web/app against the schemas of the generated OpenAPI document, and names that say they are server answers)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-LITERAL</code></td><td>No hard-coded user-facing text in components</td><td>UX-07, coding-standards §4</td><td>oxlint (react/jsx-no-literals, one configuration with LINT-TS): JSX text and the string values of aria-*, title, alt and placeholder</td><td>edit · commit · ci</td></tr>
-<tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match</td><td>UX-07</td><td>xtask (parses messages/en.json and code references)</td><td>edit · commit · ci</td></tr>
+<tr><td><code>TXT-CATALOG</code></td><td>Message catalog: no missing, unused or duplicate keys; placeholders match; every area imports its part</td><td>UX-07, ADR-0028</td><td>xtask (parses messages/en.json and code references; the entry of every feature with a message part imports it)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>TXT-TERMS</code></td><td>No words from the glossary's 'Don't say' column in UI text, user docs or API names</td><td>glossary.md</td><td>xtask (reads glossary tables)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>STY-TOKENS</code></td><td>Only design tokens in code: no hex/rgb colors in the app or in a rule of the theme file</td><td>ADR-0010, ADR-0026</td><td>xtask (no color values in the TypeScript and CSS of the app, nor in the rules of design/theme.kdl; sizes are LINT-CSS, styles from code are THEME-ONLY)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>THEME-ONLY</code></td><td>The look lives in design/theme.kdl only: no style=, no className, no CSS file but the generated one (also in the pages of docs/)</td><td>ADR-0026, coding-standards §4</td><td>xtask (the TypeScript and CSS files of the app, and no style element or attribute in the pages of docs/; nothing is exempt)</td><td>edit · commit · ci</td></tr>
@@ -1753,7 +1753,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Consequences</h4>
 <ul>
 <li>No global client state library: URL + query cache + local component state cover the needs.</li>
-<li>Heavy features are lazy-loaded to meet the 250 KB initial budget.</li>
+<li>Heavy features are lazy-loaded to meet the 250 KB initial budget, and so are their texts: each feature brings its own part of the message catalog (ADR-0028).</li>
 </ul>
 <h4>Alternatives considered</h4>
 <ul>
@@ -2471,6 +2471,36 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Enforced by</h4>
 <p>Review (the lookup function is the one place; its property test <code>cfg_01_a_layout_never_shows_a_field_the_role_cannot_see</code> lives in WP-09) and SEC-MATRIX for the levels per issue type.</p>
+
+<!-- 0028-message-parts.md -->
+<h3 id="adr-0028"><button class="sec" data-sec>§13.28</button>ADR-0028: The message catalog is split into parts; the first page loads one</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-13</p>
+<h4>Context</h4>
+<p><code>messages/en.json</code> is the one source of every word (UX-07). The browser got all of it as one object, so every text of every screen was in the first page, and each new screen made the first page bigger: the catalog was about 22 KB of the 250 KB the first page may have (PERF-04, ADR-0009). The next package in line already pushed the first page over the budget through new texts alone.</p>
+<h4>Decision</h4>
+<ol>
+<li><strong><code>en.json</code> stays the one source, and the generator writes the parts.</strong> <code>cargo xtask gen messages</code> writes one TypeScript file per part into <code>web/packages/messages/src/generated/</code>: <code>shared.ts</code> (the first page) and one file per folder of <code>web/app/src/features/</code>, plus <code>types.ts</code> (the type of every key, with no text in it) and <code>all.ts</code> (every part, for tests).</li>
+<li><strong>One rule says where a key goes, and nobody keeps a list of keys.</strong> Code names a key when it writes it as a string, or builds it from a template (<code>`issue-field.${code}`</code> or <code>"issue-field." + code</code>): a template names every key that starts with its text. Comments do not count. A key goes to the part of a feature when that feature is the only code that names it (the same reading TXT-CATALOG uses for "used"). It goes to <code>shared</code> when code outside the features names it, when two features do, and when no code names it: the server sends such a key, or a word of an enum makes it, and then any page may show it. The keys that the words of the enums make (error codes, <code>issue-field.</code>, <code>starting-role.</code>, permissions and so on, from one list that the generator and TXT-CATALOG share) are always <code>shared</code>, whatever the code says: the server sends them by key and shared code looks them up at run time. The one table in the generator lists the parts (<code>shared</code> and the feature folders); it stays a table, because the paths of generated files are known without reading the folders (META-COVERAGE counts them). A test and TXT-CATALOG compare it with the folders, so a new feature cannot be forgotten (its texts would stay on the first page until it is added). A new key therefore starts on the first page and moves to its area as soon as the area's code names it; the diff of the generated files shows it.</li>
+<li><strong><code>t()</code> stays synchronous and keeps its types.</strong> Every part registers its texts when its file is loaded (<code>registry.ts</code>). The entry of a feature (<code>index.ts</code>) imports its part as its first import, so the part lands in the chunk of that feature and is evaluated before the feature runs. Routes load a feature with <code>import()</code> before they render it, so the texts are there; a screen that sits behind <code>OnlyWith</code> has a route <code>loader</code> (<code>loadsScreen</code>) that loads it first, because the router cannot see a lazy component inside another one. <code>isMessageKey</code> is true for loaded keys only, which is why the code that looks keys up by a string lives in the area whose part holds them, or the keys are on the first page.
+<strong>A text that is not loaded</strong> is a defect of the build, and a person never sees a key. While the app is built for development (<code>import.meta.env.DEV</code>, which vitest sets too) <code>t()</code> <strong>throws</strong> with the key in the message, so the defect is found at once. In production <code>t()</code> writes <code>console.error</code> once per key, naming the key, and returns an empty text, so the rest of the page keeps working. The end-to-end tests fail a test on any <code>console.error</code> of the app (the shared fixture; the browser's own "Failed to load resource" lines for refused requests do not count), so the defect is still found before release. The vitest tests cannot find a part that an area forgot to import, because they load every part; TXT-CATALOG finds it.</li>
+<li><strong>Outside the browser app everything is loaded.</strong> <code>@bugaboo/messages</code> resolves to an entry that loads every part for Node (unit tests and end-to-end tests); the browser build resolves to the plain entry.</li>
+<li><strong>Precompiling the messages at build time is not done now.</strong> It would let the first page drop the ICU parser (about 57 KB of source, some 8 KB after Brotli), but it needs the ICU syntax tree written by the generator and an alias of the parser in the build and not in the tests. Splitting the catalog gives the room that was asked for; the parser can go later, as its own decision.</li>
+</ol>
+<h4>Consequences</h4>
+<ul>
+<li>The first page carries the texts of the shell, sign-in, setup and errors shown anywhere, plus the texts of the features that the first page itself loads. A feature that is loaded lazily brings its texts in its own chunk; the texts of the rest of M3 and beyond land there too.</li>
+<li><code>cargo xtask gen messages</code> now reads the code of <code>web/</code> as well as the catalog. DOC-GENERATED fails when a change of code moves a key, and <code>gen messages</code> fixes it.</li>
+<li>A feature that the first page loads statically (today <code>account</code>, <code>shell</code>, <code>sign-in</code>, <code>home</code>) keeps its texts on the first page. Making such a feature lazy moves its texts with it.</li>
+<li>A text that two lazy features show is on the first page. That is cheap for common words and a reason to name such a text once in shared code.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>A table from the first part of a key (its area) to a part.</strong> Simple, but a key shown by two areas (a <code>projects.</code> text that the issues screens also show) cannot be placed, and the table drifts from the code.</li>
+<li><strong>Load a part asynchronously from <code>t()</code>.</strong> Makes <code>t()</code> asynchronous at every call site. Rejected.</li>
+<li><strong>One chunk per area chosen by hand in the build configuration.</strong> A second list of areas that nothing checks. Rejected.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>DOC-GENERATED (the parts are the output of the catalog and the code), TXT-CATALOG (every feature folder has a part, the entry of every feature with texts imports its part as its first import statement, in code and not in a comment, and nothing else does), the end-to-end fixture (a <code>console.error</code> of the app fails the test), PERF-BUNDLE (the first page stays within its budget), LINT-TYPES (every key keeps its type), and the tests in <code>web/packages/messages</code> (every key is in exactly one part, a key is found once its part is loaded, a missing text fails).</p>
 
 
   </main>

@@ -262,3 +262,14 @@ test("ux_01 the tab says the name of the topic once, also when a topic is opened
   await page.goto(paths.security);
   await expect(page).toHaveTitle(`${t("security.title")} · ${t("app.name")}`);
 });
+
+test("ux_01 a page that loads when it is opened gets the focus on its heading", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  // The Themes page is a chunk of its own: the focus must wait for it and not land on the page
+  // that is leaving.
+  await openFromMenu(page, t("nav.themes"));
+  await expect(page).toHaveURL(addressEndingAt(paths.themes));
+  await expect(page.getByRole("heading", { level: 1, name: t("nav.themes") })).toBeFocused();
+});

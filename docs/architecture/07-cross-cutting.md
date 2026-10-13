@@ -400,7 +400,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit
 
 - **Server data:** only in the TanStack Query cache. **URL:** the search, the presentation and the open issue live in typed URL parameters, so every screen is shareable.
 - **Lean requests:** each screen asks for the fields its layout shows (`?fields=`); lists use cursor pagination and are virtualized.
-- **Text:** every user-facing string is a key in `messages/en.json` (ICU message format), typed via generated keys. The hooks reject literal text in components.
+- **Text:** every user-facing string is a key in `messages/en.json` (ICU message format), typed via generated keys. The hooks reject literal text in components. The browser catalog is split into parts (ADR-0028): the first page loads `shared`, and the entry of each feature imports its own part, so the texts of a lazy area arrive with its chunk; `t()` of a text whose part is not loaded fails. Enforced by: TXT-CATALOG, DOC-GENERATED.
 - **Text in Rust:** the server uses the constants and functions generated into `bb_core::message` (`SERVER_NOT_FOUND`, `server_port_busy(port)`), whose placeholders are typed arguments; a key that does not exist does not compile. Keys that nothing uses are found. Enforced by: TXT-CATALOG.
 - **Styles:** one theme file (`design/theme.kdl`): tokens per theme and mode, and the rules of every component as `part` rules that use token variables only; one generated style sheet; no inline styles and no class names (CSP, THEME-ONLY).
 - **Accessibility:** React Aria Components for focus, keyboard and screen-reader behavior; axe checks in CI.

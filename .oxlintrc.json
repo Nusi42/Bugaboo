@@ -40,11 +40,11 @@
       "rules": { "max-lines": "off" }
     },
     {
-      // `cargo xtask gen messages` writes one line per message of the catalog into this file,
-      // longer with every screen. Nobody edits it, and a file over about 400 lines needs a reason
+      // `cargo xtask gen messages` writes one line per message of the catalog into these files,
+      // longer with every screen. Nobody edits them, and a file over about 400 lines needs a reason
       // (coding-standards section 2): this is it.
-      "files": ["web/packages/messages/src/generated.ts"],
-      "rules": { "max-lines": "off" }
+      "files": ["web/packages/messages/src/generated/*.ts"],
+      "rules": { "max-lines": "off", "import/max-dependencies": "off" }
     },
     {
       // `cargo xtask gen theme` writes the names of the tokens, the parts and the words of each
@@ -114,8 +114,10 @@
               "Route",
               "Browser",
               "BrowserContext",
+              "BrowserContextOptions",
               "Locator",
-              "Page"
+              "Page",
+              "WebError"
             ]
           }
         ]
@@ -127,7 +129,10 @@
       "error",
       { "allow": [{ "from": "package", "package": "@tanstack/router-core", "name": ["Redirect"] }] }
     ],
-    "no-console": "error",
+    // `console.error` is how the app reports a defect of the build that a person must not see, such
+    // as a message text that is not loaded (ADR-0028); the end-to-end tests fail on it. Every other
+    // use of the console is still an error.
+    "no-console": ["error", { "allow": ["error"] }],
     "no-eval": "error",
     "no-new-func": "error",
     "no-implied-eval": "error",
@@ -148,6 +153,22 @@
     // the modern JSX transform (tsconfig "jsx": "react-jsx") needs no React in scope, and
     // the one style sheet (generated from design/theme.kdl) is imported only for its effect.
     "react/react-in-jsx-scope": "off",
-    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }]
+    // The same for the message parts: an area imports its part for the texts it registers (UX-07),
+    // and the messages package imports the part of the first page (or every part, for Node).
+    "import/no-unassigned-import": [
+      "error",
+      {
+        "allow": [
+          "**/*.css",
+          // The part of an area, imported by that area's index.ts (one file per feature folder,
+          // written by `cargo xtask gen messages`; TXT-CATALOG checks the import).
+          "@bugaboo/messages/parts/*",
+          // The first page's part, imported by the messages package (written by `cargo xtask gen messages`).
+          "./generated/shared.ts",
+          // Every part, for Node (written by `cargo xtask gen messages`: see ALL_OUTPUT in xtask/src/gen/messages.rs).
+          "./generated/all.ts"
+        ]
+      }
+    ]
   }
 }

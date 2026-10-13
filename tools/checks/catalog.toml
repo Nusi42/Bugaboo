@@ -178,9 +178,9 @@ status = "active"
 
 [[check]]
 id = "TXT-CATALOG"
-title = "Message catalog: no missing, unused or duplicate keys; placeholders match"
-rule = "UX-07"
-tool = "xtask (parses messages/en.json and code references)"
+title = "Message catalog: no missing, unused or duplicate keys; placeholders match; every area imports its part"
+rule = "UX-07, ADR-0028"
+tool = "xtask (parses messages/en.json and code references; the entry of every feature with a message part imports it)"
 when = ["edit", "commit", "ci"]
 files = ["messages/**", "web/**/*.{ts,tsx}", "crates/**/*.rs"]
 status = "active"

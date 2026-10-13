@@ -3,7 +3,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "node": "./src/everything.ts",
+      "default": "./src/index.ts"
+    },
+    "./parts/*": "./src/generated/*.ts"
   },
   "dependencies": {
     "intl-messageformat": "12.1.2"

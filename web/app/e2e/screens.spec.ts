@@ -110,7 +110,9 @@ test("ux_04 the invitations with the questions that open over them", async ({ pa
 test("ux_04 the status of the server", async ({ page }) => {
   await signIn(page, ada);
   await openFromMenu(page, t("nav.status"));
-  await expect(page.getByRole("heading", { level: 1, name: t("status.title") })).toBeVisible();
-  await expect(page.getByText(t("status.database.ok"))).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("server-status.title") }),
+  ).toBeVisible();
+  await expect(page.getByText(t("server-status.database.ok"))).toBeVisible();
   await expectGoodInEveryLook(page);
 });

@@ -17,6 +17,7 @@
 use std::collections::BTreeSet;
 
 use super::{Check, Context, Finding};
+use crate::generate::messages::is_test_or_generated;
 use crate::rust_registry::declared_keys;
 use crate::rust_source::strip_comments;
 use crate::rust_source::without_tests;
@@ -62,15 +63,11 @@ impl Check for ArchSettings {
             context
                 .sources(self.id(), Kind::Web)?
                 .into_iter()
-                .filter(|(path, _)| !NOT_APP_CODE.iter().any(|marker| path.contains(marker))),
+                .filter(|(path, _)| !is_test_or_generated(path)),
         );
         Ok(evaluate(&sources))
     }
 }
-
-/// Web files that are not the app's own code: tests, end-to-end tests and generated files. The app
-/// must not read settings by key text either.
-const NOT_APP_CODE: [&str; 4] = [".test.", ".spec.", "/e2e/", "generated."];
 
 /// What comes before a string that names a message of the catalog, not a setting: messages and
 /// settings are separate namespaces, so a message may have the same text as the key of a setting

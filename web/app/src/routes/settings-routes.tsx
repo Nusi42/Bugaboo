@@ -1,8 +1,8 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 
-import { StartPage } from "../features/my-settings/index.ts";
 import { ShortcutsPage, useQuickResults } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
+import { StartScreen } from "./start-screen.ts";
 
 /** The page of the keyboard shortcuts, with the address saying which one is open. */
 export function ShortcutsRoute() {
@@ -30,5 +30,5 @@ export function StartPageRoute() {
       title: result.hint === undefined ? result.title : `${result.title} (${result.hint})`,
     })),
   );
-  return <StartPage pages={pages} />;
+  return <StartScreen pages={pages} />;
 }

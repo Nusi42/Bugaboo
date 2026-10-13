@@ -33,6 +33,7 @@ mod steps;
 mod testutil;
 mod tools;
 mod wasm;
+mod web_code;
 
 use std::io::Read as _;
 use std::path::PathBuf;
