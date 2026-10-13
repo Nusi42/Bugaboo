@@ -93,9 +93,10 @@ function Offered({ description }: Pick<DescriptionNotesProps, "description">) {
 function ChangedAfter({
   issue,
   which,
+  version,
   onCompare,
-}: Pick<DescriptionNotesProps, "issue" | "which" | "onCompare">) {
-  const name = useWhoChanged(issue, which, true);
+}: Pick<DescriptionNotesProps, "issue" | "which" | "onCompare"> & { readonly version: number }) {
+  const name = useWhoChanged(issue, which, version);
   return (
     <Alert tone={alertTone.info}>
       <div {...partOf(part.issueNote)}>
@@ -128,7 +129,12 @@ export function DescriptionNotes(props: DescriptionNotesProps) {
         </Alert>
       )}
       {changedAfter && !comparing ? (
-        <ChangedAfter issue={props.issue} which={props.which} onCompare={onCompare} />
+        <ChangedAfter
+          issue={props.issue}
+          which={props.which}
+          version={description.version}
+          onCompare={onCompare}
+        />
       ) : null}
       <Lost {...props} />
       {problem === null || problem === undefined ? null : (
