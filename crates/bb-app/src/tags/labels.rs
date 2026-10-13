@@ -124,6 +124,12 @@ fn crowd(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Refuses (`resource.not_found`) a label that is not there.
+    pub(crate) async fn label_exists(&self, label: LabelId) -> Result<(), AppError> {
+        self.label_catalogue().await?.label(label)?;
+        Ok(())
+    }
+
     async fn label_catalogue(&self) -> Result<Catalogue, AppError> {
         let store = self.store();
         Ok(Catalogue {

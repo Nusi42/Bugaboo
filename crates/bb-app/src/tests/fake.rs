@@ -109,6 +109,8 @@ pub(crate) struct State {
     pub(crate) label_groups: Vec<bb_core::tags::LabelGroup>,
     pub(crate) labels: Vec<bb_core::tags::Label>,
     pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
+    pub(crate) jobs: Vec<bb_core::job::Job>,
+    pub(crate) bulk_runs: Vec<bb_core::bulk::BulkRun>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

@@ -1453,7 +1453,6 @@
   "bulk-skip.same-issue": "An issue cannot be related to itself",
   "bulk-skip.limit-reached": "It has as many as it may",
   "bulk-skip.not-valid": "The change does not fit this issue",
-  "bulk-skip.person-not-allowed": "A person in the change cannot be named on this issue",
   "bulk-state.queued": "Waiting",
   "bulk-state.running": "Working",
   "bulk-state.done": "Done",

@@ -39,6 +39,13 @@ pub(crate) struct MovePlan {
     pub(crate) already_there: bool,
 }
 
+impl MovePlan {
+    /// The project the issue goes to.
+    pub(crate) const fn target_id(&self) -> ProjectId {
+        self.target.id
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Whether a project offers an issue type to its issues. Until types are limited to projects
     /// (M3-F22) a project offers every type that is not retired; this is the one place that says

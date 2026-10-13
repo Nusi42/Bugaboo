@@ -333,10 +333,6 @@ pub const BULK_SKIP_NOT_VALID: MessageKey = MessageKey::new("bulk-skip.not-valid
 /// The message `bulk-skip.nothing-to-change`.
 pub const BULK_SKIP_NOTHING_TO_CHANGE: MessageKey = MessageKey::new("bulk-skip.nothing-to-change");
 
-/// The message `bulk-skip.person-not-allowed`.
-pub const BULK_SKIP_PERSON_NOT_ALLOWED: MessageKey =
-    MessageKey::new("bulk-skip.person-not-allowed");
-
 /// The message `bulk-skip.relation-exists`.
 pub const BULK_SKIP_RELATION_EXISTS: MessageKey = MessageKey::new("bulk-skip.relation-exists");
 
@@ -6837,10 +6833,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk-skip.not-found", "It is not there for you"),
     ("bulk-skip.not-valid", "The change does not fit this issue"),
     ("bulk-skip.nothing-to-change", "It is like that already"),
-    (
-        "bulk-skip.person-not-allowed",
-        "A person in the change cannot be named on this issue",
-    ),
     ("bulk-skip.relation-exists", "The relation is there already"),
     (
         "bulk-skip.same-issue",

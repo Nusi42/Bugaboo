@@ -111,6 +111,18 @@ impl<S> AuthServices<S> {
         }
     }
 
+    /// The context of a background job that makes changes as `actor`, the person who asked for
+    /// them: the use cases it runs take the actor from here and not from a session, which a job
+    /// does not have. Only a job that a signed-in request queued gets one (`bulk`), with the
+    /// person it stored.
+    #[must_use]
+    pub(crate) fn ctx_acting_as(&self, actor: ActingPerson) -> Ctx<'_, S> {
+        Ctx {
+            acting: Some(actor),
+            ..self.ctx(RequestInfo::default())
+        }
+    }
+
     /// Whether `presented` (the `x-csrf-token` header) is the token of the session behind
     /// `session_token` (the cookie). Anything that is not a session secret is `false`.
     #[must_use]

@@ -100,7 +100,10 @@ pub(super) async fn serve_settings(
     });
     // Old drafts, notes and lock rows are cleared at the start and once a day (M3-F30).
     let clearing = housekeeping::spawn(wired.housekeeping, housekeeping::CLEAR_EVERY);
+    // The jobs that are queued (a change to many issues) are done in the background (ADR-0017).
+    let working = bb_jobs::spawn(wired.jobs, bb_jobs::POLL_EVERY);
     let served = bb_api::serve(incoming, options, shutdown).await;
+    working.abort();
     clearing.abort();
     if let Some(timer) = renewal {
         timer.abort();

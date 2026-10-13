@@ -10,6 +10,7 @@ use bb_core::technical::TechnicalName;
 use super::fake::FakeStore;
 use super::scenarios::{Added, a_project, measured, text, token};
 use super::world::World;
+use crate::bulk::{ApplyBulk, BulkAction, BulkChange, BulkTarget, apply_bulk};
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
     ChangeIssue, ChangeIssueType, DeleteIssue, IssueTypesQuery, MakeIssue, MakeIssueType,
@@ -244,6 +245,31 @@ pub(crate) async fn move_issue_scenario(world: &World) -> Added {
                 issue: issue.to_string(),
                 version: 1,
                 project: other.to_string(),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn apply_bulk_scenario(world: &World) -> Added {
+    let project = a_project(world, "ACME").await?;
+    let issue = an_issue(world, project).await?;
+    measured(
+        &world.store,
+        apply_bulk(
+            &world.ctx(),
+            ApplyBulk {
+                session_token: token(world),
+                issues: vec![BulkTarget {
+                    issue: issue.to_string(),
+                    version: 1,
+                }],
+                action: BulkAction::Change {
+                    change: BulkChange {
+                        status: Some(Status::Done),
+                        ..BulkChange::default()
+                    },
+                },
             },
         ),
     )

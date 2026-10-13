@@ -4,6 +4,7 @@
 
 pub mod access;
 pub mod auth;
+pub mod bulk;
 pub mod comments;
 pub mod context;
 pub mod editing;
@@ -12,6 +13,7 @@ pub mod follow;
 pub mod history;
 mod input;
 pub mod issues;
+pub mod jobs;
 mod member;
 pub mod people;
 pub mod ports;

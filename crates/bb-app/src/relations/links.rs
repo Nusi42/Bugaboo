@@ -61,8 +61,17 @@ pub(crate) struct RelationPlan {
     second: Issue,
     /// The kind.
     kind: RelationKind,
+    /// Which end the issue they start from is.
+    direction: Direction,
     /// The relation as it would be stored.
     relation: Relation,
+}
+
+impl RelationPlan {
+    /// What the issue the person starts from reads (*blocks*), and the issue at the other end.
+    pub(crate) fn describe(&self) -> (&str, &Issue) {
+        (self.kind.name(self.direction), &self.second)
+    }
 }
 
 /// Whether adding the relation would break a rule that is judged on what is stored: it is there
@@ -153,6 +162,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             held,
             second,
             kind,
+            direction: input.direction,
             relation,
         })
     }
@@ -176,6 +186,7 @@ pub async fn add_relation<S: AuthStore>(
         second,
         kind,
         relation,
+        ..
     } = ctx.plan_relation(&actor, &input).await?;
     let event = ctx.event(
         by(actor.person.id),

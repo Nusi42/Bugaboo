@@ -129,6 +129,13 @@ struct Reading<'a> {
     maker: LineMaker,
 }
 
+/// What shows changes to a reader (see `Ctx::change_reader`).
+pub(crate) struct ChangeReader {
+    batch: Batch<'static>,
+    people: HashMap<(PeopleKind, UserId), PersonRef>,
+    maker: LineMaker,
+}
+
 /// Whether the row is about a relation (the rest are about an issue).
 fn is_relation(row: &HistoryEntry) -> bool {
     row.record_kind.as_str() == RecordKind::Relation.code()
@@ -338,19 +345,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// The fields of a row of changes that the reader may see; `None` when none of them is.
+    /// The fields of a change that the reader may see; `None` when none of them is.
     async fn field_changes(
         &self,
         reading: &mut Reading<'_>,
         issue_type: IssueTypeId,
         batch: &Batch<'_>,
-        row: &HistoryEntry,
+        changes: &[FieldChange],
     ) -> Result<Option<HistoryWhat>, AppError> {
         // The mask for the type of the issue now, built-in and own fields alike, so a field the
         // reader may not see on this type is in no row.
         let mask = reading.held.field_mask_for(Some(issue_type));
         let mut fields = Vec::new();
-        for change in visible_changes(&|field| mask.can_see(field), &row.changes) {
+        for change in visible_changes(&|field| mask.can_see(field), changes) {
             let member = Member::of(&change.field);
             let before = self
                 .change_value(reading, batch, member, change.before.as_ref())
@@ -377,6 +384,43 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         Ok((!fields.is_empty()).then_some(HistoryWhat::Changes { fields }))
+    }
+
+    /// What reads changes that have not happened yet, as the history will show them: made once for
+    /// a preview, so the definitions of the fields and the people are read once for all of it.
+    pub(crate) async fn change_reader(&self) -> Result<ChangeReader, AppError> {
+        Ok(ChangeReader {
+            batch: self.batch_of(&[], &[]).await?,
+            people: HashMap::new(),
+            maker: self.line_maker().await?,
+        })
+    }
+
+    /// Changes that have not happened yet, shown as the history will show them to the actor: the
+    /// preview of a change to many issues says what will change in the words of the history.
+    pub(crate) async fn changes_as_read(
+        &self,
+        reader: &mut ChangeReader,
+        actor: &Actor,
+        held: &Evaluation,
+        issue: &Issue,
+        changes: &[FieldChange],
+    ) -> Result<Vec<FieldChangeView>, AppError> {
+        let mut reading = Reading {
+            actor,
+            held,
+            people: std::mem::take(&mut reader.people),
+            maker: std::mem::take(&mut reader.maker),
+        };
+        let read = self
+            .field_changes(&mut reading, issue.issue_type, &reader.batch, changes)
+            .await;
+        reader.people = reading.people;
+        reader.maker = reading.maker;
+        Ok(match read? {
+            Some(HistoryWhat::Changes { fields }) => fields,
+            _ => Vec::new(),
+        })
     }
 
     /// A relation added or taken away, as the issue it is shown on reads it; `None` when the
@@ -513,7 +557,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
                 } else {
-                    self.field_changes(reading, issue.issue_type, batch, row)
+                    self.field_changes(reading, issue.issue_type, batch, &row.changes)
                         .await?
                 }
             }

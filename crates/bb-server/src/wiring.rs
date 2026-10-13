@@ -46,6 +46,8 @@ pub(crate) struct Wired {
     pub(crate) setup_code: Option<String>,
     /// What the server does on a timer while it runs.
     pub(crate) housekeeping: Housekeeping,
+    /// The services the background job worker runs with (`bb-jobs`).
+    pub(crate) jobs: Arc<AuthServices<AuthStorage>>,
 }
 
 /// The clearing of what outlived its keep period (drafts, notes for people who were editing and
@@ -202,6 +204,7 @@ pub(crate) async fn wire(
     let services = Arc::new(services);
     Ok(Wired {
         housekeeping: Housekeeping(Arc::clone(&services)),
+        jobs: Arc::clone(&services),
         auth: AuthHandle::new(services),
         probe: ProbeHandle::new(Arc::new(probe)),
         setup_code,

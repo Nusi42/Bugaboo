@@ -24,6 +24,7 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
+use crate::bulk::BulkStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
 use crate::fields::FieldStore;
@@ -320,6 +321,7 @@ pub trait AuthStore:
     + IssueStore
     + RelationStore
     + TagStore
+    + BulkStore
     + CommentStore
     + FollowStore
     + HistoryStore

@@ -28,6 +28,10 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
+use crate::bulk::{
+    ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunView, apply_bulk,
+    bulk_run, preview_bulk,
+};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
@@ -474,6 +478,12 @@ use_cases! {
     combine_choices(CombineChoices) -> Authorized<FieldView>;
     /// Saves the long text of an own field of an issue, under its edit lock.
     save_field_text(SaveFieldText) -> Authorized<IssueView>;
+    /// Says what a change to many issues would do to each issue.
+    preview_bulk(BulkPreviewQuery) -> Authorized<BulkPreview>;
+    /// Changes many issues at once after the preview.
+    apply_bulk(ApplyBulk) -> Authorized<BulkResult>;
+    /// Shows how far a change to many issues that goes on in the background is.
+    bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
     /// Shows the tags and labels of an issue.
     issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
     /// Puts a tag on an issue by its name.

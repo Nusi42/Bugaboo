@@ -10,6 +10,7 @@
 mod access_keys;
 mod anchor;
 mod auth;
+mod bulk;
 mod chain;
 mod comments;
 mod db;

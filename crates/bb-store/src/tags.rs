@@ -624,7 +624,7 @@ impl TagStore for AuthStorage {
             ])
             .values([
                 Expr::val(label.id.stored()),
-                Expr::val(label.group.map(|group| group.stored())),
+                Expr::val(label.group.map(StoredId::stored)),
                 Expr::val(group_key(label.group)),
                 Expr::val(label.name.as_str()),
                 Expr::val(name_key(&label.name)),
@@ -652,7 +652,7 @@ impl TagStore for AuthStorage {
             .value(LabelRow::Name, name)
             .value(LabelRow::NameKey, name_key(name))
             .value(LabelRow::Color, color.code())
-            .value(LabelRow::Group, group.map(|group| group.stored()))
+            .value(LabelRow::Group, group.map(StoredId::stored))
             .value(LabelRow::GroupKey, group_key(group))
             .value(LabelRow::RetiredAt, retired_at.map(to_micros))
             .value(LabelRow::Version, Expr::col(LabelRow::Version).add(1))

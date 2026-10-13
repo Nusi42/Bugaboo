@@ -6,5 +6,12 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[dependencies]
+bb-app = { path = "../bb-app" }
+bb-core = { path = "../bb-core" }
+jiff = { workspace = true }
+tokio = { workspace = true, features = ["rt", "time"] }
+tracing = { workspace = true }
+
 [lints]
 workspace = true

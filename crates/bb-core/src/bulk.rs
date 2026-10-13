@@ -46,8 +46,6 @@ words! {
         LimitReached => "limit-reached",
         /// The change is not valid for this issue (a value its field does not take).
         NotValid => "not-valid",
-        /// A person named in the change may not be named on this issue.
-        PersonNotAllowed => "person-not-allowed",
     }
     messages name = "bulk-skip."
 }
