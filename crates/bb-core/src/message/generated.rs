@@ -4928,6 +4928,15 @@ pub fn issues_changed(field: impl std::fmt::Display, value: impl std::fmt::Displ
     )
 }
 
+/// The message `issues.changed-after-you-by`.
+#[must_use]
+pub fn issues_changed_after_you_by(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.changed-after-you-by"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `issues.changed-own`.
 #[must_use]
 pub fn issues_changed_own(count: i64) -> Message {
@@ -7920,6 +7929,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "issues.changed-after-you",
         "The description changed after you started.",
+    ),
+    (
+        "issues.changed-after-you-by",
+        "{name} changed the description after you started.",
     ),
     (
         "issues.changed-own",

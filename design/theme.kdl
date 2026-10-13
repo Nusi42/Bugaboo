@@ -2778,6 +2778,16 @@ part "issue-compare.paragraph" {
     white-space pre-wrap
 }
 
+// The words that the other text does not have (M3-F54): a fill and an underline, so they are not
+// told by color alone.
+part "issue-compare.changed" {
+    background "$warning-soft"
+    color "$fg"
+    text-decoration underline
+    text-underline-offset "$space-1"
+    use "marked"
+}
+
 // The list of the issues of a project.
 part "issue-list" {
     display flex

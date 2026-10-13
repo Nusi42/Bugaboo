@@ -6,9 +6,13 @@ import { formatAgo, formatSince } from "../../shared/format.ts";
 import { personName } from "../../shared/person.ts";
 import { useNow } from "../../shared/use-now.ts";
 import type { Description } from "./use-description.ts";
+import { useWhoChanged } from "./use-who-changed.ts";
 
 export interface DescriptionNotesProps {
   readonly description: Description;
+  /** The ID of the issue and the part of it, to find out who changed the text. */
+  readonly issue: string;
+  readonly which: string;
   /** Whether *Compare and save* or *Show changes* is open. */
   readonly comparing: boolean;
   readonly onCompare: () => void;
@@ -85,6 +89,27 @@ function Offered({ description }: Pick<DescriptionNotesProps, "description">) {
   );
 }
 
+/** The text changed after the person started: who changed it, if the page can tell, and the way to see the changes. */
+function ChangedAfter({
+  issue,
+  which,
+  onCompare,
+}: Pick<DescriptionNotesProps, "issue" | "which" | "onCompare">) {
+  const name = useWhoChanged(issue, which, true);
+  return (
+    <Alert tone={alertTone.info}>
+      <div {...partOf(part.issueNote)}>
+        <span>
+          {name === undefined
+            ? t("issues.changed-after-you")
+            : t("issues.changed-after-you-by", { name })}
+        </span>
+        <Button onPress={onCompare}>{t("issues.show-changes")}</Button>
+      </div>
+    </Alert>
+  );
+}
+
 /** What the person needs to know while they edit: a draft, a request, a change, a failure. */
 export function DescriptionNotes(props: DescriptionNotesProps) {
   const { description, comparing, onCompare } = props;
@@ -103,12 +128,7 @@ export function DescriptionNotes(props: DescriptionNotesProps) {
         </Alert>
       )}
       {changedAfter && !comparing ? (
-        <Alert tone={alertTone.info}>
-          <div {...partOf(part.issueNote)}>
-            <span>{t("issues.changed-after-you")}</span>
-            <Button onPress={onCompare}>{t("issues.show-changes")}</Button>
-          </div>
-        </Alert>
+        <ChangedAfter issue={props.issue} which={props.which} onCompare={onCompare} />
       ) : null}
       <Lost {...props} />
       {problem === null || problem === undefined ? null : (

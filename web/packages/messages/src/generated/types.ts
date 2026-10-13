@@ -181,6 +181,7 @@ export interface MessageArguments {
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
   "issues.changed": { field: string | number; value: string | number };
+  "issues.changed-after-you-by": { name: string | number };
   "issues.changed-own": { count: number };
   "issues.changed-people": { count: number; field: string | number; names: string | number };
   "issues.compare-keep": { number: string | number };

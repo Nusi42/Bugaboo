@@ -24,7 +24,7 @@ Press "Edit" (or `e`) to open the description for writing. Nothing is locked unt
 
 - Your text is kept as a **draft**, in your browser and, privately, on the server, until you save or throw it away (at most 30 days). If you close the window and come back, "Continue your draft from yesterday" is offered.
 - If somebody else is editing the same description, you see "Ana is editing the description · since 2 min" and the buttons "Ask Ana to finish" and, if your role allows it, "Edit anyway". Ana is told within 15 seconds; with "Edit anyway" her unsaved text stays her draft.
-- If your editing time runs out, somebody took over, or the description changed after you started, the page says "Not saved yet", keeps your text and offers "Compare and save": your text next to the newer one, paragraph by paragraph, to choose what to keep.
-- Every 30 seconds, and when you come back to the tab, Bugaboo checks whether the issue changed. If the description did, you see "The description changed after you started" with "Show changes".
+- If your editing time runs out, somebody took over, or the description changed after you started, the page says "Not saved yet", keeps your text and offers "Compare and save": your text next to the newer one, paragraph by paragraph, with the words that differ marked (underlined and filled, so color is not the only sign), to choose what to keep.
+- Every 30 seconds, and when you come back to the tab, Bugaboo checks whether the issue changed. If the description did, you see "Ben changed the description after you started" (the name is shown the way you may see people) with "Show changes", which marks the words that differ.
 
 "Cancel" throws your text away.

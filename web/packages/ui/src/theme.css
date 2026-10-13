@@ -3106,6 +3106,19 @@ body {
   white-space: pre-wrap;
 }
 
+[data-part="issue-compare.changed"] {
+  background: var(--warning-soft);
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+@media (forced-colors: active) {
+  [data-part="issue-compare.changed"] {
+    outline: var(--ring-width) solid var(--accent);
+  }
+}
+
 [data-part="issue-list"] {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,7 @@
 import type { SafeHtml } from "@bugaboo/api-client";
 
 import { LongTextBlock } from "./DescriptionBlock.tsx";
-import { sectionId, type LongTextWords } from "./long-text-words.ts";
+import { type LongTextWords } from "./long-text-words.ts";
 import type { IssueView } from "./slots.ts";
 import { useIssueLongText, type SaveLongText } from "./use-description.ts";
 
@@ -40,7 +40,8 @@ export function IssueLongText({
   return (
     <LongTextBlock
       description={long}
-      titleId={sectionId(issue.id ?? address, part)}
+      issue={issue.id ?? address}
+      which={part}
       html={html}
       filled={filled}
       canChange={canChange}

@@ -5,6 +5,7 @@ import { api } from "../../shared/api.ts";
 import { useLongText, type LongText } from "../../shared/editing/index.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
+import { DESCRIPTION_PART } from "./long-text-words.ts";
 import type { IssueView } from "./slots.ts";
 
 /** The description of an issue as a long text being edited, and when it was last saved. */
@@ -84,7 +85,7 @@ export function useDescription(issue: IssueView, address: string): Description {
     [id],
   );
   return useIssueLongText(issue, address, {
-    part: "description",
+    part: DESCRIPTION_PART,
     saved: issue.description ?? "",
     save,
   });
