@@ -1471,15 +1471,6 @@ pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing
 /// The message `groups.used-whole`.
 pub const GROUPS_USED_WHOLE: MessageKey = MessageKey::new("groups.used-whole");
 
-/// The message `history.field-issue-type`.
-pub const HISTORY_FIELD_ISSUE_TYPE: MessageKey = MessageKey::new("history.field-issue-type");
-
-/// The message `history.field-parent`.
-pub const HISTORY_FIELD_PARENT: MessageKey = MessageKey::new("history.field-parent");
-
-/// The message `history.field-sub-issue`.
-pub const HISTORY_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("history.field-sub-issue");
-
 /// The message `history.more`.
 pub const HISTORY_MORE: MessageKey = MessageKey::new("history.more");
 
@@ -1589,8 +1580,14 @@ pub const ISSUE_FIELD_ESTIMATED_TIME: MessageKey = MessageKey::new("issue-field.
 pub const ISSUE_FIELD_FOUND_IN_RELEASE: MessageKey =
     MessageKey::new("issue-field.found-in-release");
 
+/// The message `issue-field.issue-type`.
+pub const ISSUE_FIELD_ISSUE_TYPE: MessageKey = MessageKey::new("issue-field.issue-type");
+
 /// The message `issue-field.labels`.
 pub const ISSUE_FIELD_LABELS: MessageKey = MessageKey::new("issue-field.labels");
+
+/// The message `issue-field.parent`.
+pub const ISSUE_FIELD_PARENT: MessageKey = MessageKey::new("issue-field.parent");
 
 /// The message `issue-field.planned-for-release`.
 pub const ISSUE_FIELD_PLANNED_FOR_RELEASE: MessageKey =
@@ -1604,6 +1601,9 @@ pub const ISSUE_FIELD_REPORTED_BY: MessageKey = MessageKey::new("issue-field.rep
 
 /// The message `issue-field.status`.
 pub const ISSUE_FIELD_STATUS: MessageKey = MessageKey::new("issue-field.status");
+
+/// The message `issue-field.sub-issue`.
+pub const ISSUE_FIELD_SUB_ISSUE: MessageKey = MessageKey::new("issue-field.sub-issue");
 
 /// The message `issue-field.tags`.
 pub const ISSUE_FIELD_TAGS: MessageKey = MessageKey::new("issue-field.tags");
@@ -8148,10 +8148,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
-    ("history.field-issue-type", "Issue type"),
     ("history.field-other", "{field}"),
-    ("history.field-parent", "Part of"),
-    ("history.field-sub-issue", "Sub-issue"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),
@@ -8228,11 +8225,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-field.due-date", "Due date"),
     ("issue-field.estimated-time", "Estimated time"),
     ("issue-field.found-in-release", "Found in release"),
+    ("issue-field.issue-type", "Issue type"),
     ("issue-field.labels", "Labels"),
+    ("issue-field.parent", "Part of"),
     ("issue-field.planned-for-release", "Planned for release"),
     ("issue-field.priority", "Priority"),
     ("issue-field.reported-by", "Reported by"),
     ("issue-field.status", "Status"),
+    ("issue-field.sub-issue", "Sub-issue"),
     ("issue-field.tags", "Tags"),
     ("issue-field.time-left", "Time left"),
     ("issue-field.time-spent", "Time spent"),
