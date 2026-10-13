@@ -3015,6 +3015,7 @@ export interface components {
       | "edit.version_changed"
       | "edit.lock_lost"
       | "edit.taken_over"
+      | "edit.in_progress"
       | "rate_limit.exceeded"
       | "server.unavailable"
       | "server.internal";
@@ -3603,13 +3604,22 @@ export interface components {
     LayoutEditorBody: {
       /** @description The fields that can be added: placeable here and not in a section yet. */
       available: components["schemas"]["EditorFieldBody"][];
+      /**
+       * @description The person may choose the roles of a field (*Decide what roles see* at the place). When
+       *     false, `roles` is empty, no field has a mark, and a save keeps the roles of the fields on
+       *     the layout.
+       */
+      choose_roles: boolean;
       inherited_from?: components["schemas"]["InheritedFromBody"] | null;
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /** @description The issue page or the new-issue form. */
       kind: components["schemas"]["LayoutKind"];
       layout?: components["schemas"]["LayoutSlotBody"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
-      /** @description The roles that can be ticked, in the order of roles. */
+      /**
+       * @description The roles that can be ticked, in the order of roles; none when the person may not choose
+       *     the roles of a field.
+       */
       roles: components["schemas"]["EditorRoleBody"][];
       /** @description The sections, in order. */
       sections: components["schemas"]["EditorSectionBody"][];

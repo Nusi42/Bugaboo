@@ -16,9 +16,9 @@ use super::types::{
     EditorField, EditorRole, EditorSection, FormLayout, FormLayoutQuery, InheritedFrom,
     LayoutEditor, LayoutEditorQuery, LayoutSlot,
 };
-use crate::access::Actor;
+use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::fields::{Definition, Item};
+use crate::fields::{Definition, Item, must_be_asked_for};
 use crate::issues::IssueTypeRef;
 use crate::projects::ProjectRef;
 
@@ -95,20 +95,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         if at.project.is_some() {
             return self.own_fields_at(&issues, |_| true).await;
         }
-        Ok(self
-            .field_catalogue()
-            .await?
-            .iter()
-            .filter(|definition| {
-                let field = &definition.field;
-                let types = &definition.scope.issue_types;
-                field.applies_to == bb_core::own_fields::FieldFor::Issues
-                    && field.retired_at.is_none()
-                    && (types.is_empty()
-                        || at.issue_type.is_some_and(|wanted| types.contains(&wanted)))
-            })
-            .map(|definition| FieldKey::Own(definition.field.id))
-            .collect())
+        self.own_fields_reaching(&issues, |scope| scope.reaches_type(at.issue_type), |_| true)
+            .await
     }
 
     /// Every role, in the order of roles.
@@ -203,11 +191,12 @@ pub async fn form_layout<S: AuthStore>(
     }))
 }
 
-/// The own fields of `among` that must be filled in.
+/// The own fields of `among` that a new item must be asked for (`must_be_asked_for`: required and
+/// without a default).
 fn required_among(definitions: &[Definition], among: &BTreeSet<FieldKey>) -> Vec<FieldKey> {
     definitions
         .iter()
-        .filter(|definition| definition.field.rules.required)
+        .filter(|definition| must_be_asked_for(definition))
         .map(|definition| FieldKey::Own(definition.field.id))
         .filter(|field| among.contains(field))
         .collect()
@@ -263,9 +252,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         held: &Evaluation,
         at: &Where,
     ) -> Result<LayoutEditor, AppError> {
-        let roles = self.all_roles().await?;
-        let ids: Vec<RoleId> = roles.iter().map(|role| role.id).collect();
+        let every_role = self.all_roles().await?;
+        let ids: Vec<RoleId> = every_role.iter().map(|role| role.id).collect();
         let (header, content) = self.layout_in_force(at, &ids).await?;
+        // The roles, what each is shown, and where field permissions win are what *Decide what
+        // roles see* shows on the *Field permissions* page: whoever does not hold it gets none of
+        // them, and the editor does not offer the roles (ADR-0027).
+        let choose_roles = held.allows(Permission::DecideWhatRolesSee);
+        let roles: Vec<EditorRole> = if choose_roles {
+            every_role.into_iter().take(ROLES_MAX).collect()
+        } else {
+            Vec::new()
+        };
         let names = self
             .known_field_names(actor, held, at.project.as_ref().map(|project| project.id))
             .await?;
@@ -276,7 +274,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         )
         .into_iter()
         .collect();
-        let reachable: BTreeSet<FieldKey> = self.own_fields_for(at).await?.into_iter().collect();
+        let reaching = self.own_fields_for(at).await?;
+        let reachable: BTreeSet<FieldKey> = reaching.iter().copied().collect();
         let known = |field: FieldKey| match field {
             FieldKey::BuiltIn(_) => true,
             FieldKey::Own(_) => names.contains_key(&field),
@@ -287,8 +286,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .copied()
             .map(FieldKey::BuiltIn)
             .chain(
-                self.own_fields_for(at)
-                    .await?
+                reaching
                     .into_iter()
                     .filter(|field| names.contains_key(field)),
             )
@@ -299,11 +297,15 @@ impl<S: AuthStore> Ctx<'_, S> {
             .copied()
             .chain(offered.iter().copied())
             .collect();
-        let limited = self.roles_limited(at, &roles, &every).await?;
+        let limited = if choose_roles {
+            self.roles_limited(at, &roles, &every).await?
+        } else {
+            HashMap::new()
+        };
         let field_of = |field: FieldKey, shown_to: Vec<RoleId>| EditorField {
             field,
             name: names.get(&field).cloned(),
-            roles: shown_to,
+            roles: if choose_roles { shown_to } else { Vec::new() },
             limited_for: limited.get(&field).cloned().unwrap_or_default(),
             required: at.kind == LayoutKind::NewIssue && required.contains(&field),
         };
@@ -351,6 +353,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|field| field_of(field, Vec::new()))
                 .collect(),
             roles,
+            choose_roles,
         })
     }
 

@@ -22,8 +22,18 @@ use crate::personal::Entity;
 
 /// The most sections one layout has.
 pub const SECTIONS_MAX: usize = 20;
-/// The most fields one layout has, over all its sections.
-pub const FIELDS_MAX: usize = 100;
+/// The most fields one layout has, over all its sections: every own field there can be, and every
+/// built-in field a form can place (the issue page has the most). Made from those two limits, so
+/// the starting layout of an organization with the most own fields still fits.
+pub const PLACED_MAX: usize = crate::own_fields::FIELDS_MAX + MOST_BUILT_IN;
+/// The most built-in fields a form of any kind can place.
+const MOST_BUILT_IN: usize = {
+    let (page, new) = (
+        built_in_fields(LayoutKind::IssuePage).len(),
+        built_in_fields(LayoutKind::NewIssue).len(),
+    );
+    if page > new { page } else { new }
+};
 /// The most characters of the title of a section or of the name of a tab.
 pub const TITLE_MAX: usize = 60;
 
@@ -111,7 +121,7 @@ impl LayoutContent {
     /// # Errors
     /// Names the first rule that is broken.
     pub fn check(&self, kind: LayoutKind) -> Result<(), Problem> {
-        if self.sections.len() > SECTIONS_MAX || self.placed().count() > FIELDS_MAX {
+        if self.sections.len() > SECTIONS_MAX || self.placed().count() > PLACED_MAX {
             return Err(Problem::TooBig);
         }
         if self.sections.iter().any(|section| {
@@ -379,6 +389,26 @@ mod tests {
             RoleId::generate(&mut source).unwrap(),
             RoleId::generate(&mut source).unwrap(),
         )
+    }
+
+    #[test]
+    fn the_starting_layout_of_the_most_own_fields_is_one_a_save_accepts() {
+        let mut source = SequentialIds::default();
+        let own: Vec<FieldKey> = (0..crate::own_fields::FIELDS_MAX)
+            .map(|_| FieldKey::Own(crate::id::FieldId::generate(&mut source).unwrap()))
+            .collect();
+        let role = RoleId::generate(&mut source).unwrap();
+        for kind in [LayoutKind::IssuePage, LayoutKind::NewIssue] {
+            let starting = LayoutContent::starting(kind, &own, &[role]);
+            assert_eq!(starting.check(kind), Ok(()), "{kind:?}");
+        }
+        // One field more than there can be is too many.
+        let mut more = LayoutContent::starting(LayoutKind::IssuePage, &own, &[role]);
+        more.sections[0].fields.push(PlacedField {
+            field: FieldKey::Own(crate::id::FieldId::generate(&mut source).unwrap()),
+            roles: vec![],
+        });
+        assert_eq!(more.check(LayoutKind::IssuePage), Err(Problem::TooBig));
     }
 
     #[test]

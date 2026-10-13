@@ -757,6 +757,9 @@ pub const ERROR_AUTH_WRONG_SECOND_STEP_CODE: MessageKey =
 /// The message `error.auth.wrong-setup-code`.
 pub const ERROR_AUTH_WRONG_SETUP_CODE: MessageKey = MessageKey::new("error.auth.wrong-setup-code");
 
+/// The message `error.edit.in-progress`.
+pub const ERROR_EDIT_IN_PROGRESS: MessageKey = MessageKey::new("error.edit.in-progress");
+
 /// The message `error.edit.lock-lost`.
 pub const ERROR_EDIT_LOCK_LOST: MessageKey = MessageKey::new("error.edit.lock-lost");
 
@@ -7607,6 +7610,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.auth.wrong-setup-code",
         "That setup code is not right. Copy it again from the window where Bugaboo is running.",
+    ),
+    (
+        "error.edit.in-progress",
+        "Someone is editing this right now. Try again when they have finished.",
     ),
     (
         "error.edit.lock-lost",

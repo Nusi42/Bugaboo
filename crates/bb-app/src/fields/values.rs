@@ -26,7 +26,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
-use super::manage::current_default;
+use super::manage::{current_default, must_be_asked_for};
 use super::pattern::Linear;
 use super::types::Definition;
 use crate::access::Actor;
@@ -236,6 +236,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         item: &Item,
         level_allows: impl Fn(FieldKey) -> bool,
     ) -> Result<Vec<FieldKey>, AppError> {
+        self.own_fields_reaching(
+            item,
+            |scope| scope.reaches(&item.chain, item.issue_type),
+            level_allows,
+        )
+        .await
+    }
+
+    /// The own fields that are used for an item and not retired, whose scope `reached` and that
+    /// `level_allows`. The layouts of the whole organization, which has no project, say `reached`
+    /// by the issue type alone (`Scope::reaches_type`).
+    pub(crate) async fn own_fields_reaching(
+        &self,
+        item: &Item,
+        reached: impl Fn(&bb_core::own_fields::Scope) -> bool,
+        level_allows: impl Fn(FieldKey) -> bool,
+    ) -> Result<Vec<FieldKey>, AppError> {
         Ok(self
             .field_catalogue()
             .await?
@@ -244,7 +261,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let field = &definition.field;
                 field.applies_to == item.field_for()
                     && field.retired_at.is_none()
-                    && definition.scope.reaches(&item.chain, item.issue_type)
+                    && reached(&definition.scope)
                     && level_allows(FieldKey::Own(field.id))
             })
             .map(|definition| FieldKey::Own(definition.field.id))
@@ -715,20 +732,22 @@ impl<S: AuthStore> Ctx<'_, S> {
             if !reaches || sets.iter().any(|set| set.field == field.id) {
                 continue;
             }
-            let default = current_default(definition);
-            if default.is_none() {
+            if must_be_asked_for(definition) {
                 let may_fill = viewer.field_level_for(item.issue_type, FieldKey::Own(field.id))
                     >= FieldLevel::CanChange;
-                if field.rules.required && may_fill {
+                if may_fill {
                     return Err(ErrorCode::FieldRequired.into());
                 }
                 continue;
             }
+            let Some(default) = current_default(definition) else {
+                continue;
+            };
             sets.push(Set {
                 field: field.id,
                 kind: field.kind,
                 old: None,
-                new: default,
+                new: Some(default),
             });
         }
         Ok(())

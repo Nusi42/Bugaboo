@@ -202,8 +202,13 @@ pub(crate) struct LayoutEditorBody {
     sections: Vec<EditorSectionBody>,
     /// The fields that can be added: placeable here and not in a section yet.
     available: Vec<EditorFieldBody>,
-    /// The roles that can be ticked, in the order of roles.
+    /// The roles that can be ticked, in the order of roles; none when the person may not choose
+    /// the roles of a field.
     roles: Vec<EditorRoleBody>,
+    /// The person may choose the roles of a field (*Decide what roles see* at the place). When
+    /// false, `roles` is empty, no field has a mark, and a save keeps the roles of the fields on
+    /// the layout.
+    choose_roles: bool,
 }
 
 impl Masked for LayoutEditorBody {}
@@ -223,6 +228,7 @@ impl From<&LayoutEditor> for LayoutEditorBody {
                 .collect(),
             available: editor.available.iter().map(EditorFieldBody::from).collect(),
             roles: editor.roles.iter().map(EditorRoleBody::from).collect(),
+            choose_roles: editor.choose_roles,
         }
     }
 }

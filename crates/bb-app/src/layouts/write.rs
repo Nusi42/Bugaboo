@@ -4,7 +4,7 @@
 //! Everything needs *Manage issue types, kinds of relation and layouts* at the place: for a
 //! project, there; for the whole organization, at the organization.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use bb_core::ErrorCode;
 use bb_core::edit::{EditWhat, LAYOUT_PART};
@@ -66,33 +66,48 @@ impl<S: AuthStore> Ctx<'_, S> {
         .await
     }
 
-    /// The layout the editor sends as content to store: the roles exist, an own field is one the
-    /// editor may know and that reaches the place, and the fields the editor cannot know stay
-    /// where they were (the editor has no row for them, so they cannot have been removed).
+    /// The layout the editor sends, as content: the roles exist, an own field is one the editor may
+    /// know and that reaches the place. Returns what was sent, and what is to be stored: that
+    /// with the fields the editor cannot know put back where they were (the editor has no row for
+    /// them, so they cannot have been removed). Only what was sent may be shown back to the
+    /// editor, as the draft; the rest is for the write and the event.
+    ///
+    /// A person who may not *Decide what roles see* cannot tick roles: a field that is on the layout
+    /// keeps the roles it has, and a field that is new is shown to every role.
     async fn content_from(
         &self,
         at: &Where,
         sections: &[SectionInput],
         before: &LayoutContent,
         known: &BTreeSet<FieldKey>,
-    ) -> Result<LayoutContent, AppError> {
-        let roles: BTreeSet<RoleId> = self.all_roles().await?.iter().map(|role| role.id).collect();
+        may_choose_roles: bool,
+    ) -> Result<(LayoutContent, LayoutContent), AppError> {
+        let roles: Vec<RoleId> = self.all_roles().await?.iter().map(|role| role.id).collect();
         let reach: BTreeSet<FieldKey> = self.own_fields_for(at).await?.into_iter().collect();
-        let mut content = LayoutContent {
+        let kept: HashMap<FieldKey, &Vec<RoleId>> = before
+            .placed()
+            .map(|placed| (placed.field, &placed.roles))
+            .collect();
+        let mut sent = LayoutContent {
             sections: Vec::with_capacity(sections.len()),
         };
         for section in sections {
             let mut fields = Vec::with_capacity(section.fields.len());
             for input in &section.fields {
-                if input.roles.iter().any(|role| !roles.contains(role)) {
-                    return Err(ErrorCode::InvalidRequest.into());
-                }
                 if input.field.own().is_some()
                     && !(known.contains(&input.field) && reach.contains(&input.field))
                 {
                     return Err(ErrorCode::FieldNotHere.into());
                 }
-                let mut roles_of = input.roles.clone();
+                let mut roles_of = if may_choose_roles {
+                    if input.roles.iter().any(|role| !roles.contains(role)) {
+                        return Err(ErrorCode::InvalidRequest.into());
+                    }
+                    input.roles.clone()
+                } else {
+                    kept.get(&input.field)
+                        .map_or_else(|| roles.clone(), |stored| (*stored).clone())
+                };
                 roles_of.sort_unstable();
                 roles_of.dedup();
                 fields.push(PlacedField {
@@ -100,17 +115,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                     roles: roles_of,
                 });
             }
-            content.sections.push(SectionContent {
+            sent.sections.push(SectionContent {
                 tab: section.tab.trim().to_owned(),
                 title: section.title.trim().to_owned(),
                 fields,
             });
         }
-        keep_unknown_fields(&mut content, before, known);
-        content
+        let mut stored = sent.clone();
+        keep_unknown_fields(&mut stored, before, known);
+        stored
             .check(at.kind)
             .map_err(|_| AppError::from(ErrorCode::InvalidRequest))?;
-        Ok(content)
+        Ok((sent, stored))
     }
 
     /// The own fields the person may know at the place (`may_know`), and so may place.
@@ -177,6 +193,10 @@ pub async fn make_layout<S: AuthStore>(
     if header.is_some_and(|found| found.place() == at.layout_place()) {
         return Ok(held.authorize(ctx.editor_view(&actor, &held, &at).await?));
     }
+    // The copy is stored as it is, so it must be one a save would accept too.
+    content
+        .check(at.kind)
+        .map_err(|_| AppError::from(ErrorCode::InvalidRequest))?;
     let layout = Layout {
         id: LayoutId::generate(&mut ctx.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?,
@@ -250,8 +270,14 @@ pub async fn save_layout<S: AuthStore>(
         .require(&actor, Permission::ManageIssueTypes, at.place())
         .await?;
     let known = ctx.known_own_fields(&actor, &held, &at).await?;
-    let content = ctx
-        .content_from(&at, &input.sections, &stored.content, &known)
+    let (sent, content) = ctx
+        .content_from(
+            &at,
+            &input.sections,
+            &stored.content,
+            &known,
+            held.allows(Permission::DecideWhatRolesSee),
+        )
         .await?;
     let id = input.layout;
     let record = entity(RecordKind::Layout, id);
@@ -274,7 +300,8 @@ pub async fn save_layout<S: AuthStore>(
                 .map_err(|error| AppError::Internal(error.to_string()))?,
         },
         token: input.lock_token,
-        text: summary(&content).to_string(),
+        // The draft is only what the person sent: the fields they may not know stay out of it.
+        text: summary(&sent).to_string(),
         version: input.version,
     };
     let (version, written) = (input.version, content);
@@ -303,7 +330,8 @@ pub async fn save_layout<S: AuthStore>(
 /// # Errors
 /// `resource.not_found` for a layout that is not there or a project the person may not know about,
 /// `access.forbidden` without the permission, `edit.version_changed` when the layout changed since
-/// the person looked at it.
+/// the person looked at it, `edit.in_progress` while somebody else holds its edit lock. A lock of
+/// the person's own is let go in the same change.
 pub async fn delete_layout<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DeleteLayout,
@@ -334,9 +362,27 @@ pub async fn delete_layout<S: AuthStore>(
     )?;
     let why = Why::default();
     let stopped = why.clone();
+    let (what, me, now) = (
+        EditWhat {
+            record: record.clone(),
+            part: TechnicalName::new(LAYOUT_PART)
+                .map_err(|error| AppError::Internal(error.to_string()))?,
+        },
+        actor.person.id,
+        ctx.now(),
+    );
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                match S::edit_lock_in(transaction, what.clone()).await? {
+                    Some(lock) if lock.holder != me && !lock.has_expired(now) => {
+                        return Err(stopped.stop::<S>(ErrorCode::EditInProgress));
+                    }
+                    Some(_) => {
+                        S::remove_edit_lock(transaction, &what).await?;
+                    }
+                    None => {}
+                }
                 if S::delete_layout(transaction, id, version).await? {
                     Ok(())
                 } else {

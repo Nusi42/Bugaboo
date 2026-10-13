@@ -170,22 +170,22 @@ reason = "One entry for each long-text own field of the issue the person may see
 route = "GET /api/v1/layouts/editor"
 property = "sections"
 whole_value = true
-reason = "The sections of one layout: at most SECTIONS_MAX (20), a list bounded when the layout is saved; the editor needs all of them at once. (M3-F86)"
+reason = "The sections of one layout: at most SECTIONS_MAX (20), a list bounded when the layout is saved; the editor needs all of them at once. (M3-F106)"
 
 [[exempt]]
 route = "GET /api/v1/layouts/editor"
 property = "available"
 whole_value = true
-reason = "The fields that are on no section: at most the built-in fields of a form and the 200 own fields (FIELDS_MAX); the editor lists them all. (M3-F86)"
+reason = "The fields that are on no section: at most PLACED_MAX, the 200 own fields (own_fields::FIELDS_MAX) and the built-in fields of a form; the editor lists them all. (M3-F106)"
 
 [[exempt]]
 route = "GET /api/v1/layouts/editor"
 property = "roles"
 whole_value = true
-reason = "The roles of the organization, which the editor ticks; a few dozen, and the editor needs all of them for each field. (M3-F86)"
+reason = "The roles of the organization, which the editor ticks; at most ROLES_MAX (100), the cut of the table of field permissions; the editor needs all of them for each field. (M3-F106)"
 
 [[exempt]]
 route = "GET /api/v1/layouts/form"
 property = "sections"
 whole_value = true
-reason = "The sections of one layout for one person: at most SECTIONS_MAX (20); the form draws all of them. (M3-F86)"
+reason = "The sections of one layout for one person: at most SECTIONS_MAX (20); the form draws all of them. (M3-F106)"

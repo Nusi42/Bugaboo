@@ -25,16 +25,16 @@ use super::fields_http::{id_of, make_field, set_levels};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{PROJECTS, Site, ok};
 
-const LAYOUTS: &str = "/api/v1/layouts";
-const LOCKS: &str = "/api/v1/edit-locks";
+pub(super) const LAYOUTS: &str = "/api/v1/layouts";
+pub(super) const LOCKS: &str = "/api/v1/edit-locks";
 
 /// An open editor, as the browser makes its ID.
-const AN_EDITOR: &str = "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5";
+pub(super) const AN_EDITOR: &str = "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5";
 /// Another open editor.
-const ANOTHER_EDITOR: &str = "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e";
+pub(super) const ANOTHER_EDITOR: &str = "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e";
 
 /// The editor view of the layout of the new-issue form of a project.
-async fn editor_of(browser: &mut Browser, project: &str) -> Result<Value, Failure> {
+pub(super) async fn editor_of(browser: &mut Browser, project: &str) -> Result<Value, Failure> {
     let editor = browser
         .send(
             "GET",
@@ -46,7 +46,7 @@ async fn editor_of(browser: &mut Browser, project: &str) -> Result<Value, Failur
 }
 
 /// Makes the layout of the new-issue form of a project (*Customize this form*); the editor view.
-async fn customize(browser: &mut Browser, project: &str) -> Result<Value, Failure> {
+pub(super) async fn customize(browser: &mut Browser, project: &str) -> Result<Value, Failure> {
     let made = browser
         .send(
             "POST",
@@ -58,7 +58,7 @@ async fn customize(browser: &mut Browser, project: &str) -> Result<Value, Failur
 }
 
 /// The ID of a role of the editor by its name.
-fn role_named(editor: &Value, name: &str) -> Result<String, Failure> {
+pub(super) fn role_named(editor: &Value, name: &str) -> Result<String, Failure> {
     editor["roles"]
         .as_array()
         .and_then(|roles| roles.iter().find(|role| role["name"] == name))
@@ -68,7 +68,11 @@ fn role_named(editor: &Value, name: &str) -> Result<String, Failure> {
 }
 
 /// Takes the edit lock on a layout as `browser`; the answer.
-async fn take_lock(browser: &mut Browser, layout: &str, editor: &str) -> Result<Value, Failure> {
+pub(super) async fn take_lock(
+    browser: &mut Browser,
+    layout: &str,
+    editor: &str,
+) -> Result<Value, Failure> {
     let taken = browser
         .send(
             "POST",
@@ -83,7 +87,11 @@ async fn take_lock(browser: &mut Browser, layout: &str, editor: &str) -> Result<
 }
 
 /// The keys of the fields a person is shown on the form of a project: all sections in order.
-async fn form_of(browser: &mut Browser, project: &str, kind: &str) -> Result<Vec<String>, Failure> {
+pub(super) async fn form_of(
+    browser: &mut Browser,
+    project: &str,
+    kind: &str,
+) -> Result<Vec<String>, Failure> {
     let form = browser
         .send(
             "GET",
@@ -101,7 +109,7 @@ async fn form_of(browser: &mut Browser, project: &str, kind: &str) -> Result<Vec
 }
 
 /// Saves the sections of a layout under the lock; the reply.
-async fn save(
+pub(super) async fn save(
     browser: &mut Browser,
     layout: &str,
     version: &Value,
@@ -117,7 +125,7 @@ async fn save(
         .await
 }
 
-fn slot(editor: &Value) -> Result<(String, Value), Failure> {
+pub(super) fn slot(editor: &Value) -> Result<(String, Value), Failure> {
     Ok((
         editor["layout"]["id"]
             .as_str()
@@ -153,10 +161,7 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
         // The lead customizes the form: the description for everybody; the priority, who is
         // assigned and the due date for Team members only.
         let editor = customize(&mut ada, "ACME").await?;
-        let (team, guest) = (
-            role_named(&editor, "Team member")?,
-            role_named(&editor, "Guest")?,
-        );
+        let team = role_named(&editor, "Team member")?;
         let everybody: Vec<&str> = editor["roles"]
             .as_array()
             .ok_or("no roles")?
@@ -201,8 +206,7 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
                 .await?
                 .contains(&"priority".to_owned())
         );
-        // The Guest is not let into the editor, and a person who is not asked is not told the
-        // layout has roles.
+        // The Guest is not let into the editor.
         let refused = gus
             .send(
                 "GET",
@@ -211,7 +215,6 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
             )
             .await?;
         assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.body);
-        let _ = guest;
         Ok(())
     })
     .await

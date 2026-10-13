@@ -189,8 +189,13 @@ pub struct LayoutEditor {
     pub sections: Vec<EditorSection>,
     /// The fields that can be added: placeable here and not in a section yet.
     pub available: Vec<EditorField>,
-    /// The roles that can be ticked.
+    /// The roles that can be ticked: at most [`ROLES_MAX`](crate::access::ROLES_MAX), the cut of
+    /// the table of field permissions. None for somebody who may not *Decide what roles see*.
     pub roles: Vec<EditorRole>,
+    /// The person may choose the roles of a field (*Decide what roles see* at the place). Without
+    /// it the editor shows no role names and no marks, a field keeps its roles when it is saved, and
+    /// a field that is added is shown to every role.
+    pub choose_roles: bool,
 }
 
 impl Masked for LayoutEditor {}

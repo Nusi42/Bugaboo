@@ -47,6 +47,7 @@ export const messages = {
     "Someone changed this while you were working. Use Compare and save to keep your changes.",
   "error.edit.lock-lost":
     "Your editing time ran out. Your text is kept as a draft. Use Compare and save to keep your changes.",
+  "error.edit.in-progress": "Someone is editing this right now. Try again when they have finished.",
   "error.edit.taken-over":
     "Someone took over the editing. Your text is kept as a draft. Use Compare and save to keep your changes.",
   "error.rate-limit.exceeded": "Too many tries. Please wait a little and try again.",

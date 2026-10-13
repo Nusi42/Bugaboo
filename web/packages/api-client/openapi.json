@@ -18440,6 +18440,7 @@
           "edit.version_changed",
           "edit.lock_lost",
           "edit.taken_over",
+          "edit.in_progress",
           "rate_limit.exceeded",
           "server.unavailable",
           "server.internal"
@@ -19713,7 +19714,7 @@
       "LayoutEditorBody": {
         "type": "object",
         "description": "What the editor shows for a place.",
-        "required": ["kind", "sections", "available", "roles"],
+        "required": ["kind", "sections", "available", "roles", "choose_roles"],
         "properties": {
           "available": {
             "type": "array",
@@ -19721,6 +19722,10 @@
               "$ref": "#/components/schemas/EditorFieldBody"
             },
             "description": "The fields that can be added: placeable here and not in a section yet."
+          },
+          "choose_roles": {
+            "type": "boolean",
+            "description": "The person may choose the roles of a field (*Decide what roles see* at the place). When\nfalse, `roles` is empty, no field has a mark, and a save keeps the roles of the fields on\nthe layout."
           },
           "inherited_from": {
             "oneOf": [
@@ -19775,7 +19780,7 @@
             "items": {
               "$ref": "#/components/schemas/EditorRoleBody"
             },
-            "description": "The roles that can be ticked, in the order of roles."
+            "description": "The roles that can be ticked, in the order of roles; none when the person may not choose\nthe roles of a field."
           },
           "sections": {
             "type": "array",
