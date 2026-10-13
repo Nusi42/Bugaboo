@@ -11,6 +11,14 @@ import { viewports } from "./viewports.ts";
 const ports = readPorts();
 const portsForWorkers = ports.e2eWorkersTo - ports.e2eWorkersFrom + 1;
 
+/** What runs in the WebKit phone project. */
+const webkitPhoneFiles = [
+  "**/issues.spec.ts",
+  "**/issues-editing.spec.ts",
+  "**/issues-new.spec.ts",
+  "**/concurrent/locks.spec.ts",
+];
+
 export default defineConfig({
   testDir: resolve(import.meta.dirname, "../app/e2e"),
   outputDir: resolve(repoRoot, "test-results"),
@@ -33,7 +41,16 @@ export default defineConfig({
     { name: "desktop", use: { browserName: "chromium", viewport: viewports.computer } },
     {
       name: "phone",
+      // Ten browsers at once are shown on a computer; the phone has the locks in WebKit below.
+      testIgnore: "**/concurrent/**",
       use: { browserName: "chromium", viewport: viewports.phone, hasTouch: true },
+    },
+    // A phone in a browser that is not Chromium (M2-F12): only what a phone is used for most, the
+    // issue page, the new-issue dialog and the edit locks. The same files, the same servers.
+    {
+      name: "webkit-phone",
+      testMatch: webkitPhoneFiles,
+      use: { browserName: "webkit", viewport: viewports.phone, hasTouch: true },
     },
   ],
 });

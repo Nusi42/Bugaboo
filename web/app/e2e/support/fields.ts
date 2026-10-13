@@ -19,7 +19,7 @@ export function fieldNamed(
 }
 
 /** Makes an own field for issues, through the API. */
-async function makeOwnField(
+export async function makeOwnField(
   admin: ApiSession,
   name: string,
   kind: Schema<"FieldType">,

@@ -23,6 +23,12 @@ const reports: string[] = [];
  */
 const REFUSED = /^Failed to load resource: the server responded with a status of 4\d\d/u;
 
+/**
+ * What a test that cuts a network on purpose expects the browser to write about it (see
+ * `tolerate`). Empty at the start of every test, so one test never lets another off.
+ */
+const expected: Readonly<RegExp>[] = [];
+
 /** Collects the defects of every page that a context opens, now and later. */
 export function watchApp(context: BrowserContext): void {
   context.on("console", (message: ConsoleLine) => {
@@ -121,7 +127,16 @@ interface Options {
  * Pages open at its address.
  */
 export const test = base.extend<
-  Options & { server: Instance; appReports: string[] },
+  Options & {
+    server: Instance;
+    appReports: string[];
+    /**
+     * Says that the lines of the console that match are expected in this test: a test that cuts the
+     * network of a browser on purpose (a lock holder who goes offline) expects the failed requests
+     * to be written. Nothing else is let off.
+     */
+    tolerate: (lines: Readonly<RegExp>) => void;
+  },
   { pool: Servers }
 >({
   pool: [
@@ -138,6 +153,11 @@ export const test = base.extend<
   server: async ({ pool, serverSettings, sample, preparation }, provide, testInfo) => {
     await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
   },
+  tolerate: async ({ browser: _browser }, provide) => {
+    await provide((lines) => {
+      expected.push(lines);
+    });
+  },
   browser: [
     async ({ browser }, provide) => {
       const watched = watchedBrowser(browser);
@@ -149,15 +169,20 @@ export const test = base.extend<
   appReports: [
     async ({ browser: _browser }, provide) => {
       reports.length = 0;
+      expected.length = 0;
       await provide(reports);
-      const found = reports.splice(0);
+      const found = reports.splice(0).filter((line) => !expected.some((each) => each.test(line)));
       expect(found, "the app reported a defect").toEqual([]);
     },
     { auto: true },
   ],
-  contextOptions: async ({ server }, provide) => {
-    // Copying to the clipboard is allowed, as it is for a person who presses the button.
-    await provide({ baseURL: server.url, permissions: ["clipboard-read", "clipboard-write"] });
+  contextOptions: async ({ server, browserName }, provide) => {
+    // Copying to the clipboard is allowed, as it is for a person who presses the button. WebKit
+    // has no such permission to give: it lets a press of the button copy anyway.
+    await provide({
+      baseURL: server.url,
+      permissions: browserName === "chromium" ? ["clipboard-read", "clipboard-write"] : [],
+    });
   },
 });
 
