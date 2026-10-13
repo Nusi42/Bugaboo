@@ -114,8 +114,10 @@
               "Route",
               "Browser",
               "BrowserContext",
+              "BrowserContextOptions",
               "Locator",
-              "Page"
+              "Page",
+              "WebError"
             ]
           }
         ]

@@ -1,4 +1,4 @@
-import { expect, test as base } from "@playwright/test";
+import { type Browser, type BrowserContext, expect, test as base } from "@playwright/test";
 
 import { readPorts } from "../../../tooling/ports.ts";
 import { type Instance, type Settings, startServer } from "./server.ts";
@@ -7,6 +7,50 @@ import { type Instance, type Settings, startServer } from "./server.ts";
 interface ConsoleLine {
   readonly type: () => string;
   readonly text: () => string;
+}
+
+/**
+ * What the app wrote to `console.error` or threw without catching, in the test that runs now. The
+ * app reports a defect with `console.error` (for instance a message text that is not loaded,
+ * ADR-0028), so a test fails when the app does.
+ */
+const reports: string[] = [];
+
+/**
+ * The browser writes a line for every refused request. Tests of refusals expect those, so a
+ * line about a 4xx status does not count. Any other line about a request (a 5xx status, a
+ * `net::ERR_*`) is a real failure and counts.
+ */
+const REFUSED = /^Failed to load resource: the server responded with a status of 4\d\d/u;
+
+/** Collects the defects of every page that a context opens, now and later. */
+export function watchApp(context: BrowserContext): void {
+  context.on("console", (message: ConsoleLine) => {
+    if (message.type() === "error" && !REFUSED.test(message.text())) {
+      reports.push(message.text());
+    }
+  });
+  context.on("weberror", (error) => {
+    reports.push(`uncaught: ${error.error().message}`);
+  });
+}
+
+/**
+ * Makes every context that `browser.newContext` opens a watched one (see [`watchApp`]): the
+ * default one of a test, and the browsers of their own that a spec opens. Returns the way back.
+ */
+function watchedBrowser(browser: Browser): { restore: () => void } {
+  const open = browser.newContext.bind(browser);
+  browser.newContext = async (options) => {
+    const context = await open(options);
+    watchApp(context);
+    return context;
+  };
+  return {
+    restore: () => {
+      browser.newContext = open;
+    },
+  };
 }
 
 /** Gets a server into the state a file of tests starts from. */
@@ -76,7 +120,10 @@ interface Options {
  * (`server`), which stays the same for all the tests of the file; they run one after the other.
  * Pages open at its address.
  */
-export const test = base.extend<Options & { server: Instance }, { pool: Servers }>({
+export const test = base.extend<
+  Options & { server: Instance; appReports: string[] },
+  { pool: Servers }
+>({
   pool: [
     async ({ browserName }, provide, workerInfo) => {
       const pool = servers(workerInfo.parallelIndex, browserName);
@@ -91,19 +138,23 @@ export const test = base.extend<Options & { server: Instance }, { pool: Servers 
   server: async ({ pool, serverSettings, sample, preparation }, provide, testInfo) => {
     await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
   },
-  context: async ({ context }, provide) => {
-    // The app reports a defect with `console.error` (for instance a message text that is not
-    // loaded, ADR-0028), so a test fails when the app does. The browser also logs every refused
-    // request ("Failed to load resource"); tests of refusals expect those, so they do not count.
-    const reported: string[] = [];
-    context.on("console", (message: ConsoleLine) => {
-      if (message.type() === "error" && !message.text().startsWith("Failed to load resource")) {
-        reported.push(message.text());
-      }
-    });
-    await provide(context);
-    expect(reported, "the app wrote to console.error").toEqual([]);
-  },
+  browser: [
+    async ({ browser }, provide) => {
+      const watched = watchedBrowser(browser);
+      await provide(browser);
+      watched.restore();
+    },
+    { scope: "worker" },
+  ],
+  appReports: [
+    async ({ browser: _browser }, provide) => {
+      reports.length = 0;
+      await provide(reports);
+      const found = reports.splice(0);
+      expect(found, "the app reported a defect").toEqual([]);
+    },
+    { auto: true },
+  ],
   contextOptions: async ({ server }, provide) => {
     // Copying to the clipboard is allowed, as it is for a person who presses the button.
     await provide({ baseURL: server.url, permissions: ["clipboard-read", "clipboard-write"] });
