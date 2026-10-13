@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { isMessageKey, t } from "./index.ts";
 
@@ -57,5 +57,37 @@ describe("perf_04 message parts", () => {
     expect(keys.length).toBeGreaterThan(1000);
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys.filter((key) => !isMessageKey(key))).toEqual([]);
+  });
+});
+
+/** A fresh copy of the package: the parts that other tests loaded are not in it. */
+function freshPackage(): Promise<typeof import("./index.ts")> {
+  vi.resetModules();
+  return import("./index.ts");
+}
+
+describe("perf_04 a text that is missing in production", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("reports the key once and shows nothing, so the page keeps working", async () => {
+    vi.stubEnv("DEV", false);
+    const report = vi.spyOn(console, "error").mockImplementation(() => {
+      /* silent */
+    });
+    const { t: fresh } = await freshPackage();
+    expect(fresh("people.search")).toBe("");
+    expect(fresh("people.search")).toBe("");
+    expect(report).toHaveBeenCalledTimes(1);
+    expect(String(report.mock.calls[0]?.[0])).toContain("people.search");
+    expect(fresh("roles.list")).toBe("");
+    expect(report).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws in development and under test", async () => {
+    const { t: fresh } = await freshPackage();
+    expect(() => fresh("people.search")).toThrow(/people\.search.*not loaded/u);
   });
 });

@@ -1,7 +1,13 @@
-import { test as base } from "@playwright/test";
+import { expect, test as base } from "@playwright/test";
 
 import { readPorts } from "../../../tooling/ports.ts";
 import { type Instance, type Settings, startServer } from "./server.ts";
+
+/** The two things of a console message that the fixture reads. */
+interface ConsoleLine {
+  readonly type: () => string;
+  readonly text: () => string;
+}
 
 /** Gets a server into the state a file of tests starts from. */
 type Prepare = (server: Instance) => Promise<void>;
@@ -84,6 +90,19 @@ export const test = base.extend<Options & { server: Instance }, { pool: Servers 
   preparation: [{ run: () => Promise.resolve() }, { option: true }],
   server: async ({ pool, serverSettings, sample, preparation }, provide, testInfo) => {
     await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
+  },
+  context: async ({ context }, provide) => {
+    // The app reports a defect with `console.error` (for instance a message text that is not
+    // loaded, ADR-0028), so a test fails when the app does. The browser also logs every refused
+    // request ("Failed to load resource"); tests of refusals expect those, so they do not count.
+    const reported: string[] = [];
+    context.on("console", (message: ConsoleLine) => {
+      if (message.type() === "error" && !message.text().startsWith("Failed to load resource")) {
+        reported.push(message.text());
+      }
+    });
+    await provide(context);
+    expect(reported, "the app wrote to console.error").toEqual([]);
   },
   contextOptions: async ({ server }, provide) => {
     // Copying to the clipboard is allowed, as it is for a person who presses the button.

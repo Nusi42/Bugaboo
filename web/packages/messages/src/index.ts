@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { IntlMessageFormat } from "intl-messageformat";
 
 import type { MessageArguments, MessageKey } from "./generated/types.ts";
@@ -17,6 +18,29 @@ type ValuesOf<K extends MessageKey> = K extends keyof MessageArguments
 
 const formatters = new Map<MessageKey, IntlMessageFormat>();
 
+/** The keys whose missing text was reported already: once per key is enough. */
+const reported = new Set<string>();
+
+/**
+ * What `t()` does for a text whose part is not loaded (ADR-0028): a defect of the build, which
+ * the person must never see as a key. While the app is built for development, and under test,
+ * it throws, so the defect is found at once. In production it reports the key once with
+ * `console.error` (the end-to-end tests fail on that) and shows nothing, so the rest of the page
+ * keeps working. The vitest tests cannot find a missing part import: they load every part
+ * (`everything.ts`). TXT-CATALOG checks that each area imports its part first.
+ */
+function missing(key: string): string {
+  const problem = `The text ${key} is not loaded: its area does not import its message part.`;
+  if (import.meta.env.DEV) {
+    throw new Error(problem);
+  }
+  if (!reported.has(key)) {
+    reported.add(key);
+    console.error(problem);
+  }
+  return "";
+}
+
 /**
  * The text for `key`. This is the only way the app shows words: no literal text in components.
  * The values a message needs are checked at compile time.
@@ -26,9 +50,7 @@ export function t<K extends MessageKey>(key: K, ...values: ValuesOf<K>): string 
   if (formatter === undefined) {
     const text = textOf(key);
     if (text === undefined) {
-      // Never show a person a key: a part that is not loaded is a defect in the build, found by the
-      // tests (TXT-CATALOG checks that every area imports its part).
-      throw new Error(`The text ${key} is not loaded: its area does not import its message part.`);
+      return missing(key);
     }
     formatter = new IntlMessageFormat(text, locale);
     formatters.set(key, formatter);

@@ -127,7 +127,10 @@
       "error",
       { "allow": [{ "from": "package", "package": "@tanstack/router-core", "name": ["Redirect"] }] }
     ],
-    "no-console": "error",
+    // `console.error` is how the app reports a defect of the build that a person must not see, such
+    // as a message text that is not loaded (ADR-0028); the end-to-end tests fail on it. Every other
+    // use of the console is still an error.
+    "no-console": ["error", { "allow": ["error"] }],
     "no-eval": "error",
     "no-new-func": "error",
     "no-implied-eval": "error",
@@ -155,8 +158,12 @@
       {
         "allow": [
           "**/*.css",
+          // The part of an area, imported by that area's index.ts (one file per feature folder,
+          // written by `cargo xtask gen messages`; TXT-CATALOG checks the import).
           "@bugaboo/messages/parts/*",
+          // The first page's part, imported by the messages package (written by `cargo xtask gen messages`).
           "./generated/shared.ts",
+          // Every part, for Node (written by `cargo xtask gen messages`: see ALL_OUTPUT in xtask/src/gen/messages.rs).
           "./generated/all.ts"
         ]
       }
