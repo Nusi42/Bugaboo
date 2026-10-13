@@ -79,7 +79,40 @@ export async function readIssue(session: ApiSession, issue: MadeIssue) {
   );
 }
 
-/** How many own fields have a value in the issue. */
-export async function ownFieldsSet(session: ApiSession, issue: MadeIssue): Promise<number> {
-  return Object.keys((await readIssue(session, issue)).issue.own_fields ?? {}).length;
+/** A field or a choice by its ID and the name a person reads. */
+interface Named {
+  readonly id: string;
+  readonly name: string;
+}
+
+/** A field with its choices. */
+interface Known extends Named {
+  readonly choices: readonly Named[];
+}
+
+/**
+ * The choice that each pick-one own field of the issue has, by the names of the field and of the
+ * choice (as a person reads them). A value that is no choice of its field is shown as it is, so a
+ * wrong value is named in the failure.
+ */
+export async function ownChoices(
+  session: ApiSession,
+  issue: MadeIssue,
+): Promise<Readonly<Record<string, string>>> {
+  const values = (await readIssue(session, issue)).issue.own_fields ?? {};
+  const fields: Known[] = [];
+  for (const field of dataOf(await session.client.GET("/api/v1/fields")).fields) {
+    const choices: Named[] = [];
+    for (const choice of field.choices) {
+      choices.push({ id: choice.id, name: choice.name });
+    }
+    fields.push({ id: field.id, name: field.name, choices });
+  }
+  const choices: Record<string, string> = {};
+  for (const [id, value] of Object.entries(values)) {
+    const field = fields.find((each) => each.id === id);
+    const choice = field?.choices.find((each) => each.id === value);
+    choices[field?.name ?? id] = choice?.name ?? JSON.stringify(value);
+  }
+  return choices;
 }

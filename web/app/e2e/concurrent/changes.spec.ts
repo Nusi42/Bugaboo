@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 
 import { signedInAdmin } from "../support/access.ts";
-import { changesOf, changesSince, ownFieldsSet, readIssue } from "../support/crowd-checks.ts";
+import { changesOf, changesSince, ownChoices, readIssue } from "../support/crowd-checks.ts";
 import {
   openIssueAndWait,
   readyToChange,
@@ -69,7 +69,11 @@ test("iss_17_ten_people_change_ten_fields_of_one_issue_and_every_change_lands_on
   const read = await readIssue(admin, issue);
   expect(read.issue.status).toBe("in-progress");
   expect(read.issue.priority).toBe("critical");
-  expect(await ownFieldsSet(admin, issue)).toBe(areaNames.length);
+  // Each area has the choice its person made, not just some value.
+  const chosen = crowdEdits.filter((edit) => areaNames.includes(edit.label));
+  expect(await ownChoices(admin, issue)).toEqual(
+    Object.fromEntries(chosen.map((edit) => [edit.label, edit.choice])),
+  );
   // One event for each change, each of one field, no field twice, and the version counted up ten times.
   const events = await changesSince(admin, issue, before);
   expect(events.every((fields) => fields.length === 1)).toBe(true);
