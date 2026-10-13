@@ -194,6 +194,7 @@ Rules:
 | **Reset to default**     | Take away the value set at this level, so the value from above counts again | clear override (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
 | **Layout**               | Which fields appear where: *issue layout*, *new-issue form*, *card layout* | screen, screen scheme      |
+| **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |
 | **Spacing**              | How close together things are on screen: *Comfortable* or *Compact* | density (in UI) |
 | **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
 | **Larger text**          | All text a step bigger                                             | zoom, font scale (in UI)           |

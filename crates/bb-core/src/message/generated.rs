@@ -8440,10 +8440,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.customize-project", "Customize for {project}"),
     ("layouts.discard", "Discard changes"),
     ("layouts.edit-anyway", "Edit anyway"),
-    ("layouts.field-add-to", "Add {name} to"),
+    ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
     ("layouts.field-drag", "Drag {name}"),
-    ("layouts.field-move-to", "Move {name} to"),
+    ("layouts.field-move-to", "Move {name} to another section"),
     ("layouts.field-remove", "Take {name} off this form"),
     (
         "layouts.field-required",
