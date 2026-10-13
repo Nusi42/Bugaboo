@@ -76,6 +76,30 @@ impl Database {
             .collect()
     }
 
+    /// The events about records of one kind, oldest first: what the check after a run reads to
+    /// count the comments of an issue (TEST-CONCURRENT).
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn events_of_kind(
+        &self,
+        kind: &EntityKind,
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(event_columns())
+            .from(Event::Table)
+            .and_where(Expr::col(Event::EntityKind).eq(kind.as_str()))
+            .order_by(Event::Id, Order::Asc)
+            .limit(limit);
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_event)
+            .collect()
+    }
+
     /// The newest event about one record for which `wanted` is true, looked for through all its
     /// events from the newest on, a page at a time, so no window cuts the search short.
     ///
@@ -391,6 +415,25 @@ mod tests {
             assert_eq!(waiting[0].0.position, 1);
             assert_eq!(waiting[0].0.event_id, event.id);
             assert_eq!(waiting[0].1, event);
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_events_of_a_kind_are_found_oldest_first() -> TestResult {
+        each_database("test_concurrent_events_of_kind", async |db| {
+            let database = open(db).await?;
+            let mut ids = ids();
+            let first = event(&mut ids, 5);
+            let second = event(&mut ids, 6);
+            for each in [&first, &second] {
+                database.record_change(each, async |_| Ok(())).await?;
+            }
+            let found = database.events_of_kind(&first.entity.kind, 10).await?;
+            assert_eq!(found, [first.clone(), second]);
+            let none = EntityKind::new("comment")?;
+            assert!(database.events_of_kind(&none, 10).await?.is_empty());
             Ok(())
         })
         .await

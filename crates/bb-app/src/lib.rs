@@ -12,7 +12,7 @@ pub mod follow;
 pub mod history;
 mod input;
 pub mod issues;
-mod member;
+pub mod member;
 pub mod people;
 pub mod ports;
 pub mod projects;

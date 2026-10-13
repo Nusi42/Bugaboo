@@ -2,29 +2,29 @@
 //! architecture §11, ADR-0019), on both databases.
 //!
 //! Ten people, each with a browser of their own, change the same few issues together: short values,
-//! descriptions under their locks, comments and reads. Some editors vanish without letting go. The
-//! clock of the test runs on while they work, so leases really run out. When they are done the
-//! invariants of the architecture hold: every change has its event, versions only go up, no lock
-//! outlives its lease, and no text that was typed is lost.
+//! descriptions under their locks, comments and reads. Some editors vanish without letting go, and
+//! some type for longer than the lease lasts. The clock of the test runs on until the last person
+//! is done, so leases really run out. The people write a book of what they did; what must hold
+//! afterwards is not defined here but in `bb-load-check`, which `cargo xtask load` calls with the
+//! book of its own run.
 
-use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use axum::Router;
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
-use bb_core::edit::{EditWhat, LEASE_SECONDS};
-use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::EntityId;
-use bb_core::technical::TechnicalName;
+use bb_app::context::Clock as _;
+use bb_core::edit::LEASE_SECONDS;
+use bb_load_check::{
+    Afterwards, Book, DraftEnd, Drafted, Kept, Seen, Work, check, lock_rows, locks_beyond_lease,
+};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 use tokio::task::JoinSet;
 
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, ok};
-use super::rig::Rig;
+use super::rig::{Rig, TestClock};
 
 const LOCKS: &str = "/api/v1/edit-locks";
 const PEOPLE: usize = 10;
@@ -33,41 +33,6 @@ const ROUNDS: usize = 14;
 /// How many seconds of the clock of the test pass at every tick of the run.
 const SECONDS_A_TICK: i64 = 7;
 const TICK: Duration = Duration::from_millis(15);
-/// Long enough for the clock of the test to pass the lease.
-const SLOW_TYPIST: Duration = Duration::from_millis(220);
-
-/// An issue the people work on.
-#[derive(Clone)]
-struct Work {
-    id: String,
-    key: String,
-}
-
-/// Something that was kept by the server and that the invariants are about.
-struct Kept {
-    key: String,
-    /// The version the issue had after the change.
-    version: i64,
-    /// The description, when the change was a save of the description.
-    text: Option<String>,
-}
-
-/// Everything the ten people did that counts, and what went wrong.
-#[derive(Default)]
-struct Book {
-    kept: Vec<Kept>,
-    comments: BTreeMap<String, usize>,
-    /// The versions each person read of each issue, in the order they read them.
-    seen: Vec<(usize, String, i64)>,
-    /// Text that was typed, refused and not found as the draft of the person.
-    lost: Vec<String>,
-    /// How many saves were refused because the lock was lost or taken over, and the text was kept.
-    refused: usize,
-    /// How many editors closed the laptop and never let go.
-    abandoned: usize,
-    /// Anything that broke a rule, with the moment.
-    broken: Vec<String>,
-}
 
 type Shared = Arc<Mutex<Book>>;
 
@@ -90,9 +55,12 @@ fn version_in(body: &Value) -> Result<i64, Failure> {
 /// One person: what they do in each round is fixed by who they are, so a failure repeats.
 struct Person {
     number: usize,
+    /// The ID of the person, as the drafts name them.
+    holder: String,
     browser: Browser,
     issues: Vec<Work>,
     book: Shared,
+    clock: Arc<TestClock>,
 }
 
 impl Person {
@@ -107,9 +75,11 @@ impl Person {
             .send("GET", &format!("{ISSUES}/{}", work.key), None)
             .await?;
         let version = version_in(ok(&reply)?)?;
-        book(&self.book)?
-            .seen
-            .push((self.number, work.key.clone(), version));
+        book(&self.book)?.seen.push(Seen {
+            person: u32::try_from(self.number)?,
+            key: work.key.clone(),
+            version,
+        });
         Ok(version)
     }
 
@@ -155,10 +125,7 @@ impl Person {
             )
             .await?;
         ok(&reply)?;
-        *book(&self.book)?
-            .comments
-            .entry(work.key.clone())
-            .or_default() += 1;
+        book(&self.book)?.comments.push(work.key.clone());
         Ok(())
     }
 
@@ -180,6 +147,24 @@ impl Person {
         Ok(token_of(ok(&over)?))
     }
 
+    /// Writes down what became of a text that was sent as a draft.
+    fn drafted(
+        &self,
+        work: &Work,
+        text: &str,
+        ending: DraftEnd,
+        found_as_draft: Option<bool>,
+    ) -> Result<(), Failure> {
+        book(&self.book)?.drafted.push(Drafted {
+            holder: self.holder.clone(),
+            key: work.key.clone(),
+            text: text.to_owned(),
+            ending,
+            found_as_draft,
+        });
+        Ok(())
+    }
+
     /// Edits the description under the lock. A person whose time ran out or who was taken over
     /// keeps their text as a draft: that is looked for at once.
     async fn describe(&mut self, work: &Work, round: usize) -> Result<(), Failure> {
@@ -188,6 +173,7 @@ impl Person {
         };
         let text = format!("Text {}-{round} on {}", self.number, work.key);
         let version = self.read(work).await?;
+        let started = self.clock.now().as_second();
         let beat = json!({"what": what_of(&work.id), "lock_token": token,
             "draft": {"text": text, "base_version": version}});
         let beat = self
@@ -197,12 +183,15 @@ impl Person {
         ok(&beat)?;
         // Every fifth editor closes the laptop and never lets go: the lease has to end it.
         if (self.number + round).is_multiple_of(5) {
-            book(&self.book)?.abandoned += 1;
-            return Ok(());
+            return self.drafted(work, &text, DraftEnd::Vanished, None);
         }
-        // Every third one types for longer than the lease lasts.
+        // Every third one types for longer than the lease lasts, by the clock of the test. The
+        // clock runs on as long as anybody works, so the wait ends, and the lease has run out by
+        // then, however slow the computer is.
         if (self.number + round).is_multiple_of(3) {
-            tokio::time::sleep(SLOW_TYPIST).await;
+            while self.clock.now().as_second() <= started + LEASE_SECONDS {
+                tokio::time::sleep(TICK).await;
+            }
         }
         let saved = self
             .browser
@@ -216,9 +205,9 @@ impl Person {
             book(&self.book)?.kept.push(Kept {
                 key: work.key.clone(),
                 version: version_in(&saved.body)?,
-                text: Some(text),
+                text: Some(text.clone()),
             });
-            return Ok(());
+            return self.drafted(work, &text, DraftEnd::Saved, None);
         }
         if !matches!(
             saved.code(),
@@ -226,12 +215,12 @@ impl Person {
         ) {
             return Err(format!("{}: {}", saved.status, saved.body).into());
         }
-        book(&self.book)?.refused += 1;
-        self.expect_draft(work, &text).await
+        let found = self.is_draft(work, &text).await?;
+        self.drafted(work, &text, DraftEnd::Refused, Some(found))
     }
 
-    /// The text that a refused save was sent with is the draft of the person.
-    async fn expect_draft(&mut self, work: &Work, text: &str) -> Result<(), Failure> {
+    /// Whether the text is the draft of the person now.
+    async fn is_draft(&mut self, work: &Work, text: &str) -> Result<bool, Failure> {
         let draft = self
             .browser
             .send(
@@ -240,10 +229,7 @@ impl Person {
                 None,
             )
             .await?;
-        if ok(&draft)?["draft"]["text"] != *text {
-            book(&self.book)?.lost.push(text.to_owned());
-        }
-        Ok(())
+        Ok(ok(&draft)?["draft"]["text"] == *text)
     }
 
     async fn rounds(mut self) -> Result<(), Failure> {
@@ -266,12 +252,13 @@ fn token_of(body: &Value) -> Option<String> {
     body["lock_token"].as_str().map(str::to_owned)
 }
 
-/// The people, each with a browser, and the issues they share.
+/// The people, each with a browser, and the issues they share (which the book names).
 async fn the_crowd(
+    rig: &Rig,
     site: &Site<'_>,
     admin: &mut Browser,
     shared: &Shared,
-) -> Result<(Vec<Person>, Vec<Work>), Failure> {
+) -> Result<Vec<Person>, Failure> {
     let mut issues = Vec::new();
     for at in 0..ISSUE_COUNT {
         let made = site.make(admin, &format!("Shared issue {at}")).await?;
@@ -281,223 +268,43 @@ async fn the_crowd(
             key: body["key"].as_str().ok_or("no key")?.to_owned(),
         });
     }
+    book(shared)?.issues.clone_from(&issues);
     let mut people = Vec::new();
     for number in 0..PEOPLE {
-        let (browser, _) = site
+        let (browser, holder) = site
             .person(StartingRole::TeamMember, &format!("crowd{number}"))
             .await?;
         people.push(Person {
             number,
+            holder: holder.to_string(),
             browser,
             issues: issues.clone(),
             book: Arc::clone(shared),
+            clock: Arc::clone(&rig.clock),
         });
     }
-    Ok((people, issues))
+    Ok(people)
 }
 
-/// The lock of an issue as the database holds it.
-async fn stored_lock(rig: &Rig, work: &Work) -> Result<Option<bb_core::edit::EditLock>, Failure> {
-    let what = EditWhat {
-        record: EntityRef {
-            kind: RecordKind::Issue.into(),
-            id: work
-                .id
-                .parse::<EntityId>()
-                .map_err(|error| error.to_string())?,
-        },
-        part: TechnicalName::new("description")?,
-    };
-    Ok(bb_app::editing::EditStore::edit_lock(&rig.storage, what).await?)
-}
-
-/// While the people work, the clock runs on and no lock is allowed to be further away than its lease.
-async fn run_the_clock(rig: &Rig, issues: &[Work], shared: &Shared) -> Result<(), Failure> {
-    for _ in 0..60 {
-        tokio::time::sleep(TICK).await;
-        rig.clock.advance(SECONDS_A_TICK);
-        for work in issues {
-            if let Some(lock) = stored_lock(rig, work).await? {
-                let furthest = rig.clock_now().as_second() + LEASE_SECONDS;
-                if lock.expires_at.as_second() > furthest {
-                    book(shared)?
-                        .broken
-                        .push(format!("the lock on {} outlives its lease", work.key));
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-/// All the people work until each has done their rounds, and the clock runs beside them.
-async fn work_together(
-    rig: &Rig,
-    people: Vec<Person>,
-    issues: &[Work],
-    shared: &Shared,
-) -> Result<(), Failure> {
+/// All the people work until each has done their rounds. The clock runs beside them for as long as
+/// any of them is at work, and no lock is allowed to be further away than its lease.
+async fn work_together(rig: &Rig, people: Vec<Person>, shared: &Shared) -> Result<(), Failure> {
     let mut working = JoinSet::new();
     for person in people {
         working.spawn(person.rounds());
     }
-    run_the_clock(rig, issues, shared).await?;
-    while let Some(done) = working.join_next().await {
-        done??;
-    }
-    Ok(())
-}
-
-/// The distinct events of one kind in the history of an issue.
-async fn events_of(admin: &mut Browser, work: &Work, tab: &str) -> Result<usize, Failure> {
-    let mut events = std::collections::BTreeSet::new();
-    let mut cursor = String::new();
-    loop {
-        let page = admin
-            .send(
-                "GET",
-                &format!("{ISSUES}/{}/history?tab={tab}&limit=100{cursor}", work.key),
-                None,
-            )
-            .await?;
-        let body = ok(&page)?;
-        for item in body["items"].as_array().ok_or("no items")? {
-            events.insert(item["event"].as_str().ok_or("no event")?.to_owned());
+    while !working.is_empty() {
+        tokio::time::sleep(TICK).await;
+        rig.clock.advance(SECONDS_A_TICK);
+        let rows = lock_rows(&rig.database).await?;
+        let now = rig.clock_now().as_second();
+        let mut guard = book(shared)?;
+        let beyond = locks_beyond_lease(&guard, &rows, now, LEASE_SECONDS);
+        guard.broken.extend(beyond);
+        drop(guard);
+        while let Some(done) = working.try_join_next() {
+            done??;
         }
-        match body["next_cursor"].as_str() {
-            Some(next) => cursor = format!("&cursor={next}"),
-            None => return Ok(events.len()),
-        }
-    }
-}
-
-/// The versions of the changes that were kept on an issue, and how many comments were written.
-fn kept_of(shared: &Shared, key: &str) -> Result<(Vec<i64>, usize), Failure> {
-    let book = book(shared)?;
-    let versions = book
-        .kept
-        .iter()
-        .filter(|each| each.key == key)
-        .map(|each| each.version)
-        .collect();
-    Ok((
-        versions,
-        book.comments.get(key).copied().unwrap_or_default(),
-    ))
-}
-
-/// Every change has an event, and versions only go up by one at a time.
-async fn check_events_and_versions(
-    admin: &mut Browser,
-    issues: &[Work],
-    shared: &Shared,
-) -> Result<(), Failure> {
-    for work in issues {
-        let read = admin
-            .send("GET", &format!("{ISSUES}/{}", work.key), None)
-            .await?;
-        let now = version_in(ok(&read)?)?;
-        let (mut versions, comments) = kept_of(shared, &work.key)?;
-        versions.sort_unstable();
-        let expected: Vec<i64> = (2..=now).collect();
-        assert_eq!(
-            versions, expected,
-            "{}: versions go up one by one",
-            work.key
-        );
-        // The first event is the one that made the issue.
-        assert_eq!(
-            events_of(admin, work, "changes").await?,
-            versions.len() + 1,
-            "{}: one event for every change",
-            work.key
-        );
-        assert_eq!(
-            events_of(admin, work, "comments").await?,
-            comments,
-            "{}: one event for every comment",
-            work.key
-        );
-    }
-    Ok(())
-}
-
-/// What each person read only goes up; the description is the last text that was kept.
-fn check_reads_and_texts(book: &Book, issues: &[Work]) {
-    let mut last: BTreeMap<(usize, &str), i64> = BTreeMap::new();
-    for (person, key, version) in &book.seen {
-        let before = last.insert((*person, key.as_str()), *version);
-        assert!(
-            before.is_none_or(|before| before <= *version),
-            "person {person} read {key} at {version} after {before:?}"
-        );
-    }
-    assert!(book.lost.is_empty(), "text that was lost: {:?}", book.lost);
-    assert!(book.broken.is_empty(), "{:?}", book.broken);
-    assert_eq!(issues.len(), ISSUE_COUNT);
-    // The run did what it is for: texts were kept, some were refused and kept as drafts, some
-    // editors vanished.
-    assert!(book.kept.iter().any(|each| each.text.is_some()));
-    assert!(
-        book.refused > 0,
-        "no save was refused, so no draft was looked for"
-    );
-    assert!(book.abandoned > 0);
-}
-
-/// The description of an issue is the text of the last save that was kept.
-async fn check_descriptions(
-    admin: &mut Browser,
-    issues: &[Work],
-    shared: &Shared,
-) -> Result<(), Failure> {
-    for work in issues {
-        let read = admin
-            .send("GET", &format!("{ISSUES}/{}", work.key), None)
-            .await?;
-        let last = book(shared)?
-            .kept
-            .iter()
-            .filter(|each| each.key == work.key && each.text.is_some())
-            .max_by_key(|each| each.version)
-            .and_then(|each| each.text.clone())
-            .unwrap_or_default();
-        assert_eq!(
-            ok(&read)?["issue"]["description"],
-            last,
-            "{}: the description is the text that was kept last",
-            work.key
-        );
-    }
-    Ok(())
-}
-
-/// Once the leases are over nobody holds a lock, and what is left of the rows goes with the purge.
-async fn check_locks_are_gone(rig: &Rig, app: &Router, issues: &[Work]) -> Result<(), Failure> {
-    rig.clock.advance(LEASE_SECONDS + 1);
-    let mut asker = Browser::signed_in_as(app, "crowd0@example.test").await?;
-    for work in issues {
-        let reply = asker
-            .send(
-                "GET",
-                &format!("{LOCKS}?kind=issue&id={}&part=description", work.id),
-                None,
-            )
-            .await?;
-        assert!(
-            ok(&reply)?["held"].is_null(),
-            "{}: a lock outlived its lease",
-            work.key
-        );
-    }
-    let ctx = rig.services.ctx(Rig::info());
-    bb_app::editing::purge_drafts(&ctx, bb_app::editing::PurgeDraftsQuery).await?;
-    for work in issues {
-        assert!(
-            stored_lock(rig, work).await?.is_none(),
-            "{}: the row of the lock is gone",
-            work.key
-        );
     }
     Ok(())
 }
@@ -508,15 +315,27 @@ async fn test_concurrent_invariants_hold_after_a_run() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut admin) = Site::start(&rig, &app).await?;
         let shared: Shared = Arc::default();
-        let (people, issues) = the_crowd(&site, &mut admin, &shared).await?;
-        work_together(&rig, people, &issues, &shared).await?;
-        check_events_and_versions(&mut admin, &issues, &shared).await?;
-        {
-            let guard = book(&shared)?;
-            check_reads_and_texts(&guard, &issues);
-        }
-        check_descriptions(&mut admin, &issues, &shared).await?;
-        check_locks_are_gone(&rig, &app, &issues).await
+        let people = the_crowd(&rig, &site, &mut admin, &shared).await?;
+        work_together(&rig, people, &shared).await?;
+        // The run did what it is for: texts were kept, some saves were refused because the clock
+        // went past their lease and the text was kept as a draft, some editors vanished.
+        let book = std::mem::take(&mut *book(&shared)?);
+        let ended = |ending| book.drafted.iter().any(|each| each.ending == ending);
+        assert!(book.kept.iter().any(|each| each.text.is_some()));
+        assert!(ended(DraftEnd::Refused), "no save was refused");
+        assert!(ended(DraftEnd::Vanished), "no editor vanished");
+        // Once the leases are over nobody holds a lock, and the purge takes the rows.
+        rig.clock.advance(LEASE_SECONDS + 1);
+        let ctx = rig.services.ctx(Rig::info());
+        bb_app::editing::purge_drafts(&ctx, bb_app::editing::PurgeDraftsQuery).await?;
+        let afterwards = Afterwards {
+            now: rig.clock_now().as_second(),
+            lease_seconds: LEASE_SECONDS,
+            purged: true,
+        };
+        let found = check(&rig.database, &book, &afterwards).await?;
+        assert!(found.is_empty(), "{found:#?}");
+        Ok(())
     })
     .await
 }

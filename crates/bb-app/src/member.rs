@@ -44,9 +44,11 @@ pub(crate) mod relation {
     pub(crate) const TO: &str = "to";
 }
 
-/// The members of a comment. History reads the issue of a new comment from `ISSUE`.
-pub(crate) mod comment {
-    pub(crate) const ISSUE: &str = "issue";
+/// The members of a comment. History reads the issue of a new comment from `ISSUE`, and so does
+/// the check after a run of many people (`bb-load-check`).
+pub mod comment {
+    /// The member that names the issue of a comment.
+    pub const ISSUE: &str = "issue";
     pub(crate) const TEXT: &str = "text";
     pub(crate) const DELETED_AT: &str = crate::issues::member::DELETED_AT;
 }

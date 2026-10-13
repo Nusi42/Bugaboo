@@ -522,6 +522,18 @@ name = "bb-jobs"
 version = "0.0.0"
 
 [[package]]
+name = "bb-load-check"
+version = "0.0.0"
+dependencies = [
+ "bb-app",
+ "bb-core",
+ "bb-store",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "bb-macros"
 version = "0.0.0"
 dependencies = [
@@ -599,6 +611,7 @@ dependencies = [
  "bb-auth",
  "bb-core",
  "bb-dev-words",
+ "bb-load-check",
  "bb-store",
  "bb-testing",
  "clap",
