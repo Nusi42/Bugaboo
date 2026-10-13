@@ -108,6 +108,7 @@ impl<S> AuthServices<S> {
             evaluations: Mutex::default(),
             via_key: AtomicBool::new(false),
             acting: None,
+            reason: Mutex::default(),
         }
     }
 
@@ -150,6 +151,9 @@ pub struct Ctx<'a, S> {
     /// The person a background job makes its changes as; none for a request, which has a session or
     /// an access key to tell who asks.
     pub(crate) acting: Option<ActingPerson>,
+    /// The reason the events of the changes made now carry, set by a job for the issue it works on
+    /// (`bulk`); none for a request.
+    pub(crate) reason: Mutex<Option<String>>,
 }
 
 /// Makes IDs from the clock of the context and the secure random source.
@@ -184,6 +188,7 @@ pub(crate) struct EventMaker {
     clock: Arc<dyn Clock + Send + Sync>,
     actor: Actor,
     channel: Channel,
+    reason: Option<String>,
 }
 
 impl EventMaker {
@@ -201,7 +206,7 @@ impl EventMaker {
             channel: self.channel,
             entity,
             changes,
-            reason: None,
+            reason: self.reason.clone(),
         })
     }
 }
@@ -255,7 +260,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             } else {
                 Channel::Ui
             },
+            reason: self
+                .reason
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone(),
         }
+    }
+
+    /// Makes the events of the changes that follow carry `reason`, until it is set again.
+    pub(crate) fn set_reason(&self, reason: Option<String>) {
+        *self
+            .reason
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = reason;
     }
 
     /// Writes an entry into the security log. A log that cannot be written is reported in the

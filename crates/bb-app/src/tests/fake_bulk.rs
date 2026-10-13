@@ -142,6 +142,14 @@ impl BulkStore for FakeStore {
         Ok(tx.state.bulk_runs.iter().find(|run| run.id == id).cloned())
     }
 
+    async fn event_with_reason(&self, reason: &str, since: Timestamp) -> Result<bool, FakeError> {
+        Ok(self
+            .lock()
+            .events
+            .iter()
+            .any(|event| event.time >= since && event.reason.as_deref() == Some(reason)))
+    }
+
     async fn save_bulk_progress(
         &self,
         run: &BulkRun,

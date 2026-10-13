@@ -168,7 +168,7 @@ pub struct IssueLabel {
 #[cfg(test)]
 mod tests {
     use super::{TagProject, name_key, tag_allowed_in};
-    use crate::id::{IdSource, SequentialIds};
+    use crate::id::{ProjectId, SequentialIds, TagId};
 
     #[test]
     fn tag_01_two_spellings_of_a_name_have_one_key() {
@@ -177,13 +177,17 @@ mod tests {
     }
 
     #[test]
-    fn tag_01_a_limited_tag_is_allowed_only_in_its_projects() {
+    fn tag_01_a_limited_tag_is_allowed_only_in_its_projects() -> Result<(), crate::id::IdError> {
         let mut ids = SequentialIds::default();
-        let (tag, other) = (ids.next_id(), ids.next_id());
-        let (here, there) = (ids.next_id(), ids.next_id());
+        let (tag, other) = (TagId::generate(&mut ids)?, TagId::generate(&mut ids)?);
+        let (here, there) = (
+            ProjectId::generate(&mut ids)?,
+            ProjectId::generate(&mut ids)?,
+        );
         let limits = [TagProject { tag, project: here }];
         assert!(tag_allowed_in(tag, &limits, &[there, here]));
         assert!(!tag_allowed_in(tag, &limits, &[there]));
         assert!(tag_allowed_in(other, &limits, &[there]));
+        Ok(())
     }
 }

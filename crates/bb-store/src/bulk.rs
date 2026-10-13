@@ -131,6 +131,10 @@ impl JobStore for AuthStorage {
 }
 
 impl BulkStore for AuthStorage {
+    async fn event_with_reason(&self, reason: &str, since: Timestamp) -> Result<bool, StoreError> {
+        self.database().event_with_reason_since(reason, since).await
+    }
+
     async fn bulk_run_in(
         transaction: &mut Transaction,
         id: BulkRunId,

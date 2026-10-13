@@ -16,7 +16,7 @@ use bb_policy::{Authorized, Place};
 use serde_json::json;
 
 use super::judge::{Judged, Probe, Selection, skip_of};
-use super::run::RUN_KEY;
+use super::run::step_payload;
 use super::types::{ApplyBulk, BulkAction, BulkOutcome, BulkResult, BulkTarget};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, set_to};
 use crate::issues::{ChangeIssue, DeleteIssue, MoveIssue, change_issue, delete_issue, move_issue};
@@ -187,7 +187,7 @@ pub async fn apply_bulk<S: AuthStore>(
         finished_at: None,
     };
     let job = JobId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?;
-    let payload = json!({ RUN_KEY: run.id.to_string() });
+    let payload = step_payload(run.id);
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::BulkRun, run.id),

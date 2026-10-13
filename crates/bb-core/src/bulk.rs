@@ -125,3 +125,12 @@ pub struct BulkRun {
     #[not_personal]
     pub finished_at: Option<Timestamp>,
 }
+impl BulkRun {
+    /// The reason the event of the change to the issue at `index` carries, so a worker that stops
+    /// between the change and counting it can tell, when it goes on, that the change was made
+    /// (ADR-0017).
+    #[must_use]
+    pub fn item_reason(&self, index: i64) -> String {
+        format!("bulk-run:{}:{index}", self.id)
+    }
+}

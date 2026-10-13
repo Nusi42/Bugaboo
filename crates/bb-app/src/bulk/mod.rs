@@ -23,5 +23,7 @@ mod types;
 pub use apply::apply_bulk;
 pub use preview::preview_bulk;
 pub use run::bulk_run;
+#[cfg(test)]
+pub(crate) use run::step_payload;
 pub use store::BulkStore;
 pub use types::*;

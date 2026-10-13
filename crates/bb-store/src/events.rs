@@ -11,6 +11,7 @@
 //! consumer that has seen position 7 can never miss a position 6 that commits later.
 
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, FieldChange};
+use bb_core::id::EventId;
 use bb_core::outbox::OutboxEntry;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
@@ -73,6 +74,28 @@ impl Database {
             .iter()
             .map(read_event)
             .collect()
+    }
+
+    /// Whether an event with this reason was written at or after `since`. Event IDs begin with
+    /// their time, so the search reads only the range of the IDs since then.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn event_with_reason_since(
+        &self,
+        reason: &str,
+        since: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let first = EventId::from_parts(since, [0; 10])
+            .map_err(|_| StoreError::Corrupt("a moment of an event"))?;
+        let mut select = Query::select();
+        select
+            .column(Event::Id)
+            .from(Event::Table)
+            .and_where(Expr::col(Event::Id).gte(first.stored()))
+            .and_where(Expr::col(Event::Reason).eq(reason))
+            .limit(1);
+        Ok(self.fetch_optional(&select).await?.is_some())
     }
 
     /// The newest event about one record for which `wanted` is true, looked for through all its

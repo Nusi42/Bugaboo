@@ -116,36 +116,38 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn do_job(&self, job: &Job) -> Result<(), TechnicalName> {
         let failed = |code: &str| TechnicalName::new(code).unwrap_or_else(|_| job.kind.clone());
         match job.kind.as_str() {
-            kind::BULK_STEP => self.run_bulk_step(&job.payload).await.map_err(|error| {
-                tracing::warn!(cause = %error, "a step of a change to many issues failed");
-                failed(FAILED)
-            }),
-            kind::RENEW_IDS => self.renew_ids_step(&job.payload).await.map_err(|error| {
-                tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
-                failed(FAILED)
-            }),
-            kind::PURGE_DRAFTS => self
-                .run_daily(kind::PURGE_DRAFTS, async {
-                    purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
-                        tracing::info!(drafts, "old drafts were cleared");
-                    })
-                })
+            kind::BULK_STEP => Box::pin(self.run_bulk_step(&job.payload))
                 .await
                 .map_err(|error| {
-                    tracing::warn!(cause = %error, "old drafts could not be cleared");
+                    tracing::warn!(cause = %error, "a step of a change to many issues failed");
                     failed(FAILED)
                 }),
-            kind::CATCH_UP_HISTORY => self
-                .run_daily(kind::CATCH_UP_HISTORY, async {
-                    self.catch_up_history().await.map(|events| {
-                        tracing::info!(events, "the history caught up with the events");
-                    })
-                })
+            kind::RENEW_IDS => Box::pin(self.renew_ids_step(&job.payload))
                 .await
                 .map_err(|error| {
-                    tracing::warn!(cause = %error, "the history could not catch up");
+                    tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
                     failed(FAILED)
                 }),
+            kind::PURGE_DRAFTS => Box::pin(self.run_daily(kind::PURGE_DRAFTS, async {
+                purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
+                    tracing::info!(drafts, "old drafts were cleared");
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "old drafts could not be cleared");
+                failed(FAILED)
+            }),
+            kind::CATCH_UP_HISTORY => Box::pin(self.run_daily(kind::CATCH_UP_HISTORY, async {
+                self.catch_up_history().await.map(|events| {
+                    tracing::info!(events, "the history caught up with the events");
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "the history could not catch up");
+                failed(FAILED)
+            }),
             other => {
                 tracing::error!(kind = other, "a job of a kind nobody knows");
                 Err(failed(UNKNOWN_KIND))

@@ -4,7 +4,11 @@
 //! A step changes up to [`BULK_STEP`] issues, each by the use case of a single change, as the
 //! person who asked (the job has no session; the run keeps the person). The progress is saved after
 //! every issue, so a worker that stops loses nothing: the next one goes on at the first issue that
-//! is not counted. When issues are left, the step queues the next one.
+//! is not counted. The change and the saving of the progress are two writes, so the event of every
+//! change carries the item it was made for (`BulkRun::item_reason`): a worker that stopped between
+//! the two finds that event when it goes on and counts the issue as changed, instead of judging it
+//! again and reporting that it changed since the preview. When issues are left, the step queues
+//! the next one.
 
 use bb_core::ErrorCode;
 use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus};
@@ -21,7 +25,12 @@ use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::jobs::{kind, kind_name};
 
 /// The member of the payload of a step that names the run.
-pub(super) const RUN_KEY: &str = "run";
+const RUN_KEY: &str = "run";
+
+/// What a step of a run is queued with: the run it is a step of.
+pub(crate) fn step_payload(run: BulkRunId) -> Value {
+    serde_json::json!({ RUN_KEY: run.to_string() })
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// How far a run is, as the person who asked for it reads it: the issues it left alone as
@@ -106,6 +115,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .len()
             .min(usize::try_from(run.done).unwrap_or(usize::MAX) + BULK_STEP);
         run.status = BulkStatus::Running;
+        let first = run.done;
         while usize::try_from(run.done).unwrap_or(usize::MAX) < end {
             let at = run.done;
             let item = run.items[usize::try_from(at).unwrap_or(usize::MAX)];
@@ -113,19 +123,35 @@ impl<S: AuthStore> Ctx<'_, S> {
                 issue: item.issue.to_string(),
                 version: item.version,
             };
-            match acting.apply_item(&selection, &target, &mut maker).await {
-                Ok(outcome) => match outcome.skipped {
-                    None => run.changed += 1,
-                    Some(reason) => run.skipped.push(BulkSkip {
-                        issue: item.issue,
-                        reason,
-                    }),
-                },
-                Err(error) => {
-                    // The store broke: the run stops where it is, and says so.
-                    tracing::error!(cause = %error, "a change to many issues stopped");
-                    return self.end_run(&mut run, BulkStatus::Failed).await;
+            // Only the issue the step begins at can have been changed by a worker that stopped
+            // before it counted the change: its event says so, and it counts as changed.
+            let written = at == first
+                && self
+                    .store()
+                    .event_with_reason(&run.item_reason(at), run.created_at)
+                    .await
+                    .map_err(|error| internal::<S>(&error))?;
+            let left_alone = if written {
+                None
+            } else {
+                acting.set_reason(Some(run.item_reason(at)));
+                let applied = acting.apply_item(&selection, &target, &mut maker).await;
+                acting.set_reason(None);
+                match applied {
+                    Ok(outcome) => outcome.skipped,
+                    Err(error) => {
+                        // The store broke: the run stops where it is, and says so.
+                        tracing::error!(cause = %error, "a change to many issues stopped");
+                        return self.end_run(&mut run, BulkStatus::Failed).await;
+                    }
                 }
+            };
+            match left_alone {
+                None => run.changed += 1,
+                Some(reason) => run.skipped.push(BulkSkip {
+                    issue: item.issue,
+                    reason,
+                }),
             }
             run.done += 1;
             if usize::try_from(run.done).unwrap_or(usize::MAX) >= run.items.len() {
@@ -169,7 +195,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .queue_job(
                 job,
                 &kind_name(kind::BULK_STEP)?,
-                &serde_json::json!({ RUN_KEY: run.to_string() }),
+                &step_payload(run),
                 now,
                 now,
             )

@@ -375,6 +375,66 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     Ok(())
 }
 
+#[tokio::test]
+async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_it_goes_on()
+-> Outcome {
+    use bb_core::bulk::{BulkItem, BulkRun};
+    use bb_core::id::BulkRunId;
+
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let mut issues = Vec::new();
+    for _ in 0..3 {
+        issues.push(an_issue(&world, project).await?);
+    }
+    let run = BulkRun {
+        id: BulkRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        person: world.admin.person.id,
+        action: serde_json::to_value(done())?,
+        items: issues
+            .iter()
+            .map(|issue| BulkItem {
+                issue: *issue,
+                version: 1,
+            })
+            .collect(),
+        status: BulkStatus::Queued,
+        done: 0,
+        changed: 0,
+        skipped: Vec::new(),
+        created_at: world.ctx().now(),
+        finished_at: None,
+    };
+    world.store.lock().state.bulk_runs.push(run.clone());
+    let payload = crate::bulk::step_payload(run.id);
+    world.ctx().run_bulk_step(&payload).await?;
+    let finished = world.store.lock().state.bulk_runs[0].clone();
+    assert_eq!((finished.status, finished.changed), (BulkStatus::Done, 3));
+    // The worker died after it changed the third issue and before it counted it: the run is
+    // back at two issues counted, and the issue is changed.
+    {
+        let mut shared = world.store.lock();
+        let stopped = &mut shared.state.bulk_runs[0];
+        stopped.status = BulkStatus::Running;
+        stopped.done = 2;
+        stopped.changed = 2;
+        stopped.finished_at = None;
+    }
+    world.ctx().run_bulk_step(&payload).await?;
+    let again = world.store.lock().state.bulk_runs[0].clone();
+    assert_eq!(again.status, BulkStatus::Done);
+    assert_eq!(
+        (again.done, again.changed),
+        (3, 3),
+        "the issue counts as changed"
+    );
+    assert!(
+        again.skipped.is_empty(),
+        "it is not reported as changed since the preview"
+    );
+    Ok(())
+}
+
 async fn types_first(world: &World) -> Result<bb_core::id::IssueTypeId, String> {
     let types = issue_types(
         &world.ctx(),

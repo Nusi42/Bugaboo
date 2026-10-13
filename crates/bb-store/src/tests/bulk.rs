@@ -168,3 +168,22 @@ async fn iss_09_a_job_that_waits_for_later_is_told_by_its_kind() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn adr_0017_an_event_is_found_by_its_reason_since_a_moment() -> TestResult {
+    each_database("adr_0017_event_by_reason", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let mut marked = event(&mut source, 5);
+        marked.reason = Some("bulk-run:one:7".to_owned());
+        ChangeStore::record_change(storage, &marked, |_| Box::pin(async { Ok(()) })).await?;
+        let early = Timestamp::UNIX_EPOCH;
+        let late = Timestamp::from_second(4_000_000_000)?;
+        assert!(storage.event_with_reason("bulk-run:one:7", early).await?);
+        assert!(!storage.event_with_reason("bulk-run:one:8", early).await?);
+        assert!(!storage.event_with_reason("bulk-run:one:7", late).await?);
+        Ok(())
+    })
+    .await
+}

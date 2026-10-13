@@ -10,6 +10,7 @@ use std::future::Future;
 
 use bb_core::bulk::BulkRun;
 use bb_core::id::BulkRunId;
+use jiff::Timestamp;
 
 use crate::jobs::JobStore;
 use crate::store_macros::{queries, reads, writes};
@@ -26,6 +27,9 @@ pub trait BulkStore: JobStore + 'static {
         /// the issues left alone, the end) if it is still at `expected_done`, and says whether it
         /// was. Two workers that took the same step cannot both count it.
         fn save_bulk_progress(run: &BulkRun, expected_done: i64) -> bool;
+        /// Whether an event with this reason was written at or after `since`: how a run that went
+        /// on after a worker stopped finds out that the worker changed an issue before it stopped.
+        fn event_with_reason(reason: &str, since: Timestamp) -> bool;
     }
 
     writes! {
