@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
-import { blockOf, portsOf } from "./ports.ts";
+import layout from "../../tools/dev/ports.json" with { type: "json" };
+import { BLOCK_VARIABLE, blockOf, portsOf } from "./ports.ts";
 
 describe("dist_01 every work folder has a block of ports of its own (ADR-0023)", () => {
   it("gives the first work folder the first block, and the next ones the blocks after it", () => {
@@ -45,5 +48,15 @@ describe("dist_01 every work folder has a block of ports of its own (ADR-0023)",
         expect(port).toBeLessThanOrEqual(48099);
       }
     }
+  });
+});
+
+describe("m2c_f41 the names in ports.json are written once", () => {
+  it("reads the variable and the folder prefix from ports.json and writes neither again", () => {
+    expect(BLOCK_VARIABLE).toBe(layout.blockVariable);
+    expect(blockOf(`${layout.workFolderPrefix}4`)).toBe(4);
+    const code = readFileSync(new URL("ports.ts", import.meta.url), "utf8");
+    expect(code).not.toContain(layout.blockVariable);
+    expect(code).not.toContain(layout.workFolderPrefix);
   });
 });
