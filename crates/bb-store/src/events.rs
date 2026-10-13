@@ -42,12 +42,11 @@ impl Database {
     ) -> Result<T, StoreError> {
         let mut transaction = self.begin().await?;
         let result = change(&mut transaction).await?;
-        append_event(&mut transaction, event).await?;
+        append_events(&mut transaction, std::slice::from_ref(event)).await?;
         // The events the change added besides its own come last, so the lock on the outbox is
         // the last lock of the transaction and no writer waits on it while holding a row.
-        for follow_up in std::mem::take(&mut transaction.follow_ups) {
-            append_event(&mut transaction, &follow_up).await?;
-        }
+        let follow_ups = std::mem::take(&mut transaction.follow_ups);
+        append_events(&mut transaction, &follow_ups).await?;
         transaction.commit().await?;
         Ok(result)
     }
@@ -264,59 +263,78 @@ async fn transaction_has_no_row(
     Ok(transaction.fetch_optional(&select).await?.is_none())
 }
 
-/// Appends the event and its outbox entry inside the transaction of the change.
-pub(crate) async fn append_event(
+/// How many events one statement inserts: the bind variables of a statement are limited (nine
+/// for each event here), and SQLite's older limit of 999 is the smallest.
+const EVENTS_PER_STATEMENT: usize = 100;
+
+/// Appends the events and their outbox entries, in the order given, inside the transaction of the
+/// change. The positions are taken with one statement for all of them and the rows are written
+/// many to a statement, so a change that writes an event for each of thousands of issues is a
+/// handful of statements and not thousands.
+pub(crate) async fn append_events(
     transaction: &mut Transaction,
-    event: &DomainEvent,
+    events: &[DomainEvent],
 ) -> Result<(), StoreError> {
+    if events.is_empty() {
+        return Ok(());
+    }
+    let count = i64::try_from(events.len()).map_err(|_| StoreError::Corrupt("the events"))?;
     // First the counter: it takes the lock that puts the commits in order.
     let mut next = Query::update();
     next.table(OutboxPosition::Table)
         .value(
             OutboxPosition::Position,
-            Expr::col(OutboxPosition::Position).add(1_i64),
+            Expr::col(OutboxPosition::Position).add(count),
         )
         .and_where(Expr::col(OutboxPosition::Consumer).eq(OUTBOX_HEAD))
         .returning_col(OutboxPosition::Position);
-    let position: i64 = transaction
+    let last: i64 = transaction
         .fetch_optional(&next)
         .await?
         .ok_or(StoreError::Corrupt("the outbox counter"))?
         .get(OutboxPosition::Position)?;
+    let first = last - (count - 1);
 
-    let (actor_kind, actor_id) = match event.actor {
-        Actor::Person(person) => (ACTOR_PERSON, Some(person.stored())),
-        Actor::System => (ACTOR_SYSTEM, None),
-    };
-    let mut insert = Query::insert();
-    insert
-        .into_table(Event::Table)
-        .columns(event_columns())
-        .values([
-            Expr::val(event.id.stored()),
-            Expr::val(to_micros(event.time)),
-            Expr::val(actor_kind),
-            Expr::val(actor_id),
-            Expr::val(event.channel.code()),
-            Expr::val(event.entity.kind.as_str()),
-            Expr::val(event.entity.id.stored()),
-            Expr::val(serde_json::to_string(&event.changes)?),
-            Expr::val(event.reason.clone()),
-        ])
-        .map_err(|_| StoreError::Corrupt("an event"))?;
-    transaction.execute(&insert).await?;
-
-    let mut outbox = Query::insert();
-    outbox
-        .into_table(Outbox::Table)
-        .columns([Outbox::Position, Outbox::EventId, Outbox::CreatedAt])
-        .values([
-            Expr::val(position),
-            Expr::val(event.id.stored()),
-            Expr::val(to_micros(event.time)),
-        ])
-        .map_err(|_| StoreError::Corrupt("an outbox entry"))?;
-    transaction.execute(&outbox).await?;
+    let mut position = first;
+    for chunk in events.chunks(EVENTS_PER_STATEMENT) {
+        let mut insert = Query::insert();
+        insert.into_table(Event::Table).columns(event_columns());
+        let mut outbox = Query::insert();
+        outbox.into_table(Outbox::Table).columns([
+            Outbox::Position,
+            Outbox::EventId,
+            Outbox::CreatedAt,
+        ]);
+        for event in chunk {
+            let (actor_kind, actor_id) = match event.actor {
+                Actor::Person(person) => (ACTOR_PERSON, Some(person.stored())),
+                Actor::System => (ACTOR_SYSTEM, None),
+            };
+            insert
+                .values([
+                    Expr::val(event.id.stored()),
+                    Expr::val(to_micros(event.time)),
+                    Expr::val(actor_kind),
+                    Expr::val(actor_id),
+                    Expr::val(event.channel.code()),
+                    Expr::val(event.entity.kind.as_str()),
+                    Expr::val(event.entity.id.stored()),
+                    Expr::val(serde_json::to_string(&event.changes)?),
+                    Expr::val(event.reason.clone()),
+                ])
+                .map_err(|_| StoreError::Corrupt("an event"))?;
+            outbox
+                .values([
+                    Expr::val(position),
+                    Expr::val(event.id.stored()),
+                    Expr::val(to_micros(event.time)),
+                ])
+                .map_err(|_| StoreError::Corrupt("an outbox entry"))?;
+            position += 1;
+        }
+        transaction.execute(&insert).await?;
+        transaction.execute(&outbox).await?;
+    }
     Ok(())
 }
 
@@ -391,6 +409,45 @@ mod tests {
             assert_eq!(waiting[0].0.position, 1);
             assert_eq!(waiting[0].0.event_id, event.id);
             assert_eq!(waiting[0].1, event);
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0007_many_follow_up_events_get_one_position_each_in_order() -> TestResult {
+        each_database("adr_0007_follow_ups_in_bulk", async |db| {
+            let database = open(db).await?;
+            let mut ids = ids();
+            let event = event(&mut ids, 5);
+            // More than one statement holds, so the chunks must join up.
+            let follow_ups: Vec<DomainEvent> = (0..250)
+                .map(|at| crate::test_support::event(&mut ids, 6 + at))
+                .collect();
+            let queued = follow_ups.clone();
+            database
+                .record_change(&event, async move |transaction| {
+                    transaction.follow_ups.extend(queued);
+                    Ok(())
+                })
+                .await?;
+            let waiting = database.outbox_after(&name("history"), 1000).await?;
+            let mut expected = vec![event];
+            expected.extend(follow_ups);
+            let seen: Vec<(i64, DomainEvent)> = waiting
+                .into_iter()
+                .map(|(entry, event)| (entry.position, event))
+                .collect();
+            assert_eq!(
+                seen.iter()
+                    .map(|(position, _)| *position)
+                    .collect::<Vec<_>>(),
+                (1..=251).collect::<Vec<_>>()
+            );
+            assert_eq!(
+                seen.into_iter().map(|(_, event)| event).collect::<Vec<_>>(),
+                expected
+            );
             Ok(())
         })
         .await
