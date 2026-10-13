@@ -21,6 +21,7 @@ pub mod roles;
 pub mod settings;
 pub mod status;
 mod store_macros;
+pub mod tags;
 
 #[cfg(test)]
 mod tests;

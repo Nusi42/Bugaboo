@@ -32,6 +32,7 @@ mod schema;
 mod secrets;
 mod security_log;
 mod settings;
+mod tags;
 #[cfg(feature = "testing")]
 mod testing;
 

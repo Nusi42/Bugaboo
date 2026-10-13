@@ -5,6 +5,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::bulk::{BulkState, SkipReason};
 use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
 use bb_core::issue_key::IdMode;
@@ -88,6 +89,20 @@ pub(crate) fn made_keys() -> Vec<Made> {
     }
     for level in PeopleLevel::ALL {
         keys.push(made("the people level", level.code(), level.name()));
+    }
+    for reason in SkipReason::ALL {
+        keys.push(made(
+            "why an issue is left alone",
+            reason.code(),
+            reason.name(),
+        ));
+    }
+    for state in BulkState::ALL {
+        keys.push(made(
+            "the state of a run of many changes",
+            state.code(),
+            state.name(),
+        ));
     }
     keys
 }

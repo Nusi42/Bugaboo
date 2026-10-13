@@ -20,6 +20,7 @@ crate::entities! {
     crate::access_key::AccessKey,
     crate::access_key::AccessKeyPermission,
     crate::access_key::AccessKeyProject,
+    crate::bulk::BulkRun,
     crate::comment::Comment,
     crate::comment::CommentVersion,
     crate::comment::Mention,
@@ -62,6 +63,12 @@ crate::entities! {
     crate::sign_in::SignInSession,
     crate::sign_in::StoredPasskey,
     crate::sign_in::TwoStep,
+    crate::tags::IssueLabel,
+    crate::tags::IssueTag,
+    crate::tags::Label,
+    crate::tags::LabelGroup,
+    crate::tags::Tag,
+    crate::tags::TagProject,
 }
 
 #[cfg(test)]

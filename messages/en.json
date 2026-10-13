@@ -1442,5 +1442,20 @@
   "fields.pick-choose-name": "Choose {name}",
   "fields.pick-issue-key": "ID of the issue, like WEB-12",
   "fields.pick-issue-find": "Find the issue",
-  "fields.pick-no-issue": "No issue has that ID."
+  "fields.pick-no-issue": "No issue has that ID.",
+  "bulk-skip.not-found": "It is not there for you",
+  "bulk-skip.not-allowed": "You may not make this change to it",
+  "bulk-skip.nothing-to-change": "It is like that already",
+  "bulk-skip.changed-since": "It changed after the preview",
+  "bulk-skip.type-missing": "The other project does not offer its issue type",
+  "bulk-skip.field-missing": "The other project does not use a field it has a value in",
+  "bulk-skip.relation-exists": "The relation is there already",
+  "bulk-skip.same-issue": "An issue cannot be related to itself",
+  "bulk-skip.limit-reached": "It has as many as it may",
+  "bulk-skip.not-valid": "The change does not fit this issue",
+  "bulk-skip.person-not-allowed": "A person in the change cannot be named on this issue",
+  "bulk-state.queued": "Waiting",
+  "bulk-state.running": "Working",
+  "bulk-state.done": "Done",
+  "bulk-state.failed": "Stopped"
 }

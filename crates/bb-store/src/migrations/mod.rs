@@ -34,6 +34,7 @@ mod m0007_issues;
 mod m0008_editing;
 mod m0009_fields;
 mod m0010_relations;
+mod m0011_tags;
 
 /// One step of a migration.
 pub(crate) enum Step {
@@ -150,6 +151,11 @@ const ALL: &[Definition] = &[
         version: 10,
         name: "relations",
         steps: || Ok(m0010_relations::steps()),
+    },
+    Definition {
+        version: 11,
+        name: "tags",
+        steps: || Ok(m0011_tags::steps()),
     },
 ];
 

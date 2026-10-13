@@ -105,6 +105,8 @@ words! {
     pub enum RecordKind {
         /// An access key.
         AccessKey => "access_key",
+        /// One run of a change to many issues (ISS-09).
+        BulkRun => "bulk_run",
         /// An own field (CF-01).
         Field => "field",
         /// One row of *Who has which role*.
@@ -121,6 +123,10 @@ words! {
         Issue => "issue",
         /// An issue type.
         IssueType => "issue_type",
+        /// A label of the organization's list (TAG-02).
+        Label => "label",
+        /// A group of labels (TAG-02).
+        LabelGroup => "label_group",
         /// A passkey.
         Passkey => "passkey",
         /// A person.
@@ -141,6 +147,8 @@ words! {
         SetupCode => "setup_code",
         /// The making of the starting roles.
         StartingRoles => "starting_roles",
+        /// A tag (TAG-01).
+        Tag => "tag",
     }
 }
 

@@ -300,6 +300,26 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a tag (TAG-01).
+    TagId
+}
+
+define_ordered_id! {
+    /// The ID of a label of the organization's list (TAG-02).
+    LabelId
+}
+
+define_ordered_id! {
+    /// The ID of a group of labels (TAG-02).
+    LabelGroupId
+}
+
+define_ordered_id! {
+    /// The ID of one run of a change to many issues (ISS-09).
+    BulkRunId
+}
+
+define_ordered_id! {
     /// The ID of a domain event (ADR-0007).
     EventId
 }
@@ -389,6 +409,10 @@ into_entity_id!(
     RelationKindId,
     RelationId,
     CommentId,
+    TagId,
+    LabelId,
+    LabelGroupId,
+    BulkRunId,
     EventId,
     JobId,
     SessionId,

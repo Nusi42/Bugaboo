@@ -312,6 +312,52 @@ pub const BACKUP_SHOWN_ONCE: MessageKey = MessageKey::new("backup.shown-once");
 /// The message `backup.title`.
 pub const BACKUP_TITLE: MessageKey = MessageKey::new("backup.title");
 
+/// The message `bulk-skip.changed-since`.
+pub const BULK_SKIP_CHANGED_SINCE: MessageKey = MessageKey::new("bulk-skip.changed-since");
+
+/// The message `bulk-skip.field-missing`.
+pub const BULK_SKIP_FIELD_MISSING: MessageKey = MessageKey::new("bulk-skip.field-missing");
+
+/// The message `bulk-skip.limit-reached`.
+pub const BULK_SKIP_LIMIT_REACHED: MessageKey = MessageKey::new("bulk-skip.limit-reached");
+
+/// The message `bulk-skip.not-allowed`.
+pub const BULK_SKIP_NOT_ALLOWED: MessageKey = MessageKey::new("bulk-skip.not-allowed");
+
+/// The message `bulk-skip.not-found`.
+pub const BULK_SKIP_NOT_FOUND: MessageKey = MessageKey::new("bulk-skip.not-found");
+
+/// The message `bulk-skip.not-valid`.
+pub const BULK_SKIP_NOT_VALID: MessageKey = MessageKey::new("bulk-skip.not-valid");
+
+/// The message `bulk-skip.nothing-to-change`.
+pub const BULK_SKIP_NOTHING_TO_CHANGE: MessageKey = MessageKey::new("bulk-skip.nothing-to-change");
+
+/// The message `bulk-skip.person-not-allowed`.
+pub const BULK_SKIP_PERSON_NOT_ALLOWED: MessageKey =
+    MessageKey::new("bulk-skip.person-not-allowed");
+
+/// The message `bulk-skip.relation-exists`.
+pub const BULK_SKIP_RELATION_EXISTS: MessageKey = MessageKey::new("bulk-skip.relation-exists");
+
+/// The message `bulk-skip.same-issue`.
+pub const BULK_SKIP_SAME_ISSUE: MessageKey = MessageKey::new("bulk-skip.same-issue");
+
+/// The message `bulk-skip.type-missing`.
+pub const BULK_SKIP_TYPE_MISSING: MessageKey = MessageKey::new("bulk-skip.type-missing");
+
+/// The message `bulk-state.done`.
+pub const BULK_STATE_DONE: MessageKey = MessageKey::new("bulk-state.done");
+
+/// The message `bulk-state.failed`.
+pub const BULK_STATE_FAILED: MessageKey = MessageKey::new("bulk-state.failed");
+
+/// The message `bulk-state.queued`.
+pub const BULK_STATE_QUEUED: MessageKey = MessageKey::new("bulk-state.queued");
+
+/// The message `bulk-state.running`.
+pub const BULK_STATE_RUNNING: MessageKey = MessageKey::new("bulk-state.running");
+
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
 
@@ -6771,6 +6817,36 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These codes are shown only now. Save them before you leave this page.",
     ),
     ("backup.title", "Backup codes"),
+    ("bulk-skip.changed-since", "It changed after the preview"),
+    (
+        "bulk-skip.field-missing",
+        "The other project does not use a field it has a value in",
+    ),
+    ("bulk-skip.limit-reached", "It has as many as it may"),
+    (
+        "bulk-skip.not-allowed",
+        "You may not make this change to it",
+    ),
+    ("bulk-skip.not-found", "It is not there for you"),
+    ("bulk-skip.not-valid", "The change does not fit this issue"),
+    ("bulk-skip.nothing-to-change", "It is like that already"),
+    (
+        "bulk-skip.person-not-allowed",
+        "A person in the change cannot be named on this issue",
+    ),
+    ("bulk-skip.relation-exists", "The relation is there already"),
+    (
+        "bulk-skip.same-issue",
+        "An issue cannot be related to itself",
+    ),
+    (
+        "bulk-skip.type-missing",
+        "The other project does not offer its issue type",
+    ),
+    ("bulk-state.done", "Done"),
+    ("bulk-state.failed", "Stopped"),
+    ("bulk-state.queued", "Waiting"),
+    ("bulk-state.running", "Working"),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),
