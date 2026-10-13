@@ -1,6 +1,13 @@
 import type { Schema } from "@bugaboo/api-client";
 
-import { draftOf, nextKey, withRoles, type Draft, type Section } from "./editor-model.ts";
+import {
+  draftOf,
+  nextKey,
+  sameLayout,
+  withRoles,
+  type Draft,
+  type Section,
+} from "./editor-model.ts";
 
 /** A section as a kept draft holds it: what a refused save wrote down. */
 interface KeptSection {
@@ -100,4 +107,10 @@ export function restoredDraft(editor: Schema<"LayoutEditorBody">, text: string):
       .filter((each) => !used.has(each.field))
       .map((each) => withRoles(each, [])),
   };
+}
+
+/** Whether a kept draft holds changes: it is not what the layout shows now (or cannot be read). */
+export function differsFromLayout(editor: Schema<"LayoutEditorBody">, text: string): boolean {
+  const restored = restoredDraft(editor, text);
+  return restored === undefined || !sameLayout(restored, draftOf(editor));
 }

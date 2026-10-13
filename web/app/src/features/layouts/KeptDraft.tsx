@@ -6,7 +6,7 @@ import { useState } from "react";
 import { formatAgo } from "../../shared/format.ts";
 import { useNow } from "../../shared/use-now.ts";
 import { type Draft } from "./editor-model.ts";
-import { restoredDraft } from "./kept-draft.ts";
+import { differsFromLayout, restoredDraft } from "./kept-draft.ts";
 import { useKeptDraft, useThrowAwayKeptDraft } from "./layouts.ts";
 
 export interface KeptDraftProps {
@@ -27,9 +27,8 @@ export function KeptDraft({ editor, layout, onRestore }: KeptDraftProps) {
   const now = useNow();
   const [back, setBack] = useState(false);
   const kept = found.data;
-  const version = editor.layout?.version;
-  // A draft that started from this version is on screen already.
-  if (back || kept === null || kept === undefined || kept.base_version === version) {
+  // A draft is offered when it holds changes: after a lost lock it started from this very version.
+  if (back || kept === null || kept === undefined || !differsFromLayout(editor, kept.text)) {
     return null;
   }
   const when = formatAgo(kept.saved_at, now);

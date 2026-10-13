@@ -1,7 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { restoredDraft } from "./kept-draft.ts";
+import { differsFromLayout, restoredDraft } from "./kept-draft.ts";
 
 function field(key: string, roles: readonly string[]): Schema<"EditorFieldBody"> {
   return { field: key, name: null, roles, limited_for: [], required: false };
@@ -51,5 +51,26 @@ describe("cfg_01 a kept draft on the layout as it is now", () => {
     expect(restoredDraft(editor, "not json")).toBeUndefined();
     expect(restoredDraft(editor, '{"a":1}')).toBeUndefined();
     expect(restoredDraft(editor, '[{"tab":1}]')).toBeUndefined();
+  });
+});
+
+describe("cfg_01 a kept draft is offered when it differs from the layout", () => {
+  const same = JSON.stringify([
+    { tab: "", title: "Theirs", fields: [{ field: "description", roles: ["team"] }] },
+  ]);
+  const other = JSON.stringify([
+    { tab: "", title: "Mine", fields: [{ field: "description", roles: [] }] },
+  ]);
+
+  it("is offered when it differs, whatever version it started from", () => {
+    expect(differsFromLayout(editor, other)).toBe(true);
+  });
+
+  it("is not offered when it holds what the layout shows", () => {
+    expect(differsFromLayout(editor, same)).toBe(false);
+  });
+
+  it("is offered, without a way to put it back, when it cannot be read", () => {
+    expect(differsFromLayout(editor, "not json")).toBe(true);
   });
 });
