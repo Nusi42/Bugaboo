@@ -18,6 +18,7 @@ mod fake_settings;
 mod hidden;
 mod key_scope;
 mod keys;
+mod layout_roles;
 mod limits;
 mod scenarios;
 mod scenarios_fields;

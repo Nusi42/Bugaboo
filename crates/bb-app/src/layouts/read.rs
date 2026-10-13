@@ -260,7 +260,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // them, and the editor does not offer the roles (ADR-0027).
         let choose_roles = held.allows(Permission::DecideWhatRolesSee);
         let roles: Vec<EditorRole> = if choose_roles {
-            every_role.into_iter().take(ROLES_MAX).collect()
+            offered_roles(&every_role).to_vec()
         } else {
             Vec::new()
         };
@@ -421,4 +421,10 @@ pub async fn layout_editor<S: AuthStore>(
         .await?;
     let view = ctx.editor_view(&actor, &held, &at).await?;
     Ok(held.authorize(view))
+}
+
+/// The roles the editor offers to tick: at most [`ROLES_MAX`]. The one definition, for what the
+/// editor is shown and for what a save may change.
+pub(super) fn offered_roles(every_role: &[EditorRole]) -> &[EditorRole] {
+    &every_role[..every_role.len().min(ROLES_MAX)]
 }

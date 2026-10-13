@@ -17,7 +17,7 @@ use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_policy::{Authorized, Permission};
 use serde_json::{Value, json};
 
-use super::read::Where;
+use super::read::{Where, offered_roles};
 use super::types::{DeleteLayout, LayoutEditor, MakeLayout, SaveLayout, SectionInput};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::editing::{TextSave, Written};
@@ -82,7 +82,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         known: &BTreeSet<FieldKey>,
         may_choose_roles: bool,
     ) -> Result<(LayoutContent, LayoutContent), AppError> {
-        let roles: Vec<RoleId> = self.all_roles().await?.iter().map(|role| role.id).collect();
+        let every_role = self.all_roles().await?;
+        let roles: Vec<RoleId> = every_role.iter().map(|role| role.id).collect();
+        let offered: Vec<RoleId> = offered_roles(&every_role)
+            .iter()
+            .map(|role| role.id)
+            .collect();
         let reach: BTreeSet<FieldKey> = self.own_fields_for(at).await?.into_iter().collect();
         let kept: HashMap<FieldKey, &Vec<RoleId>> = before
             .placed()
@@ -91,37 +96,72 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut sent = LayoutContent {
             sections: Vec::with_capacity(sections.len()),
         };
+        let mut full = sent.clone();
         for section in sections {
             let mut fields = Vec::with_capacity(section.fields.len());
+            let mut shown = Vec::with_capacity(section.fields.len());
             for input in &section.fields {
                 if input.field.own().is_some()
                     && !(known.contains(&input.field) && reach.contains(&input.field))
                 {
                     return Err(ErrorCode::FieldNotHere.into());
                 }
-                let mut roles_of = if may_choose_roles {
+                let mut asked = if may_choose_roles {
                     if input.roles.iter().any(|role| !roles.contains(role)) {
                         return Err(ErrorCode::InvalidRequest.into());
                     }
                     input.roles.clone()
                 } else {
+                    Vec::new()
+                };
+                asked.sort_unstable();
+                asked.dedup();
+                let roles_of = if may_choose_roles {
+                    // The editor only offered some roles: the others keep what is stored, and a
+                    // new field is shown to them.
+                    let mut merged: Vec<RoleId> = asked
+                        .iter()
+                        .copied()
+                        .filter(|role| offered.contains(role))
+                        .collect();
+                    let outside = roles.iter().copied().filter(|role| !offered.contains(role));
+                    match kept.get(&input.field) {
+                        Some(stored) => merged.extend(
+                            stored
+                                .iter()
+                                .copied()
+                                .filter(|role| !offered.contains(role)),
+                        ),
+                        None => merged.extend(outside),
+                    }
+                    merged.sort_unstable();
+                    merged.dedup();
+                    merged
+                } else {
                     kept.get(&input.field)
                         .map_or_else(|| roles.clone(), |stored| (*stored).clone())
                 };
-                roles_of.sort_unstable();
-                roles_of.dedup();
                 fields.push(PlacedField {
                     field: input.field,
                     roles: roles_of,
+                });
+                shown.push(PlacedField {
+                    field: input.field,
+                    roles: fields[fields.len() - 1].roles.clone(),
                 });
             }
             sent.sections.push(SectionContent {
                 tab: section.tab.trim().to_owned(),
                 title: section.title.trim().to_owned(),
+                fields: shown,
+            });
+            full.sections.push(SectionContent {
+                tab: section.tab.trim().to_owned(),
+                title: section.title.trim().to_owned(),
                 fields,
             });
         }
-        let mut stored = sent.clone();
+        let mut stored = full;
         keep_unknown_fields(&mut stored, before, known);
         stored
             .check(at.kind)

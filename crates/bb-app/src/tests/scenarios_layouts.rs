@@ -3,7 +3,7 @@
 
 use bb_core::edit::EditLock;
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::{EditorId, LockToken};
+use bb_core::id::{EditorId, LockToken, UserId};
 use bb_core::layout::LayoutKind;
 use jiff::Timestamp;
 
@@ -41,6 +41,11 @@ pub(crate) fn slot_of(editor: &LayoutEditor) -> Result<LayoutSlot, String> {
 
 /// The lock Ada holds on a layout, to the end of the century.
 pub(crate) fn lock_the_layout(world: &World, slot: LayoutSlot) -> LockToken {
+    lock_the_layout_for(world, slot, world.admin.person.id)
+}
+
+/// The lock somebody holds on a layout, to the end of the century.
+pub(crate) fn lock_the_layout_for(world: &World, slot: LayoutSlot, holder: UserId) -> LockToken {
     let token = LockToken::from_random([7; 16]);
     world.store.lock().state.locks.push(EditLock {
         record: EntityRef {
@@ -49,7 +54,7 @@ pub(crate) fn lock_the_layout(world: &World, slot: LayoutSlot) -> LockToken {
         },
         part: bb_core::technical::TechnicalName::new(bb_core::edit::LAYOUT_PART)
             .unwrap_or_else(|_| unreachable!()),
-        holder: world.admin.person.id,
+        holder,
         editor: EditorId::from_random([6; 16]),
         token,
         taken_at: Timestamp::UNIX_EPOCH,
