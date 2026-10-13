@@ -5,6 +5,7 @@ import { paths } from "../shared/paths.ts";
 import { shortcutIdOf, type ShortcutId } from "../shared/shortcuts.ts";
 import { appRoute, mySettingsRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { loadsScreen } from "./preload.ts";
 import { ShortcutsRoute, StartPageRoute } from "./settings-routes.tsx";
 
 // The pages that are not the first one are loaded when they are first opened, so the first page
@@ -107,6 +108,7 @@ export const projectsRoute = createRoute({
   validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
+  loader: loadsScreen(ProjectsScreen),
   component: function Projects() {
     const { open } = useSearch({ strict: false });
     const navigate = useNavigate();
@@ -129,6 +131,7 @@ export const projectsRoute = createRoute({
 export const statusRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.status,
+  loader: loadsScreen(StatusScreen),
   component: function Status() {
     return (
       <OnlyWith path={paths.status}>
@@ -141,6 +144,7 @@ export const statusRoute = createRoute({
 export const organizationSecurityRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.organizationSecurity,
+  loader: loadsScreen(SecurityScreen),
   component: function OrganizationSecurity() {
     return (
       <OnlyWith path={paths.organizationSecurity}>
@@ -153,6 +157,7 @@ export const organizationSecurityRoute = createRoute({
 export const signInRulesRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.signInRules,
+  loader: loadsScreen(SignInRulesScreen),
   component: function SignInRules() {
     return (
       <OnlyWith path={paths.signInRules}>
@@ -165,6 +170,7 @@ export const signInRulesRoute = createRoute({
 export const themesRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.themes,
+  loader: loadsScreen(ThemesScreen),
   component: function Themes() {
     return (
       <OnlyWith path={paths.themes}>

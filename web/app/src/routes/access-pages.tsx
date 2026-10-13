@@ -4,6 +4,7 @@ import { paths, routeParam } from "../shared/paths.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { loadsScreen } from "./preload.ts";
 
 // The screens of people, groups and roles are loaded when they are first opened, so the first page
 // stays small (coding-standards section 6).
@@ -22,6 +23,7 @@ const RoleScreen = lazyRouteComponent(() => import("../features/roles/index.ts")
 export const peopleRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.people,
+  loader: loadsScreen(PeopleScreen),
   component: function People() {
     return (
       <OnlyWith path={paths.people}>
@@ -35,6 +37,7 @@ export const peopleRoute = createRoute({
 export const personRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.person,
+  loader: loadsScreen(PersonScreen),
   component: function Person() {
     const id = useAddressPart(routeParam.person);
     return (
@@ -50,6 +53,7 @@ export const groupsRoute = createRoute({
   validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
     open: typeof search["open"] === "string" ? search["open"] : undefined,
   }),
+  loader: loadsScreen(GroupsScreen),
   component: function Groups() {
     const { open } = useSearch({ strict: false });
     const navigate = useNavigate();
@@ -73,6 +77,7 @@ export const groupsRoute = createRoute({
 export const rolesRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.roles,
+  loader: loadsScreen(RolesScreen),
   component: function Roles() {
     return (
       <OnlyWith path={paths.roles}>
@@ -86,6 +91,7 @@ export const rolesRoute = createRoute({
 export const roleRoute = createRoute({
   getParentRoute: () => organizationSettingsRoute,
   path: paths.role,
+  loader: loadsScreen(RoleScreen),
   component: function Role() {
     const id = useAddressPart(routeParam.role);
     return (
