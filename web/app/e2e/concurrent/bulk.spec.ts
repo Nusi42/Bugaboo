@@ -14,7 +14,9 @@ import { expect, test } from "../support/fixtures.ts";
 
 // Changing many issues while somebody edits one of them (architecture §11, M3 WP-10, ISS-09).
 // The route that changes many issues comes with WP-08. Until the server has it, the scenario is
-// skipped and says why; it runs as soon as the API description names the route.
+// skipped and says why. TEST-CONCURRENT fails once the migration of WP-08 (`m0011`) is in the code and
+// the skip is still here: then `bulkBody` and the search for the route in support/bulk.ts are
+// adapted to the real route and the skip is taken out.
 
 test.use({ preparation: { run: prepareCrowd } });
 

@@ -2,6 +2,7 @@ import { type Browser, type BrowserContext, expect, test as base } from "@playwr
 
 import { readPorts } from "../../../tooling/ports.ts";
 import { type Instance, type Settings, startServer } from "./server.ts";
+import { Tolerances } from "./tolerance.ts";
 
 /** The two things of a console message that the fixture reads. */
 interface ConsoleLine {
@@ -23,19 +24,18 @@ const reports: string[] = [];
  */
 const REFUSED = /^Failed to load resource: the server responded with a status of 4\d\d/u;
 
-/**
- * What a test that cuts a network on purpose expects the browser to write about it (see
- * `tolerate`). Empty at the start of every test, so one test never lets another off.
- */
-const expected: Readonly<RegExp>[] = [];
+/** The console lines a test expects of a browser that it cuts off the network (see `tolerate`). */
+const tolerances = new Tolerances();
 
 /** Collects the defects of every page that a context opens, now and later. */
 export function watchApp(context: BrowserContext): void {
   context.on("console", (message: ConsoleLine) => {
-    if (message.type() === "error" && !REFUSED.test(message.text())) {
-      reports.push(message.text());
+    const text = message.text();
+    if (message.type() === "error" && !REFUSED.test(text) && !tolerances.expects(context, text)) {
+      reports.push(text);
     }
   });
+  // An uncaught error is never expected, whatever the network does.
   context.on("weberror", (error) => {
     reports.push(`uncaught: ${error.error().message}`);
   });
@@ -57,6 +57,12 @@ function watchedBrowser(browser: Browser): { restore: () => void } {
       browser.newContext = open;
     },
   };
+}
+
+/** A browser that is cut off the network and brought back (see `tolerate`). */
+interface Offline {
+  readonly begin: () => Promise<void>;
+  readonly end: () => Promise<void>;
 }
 
 /** Gets a server into the state a file of tests starts from. */
@@ -131,11 +137,13 @@ export const test = base.extend<
     server: Instance;
     appReports: string[];
     /**
-     * Says that the lines of the console that match are expected in this test: a test that cuts the
-     * network of a browser on purpose (a lock holder who goes offline) expects the failed requests
-     * to be written. Nothing else is let off.
+     * For a test that cuts the network of one browser on purpose (a lock holder who goes offline):
+     * the console lines of that context that match `lines` are expected, from `begin` (which cuts
+     * the network) until `end` (which brings it back). Lines of any other context, lines while it
+     * is online, other lines, and uncaught errors are never let off. Only
+     * `concurrent/locks.spec.ts` may use it (TEST-CONCURRENT).
      */
-    tolerate: (lines: Readonly<RegExp>) => void;
+    tolerate: (context: BrowserContext, lines: Readonly<RegExp>) => Offline;
   },
   { pool: Servers }
 >({
@@ -154,8 +162,20 @@ export const test = base.extend<
     await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
   },
   tolerate: async ({ browser: _browser }, provide) => {
-    await provide((lines) => {
-      expected.push(lines);
+    await provide((context, lines) => {
+      const network = tolerances.add(context, lines);
+      return {
+        begin: async () => {
+          network.cut();
+          await context.setOffline(true);
+        },
+        end: async () => {
+          await context.setOffline(false);
+          // A round trip to every page, so the lines written while it was offline have arrived.
+          await Promise.all(context.pages().map((page) => page.evaluate(() => 0)));
+          network.restored();
+        },
+      };
     });
   },
   browser: [
@@ -169,10 +189,9 @@ export const test = base.extend<
   appReports: [
     async ({ browser: _browser }, provide) => {
       reports.length = 0;
-      expected.length = 0;
+      tolerances.clear();
       await provide(reports);
-      const found = reports.splice(0).filter((line) => !expected.some((each) => each.test(line)));
-      expect(found, "the app reported a defect").toEqual([]);
+      expect(reports.splice(0), "the app reported a defect").toEqual([]);
     },
     { auto: true },
   ],

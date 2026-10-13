@@ -6,7 +6,10 @@
 //! - the browser scenarios in `web/app/e2e/concurrent/` (ten Playwright contexts) exist under the
 //!   names the work package gives them, and none is skipped, marked `fixme` or alone (`only`);
 //!   the one scenario that needs a route another package adds may skip itself with a condition
-//!   and a reason (`test.skip(condition, "reason")`), never without one;
+//!   and a reason (`test.skip(condition, "reason")`), never without one, and not any more once
+//!   the migration of that package is in the code (it would be skipped for ever without a sign);
+//! - `tolerate(`, which lets a test expect the console lines of a browser that is cut off the
+//!   network, is used in `concurrent/locks.spec.ts` only: anywhere else it would hide defects;
 //! - the invariants test of the server (`test_concurrent_invariants_hold_after_a_run`, run on both
 //!   databases by `cargo xtask ci`) is a `#[tokio::test]` that is not switched off;
 //! - `cargo xtask ci` makes the short run of `cargo xtask load` (the API at speed, both databases).
@@ -30,6 +33,22 @@ const CI_FILE: &str = "xtask/src/ci.rs";
 const LOAD_COMMAND: &str = "\"load\"";
 /// The only spec that may skip itself, with a condition and a reason.
 const MAY_SKIP: &str = "bulk.spec.ts";
+/// Where the migrations are, and the one of the package that adds the route the skipping spec
+/// waits for (WP-08, the README of M3): once it exists the scenario must run.
+const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations";
+const ROUTE_MIGRATION: &str = "m0011";
+/// The folders with the browser tests and their helpers.
+const E2E_FOLDERS: [&str; 3] = [
+    "web/app/e2e",
+    "web/app/e2e/support",
+    "web/app/e2e/concurrent",
+];
+/// The files that may name `tolerate(`: the spec of the locks, which uses it, and the fixtures,
+/// which define it.
+const MAY_TOLERATE: [&str; 2] = [
+    "web/app/e2e/concurrent/locks.spec.ts",
+    "web/app/e2e/support/fixtures.ts",
+];
 
 /// The browser scenarios the work package names (the work package, architecture §11).
 pub(super) const SCENARIOS: [&str; 5] = [
@@ -53,6 +72,8 @@ impl Check for TestConcurrent {
         let server = read_text(repo, SERVER_TEST_FILE).ok();
         let ci = read_text(repo, CI_FILE)?;
         let mut findings = scenarios(&specs);
+        findings.extend(route_has_arrived(&migrations_of(repo)?, &specs));
+        findings.extend(tolerated_elsewhere(&e2e_files(repo)?));
         findings.extend(server_test(server.as_deref()));
         findings.extend(ci_runs_the_load(&ci));
         Ok(findings)
@@ -69,6 +90,59 @@ pub(super) fn specs_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, 
         specs.push((name, strip_comments(&text)));
     }
     Ok(specs)
+}
+
+/// The names of the migration files.
+fn migrations_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<String>> {
+    sorted_files(repo, MIGRATIONS_FOLDER, |name| name.ends_with(".rs"))
+}
+
+/// Every TypeScript file of the browser tests and their helpers: path and code (comments blank).
+fn e2e_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
+    let mut files = Vec::new();
+    for folder in E2E_FOLDERS {
+        for name in sorted_files(repo, folder, |name| name.ends_with(".ts"))? {
+            let path = format!("{folder}/{name}");
+            let code = strip_comments(&read_text(repo, &path)?);
+            files.push((path, code));
+        }
+    }
+    Ok(files)
+}
+
+/// Once the migration of the package that adds the route is in the code, the scenario that waited
+/// for it must run: a guess at the route that does not fit would otherwise skip it for ever.
+fn route_has_arrived(migrations: &[String], specs: &[(String, String)]) -> Vec<Finding> {
+    let arrived = migrations
+        .iter()
+        .any(|name| name.starts_with(&format!("{ROUTE_MIGRATION}_")));
+    let skips = specs
+        .iter()
+        .any(|(file, text)| file == MAY_SKIP && text.contains("test.skip("));
+    if arrived && skips {
+        vec![Finding::at(
+            format!("{SPEC_FOLDER}/{MAY_SKIP}"),
+            format!(
+                "The migration {ROUTE_MIGRATION} (WP-08, the route that changes many issues) is in the code, but this scenario still skips itself. Adapt `bulkBody` and the route search in web/app/e2e/support/bulk.ts to the real route and take the skip out."
+            ),
+        )]
+    } else {
+        Vec::new()
+    }
+}
+
+/// `tolerate(` outside the files that may name it.
+fn tolerated_elsewhere(files: &[(String, String)]) -> Vec<Finding> {
+    files
+        .iter()
+        .filter(|(path, code)| !MAY_TOLERATE.contains(&path.as_str()) && code.contains("tolerate("))
+        .map(|(path, _)| {
+            Finding::at(
+                path.clone(),
+                "`tolerate(` lets a test expect the console lines of a browser that is cut off the network. Only concurrent/locks.spec.ts may use it; anywhere else it would hide defects.",
+            )
+        })
+        .collect()
 }
 
 /// Whether some spec declares a test of this name: `test("name"`.
@@ -238,6 +312,75 @@ mod tests {
         assert!(!declares(&specs, SCENARIOS[0]));
     }
 
+    fn skipping_spec() -> Vec<(String, String)> {
+        let mut specs = all_scenarios();
+        specs.push((
+            MAY_SKIP.to_owned(),
+            "test.skip(late, \"later\");".to_owned(),
+        ));
+        specs
+    }
+
+    #[test]
+    fn good_example_the_route_is_not_in_the_code_yet_and_the_scenario_skips() {
+        let migrations = ["m0010_relations.rs".to_owned()];
+        assert!(route_has_arrived(&migrations, &skipping_spec()).is_empty());
+    }
+
+    #[test]
+    fn good_example_the_route_is_in_the_code_and_the_scenario_runs() {
+        let mut specs = all_scenarios();
+        specs.push((MAY_SKIP.to_owned(), "test(\"runs\", () => {});".to_owned()));
+        let migrations = ["m0011_tags.rs".to_owned()];
+        assert!(route_has_arrived(&migrations, &specs).is_empty());
+    }
+
+    #[test]
+    fn bad_example_the_route_is_in_the_code_and_the_scenario_still_skips() {
+        let migrations = ["m0011_tags.rs".to_owned()];
+        let found = route_has_arrived(&migrations, &skipping_spec());
+        assert_eq!(found.len(), 1);
+        assert!(
+            found[0].message.contains("bulkBody"),
+            "{}",
+            found[0].message
+        );
+    }
+
+    #[test]
+    fn good_example_tolerate_in_the_spec_of_the_locks_and_in_the_fixtures() {
+        let files = [
+            (
+                MAY_TOLERATE[0].to_owned(),
+                "const net = tolerate(holder.context(), lines);".to_owned(),
+            ),
+            (
+                MAY_TOLERATE[1].to_owned(),
+                "tolerate(context, lines) {}".to_owned(),
+            ),
+            (
+                "web/app/e2e/issues.spec.ts".to_owned(),
+                "nothing like it here".to_owned(),
+            ),
+        ];
+        assert!(tolerated_elsewhere(&files).is_empty());
+    }
+
+    #[test]
+    fn bad_example_tolerate_in_another_spec_or_a_helper() {
+        for path in [
+            "web/app/e2e/issues.spec.ts",
+            "web/app/e2e/concurrent/changes.spec.ts",
+            "web/app/e2e/support/crowd-pages.ts",
+        ] {
+            let files = [(
+                path.to_owned(),
+                "tolerate(page.context(), /x/u);".to_owned(),
+            )];
+            assert_eq!(tolerated_elsewhere(&files).len(), 1, "{path}");
+        }
+    }
+
     #[test]
     fn good_example_the_server_test_is_a_tokio_test_with_options() {
         let code = format!(
@@ -278,6 +421,8 @@ mod tests {
             .chain(server_test(
                 read_text(&repo, SERVER_TEST_FILE).ok().as_deref(),
             ))
+            .chain(route_has_arrived(&migrations_of(&repo).unwrap(), &specs))
+            .chain(tolerated_elsewhere(&e2e_files(&repo).unwrap()))
             .chain(ci_runs_the_load(&read_text(&repo, CI_FILE).unwrap()))
             .map(|finding| finding.message)
             .collect();
