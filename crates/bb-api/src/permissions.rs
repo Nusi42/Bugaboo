@@ -402,6 +402,31 @@ pub const ROUTES: &[Route] = &[
     route("unfollowIssue", Declared::ByRecord, Answer::Ordinary),
     route("listIssueTypes", Declared::SignedIn, Answer::Ordinary),
     route(
+        "getFormLayout",
+        Declared::Permission(Permission::SeeProjects),
+        Answer::NeverStored,
+    ),
+    route(
+        "getLayoutEditor",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::NeverStored,
+    ),
+    route(
+        "makeLayout",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
+        "saveLayout",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
+        "deleteLayout",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route(
         "makeIssueType",
         Declared::Permission(Permission::ManageIssueTypes),
         Answer::Ordinary,
