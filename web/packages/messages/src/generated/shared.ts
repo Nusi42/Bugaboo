@@ -494,6 +494,7 @@ export const messages = {
   "bulk-skip.changed-since": "It changed after the preview",
   "bulk-skip.type-missing": "The other project does not offer its issue type",
   "bulk-skip.field-missing": "The other project does not use a field it has a value in",
+  "bulk-skip.tag-not-here": "It has a tag that is not for the other project",
   "bulk-skip.relation-exists": "The relation is there already",
   "bulk-skip.same-issue": "An issue cannot be related to itself",
   "bulk-skip.limit-reached": "It has as many as it may",

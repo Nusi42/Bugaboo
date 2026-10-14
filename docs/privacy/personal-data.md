@@ -162,7 +162,7 @@ Defined in `crates/bb-core/src/event.rs`.
 | `channel` | No            | –          | –                      | Where the change came from.                                                                                                                                                  |
 | `entity`  | No            | –          | –                      | The record it is about.                                                                                                                                                      |
 | `changes` | Yes           | `content`  | `legitimate_interests` | The fields that changed. They can hold anything a person typed, but never credentials, password hashes or secrets: use cases leave those fields out of the changes (review). |
-| `reason`  | Yes           | `content`  | `legitimate_interests` | Why, when the person said so.                                                                                                                                                |
+| `reason`  | Yes           | `content`  | `legitimate_interests` | Why, when the person said so; for a change a job made as the person, the item of the job (a change to many issues, `BulkRun::item_reason`).                                  |
 
 ### Draft
 
