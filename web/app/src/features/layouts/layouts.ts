@@ -1,5 +1,6 @@
 import {
   dataOf,
+  keepsTextAsDraft,
   layoutEditPart,
   layoutKindWords,
   readDraft,
@@ -190,17 +191,12 @@ export function useSaveLayout() {
     // A refused save keeps the changes as the draft of the person: the editor reads the layout as it
     // is now and the draft it was kept in.
     onError: (error: unknown, input) => {
-      if (isKept(codeOf(error))) {
+      if (keepsTextAsDraft(codeOf(error))) {
         refreshLayouts();
         refreshLayoutDraft(input.layout);
       }
     },
   });
-}
-
-/** Whether a refusal of a save is one that keeps the changes as a draft. */
-function isKept(code: string | undefined): boolean {
-  return code === "edit.version_changed" || code === "edit.lock_lost" || code === "edit.taken_over";
 }
 
 /** What the lock on a layout, and its draft, are about: the thing being edited. */

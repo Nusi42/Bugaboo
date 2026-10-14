@@ -2,9 +2,9 @@ import {
   ApiError,
   conflictOf,
   dataOf,
-  draftKeptCodes,
   editAnyway,
   heartbeatSeconds,
+  keepsTextAsDraft,
   newEditorId,
   readDraft,
   releaseEditLock,
@@ -34,9 +34,6 @@ export interface Context {
    */
   readonly editUntil: number;
 }
-
-/** The refusals of a save that keep the text as a draft: the list of the server. */
-const KEPT_AS_DRAFT: ReadonlySet<string> = new Set(draftKeptCodes);
 
 /** How often a stale change is sent again on the newer version before it is called stuck. */
 const MOST_TRIES = 40;
@@ -183,7 +180,7 @@ async function save(context: Context, work: Work, token: string, version: number
     context.book.drafted({ holder: context.holder, key: work.key, text, ending: "saved" });
   } catch (error) {
     const code = codeOf(error);
-    if (code === undefined || !KEPT_AS_DRAFT.has(code)) {
+    if (!keepsTextAsDraft(code)) {
       throw error;
     }
     await keptAsDraft(context, work, text);

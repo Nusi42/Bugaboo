@@ -25,6 +25,7 @@ export {
   releaseEditLock,
   saveDraft,
   sendHeartbeat,
+  keepsTextAsDraft,
   startHeartbeats,
   startHeartbeatsOn,
   readEditLock,
