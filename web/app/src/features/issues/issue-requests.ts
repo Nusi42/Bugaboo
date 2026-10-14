@@ -33,6 +33,20 @@ export function versionNow(address: string, fallback: number): number {
   return isDetail(known) ? (known.issue.version ?? fallback) : fallback;
 }
 
+/**
+ * A change that is not one of the fields (a tag or a label put on or taken off) counted the issue
+ * up to `version`: the page writes it into what it knows, so a change made right after is made on
+ * it and does not conflict with the person's own. An answer that comes in late never takes the
+ * version back.
+ */
+export function versionCounted(address: string, version: number): void {
+  queryClient.setQueryData(queryKeys.issues.one(address), (known: unknown) =>
+    isDetail(known) && (known.issue.version ?? 0) < version
+      ? { ...known, issue: { ...known.issue, version } }
+      : known,
+  );
+}
+
 /** Reads the issue again: somebody else's version is the one to show. */
 export function readAgain(address: string): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.one(address) });

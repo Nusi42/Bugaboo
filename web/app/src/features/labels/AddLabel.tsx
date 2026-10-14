@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshLabels, useLabels, type Chip } from "./labels.ts";
+import { afterSorting, useLabels, type Chip, type Counted } from "./labels.ts";
 
 /** The choice that stands for no label picked yet. */
 const NONE = "";
@@ -20,8 +20,8 @@ export function AddLabel({
   const [picked, setPicked] = useState(NONE);
   const labels = useLabels();
   const add = api.query.useMutation("post", "/api/v1/issues/{issue}/labels", {
-    onSuccess: () => {
-      refreshLabels();
+    onSuccess: (sorting: Counted) => {
+      afterSorting(issue, sorting);
       setPicked(NONE);
     },
   });

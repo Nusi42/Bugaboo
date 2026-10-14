@@ -6,6 +6,7 @@ import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
+import { versionCounted } from "../issues/index.ts";
 
 /** A group of labels, as the list of the organization shows it. */
 export type LabelGroup = Schema<"LabelGroupBody">;
@@ -109,6 +110,20 @@ export function refreshLabels(): void {
     void queryClient.invalidateQueries({ queryKey: ["get", route] });
   }
   void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
+}
+
+/** The answer of putting a tag or a label on an issue or taking one off: the version it counted to. */
+export interface Counted {
+  readonly version: number;
+}
+
+/**
+ * A tag or label was put on an issue or taken off: the page writes the version the issue counted
+ * up to into what it knows, so a change made right after does not conflict, and shows the rest again.
+ */
+export function afterSorting(issue: string, { version }: Counted): void {
+  versionCounted(issue, version);
+  refreshLabels();
 }
 
 /** The choice that stands for a label in no group. */

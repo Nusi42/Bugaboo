@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { refreshLabels, useTagSuggestions } from "./labels.ts";
+import { afterSorting, useTagSuggestions, type Counted } from "./labels.ts";
 
 export interface AddTagProps {
   /** The issue, by its readable ID. */
@@ -50,8 +50,8 @@ function Suggestions({ project, text, pick }: SuggestionsProps) {
 export function AddTag({ issue, project }: AddTagProps) {
   const [text, setText] = useState("");
   const add = api.query.useMutation("post", "/api/v1/issues/{issue}/tags", {
-    onSuccess: () => {
-      refreshLabels();
+    onSuccess: (sorting: Counted) => {
+      afterSorting(issue, sorting);
       setText("");
     },
   });

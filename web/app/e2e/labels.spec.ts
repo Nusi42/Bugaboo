@@ -73,6 +73,26 @@ test("tag_01 a tag is made by adding it to an issue and found on the page of tag
   ).toBeVisible();
 });
 
+test("tag_01 a status change right after a tag is added does not conflict", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-3"));
+  await showDetails(page);
+  await page.getByLabel(t("labels.add-tag"), { exact: true }).fill("quick");
+  await page.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+  await expect(
+    listNamed(page, t("labels.tags-heading")).getByText("quick", { exact: true }),
+  ).toBeVisible();
+  // The tag counted the version of the issue up; the change of status is made on that version.
+  await page.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
+    label: t("status.in-progress"),
+  });
+  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveValue(
+    "in-progress",
+  );
+});
+
 test("tag_03 renaming a label shows which issues change before it is saved", async ({
   page,
   server,

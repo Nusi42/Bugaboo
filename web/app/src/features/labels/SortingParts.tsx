@@ -7,7 +7,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { AddLabel } from "./AddLabel.tsx";
 import { AddTag } from "./AddTag.tsx";
 import { Chips } from "./Chips.tsx";
-import { refreshLabels } from "./labels.ts";
+import { afterSorting, type Counted } from "./labels.ts";
 
 /** What the two parts get: the answer for the issue, and the issue it is about. */
 export interface SortingPartProps {
@@ -22,7 +22,9 @@ export function TagsPart({
   project,
 }: SortingPartProps & { readonly project: string | undefined }) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/tags/{tag}", {
-    onSuccess: refreshLabels,
+    onSuccess: (sorting: Counted) => {
+      afterSorting(issueKey, sorting);
+    },
   });
   return (
     <>
@@ -50,7 +52,9 @@ export function TagsPart({
 /** The labels of the issue, with the ways to take one off and to add one. */
 export function LabelsPart({ body, issueKey }: SortingPartProps) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/labels/{label}", {
-    onSuccess: refreshLabels,
+    onSuccess: (sorting: Counted) => {
+      afterSorting(issueKey, sorting);
+    },
   });
   return (
     <>
