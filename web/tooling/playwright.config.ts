@@ -66,6 +66,9 @@ export default defineConfig({
     {
       name: "speed",
       testMatch: speedFiles,
+      // A speed test that a busy computer slowed down is run once more; if it still misses, it is
+      // a miss. On a busy computer run it alone: `--project=speed --no-deps`.
+      retries: 1,
       dependencies: ["tablet", "desktop", "phone", "webkit-phone"],
       use: { browserName: "chromium", viewport: viewports.computer },
     },

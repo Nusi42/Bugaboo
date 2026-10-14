@@ -148,9 +148,10 @@ export async function addToTheFormOfWeb(
     }
     placed.push({ field: found.field, roles: others });
   }
-  if (editor.layout !== undefined && editor.layout !== null) {
-    await putFieldsInFirstSection(admin, editor, editor.layout, placed);
+  if (editor.layout === undefined || editor.layout === null) {
+    throw new TypeError("The project has no layout of its own after one was made.");
   }
+  await putFieldsInFirstSection(admin, editor, editor.layout, placed);
 }
 
 /**

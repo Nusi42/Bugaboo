@@ -61,7 +61,7 @@ export async function pickTheme(page: Page, theme: Theme): Promise<void> {
  * Puts a theme on the page without the choice at the bottom, which a question that covers the
  * page makes unreachable. The colors follow `data-look` at once.
  */
-export async function putOnTheme(page: Page, theme: Theme): Promise<void> {
+async function putOnTheme(page: Page, theme: Theme): Promise<void> {
   await page.evaluate((look) => {
     document.documentElement.dataset["look"] = look;
   }, theme.id);

@@ -30,7 +30,7 @@ test("ux_03 held upright, a tablet opens the issue as a full-height sheet over t
   await expect(sheet).toHaveCount(0);
   await expect(page).toHaveURL(/\/issues$/u);
   // Turned sideways the same window has room for the panel next to the list.
-  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.setViewportSize(viewports.tabletSideways);
   await page.goto(issuePanelAddress("WEB", "WEB-2"));
   await expect(page.getByRole("complementary", { name: "WEB-2", exact: true })).toBeVisible();
   await expect(sheet).toHaveCount(0);

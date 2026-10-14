@@ -9,6 +9,8 @@ export const viewports = {
   computer: { width: breakpoints.computer, height: 800 },
   /** Between the two breakpoints: the sidebar is a menu that slides in. */
   tablet: { width: 900, height: 1000 },
+  /** A tablet turned sideways: wider than tall, and still narrower than a computer. */
+  tabletSideways: { width: breakpoints.computer - 1, height: 800 },
   /** A small phone. */
   phone: { width: 360, height: 740 },
   /** The phone of the pictures for the review. */

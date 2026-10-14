@@ -5,6 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
+import { addRelation } from "./support/relate.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
 // The parts of the issue page that sub-issues, relations, comments, history and following add
@@ -33,13 +34,7 @@ test("iss_03 an issue becomes a sub-issue and the progress says how far the sub-
 test("iss_04 a relation is added in words and shows on the page", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
-  await page.getByRole("button", { name: t("related-issues.add"), exact: true }).click();
-  await page.getByRole("radio", { name: "blocks", exact: true }).check();
-  await page.getByLabel(t("related-issues.issue-field")).fill("WEB-3");
-  await page.getByRole("button", { name: t("related-issues.add-it"), exact: true }).click();
-  await expect(
-    page.getByText(t("related-issues.added", { key: "WEB-1", name: "blocks", other: "WEB-3" })),
-  ).toBeVisible();
+  await addRelation(page, "WEB-1", "WEB-3");
   await page.reload();
   const related = page.getByRole("region", { name: t("related-issues.title") });
   await expect(related.getByText("WEB-3", { exact: true })).toBeVisible();

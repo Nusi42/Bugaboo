@@ -35,7 +35,7 @@ async function create(page: Page, title: string): Promise<void> {
   await newIssueDialog(page)
     .getByRole("button", { name: t("issues.create"), exact: true })
     .click();
-  await expect(page.getByRole("heading", { name: new RegExp(title, "u") })).toBeVisible();
+  await expect(page.getByRole("heading", { name: title })).toBeVisible();
   await expect(page).toHaveURL(/\/issues\//u);
 }
 

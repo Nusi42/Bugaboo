@@ -17,7 +17,7 @@ export function saveButton(page: Page) {
 export function saveDescriptionButton(page: Page) {
   // The nearest box around the text box that has a Save: the editor of the description.
   return descriptionBox(page)
-    .locator("xpath=ancestor::*[.//button[normalize-space(.)='Save']][1]")
+    .locator(`xpath=ancestor::*[.//button[normalize-space(.)='${t("common.save")}']][1]`)
     .getByRole("button", { name: t("common.save"), exact: true });
 }
 

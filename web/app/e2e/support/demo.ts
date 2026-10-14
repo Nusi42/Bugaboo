@@ -2,15 +2,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths, projectAddress } from "../../src/shared/paths.ts";
-import {
-  expectNoOverlap,
-  expectNoSidewaysScroll,
-  expectNoViolations,
-  expectVisibleTextInName,
-  expectGoodInEveryLook,
-  putOnTheme,
-  themes,
-} from "./checks.ts";
+import { chooseTheme, expectGoodInEveryLook, themes } from "./checks.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
 import { sampleProjectName, sampleProjects } from "./sample.ts";
@@ -45,18 +37,10 @@ const DEMO_M3 = "M3/demo";
 export async function goodInFourThemes(page: Page, step: string): Promise<void> {
   // The checks first, in the window as it is: the window grown for a picture leaves the bars at
   // its edges in a state that no person ever sees.
+  await expectGoodInEveryLook(page);
   await inOrder(
     themes.map((theme) => async () => {
-      await putOnTheme(page, theme);
-      await expectNoViolations(page);
-      await expectNoSidewaysScroll(page);
-      await expectNoOverlap(page);
-      await expectVisibleTextInName(page);
-    }),
-  );
-  await inOrder(
-    themes.map((theme) => async () => {
-      await putOnTheme(page, theme);
+      await chooseTheme(page, theme);
       await shootWholeAs(page, picture(step, page), DEMO_M3, theme.id);
     }),
   );

@@ -220,3 +220,27 @@ export function sampleEverywhere(role: string, count: number): readonly SamplePe
 export function sampleGuestIn(project: string): SamplePerson {
   return sampleHolderIn("Guest", project);
 }
+
+/** A sub-project of the sample, which the speed tests ask the preview of a move for. */
+export const sampleSubProject: SampleProject = (() => {
+  const found = sampleProjects.find((project) => project.inside !== null);
+  if (found === undefined) {
+    throw new Error("The sample has no sub-project.");
+  }
+  return found;
+})();
+
+/** The own field the speed tests combine two choices of: the first with choices, and its first two choices. */
+export const sampleCombine: {
+  readonly field: string;
+  readonly from: string;
+  readonly into: string;
+} = (() => {
+  for (const field of layout.issues.fields) {
+    const [from, into] = field.choices;
+    if (from !== undefined && into !== undefined) {
+      return { field: field.name, from, into };
+    }
+  }
+  throw new Error("The sample has no own field with two choices.");
+})();

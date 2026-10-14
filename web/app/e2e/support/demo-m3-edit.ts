@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
-import { signedInPage, type ScreenLook } from "./crowd-pages.ts";
+import { lostNote, savedNote, signedInPage, type ScreenLook } from "./crowd-pages.ts";
 import { goodInFourThemes } from "./demo.ts";
 import { made, theTwo } from "./demo-m3-state.ts";
 import {
@@ -42,10 +42,10 @@ export async function twoPeopleEditTheDescription(
   await other.getByRole("button", { name: t("issues.edit-anyway"), exact: true }).click();
   await descriptionBox(other).fill(SECOND_TEXT);
   await saveDescriptionButton(other).click();
-  await expect(other.getByText(new RegExp(`^${t("save.saved")}`, "u")).first()).toBeVisible();
+  await expect(savedNote(other)).toBeVisible();
   // The first person's text is kept, and they compare and save it.
   await saveDescriptionButton(holder).click();
-  await expect(holder.getByText(new RegExp(`^${t("save.not-saved")}`, "u")).first()).toBeVisible();
+  await expect(lostNote(holder)).toBeVisible();
   await holder.getByRole("button", { name: t("issues.compare-and-save"), exact: true }).click();
   await expect(holder.getByText(SECOND_TEXT).first()).toBeVisible();
   await goodInFourThemes(holder, "09-compare-and-save");

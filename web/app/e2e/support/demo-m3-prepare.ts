@@ -26,11 +26,7 @@ export async function prepareTheDemo(server: Instance): Promise<void> {
   const guest = await roleId(admin, roleName.guest);
   await setFieldLevel(admin, { role: guest, field: field.id }, "hidden");
   await addToTheFormOfWeb(admin, [assignedTo, costCenter]);
-  await setPeopleLevel(
-    admin,
-    { role: await roleId(admin, roleName.guest), kind: "assigned-to" },
-    "hidden",
-  );
+  await setPeopleLevel(admin, { role: guest, kind: "assigned-to" }, "hidden");
   await admin.dispose();
 }
 
@@ -41,14 +37,23 @@ export async function costCenterField(session: ApiSession): Promise<string> {
       return each.id;
     }
   }
-  throw new Error("The Website has no field called Cost center.");
+  throw new Error(`The organization has no field called ${costCenter}.`);
+}
+
+/** What the Team member sees of the Guest's bug after taking it. */
+export interface Taken {
+  /** The names of the people it is assigned to, as the Team member reads them. */
+  readonly assigned: readonly string[];
+  /** The value of the cost center, as the Team member reads it. */
+  readonly cost: unknown;
 }
 
 /**
  * The Team member takes the Guest's bug: assigns it to a colleague and writes the cost center of
- * the work (through the API; the screens for it are tested with the issue page).
+ * the work (through the API; the screens for it are tested with the issue page). Says what the
+ * Team member reads back, so a step that follows can tell that the change was made.
  */
-export async function takeTheGuestsBug(server: Instance): Promise<void> {
+export async function takeTheGuestsBug(server: Instance): Promise<Taken> {
   const { first, second } = theTwo();
   const session = await signInThroughApi(server, first);
   const other = await signInThroughApi(server, second);
@@ -60,13 +65,26 @@ export async function takeTheGuestsBug(server: Instance): Promise<void> {
     }),
   );
   const field = await costCenterField(session);
-  await session.client.PATCH("/api/v1/issues/{issue}", {
-    params: { path: { issue: made.guestKey } },
-    body: {
-      version: found.issue.version ?? 1,
-      assigned_to: [colleague],
-      fields: { [field]: COST_CENTER },
-    },
-  });
+  const version = found.issue.version;
+  if (typeof version !== "number") {
+    throw new TypeError("The Guest's bug has no version.");
+  }
+  const changed = dataOf(
+    await session.client.PATCH("/api/v1/issues/{issue}", {
+      params: { path: { issue: made.guestKey } },
+      body: {
+        version,
+        assigned_to: [colleague],
+        fields: { [field]: COST_CENTER },
+      },
+    }),
+  );
   await session.dispose();
+  const assigned: string[] = [];
+  for (const person of changed.assigned_to ?? []) {
+    if (person.shown === "name") {
+      assigned.push(person.name);
+    }
+  }
+  return { assigned, cost: changed.own_fields?.[field] };
 }
