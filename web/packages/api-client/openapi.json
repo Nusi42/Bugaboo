@@ -22856,7 +22856,7 @@
       "IssueSortingBody": {
         "type": "object",
         "description": "The tags and labels of one issue, and what the person may do with them. A member that holds a\nfield of the catalogue is left out when the person's level for the field is *Hidden*.",
-        "required": ["issue", "issue_type", "may_change_tags", "may_change_labels"],
+        "required": ["issue", "version", "issue_type", "may_change_tags", "may_change_labels"],
         "properties": {
           "issue": {
             "type": "string",
@@ -22887,6 +22887,11 @@
               "$ref": "#/components/schemas/TagRefBody"
             },
             "description": "The tags on it, in the order they were put there."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue now. A change of a tag or a label counts it up."
           }
         }
       },

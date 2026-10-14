@@ -4,6 +4,8 @@
 //! history of each. Every flow runs on SQLite and PostgreSQL.
 
 use bb_app::access::StartingRole;
+use bb_core::event::{EntityRef, RecordKind};
+use bb_core::id::IssueId;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -347,6 +349,187 @@ async fn tag_03_renaming_a_tag_asks_for_the_version_and_changes_every_issue() ->
             )
             .await?;
         assert_eq!(refused.code(), "access.forbidden");
+        Ok(())
+    })
+    .await
+}
+
+/// The ID of an issue, as the events are about it.
+async fn entity_of(ada: &mut Browser, issue: &str) -> Result<EntityRef, Failure> {
+    let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
+    let id: IssueId = ok(&read)?["issue"]["id"].as_str().ok_or("no ID")?.parse()?;
+    Ok(EntityRef {
+        kind: RecordKind::Issue.into(),
+        id: id.into(),
+    })
+}
+
+/// The version of an issue now.
+async fn version_of(ada: &mut Browser, issue: &str) -> Result<i64, Failure> {
+    let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
+    Ok(ok(&read)?["issue"]["version"]
+        .as_i64()
+        .ok_or("no version")?)
+}
+
+/// The versions the events of an issue count up to, lowest first (the events of a test share one
+/// time, so their order is not the order of the versions).
+async fn counted_versions(rig: &super::rig::Rig, entity: &EntityRef) -> Result<Vec<i64>, Failure> {
+    let events = rig.database.events_about(entity, 100).await?;
+    let mut versions: Vec<i64> = events
+        .iter()
+        .flat_map(|event| event.changes.iter())
+        .filter(|change| change.field == bb_core::version::FIELD)
+        .filter_map(|change| change.after.as_ref().and_then(Value::as_i64))
+        .collect();
+    versions.sort_unstable();
+    Ok(versions)
+}
+
+#[tokio::test]
+async fn adr_0017_two_people_taking_tags_off_at_the_same_moment_both_succeed() -> TestResult {
+    each_database("adr_0017_removes_race", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut ben, _) = site.person_in_acme(StartingRole::TeamMember, "ben").await?;
+        let issue = key_of(&site.make(&mut ada, "Crowded").await?)?;
+        let mut tags = Vec::new();
+        for name in ["one", "two", "three", "four"] {
+            let put = ada
+                .send(
+                    "POST",
+                    &format!("{ISSUES}/{issue}/tags"),
+                    Some(json!({"name": name})),
+                )
+                .await?;
+            tags = ok(&put)?["tags"]
+                .as_array()
+                .ok_or("no tags")?
+                .iter()
+                .filter_map(|tag| tag["id"].as_str().map(str::to_owned))
+                .collect();
+        }
+        let entity = entity_of(&mut ada, &issue).await?;
+        let before = version_of(&mut ada, &issue).await?;
+        let (path, other) = (format!("{ISSUES}/{issue}/tags"), tags.clone());
+        let (first, second) = tokio::join!(
+            async {
+                for tag in &tags[..2] {
+                    let reply = ada.send("DELETE", &format!("{path}/{tag}"), None).await?;
+                    ok(&reply)?;
+                }
+                Ok::<(), Failure>(())
+            },
+            async {
+                for tag in &other[2..] {
+                    let reply = ben.send("DELETE", &format!("{path}/{tag}"), None).await?;
+                    ok(&reply)?;
+                }
+                Ok::<(), Failure>(())
+            }
+        );
+        first?;
+        second?;
+        assert_eq!(version_of(&mut ada, &issue).await?, before + 4);
+        // The creation of the issue is no count-up: one event for each version after it, in a row.
+        assert_eq!(
+            counted_versions(&rig, &entity).await?,
+            (2..=before + 4).collect::<Vec<_>>(),
+            "one event for each version, in a row"
+        );
+        let sorting = ada
+            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+            .await?;
+        assert!(names(ok(&sorting)?, "tags").is_empty());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0017_a_tag_added_while_the_title_is_saved_lands_and_the_version_agrees() -> TestResult
+{
+    each_database("adr_0017_add_and_title", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut ben, _) = site.person_in_acme(StartingRole::TeamMember, "ben").await?;
+        let issue = key_of(&site.make(&mut ada, "Old title").await?)?;
+        let entity = entity_of(&mut ada, &issue).await?;
+        let before = version_of(&mut ada, &issue).await?;
+        let (tags_path, issue_path) = (
+            format!("{ISSUES}/{issue}/tags"),
+            format!("{ISSUES}/{issue}"),
+        );
+        let (added, saved) = tokio::join!(
+            ada.send("POST", &tags_path, Some(json!({"name": "urgent"}))),
+            ben.send(
+                "PATCH",
+                &issue_path,
+                Some(json!({"version": before, "title": "New title"})),
+            )
+        );
+        // The tag never conflicts with anything: it takes no version.
+        let added = added?;
+        ok(&added)?;
+        // The title is saved from the version it read; if the tag came first, it is told so
+        // and saves again from the version it is told.
+        let saved = saved?;
+        if saved.code() == "edit.version_changed" {
+            let now = version_of(&mut ben, &issue).await?;
+            ok(&ben
+                .send(
+                    "PATCH",
+                    &format!("{ISSUES}/{issue}"),
+                    Some(json!({"version": now, "title": "New title"})),
+                )
+                .await?)?;
+        } else {
+            ok(&saved)?;
+        }
+        assert_eq!(version_of(&mut ada, &issue).await?, before + 2);
+        let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
+        assert_eq!(ok(&read)?["issue"]["title"], "New title");
+        let sorting = ada
+            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+            .await?;
+        assert_eq!(names(ok(&sorting)?, "tags"), vec!["urgent".to_owned()]);
+        assert_eq!(
+            counted_versions(&rig, &entity).await?,
+            (2..=before + 2).collect::<Vec<_>>(),
+            "the versions of the events and of the row agree"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0017_tags_and_labels_of_an_issue_in_the_trash_are_not_found() -> TestResult {
+    each_database("adr_0017_trash", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.make(&mut ada, "Soon gone").await?)?;
+        let label = a_label(&mut ada, "bug", None).await?;
+        let trashed = ada
+            .send("DELETE", &format!("{ISSUES}/{issue}"), None)
+            .await?;
+        assert!(trashed.status.is_success(), "{}", trashed.body);
+        let tag = ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{issue}/tags"),
+                Some(json!({"name": "late"})),
+            )
+            .await?;
+        assert_eq!(tag.code(), "resource.not_found");
+        let put = ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{issue}/labels"),
+                Some(json!({"label": label})),
+            )
+            .await?;
+        assert_eq!(put.code(), "resource.not_found");
         Ok(())
     })
     .await

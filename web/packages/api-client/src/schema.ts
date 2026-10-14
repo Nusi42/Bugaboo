@@ -4232,6 +4232,11 @@ export interface components {
       may_change_tags: boolean;
       /** @description The tags on it, in the order they were put there. */
       tags?: components["schemas"]["TagRefBody"][] | null;
+      /**
+       * Format: int64
+       * @description The version of the issue now. A change of a tag or a label counts it up.
+       */
+      version: number;
     };
     /** @description An issue type: the fields that can be asked for. */
     IssueTypeItem: {

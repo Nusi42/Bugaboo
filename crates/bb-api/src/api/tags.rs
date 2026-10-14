@@ -102,6 +102,9 @@ pub(crate) struct IssueSortingBody {
     /// The internal ID of the issue.
     #[masked(open)]
     issue: String,
+    /// The version of the issue now. A change of a tag or a label counts it up.
+    #[masked(open)]
+    version: i64,
     /// Its issue type. The levels set for it count for the fields of this issue.
     #[masked(nested, item_type)]
     issue_type: IssueTypeRef,
@@ -125,6 +128,7 @@ impl From<IssueSorting> for IssueSortingBody {
     fn from(sorting: IssueSorting) -> Self {
         Self {
             issue: sorting.issue.to_string(),
+            version: sorting.version,
             issue_type: IssueTypeRef::from(&sorting.issue_type),
             tags: Some(sorting.tags.iter().map(TagRefBody::from).collect()),
             labels: Some(sorting.labels.iter().map(LabelRefBody::from).collect()),

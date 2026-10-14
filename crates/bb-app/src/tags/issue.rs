@@ -5,9 +5,10 @@
 //! whatever its capitals), and a tag that is limited to other projects is refused. A label comes
 //! from the list the people who look after labels keep; in a *Pick one* group the label takes the
 //! place of the one the issue has from that group. Each change is one event of the issue, with
-//! the names it had and the names it has (History reads them), and none of them counts the version
-//! of the issue up: tags and labels are added and taken off one by one, so two people never
-//! overwrite each other.
+//! the names it had and the names it has (History reads them). Each also counts the version of
+//! the issue up by one, whatever the version is, because it takes no version: two of them at the
+//! same moment, or one beside a save of the title, both succeed, and the event and the row agree on
+//! the version they count up to (ADR-0017). Only an issue that went to the trash is not found.
 
 use std::sync::Arc;
 
@@ -28,7 +29,7 @@ use super::types::{
     AddLabel, AddTag, IssueSorting, IssueSortingQuery, LabelRef, RemoveLabel, RemoveTag, TagRef,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::input::clean_text;
 use crate::issues::{IssueTypeRef, member};
 use crate::projects::Why;
@@ -79,6 +80,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let may_change = held.may_change_issue(issue.reported_by);
         Ok(IssueSorting {
             issue: issue.id,
+            version: issue.version,
             issue_type: IssueTypeRef::from(&issue_type),
             tags: held_tags
                 .iter()
@@ -202,21 +204,29 @@ impl LabelPlan {
 }
 
 /// Counts the version of an issue up inside the change that puts a tag or a label on it or takes
-/// one off, on the version stored now, so a preview of a change to many issues that read the
-/// version before sees that the issue changed in between (ADR-0019, ISS-09).
-async fn count_version_up<S: AuthStore>(
+/// one off, and writes the event of the change with the version the row has then, so the event
+/// and the row always agree. These changes take no version: whatever the version is, it counts up
+/// by one, so two of them at the same moment both succeed (ADR-0017). Only an issue that went to
+/// the trash in between is not found. Gives the new version of the issue.
+async fn count_up_and_record<S: AuthStore>(
     transaction: &mut S::Transaction,
+    maker: &EventMaker,
     issue: IssueId,
+    names: FieldChange,
     now: Timestamp,
-) -> Result<(), S::Error> {
-    let Some(stored) = S::issue_in(transaction, issue).await? else {
-        return Err(S::aborted());
+    stopped: &Why,
+) -> Result<i64, S::Error> {
+    let Some(version) = S::count_up_issue_version(transaction, issue, now).await? else {
+        return Err(stopped.stop::<S>(ErrorCode::NotFound));
     };
-    if S::count_issue_version_up(transaction, issue, stored.version, now).await? {
-        Ok(())
-    } else {
-        Err(S::aborted())
-    }
+    let event = maker
+        .make(
+            entity(RecordKind::Issue, issue),
+            vec![names, counted_up(version - 1)],
+        )
+        .map_err(|_| stopped.stop::<S>(ErrorCode::Internal))?;
+    S::append_follow_up_event(transaction, &event).await?;
+    Ok(version)
 }
 
 /// The end of the change that takes a tag or a label off an issue: when it was on the issue, the
@@ -224,13 +234,15 @@ async fn count_version_up<S: AuthStore>(
 /// found.
 async fn counted_after_take_off<S: AuthStore>(
     transaction: &mut S::Transaction,
+    maker: &EventMaker,
     taken_off: bool,
     issue: IssueId,
+    names: FieldChange,
     now: Timestamp,
     stopped: &Why,
-) -> Result<(), S::Error> {
+) -> Result<i64, S::Error> {
     if taken_off {
-        count_version_up::<S>(transaction, issue, now).await
+        count_up_and_record::<S>(transaction, maker, issue, names, now, stopped).await
     } else {
         Err(stopped.stop::<S>(ErrorCode::NotFound))
     }
@@ -264,7 +276,7 @@ pub async fn add_tag<S: AuthStore>(
     input: AddTag,
 ) -> Result<Authorized<IssueSorting>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let Kept { issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
+    let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
     let name = clean_text(&input.name, TAG_NAME_MAX)?;
     let chain = ctx.chain_of(issue.project).await?;
     let state = ctx.tag_state(issue.id).await?;
@@ -277,20 +289,15 @@ pub async fn add_tag<S: AuthStore>(
         let before = tag_names(&state.tags, &state.held);
         let mut after = before.clone();
         after.push(shown);
-        let event = ctx.event(
-            by(actor.person.id),
-            entity(RecordKind::Issue, issue.id),
-            vec![
-                names_changed(member::TAGS, &before, &after),
-                counted_up(issue.version),
-            ],
-        )?;
+        let names = names_changed(member::TAGS, &before, &after);
+        let maker = ctx.event_maker(by(actor.person.id));
         let (id, person, now) = (issue.id, actor.person.id, ctx.now());
         let (why, mut ids) = (Why::default(), ctx.owned_ids());
         let stopped = why.clone();
         let color = ChoiceColor::nth(state.tags.len());
-        ctx.store()
-            .record_change(&event, move |transaction| {
+        let counted = ctx
+            .store()
+            .record_changes(&[], move |transaction| {
                 Box::pin(async move {
                     S::lock_tags_and_labels(transaction).await?;
                     // Judged again on what is stored now: the tag may have been made, limited or
@@ -303,13 +310,14 @@ pub async fn add_tag<S: AuthStore>(
                         Err(code) => return Err(stopped.stop::<S>(code)),
                     };
                     if judged.already {
-                        return Ok(());
+                        return Ok(None);
                     }
                     let tag = if let Some(tag) = judged.tag {
                         tag
                     } else {
                         let made = Tag {
-                            id: TagId::generate(&mut ids).map_err(|_| S::aborted())?,
+                            id: TagId::generate(&mut ids)
+                                .map_err(|_| stopped.stop::<S>(ErrorCode::Internal))?,
                             name: name.clone(),
                             color,
                             created_at: now,
@@ -318,7 +326,9 @@ pub async fn add_tag<S: AuthStore>(
                         S::insert_tag(transaction, &made).await?;
                         made.id
                     };
-                    count_version_up::<S>(transaction, id, now).await?;
+                    let version =
+                        count_up_and_record::<S>(transaction, &maker, id, names, now, &stopped)
+                            .await?;
                     S::insert_issue_tag(
                         transaction,
                         &IssueTag {
@@ -328,11 +338,15 @@ pub async fn add_tag<S: AuthStore>(
                             added_at: now,
                         },
                     )
-                    .await
+                    .await?;
+                    Ok(Some(version))
                 })
             })
             .await
             .map_err(|error| why.answer::<S>(&error, ErrorCode::TagNotHere))?;
+        if let Some(version) = counted {
+            issue.version = version;
+        }
     }
     let view = ctx.sorting_of(&held, &issue).await?;
     Ok(held.authorize(view))
@@ -349,7 +363,7 @@ pub async fn remove_tag<S: AuthStore>(
     input: RemoveTag,
 ) -> Result<Authorized<IssueSorting>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let Kept { issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
+    let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
     let state = ctx.tag_state(issue.id).await?;
     if !state.held.iter().any(|link| link.tag == input.tag) {
         return Err(AppError::Refused(ErrorCode::NotFound));
@@ -362,21 +376,25 @@ pub async fn remove_tag<S: AuthStore>(
         .cloned()
         .collect();
     let after = tag_names(&state.tags, &rest);
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::Issue, issue.id),
-        vec![
-            names_changed(member::TAGS, &before, &after),
-            counted_up(issue.version),
-        ],
-    )?;
+    let names = names_changed(member::TAGS, &before, &after);
+    let maker = ctx.event_maker(by(actor.person.id));
     let (id, tag, why, now) = (issue.id, input.tag, Why::default(), ctx.now());
     let stopped = why.clone();
-    ctx.store()
-        .record_change(&event, move |transaction| {
+    issue.version = ctx
+        .store()
+        .record_changes(&[], move |transaction| {
             Box::pin(async move {
                 let taken_off = S::delete_issue_tag(transaction, id, tag).await?;
-                counted_after_take_off::<S>(transaction, taken_off, id, now, &stopped).await
+                counted_after_take_off::<S>(
+                    transaction,
+                    &maker,
+                    taken_off,
+                    id,
+                    names,
+                    now,
+                    &stopped,
+                )
+                .await
             })
         })
         .await
@@ -398,22 +416,17 @@ pub async fn add_label<S: AuthStore>(
     input: AddLabel,
 ) -> Result<Authorized<IssueSorting>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let plan = ctx.plan_label(&actor, &input.issue, input.label).await?;
+    let mut plan = ctx.plan_label(&actor, &input.issue, input.label).await?;
     let (_, held) = ctx.visible_issue(&actor, &input.issue).await?;
     if !plan.is_done_already() {
-        let event = ctx.event(
-            by(actor.person.id),
-            entity(RecordKind::Issue, plan.issue.id),
-            vec![
-                names_changed(member::LABELS, &plan.before, &plan.after),
-                counted_up(plan.issue.version),
-            ],
-        )?;
+        let names = names_changed(member::LABELS, &plan.before, &plan.after);
+        let maker = ctx.event_maker(by(actor.person.id));
         let (id, label, person, now) = (plan.issue.id, input.label, actor.person.id, ctx.now());
         let why = Why::default();
         let stopped = why.clone();
-        ctx.store()
-            .record_change(&event, move |transaction| {
+        let counted = ctx
+            .store()
+            .record_changes(&[], move |transaction| {
                 Box::pin(async move {
                     S::lock_tags_and_labels(transaction).await?;
                     // Judged again on what is stored now.
@@ -425,9 +438,11 @@ pub async fn add_label<S: AuthStore>(
                         Err(code) => return Err(stopped.stop::<S>(code)),
                     };
                     if judged.already {
-                        return Ok(());
+                        return Ok(None);
                     }
-                    count_version_up::<S>(transaction, id, now).await?;
+                    let version =
+                        count_up_and_record::<S>(transaction, &maker, id, names, now, &stopped)
+                            .await?;
                     for replaced in &judged.replaces {
                         S::delete_issue_label(transaction, id, *replaced).await?;
                     }
@@ -440,11 +455,15 @@ pub async fn add_label<S: AuthStore>(
                             added_at: now,
                         },
                     )
-                    .await
+                    .await?;
+                    Ok(Some(version))
                 })
             })
             .await
             .map_err(|error| why.answer::<S>(&error, ErrorCode::InvalidRequest))?;
+        if let Some(version) = counted {
+            plan.issue.version = version;
+        }
     }
     let view = ctx.sorting_of(&held, &plan.issue).await?;
     Ok(held.authorize(view))
@@ -461,7 +480,7 @@ pub async fn remove_label<S: AuthStore>(
     input: RemoveLabel,
 ) -> Result<Authorized<IssueSorting>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let Kept { issue, held } = ctx
+    let Kept { mut issue, held } = ctx
         .issue_to_sort(&actor, &input.issue, Field::Labels)
         .await?;
     let state = ctx.label_state(issue.id).await?;
@@ -476,21 +495,25 @@ pub async fn remove_label<S: AuthStore>(
         .cloned()
         .collect();
     let after = label_names(&state.labels, &rest);
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::Issue, issue.id),
-        vec![
-            names_changed(member::LABELS, &before, &after),
-            counted_up(issue.version),
-        ],
-    )?;
+    let names = names_changed(member::LABELS, &before, &after);
+    let maker = ctx.event_maker(by(actor.person.id));
     let (id, label, why, now) = (issue.id, input.label, Why::default(), ctx.now());
     let stopped = why.clone();
-    ctx.store()
-        .record_change(&event, move |transaction| {
+    issue.version = ctx
+        .store()
+        .record_changes(&[], move |transaction| {
             Box::pin(async move {
                 let taken_off = S::delete_issue_label(transaction, id, label).await?;
-                counted_after_take_off::<S>(transaction, taken_off, id, now, &stopped).await
+                counted_after_take_off::<S>(
+                    transaction,
+                    &maker,
+                    taken_off,
+                    id,
+                    names,
+                    now,
+                    &stopped,
+                )
+                .await
             })
         })
         .await

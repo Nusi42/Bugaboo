@@ -65,6 +65,11 @@ pub struct IssueSorting {
     /// The issue.
     #[masked(open)]
     pub issue: IssueId,
+    /// The version of the issue now. A change of a tag or a label counts it up, so the page
+    /// writes it into what it knows about the issue and a change right after does not conflict
+    /// with the person's own (ADR-0019).
+    #[masked(open)]
+    pub version: i64,
     /// Its issue type. The levels set for it count for the fields of this issue (ADR-0027).
     #[masked(nested, item_type)]
     pub issue_type: IssueTypeRef,
