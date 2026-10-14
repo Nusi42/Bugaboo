@@ -5,9 +5,6 @@
 //!
 //! - the browser scenarios in `web/app/e2e/concurrent/` (ten Playwright contexts) exist under the
 //!   names the work package gives them, and none is skipped, marked `fixme` or alone (`only`);
-//!   the one scenario that needs a route another package adds may skip itself with a condition
-//!   and a reason (`test.skip(condition, "reason")`), never without one, and not any more once
-//!   the migration of that package is in the code (it would be skipped for ever without a sign);
 //! - `tolerate(`, which lets a test expect the console lines of a browser that is cut off the
 //!   network, is used in `concurrent/locks.spec.ts` only: anywhere else it would hide defects;
 //! - the invariants test of the server (`test_concurrent_invariants_hold_after_a_run`, run on both
@@ -32,15 +29,6 @@ const SERVER_TEST: &str = "test_concurrent_invariants_hold_after_a_run";
 const CI_FILE: &str = "xtask/src/ci.rs";
 /// What the step of the short run in `cargo xtask ci` must call.
 const LOAD_COMMAND: &str = "\"load\"";
-/// The only spec that may skip itself, with a condition and a reason.
-const MAY_SKIP: &str = "bulk.spec.ts";
-/// Where the migrations are, and the one of the package that adds the route the skipping spec
-/// waits for (WP-08, the README of M3): once it exists the scenario must run. The file name is the
-/// sign, and not the route in `openapi.json`, because the rule that finds the route (`findBulkRoute`
-/// in `web/app/e2e/support/bulk.ts`) is TypeScript code that runs against the live server; a copy of
-/// its pattern in Rust would be a second definition of it (coding-standards §1).
-const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations";
-const ROUTE_MIGRATION: &str = "m0011";
 /// The folder with the browser tests and their helpers, with every folder below it.
 const E2E_FOLDER: &str = "web/app/e2e";
 /// The files that may name `tolerate(`: the spec of the locks, which uses it, and the fixtures,
@@ -72,7 +60,6 @@ impl Check for TestConcurrent {
         let server = read_text(repo, SERVER_TEST_FILE).ok();
         let ci = read_text(repo, CI_FILE)?;
         let mut findings = scenarios(&specs);
-        findings.extend(route_has_arrived(&migrations_of(repo)?, &specs));
         findings.extend(tolerated_elsewhere(&e2e_files(repo)?));
         findings.extend(server_test(server.as_deref()));
         findings.extend(ci_runs_the_load(&ci));
@@ -90,11 +77,6 @@ pub(super) fn specs_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, 
         specs.push((name, strip_comments(&text)));
     }
     Ok(specs)
-}
-
-/// The names of the migration files.
-fn migrations_of(repo: &crate::repo::Repo) -> anyhow::Result<Vec<String>> {
-    sorted_files(repo, MIGRATIONS_FOLDER, |name| has_extension(name, "rs"))
 }
 
 /// The TypeScript files of the browser tests and their helpers, in any folder below
@@ -117,27 +99,6 @@ fn e2e_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> 
         files.push((path.clone(), code));
     }
     Ok(files)
-}
-
-/// Once the migration of the package that adds the route is in the code, the scenario that waited
-/// for it must run: a guess at the route that does not fit would otherwise skip it for ever.
-fn route_has_arrived(migrations: &[String], specs: &[(String, String)]) -> Vec<Finding> {
-    let arrived = migrations
-        .iter()
-        .any(|name| name.starts_with(&format!("{ROUTE_MIGRATION}_")));
-    let skips = specs
-        .iter()
-        .any(|(file, text)| file == MAY_SKIP && text.contains("test.skip("));
-    if arrived && skips {
-        vec![Finding::at(
-            format!("{SPEC_FOLDER}/{MAY_SKIP}"),
-            format!(
-                "The migration {ROUTE_MIGRATION} (WP-08, the route that changes many issues) is in the code, but this scenario still skips itself. Adapt `bulkBody` and the route search in web/app/e2e/support/bulk.ts to the real route and take the skip out."
-            ),
-        )]
-    } else {
-        Vec::new()
-    }
 }
 
 /// `tolerate(` outside the files that may name it.
@@ -178,8 +139,8 @@ fn scenarios(specs: &[(String, String)]) -> Vec<Finding> {
     findings
 }
 
-/// What switches a test of this file off: `.only`, `.fixme`, a skipped declaration, and a skip
-/// without a condition; a skip with a condition is allowed in the one spec that waits for a route.
+/// What switches a test of this file off: `.only`, `.fixme`, and a skip with or without a
+/// condition.
 fn switched_off(file: &str, text: &str) -> Vec<Finding> {
     let at = format!("{SPEC_FOLDER}/{file}");
     let mut findings = Vec::new();
@@ -199,15 +160,11 @@ fn switched_off(file: &str, text: &str) -> Vec<Finding> {
             ));
         }
     }
-    for (index, _) in text.match_indices("test.skip(") {
-        let argument = text[index + "test.skip(".len()..].trim_start();
-        let declares_a_skipped_test = argument.starts_with(['"', '\'', '`', ')']);
-        if file != MAY_SKIP || declares_a_skipped_test {
-            findings.push(Finding::at(
-                at.clone(),
-                "A test is skipped. Only the scenario that waits for a route of another package may skip itself, with `test.skip(condition, reason)`.",
-            ));
-        }
+    for _ in text.match_indices("test.skip(") {
+        findings.push(Finding::at(
+            at.clone(),
+            "A test is skipped. A scenario of ten people runs in every build; a route that is not there yet is waited for in the work package, not skipped.",
+        ));
     }
     findings
 }
@@ -296,16 +253,6 @@ mod tests {
     }
 
     #[test]
-    fn good_example_the_scenario_that_waits_for_a_route_may_skip_with_a_condition() {
-        let mut specs = all_scenarios();
-        specs.push((
-            MAY_SKIP.to_owned(),
-            "test.skip(route === undefined, \"not in this build\");".to_owned(),
-        ));
-        assert!(scenarios(&specs).is_empty());
-    }
-
-    #[test]
     fn bad_example_another_scenario_skips_itself_with_a_condition() {
         let mut specs = all_scenarios();
         specs[0].1.push_str("test.skip(slow, \"too slow\");");
@@ -319,41 +266,6 @@ mod tests {
             strip_comments(&format!("// test(\"{}\", () => {{}});", SCENARIOS[0])),
         )];
         assert!(!declares(&specs, SCENARIOS[0]));
-    }
-
-    fn skipping_spec() -> Vec<(String, String)> {
-        let mut specs = all_scenarios();
-        specs.push((
-            MAY_SKIP.to_owned(),
-            "test.skip(late, \"later\");".to_owned(),
-        ));
-        specs
-    }
-
-    #[test]
-    fn good_example_the_route_is_not_in_the_code_yet_and_the_scenario_skips() {
-        let migrations = ["m0010_relations.rs".to_owned()];
-        assert!(route_has_arrived(&migrations, &skipping_spec()).is_empty());
-    }
-
-    #[test]
-    fn good_example_the_route_is_in_the_code_and_the_scenario_runs() {
-        let mut specs = all_scenarios();
-        specs.push((MAY_SKIP.to_owned(), "test(\"runs\", () => {});".to_owned()));
-        let migrations = ["m0011_tags.rs".to_owned()];
-        assert!(route_has_arrived(&migrations, &specs).is_empty());
-    }
-
-    #[test]
-    fn bad_example_the_route_is_in_the_code_and_the_scenario_still_skips() {
-        let migrations = ["m0011_tags.rs".to_owned()];
-        let found = route_has_arrived(&migrations, &skipping_spec());
-        assert_eq!(found.len(), 1);
-        assert!(
-            found[0].message.contains("bulkBody"),
-            "{}",
-            found[0].message
-        );
     }
 
     #[test]
@@ -454,7 +366,6 @@ mod tests {
             .chain(server_test(
                 read_text(&repo, SERVER_TEST_FILE).ok().as_deref(),
             ))
-            .chain(route_has_arrived(&migrations_of(&repo).unwrap(), &specs))
             .chain(tolerated_elsewhere(&e2e_files(&repo).unwrap()))
             .chain(ci_runs_the_load(&read_text(&repo, CI_FILE).unwrap()))
             .map(|finding| finding.message)

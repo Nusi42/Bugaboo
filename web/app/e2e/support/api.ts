@@ -1,7 +1,6 @@
 import {
   ApiError,
   CSRF_COOKIE,
-  CSRF_HEADER,
   createApi,
   isProblem,
   type Api,
@@ -20,19 +19,8 @@ export interface ApiSession {
   readonly client: Readonly<Api["client"]>;
   /** The cookies of the session, to open a browser that is signed in as this person. */
   readonly state: () => Promise<StorageState>;
-  /**
-   * Sends a change to a route the API description of this build does not know yet (a package that
-   * is not merged): the status and the JSON answer.
-   */
-  readonly post: (path: string, body: unknown) => Promise<RawAnswer>;
   /** Signs out (so the session is not left in the list of places) and closes the session. */
   readonly dispose: () => Promise<void>;
-}
-
-/** What a server said to a request that the typed client does not know. */
-export interface RawAnswer {
-  readonly status: number;
-  readonly body: unknown;
 }
 
 /** What a browser needs to be signed in as somebody: their cookies. */
@@ -92,14 +80,6 @@ export function sessionOver(context: APIRequestContext, origin: string): ApiSess
   return {
     client,
     state: () => context.storageState(),
-    post: async (path, body) => {
-      const token = await tokenOf(context);
-      const answer = await context.post(path, {
-        data: body,
-        headers: { origin, ...(token === undefined ? {} : { [CSRF_HEADER]: token }) },
-      });
-      return { status: answer.status(), body: await answer.json().catch(() => null) };
-    },
     dispose: async () => {
       // Nobody may be signed in any more, or the session would be listed forever. A session that
       // never signed in is refused, which is as good.
