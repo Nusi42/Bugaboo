@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { priorityWords } from "@bugaboo/api-client";
 
 import type { NamedPerson } from "../../shared/person.ts";
+import { forApi } from "../../shared/reference.ts";
 
 /** What a person has filled in on the form of a new issue. */
 export interface NewIssueValues {
@@ -128,7 +129,13 @@ export function forForm(values: NewIssueValues, shows: (field: string) => boolea
 
 /** The body that makes the issue: a priority only when the person moved it from the usual one. */
 export function bodyOf(values: NewIssueValues) {
-  const fields = fieldsWhere(values.fields, (_, value) => value !== null);
+  // The people, groups and issues picked on the form are held with their names; the API takes IDs.
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(values.fields)) {
+    if (value !== null) {
+      fields[key] = forApi(value);
+    }
+  }
   return {
     issue_type: values.issueType,
     title: values.title.trim(),

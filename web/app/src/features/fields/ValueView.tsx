@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ownValueText } from "../../shared/own-value-text.ts";
 import { personName, type Person } from "../../shared/person.ts";
 import { choiceOf, plainText, type Choice, type OwnField, type KindWord } from "./fields.ts";
-import { memberOf } from "./reference.ts";
+import { memberOf } from "../../shared/reference.ts";
 
 /** How far a number is between the lowest and the highest of the field, from 0 to 1 (a percent without a range). */
 function fractionOf(field: OwnField, value: number): number {

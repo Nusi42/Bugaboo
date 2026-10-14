@@ -4,6 +4,7 @@ import type { IssueBlockProps } from "../issues/index.ts";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import type { Picked } from "../../shared/reference.ts";
 
 /** The values of the own fields of an item, by the key of the field, as the server sent them. */
 export type FieldValues = Readonly<Record<string, unknown>>;
@@ -18,6 +19,20 @@ export type TypeInfo = Schema<"FieldTypeBody">;
 export type KindWord = Schema<"FieldType">;
 /** How a value is shown, by its word. */
 export type LookWord = Schema<"Look">;
+
+/**
+ * The value an editor sends: what the API takes for this field, or `null` to take the value away.
+ * On the form of a new issue a person, group or issue picked is held with its name until the issue
+ * is made.
+ */
+export type Sent =
+  | string
+  | number
+  | boolean
+  | readonly string[]
+  | Picked
+  | readonly Picked[]
+  | null;
 
 /** The name of the part of an issue that a long-text field is: what its lock and drafts are about. */
 export function editPartOf(field: string): string {

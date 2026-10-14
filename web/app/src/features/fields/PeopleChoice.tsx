@@ -6,7 +6,7 @@ import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { peopleOf, useAssignablePeople } from "../issues/index.ts";
 import { ChoiceDialog } from "./ChoiceDialog.tsx";
 import type { OwnField } from "./fields.ts";
-import { referenceIds } from "./reference.ts";
+import { type Picked, picksOf } from "../../shared/reference.ts";
 
 export interface PeopleChoiceProps {
   readonly field: OwnField;
@@ -18,8 +18,8 @@ export interface PeopleChoiceProps {
   readonly issue?: string | undefined;
   /** The ID of the type of the issue that is being made, while there is no issue yet. */
   readonly issueType?: string | undefined;
-  /** Sends the IDs of the people from now on; `null` takes the value away. */
-  readonly onCommit: (ids: readonly string[] | string | null) => void;
+  /** Sends the people from now on, with their names; `null` takes the value away. */
+  readonly onCommit: (picks: readonly Picked[] | Picked | null) => void;
 }
 
 /** A person who may be named: a button to choose them, or the word that they are and a button to take them out. */
@@ -31,7 +31,7 @@ function PersonRow({
 }: {
   readonly person: NamedPerson;
   readonly chosen: boolean;
-  readonly onPick: (id: string) => void;
+  readonly onPick: (person: NamedPerson) => void;
   readonly onTakeOut: (id: string) => void;
 }) {
   return (
@@ -52,7 +52,7 @@ function PersonRow({
         <Button
           aria-label={t("fields.pick-choose-name", { name: person.name })}
           onPress={() => {
-            onPick(person.id);
+            onPick(person);
           }}
         >
           {t("fields.choose")}
@@ -73,11 +73,11 @@ function PeopleList({
   onTakeOut,
 }: {
   readonly field: OwnField;
-  readonly chosen: readonly string[];
+  readonly chosen: readonly Picked[];
   readonly project: string;
   readonly issue: string | undefined;
   readonly issueType: string | undefined;
-  readonly onPick: (id: string) => void;
+  readonly onPick: (person: NamedPerson) => void;
   readonly onTakeOut: (id: string) => void;
 }) {
   const { words, frame } = usePickerFrame();
@@ -98,7 +98,7 @@ function PeopleList({
         <PersonRow
           key={person.id}
           person={person}
-          chosen={chosen.includes(person.id)}
+          chosen={chosen.some((each) => each.id === person.id)}
           onPick={onPick}
           onTakeOut={onTakeOut}
         />
@@ -117,7 +117,7 @@ export function PeopleChoice({
   onCommit,
 }: PeopleChoiceProps) {
   const many = field.kind === "people";
-  const chosen = referenceIds(value);
+  const chosen = picksOf(value);
   return (
     <ChoiceDialog field={field}>
       {(done) => (
@@ -127,16 +127,16 @@ export function PeopleChoice({
           project={project}
           issue={issue}
           issueType={issueType}
-          onPick={(id) => {
+          onPick={(person) => {
             if (many) {
-              onCommit([...chosen, id]);
+              onCommit([...chosen, person]);
             } else {
-              onCommit(id);
+              onCommit(person);
               done();
             }
           }}
           onTakeOut={(id) => {
-            const left = chosen.filter((each) => each !== id);
+            const left = chosen.filter((each) => each.id !== id);
             onCommit(left.length === 0 ? null : left);
           }}
         />
