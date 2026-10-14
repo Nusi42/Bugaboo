@@ -39,6 +39,25 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
+const upright = "(orientation: portrait)";
+
+function readUpright(): boolean {
+  return matchMedia(upright).matches;
+}
+
+function subscribeUpright(listener: () => void): () => void {
+  const watched = matchMedia(upright);
+  watched.addEventListener("change", listener);
+  return () => {
+    watched.removeEventListener("change", listener);
+  };
+}
+
+/** Whether the window is held upright (taller than wide); it follows the window when it is turned. */
+export function useUpright(): boolean {
+  return useSyncExternalStore(subscribeUpright, readUpright);
+}
+
 /** The layout of the window right now; it follows the window when it is resized or turned. */
 export function useLayout(): LayoutMode {
   return useSyncExternalStore(subscribe, readLayout);

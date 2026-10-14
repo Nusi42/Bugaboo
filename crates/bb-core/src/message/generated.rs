@@ -2034,6 +2034,9 @@ pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
 
+/// The message `issues.sheet`.
+pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
+
 /// The message `issues.show-changes`.
 pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes");
 
@@ -9135,6 +9138,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
     ),
+    ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Side panel view"),
     ("issues.someone", "Someone"),

@@ -6,6 +6,7 @@ export const messages = {
   "issues.changed": "{field} changed to {value}.",
   "issues.changed-people":
     "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
+  "issues.sheet": "Issue",
   "issues.new-title": "New issue",
   "issues.project": "Project",
   "issues.type": "Type",
