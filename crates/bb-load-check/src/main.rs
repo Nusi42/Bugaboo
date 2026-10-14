@@ -63,7 +63,7 @@ async fn run() -> Result<Vec<String>, Failure> {
     let database = open(&arguments).await?;
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     // The server ran on the clock of this computer, and the leases are over by the end of a run.
-    // The purge belongs to the housekeeping of the server: no row is asked to be gone.
+    // The purge belongs to the job runner of the server (`bb-jobs`): no row is asked to be gone.
     let afterwards = Afterwards {
         now: i64::try_from(now)?,
         lease_seconds: LEASE_SECONDS,

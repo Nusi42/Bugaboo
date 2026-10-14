@@ -4,8 +4,10 @@
 //! `cargo xtask load` both end here.
 //!
 //! - Every change has its event: the versions of an issue run from 2 up to the one it has, each
-//!   kept by exactly one person and counted by exactly one event. (Other events about the issue, a
-//!   lock taken over or let go, count no version and are no changes.)
+//!   kept by exactly one person and counted by exactly one event. Every event that counts a version
+//!   is one (`DomainEvent::version_after`): a save, a tag or a label put on or taken off, a change
+//!   made by a job for many issues. (Other events about the issue, a lock taken over or let go,
+//!   count no version and are no changes.)
 //! - Every comment has its event.
 //! - The description is the text of the last save that went through.
 //! - What a person read of an issue only goes up.
@@ -51,10 +53,14 @@ fn events_and_versions(book: &Book, issue: &IssueFacts) -> Vec<String> {
             issue.version
         ));
     }
-    if issue.event_versions != counting(2, issue.version) {
+    // Event IDs begin with their time and end in random bytes, so two events of the same
+    // millisecond come in any order: what counts is that each version is there exactly once.
+    let mut counted = issue.event_versions.clone();
+    counted.sort_unstable();
+    if counted != counting(2, issue.version) {
         found.push(format!(
             "{key}: the events of its changes have the versions {:?}, not 2 up to {}",
-            issue.event_versions, issue.version
+            counted, issue.version
         ));
     }
     let written = book.comments.iter().filter(|each| *each == key).count();
@@ -281,6 +287,15 @@ mod tests {
         let (mut book, facts) = good_run();
         book.kept[0].version = 4;
         assert!(!judge(&book, &facts, &afterwards()).is_empty());
+    }
+
+    #[test]
+    fn test_concurrent_events_of_one_millisecond_may_come_in_any_order() {
+        let (book, mut facts) = good_run();
+        facts.issues[0].event_versions = vec![3, 2];
+        assert!(judge(&book, &facts, &afterwards()).is_empty());
+        facts.issues[0].event_versions = vec![3, 3];
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
     }
 
     #[test]
