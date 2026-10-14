@@ -13,6 +13,14 @@ export function saveButton(page: Page) {
   return page.getByRole("button", { name: t("common.save"), exact: true });
 }
 
+/** The button that saves the description, on a page where other fields have a *Save* of their own. */
+export function saveDescriptionButton(page: Page) {
+  // The nearest box around the text box that has a Save: the editor of the description.
+  return descriptionBox(page)
+    .locator("xpath=ancestor::*[.//button[normalize-space(.)='Save']][1]")
+    .getByRole("button", { name: t("common.save"), exact: true });
+}
+
 /** The button of a text that was not saved because the issue changed: *Compare and save*. */
 export function compareAndSaveButton(page: Page) {
   return page.getByRole("button", { name: t("issues.compare-and-save"), exact: true });

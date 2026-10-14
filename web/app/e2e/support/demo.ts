@@ -2,12 +2,20 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths, projectAddress } from "../../src/shared/paths.ts";
-import { expectGoodInEveryLook } from "./checks.ts";
+import {
+  expectNoOverlap,
+  expectNoSidewaysScroll,
+  expectNoViolations,
+  expectVisibleTextInName,
+  expectGoodInEveryLook,
+  putOnTheme,
+  themes,
+} from "./checks.ts";
 import { layoutOf } from "./layout.ts";
 import { inOrder } from "./sequence.ts";
 import { sampleProjectName, sampleProjects } from "./sample.ts";
 import { tree } from "./projects.ts";
-import { shootWhole } from "./screenshots.ts";
+import { shootWhole, shootWholeAs } from "./screenshots.ts";
 
 // What the exit demo of M2 and its pictures share (m2-exit-demo.spec.ts).
 
@@ -24,6 +32,34 @@ export async function good(page: Page, step: string): Promise<void> {
   // The pictures first: the check puts every theme on the page, and leaves the last one there.
   await shootWhole(page, picture(step, page), DEMO);
   await expectGoodInEveryLook(page);
+}
+
+/** The folder of the pictures of the exit demo of M3. */
+const DEMO_M3 = "M3/demo";
+
+/**
+ * The screen is good in each of the four themes and is in the pictures of the exit demo of M3, one
+ * for each theme (`<step>-<phone|computer>-<theme>.png`): the screen is checked in each theme, and
+ * then the pictures are taken when a folder is wanted.
+ */
+export async function goodInFourThemes(page: Page, step: string): Promise<void> {
+  // The checks first, in the window as it is: the window grown for a picture leaves the bars at
+  // its edges in a state that no person ever sees.
+  await inOrder(
+    themes.map((theme) => async () => {
+      await putOnTheme(page, theme);
+      await expectNoViolations(page);
+      await expectNoSidewaysScroll(page);
+      await expectNoOverlap(page);
+      await expectVisibleTextInName(page);
+    }),
+  );
+  await inOrder(
+    themes.map((theme) => async () => {
+      await putOnTheme(page, theme);
+      await shootWholeAs(page, picture(step, page), DEMO_M3, theme.id);
+    }),
+  );
 }
 
 /** Opens a page and waits for its heading. */
