@@ -70,6 +70,25 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
     Ok(run.id.to_string())
 }
 
+/// The ID of a role, for the routes that name one.
+async fn a_role(rig: &Rig) -> Result<String, Failure> {
+    let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
+    let role = rig
+        .api()
+        .make_role(
+            Rig::info(),
+            MakeRole {
+                session_token: admin,
+                name: "Checker".to_owned(),
+                permissions: vec![Permission::SeeProjects],
+                two_step: false,
+            },
+        )
+        .await?
+        .into_value();
+    Ok(role.id.to_string())
+}
+
 /// The ID of a comment written on the issue, for the routes that name a comment.
 async fn a_comment_on(ada: &mut Browser, issue_key: &str) -> Result<String, Failure> {
     let written = ada
@@ -129,20 +148,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A role and a project for the routes that name one.
-        let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
-        let role = rig
-            .api()
-            .make_role(
-                Rig::info(),
-                MakeRole {
-                    session_token: admin,
-                    name: "Checker".to_owned(),
-                    permissions: vec![Permission::SeeProjects],
-                    two_step: false,
-                },
-            )
-            .await?
-            .into_value();
+        let role = a_role(&rig).await?;
         let made = ada
             .send(
                 "POST",
@@ -181,7 +187,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 "EXAMPLE"
             };
             let filled = template
-                .replace("{role_id}", &role.id.to_string())
+                .replace("{role_id}", &role)
                 .replace("{group_id}", &group_id)
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
