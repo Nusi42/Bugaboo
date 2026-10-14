@@ -17,10 +17,6 @@ export const messages = {
   "history.changed-long-text": "{who} changed {field}",
   "history.relation-added": "{who} added a relation: this issue {name} {issue}",
   "history.relation-removed": "{who} took away a relation: this issue {name} {issue}",
-  "history.field-issue-type": "Issue type",
-  "history.field-parent": "Part of",
-  "history.field-sub-issue": "Sub-issue",
-  "history.field-other": "{field}",
   "comments.write": "Write a comment",
   "comments.write-help": "Type @ and a name to mention someone.",
   "comments.add": "Comment",
@@ -37,7 +33,6 @@ export const messages = {
   "comments.editing": "Edit the comment",
   "comments.lock-held": "Someone else is editing this comment.",
   "comments.mention-choices": "Who you can mention",
-  "history.field-project": "Project",
 } as const;
 
 register(messages);

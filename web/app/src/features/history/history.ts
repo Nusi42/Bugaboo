@@ -1,9 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
-import { isMessageKey, t } from "@bugaboo/messages";
+import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
 import { changeValueText } from "../../shared/change-value.ts";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { personName } from "../../shared/person.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
@@ -42,30 +43,6 @@ export function groupByEvent(items: readonly HistoryEntry[]): readonly (readonly
 /** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
 export function whoOf(entry: Schema<"HistoryEntryItem">): string {
   return entry.by === undefined || entry.by === null ? t("history.system") : personName(entry.by);
-}
-
-/**
- * The name of a field as people read it: the name of an own field, which the server sends, the
- * catalogue's own, or one of the members History adds.
- */
-export function fieldLabel(field: string, name?: string | null): string {
-  if (name !== undefined && name !== null) {
-    return name;
-  }
-  switch (field) {
-    case "issue-type":
-      return t("history.field-issue-type");
-    case "parent":
-      return t("history.field-parent");
-    case "sub-issue":
-      return t("history.field-sub-issue");
-    case "project":
-      return t("history.field-project");
-    default: {
-      const key = `issue-field.${field}`;
-      return isMessageKey(key) ? t(key) : t("history.field-other", { field });
-    }
-  }
 }
 
 /** The value of one side of a history entry in the one shape of a change's value, if it has any. */
@@ -108,7 +85,10 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
 /** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
 export function changeSentence(entry: HistoryEntry): string {
   const who = whoOf(entry);
-  const field = fieldLabel(entry.field ?? "", entry.field_name);
+  const field = fieldNameOf(
+    { code: entry.field ?? "", name: entry.field_name },
+    t("history.field-other", { field: entry.field ?? "" }),
+  );
   const before = sideOf(entry, "before");
   const after = sideOf(entry, "after");
   if (before !== undefined && after !== undefined) {

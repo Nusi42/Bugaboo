@@ -10,7 +10,7 @@
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
-use super::Step;
+use super::{Step, id_column};
 use crate::schema::{
     BulkRunRow, IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, ProjectRow,
     TagProjectRow, TagRow,
@@ -28,7 +28,7 @@ fn tags() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(TagRow::Table)
-                .col(ColumnDef::new(TagRow::Id).blob().not_null().primary_key())
+                .col(id_column(TagRow::Id).primary_key())
                 .col(ColumnDef::new(TagRow::Name).text().not_null())
                 .col(ColumnDef::new(TagRow::NameKey).text().not_null())
                 .col(ColumnDef::new(TagRow::Color).text().not_null())
@@ -48,8 +48,8 @@ fn tags() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(TagProjectRow::Table)
-                .col(ColumnDef::new(TagProjectRow::Tag).blob().not_null())
-                .col(ColumnDef::new(TagProjectRow::Project).blob().not_null())
+                .col(id_column(TagProjectRow::Tag))
+                .col(id_column(TagProjectRow::Project))
                 .primary_key(
                     Index::create()
                         .col(TagProjectRow::Tag)
@@ -70,10 +70,10 @@ fn tags() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(IssueTagRow::Table)
-                .col(ColumnDef::new(IssueTagRow::Issue).blob().not_null())
-                .col(ColumnDef::new(IssueTagRow::Tag).blob().not_null())
+                .col(id_column(IssueTagRow::Issue))
+                .col(id_column(IssueTagRow::Tag))
                 // No reference to the person: a removed person leaves a tombstone (PRIV-04).
-                .col(ColumnDef::new(IssueTagRow::AddedBy).blob().not_null())
+                .col(id_column(IssueTagRow::AddedBy))
                 .col(
                     ColumnDef::new(IssueTagRow::AddedAt)
                         .big_integer()
@@ -109,12 +109,7 @@ fn labels() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(LabelGroupRow::Table)
-                .col(
-                    ColumnDef::new(LabelGroupRow::Id)
-                        .blob()
-                        .not_null()
-                        .primary_key(),
-                )
+                .col(id_column(LabelGroupRow::Id).primary_key())
                 .col(ColumnDef::new(LabelGroupRow::Name).text().not_null())
                 .col(ColumnDef::new(LabelGroupRow::NameKey).text().not_null())
                 .col(ColumnDef::new(LabelGroupRow::PickOne).boolean().not_null())
@@ -142,7 +137,7 @@ fn labels() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(LabelRow::Table)
-                .col(ColumnDef::new(LabelRow::Id).blob().not_null().primary_key())
+                .col(id_column(LabelRow::Id).primary_key())
                 .col(ColumnDef::new(LabelRow::Group).blob())
                 .col(ColumnDef::new(LabelRow::GroupKey).text().not_null())
                 .col(ColumnDef::new(LabelRow::Name).text().not_null())
@@ -171,10 +166,10 @@ fn labels() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(IssueLabelRow::Table)
-                .col(ColumnDef::new(IssueLabelRow::Issue).blob().not_null())
-                .col(ColumnDef::new(IssueLabelRow::Label).blob().not_null())
+                .col(id_column(IssueLabelRow::Issue))
+                .col(id_column(IssueLabelRow::Label))
                 // No reference to the person: a removed person leaves a tombstone (PRIV-04).
-                .col(ColumnDef::new(IssueLabelRow::AddedBy).blob().not_null())
+                .col(id_column(IssueLabelRow::AddedBy))
                 .col(
                     ColumnDef::new(IssueLabelRow::AddedAt)
                         .big_integer()
@@ -213,13 +208,11 @@ fn runs() -> Vec<Step> {
         Table::create()
             .table(BulkRunRow::Table)
             .col(
-                ColumnDef::new(BulkRunRow::Id)
-                    .blob()
-                    .not_null()
+                id_column(BulkRunRow::Id)
                     .primary_key(),
             )
             // No reference to the person: a removed person leaves a tombstone (PRIV-04).
-            .col(ColumnDef::new(BulkRunRow::Person).blob().not_null())
+            .col(id_column(BulkRunRow::Person))
             .col(ColumnDef::new(BulkRunRow::Action).text().not_null())
             .col(ColumnDef::new(BulkRunRow::Items).text().not_null())
             .col(ColumnDef::new(BulkRunRow::Status).text().not_null())

@@ -9,4 +9,3 @@ const HistoryBlock = lazyRouteComponent(() => import("./HistoryBlock.tsx"), "His
 export function registerHistoryBlock(): void {
   addIssueBlock(issueSlots.history, { id: "history", order: 0, component: HistoryBlock });
 }
-export { fieldLabel } from "./history.ts";

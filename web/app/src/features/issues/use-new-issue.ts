@@ -2,12 +2,16 @@ import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
 import { useNow } from "../../shared/use-now.ts";
+import { useFormLayout, type FormView } from "../layouts/index.ts";
+import { forForm } from "./new-issue-form.ts";
 import { useMakeIssue } from "./use-make-issue.ts";
 import { useNewIssueValues, type NewIssueValuesState } from "./use-new-issue-values.ts";
 
 /** What the new-issue form needs: its values and draft, and what making the issue does. */
 export interface NewIssue extends NewIssueValuesState {
   readonly now: number;
+  /** Which fields the layout of the form asks this person for. */
+  readonly layout: FormView;
   /** Makes the issue; the dialog is done, or starts again with the same project and type. */
   readonly create: (another: boolean, onMade: (key: string, project: string) => void) => void;
   readonly pending: boolean;
@@ -23,16 +27,22 @@ export function useNewIssue(): NewIssue {
   const shortName = state.project?.shortName;
   const make = useMakeIssue(shortName);
   const now = useNow();
+  const layout = useFormLayout({
+    project: shortName,
+    issueType: state.values.issueType === "" ? undefined : state.values.issueType,
+    kind: "new-issue",
+  });
   return {
     ...state,
     now,
+    layout,
     lastKey,
     change: (next) => {
       setLastKey(null);
       state.change(next);
     },
     create: (another, onMade) => {
-      make.mutate(state.values, {
+      make.mutate(forForm(state.values, layout.shows), {
         onSuccess: (made: Schema<"IssueItem">) => {
           const key = made.key ?? "";
           if (another) {

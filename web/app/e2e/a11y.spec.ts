@@ -161,6 +161,7 @@ const visits: readonly Visit[] = [
   { address: paths.relationKinds, open: signedIn(paths.relationKinds), guest: false },
   { address: paths.labels, open: signedIn(paths.labels), guest: false },
   { address: paths.fields, open: signedIn(paths.fields), guest: false },
+  { address: paths.layouts, open: signedIn(paths.layouts), guest: false },
   { address: paths.field, open: signedInAt(() => fieldAddress(someField)), guest: false },
   { address: paths.roles, open: signedIn(paths.roles), guest: false },
   { address: paths.role, open: signedInAt(() => roleAddress(someRole)), guest: false },
@@ -185,6 +186,11 @@ const visits: readonly Visit[] = [
   {
     address: paths.projectRoles,
     open: signedIn(addressInProject(paths.projectRoles, "WEB")),
+    guest: false,
+  },
+  {
+    address: paths.projectLayouts,
+    open: signedIn(addressInProject(paths.projectLayouts, "WEB")),
     guest: false,
   },
   {

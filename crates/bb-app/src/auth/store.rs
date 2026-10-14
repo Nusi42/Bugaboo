@@ -31,6 +31,7 @@ use crate::fields::FieldStore;
 use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::issues::IssueStore;
+use crate::layouts::LayoutStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -326,6 +327,7 @@ pub trait AuthStore:
     + FollowStore
     + HistoryStore
     + FieldStore
+    + LayoutStore
     + SettingsStore
     + 'static
 {

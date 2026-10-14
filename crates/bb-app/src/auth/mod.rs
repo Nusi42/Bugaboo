@@ -63,6 +63,10 @@ use crate::issues::{
     assignable_people, change_issue, change_issue_type, delete_issue, issue, issue_types, issues,
     make_issue, make_issue_type, move_issue, restore_issue, save_description,
 };
+use crate::layouts::{
+    DeleteLayout, FormLayout, FormLayoutQuery, LayoutEditor, LayoutEditorQuery, MakeLayout,
+    SaveLayout, delete_layout, form_layout, layout_editor, make_layout, save_layout,
+};
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
     GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery, MakeGroup,
@@ -518,4 +522,14 @@ use_cases! {
     label_change_preview(LabelChangePreviewQuery) -> Authorized<TagChangePreview>;
     /// Moves every issue from a label to another and takes the first away.
     combine_labels(CombineLabels) -> Authorized<LabelView>;
+    /// Shows which fields a form shows to the person who asks.
+    form_layout(FormLayoutQuery) -> Authorized<FormLayout>;
+    /// Shows the layout of a place to somebody who may change it.
+    layout_editor(LayoutEditorQuery) -> Authorized<LayoutEditor>;
+    /// Makes the layout of a place as a copy of the one that counts there.
+    make_layout(MakeLayout) -> Authorized<LayoutEditor>;
+    /// Saves the sections and fields of a layout, under its edit lock.
+    save_layout(SaveLayout) -> Authorized<LayoutEditor>;
+    /// Takes the layout of a place away.
+    delete_layout(DeleteLayout) -> Done;
 }

@@ -7,6 +7,7 @@ import type { Place } from "./place.ts";
 import { fieldPlaces } from "./field-places.ts";
 import { labelPlaces } from "./label-places.ts";
 import { projectPlaces } from "./project-places.ts";
+import { layoutPlaces } from "./layout-places.ts";
 import { relationPlaces } from "./relation-places.ts";
 
 export type { Place } from "./place.ts";
@@ -192,6 +193,7 @@ const organizationTopics: readonly Place[] = [
   ...fieldPlaces,
   ...relationPlaces,
   ...labelPlaces,
+  ...layoutPlaces,
   {
     path: paths.organizationSecurity,
     name: "nav.organization-security",

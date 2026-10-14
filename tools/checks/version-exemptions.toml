@@ -140,3 +140,11 @@ reason = "Changes nothing: it only says what a rename, a combine or a change to 
 [[exempt]]
 routes = ["POST /api/v1/bulk/changes"]
 reason = "Every issue of the change has its own version in the body (`issues[].version`), which a list of many changes needs and a single `version` cannot say (ADR-0019, M3 WP-08)."
+
+[[exempt]]
+routes = ["POST /api/v1/layouts"]
+reason = "Makes the layout of a place as a copy of the one in force (a new record); a place that has one is shown as it is, and two people who make it at the same moment get one (the second is told version_changed)."
+
+[[exempt]]
+routes = ["DELETE /api/v1/layouts/{layout}"]
+reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version_changed."

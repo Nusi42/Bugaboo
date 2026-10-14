@@ -5,6 +5,7 @@ import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
+import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 import { makeProject } from "./support/projects.ts";
 import { inOrder } from "./support/sequence.ts";
 
@@ -62,8 +63,13 @@ test("cf_04 an administrator makes Severity with four colored choices and sees i
   );
   await inOrder(
     severity.map(([name, color]) => async () => {
-      const group = page.getByRole("group", { name: t("fields.choice-color", { name }) });
-      const swatch = group.getByRole("radio", { name: t(`choice-color.${color}`), exact: true });
+      const group = page.getByRole("group", {
+        name: t("fields.choice-color", { name }),
+      });
+      const swatch = group.getByRole("radio", {
+        name: t(`choice-color.${color}`),
+        exact: true,
+      });
       await swatch.click();
       await expect(swatch).toBeChecked();
     }),
@@ -83,4 +89,35 @@ test("cf_01 Platforms (pick several) and Customer (text) are made on the same sc
   const list = page.getByRole("list", { name: t("fields.list") });
   await expect(list.getByRole("link")).toHaveText(["Severity", "Platforms", "Customer"]);
   await expectGoodInEveryLook(page);
+});
+
+/** The choices of a field in the order they are listed in: the first words of each. */
+function rowsOfChoices(page: Page) {
+  return page.getByRole("list", { name: t("fields.choices") }).locator(":scope > li");
+}
+
+test("m3_f61 the choices of a field are put in order with the buttons, and by dragging on a computer", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await makeField(page, t("field-type.pick-one"), "Impact", ["Low", "Mid", "High"]);
+  const rows = rowsOfChoices(page);
+  await expect(rows.first()).toContainText("Low");
+  // The buttons do everything a drag does: High goes up one place.
+  await page.getByRole("button", { name: t("fields.choice-up", { name: "High" }) }).click();
+  await expect(rows.nth(1)).toContainText("High");
+  // Mid is dragged in front of the first choice, where a window is wide enough for a handle.
+  const dragMid = async (): Promise<void> => {
+    await handleIn(page, t("fields.choice-drag", { name: "Mid" })).dragTo(
+      slotsIn(rows.first()).first(),
+    );
+    await expect(rows.first()).toContainText("Mid");
+  };
+  await onThisLayout(page, {
+    computer: dragMid,
+    tablet: dragMid,
+    phone: async () => {
+      await expect(handleIn(page, t("fields.choice-drag", { name: "Mid" }))).toHaveCount(0);
+    },
+  });
 });

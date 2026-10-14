@@ -75,6 +75,15 @@ export const projectPages = {
     needs: "decide-what-roles-see",
     title: (project) => t("field-permissions.project-title", { project }),
   },
+  layouts: {
+    path: paths.projectLayouts,
+    name: "layouts.nav",
+    icon: iconName.panel,
+    parent: paths.projectSettings,
+    tab: "layouts.nav",
+    needs: "manage-issue-types",
+    title: (project) => t("layouts.project-title", { project }),
+  },
   people: {
     path: paths.projectPeople,
     name: "nav.people-visibility",
@@ -100,6 +109,7 @@ export const settingsTabs: readonly ProjectPage[] = [
   projectPages.settings,
   projectPages.roles,
   projectPages.fields,
+  projectPages.layouts,
   projectPages.people,
   projectPages.check,
 ];

@@ -148,7 +148,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// a status or a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 9] = [
+const WORD_LISTS: [&str; 10] = [
     "IssueIcon",
     "Status",
     "StatusGroup",
@@ -158,6 +158,7 @@ const WORD_LISTS: [&str; 9] = [
     "FieldFor",
     "Look",
     "ChoiceColor",
+    "LayoutKind",
 ];
 
 /// `IssueIcon` as `issueIconWords`.
@@ -328,13 +329,16 @@ export const pageSizeDefault = {};
 }
 
 /// The times and sizes of editing as constants for the browser client: it sends a heartbeat as
-/// often as the lease needs, and asks about as many records as one check takes.
+/// often as the lease needs, asks about as many records as one check takes, and names the part of
+/// a layout that its edit lock is about.
 pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
     let Some((_, text)) = sources.iter().find(|(path, _)| path == EDIT_SOURCE) else {
         bail!("{EDIT_SOURCE} is missing");
     };
     let file = syn::parse_file(text).with_context(|| format!("{EDIT_SOURCE} is not Rust"))?;
     let number = |name: &str| number_const(&file, EDIT_SOURCE, name);
+    let layout_part = text_const(text, "LAYOUT_PART")
+        .with_context(|| format!("{EDIT_SOURCE} has no `const LAYOUT_PART` that is text"))?;
     Ok(format!(
         "{TS_HEADER}/** How long an edit lock lasts after the last heartbeat, in seconds. */
 export const leaseSeconds = {};
@@ -353,6 +357,9 @@ export const draftTextMax = {};
 
 /** The most records one check of versions asks about. */
 export const versionsMax = {};
+
+/** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
+export const layoutEditPart = {layout_part:?};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
@@ -582,6 +589,7 @@ pub const WATCH_SECONDS: i64 = 30;
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
+pub const LAYOUT_PART: &str = \"layout\";
 "
             .to_owned(),
         );
@@ -592,6 +600,7 @@ pub const VERSIONS_MAX: u32 = 50;
         assert!(text.contains("draftKeepDays = 30;"), "{text}");
         assert!(text.contains("draftTextMax = 100000;"), "{text}");
         assert!(text.contains("versionsMax = 50;"), "{text}");
+        assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
         assert!(editing(&[]).is_err());
     }
 

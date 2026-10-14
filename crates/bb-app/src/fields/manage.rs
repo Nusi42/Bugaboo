@@ -101,6 +101,13 @@ pub(super) fn current_default(definition: &Definition) -> Option<FieldValue> {
     default_fits(field.kind, &field.rules, &definition.choices, &value).then_some(value)
 }
 
+/// Whether a new item must be asked for this field: it is required and has no default to start
+/// with. The one judgement of the server (a new item without a value is refused), of the form a
+/// person gets (the field stays on it) and of the "required" mark in the layout editor.
+pub(crate) fn must_be_asked_for(definition: &Definition) -> bool {
+    definition.field.rules.required && current_default(definition).is_none()
+}
+
 /// The default value as it is kept (the JSON of its type), checked against the rules and, for a
 /// *Pick one* or *Pick several* field, against its choices. Empty text for no default.
 fn default_text(

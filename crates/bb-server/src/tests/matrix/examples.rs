@@ -287,6 +287,14 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("listIssueTypes", &[Quirk::KeysActAsThePerson]),
     Example::route("makeIssueType"),
     Example::route("changeIssueType"),
+    Example::with(
+        "getFormLayout",
+        &[Quirk::AtTheTargetProject, Quirk::HidesUnseen],
+    ),
+    Example::with("getLayoutEditor", &[Quirk::AtTheTargetProject]),
+    Example::with("makeLayout", &[Quirk::AtTheTargetProject]),
+    Example::with("saveLayout", &[Quirk::AtTheTargetProject]),
+    Example::with("deleteLayout", &[Quirk::AtTheTargetProject]),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("makeIssue", &[Quirk::NeedsToSeeTheProject]),
@@ -767,6 +775,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_layouts::layout_request(fixture, operation).await? {
         return Ok(found);
     }
     if let Some(found) =

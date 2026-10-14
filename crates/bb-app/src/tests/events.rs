@@ -14,6 +14,7 @@ use std::pin::Pin;
 use super::scenarios::{self as s, Added};
 use super::scenarios_fields as sf;
 use super::scenarios_issues as si;
+use super::scenarios_layouts as sl;
 use super::scenarios_relations as sr;
 use super::scenarios_tags as st;
 use super::world::{Outcome, World};
@@ -129,6 +130,9 @@ table! {
     "combine_labels" => st::combine_labels_scenario,
     "add_label" => st::add_label_scenario,
     "remove_label" => st::remove_label_scenario,
+    "make_layout" => sl::make_layout_scenario,
+    "save_layout" => sl::save_layout_scenario,
+    "delete_layout" => sl::delete_layout_scenario,
 }
 
 #[test]

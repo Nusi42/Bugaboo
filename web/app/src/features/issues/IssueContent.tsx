@@ -31,7 +31,12 @@ export function IssueContent({ detail, address, changes, blocks, split }: IssueC
     <>
       <IssueSaved changes={changes} />
       {changes.conflict === null ? null : <ConflictNote conflict={changes.conflict} />}
-      <FactsBar issue={detail.issue} mask={blocks.mask} onChange={changes.change} />
+      <FactsBar
+        issue={detail.issue}
+        mask={blocks.mask}
+        form={blocks.form}
+        onChange={changes.change}
+      />
       <div {...partOf(part.issueBody, { variants: [!split && "stacked"] })}>
         <IssueMain detail={detail} address={address} blocks={blocks} />
         {split || open ? <FieldsPanel blocks={blocks} stacked={!split} /> : null}

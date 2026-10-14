@@ -16,6 +16,7 @@ mod examples;
 mod examples_editing;
 mod examples_fields;
 mod examples_issues;
+mod examples_layouts;
 mod examples_people;
 mod examples_relations;
 mod examples_tags;

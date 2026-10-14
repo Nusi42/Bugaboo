@@ -1835,6 +1835,90 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/layouts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Makes the layout of a place as a copy of the one that counts there (*Customize this form*).
+     *     Needs the permission *Manage issue types, kinds of relation and layouts*.
+     */
+    post: operations["makeLayout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/layouts/editor": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The layout of a place for somebody who may change it. Needs the permission *Manage issue
+     *     types, kinds of relation and layouts*.
+     */
+    get: operations["getLayoutEditor"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/layouts/form": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Which fields a form shows to the person who asks: the layout of the project and the issue type,
+     *     applied to the person's roles and to the levels of the fields.
+     */
+    get: operations["getFormLayout"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/layouts/{layout}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Saves the sections and fields of a layout, under the edit lock the person holds. Needs the
+     *     permission *Manage issue types, kinds of relation and layouts*.
+     */
+    put: operations["saveLayout"];
+    post?: never;
+    /**
+     * Takes the layout of a place away: the place uses the layout it inherits again. Needs the
+     *     permission *Manage issue types, kinds of relation and layouts*.
+     */
+    delete: operations["deleteLayout"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/mentions": {
     parameters: {
       query?: never;
@@ -3506,6 +3590,41 @@ export interface components {
       /** @description The thing somebody else is editing. */
       what: components["schemas"]["EditWhatBody"];
     };
+    /** @description A field of a layout in the editor. */
+    EditorFieldBody: {
+      /** @description The key of the field: the word of a built-in field or the ID of an own field. */
+      field: string;
+      /**
+       * @description The IDs of the roles for which field permissions win: they may not see the field (on the
+       *     new-issue form: not change it), whatever the layout says.
+       */
+      limited_for: string[];
+      /** @description The name of an own field; a built-in field is named by its word. */
+      name?: string | null;
+      /**
+       * @description An own field that must be filled in: it stays on the new-issue form for everybody who can
+       *     fill it in.
+       */
+      required: boolean;
+      /** @description The IDs of the roles the layout shows it to. */
+      roles: string[];
+    };
+    /** @description A role the editor can tick. */
+    EditorRoleBody: {
+      /** @description The ID of the role. */
+      id: string;
+      /** @description Its name. */
+      name: string;
+    };
+    /** @description A section of a layout in the editor. */
+    EditorSectionBody: {
+      /** @description Its fields, in order. */
+      fields: components["schemas"]["EditorFieldBody"][];
+      /** @description The tab it is under; empty for none. */
+      tab: string;
+      /** @description Its title; may be empty. */
+      title: string;
+    };
     /**
      * @description What went wrong. Clients react to this text, which never changes.
      * @enum {string}
@@ -3563,6 +3682,7 @@ export interface components {
       | "edit.version_changed"
       | "edit.lock_lost"
       | "edit.taken_over"
+      | "edit.in_progress"
       | "rate_limit.exceeded"
       | "server.unavailable"
       | "server.internal";
@@ -3647,6 +3767,13 @@ export interface components {
      * @enum {string}
      */
     FieldFor: "issues" | "projects";
+    /** @description A field in a section that is saved. */
+    FieldInputBody: {
+      /** @description The key of the field: the word of a built-in field or the ID of an own field. */
+      field: string;
+      /** @description The IDs of the roles it is shown to. */
+      roles: string[];
+    };
     /** @description The key of a field: the word of a built-in field, or the ID of an own field. */
     FieldKey: string;
     /**
@@ -3749,6 +3876,25 @@ export interface components {
       /** @description Whether the person follows the issue. */
       following: boolean;
       reason?: components["schemas"]["FollowReason"] | null;
+    };
+    /** @description The layout of a form for the person who asks: only what they may see, or fill in. */
+    FormLayoutBody: {
+      /** @description The issue page or the new-issue form. */
+      kind: components["schemas"]["LayoutKind"];
+      /** @description The sections that have at least one field for the person, in order. */
+      sections: components["schemas"]["FormSectionBody"][];
+    };
+    /** @description A section of a form as the person who asks sees it. */
+    FormSectionBody: {
+      /**
+       * @description The fields the person sees (or fills in) here, in order, by their keys: the word of a
+       *     built-in field (`priority`) or the ID of an own field.
+       */
+      fields: string[];
+      /** @description The tab it is under; empty for none. */
+      tab: string;
+      /** @description Its title; may be empty. */
+      title: string;
     };
     /**
      * @description What kind of text a text setting holds.
@@ -3917,6 +4063,13 @@ export interface components {
     ImageHostsBody: {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
       hosts: string[];
+    };
+    /** @description Where the layout that counts at a place is set, when it is another place. */
+    InheritedFromBody: {
+      issue_type?: components["schemas"]["IssueTypeRef"] | null;
+      project?: components["schemas"]["ProjectRef"] | null;
+      /** @description It is set for the whole organization. */
+      whole_organization: boolean;
     };
     /** @description An invitation as the administrator sees it. */
     InvitationBody: {
@@ -4196,6 +4349,45 @@ export interface components {
       labels: components["schemas"]["LabelBody"][];
       /** @description Whether the person looks after labels and tags. */
       may_manage: boolean;
+    };
+    /** @description What the editor shows for a place. */
+    LayoutEditorBody: {
+      /** @description The fields that can be added: placeable here and not in a section yet. */
+      available: components["schemas"]["EditorFieldBody"][];
+      /**
+       * @description The person may choose the roles of a field (*Decide what roles see* at the place). When
+       *     false, `roles` is empty, no field has a mark, and a save keeps the roles of the fields on
+       *     the layout.
+       */
+      choose_roles: boolean;
+      inherited_from?: components["schemas"]["InheritedFromBody"] | null;
+      issue_type?: components["schemas"]["IssueTypeRef"] | null;
+      /** @description The issue page or the new-issue form. */
+      kind: components["schemas"]["LayoutKind"];
+      layout?: components["schemas"]["LayoutSlotBody"] | null;
+      project?: components["schemas"]["ProjectRef"] | null;
+      /**
+       * @description The roles that can be ticked, in the order of roles; none when the person may not choose
+       *     the roles of a field.
+       */
+      roles: components["schemas"]["EditorRoleBody"][];
+      /** @description The sections, in order. */
+      sections: components["schemas"]["EditorSectionBody"][];
+    };
+    /**
+     * @description What a layout is for: the issue page or the new-issue form.
+     * @enum {string}
+     */
+    LayoutKind: "new-issue" | "issue-page";
+    /** @description The layout set at exactly the place that was asked about. */
+    LayoutSlotBody: {
+      /** @description The ID of the layout, which the edit lock is about. */
+      id: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
     };
     /** @description A field or a kind with its level and what each role says. */
     LevelAnswerBody_FieldKey_FieldLevel: {
@@ -4662,6 +4854,15 @@ export interface components {
       name: string;
       /** @description Whether an issue has at most one label of the group. */
       pick_one: boolean;
+    };
+    /** @description The layout to make for a place. */
+    NewLayoutBody: {
+      /** @description The issue type; leave it out for all types. */
+      issue_type?: string | null;
+      /** @description The issue page or the new-issue form. */
+      kind: components["schemas"]["LayoutKind"];
+      /** @description The project, by its ID or its short name; leave it out for the whole organization. */
+      project?: string | null;
     };
     /** @description A row for the whole organization to give: to a person or to a group, and the role. */
     NewOrganizationRowBody: {
@@ -6124,6 +6325,18 @@ export interface components {
        */
       version: number;
     };
+    /** @description The sections of a layout to save. */
+    SaveLayoutBody: {
+      /** @description The token the edit lock was taken with. */
+      lock_token: string;
+      /** @description All the sections, in order. They replace the sections that are stored. */
+      sections: components["schemas"]["SectionInputBody"][];
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
     /** @description Where a field is used, in a request. */
     ScopeInput: {
       /** @description The IDs of the issue types the field is limited to; empty for all. */
@@ -6158,6 +6371,15 @@ export interface components {
     SecretBody: {
       /** @description The secret from the link (the part after the `#`). */
       secret: string;
+    };
+    /** @description A section that is saved. */
+    SectionInputBody: {
+      /** @description Its fields, in order. */
+      fields: components["schemas"]["FieldInputBody"][];
+      /** @description The tab it is under; empty for none. */
+      tab: string;
+      /** @description Its title. */
+      title: string;
     };
     /** @description What checking the security log found. */
     SecurityLogBody: {
@@ -16190,6 +16412,482 @@ export interface operations {
         content: {
           "application/problem+json": components["schemas"]["Problem"];
         };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  makeLayout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewLayoutBody"];
+      };
+    };
+    responses: {
+      /** @description The layout of the place. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LayoutEditorBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getLayoutEditor: {
+    parameters: {
+      query: {
+        /** @description The project, by its ID or its short name; leave it out for the whole organization. */
+        project?: string;
+        /** @description The issue type; leave it out for all types. */
+        issue_type?: string;
+        /** @description The issue page or the new-issue form. */
+        kind: components["schemas"]["LayoutKind"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The layout with its roles and marks. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LayoutEditorBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getFormLayout: {
+    parameters: {
+      query: {
+        /** @description The project, by its ID or its short name. */
+        project: string;
+        /** @description The issue type of the issue that is shown or made; leave it out while no type is picked. */
+        issue_type?: string;
+        /** @description The issue page or the new-issue form. */
+        kind: components["schemas"]["LayoutKind"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The sections of the form. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FormLayoutBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  saveLayout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the layout. */
+        layout: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SaveLayoutBody"];
+      };
+    };
+    responses: {
+      /** @description The layout as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LayoutEditorBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteLayout: {
+    parameters: {
+      query: {
+        /** @description The version the person looked at. */
+        version: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the layout. */
+        layout: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The layout is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {

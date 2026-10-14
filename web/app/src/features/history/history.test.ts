@@ -1,13 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import {
-  changeSentence,
-  fieldLabel,
-  groupByEvent,
-  relationSentence,
-  type HistoryEntry,
-} from "./history.ts";
+import { changeSentence, groupByEvent, relationSentence, type HistoryEntry } from "./history.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
 
 const ben = { shown: "name", id: "b", name: "Ben" } as const;
@@ -91,7 +85,6 @@ describe("iss_06 values the screen words itself", () => {
 
 describe("iss_06 relations and the items of one event", () => {
   it("names the parent and the relations by their readable IDs", () => {
-    expect(fieldLabel("parent")).toBe("Part of");
     expect(
       relationSentence(
         change({

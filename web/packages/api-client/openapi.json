@@ -12712,6 +12712,637 @@
         "x-permission": "manage-labels"
       }
     },
+    "/api/v1/layouts": {
+      "post": {
+        "tags": ["layouts"],
+        "summary": "Makes the layout of a place as a copy of the one that counts there (*Customize this form*).\nNeeds the permission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "makeLayout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewLayoutBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The layout of the place.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutEditorBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/layouts/editor": {
+      "get": {
+        "tags": ["layouts"],
+        "summary": "The layout of a place for somebody who may change it. Needs the permission *Manage issue\ntypes, kinds of relation and layouts*.",
+        "operationId": "getLayoutEditor",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The project, by its ID or its short name; leave it out for the whole organization.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The issue type; leave it out for all types.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "The issue page or the new-issue form.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LayoutKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The layout with its roles and marks.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutEditorBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/layouts/form": {
+      "get": {
+        "tags": ["layouts"],
+        "summary": "Which fields a form shows to the person who asks: the layout of the project and the issue type,\napplied to the person's roles and to the levels of the fields.",
+        "operationId": "getFormLayout",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The project, by its ID or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The issue type of the issue that is shown or made; leave it out while no type is picked.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "The issue page or the new-issue form.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LayoutKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sections of the form.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormLayoutBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-projects"
+      }
+    },
+    "/api/v1/layouts/{layout}": {
+      "put": {
+        "tags": ["layouts"],
+        "summary": "Saves the sections and fields of a layout, under the edit lock the person holds. Needs the\npermission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "saveLayout",
+        "parameters": [
+          {
+            "name": "layout",
+            "in": "path",
+            "description": "The ID of the layout.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLayoutBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The layout as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutEditorBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      },
+      "delete": {
+        "tags": ["layouts"],
+        "summary": "Takes the layout of a place away: the place uses the layout it inherits again. Needs the\npermission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "deleteLayout",
+        "parameters": [
+          {
+            "name": "layout",
+            "in": "path",
+            "description": "The ID of the layout.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version the person looked at.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The layout is gone."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
     "/api/v1/me/mentions": {
       "get": {
         "tags": ["comments"],
@@ -20870,6 +21501,76 @@
           }
         }
       },
+      "EditorFieldBody": {
+        "type": "object",
+        "description": "A field of a layout in the editor.",
+        "required": ["field", "roles", "limited_for", "required"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "limited_for": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the roles for which field permissions win: they may not see the field (on the\nnew-issue form: not change it), whatever the layout says."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; a built-in field is named by its word."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "An own field that must be filled in: it stays on the new-issue form for everybody who can\nfill it in."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the roles the layout shows it to."
+          }
+        }
+      },
+      "EditorRoleBody": {
+        "type": "object",
+        "description": "A role the editor can tick.",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the role."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          }
+        }
+      },
+      "EditorSectionBody": {
+        "type": "object",
+        "description": "A section of a layout in the editor.",
+        "required": ["tab", "title", "fields"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EditorFieldBody"
+            },
+            "description": "Its fields, in order."
+          },
+          "tab": {
+            "type": "string",
+            "description": "The tab it is under; empty for none."
+          },
+          "title": {
+            "type": "string",
+            "description": "Its title; may be empty."
+          }
+        }
+      },
       "ErrorCode": {
         "type": "string",
         "description": "What went wrong. Clients react to this text, which never changes.",
@@ -20926,6 +21627,7 @@
           "edit.version_changed",
           "edit.lock_lost",
           "edit.taken_over",
+          "edit.in_progress",
           "rate_limit.exceeded",
           "server.unavailable",
           "server.internal"
@@ -21109,6 +21811,24 @@
         "type": "string",
         "description": "What an own field is added to.",
         "enum": ["issues", "projects"]
+      },
+      "FieldInputBody": {
+        "type": "object",
+        "description": "A field in a section that is saved.",
+        "required": ["field", "roles"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the roles it is shown to."
+          }
+        }
       },
       "FieldKey": {
         "type": "string",
@@ -21312,6 +22032,46 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "FormLayoutBody": {
+        "type": "object",
+        "description": "The layout of a form for the person who asks: only what they may see, or fill in.",
+        "required": ["kind", "sections"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LayoutKind",
+            "description": "The issue page or the new-issue form."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormSectionBody"
+            },
+            "description": "The sections that have at least one field for the person, in order."
+          }
+        }
+      },
+      "FormSectionBody": {
+        "type": "object",
+        "description": "A section of a form as the person who asks sees it.",
+        "required": ["tab", "title", "fields"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The fields the person sees (or fills in) here, in order, by their keys: the word of a\nbuilt-in field (`priority`) or the ID of an own field."
+          },
+          "tab": {
+            "type": "string",
+            "description": "The tab it is under; empty for none."
+          },
+          "title": {
+            "type": "string",
+            "description": "Its title; may be empty."
           }
         }
       },
@@ -21716,6 +22476,39 @@
               "type": "string"
             },
             "description": "The hosts, such as `images.example.com`. Empty means no image from outside."
+          }
+        }
+      },
+      "InheritedFromBody": {
+        "type": "object",
+        "description": "Where the layout that counts at a place is set, when it is another place.",
+        "required": ["whole_organization"],
+        "properties": {
+          "issue_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueTypeRef",
+                "description": "The issue type it is for; none for all types."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project it is set for, when the person may know it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "whole_organization": {
+            "type": "boolean",
+            "description": "It is set for the whole organization."
           }
         }
       },
@@ -22306,6 +23099,107 @@
           "may_manage": {
             "type": "boolean",
             "description": "Whether the person looks after labels and tags."
+          }
+        }
+      },
+      "LayoutEditorBody": {
+        "type": "object",
+        "description": "What the editor shows for a place.",
+        "required": ["kind", "sections", "available", "roles", "choose_roles"],
+        "properties": {
+          "available": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EditorFieldBody"
+            },
+            "description": "The fields that can be added: placeable here and not in a section yet."
+          },
+          "choose_roles": {
+            "type": "boolean",
+            "description": "The person may choose the roles of a field (*Decide what roles see* at the place). When\nfalse, `roles` is empty, no field has a mark, and a save keeps the roles of the fields on\nthe layout."
+          },
+          "inherited_from": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InheritedFromBody",
+                "description": "Where the layout that counts is set, when it is another place."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueTypeRef",
+                "description": "The issue type of the place; none for all types."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LayoutKind",
+            "description": "The issue page or the new-issue form."
+          },
+          "layout": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LayoutSlotBody",
+                "description": "The layout set at this place. Without it the place uses the layout it inherits (or the\nstarting layout), and *Customize* makes one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project of the place; none for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EditorRoleBody"
+            },
+            "description": "The roles that can be ticked, in the order of roles; none when the person may not choose\nthe roles of a field."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EditorSectionBody"
+            },
+            "description": "The sections, in order."
+          }
+        }
+      },
+      "LayoutKind": {
+        "type": "string",
+        "description": "What a layout is for: the issue page or the new-issue form.",
+        "enum": ["new-issue", "issue-page"]
+      },
+      "LayoutSlotBody": {
+        "type": "object",
+        "description": "The layout set at exactly the place that was asked about.",
+        "required": ["id", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the layout, which the edit lock is about."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       },
@@ -23355,6 +24249,25 @@
           "pick_one": {
             "type": "boolean",
             "description": "Whether an issue has at most one label of the group."
+          }
+        }
+      },
+      "NewLayoutBody": {
+        "type": "object",
+        "description": "The layout to make for a place.",
+        "required": ["kind"],
+        "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The issue type; leave it out for all types."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LayoutKind",
+            "description": "The issue page or the new-issue form."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project, by its ID or its short name; leave it out for the whole organization."
           }
         }
       },
@@ -26411,6 +27324,29 @@
           }
         }
       },
+      "SaveLayoutBody": {
+        "type": "object",
+        "description": "The sections of a layout to save.",
+        "required": ["version", "lock_token", "sections"],
+        "properties": {
+          "lock_token": {
+            "type": "string",
+            "description": "The token the edit lock was taken with."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionInputBody"
+            },
+            "description": "All the sections, in order. They replace the sections that are stored."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
       "ScopeInput": {
         "type": "object",
         "description": "Where a field is used, in a request.",
@@ -26471,6 +27407,28 @@
           "secret": {
             "type": "string",
             "description": "The secret from the link (the part after the `#`)."
+          }
+        }
+      },
+      "SectionInputBody": {
+        "type": "object",
+        "description": "A section that is saved.",
+        "required": ["tab", "title", "fields"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldInputBody"
+            },
+            "description": "Its fields, in order."
+          },
+          "tab": {
+            "type": "string",
+            "description": "The tab it is under; empty for none."
+          },
+          "title": {
+            "type": "string",
+            "description": "Its title."
           }
         }
       },

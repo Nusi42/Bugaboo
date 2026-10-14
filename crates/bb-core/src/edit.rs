@@ -32,6 +32,8 @@ pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const VERSIONS_MAX: u32 = 50;
 /// The most characters of the text of a draft.
 pub const DRAFT_TEXT_MAX: usize = 100_000;
+/// The part of a layout that its edit lock is about: a layout is edited as a whole (ADR-0027).
+pub const LAYOUT_PART: &str = "layout";
 /// The kind of job that deletes the drafts that outlived their keep period (ADR-0017).
 pub const PURGE_DRAFTS_JOB: &str = "editing.purge_drafts";
 

@@ -27,6 +27,7 @@ mod values;
 
 pub use catalogue::{field, field_types, field_usage, fields};
 pub use choices::{add_choice, change_choice, combine_choices, reorder_choices};
+pub(crate) use manage::must_be_asked_for;
 pub use manage::{change_field, make_field};
 pub use store::{FieldStore, StoredValues};
 pub use text::{SaveFieldText, save_field_text};

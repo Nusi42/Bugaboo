@@ -21,6 +21,8 @@ export interface AssigneePickerProps {
   readonly project: string;
   /** The issue (its ID): who reported it decides who may see it, and so who is offered. */
   readonly issue?: string | undefined;
+  /** The ID of the type of the issue that is being made: a level per issue type then decides. */
+  readonly issueType?: string | undefined;
   /** The people it is assigned to now. */
   readonly assigned: readonly NamedPerson[];
   /** The people it is assigned to from now on: all of them. */
@@ -60,15 +62,16 @@ function Row({ person, assigned, onAssign, onUnassign }: RowProps) {
 interface InsideProps {
   readonly project: string;
   readonly issue?: string | undefined;
+  readonly issueType?: string | undefined;
   readonly assigned: readonly NamedPerson[];
   readonly onChange: (people: readonly NamedPerson[]) => void;
   readonly onClose: () => void;
 }
 
 /** The inside of the dialog, drawn only while it is open so nothing is asked before. */
-function Inside({ project, issue, assigned, onChange, onClose }: InsideProps) {
+function Inside({ project, issue, issueType, assigned, onChange, onClose }: InsideProps) {
   const { words, frame } = usePickerFrame();
-  const found = useAssignablePeople(project, words, { issue });
+  const found = useAssignablePeople(project, words, { issue, issueType });
   const people = peopleOf(found.data?.pages);
   return (
     <div>
@@ -115,6 +118,7 @@ export function AssigneePicker({
   onClose,
   project,
   issue,
+  issueType,
   assigned,
   onChange,
 }: AssigneePickerProps) {
@@ -132,6 +136,7 @@ export function AssigneePicker({
         <Inside
           project={project}
           issue={issue}
+          issueType={issueType}
           assigned={assigned}
           onChange={onChange}
           onClose={onClose}

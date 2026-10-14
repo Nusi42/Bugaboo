@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { issueTypeLinesOf, useIssueTypes } from "../issue-types/index.ts";
+import { mayOpenProjectPage, projectPages } from "../../shared/project-pages.ts";
 import { useProject } from "../projects/index.ts";
 import type { FormDraft } from "./find-new-issue-draft.ts";
 import { emptyForm, hasWriting, type NewIssueValues } from "./new-issue-form.ts";
@@ -24,6 +25,8 @@ export interface NewIssueValuesState {
   readonly project: { readonly name: string; readonly shortName: string } | undefined;
   readonly types: readonly { readonly id: string; readonly name: string }[];
   readonly values: NewIssueValues;
+  /** The person may change the layout of the form of this project (*Customize this form*). */
+  readonly canCustomize: boolean;
   readonly change: (values: NewIssueValues) => void;
   /** The draft found for this project, until it is used or thrown away. */
   readonly offered: FormDraft | null;
@@ -56,6 +59,7 @@ export function useNewIssueValues(): NewIssueValuesState {
     address,
     types,
     values,
+    canCustomize: found !== undefined && mayOpenProjectPage(projectPages.layouts, found),
     change,
     project:
       found === undefined

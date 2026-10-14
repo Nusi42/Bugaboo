@@ -3,6 +3,8 @@ import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tansta
 import {
   issueAddress,
   issuePanelAddress,
+  layoutsAddress,
+  type LayoutsOpen,
   paths,
   projectIssuesAddress,
   routeParam,
@@ -77,6 +79,67 @@ export const labelsRoute = createRoute({
           }}
         />
       </OnlyWith>
+    );
+  },
+});
+
+const OrganizationLayoutsScreen = lazyRouteComponent(
+  () => import("../features/layouts/index.ts"),
+  "OrganizationLayoutsScreen",
+);
+const ProjectLayoutsScreen = lazyRouteComponent(
+  () => import("../features/layouts/index.ts"),
+  "ProjectLayoutsScreen",
+);
+
+/** What the address of the editor of layouts says is open: the form and the issue type. */
+function layoutsSearch(search: Readonly<Record<string, unknown>>): LayoutsOpen {
+  return {
+    form: typeof search["form"] === "string" ? search["form"] : undefined,
+    type: typeof search["type"] === "string" ? search["type"] : undefined,
+  };
+}
+
+/** *Organization settings › Layouts*: the forms of the whole organization. */
+export const layoutsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.layouts,
+  validateSearch: layoutsSearch,
+  loader: loadsScreen(OrganizationLayoutsScreen),
+  component: function Layouts() {
+    const open = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return (
+      <OnlyWith path={paths.layouts}>
+        <OrganizationLayoutsScreen
+          open={layoutsSearch(open)}
+          onOpen={(_, next: LayoutsOpen) => {
+            void navigate({ href: layoutsAddress(undefined, next) });
+          }}
+        />
+      </OnlyWith>
+    );
+  },
+});
+
+/** `/p/WEB/settings/layouts`: the layouts of a project. */
+export const projectLayoutsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.projectLayouts,
+  validateSearch: layoutsSearch,
+  loader: loadsScreen(ProjectLayoutsScreen),
+  component: function ProjectLayouts() {
+    const project = useAddressPart(routeParam.project);
+    const open = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return project === undefined ? null : (
+      <ProjectLayoutsScreen
+        address={project}
+        open={layoutsSearch(open)}
+        onOpen={(shortName: string | undefined, next: LayoutsOpen) => {
+          void navigate({ href: layoutsAddress(shortName ?? project, next) });
+        }}
+      />
     );
   },
 });

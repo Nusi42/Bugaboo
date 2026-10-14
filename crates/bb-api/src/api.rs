@@ -58,6 +58,7 @@ mod groups;
 mod history;
 mod issue_types;
 mod issues;
+mod layouts;
 mod own_access;
 mod people;
 mod people_visibility;
@@ -154,6 +155,7 @@ where
         .merge(projects::routes())
         .merge(fields::routes())
         .merge(issue_types::routes())
+        .merge(layouts::routes())
         .merge(issues::routes())
         .merge(relations::routes())
         .merge(tags::routes())

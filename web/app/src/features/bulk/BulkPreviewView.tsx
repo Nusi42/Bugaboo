@@ -3,7 +3,7 @@ import { Alert, alertTone, partOf, part, type LongPreviewGroup } from "@bugaboo/
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { changeValueText } from "../../shared/change-value.ts";
-import { fieldLabel } from "../history/index.ts";
+import { fieldNameOf } from "../../shared/field-names.ts";
 import { skipText, type BulkPreview, type BulkRow } from "./bulk.ts";
 
 export interface BulkPreviewViewProps {
@@ -19,7 +19,10 @@ function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
     return detail.fields.map((change) => ({
       key: change.field,
       content: t("bulk.line-changes", {
-        field: fieldLabel(change.field, change.name),
+        field: fieldNameOf(
+          { code: change.field, name: change.name },
+          t("history.field-other", { field: change.field }),
+        ),
         after: changeValueText(change.field, change.after) ?? t("bulk.value-none"),
       }),
     }));

@@ -447,6 +447,50 @@ pub(crate) enum RelationKindRow {
     Version,
 }
 
+/// The layouts of the issue page and the new-issue form: where each is set (CFG-01, ADR-0027).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutRow {
+    #[iden = "layout"]
+    Table,
+    Id,
+    Project,
+    IssueType,
+    Kind,
+    Version,
+}
+
+/// A section of a layout.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutSectionRow {
+    #[iden = "layout_section"]
+    Table,
+    Layout,
+    Position,
+    Tab,
+    Title,
+}
+
+/// A field in a section of a layout.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutFieldRow {
+    #[iden = "layout_field"]
+    Table,
+    Layout,
+    Field,
+    Section,
+    Position,
+}
+
+/// A role a field of a layout is shown to.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutFieldRoleRow {
+    #[iden = "layout_field_role"]
+    Table,
+    Layout,
+    Field,
+    Role,
+}
+
 /// Relations between two issues, stored once from the issue that reads the forward name (ISS-04).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum RelationRow {
@@ -1018,6 +1062,30 @@ stored_tables! {
         Position => position,
         RetiredAt => retired_at,
         Version => version,
+    },
+    LayoutRow => bb_core::layout::Layout {
+        Id => id,
+        Project => project,
+        IssueType => issue_type,
+        Kind => kind,
+        Version => version,
+    },
+    LayoutSectionRow => bb_core::layout::LayoutSection {
+        Layout => layout,
+        Position => position,
+        Tab => tab,
+        Title => title,
+    },
+    LayoutFieldRow => bb_core::layout::LayoutField {
+        Layout => layout,
+        Field => field,
+        Section => section,
+        Position => position,
+    },
+    LayoutFieldRoleRow => bb_core::layout::LayoutFieldRole {
+        Layout => layout,
+        Field => field,
+        Role => role,
     },
     RelationRow => bb_core::relation::Relation {
         Id => id,
