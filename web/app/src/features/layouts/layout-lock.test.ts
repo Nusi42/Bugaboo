@@ -184,7 +184,7 @@ describe("iss_17 the edit lock on a layout", () => {
     expect(lock.snapshot().phase).toBe("mine");
   });
 
-  it("is lost when a heartbeat says the lease ran out, and stops beating", async () => {
+  it("is lost when a heartbeat says the lease ran out, and stops beating without a release", async () => {
     const { lock, beats, released } = rig(taken, ranOut);
     lock.start();
     await settle();
@@ -192,7 +192,7 @@ describe("iss_17 the edit lock on a layout", () => {
     await beat?.();
     expect(lock.snapshot()).toEqual({ phase: "lost" });
     expect(beats).toEqual([]);
-    expect(released).toEqual(["token-1"]);
+    expect(released).toEqual([]);
   });
 });
 

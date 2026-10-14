@@ -186,7 +186,8 @@ export class EditLockSession {
 
   private async ranOut(): Promise<void> {
     if (this.options.onRanOut === "lost") {
-      void this.release();
+      // A lock that ran out is no lock (ADR-0019): there is nothing to let go.
+      this.forget();
       this.options.onLost("ran-out");
       return;
     }

@@ -2,7 +2,13 @@ import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import { EditLockSession, type SessionDeps, type SessionOptions } from "./edit-lock-session.ts";
+import { LockServer } from "./lock-server-testing.ts";
 import { heldBy, settle, stillHeld, taken } from "./long-text-testing.ts";
+
+/** Neither a heartbeat nor a loss is of interest to the test. */
+function nothing(): void {
+  // Nothing to do.
+}
 
 /** A heartbeat that nobody started. */
 function idle(): Promise<unknown> {
@@ -120,7 +126,7 @@ describe("iss_17 the end of a session and what is asked of it", () => {
 });
 
 describe("iss_17 the heartbeat of a session", () => {
-  it("is_lost_and_lets_go_when_the_lease_ran_out_with_the_policy_lost", async () => {
+  it("is_lost_and_does_not_let_go_when_the_lease_ran_out_with_the_policy_lost", async () => {
     const { session, answers, beating, beat, answerWith, lost, released } = rig();
     const asking = session.take();
     answers[0]?.(taken("T"));
@@ -131,7 +137,8 @@ describe("iss_17 the heartbeat of a session", () => {
     await settle();
     expect(lost).toEqual([["ran-out", undefined]]);
     expect(beating()).toBe(0);
-    expect(released).toEqual(["T"]);
+    expect(released).toEqual([]);
+    expect(session.token).toBeUndefined();
   });
 
   it("is_told_that_the_lock_was_taken_over_and_does_not_let_go_of_it", async () => {
@@ -149,5 +156,32 @@ describe("iss_17 the heartbeat of a session", () => {
     expect(lost).toEqual([["taken-over", "p2"]]);
     expect(released).toEqual([]);
     expect(session.token).toBeUndefined();
+  });
+});
+
+describe("iss_17 an ask and the releases on their way", () => {
+  it("waits_for_a_release_that_arrives_late_and_gets_the_lock_after_it", async () => {
+    const server = new LockServer();
+    const deps: SessionDeps = {
+      take: server.take,
+      editAnyway: server.take,
+      askToFinish: () => Promise.resolve(),
+      heartbeat: () => Promise.resolve(stillHeld),
+      release: server.release,
+      startHeartbeats: () => nothing,
+      newEditorId: () => "editor-1",
+    };
+    const session = new EditLockSession(deps, { onRanOut: "lost", onLost: nothing });
+    expect((await session.take()).kind).toBe("mine");
+    // Asking again lets the lock go first; the release is still on its way.
+    const again = session.take();
+    await settle();
+    expect(server.calls).toEqual(["take", "release T"]);
+    server.arrive();
+    expect((await again).kind).toBe("mine");
+    // The release went through before the second ask: the lock is held, not taken away.
+    expect(server.calls).toEqual(["take", "release T", "take"]);
+    expect(server.held).toBe("T");
+    expect(session.token).toBe("T");
   });
 });
