@@ -194,6 +194,28 @@ export function sampleHolderIn(role: string, project: string): SamplePerson {
   );
 }
 
+/**
+ * `count` people who have the role (by the name people read) for the whole organization, in the
+ * order of the sample, without a code app and without a place where they have *No access*: they
+ * sign in with the password alone.
+ */
+export function sampleEverywhere(role: string, count: number): readonly SamplePerson[] {
+  const all = sampleRows();
+  const rows = all.filter((row) => row.project === null && row.role === role);
+  // Whoever has *No access* somewhere (Ben Hale on Android) cannot work on every issue.
+  const kept = new Set(all.filter((row) => row.role === null).map((row) => row.who));
+  const found = samplePeople().filter(
+    (person) =>
+      person.codeAppSecret === undefined &&
+      !kept.has(person.email) &&
+      rows.some((row) => row.who === person.email),
+  );
+  if (found.length < count) {
+    throw new Error(`The sample has fewer than ${String(count)} people with ${role} everywhere.`);
+  }
+  return found.slice(0, count);
+}
+
 /** A Guest who has the role in this project and no code app: signs in with the password alone. */
 export function sampleGuestIn(project: string): SamplePerson {
   return sampleHolderIn("Guest", project);
