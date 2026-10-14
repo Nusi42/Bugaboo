@@ -72,10 +72,22 @@ export class LayoutLockController {
    * a lock an older ask took is let go, so no heartbeat runs for it and no token is left behind.
    */
   readonly start = (): void => {
-    this.release();
+    const holding = this.token !== undefined;
+    const gone = this.release();
     this.closed = false;
     this.set(taking);
-    this.ask(this.deps.take);
+    // The server gives the same editor the same token again, so asking before the old token is
+    // let go of would have the release take the new lock away: ask only once it is gone.
+    const take = (editor: string) => this.deps.take(editor);
+    this.ask(
+      holding
+        ? (editor) =>
+            gone.then(
+              () => take(editor),
+              () => take(editor),
+            )
+        : take,
+    );
   };
 
   /** Asks `how` for the lock and takes the answer if nobody asked again meanwhile. */
@@ -116,27 +128,29 @@ export class LayoutLockController {
     this.stop = this.deps.startHeartbeats(async () => {
       const answer = await this.deps.heartbeat(mine);
       if (answer.lock.status !== "held" && !this.closed && asked === this.generation) {
-        this.release();
+        void this.release();
         this.set(lost);
       }
     });
   }
 
-  private release(): void {
+  /** Lets go of the lock that is held, if any; settles when the server has answered. */
+  private release(): Promise<void> {
     this.stop?.();
     this.stop = undefined;
     const held = this.token;
     this.token = undefined;
-    if (held !== undefined) {
-      void this.deps.release(held);
+    if (held === undefined) {
+      return Promise.resolve();
     }
+    return this.deps.release(held);
   }
 
   /** The editor is closed: the heartbeat stops and the lock is let go. */
   readonly dispose = (): void => {
     this.closed = true;
     this.generation += 1;
-    this.release();
+    void this.release();
   };
 
   /** *Edit anyway*: the lock becomes the caller's. */

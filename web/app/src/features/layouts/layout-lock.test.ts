@@ -89,12 +89,69 @@ function slowRig() {
   };
 }
 
+/** The calls of a lock that a test does not look at. */
+const quiet = {
+  editAnyway: () => Promise.resolve(taken),
+  askToFinish: () => Promise.resolve(),
+  heartbeat: () => Promise.resolve(stillHeld),
+  newEditorId: () => "editor-1",
+  nameOf: () => "Ada",
+};
+
+/** A lock whose release answers only when the test says so, and the order of its calls. */
+function orderRig() {
+  const calls: string[] = [];
+  const answers: (() => void)[] = [];
+  let beats = 0;
+  const deps: LockDeps = {
+    ...quiet,
+    take: () => {
+      calls.push("take");
+      return Promise.resolve(taken);
+    },
+    release: () => {
+      calls.push("release");
+      return new Promise<void>((done) => {
+        answers.push(done);
+      });
+    },
+    startHeartbeats: () => {
+      beats += 1;
+      return () => {
+        beats -= 1;
+      };
+    },
+  };
+  return {
+    lock: new LayoutLockController(deps),
+    calls,
+    answers,
+  };
+}
+
 /** Lets the answers of the doubles arrive. */
 async function settle(): Promise<void> {
   await new Promise<void>((done) => {
     setTimeout(done, 0);
   });
 }
+
+describe("iss_17 asking for the lock after one is held", () => {
+  it("asks for the lock again only after the old token is let go of", async () => {
+    // The server hands the same editor the same token, so a release that arrives after the new
+    // ask would take the new lock away.
+    const { lock, calls, answers } = orderRig();
+    lock.start();
+    await settle();
+    lock.start();
+    await settle();
+    expect(calls).toEqual(["take", "release"]);
+    answers.shift()?.();
+    await settle();
+    expect(calls).toEqual(["take", "release", "take"]);
+    expect(lock.snapshot()).toEqual({ phase: "mine", token: "token-1" });
+  });
+});
 
 describe("iss_17 the edit lock on a layout", () => {
   it("is mine when it is free, and is let go when the editor closes", async () => {

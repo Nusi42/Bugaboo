@@ -6,7 +6,7 @@ import { addressInProject, paths } from "../../src/shared/paths.ts";
 import { roleId, roleName, setFieldLevel, signedInAdmin } from "./access.ts";
 import { ada } from "./accounts.ts";
 import { anotherBrowser, signIn } from "./flows.ts";
-import { prepareWeb } from "./issues.ts";
+import { firstIssueType, prepareWeb } from "./issues.ts";
 import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 
@@ -34,11 +34,15 @@ export async function prepareLayouts(server: Instance): Promise<void> {
   await admin.dispose();
 }
 
-/** The layout of the new-issue form of the project WEB, as the editor reads it. */
-async function webEditor(admin: ApiSession): Promise<Schema<"LayoutEditorBody">> {
+/**
+ * The layout of the new-issue form of the project WEB for the issue type *Bug* (the type that the
+ * new-issue dialog starts with, so the place that *Customize this form* makes a layout for), as
+ * the editor reads it.
+ */
+async function webEditor(admin: ApiSession, bug: string): Promise<Schema<"LayoutEditorBody">> {
   return dataOf(
     await admin.client.GET("/api/v1/layouts/editor", {
-      params: { query: { kind: "new-issue", project: "WEB" } },
+      params: { query: { kind: "new-issue", project: "WEB", issue_type: bug } },
     }),
   );
 }
@@ -48,7 +52,7 @@ function kept(field: Schema<"EditorFieldBody">) {
   return { field: field.field, roles: [...field.roles] };
 }
 
-/** Takes the layout of the project WEB away: the project uses the layout it inherits again. */
+/** Takes the layout of the form of *Bug* in the project WEB away: it uses the layout it inherits again. */
 async function removeLayoutOfWeb(admin: ApiSession, editor: Schema<"LayoutEditorBody">) {
   if (editor.layout !== undefined && editor.layout !== null) {
     dataOf(
@@ -59,7 +63,7 @@ async function removeLayoutOfWeb(admin: ApiSession, editor: Schema<"LayoutEditor
   }
 }
 
-/** Saves the layout of the project WEB with *Due date* (for every role) at the end of the first section. */
+/** Saves the layout of *Bug* in the project WEB with *Due date* (for every role) at the end of the first section. */
 async function putDueDateInFirstSection(
   admin: ApiSession,
   editor: Schema<"LayoutEditorBody">,
@@ -100,21 +104,24 @@ async function putDueDateInFirstSection(
 /**
  * Brings the new-issue form of the project WEB to the state a test starts from, through the API,
  * so that no test depends on what another one did: with `customized` the project has a layout of
- * its own with *Due date* in the first section (what the lead makes in the first test); with
- * `inherited` the project has no layout of its own and uses the one it inherits.
+ * its own for *Bug* with *Due date* in the first section (what the lead makes in the first test);
+ * with `inherited` the form of *Bug* has no layout of its own and uses the one it inherits.
  */
 export async function setLayoutOfWeb(
   server: Instance,
   state: "customized" | "inherited",
 ): Promise<void> {
   const admin = await signedInAdmin(server);
-  let editor = await webEditor(admin);
+  const bug = await firstIssueType(admin);
+  let editor = await webEditor(admin, bug);
   if (state === "inherited") {
     await removeLayoutOfWeb(admin, editor);
   } else {
     if (editor.layout === undefined || editor.layout === null) {
       editor = dataOf(
-        await admin.client.POST("/api/v1/layouts", { body: { kind: "new-issue", project: "WEB" } }),
+        await admin.client.POST("/api/v1/layouts", {
+          body: { kind: "new-issue", project: "WEB", issue_type: bug },
+        }),
       );
     }
     const due = editor.available.find((field) => field.name === dueDate);
