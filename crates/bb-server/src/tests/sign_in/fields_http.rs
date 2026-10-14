@@ -1092,6 +1092,22 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
     .await
 }
 
+/// The lock on the text of an own field of an issue; the answer that took it.
+async fn take_notes_lock(ada: &mut Browser, id: &str, field: &str) -> Result<Reply, Failure> {
+    let taken = ada
+        .send(
+            "POST",
+            "/api/v1/edit-locks",
+            Some(json!({
+                "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
+                "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
+            })),
+        )
+        .await?;
+    assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+    Ok(taken)
+}
+
 /// A long text own field *Notes* and an issue with it, with the lock on that text taken by this
 /// browser: the field, the issue as made, its readable ID and the answer that took the lock.
 async fn locked_notes(
@@ -1109,17 +1125,7 @@ async fn locked_notes(
         id_of(&made)?,
         made["key"].as_str().ok_or("no key")?.to_owned(),
     );
-    let taken = ada
-        .send(
-            "POST",
-            "/api/v1/edit-locks",
-            Some(json!({
-                "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
-                "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
-            })),
-        )
-        .await?;
-    assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+    let taken = take_notes_lock(ada, &id, &field).await?;
     Ok((field, made, key, taken))
 }
 
@@ -1209,6 +1215,46 @@ async fn adr_0019_a_change_of_another_field_does_not_refuse_a_long_own_field() -
             .await?;
         assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
         assert_eq!(saved.body["title"], "Renamed");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0019_a_stale_version_refuses_a_long_own_field_whose_text_changed() -> TestResult {
+    each_database("adr_0019_long_text_stale", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (field, made, key, taken) = locked_notes(&site, &mut ada).await?;
+        let path = format!("{ISSUES}/{key}/fields/{field}/text");
+        // The text itself changes meanwhile (the save lets the lock go).
+        let first = ada
+            .send(
+                "PUT",
+                &path,
+                Some(json!({
+                    "version": made["version"],
+                    "lock_token": taken.body["lock_token"],
+                    "text": "First",
+                })),
+            )
+            .await?;
+        assert_eq!(first.status, StatusCode::OK, "{}", first.body);
+        let id = id_of(&made)?;
+        let again = take_notes_lock(&mut ada, &id, &field).await?;
+        let stale = ada
+            .send(
+                "PUT",
+                &path,
+                Some(json!({
+                    "version": made["version"],
+                    "lock_token": again.body["lock_token"],
+                    "text": "My text",
+                })),
+            )
+            .await?;
+        assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
+        assert_eq!(stale.code(), "edit.version_changed");
         Ok(())
     })
     .await
