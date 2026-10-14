@@ -44,6 +44,7 @@ mod matrix;
 mod own_access_http;
 mod passkeys;
 mod people_http;
+mod perf_queries;
 mod permissions_http;
 mod policy;
 mod policy_probes;

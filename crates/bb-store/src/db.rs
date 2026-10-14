@@ -8,6 +8,8 @@
 
 use std::future::Future;
 use std::str::FromStr as _;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use bb_core::event::DomainEvent;
@@ -124,6 +126,10 @@ enum Pool {
 #[derive(Clone, Debug)]
 pub struct Database {
     pool: Pool,
+    /// How many statements this database has run (all clones share it): the tests of PERF-05 read
+    /// it before and after a request to see that a read runs as many statements for a busy
+    /// issue as for a bare one.
+    statements: Arc<AtomicU64>,
 }
 
 impl Database {
@@ -150,7 +156,10 @@ impl Database {
         } else {
             return Err(StoreError::UnsupportedDatabase);
         };
-        Ok(Self { pool })
+        Ok(Self {
+            pool,
+            statements: Arc::default(),
+        })
     }
 
     /// Opens the SQLite database in `file` (made if missing), the built-in database of the data
@@ -163,6 +172,7 @@ impl Database {
         make_private_file(file)?;
         Ok(Self {
             pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
+            statements: Arc::default(),
         })
     }
 
@@ -173,6 +183,13 @@ impl Database {
             Pool::Sqlite(_) => Dialect::Sqlite,
             Pool::Postgres(_) => Dialect::Postgres,
         }
+    }
+
+    /// How many statements this database has run since it was opened: a counter for the tests of
+    /// PERF-05 (no N+1 queries). Statements that change the schema or take a lock are not counted.
+    #[must_use]
+    pub fn statements_run(&self) -> u64 {
+        self.statements.load(Ordering::Relaxed)
     }
 
     /// Closes all connections.
@@ -215,6 +232,7 @@ impl Database {
     pub(crate) async fn begin(&self) -> Result<Transaction, StoreError> {
         Ok(Transaction {
             follow_ups: Vec::new(),
+            statements: Arc::clone(&self.statements),
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin_with("BEGIN IMMEDIATE").await?),
                 Pool::Postgres(pool) => TxInner::Postgres(pool.begin().await?),
@@ -228,6 +246,7 @@ impl Database {
     pub(crate) async fn begin_read(&self) -> Result<Transaction, StoreError> {
         Ok(Transaction {
             follow_ups: Vec::new(),
+            statements: Arc::clone(&self.statements),
             inner: match &self.pool {
                 Pool::Sqlite(pool) => TxInner::Sqlite(pool.begin().await?),
                 Pool::Postgres(pool) => TxInner::Postgres(
@@ -243,6 +262,7 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
+        self.statements.fetch_add(1, Ordering::Relaxed);
         Connection::Pool(&self.pool).execute(statement.into()).await
     }
 
@@ -251,6 +271,7 @@ impl Database {
         &self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
+        self.statements.fetch_add(1, Ordering::Relaxed);
         Connection::Pool(&self.pool)
             .fetch_all(statement.into())
             .await
@@ -389,6 +410,8 @@ pub(crate) enum LockClass {
 /// outbox entry. A transaction that is dropped without `commit` is rolled back.
 pub struct Transaction {
     inner: TxInner,
+    /// The counter of the statements of the database this transaction belongs to.
+    statements: Arc<AtomicU64>,
     /// Events the change adds besides its own; `record_change` appends them after the event of
     /// the change, so the lock on the outbox stays the last lock of the transaction.
     pub(crate) follow_ups: Vec<DomainEvent>,
@@ -416,6 +439,7 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<u64, StoreError> {
+        self.statements.fetch_add(1, Ordering::Relaxed);
         Connection::Transaction(&mut self.inner)
             .execute(statement.into())
             .await
@@ -426,6 +450,7 @@ impl Transaction {
         &mut self,
         statement: impl Into<Statement<'a>>,
     ) -> Result<Vec<Row>, StoreError> {
+        self.statements.fetch_add(1, Ordering::Relaxed);
         Connection::Transaction(&mut self.inner)
             .fetch_all(statement.into())
             .await

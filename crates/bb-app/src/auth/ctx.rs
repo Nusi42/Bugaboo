@@ -108,6 +108,7 @@ impl<S> AuthServices<S> {
             evaluations: Mutex::default(),
             via_key: AtomicBool::new(false),
             image_hosts: Mutex::default(),
+            known: Known::default(),
             acting: None,
             reason: Mutex::default(),
         }
@@ -137,6 +138,24 @@ impl<S> AuthServices<S> {
 /// The evaluations a request has made, by person and place.
 pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;
 
+/// What a request looks up once. A page of comments names the same few people, handles and issues
+/// again and again; the context remembers the answers for the length of the request (and no
+/// longer), so a page runs as many statements for forty comments as for four.
+#[derive(Default)]
+pub(crate) struct Known {
+    /// The people looked up by ID; `None` for a person who is not there.
+    pub(crate) people: Mutex<HashMap<UserId, Option<bb_core::person::Person>>>,
+    /// What the handle of a mention named, for a reader of an issue at a level of *Mentions*.
+    pub(crate) handles: Mutex<
+        HashMap<
+            (bb_core::id::IssueId, bb_core::access::PeopleLevel, String),
+            Option<crate::comments::Named>,
+        >,
+    >,
+    /// Whether a reader sees the issue an ID in a text names.
+    pub(crate) issue_ids: Mutex<HashMap<(UserId, String), bool>>,
+}
+
 /// The services plus the request, which is what a use case takes.
 ///
 /// The context lives for one request. It holds the evaluations of the policy engine made during
@@ -152,6 +171,9 @@ pub struct Ctx<'a, S> {
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,
+    /// What the request has looked up once and is asked for again for every comment of a page
+    /// (PERF-05): people by ID, what a handle names, whether an issue ID in a text is shown.
+    pub(crate) known: Known,
     /// The person a background job makes its changes as; none for a request, which has a session or
     /// an access key to tell who asks.
     pub(crate) acting: Option<ActingPerson>,
