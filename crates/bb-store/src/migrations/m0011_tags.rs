@@ -207,10 +207,7 @@ fn runs() -> Vec<Step> {
     vec![Step::Table(
         Table::create()
             .table(BulkRunRow::Table)
-            .col(
-                id_column(BulkRunRow::Id)
-                    .primary_key(),
-            )
+            .col(id_column(BulkRunRow::Id).primary_key())
             // No reference to the person: a removed person leaves a tombstone (PRIV-04).
             .col(id_column(BulkRunRow::Person))
             .col(ColumnDef::new(BulkRunRow::Action).text().not_null())
