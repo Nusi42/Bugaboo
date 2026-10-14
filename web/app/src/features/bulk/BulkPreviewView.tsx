@@ -19,10 +19,7 @@ function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
     return detail.fields.map((change) => ({
       key: change.field,
       content: t("bulk.line-changes", {
-        field: fieldNameOf(
-          { code: change.field, name: change.name },
-          t("history.field-other", { field: change.field }),
-        ),
+        field: fieldNameOf({ code: change.field, name: change.name }),
         after: changeValueText(change.field, change.after) ?? t("bulk.value-none"),
       }),
     }));

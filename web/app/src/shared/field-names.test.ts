@@ -24,10 +24,6 @@ describe("fieldNameOf", () => {
     expect(fieldNameOf({ code: "project" })).toBe("Project");
   });
 
-  it("gives the fallback text of the caller for a field this version does not know", () => {
-    expect(fieldNameOf({ code: "from-the-future" }, "Other")).toBe("Other");
-  });
-
   it("gives the code of a field this version does not know", () => {
     expect(fieldNameOf({ code: "from-the-future" })).toBe("from-the-future");
   });

@@ -1,5 +1,6 @@
 import { priorityWords, statusWords } from "@bugaboo/api-client";
 
+import { wordOf } from "../../shared/present.ts";
 import type { ProjectChoice } from "../fields/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
 import { bulkKind, type BulkKind, type NewBulkAction } from "./bulk.ts";
@@ -27,11 +28,6 @@ export const emptyDraft: Draft = {
   relation: NONE,
   other: "",
 };
-
-/** The word of the list that the text is, or nothing. */
-function wordOf<Word extends string>(words: readonly Word[], text: string): Word | undefined {
-  return words.find((word) => word === text);
-}
 
 /** The request of a change of status or priority; nothing while both are left as they are. */
 function changeOf(draft: Draft): NewBulkAction | null {

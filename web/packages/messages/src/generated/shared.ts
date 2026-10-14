@@ -306,6 +306,7 @@ export const messages = {
   "issue-field.parent": "Part of",
   "issue-field.sub-issue": "Sub-issue",
   "issue-field.project": "Project",
+  "field.unknown-name": "{field}",
   "people-kind.assigned-to": "Assigned to",
   "people-kind.reported-by": "Reported by",
   "people-kind.last-changed-by": "Last changed by",
@@ -369,7 +370,6 @@ export const messages = {
   "issue-type.goal": "Goal",
   "nav.relation-kinds": "Kinds of relation",
   "history.tabs": "What to show",
-  "history.field-other": "{field}",
   "history.people-none": "nobody",
   "error.issue.parent-circle":
     "That would make a circle of issues or a chain that is too long. Choose another issue.",

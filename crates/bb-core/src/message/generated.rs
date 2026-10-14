@@ -4992,6 +4992,15 @@ pub fn field_permissions_project_title(project: impl std::fmt::Display) -> Messa
     )
 }
 
+/// The message `field.unknown-name`.
+#[must_use]
+pub fn field_unknown_name(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("field.unknown-name"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
 /// The message `fields.choice-color`.
 #[must_use]
 pub fn fields_choice_color(name: impl std::fmt::Display) -> Message {
@@ -5334,15 +5343,6 @@ pub fn history_cleared(field: impl std::fmt::Display, who: impl std::fmt::Displa
             ("field", Value::Text(field.to_string())),
             ("who", Value::Text(who.to_string())),
         ],
-    )
-}
-
-/// The message `history.field-other`.
-#[must_use]
-pub fn history_field_other(field: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("history.field-other"),
-        vec![("field", Value::Text(field.to_string()))],
     )
 }
 
@@ -8521,6 +8521,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "field.password-help",
         "At least 12 characters. A few words in a row make a good password.",
     ),
+    ("field.unknown-name", "{field}"),
     ("fields.add-choice", "New choice"),
     ("fields.add-choice-button", "Add the choice"),
     ("fields.back", "Back to all fields"),
@@ -8807,7 +8808,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
-    ("history.field-other", "{field}"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),

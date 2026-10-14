@@ -85,10 +85,7 @@ export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | 
 /** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
 export function changeSentence(entry: HistoryEntry): string {
   const who = whoOf(entry);
-  const field = fieldNameOf(
-    { code: entry.field ?? "", name: entry.field_name },
-    t("history.field-other", { field: entry.field ?? "" }),
-  );
+  const field = fieldNameOf({ code: entry.field ?? "", name: entry.field_name });
   const before = sideOf(entry, "before");
   const after = sideOf(entry, "after");
   if (before !== undefined && after !== undefined) {

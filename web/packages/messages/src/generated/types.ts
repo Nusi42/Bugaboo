@@ -139,6 +139,7 @@ export interface MessageArguments {
   "data-folder.unknown": { part: string | number; path: string | number };
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.project-title": { project: string | number };
+  "field.unknown-name": { field: string | number };
   "fields.choice-color": { name: string | number };
   "fields.choice-down": { name: string | number };
   "fields.choice-drag": { name: string | number };
@@ -178,7 +179,6 @@ export interface MessageArguments {
   };
   "history.changed-long-text": { field: string | number; who: string | number };
   "history.cleared": { field: string | number; who: string | number };
-  "history.field-other": { field: string | number };
   "history.relation-added": { issue: string | number; name: string | number; who: string | number };
   "history.relation-removed": {
     issue: string | number;
