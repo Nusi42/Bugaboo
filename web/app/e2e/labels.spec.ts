@@ -73,7 +73,7 @@ test("tag_01 a tag is made by adding it to an issue and found on the page of tag
   ).toBeVisible();
 });
 
-test("tag_02 renaming a label shows which issues change before it is saved", async ({
+test("tag_03 renaming a label shows which issues change before it is saved", async ({
   page,
   server,
 }) => {
@@ -102,14 +102,14 @@ test("tag_02 renaming a label shows which issues change before it is saved", asy
   ).toBeVisible();
 });
 
-test("tag_03 the page of labels and tags is good in every theme", async ({ page }) => {
+test("tag_02 the page of labels and tags is good in every theme", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(paths.labels);
   await expect(listNamed(page, t("labels.tags-search"))).toBeVisible();
   await expectGoodInEveryLook(page);
 });
 
-test("tag_03 a person who may not look after labels does not find the page", async ({ page }) => {
+test("tag_02 a person who may not look after labels does not find the page", async ({ page }) => {
   await signIn(page, bob);
   await page.goto(paths.labels);
   await expect(
