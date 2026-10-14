@@ -365,6 +365,22 @@ impl EditStore for AuthStorage {
             .await
     }
 
+    async fn field_changed_since(
+        &self,
+        record: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        Ok(self
+            .database()
+            .latest_event_about_where(record, |event| {
+                event.version_after().is_some_and(|after| after > version)
+                    && event.changes.iter().any(|change| change.field == field)
+            })
+            .await?
+            .is_some())
+    }
+
     async fn take_edit_notices(
         &self,
         recipient: UserId,

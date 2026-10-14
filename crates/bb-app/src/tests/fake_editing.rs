@@ -107,6 +107,19 @@ impl EditStore for FakeStore {
             .cloned())
     }
 
+    async fn field_changed_since(
+        &self,
+        record: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<bool, FakeError> {
+        Ok(self.lock().events.iter().any(|event| {
+            event.entity == *record
+                && event.version_after().is_some_and(|after| after > version)
+                && event.changes.iter().any(|change| change.field == field)
+        }))
+    }
+
     async fn take_edit_notices(
         &self,
         recipient: UserId,

@@ -1156,3 +1156,54 @@ async fn cf_01_a_long_text_own_field_is_saved_under_its_lock_and_comes_back_as_h
     })
     .await
 }
+
+#[tokio::test]
+async fn adr_0019_a_change_of_another_field_does_not_refuse_a_long_own_field() -> TestResult {
+    each_database("adr_0019_long_text_other_field", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let notes = make_field(
+            &mut ada,
+            json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
+        )
+        .await?;
+        let field = id_of(&notes)?;
+        let made = ok(&site.make(&mut ada, "Has notes").await?)?.clone();
+        let (id, key) = (id_of(&made)?, made["key"].as_str().ok_or("no key")?.to_owned());
+        let taken = ada
+            .send(
+                "POST",
+                "/api/v1/edit-locks",
+                Some(json!({
+                    "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
+                    "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
+                })),
+            )
+            .await?;
+        assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+        // Somebody renames the issue while the text is being written: the version counts up.
+        let renamed = ada
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{key}"),
+                Some(json!({"version": made["version"], "title": "Renamed"})),
+            )
+            .await?;
+        assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.body);
+        let saved = ada
+            .send(
+                "PUT",
+                &format!("{ISSUES}/{key}/fields/{field}/text"),
+                Some(json!({
+                    "version": made["version"],
+                    "lock_token": taken.body["lock_token"],
+                    "text": "Steps",
+                })),
+            )
+            .await?;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+        assert_eq!(saved.body["title"], "Renamed");
+        Ok(())
+    })
+    .await
+}

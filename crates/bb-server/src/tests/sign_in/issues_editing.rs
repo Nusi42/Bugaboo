@@ -161,14 +161,15 @@ async fn ux_06_the_box_learns_who_is_editing_before_the_first_key() -> TestResul
 }
 
 #[tokio::test]
-async fn adr_0019_a_stale_version_gets_the_structured_answer_and_the_text_is_kept() -> TestResult {
-    each_database("adr_0019_issue_stale", async |db| {
+async fn adr_0019_a_change_of_another_field_does_not_refuse_the_text() -> TestResult {
+    each_database("adr_0019_other_field", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let made = site.make(&mut ada, "Stale").await?;
+        let made = site.make(&mut ada, "Other field").await?;
         let (id, key) = ids_of(ok(&made)?)?;
         let token = lock(&mut ada, &id).await?;
-        // Somebody changes the priority meanwhile.
+        // Somebody changes the priority meanwhile: the version of the issue counts up, the text is
+        // not what they changed.
         let other = ada
             .send(
                 "PATCH",
@@ -177,17 +178,52 @@ async fn adr_0019_a_stale_version_gets_the_structured_answer_and_the_text_is_kep
             )
             .await?;
         assert_eq!(other.status, StatusCode::OK);
-        let stale = ada
+        let saved = ada
             .send(
                 "PUT",
                 &format!("{ISSUES}/{key}/description"),
                 Some(json!({"version": 1, "lock_token": token, "text": "My text"})),
             )
             .await?;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+        assert_eq!(saved.body["version"], 3);
+        assert_eq!(saved.body["description"], "My text");
+        assert_eq!(saved.body["priority"], "high");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0019_a_stale_version_gets_the_structured_answer_and_the_text_is_kept() -> TestResult {
+    each_database("adr_0019_issue_stale", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let made = site.make(&mut ada, "Stale").await?;
+        let (id, key) = ids_of(ok(&made)?)?;
+        let path = format!("{ISSUES}/{key}/description");
+        let token = lock(&mut ada, &id).await?;
+        // The text itself changes meanwhile (the first save lets the lock go).
+        let first = ada
+            .send(
+                "PUT",
+                &path,
+                Some(json!({"version": 1, "lock_token": token, "text": "First"})),
+            )
+            .await?;
+        assert_eq!(first.status, StatusCode::OK, "{}", first.body);
+        let token = lock(&mut ada, &id).await?;
+        let stale = ada
+            .send(
+                "PUT",
+                &path,
+                Some(json!({"version": 1, "lock_token": token, "text": "My text"})),
+            )
+            .await?;
         assert_eq!(stale.status, StatusCode::CONFLICT);
         assert_eq!(stale.code(), "edit.version_changed");
         assert_eq!(stale.body["conflict"]["version"], 2);
-        assert_eq!(stale.body["conflict"]["fields"], json!(["priority"]));
+        assert_eq!(stale.body["conflict"]["fields"], json!(["description"]));
         let draft = ada
             .send(
                 "GET",

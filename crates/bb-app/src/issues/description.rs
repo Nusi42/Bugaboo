@@ -65,9 +65,14 @@ pub async fn save_description<S: AuthStore>(
             after: Some(json!(text)),
         });
     }
-    changes.push(counted_up(input.version));
     let id = current.id;
     let record = entity(RecordKind::Issue, id);
+    // The lock covers the text only: a change of another field since the person started is no
+    // conflict, so the text goes on the version the issue has now.
+    let version = ctx
+        .version_for_text(&record, member::DESCRIPTION, input.version, current.version)
+        .await?;
+    changes.push(counted_up(version));
     let event = ctx.event(by(actor.person.id), record.clone(), changes)?;
     let what = EditWhat {
         record,
@@ -80,7 +85,6 @@ pub async fn save_description<S: AuthStore>(
         text,
         version: input.version,
     };
-    let version = input.version;
     let written = next.clone();
     ctx.save_text(
         actor.person.id,

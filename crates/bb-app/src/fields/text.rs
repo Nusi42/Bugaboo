@@ -139,7 +139,17 @@ pub async fn save_field_text<S: AuthStore>(
             .refused_keeping_draft(&actor, &save, violation.error().into())
             .await);
     }
-    if current.version != input.version {
+    // The lock covers the text only: a change of another field since the person started is no
+    // conflict (`version_for_text`); a change of this text is.
+    let version = ctx
+        .version_for_text(
+            &entity(RecordKind::Issue, current.id),
+            &key.code(),
+            input.version,
+            current.version,
+        )
+        .await?;
+    if current.version != version {
         let stale = AppError::stale(
             entity(RecordKind::Issue, current.id),
             Place::Project(current.project),

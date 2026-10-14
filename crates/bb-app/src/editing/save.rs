@@ -5,12 +5,12 @@
 
 use bb_core::ErrorCode;
 use bb_core::edit::{DRAFT_KEPT_BY, DraftTarget, EditWhat, Hold};
-use bb_core::event::DomainEvent;
+use bb_core::event::{DomainEvent, EntityRef};
 use bb_core::id::{LockToken, UserId};
 use bb_policy::Place;
 
 use super::types::DraftText;
-use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, internal};
 use crate::ports::BoxFuture;
 use crate::projects::Why;
 
@@ -36,6 +36,33 @@ pub enum Written<T> {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The version a long text is written against. A lock covers only the text, so a change of
+    /// another field of the record since the person started (`sent` is older than `current`) does
+    /// not refuse the save: the text goes on the version now. When the text itself (`field`) was
+    /// changed since, `sent` is returned, and the write finds the record at another version and
+    /// refuses the save as stale (`edit.version_changed`). The write still compares the version
+    /// it is given, so a change that lands after this look is refused too (ARCH-VERSIONED).
+    ///
+    /// # Errors
+    /// The error of the store.
+    pub async fn version_for_text(
+        &self,
+        record: &EntityRef,
+        field: &str,
+        sent: i64,
+        current: i64,
+    ) -> Result<i64, AppError> {
+        if sent >= current {
+            return Ok(sent);
+        }
+        let changed = self
+            .store()
+            .field_changed_since(record, field, sent)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        Ok(if changed { sent } else { current })
+    }
+
     /// Saves a long text: inside one change it checks that the lock is still the editor's, runs
     /// `write` (which writes the record and says whether the record was still at the version the
     /// person started from; any other trouble is its own error), lets go of the lock and deletes
