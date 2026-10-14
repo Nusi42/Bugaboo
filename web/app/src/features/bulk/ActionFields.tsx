@@ -1,8 +1,8 @@
-import { priorityWords, statusWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { SelectField, TextField, partOf, part } from "@bugaboo/ui";
 
 import { ProjectsToUse } from "../fields/index.ts";
+import { priorityChoices, statusChoices } from "../issues/index.ts";
 import { useLabels } from "../labels/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
 import { bulkKind, type BulkKind } from "./bulk.ts";
@@ -16,14 +16,10 @@ export interface ActionFieldsProps {
   readonly relations: readonly RelationChoice[];
 }
 
-const statusChoices = [
-  { value: NONE, label: t("bulk.keep") },
-  ...statusWords.map((word) => ({ value: word, label: t(`status.${word}`) })),
-];
-const priorityChoices = [
-  { value: NONE, label: t("bulk.keep") },
-  ...priorityWords.map((word) => ({ value: word, label: t(`priority.${word}`) })),
-];
+/** What a pick of status or priority starts with: leave the field as it is. */
+const keep = { value: NONE, label: t("bulk.keep") };
+const statusOrKeep = [keep, ...statusChoices];
+const priorityOrKeep = [keep, ...priorityChoices];
 
 /** *Change status or priority*: what to set; a field left as it is stays as it is. */
 function ChangeFields({ draft, onDraft }: ActionFieldsProps) {
@@ -31,7 +27,7 @@ function ChangeFields({ draft, onDraft }: ActionFieldsProps) {
     <>
       <SelectField
         label={t("bulk.field-status")}
-        choices={statusChoices}
+        choices={statusOrKeep}
         value={draft.status}
         onChange={(status) => {
           onDraft({ ...draft, status });
@@ -39,7 +35,7 @@ function ChangeFields({ draft, onDraft }: ActionFieldsProps) {
       />
       <SelectField
         label={t("bulk.field-priority")}
-        choices={priorityChoices}
+        choices={priorityOrKeep}
         value={draft.priority}
         onChange={(priority) => {
           onDraft({ ...draft, priority });
