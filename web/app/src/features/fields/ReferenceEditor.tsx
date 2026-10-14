@@ -5,7 +5,7 @@ import { usePermissions } from "../../shared/use-me.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
 import { GroupChoice } from "./OtherChoices.tsx";
 import { PeopleChoice } from "./PeopleChoice.tsx";
-import { type Picked, idsOf, picksOf } from "../../shared/reference.ts";
+import { type Picked, forApi, picksOf } from "../../shared/reference.ts";
 import { ValueView } from "./ValueView.tsx";
 import type { ValueEditorProps } from "./ValueEditor.tsx";
 
@@ -14,7 +14,8 @@ import type { ValueEditorProps } from "./ValueEditor.tsx";
  * value without names (a draft kept before the form held them) says how many there are.
  */
 function Chosen({ field, value }: Pick<ValueEditorProps, "field" | "value">) {
-  if (picksOf(value).length > 0 && picksOf(value).every((pick) => pick.name !== "")) {
+  const picks = picksOf(value);
+  if (picks.length > 0 && picks.every((pick) => pick.name !== "")) {
     return <ValueView field={field} value={value} />;
   }
   const count = Array.isArray(value) ? value.length : Number(value !== undefined && value !== null);
@@ -35,7 +36,7 @@ export function ReferenceEditor({
   const hasValue = value !== undefined && value !== null && field.rules.required !== true;
   // On the form the picks go on with their names; on an issue the server gets their IDs.
   const commit = (picks: readonly Picked[] | Picked | null): void => {
-    onCommit(live ? picks : idsOf(picks));
+    onCommit(live ? picks : forApi(picks));
   };
   return (
     <div {...partOf(part.stack)}>

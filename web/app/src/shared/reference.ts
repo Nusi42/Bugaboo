@@ -21,15 +21,12 @@ export function isPicked(value: unknown): value is Picked {
   return typeof memberOf(value, "id") === "string" && typeof memberOf(value, "name") === "string";
 }
 
-/** The IDs of what was picked, as an issue takes them: one ID for one thing, a list for several. */
-export function idsOf(picks: readonly Picked[] | Picked | null): string | readonly string[] | null {
-  if (picks === null) {
-    return null;
-  }
-  return isPicked(picks) ? picks.id : picks.map((each) => each.id);
-}
-
-/** What a field of the form of a new issue holds for the API: things picked become their IDs. */
+/**
+ * What a field of the form of a new issue holds for the API: things picked become their IDs (one
+ * ID for one thing, a list for several), anything else stays as it is.
+ */
+export function forApi(picks: readonly Picked[] | Picked | null): string | readonly string[] | null;
+export function forApi(value: unknown): unknown;
 export function forApi(value: unknown): unknown {
   if (isPicked(value)) {
     return value.id;
@@ -51,14 +48,5 @@ export function picksOf(value: unknown): readonly Picked[] {
       return [];
     }
     return [{ id, name: typeof name === "string" ? name : typeof key === "string" ? key : "" }];
-  });
-}
-
-/** The IDs a value of a person, people, group or issue field names, as the server showed them. */
-export function referenceIds(value: unknown): readonly string[] {
-  const each: readonly unknown[] = Array.isArray(value) ? value : [value];
-  return each.flatMap((one) => {
-    const id = memberOf(one, "id");
-    return typeof id === "string" ? [id] : [];
   });
 }

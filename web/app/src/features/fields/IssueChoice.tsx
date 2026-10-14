@@ -25,7 +25,7 @@ export function IssueChoice({ field, onCommit }: OtherChoiceProps) {
         return;
       }
       setProblem(undefined);
-      onCommit({ id, name: key.trim() });
+      onCommit({ id, name: found.issue.key ?? key.trim() });
       done();
     } catch (error) {
       setProblem(messageOf(error));
