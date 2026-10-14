@@ -165,3 +165,63 @@ route = "GET /api/v1/issues/{issue}"
 property = "own_fields_html"
 whole_value = true
 reason = "One entry for each long-text own field of the issue the person may see: at most as many as the 200 own fields (FIELDS_MAX), a list bounded when the fields are made, and the issue page draws all of them at once (M3-F48)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/sorting"
+property = "tags"
+whole_value = true
+reason = "The tags of one issue: at most 30, refused when more are put on, so the list is bounded when it is written (M3 WP-08, M3-F120)."
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/sorting"
+property = "labels"
+whole_value = true
+reason = "The labels of one issue: at most 30, refused when more are put on, so the list is bounded when it is written (M3 WP-08, M3-F120)."
+
+[[exempt]]
+route = "GET /api/v1/labels"
+property = "groups"
+whole_value = true
+reason = "The groups of labels of the organization: at most 100, refused when more are made, and the screen that chooses a label needs all of them at once (M3 WP-08, M3-F120)."
+
+[[exempt]]
+route = "GET /api/v1/labels"
+property = "labels"
+whole_value = true
+reason = "The labels of the organization: at most 1,000, refused when more are made, and the screen that chooses a label needs all of them at once (M3 WP-08, M3-F120)."
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/tag-suggestions"
+property = "tags"
+whole_value = true
+reason = "The tags to offer while a person types: a hard cap of ten, by the code, and the list is only ever the first of the matches (M3 WP-08, M3-F120)."
+
+[[exempt]]
+route = "GET /api/v1/bulk/runs/{run}"
+property = "skipped"
+whole_value = true
+reason = "The first 50 of the issues a run left alone: capped by the code, and the answer says how many there are in all (`skipped_count`) (M3 WP-08, M3-F120)."
+
+[[exempt]]
+route = "GET /api/v1/layouts/editor"
+property = "sections"
+whole_value = true
+reason = "The sections of one layout: at most SECTIONS_MAX (20), a list bounded when the layout is saved; the editor needs all of them at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/layouts/editor"
+property = "available"
+whole_value = true
+reason = "The fields that are on no section: at most PLACED_MAX, the 200 own fields (own_fields::FIELDS_MAX) and the built-in fields of a form; the editor lists them all. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/layouts/editor"
+property = "roles"
+whole_value = true
+reason = "The roles of the organization, which the editor ticks; at most ROLES_MAX (100), the cut of the table of field permissions; the editor needs all of them for each field. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/layouts/form"
+property = "sections"
+whole_value = true
+reason = "The sections of one layout for one person: at most SECTIONS_MAX (20); the form draws all of them. (M3-F106)"

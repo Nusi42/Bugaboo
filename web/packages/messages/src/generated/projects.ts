@@ -77,6 +77,8 @@ export const messages = {
     "{person} could take away the No access that applies to them in {project}. Take that No access away first, or move the project somewhere else.",
   "projects.issue-ids-title": "Settings of this project",
   "issues.of-project": "Issues of this project",
+  "projects.preview-summary":
+    "{changed, plural, =0 {Nobody} one {# person} other {# people}} will gain or lose access or change role in the projects you can see.",
 } as const;
 
 register(messages);

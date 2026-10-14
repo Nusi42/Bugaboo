@@ -2,7 +2,7 @@ import { priorityWords, statusWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
-import { known } from "../../shared/present.ts";
+import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
 
 /** The short values of an issue a person changes in place. The description is long text: it has a lock. */
@@ -149,9 +149,4 @@ export function valuesOf(change: Readonly<Record<string, unknown>>): IssueValues
     ...(status === undefined ? {} : { status }),
     ...(priority === undefined ? {} : { priority }),
   };
-}
-
-/** The word of a list that a value is, or nothing. */
-function wordOf<Word extends string>(words: readonly Word[], value: unknown): Word | undefined {
-  return words.find((word) => word === value);
 }

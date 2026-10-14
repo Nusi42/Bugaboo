@@ -34,6 +34,7 @@ export const messages = {
   "fields.add-choice-button": "Add the choice",
   "fields.choice-up": "Move {name} up",
   "fields.choice-down": "Move {name} down",
+  "fields.choice-drag": "Drag {name}",
   "fields.choice-name": "Name of the choice",
   "fields.choice-color": "Color of {name}",
   "fields.choice-icon": "Icon of {name}",
@@ -70,10 +71,6 @@ export const messages = {
   "fields.scope-types-help":
     "Tick the issue types that have the field. With none ticked, every issue type has it.",
   "fields.projects-legend": "Add a project",
-  "fields.projects-search": "Find a project",
-  "fields.projects-list": "Projects",
-  "fields.projects-nothing": "No project found.",
-  "fields.projects-more": "Show more projects",
   "fields.see-title": "Who can see it",
   "fields.see-help":
     "Each role sees a field as Hidden, Can see or Can change. A new field starts with Can see for everyone who sees the project, and Can change from Team member up.",
@@ -113,6 +110,7 @@ export const messages = {
   "fields.pick-issue-key": "ID of the issue, like WEB-12",
   "fields.pick-issue-find": "Find the issue",
   "fields.pick-no-issue": "No issue has that ID.",
+  "fields.chosen-count": "{count, plural, one {# chosen} other {# chosen}}",
 } as const;
 
 register(messages);

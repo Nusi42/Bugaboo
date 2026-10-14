@@ -197,6 +197,28 @@ impl IssueStore for FakeStore {
         Ok(true)
     }
 
+    async fn move_issue(
+        tx: &mut Tx,
+        id: IssueId,
+        project: ProjectId,
+        code: &IssueCode,
+        version: i64,
+        now: Timestamp,
+    ) -> Result<bool, FakeError> {
+        let Some(found) =
+            tx.state.issues.iter_mut().find(|found| {
+                found.id == id && found.version == version && found.deleted_at.is_none()
+            })
+        else {
+            return Ok(false);
+        };
+        found.project = project;
+        found.code = code.clone();
+        found.updated_at = now;
+        found.version += 1;
+        Ok(true)
+    }
+
     async fn replace_assignees(
         tx: &mut Tx,
         issue: IssueId,

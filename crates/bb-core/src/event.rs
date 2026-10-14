@@ -105,6 +105,8 @@ words! {
     pub enum RecordKind {
         /// An access key.
         AccessKey => "access_key",
+        /// One run of a change to many issues (ISS-09).
+        BulkRun => "bulk_run",
         /// An own field (CF-01).
         Field => "field",
         /// One row of *Who has which role*.
@@ -121,6 +123,10 @@ words! {
         Issue => "issue",
         /// An issue type.
         IssueType => "issue_type",
+        /// A label of the organization's list (TAG-02).
+        Label => "label",
+        /// A group of labels (TAG-02).
+        LabelGroup => "label_group",
         /// A passkey.
         Passkey => "passkey",
         /// A person.
@@ -129,6 +135,8 @@ words! {
         Project => "project",
         /// One relation between two issues.
         Relation => "relation",
+        /// A layout of the issue page or the new-issue form (CFG-01).
+        Layout => "layout",
         /// A kind of relation.
         RelationKind => "relation_kind",
         /// A role.
@@ -141,6 +149,8 @@ words! {
         SetupCode => "setup_code",
         /// The making of the starting roles.
         StartingRoles => "starting_roles",
+        /// A tag (TAG-01).
+        Tag => "tag",
     }
 }
 
@@ -197,7 +207,8 @@ pub struct DomainEvent {
     /// password hashes or secrets: use cases leave those fields out of the changes (review).
     #[personal(category = "content", basis = "legitimate_interests")]
     pub changes: Vec<FieldChange>,
-    /// Why, when the person said so.
+    /// Why, when the person said so; for a change a job made as the person, the item of the job
+    /// (a change to many issues, `BulkRun::item_reason`).
     #[personal(category = "content", basis = "legitimate_interests")]
     pub reason: Option<String>,
 }

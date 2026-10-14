@@ -17,7 +17,6 @@ use bb_app::access::{MakeStartingRoles, make_starting_roles};
 use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
 use bb_app::comments::CommentRecords;
 use bb_app::context::SystemClock;
-use bb_app::editing::{PurgeDraftsQuery, purge_drafts};
 use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
 use bb_app::ports::SetupCodeFile;
 use bb_app::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
@@ -44,26 +43,8 @@ pub(crate) struct Wired {
     pub(crate) probe: ProbeHandle,
     /// The setup code of the first start, to print once. `None` when an administrator exists.
     pub(crate) setup_code: Option<String>,
-    /// What the server does on a timer while it runs.
-    pub(crate) housekeeping: Housekeeping,
-}
-
-/// The clearing of what outlived its keep period (drafts, notes for people who were editing and
-/// lock rows that ran out) and the catching up of the history with the events. It stands in for
-/// the jobs `editing.purge_drafts` and `history` until the job runner exists (M3-F30, M3-F71).
-#[derive(Clone)]
-pub(crate) struct Housekeeping(Arc<AuthServices<AuthStorage>>);
-
-impl Housekeeping {
-    /// One round of clearing; returns how many drafts went.
-    pub(crate) async fn clear_old(&self) -> Result<u64, bb_app::auth::AppError> {
-        purge_drafts(&self.0.ctx(RequestInfo::default()), PurgeDraftsQuery).await
-    }
-
-    /// One round of catching the history up; returns how many events it read.
-    pub(crate) async fn catch_up_history(&self) -> Result<u64, bb_app::auth::AppError> {
-        self.0.ctx(RequestInfo::default()).catch_up_history().await
-    }
+    /// The services the background job worker runs with (`bb-jobs`).
+    pub(crate) jobs: Arc<AuthServices<AuthStorage>>,
 }
 
 /// The setup code file of a server without a console, as the use case that makes the first
@@ -199,9 +180,16 @@ pub(crate) async fn wire(
         .await
         .map_err(|error| anyhow!(error.to_string()))?
         .map(|code| code.as_str().to_owned());
+    // The jobs that come back every day (clearing old drafts, catching the history up) are queued
+    // at every start; the job worker (`bb-jobs`) does them (ADR-0017, M3-F30, M3-F71).
+    services
+        .ctx(RequestInfo::default())
+        .start_daily_jobs()
+        .await
+        .map_err(|error| anyhow!(error.to_string()))?;
     let services = Arc::new(services);
     Ok(Wired {
-        housekeeping: Housekeeping(Arc::clone(&services)),
+        jobs: Arc::clone(&services),
         auth: AuthHandle::new(services),
         probe: ProbeHandle::new(Arc::new(probe)),
         setup_code,

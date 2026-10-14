@@ -24,17 +24,20 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
+use crate::bulk::BulkStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
 use crate::fields::FieldStore;
 use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::issues::IssueStore;
+use crate::layouts::LayoutStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
 use crate::settings::SettingsStore;
 use crate::store_macros::{reads, writes};
+use crate::tags::TagStore;
 
 /// A person with the password hash they sign in with.
 #[derive(Clone)]
@@ -318,10 +321,13 @@ pub trait AuthStore:
     + ProjectStore
     + IssueStore
     + RelationStore
+    + TagStore
+    + BulkStore
     + CommentStore
     + FollowStore
     + HistoryStore
     + FieldStore
+    + LayoutStore
     + SettingsStore
     + 'static
 {

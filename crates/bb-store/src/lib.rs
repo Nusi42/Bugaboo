@@ -10,6 +10,7 @@
 mod access_keys;
 mod anchor;
 mod auth;
+mod bulk;
 mod chain;
 mod comments;
 mod db;
@@ -23,6 +24,7 @@ mod issues;
 mod jobs;
 mod keys;
 mod layout;
+mod layouts;
 mod migrations;
 mod paging;
 mod policy;
@@ -32,6 +34,7 @@ mod schema;
 mod secrets;
 mod security_log;
 mod settings;
+mod tags;
 #[cfg(feature = "testing")]
 mod testing;
 

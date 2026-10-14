@@ -3,6 +3,8 @@ import { createRoute, lazyRouteComponent, useNavigate, useSearch } from "@tansta
 import {
   issueAddress,
   issuePanelAddress,
+  layoutsAddress,
+  type LayoutsOpen,
   paths,
   projectIssuesAddress,
   routeParam,
@@ -48,6 +50,96 @@ export const relationKindsRoute = createRoute({
           }}
         />
       </OnlyWith>
+    );
+  },
+});
+
+const LabelsScreen = lazyRouteComponent(() => import("../features/labels/index.ts"), "LabelsPage");
+
+/** *Organization settings › Labels and tags*: the address says which group, label or tag is open. */
+export const labelsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.labels,
+  validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
+    open: typeof search["open"] === "string" ? search["open"] : undefined,
+  }),
+  loader: loadsScreen(LabelsScreen),
+  component: function Labels() {
+    const { open } = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return (
+      <OnlyWith path={paths.labels}>
+        <LabelsScreen
+          open={open}
+          onOpen={(id: string) => {
+            void navigate({ to: paths.labels, search: { open: id } });
+          }}
+          onClose={() => {
+            void navigate({ to: paths.labels, search: {} });
+          }}
+        />
+      </OnlyWith>
+    );
+  },
+});
+
+const OrganizationLayoutsScreen = lazyRouteComponent(
+  () => import("../features/layouts/index.ts"),
+  "OrganizationLayoutsScreen",
+);
+const ProjectLayoutsScreen = lazyRouteComponent(
+  () => import("../features/layouts/index.ts"),
+  "ProjectLayoutsScreen",
+);
+
+/** What the address of the editor of layouts says is open: the form and the issue type. */
+function layoutsSearch(search: Readonly<Record<string, unknown>>): LayoutsOpen {
+  return {
+    form: typeof search["form"] === "string" ? search["form"] : undefined,
+    type: typeof search["type"] === "string" ? search["type"] : undefined,
+  };
+}
+
+/** *Organization settings › Layouts*: the forms of the whole organization. */
+export const layoutsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.layouts,
+  validateSearch: layoutsSearch,
+  loader: loadsScreen(OrganizationLayoutsScreen),
+  component: function Layouts() {
+    const open = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return (
+      <OnlyWith path={paths.layouts}>
+        <OrganizationLayoutsScreen
+          open={layoutsSearch(open)}
+          onOpen={(_, next: LayoutsOpen) => {
+            void navigate({ href: layoutsAddress(undefined, next) });
+          }}
+        />
+      </OnlyWith>
+    );
+  },
+});
+
+/** `/p/WEB/settings/layouts`: the layouts of a project. */
+export const projectLayoutsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.projectLayouts,
+  validateSearch: layoutsSearch,
+  loader: loadsScreen(ProjectLayoutsScreen),
+  component: function ProjectLayouts() {
+    const project = useAddressPart(routeParam.project);
+    const open = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return project === undefined ? null : (
+      <ProjectLayoutsScreen
+        address={project}
+        open={layoutsSearch(open)}
+        onOpen={(shortName: string | undefined, next: LayoutsOpen) => {
+          void navigate({ href: layoutsAddress(shortName ?? project, next) });
+        }}
+      />
     );
   },
 });

@@ -1,10 +1,9 @@
-import { choiceColorWords, issueIconWords } from "@bugaboo/api-client";
+import { issueIconWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
   alertTone,
   buttonLook,
-  ChoiceGroup,
   ConfirmDialog,
   FieldValue,
   Form,
@@ -17,10 +16,12 @@ import {
   partOf,
   part,
 } from "@bugaboo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
+import { ColorChoice } from "../../shared/ColorChoice.tsx";
+import { DraggableHead } from "../../shared/drag-and-drop.tsx";
 import { messageOf } from "../../shared/errors.ts";
-import { badgeLook, plainText, type Choice, type OwnField } from "./fields.ts";
+import { badgeLook, choiceKind, plainText, type Choice, type OwnField } from "./fields.ts";
 import { useChangeChoice } from "./use-change-field.ts";
 
 /** Words of the HTML standard and marks that are not text for people. */
@@ -31,11 +32,6 @@ const iconChoices = [
   ...issueIconWords.map((word) => ({ value: word, label: t(`issue-icon.${word}`) })),
 ];
 
-const colorChoices = choiceColorWords.map((word) => ({
-  value: word,
-  label: t(`choice-color.${word}`),
-}));
-
 /** Sends a change of the choice, on the version of the field the person looked at. */
 type Send = (more: Readonly<Record<string, unknown>>) => void;
 
@@ -45,6 +41,10 @@ export interface ChoiceRowProps {
   readonly first: boolean;
   readonly last: boolean;
   readonly onMove: (by: -1 | 1) => void;
+  /** Whether the choice can be dragged to another place: not on a phone, where the buttons are the way. */
+  readonly canDrag: boolean;
+  /** What comes first in the item: the place before it where a dragged choice can be dropped. */
+  readonly before: ReactNode;
   /** The other choices a value can be combined into. */
   readonly others: readonly Choice[];
   readonly onCombine: (into: string) => void;
@@ -56,10 +56,16 @@ function ChoiceTitle({
   choice,
   first,
   last,
+  canDrag,
   onMove,
-}: Pick<ChoiceRowProps, "field" | "choice" | "first" | "last" | "onMove">) {
+}: Pick<ChoiceRowProps, "field" | "choice" | "first" | "last" | "canDrag" | "onMove">) {
   return (
-    <>
+    <DraggableHead
+      kind={choiceKind}
+      id={choice.id}
+      label={t("fields.choice-drag", { name: choice.name })}
+      canDrag={canDrag}
+    >
       <FieldValue
         look={field.look === plainText ? badgeLook : field.look}
         text={choice.name}
@@ -82,7 +88,7 @@ function ChoiceTitle({
           onMove(1);
         }}
       />
-    </>
+    </DraggableHead>
   );
 }
 
@@ -120,13 +126,9 @@ function ChoiceName({
 function ChoiceLook({ choice, send }: { readonly choice: Choice; readonly send: Send }) {
   return (
     <>
-      <ChoiceGroup
+      <ColorChoice
         legend={t("fields.choice-color", { name: choice.name })}
-        choices={colorChoices}
         value={choice.color}
-        renderLabel={(color) => (
-          <span {...partOf(part.fieldSwatch, { variants: [color.value] })}>{color.label}</span>
-        )}
         onChange={(color) => {
           send({ color });
         }}
@@ -196,6 +198,7 @@ export function ChoiceRow(props: ChoiceRowProps) {
   };
   return (
     <li {...partOf(part.fieldChoice)}>
+      {props.before}
       <ChoiceTitle {...props} />
       <ChoiceName choice={choice} send={send} pending={change.isPending} />
       <ChoiceLook choice={choice} send={send} />

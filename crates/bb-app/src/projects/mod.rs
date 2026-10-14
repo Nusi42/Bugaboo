@@ -34,6 +34,7 @@ pub use change::change_project;
 pub use make::make_project;
 pub use moving::{move_project, preview_move};
 pub use read::{project, projects};
+pub(crate) use shown::Shown;
 pub use store::{Found, ProjectStore};
 pub use types::*;
 

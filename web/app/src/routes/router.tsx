@@ -21,7 +21,10 @@ import {
   fieldsRoute,
   issueRoute,
   issueTypesRoute,
+  labelsRoute,
+  layoutsRoute,
   projectIssuesRoute,
+  projectLayoutsRoute,
   relationKindsRoute,
 } from "./work-pages.tsx";
 import {
@@ -65,6 +68,7 @@ const routeTree = rootRoute.addChildren([
     projectSettingsRoute,
     projectRolesRoute,
     projectFieldsRoute,
+    projectLayoutsRoute,
     projectPeopleRoute,
     projectCheckAccessRoute,
     mySettingsRoute.addChildren([
@@ -86,6 +90,8 @@ const routeTree = rootRoute.addChildren([
       roleRoute,
       issueTypesRoute,
       relationKindsRoute,
+      labelsRoute,
+      layoutsRoute,
       fieldsRoute,
       fieldRoute,
       fieldPermissionsRoute,

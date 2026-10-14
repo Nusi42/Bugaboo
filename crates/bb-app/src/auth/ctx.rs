@@ -19,6 +19,7 @@ use jiff::Timestamp;
 use super::error::{AppError, internal};
 use super::limit::FailureLimit;
 use super::store::{AuthSettings, AuthStore, SecurityEvent};
+use crate::access::Actor as ActingPerson;
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
 use crate::ports::SetupCodeFile;
@@ -107,6 +108,20 @@ impl<S> AuthServices<S> {
             evaluations: Mutex::default(),
             via_key: AtomicBool::new(false),
             image_hosts: Mutex::default(),
+            acting: None,
+            reason: Mutex::default(),
+        }
+    }
+
+    /// The context of a background job that makes changes as `actor`, the person who asked for
+    /// them: the use cases it runs take the actor from here and not from a session, which a job
+    /// does not have. Only a job that a signed-in request queued gets one (`bulk`), with the
+    /// person it stored.
+    #[must_use]
+    pub(crate) fn ctx_acting_as(&self, actor: ActingPerson) -> Ctx<'_, S> {
+        Ctx {
+            acting: Some(actor),
+            ..self.ctx(RequestInfo::default())
         }
     }
 
@@ -137,6 +152,12 @@ pub struct Ctx<'a, S> {
     /// The hosts images in text may come from, read from the setting once for the request (a page
     /// of comments asks for them once for each comment).
     pub(crate) image_hosts: Mutex<Option<Vec<String>>>,
+    /// The person a background job makes its changes as; none for a request, which has a session or
+    /// an access key to tell who asks.
+    pub(crate) acting: Option<ActingPerson>,
+    /// The reason the events of the changes made now carry, set by a job for the issue it works on
+    /// (`bulk`); none for a request.
+    pub(crate) reason: Mutex<Option<String>>,
 }
 
 /// Makes IDs from the clock of the context and the secure random source.
@@ -171,6 +192,7 @@ pub(crate) struct EventMaker {
     clock: Arc<dyn Clock + Send + Sync>,
     actor: Actor,
     channel: Channel,
+    reason: Option<String>,
 }
 
 impl EventMaker {
@@ -188,7 +210,7 @@ impl EventMaker {
             channel: self.channel,
             entity,
             changes,
-            reason: None,
+            reason: self.reason.clone(),
         })
     }
 }
@@ -242,7 +264,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             } else {
                 Channel::Ui
             },
+            reason: self
+                .reason
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone(),
         }
+    }
+
+    /// Makes the events of the changes that follow carry `reason`, until it is set again.
+    pub(crate) fn set_reason(&self, reason: Option<String>) {
+        *self
+            .reason
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = reason;
     }
 
     /// Writes an entry into the security log. A log that cannot be written is reported in the

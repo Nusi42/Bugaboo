@@ -43,6 +43,12 @@ export const queryKeys = {
     one: (address: string) => ["projects", "one", address],
     movePreview: (project: string, to: string | null) => ["projects", "move-preview", project, to],
   },
+  layouts: {
+    /** The draft that a refused save of a layout kept, by layout. */
+    draft: (layout: string) => ["layouts", "draft", layout],
+    /** Who is editing a layout now. */
+    editing: (layout: string) => ["layouts", "editing", layout],
+  },
   issueTypes: {
     all: ["issue-types"],
     list: () => ["issue-types", "list"],
@@ -50,6 +56,10 @@ export const queryKeys = {
   relationKinds: {
     all: ["relation-kinds"],
     list: () => ["relation-kinds", "list"],
+  },
+  tags: {
+    all: ["tags"],
+    list: () => ["tags", "list"],
   },
   issueRelations: {
     all: ["issue-relations"],
@@ -124,6 +134,8 @@ const FIELD_READS = [
   "/api/v1/fields/{field}/used-by",
   "/api/v1/field-types",
   "/api/v1/field-permissions",
+  "/api/v1/layouts/form",
+  "/api/v1/layouts/editor",
   "/api/v1/issues",
   "/api/v1/issues/{issue}",
   "/api/v1/projects",
@@ -135,6 +147,20 @@ export function refreshFields(): void {
   for (const path of FIELD_READS) {
     void queryClient.invalidateQueries({ queryKey: ["get", path] });
   }
+}
+
+/** A layout was made, saved or taken away: the forms and the editor read it again. */
+export function refreshLayouts(): void {
+  for (const path of ["/api/v1/layouts/form", "/api/v1/layouts/editor"] as const) {
+    void queryClient.invalidateQueries({ queryKey: ["get", path] });
+  }
+}
+
+/** A save of a layout was refused: the draft it kept is read again. */
+export function refreshLayoutDraft(layout: string): void {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.layouts.draft(layout),
+  });
 }
 
 /** An issue type was made or changed: the list of types is read again. */
@@ -162,7 +188,9 @@ function refreshRoutes(routes: readonly string[]): void {
 
 /** A sub-issue or a relation was added or taken away: what an issue stands among is read again. */
 export function refreshIssueRelations(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issueRelations.all });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.issueRelations.all,
+  });
   void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }

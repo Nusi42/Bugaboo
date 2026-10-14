@@ -12,9 +12,10 @@ use std::time::Duration;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
-    IdError, InvitationId, IssueId, IssueTypeId, JobId, LockToken, PasskeyId, ProjectId,
-    RelationId, RelationKindId, RoleId, SessionId, UserId,
+    AccessKeyId, AssignmentId, BulkRunId, ChoiceId, CommentId, EditorId, EntityId, EventId,
+    FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
+    LayoutId, LockToken, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId,
+    TagId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -378,6 +379,9 @@ pub(crate) enum LockClass {
     /// Adding relations (key 0): two relations added at the same moment cannot both pass the
     /// limit of relations of an issue.
     IssueRelations = 5,
+    /// Changes of the names of tags, labels and groups of labels (key 0): two changes at the same
+    /// moment cannot both take a name, and a *Pick one* group is judged on what is stored.
+    TagsAndLabels = 6,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -620,6 +624,7 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AssignmentId => "an assignment ID",
+    BulkRunId => "a run ID",
     CommentId => "a comment ID",
     EditorId => "an editor ID",
     EntityId => "a record ID",
@@ -631,9 +636,13 @@ stored_ids!(
     IssueId => "an issue ID",
     IssueTypeId => "an issue type ID",
     JobId => "a job ID",
+    LabelGroupId => "a label group ID",
+    LabelId => "a label ID",
+    LayoutId => "a layout ID",
     LockToken => "an edit lock token",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",
+    TagId => "a tag ID",
     RelationId => "a relation ID",
     RelationKindId => "a kind of relation ID",
     RoleId => "a role ID",

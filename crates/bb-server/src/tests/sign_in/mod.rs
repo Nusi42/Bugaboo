@@ -17,6 +17,7 @@ mod access_keys_never;
 mod access_screens;
 mod access_screens_review;
 mod assignments_http;
+mod bulk_http;
 mod caching;
 mod comments_http;
 mod concurrent;
@@ -33,6 +34,8 @@ mod issues_fields;
 mod issues_http;
 mod issues_ids;
 mod issues_site;
+mod layouts_http;
+mod layouts_review;
 mod lists;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.
@@ -63,6 +66,7 @@ mod settings_http;
 mod settings_keys;
 mod setup_and_password;
 mod status;
+mod tags_http;
 mod timing;
 mod tls;
 mod upgrade;

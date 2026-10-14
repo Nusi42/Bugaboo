@@ -22,6 +22,7 @@ use utoipa_axum::routes;
 use super::access_bodies::cursor_error;
 use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer};
 use super::comments::CommentItem;
+use super::projects::ProjectRef;
 use super::relations::IssueRef;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -30,7 +31,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 27] = [
+const HISTORY_FIELDS: [FieldSpec; 29] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -55,6 +56,8 @@ const HISTORY_FIELDS: [FieldSpec; 27] = [
     FieldSpec::by_default("after_people"),
     FieldSpec::by_default("before_issue"),
     FieldSpec::by_default("after_issue"),
+    FieldSpec::by_default("before_project"),
+    FieldSpec::by_default("after_project"),
     FieldSpec::by_default("relation"),
     FieldSpec::by_default("direction"),
     FieldSpec::by_default("issue"),
@@ -146,6 +149,12 @@ pub(crate) struct HistoryEntryItem {
     /// A change: the issue the field holds now.
     #[serde(skip_serializing_if = "Option::is_none")]
     after_issue: Option<IssueRef>,
+    /// A change of the project: the project the issue was in, when the reader may see it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    before_project: Option<ProjectRef>,
+    /// A change of the project: the project the issue is in now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    after_project: Option<ProjectRef>,
     /// A relation: `added` or `removed`.
     #[serde(skip_serializing_if = "Option::is_none")]
     relation: Option<String>,
@@ -186,6 +195,8 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         after_people: None,
         before_issue: None,
         after_issue: None,
+        before_project: None,
+        after_project: None,
         relation: None,
         direction: None,
         issue: None,
@@ -200,6 +211,7 @@ struct Side {
     names: Option<Vec<String>>,
     people: Option<Vec<PersonRef>>,
     issue: Option<IssueRef>,
+    project: Option<ProjectRef>,
     kind: Option<FieldType>,
 }
 
@@ -216,6 +228,9 @@ impl Side {
             Some(ChangeValue::Names { names }) => side.names = Some(names.clone()),
             Some(ChangeValue::People { people }) => side.people = Some(people.clone()),
             Some(ChangeValue::Issue { issue }) => side.issue = Some(IssueRef::from(issue)),
+            Some(ChangeValue::Project { project }) => {
+                side.project = Some(ProjectRef::from(project));
+            }
             None => {}
         }
         side
@@ -252,9 +267,11 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 (item.before_text, item.before_value) = (before.text, before.value);
                 (item.before_names, item.before_people) = (before.names, before.people);
                 item.before_issue = before.issue;
+                item.before_project = before.project;
                 (item.after_text, item.after_value) = (after.text, after.value);
                 (item.after_names, item.after_people) = (after.names, after.people);
                 item.after_issue = after.issue;
+                item.after_project = after.project;
                 item
             })
             .collect(),
@@ -345,18 +362,18 @@ mod tests {
 
     use super::*;
     use crate::api::issues::IssueTypeRef;
-    use crate::api::projects::ProjectRef;
 
     #[test]
     fn perf_02_the_field_table_names_exactly_the_fields_of_an_item() {
+        let project = || ProjectRef {
+            id: String::new(),
+            short_name: String::new(),
+            name: String::new(),
+        };
         let line = || IssueRef {
             id: String::new(),
             key: String::new(),
-            project: ProjectRef {
-                id: String::new(),
-                short_name: String::new(),
-                name: String::new(),
-            },
+            project: project(),
             issue_type: IssueTypeRef {
                 id: String::new(),
                 name: String::new(),
@@ -392,6 +409,8 @@ mod tests {
             after_people: Some(Vec::new()),
             before_issue: Some(line()),
             after_issue: Some(line()),
+            before_project: Some(project()),
+            after_project: Some(project()),
             relation: Some(String::new()),
             direction: Some(Direction::Forward),
             issue: Some(line()),

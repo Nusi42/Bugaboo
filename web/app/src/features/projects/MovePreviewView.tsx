@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
-import { keyedLiftSentencesOfPreview, keyedSentencesOfPreview } from "./preview-sentences.ts";
+import { AppLongPreview } from "../../shared/app-long-preview.tsx";
+import { keyedLiftSentencesOfPreview, personSentencesOfPreview } from "./preview-sentences.ts";
 import type { Preview } from "./use-projects.ts";
 
 /**
@@ -9,7 +10,7 @@ import type { Preview } from "./use-projects.ts";
  * role, what else changes, and, when the move is not allowed, why.
  */
 export function MovePreviewView({ preview }: { readonly preview: Preview }) {
-  const sentences = keyedSentencesOfPreview(preview);
+  const groups = personSentencesOfPreview(preview);
   const lifts = keyedLiftSentencesOfPreview(preview);
   return (
     <section {...partOf(part.projectsPreview)} aria-label={t("projects.preview-heading")}>
@@ -27,15 +28,16 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
           ) : null}
         </Alert>
       ) : null}
-      {sentences.length === 0 && !preview.blocked ? (
-        <p {...partOf(part.muted)}>{t("projects.preview-nothing")}</p>
-      ) : (
-        <ul {...partOf(part.projectsSentences)} aria-label={t("projects.preview-list")}>
-          {sentences.map((line) => (
-            <li key={line.key}>{line.text}</li>
-          ))}
-        </ul>
-      )}
+      <AppLongPreview
+        summary={t("projects.preview-summary", { changed: preview.summary.will_change })}
+        label={t("projects.preview-list")}
+        nothing={t("projects.preview-nothing")}
+        groups={groups.map((group) => ({
+          key: group.key,
+          heading: <strong>{group.person}</strong>,
+          lines: group.lines.map((line) => ({ key: line.key, content: line.text })),
+        }))}
+      />
       {preview.truncated ? <p {...partOf(part.muted)}>{t("projects.preview-truncated")}</p> : null}
       <p {...partOf(part.muted)}>{t("projects.preview-hidden-note")}</p>
     </section>

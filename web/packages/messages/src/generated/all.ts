@@ -3,6 +3,7 @@
 export { messages as access } from "./access.ts";
 export { messages as account } from "./account.ts";
 export { messages as admin } from "./admin.ts";
+export { messages as bulk } from "./bulk.ts";
 export { messages as fields } from "./fields.ts";
 export { messages as follow } from "./follow.ts";
 export { messages as history } from "./history.ts";
@@ -10,6 +11,8 @@ export { messages as home } from "./home.ts";
 export { messages as invitation } from "./invitation.ts";
 export { messages as issueTypes } from "./issue-types.ts";
 export { messages as issues } from "./issues.ts";
+export { messages as labels } from "./labels.ts";
+export { messages as layouts } from "./layouts.ts";
 export { messages as mentions } from "./mentions.ts";
 export { messages as mySettings } from "./my-settings.ts";
 export { messages as people } from "./people.ts";

@@ -34,6 +34,15 @@ mod m0007_issues;
 mod m0008_editing;
 mod m0009_fields;
 mod m0010_relations;
+mod m0011_tags;
+mod m0012_layouts;
+
+/// A column that holds the ID of a record: 16 bytes, never empty.
+pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
+    let mut column = ColumnDef::new(name);
+    column.blob().not_null();
+    column
+}
 
 /// One step of a migration.
 pub(crate) enum Step {
@@ -150,6 +159,16 @@ const ALL: &[Definition] = &[
         version: 10,
         name: "relations",
         steps: || Ok(m0010_relations::steps()),
+    },
+    Definition {
+        version: 11,
+        name: "tags",
+        steps: || Ok(m0011_tags::steps()),
+    },
+    Definition {
+        version: 12,
+        name: "layouts",
+        steps: || Ok(m0012_layouts::steps()),
     },
 ];
 

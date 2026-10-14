@@ -100,6 +100,10 @@ error_codes! {
     /// An issue holds as many relations or sub-issues as it may. The count includes what the
     /// person may not see, as it is a limit of storage, so the answer names no issue.
     LimitReached => ("limit.reached", 409),
+    /// A tag is limited to other projects than the one of the issue (TAG-01).
+    TagNotHere => ("tag.not_here", 409),
+    /// Some issue holds more than one label of a group that is to be a *Pick one* group (TAG-02).
+    PickOneConflict => ("label.pick_one_conflict", 409),
     /// A required own field has no value (CF-03).
     FieldRequired => ("field.required", 400),
     /// A text, or a list of values, is shorter than the rules of the own field allow (CF-03).
@@ -150,6 +154,9 @@ error_codes! {
     /// Somebody took the editing over (*Edit anyway*), so the text cannot be saved with the
     /// lock. The text is kept as the person's draft (ADR-0019).
     EditTakenOver => ("edit.taken_over", 409),
+    /// Somebody else is editing the thing, so it cannot be taken away now. Nothing is lost: the
+    /// page names who is editing (ADR-0019).
+    EditInProgress => ("edit.in_progress", 409),
     /// Too many requests in a short time (SEC-14).
     TooManyRequests => ("rate_limit.exceeded", 429),
     /// The server cannot answer right now.

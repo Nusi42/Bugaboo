@@ -47,6 +47,7 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod bulk;
 mod check_access;
 mod comments;
 mod editing;
@@ -57,15 +58,18 @@ mod groups;
 mod history;
 mod issue_types;
 mod issues;
+mod layouts;
 mod own_access;
 mod people;
 mod people_visibility;
+mod previews;
 mod projects;
 mod projects_move;
 mod relations;
 mod roles;
 mod second_step_gap;
 mod settings;
+mod tags;
 
 pub use admin::ProbeHandle;
 pub use auth::AuthHandle;
@@ -151,8 +155,11 @@ where
         .merge(projects::routes())
         .merge(fields::routes())
         .merge(issue_types::routes())
+        .merge(layouts::routes())
         .merge(issues::routes())
         .merge(relations::routes())
+        .merge(tags::routes())
+        .merge(bulk::routes())
         .merge(comments::routes())
         .merge(history::routes())
         .merge(follow::routes())

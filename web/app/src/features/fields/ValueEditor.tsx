@@ -1,19 +1,12 @@
 import { t } from "@bugaboo/messages";
-import {
-  Checkbox,
-  Form,
-  SelectField,
-  SubmitButton,
-  Switch,
-  TextField,
-  partOf,
-  part,
-  fieldKind,
-} from "@bugaboo/ui";
+import { Checkbox, SelectField, Switch, TextField, partOf, part, fieldKind } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
+import { boxWords } from "./box-words.ts";
 import type { OwnField, KindWord } from "./fields.ts";
+import { MomentEditor } from "./MomentEditor.tsx";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
+import { SaveForm } from "./SaveForm.tsx";
 import { durationText } from "../../shared/own-value-text.ts";
 import { durationSeconds, isDecimalText, isWholeNumberText } from "./value-text.ts";
 
@@ -35,20 +28,16 @@ export interface ValueEditorProps {
   readonly issue?: string | undefined;
   /** The ID of the type of the issue that is being made, while there is no issue yet. */
   readonly issueType?: string | undefined;
+  /**
+   * The editor sits in a form that is sent as a whole (the new-issue form): there is no *Save*,
+   * and every change is handed on at once.
+   */
+  readonly live?: boolean;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
 function pickable(field: OwnField, current: readonly string[]) {
   return field.choices.filter((choice) => !choice.retired || current.includes(choice.id));
-}
-
-/** The words every box of a field carries: its name, its help text and what is wrong with it. */
-function boxWords(field: OwnField, error?: string) {
-  return {
-    label: field.name,
-    ...(field.help === "" ? {} : { description: field.help }),
-    ...(error === undefined ? {} : { errorMessage: error }),
-  };
 }
 
 /** The text a value has in a box: what a person edits. */
@@ -86,84 +75,43 @@ function sentFrom(
   return { value: trimmed };
 }
 
-/** A form with a save button around the boxes of one value. */
-function SaveForm({
-  isPending,
-  onSubmit,
-  children,
-}: {
-  readonly isPending: boolean;
-  readonly onSubmit: () => void;
-  readonly children: ReactNode;
-}) {
-  return (
-    <Form onSubmit={onSubmit}>
-      {children}
-      <div {...partOf(part.row)}>
-        <SubmitButton isPending={isPending}>{t("common.save")}</SubmitButton>
-      </div>
-    </Form>
-  );
-}
-
 /** A box for the kinds of value a person types: text, numbers and lengths of time. */
-function TextEditor({ field, value, onCommit, problem, isPending = false }: ValueEditorProps) {
+function TextEditor({
+  field,
+  value,
+  onCommit,
+  problem,
+  isPending = false,
+  live = false,
+}: ValueEditorProps) {
   const [text, setText] = useState(textOf(field, value));
   const [local, setLocal] = useState<string | undefined>();
+  const commit = (typed: string): void => {
+    const sent = sentFrom(field, typed);
+    setLocal("problem" in sent ? sent.problem : undefined);
+    if ("value" in sent) {
+      onCommit(sent.value);
+    }
+  };
   return (
     <SaveForm
       isPending={isPending}
+      live={live}
       onSubmit={() => {
-        const sent = sentFrom(field, text);
-        setLocal("problem" in sent ? sent.problem : undefined);
-        if ("value" in sent) {
-          onCommit(sent.value);
-        }
+        commit(text);
       }}
     >
       <TextField
         {...boxWords(field, local ?? problem)}
         kind={field.kind === "long-text" ? fieldKind.multiline : fieldKind.text}
         value={text}
-        onChange={setText}
+        onChange={(typed) => {
+          setText(typed);
+          if (live) {
+            commit(typed);
+          }
+        }}
       />
-    </SaveForm>
-  );
-}
-
-/** The widest span of days a day box takes: the whole calendar. */
-const CALENDAR = { min: "0001-01-01", max: "9999-12-31" };
-
-/** A day, and for a day and time also the time of day. */
-function MomentEditor({ field, value, onCommit, problem, isPending = false }: ValueEditorProps) {
-  const withTime = field.kind === "date-time";
-  const [day, setDay] = useState(typeof value === "string" ? value.slice(0, 10) : "");
-  const [time, setTime] = useState(
-    typeof value === "string" && withTime ? value.slice(11, 16) : "",
-  );
-  const sent = () => {
-    if (day === "") {
-      return null;
-    }
-    return withTime ? `${day}T${time === "" ? "00:00" : time}:00Z` : day;
-  };
-  return (
-    <SaveForm
-      isPending={isPending}
-      onSubmit={() => {
-        onCommit(sent());
-      }}
-    >
-      <TextField
-        {...boxWords(field, problem)}
-        kind={fieldKind.text}
-        date={CALENDAR}
-        value={day}
-        onChange={setDay}
-      />
-      {withTime ? (
-        <TextField label={t("fields.time-of-day")} value={time} onChange={setTime} />
-      ) : null}
     </SaveForm>
   );
 }

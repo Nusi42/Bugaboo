@@ -7,6 +7,12 @@ import { PeopleChoice } from "./PeopleChoice.tsx";
 import { ValueView } from "./ValueView.tsx";
 import type { ValueEditorProps } from "./ValueEditor.tsx";
 
+/** In the form of a new issue the things picked have no names yet, only IDs: it says how many. */
+function Chosen({ value }: { readonly value: unknown }) {
+  const count = Array.isArray(value) ? value.length : Number(value !== undefined && value !== null);
+  return count === 0 ? null : <p {...partOf(part.muted)}>{t("fields.chosen-count", { count })}</p>;
+}
+
 /** People, groups and issues: the value as shown, *Choose* to pick another, and *Take away*. */
 export function ReferenceEditor({
   field,
@@ -16,12 +22,13 @@ export function ReferenceEditor({
   issueType,
   onCommit,
   isPending = false,
+  live = false,
 }: ValueEditorProps) {
   const hasValue = value !== undefined && value !== null && field.rules.required !== true;
   return (
     <div {...partOf(part.stack)}>
       <p {...partOf(part.fieldLabel)}>{field.name}</p>
-      <ValueView field={field} value={value} />
+      {live ? <Chosen value={value} /> : <ValueView field={field} value={value} />}
       <div {...partOf(part.row)}>
         {project === undefined ? null : (
           <Chooser

@@ -447,6 +447,50 @@ pub(crate) enum RelationKindRow {
     Version,
 }
 
+/// The layouts of the issue page and the new-issue form: where each is set (CFG-01, ADR-0027).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutRow {
+    #[iden = "layout"]
+    Table,
+    Id,
+    Project,
+    IssueType,
+    Kind,
+    Version,
+}
+
+/// A section of a layout.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutSectionRow {
+    #[iden = "layout_section"]
+    Table,
+    Layout,
+    Position,
+    Tab,
+    Title,
+}
+
+/// A field in a section of a layout.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutFieldRow {
+    #[iden = "layout_field"]
+    Table,
+    Layout,
+    Field,
+    Section,
+    Position,
+}
+
+/// A role a field of a layout is shown to.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutFieldRoleRow {
+    #[iden = "layout_field_role"]
+    Table,
+    Layout,
+    Field,
+    Role,
+}
+
 /// Relations between two issues, stored once from the issue that reads the forward name (ISS-04).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum RelationRow {
@@ -469,6 +513,99 @@ pub(crate) enum IssueParentRow {
     Parent,
     SetBy,
     SetAt,
+}
+
+/// Tags (TAG-01). `name_key` is the name in lower case: two names with one key are one tag.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum TagRow {
+    #[iden = "tag"]
+    Table,
+    Id,
+    Name,
+    NameKey,
+    Color,
+    CreatedAt,
+    Version,
+}
+
+/// The projects a tag is limited to (TAG-01).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum TagProjectRow {
+    #[iden = "tag_project"]
+    Table,
+    Tag,
+    Project,
+}
+
+/// The tags on issues (TAG-01).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueTagRow {
+    #[iden = "issue_tag"]
+    Table,
+    Issue,
+    Tag,
+    AddedBy,
+    AddedAt,
+}
+
+/// Groups of labels (TAG-02).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LabelGroupRow {
+    #[iden = "label_group"]
+    Table,
+    Id,
+    Name,
+    NameKey,
+    PickOne,
+    Position,
+    RetiredAt,
+    Version,
+}
+
+/// The organization's labels (TAG-02). `group_key` is the ID of the group, or empty without one,
+/// so a name is unique inside a group.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LabelRow {
+    #[iden = "label"]
+    Table,
+    Id,
+    #[iden = "group_id"]
+    Group,
+    GroupKey,
+    Name,
+    NameKey,
+    Color,
+    Position,
+    RetiredAt,
+    Version,
+}
+
+/// The labels on issues (TAG-02).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum IssueLabelRow {
+    #[iden = "issue_label"]
+    Table,
+    Issue,
+    Label,
+    AddedBy,
+    AddedAt,
+}
+
+/// Runs of changes to many issues that go on in the background (ISS-09).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum BulkRunRow {
+    #[iden = "bulk_run"]
+    Table,
+    Id,
+    Person,
+    Action,
+    Items,
+    Status,
+    Done,
+    Changed,
+    Skipped,
+    CreatedAt,
+    FinishedAt,
 }
 
 /// Comments under issues (ISS-05).
@@ -926,6 +1063,30 @@ stored_tables! {
         RetiredAt => retired_at,
         Version => version,
     },
+    LayoutRow => bb_core::layout::Layout {
+        Id => id,
+        Project => project,
+        IssueType => issue_type,
+        Kind => kind,
+        Version => version,
+    },
+    LayoutSectionRow => bb_core::layout::LayoutSection {
+        Layout => layout,
+        Position => position,
+        Tab => tab,
+        Title => title,
+    },
+    LayoutFieldRow => bb_core::layout::LayoutField {
+        Layout => layout,
+        Field => field,
+        Section => section,
+        Position => position,
+    },
+    LayoutFieldRoleRow => bb_core::layout::LayoutFieldRole {
+        Layout => layout,
+        Field => field,
+        Role => role,
+    },
     RelationRow => bb_core::relation::Relation {
         Id => id,
         Kind => kind,
@@ -939,6 +1100,62 @@ stored_tables! {
         Parent => parent,
         SetBy => set_by,
         SetAt => set_at,
+    },
+    TagRow => bb_core::tags::Tag {
+        Id => id,
+        Name => name,
+        NameKey => name,
+        Color => color,
+        CreatedAt => created_at,
+        Version => version,
+    },
+    TagProjectRow => bb_core::tags::TagProject {
+        Tag => tag,
+        Project => project,
+    },
+    IssueTagRow => bb_core::tags::IssueTag {
+        Issue => issue,
+        Tag => tag,
+        AddedBy => added_by,
+        AddedAt => added_at,
+    },
+    LabelGroupRow => bb_core::tags::LabelGroup {
+        Id => id,
+        Name => name,
+        NameKey => name,
+        PickOne => pick_one,
+        Position => position,
+        RetiredAt => retired_at,
+        Version => version,
+    },
+    LabelRow => bb_core::tags::Label {
+        Id => id,
+        Group => group,
+        GroupKey => group,
+        Name => name,
+        NameKey => name,
+        Color => color,
+        Position => position,
+        RetiredAt => retired_at,
+        Version => version,
+    },
+    IssueLabelRow => bb_core::tags::IssueLabel {
+        Issue => issue,
+        Label => label,
+        AddedBy => added_by,
+        AddedAt => added_at,
+    },
+    BulkRunRow => bb_core::bulk::BulkRun {
+        Id => id,
+        Person => person,
+        Action => action,
+        Items => items,
+        Status => status,
+        Done => done,
+        Changed => changed,
+        Skipped => skipped,
+        CreatedAt => created_at,
+        FinishedAt => finished_at,
     },
     CommentRow => bb_core::comment::Comment {
         Id => id,

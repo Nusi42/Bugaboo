@@ -266,9 +266,11 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
 }
 
 /// The routes of *My settings*, which keys may use, the lists of issue types, of kinds of relation
-/// and of own fields, which every signed-in person reads and a key reads as its owner, and the
-/// hosts of images, which every page needs to be shown.
-const MY_SETTINGS: [&str; 9] = [
+/// and of own fields, which every signed-in person reads and a key reads as its owner, the hosts
+/// of images, which every page needs to be shown, the labels, which every signed-in person reads, and
+/// the run of a change to many issues, which a key reads as its owner (it cannot start one that runs in the background, but it reads the
+/// state of the person's own).
+const MY_SETTINGS: [&str; 11] = [
     "getImageHosts",
     "listFieldTypes",
     "listMySettings",
@@ -278,6 +280,8 @@ const MY_SETTINGS: [&str; 9] = [
     "listRelationKinds",
     "listFields",
     "getField",
+    "getBulkRun",
+    "listLabels",
 ];
 
 #[tokio::test]

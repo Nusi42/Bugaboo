@@ -5,6 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
 
+/** The values of the own fields of an item, by the key of the field, as the server sent them. */
+export type FieldValues = Readonly<Record<string, unknown>>;
+
 /** An own field as the server shows it to this person (`FieldBody`). */
 export type OwnField = Schema<"FieldBody">;
 /** A choice of a *Pick one* or *Pick several* field. */
@@ -20,6 +23,9 @@ export type LookWord = Schema<"Look">;
 export function editPartOf(field: string): string {
   return [ownFieldPartPrefix, field].join("");
 }
+
+/** What a choice of a field is when it is dragged: only a choice can be dropped among the choices. */
+export const choiceKind = "field-choice";
 
 /** The look of plain text, which has no color or icon of its own. */
 export const plainText = "plain-text" satisfies LookWord;

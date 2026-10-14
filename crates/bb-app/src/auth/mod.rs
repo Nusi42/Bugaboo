@@ -28,6 +28,10 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
+use crate::bulk::{
+    ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunView, apply_bulk,
+    bulk_run, preview_bulk,
+};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
@@ -55,9 +59,13 @@ use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
     AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
     IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView, IssueTypesQuery, IssueView,
-    IssuesQuery, MakeIssue, MakeIssueType, RestoreIssue, SaveDescription, assignable_people,
-    change_issue, change_issue_type, delete_issue, issue, issue_types, issues, make_issue,
-    make_issue_type, restore_issue, save_description,
+    IssuesQuery, MakeIssue, MakeIssueType, MoveIssue, RestoreIssue, SaveDescription,
+    assignable_people, change_issue, change_issue_type, delete_issue, issue, issue_types, issues,
+    make_issue, make_issue_type, move_issue, restore_issue, save_description,
+};
+use crate::layouts::{
+    DeleteLayout, FormLayout, FormLayoutQuery, LayoutEditor, LayoutEditorQuery, MakeLayout,
+    SaveLayout, delete_layout, form_layout, layout_editor, make_layout, save_layout,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
@@ -90,6 +98,15 @@ use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,
     SettingList, SettingView, SettingsQuery, change_setting, document_image_hosts, image_hosts,
     lock_setting, reset_setting, settings,
+};
+use crate::tags::{
+    AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
+    IssueSorting, IssueSortingQuery, LabelChangePreviewQuery, LabelGroupView, LabelView, Labels,
+    LabelsQuery, MakeLabel, MakeLabelGroup, RemoveLabel, RemoveTag, TagChangePreview,
+    TagChangePreviewQuery, TagPage, TagSuggestions, TagSuggestionsQuery, TagView, TagsQuery,
+    add_label, add_tag, change_label, change_label_group, change_tag, combine_labels, combine_tags,
+    issue_sorting, label_change_preview, labels, make_label, make_label_group, remove_label,
+    remove_tag, tag_change_preview, tag_suggestions, tags,
 };
 
 #[cfg(test)]
@@ -395,6 +412,8 @@ use_cases! {
     save_description(SaveDescription) -> Authorized<IssueView>;
     /// Puts an issue into the trash.
     delete_issue(DeleteIssue) -> Done;
+    /// Moves an issue into another project.
+    move_issue(MoveIssue) -> Authorized<IssueView>;
     /// Takes an issue out of the trash.
     restore_issue(RestoreIssue) -> Authorized<IssueView>;
     /// Lists the kinds of relation.
@@ -463,4 +482,54 @@ use_cases! {
     combine_choices(CombineChoices) -> Authorized<FieldView>;
     /// Saves the long text of an own field of an issue, under its edit lock.
     save_field_text(SaveFieldText) -> Authorized<IssueView>;
+    /// Says what a change to many issues would do to each issue.
+    preview_bulk(BulkPreviewQuery) -> Authorized<BulkPreview>;
+    /// Changes many issues at once after the preview.
+    apply_bulk(ApplyBulk) -> Authorized<BulkResult>;
+    /// Shows how far a change to many issues that goes on in the background is.
+    bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
+    /// Shows the tags and labels of an issue.
+    issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
+    /// Puts a tag on an issue by its name.
+    add_tag(AddTag) -> Authorized<IssueSorting>;
+    /// Takes a tag off an issue.
+    remove_tag(RemoveTag) -> Authorized<IssueSorting>;
+    /// Puts a label on an issue.
+    add_label(AddLabel) -> Authorized<IssueSorting>;
+    /// Takes a label off an issue.
+    remove_label(RemoveLabel) -> Authorized<IssueSorting>;
+    /// Lists the tags to offer while a person types.
+    tag_suggestions(TagSuggestionsQuery) -> Authorized<TagSuggestions>;
+    /// Lists the tags of the organization for the people who look after them.
+    tags(TagsQuery) -> Authorized<TagPage>;
+    /// Says what renaming or combining a tag would do.
+    tag_change_preview(TagChangePreviewQuery) -> Authorized<TagChangePreview>;
+    /// Changes the name, color or projects of a tag.
+    change_tag(ChangeTag) -> Authorized<TagView>;
+    /// Moves every issue from a tag to another and takes the first away.
+    combine_tags(CombineTags) -> Authorized<TagView>;
+    /// Lists the labels of the organization with their groups.
+    labels(LabelsQuery) -> Authorized<Labels>;
+    /// Makes a group of labels.
+    make_label_group(MakeLabelGroup) -> Authorized<LabelGroupView>;
+    /// Changes a group of labels.
+    change_label_group(ChangeLabelGroup) -> Authorized<LabelGroupView>;
+    /// Makes a label.
+    make_label(MakeLabel) -> Authorized<LabelView>;
+    /// Changes a label.
+    change_label(ChangeLabel) -> Authorized<LabelView>;
+    /// Says what renaming or combining a label would do.
+    label_change_preview(LabelChangePreviewQuery) -> Authorized<TagChangePreview>;
+    /// Moves every issue from a label to another and takes the first away.
+    combine_labels(CombineLabels) -> Authorized<LabelView>;
+    /// Shows which fields a form shows to the person who asks.
+    form_layout(FormLayoutQuery) -> Authorized<FormLayout>;
+    /// Shows the layout of a place to somebody who may change it.
+    layout_editor(LayoutEditorQuery) -> Authorized<LayoutEditor>;
+    /// Makes the layout of a place as a copy of the one that counts there.
+    make_layout(MakeLayout) -> Authorized<LayoutEditor>;
+    /// Saves the sections and fields of a layout, under its edit lock.
+    save_layout(SaveLayout) -> Authorized<LayoutEditor>;
+    /// Takes the layout of a place away.
+    delete_layout(DeleteLayout) -> Done;
 }

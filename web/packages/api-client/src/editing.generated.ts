@@ -27,3 +27,6 @@ export const draftKeptCodes = [
 
 /** One code of `draftKeptCodes`. */
 export type DraftKeptCode = (typeof draftKeptCodes)[number];
+
+/** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
+export const layoutEditPart = "layout";

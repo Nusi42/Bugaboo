@@ -95,6 +95,30 @@ impl<'a> Site<'a> {
         Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
     }
 
+    /// A person with the starting role in ACME only, signed in: every other project is not there
+    /// for them.
+    pub(super) async fn person_in_acme(
+        &self,
+        role: StartingRole,
+        name: &str,
+    ) -> Result<(Browser, UserId), Failure> {
+        let email = format!("{name}@example.test");
+        let started = self
+            .org
+            .rig
+            .person_called(&self.org.admin.session, &email, "Bob Builder")
+            .await?;
+        let member = super::policy_rig::Member {
+            id: started.person.id,
+            session: started.session_token,
+        };
+        let acme = self.acme.parse().map_err(|_| "no project ID")?;
+        self.org
+            .give(&member, self.roles[role.code()], acme)
+            .await?;
+        Ok((Browser::signed_in_as(self.app, &email).await?, member.id))
+    }
+
     /// A person with no role anywhere: they exist, and they are no member of any project.
     pub(super) async fn outsider(&self, name: &str) -> Result<UserId, Failure> {
         let email = format!("{name}@example.test");

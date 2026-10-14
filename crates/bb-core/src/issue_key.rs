@@ -123,6 +123,17 @@ impl IssueCode {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// Which way of giving out codes made this one: a counting number or a random code. A random
+    /// code always holds a letter, so the two never meet.
+    #[must_use]
+    pub fn mode(&self) -> IdMode {
+        if is_counting(&self.0) {
+            IdMode::Counting
+        } else {
+            IdMode::Random
+        }
+    }
 }
 
 impl TryFrom<String> for IssueCode {

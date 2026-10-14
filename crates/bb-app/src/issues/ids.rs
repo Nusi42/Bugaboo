@@ -9,8 +9,10 @@
 //! project has it (or had it) already. When the mode of a project changes, every issue of it
 //! gets a code of the new mode in the same change, and the old code stays with the issue.
 
-use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{IdSource, ProjectId};
+use bb_core::ErrorCode;
+use bb_core::bulk::{BULK_JOB_ABOVE, BULK_STEP};
+use bb_core::event::{Actor, FieldChange, RecordKind};
+use bb_core::id::{IdSource, JobId, ProjectId, UserId};
 use bb_core::issue::IssueAlias;
 use bb_core::issue_key::{IdMode, IssueCode, IssueKey, code_length, longest_code};
 use bb_core::project::ShortName;
@@ -22,8 +24,11 @@ use bb_core::version::{FIRST_VERSION, counted_up};
 use bb_policy::Tree;
 use jiff::Timestamp;
 
+use serde_json::Value;
+
 use super::fields::member;
-use crate::auth::{AuthStore, EventMaker, entity};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, entity, internal};
+use crate::jobs::{kind, kind_name};
 
 /// How many numbers a counting project tries before it gives up (which would mean the codes of the
 /// project are not what the rules make them).
@@ -220,7 +225,33 @@ pub(crate) async fn renew_in<S: AuthStore>(
     events: &EventMaker,
     at: Timestamp,
 ) -> Result<(), S::Error> {
+    renew_step_in::<S>(transaction, renewal, source, events, at, usize::MAX)
+        .await
+        .map(drop)
+}
+
+/// The same for at most `limit` issues: the ones that do not have a code of the new mode yet, in
+/// the order of their IDs. Says how many it renewed, so a big project is renewed a step at a time
+/// (`renewal_step`) and a step that finds nothing to do is the last.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn renew_step_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    renewal: &Renewal,
+    source: &mut impl IdSource,
+    events: &EventMaker,
+    at: Timestamp,
+    limit: usize,
+) -> Result<usize, S::Error> {
+    let mut renewed = 0;
     for (issue, old) in S::issue_codes_in(transaction, renewal.project).await? {
+        if renewed >= limit {
+            break;
+        }
+        if old.mode() == renewal.plan.mode {
+            continue;
+        }
         let code = new_code_in::<S>(transaction, renewal.project, renewal.plan, source).await?;
         S::set_issue_code(transaction, issue, &code).await?;
         S::insert_issue_alias(
@@ -253,6 +284,147 @@ pub(crate) async fn renew_in<S: AuthStore>(
             )
             .map_err(|_| S::aborted())?;
         S::append_follow_up_event(transaction, &event).await?;
+        renewed += 1;
     }
-    Ok(())
+    Ok(renewed)
+}
+
+/// How many issues of the project, also those in the trash, do not have a code of the plan's mode
+/// yet, read inside a change.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn still_to_renew_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    renewal: &Renewal,
+) -> Result<usize, S::Error> {
+    Ok(S::issue_codes_in(transaction, renewal.project)
+        .await?
+        .iter()
+        .filter(|(_, code)| code.mode() != renewal.plan.mode)
+        .count())
+}
+
+/// The member of the payload of the job that renews the IDs of a project: the project.
+const PROJECT_KEY: &str = "project";
+
+/// The member of the payload of that job: the person who changed the mode, whose name is on the
+/// events of the renewed IDs.
+const PERSON_KEY: &str = "by";
+
+/// Renews the IDs of the issues of a project after its mode changed, inside the change that changed
+/// it: all of them when the project has no more issues than a change to many issues waits for
+/// (`BULK_JOB_ABOVE`), and otherwise a first step, with a job that goes on with the rest a step at
+/// a time (M3-F27). Issues made meanwhile already get codes of the new mode.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn renew_or_queue_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    renewal: &Renewal,
+    source: &mut (impl IdSource + Send),
+    events: &EventMaker,
+    person: UserId,
+    at: Timestamp,
+) -> Result<(), S::Error> {
+    if still_to_renew_in::<S>(transaction, renewal).await? <= BULK_JOB_ABOVE {
+        return renew_in::<S>(transaction, renewal, source, events, at).await;
+    }
+    renew_step_in::<S>(transaction, renewal, source, events, at, BULK_STEP).await?;
+    let job = JobId::generate(source).map_err(|_| S::aborted())?;
+    let name = kind_name(kind::RENEW_IDS).map_err(|_| S::aborted())?;
+    let payload = serde_json::json!({
+        PROJECT_KEY: renewal.project.to_string(),
+        PERSON_KEY: person.to_string(),
+    });
+    S::enqueue_job(transaction, job, &name, &payload, at, at).await
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Does the next step of the renewal of the IDs of a project, as the job of the queue says: the
+    /// issues that do not have a code of the mode the project has now, a hundred at a time, and
+    /// when some are left the next step is queued. A project whose mode changed again meanwhile is
+    /// renewed to the mode it has now.
+    ///
+    /// # Errors
+    /// `request.invalid` for a payload that names no project or person, and the error of the store.
+    pub(crate) async fn renew_ids_step(&self, payload: &Value) -> Result<(), AppError> {
+        let named = |key: &str| payload.get(key).and_then(Value::as_str);
+        let project: ProjectId = named(PROJECT_KEY)
+            .and_then(|text| text.parse().ok())
+            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+        let person: UserId = named(PERSON_KEY)
+            .and_then(|text| text.parse().ok())
+            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+        let Some(found) = self
+            .store()
+            .project(project)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(());
+        };
+        let layers = self
+            .store()
+            .setting_layers(Some(project), None)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let renewal = Renewal {
+            project,
+            short_name: found.short_name,
+            plan: CodePlan::of(&layers),
+        };
+        let counted = renewal.clone();
+        let left = self
+            .store()
+            .read_snapshot(move |transaction| {
+                Box::pin(async move { still_to_renew_in::<S>(transaction, &counted).await })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if left == 0 {
+            return Ok(());
+        }
+        // The project says once that its IDs were renewed, in the step that renews the last; the
+        // steps before write the events of the issues they renew and nothing else.
+        let finishing = left <= BULK_STEP;
+        let said = if finishing {
+            vec![self.event(
+                Actor::Person(person),
+                entity(RecordKind::Project, project),
+                vec![FieldChange {
+                    field: member::ISSUE_IDS.to_owned(),
+                    before: None,
+                    after: Some(serde_json::json!(renewal.plan.mode.code())),
+                }],
+            )?]
+        } else {
+            Vec::new()
+        };
+        let (mut source, events, now) = (
+            self.owned_ids(),
+            self.event_maker(Actor::Person(person)),
+            self.now(),
+        );
+        self.store()
+            .record_changes(&said, move |transaction| {
+                Box::pin(async move {
+                    S::lock_issue_codes(transaction, renewal.project).await?;
+                    renew_step_in::<S>(transaction, &renewal, &mut source, &events, now, BULK_STEP)
+                        .await
+                        .map(drop)
+                })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if !finishing {
+            let job = JobId::generate(&mut self.ids())
+                .map_err(|error| AppError::Internal(error.to_string()))?;
+            self.store()
+                .queue_job(job, &kind_name(kind::RENEW_IDS)?, payload, now, now)
+                .await
+                .map_err(|error| internal::<S>(&error))?;
+        }
+        Ok(())
+    }
 }

@@ -65,6 +65,18 @@ pub struct ChangeIssue {
     pub fields: BTreeMap<String, Value>,
 }
 
+/// Move an issue into another project.
+pub struct MoveIssue {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The issue, by its readable ID (also an old one) or its internal ID.
+    pub issue: String,
+    /// The version the person looked at; a change made meanwhile stops this one.
+    pub version: i64,
+    /// The project it goes into, by its ID or its short name (an old one too).
+    pub project: String,
+}
+
 /// Save the description of an issue under the edit lock the person holds.
 pub struct SaveDescription {
     /// The secret of the session of the request.

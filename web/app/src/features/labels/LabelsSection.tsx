@@ -1,0 +1,48 @@
+import { t } from "@bugaboo/messages";
+import { Card, partOf, part } from "@bugaboo/ui";
+
+import { ListEditor, type ListRow } from "../shell/index.ts";
+import { EditLabel } from "./EditLabel.tsx";
+import type { Label, LabelGroup } from "./labels.ts";
+import { MakeLabelForm } from "./MakeLabelForm.tsx";
+import type { OpenProps } from "./OpenProps.ts";
+
+interface LabelsSectionProps extends OpenProps {
+  readonly labels: readonly Label[];
+  readonly groups: readonly LabelGroup[];
+}
+
+/** The row of a label: its group beside its name. */
+function rowOf(label: Label, props: LabelsSectionProps): ListRow {
+  const group = props.groups.find((each) => each.id === label.group);
+  return {
+    key: label.id,
+    name: label.name,
+    details: (
+      <span {...partOf(part.muted)}>
+        {group?.name ?? t("labels.no-group")}
+        {label.retired ? ` ${t("labels.retired")}` : null}
+      </span>
+    ),
+    editor: <EditLabel key={label.id} label={label} groups={props.groups} others={props.labels} />,
+  };
+}
+
+/** The labels as a list that opens next to it, and the form that makes one. */
+export function LabelsSection(props: LabelsSectionProps) {
+  return (
+    <Card heading={t("labels.labels-title")}>
+      <ListEditor
+        rows={props.labels.map((label) => rowOf(label, props))}
+        searchLabel={t("labels.labels-search")}
+        nothing={t("labels.labels-nothing")}
+        openKey={props.open}
+        onOpen={props.onOpen}
+        onClose={props.onClose}
+      />
+      <h3>{t("labels.make-label-title")}</h3>
+      <p {...partOf(part.text)}>{t("labels.make-label-intro")}</p>
+      <MakeLabelForm groups={props.groups} />
+    </Card>
+  );
+}

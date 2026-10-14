@@ -295,8 +295,33 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a layout of the issue page or the new-issue form (CFG-01).
+    LayoutId
+}
+
+define_ordered_id! {
     /// The ID of a comment (ISS-05).
     CommentId
+}
+
+define_ordered_id! {
+    /// The ID of a tag (TAG-01).
+    TagId
+}
+
+define_ordered_id! {
+    /// The ID of a label of the organization's list (TAG-02).
+    LabelId
+}
+
+define_ordered_id! {
+    /// The ID of a group of labels (TAG-02).
+    LabelGroupId
+}
+
+define_ordered_id! {
+    /// The ID of one run of a change to many issues (ISS-09).
+    BulkRunId
 }
 
 define_ordered_id! {
@@ -388,7 +413,12 @@ into_entity_id!(
     ChoiceId,
     RelationKindId,
     RelationId,
+    LayoutId,
     CommentId,
+    TagId,
+    LabelId,
+    LabelGroupId,
+    BulkRunId,
     EventId,
     JobId,
     SessionId,

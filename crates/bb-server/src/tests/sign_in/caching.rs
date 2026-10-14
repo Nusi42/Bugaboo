@@ -7,7 +7,14 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::Permission;
+use bb_app::bulk::BulkStore;
+use bb_app::context::SystemIds;
+use bb_app::ports::ChangeStore;
 use bb_app::roles::MakeRole;
+use bb_core::bulk::{BulkRun, BulkStatus};
+use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, RecordKind};
+use bb_core::id::{BulkRunId, EntityId, EventId};
+use bb_store::AuthStorage;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
@@ -23,6 +30,63 @@ fn get_routes() -> Vec<String> {
         .filter(|operation| operation.method == Method::GET)
         .map(|operation| operation.path.clone())
         .collect()
+}
+
+/// A run of a change to many issues that the person asked for and that is done, for the route that
+/// names one: its ID. A run exists only after more than a thousand issues were changed at once, so
+/// the row is written as the first request of such a change writes it.
+async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
+    let mut ids = SystemIds;
+    let run = BulkRun {
+        id: BulkRunId::generate(&mut ids)?,
+        person: person.parse().map_err(|_| "no person")?,
+        action: json!({"kind": "delete"}),
+        items: Vec::new(),
+        status: BulkStatus::Done,
+        done: 0,
+        changed: 0,
+        skipped: Vec::new(),
+        created_at: rig.clock_now(),
+        finished_at: Some(rig.clock_now()),
+    };
+    let event = DomainEvent {
+        id: EventId::generate(&mut ids)?,
+        time: rig.clock_now(),
+        actor: Actor::Person(run.person),
+        channel: Channel::Ui,
+        entity: EntityRef {
+            kind: EntityKind::from(RecordKind::BulkRun),
+            id: EntityId::from(run.id),
+        },
+        changes: Vec::new(),
+        reason: None,
+    };
+    let stored = run.clone();
+    ChangeStore::record_change(&rig.storage, &event, move |transaction| {
+        Box::pin(async move { AuthStorage::insert_bulk_run(transaction, &stored).await })
+    })
+    .await
+    .map_err(|error| error.to_string())?;
+    Ok(run.id.to_string())
+}
+
+/// The ID of a role, for the routes that name one.
+async fn a_role(rig: &Rig) -> Result<String, Failure> {
+    let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
+    let role = rig
+        .api()
+        .make_role(
+            Rig::info(),
+            MakeRole {
+                session_token: admin,
+                name: "Checker".to_owned(),
+                permissions: vec![Permission::SeeProjects],
+                two_step: false,
+            },
+        )
+        .await?
+        .into_value();
+    Ok(role.id.to_string())
 }
 
 /// The ID of a comment written on the issue, for the routes that name a comment.
@@ -76,6 +140,20 @@ async fn a_comment_and_a_field(
     Ok((a_comment_on(ada, issue_key).await?, a_field(ada).await?))
 }
 
+/// The address of a route that is about something named in its query: the draft and lock routes
+/// name a record (the example project), the layout routes the project and a kind of form.
+fn with_query(template: &str, filled: String, project: &str, project_id: &str) -> String {
+    match template {
+        "/api/v1/drafts" | "/api/v1/edit-locks" => {
+            format!("{filled}?kind=project&id={project_id}&part=description")
+        }
+        "/api/v1/layouts/form" | "/api/v1/layouts/editor" => {
+            format!("{filled}?project={project}&kind=new-issue")
+        }
+        _ => filled,
+    }
+}
+
 #[tokio::test]
 async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
     each_database("perf_03_http_etags", async |db| {
@@ -84,20 +162,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let mut ada = Browser::signed_in(&app, &rig).await?;
 
         // A role and a project for the routes that name one.
-        let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
-        let role = rig
-            .api()
-            .make_role(
-                Rig::info(),
-                MakeRole {
-                    session_token: admin,
-                    name: "Checker".to_owned(),
-                    permissions: vec![Permission::SeeProjects],
-                    two_step: false,
-                },
-            )
-            .await?
-            .into_value();
+        let role = a_role(&rig).await?;
         let made = ada
             .send(
                 "POST",
@@ -122,6 +187,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let issue_key = an_issue_in_example(&mut ada).await?;
         // A comment and an own field, for the routes that name one.
         let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &issue_key).await?;
+        let run_id = a_run_of(&rig, &person_id).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -135,21 +201,16 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 "EXAMPLE"
             };
             let filled = template
-                .replace("{role_id}", &role.id.to_string())
+                .replace("{role_id}", &role)
                 .replace("{group_id}", &group_id)
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
                 .replace("{issue}", &issue_key)
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
+                .replace("{run}", &run_id)
                 .replace("{project}", project);
-            // The draft and the lock routes are about a record named in the query: the example
-            // project.
-            let filled = if template == "/api/v1/drafts" || template == "/api/v1/edit-locks" {
-                format!("{filled}?kind=project&id={project_id}&part=description")
-            } else {
-                filled
-            };
+            let filled = with_query(template, filled, project, &project_id);
             let path = &filled;
             assert!(
                 !path.contains('{'),

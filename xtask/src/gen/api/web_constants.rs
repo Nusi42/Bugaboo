@@ -150,7 +150,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// a status or a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 9] = [
+const WORD_LISTS: [&str; 10] = [
     "IssueIcon",
     "Status",
     "StatusGroup",
@@ -160,6 +160,7 @@ const WORD_LISTS: [&str; 9] = [
     "FieldFor",
     "Look",
     "ChoiceColor",
+    "LayoutKind",
 ];
 
 /// `IssueIcon` as `issueIconWords`.
@@ -330,7 +331,8 @@ export const pageSizeDefault = {};
 }
 
 /// The times and sizes of editing as constants for the browser client: it sends a heartbeat as
-/// often as the lease needs, and asks about as many records as one check takes.
+/// often as the lease needs, asks about as many records as one check takes, and names the part of
+/// a layout that its edit lock is about.
 pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
     let Some((_, text)) = sources.iter().find(|(path, _)| path == EDIT_SOURCE) else {
         bail!("{EDIT_SOURCE} is missing");
@@ -342,6 +344,8 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
         .map(|code| format!("{code:?}"))
         .collect::<Vec<_>>()
         .join(", ");
+    let layout_part = text_const(text, "LAYOUT_PART")
+        .with_context(|| format!("{EDIT_SOURCE} has no `const LAYOUT_PART` that is text"))?;
     Ok(format!(
         "{TS_HEADER}/** How long an edit lock lasts after the last heartbeat, in seconds. */
 export const leaseSeconds = {};
@@ -366,6 +370,9 @@ export const draftKeptCodes = [{}] as const;
 
 /** One code of `draftKeptCodes`. */
 export type DraftKeptCode = (typeof draftKeptCodes)[number];
+
+/** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
+export const layoutEditPart = {layout_part:?};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
@@ -719,6 +726,7 @@ pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
 pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::VersionChanged];
+pub const LAYOUT_PART: &str = \"layout\";
 "
             .to_owned(),
         );
@@ -735,6 +743,7 @@ pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::V
             ),
             "{text}"
         );
+        assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
         assert!(editing(&[]).is_err());
     }
 

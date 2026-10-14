@@ -23,6 +23,7 @@ use crate::projects::ProjectRef;
 
 /// What turns issues into lines for one viewer: the issue types and the projects are read once
 /// each.
+#[derive(Default)]
 pub(crate) struct LineMaker {
     types: BTreeMap<IssueTypeId, IssueTypeRef>,
     projects: HashMap<ProjectId, Option<Project>>,

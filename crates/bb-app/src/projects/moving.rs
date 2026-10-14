@@ -40,6 +40,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::preview::PreviewSummary;
 
 /// The version of a preview: it names the project, both parents and what the move would change,
 /// so it is another one as soon as one of them changes. A digest, not a secret: the server makes
@@ -257,6 +258,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .lifts
                 .iter()
                 .any(|lift| !seen.contains(&lift.project)),
+            summary: PreviewSummary::of(people.len(), 0),
             people,
             lifts,
             truncated,

@@ -1,13 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import {
-  changeSentence,
-  fieldLabel,
-  groupByEvent,
-  relationSentence,
-  type HistoryEntry,
-} from "./history.ts";
+import { changeSentence, groupByEvent, relationSentence, type HistoryEntry } from "./history.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
 
 const ben = { shown: "name", id: "b", name: "Ben" } as const;
@@ -91,7 +85,6 @@ describe("iss_06 values the screen words itself", () => {
 
 describe("iss_06 relations and the items of one event", () => {
   it("names the parent and the relations by their readable IDs", () => {
-    expect(fieldLabel("parent")).toBe("Part of");
     expect(
       relationSentence(
         change({
@@ -131,5 +124,33 @@ describe("iss_05 the name being typed after an @", () => {
   it("puts the whole handle in its place, with a space after it", () => {
     expect(withMention("see @pro", "project.lead")).toBe("see @project.lead ");
     expect(withMention("@a", "ana.silva")).toBe("@ana.silva ");
+  });
+});
+
+/** A project as the history names it. */
+function project(name: string) {
+  return { id: name, short_name: name, name };
+}
+
+describe("tag_01 tags, labels and a move in the history", () => {
+  it("says a tag was set when there were none, and cleared when the last one went", () => {
+    expect(
+      changeSentence(change({ field: "tags", before_names: [], after_names: ["login"] })),
+    ).toBe("Ben set Tags to login");
+    expect(
+      changeSentence(change({ field: "tags", before_names: ["login"], after_names: [] })),
+    ).toBe("Ben cleared Tags");
+  });
+
+  it("names the project an issue moved from and to", () => {
+    expect(
+      changeSentence(
+        change({
+          field: "project",
+          before_project: project("Website"),
+          after_project: project("Shop"),
+        }),
+      ),
+    ).toBe("Ben changed Project from Website to Shop");
   });
 });

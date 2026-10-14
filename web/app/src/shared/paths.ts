@@ -24,7 +24,9 @@ export const paths = {
   person: "/settings/people/$person",
   groups: "/settings/groups",
   issueTypes: "/settings/issue-types",
+  layouts: "/settings/layouts",
   relationKinds: "/settings/relation-kinds",
+  labels: "/settings/labels",
   fields: "/settings/fields",
   field: "/settings/fields/$field",
   roles: "/settings/roles",
@@ -41,6 +43,7 @@ export const paths = {
   projectSettings: "/p/$project/settings",
   projectRoles: "/p/$project/settings/roles",
   projectFields: "/p/$project/settings/fields",
+  projectLayouts: "/p/$project/settings/layouts",
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
@@ -92,9 +95,38 @@ export function relationKindAddress(id: string): string {
   return `${paths.relationKinds}?open=${encodeURIComponent(id)}`;
 }
 
+/** The address of *Labels and tags* with one group, label or tag open, `/settings/labels?open=<ID>`. */
+export function labelsAddress(id: string): string {
+  return `${paths.labels}?open=${encodeURIComponent(id)}`;
+}
+
 /** The address of *Issue types* with one type open, `/settings/issue-types?open=<ID>`. */
 export function issueTypeAddress(id: string): string {
   return `${paths.issueTypes}?open=${encodeURIComponent(id)}`;
+}
+
+/**
+ * The address of the editor of a layout: of a project, or of the whole organization without one,
+ * with the form and the issue type that are open (`?form=new-issue&type=<ID>`).
+ */
+export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen = {}): string {
+  const base =
+    shortName === undefined ? paths.layouts : addressInProject(paths.projectLayouts, shortName);
+  const query = new URLSearchParams();
+  if (open.form !== undefined) {
+    query.set("form", open.form);
+  }
+  if (open.type !== undefined) {
+    query.set("type", open.type);
+  }
+  const text = query.toString();
+  return text === "" ? base : `${base}?${text}`;
+}
+
+/** What is open in the editor of layouts: the form (`issue-page`, `new-issue`) and the issue type's ID. */
+export interface LayoutsOpen {
+  readonly form?: string | undefined;
+  readonly type?: string | undefined;
 }
 
 /** The address of the page of an own field, `/settings/fields/<ID>`. */

@@ -26,7 +26,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
-use super::manage::current_default;
+use super::manage::{current_default, must_be_asked_for};
 use super::pattern::Linear;
 use super::types::Definition;
 use crate::access::Actor;
@@ -44,6 +44,25 @@ impl ItemValues {
     /// Whether the values of this item were read.
     pub(crate) fn has(&self, item: EntityId) -> bool {
         self.values.contains_key(&item)
+    }
+
+    /// Whether every own field the item has a value in is offered in a project whose projects from
+    /// the top down are `chain`, for an issue of this type: whether the item can live on there
+    /// without losing a value.
+    pub(crate) fn all_reach(
+        &self,
+        item: EntityId,
+        chain: &[ProjectId],
+        issue_type: IssueTypeId,
+    ) -> bool {
+        self.values.get(&item).is_none_or(|values| {
+            values.keys().all(|field| {
+                self.definitions
+                    .iter()
+                    .find(|definition| definition.field.id == *field)
+                    .is_none_or(|definition| definition.scope.reaches(chain, Some(issue_type)))
+            })
+        })
     }
 
     /// The value the item holds for a field.
@@ -216,6 +235,43 @@ impl<S: AuthStore> Ctx<'_, S> {
         mask: &bb_policy::FieldMask,
         item: &Item,
     ) -> Result<Vec<FieldKey>, AppError> {
+        self.own_fields_at(item, |field| mask.can_change(field))
+            .await
+    }
+
+    /// The own fields of an item that the mask lets the person see: used for the item and not
+    /// retired. The layouts of the issue page ask it, next to `changeable_own_fields`.
+    pub(crate) async fn visible_own_fields(
+        &self,
+        mask: &bb_policy::FieldMask,
+        item: &Item,
+    ) -> Result<Vec<FieldKey>, AppError> {
+        self.own_fields_at(item, |field| mask.can_see(field)).await
+    }
+
+    /// The own fields that reach an item and that `level_allows`: the one filter of the two reads.
+    pub(crate) async fn own_fields_at(
+        &self,
+        item: &Item,
+        level_allows: impl Fn(FieldKey) -> bool,
+    ) -> Result<Vec<FieldKey>, AppError> {
+        self.own_fields_reaching(
+            item,
+            |scope| scope.reaches(&item.chain, item.issue_type),
+            level_allows,
+        )
+        .await
+    }
+
+    /// The own fields that are used for an item and not retired, whose scope `reached` and that
+    /// `level_allows`. The layouts of the whole organization, which has no project, say `reached`
+    /// by the issue type alone (`Scope::reaches_type`).
+    pub(crate) async fn own_fields_reaching(
+        &self,
+        item: &Item,
+        reached: impl Fn(&bb_core::own_fields::Scope) -> bool,
+        level_allows: impl Fn(FieldKey) -> bool,
+    ) -> Result<Vec<FieldKey>, AppError> {
         Ok(self
             .field_catalogue()
             .await?
@@ -224,8 +280,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let field = &definition.field;
                 field.applies_to == item.field_for()
                     && field.retired_at.is_none()
-                    && definition.scope.reaches(&item.chain, item.issue_type)
-                    && mask.can_change(FieldKey::Own(field.id))
+                    && reached(&definition.scope)
+                    && level_allows(FieldKey::Own(field.id))
             })
             .map(|definition| FieldKey::Own(definition.field.id))
             .collect())
@@ -264,6 +320,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(ErrorCode::FieldNotHere.into());
         }
         Ok(used_for)
+    }
+
+    /// Whether an issue can live on in a project whose projects from the top down are `chain`
+    /// without losing the value of an own field: every field it has a value in is used there.
+    pub(crate) async fn fields_follow(
+        &self,
+        issue: &bb_core::issue::Issue,
+        chain: &[ProjectId],
+    ) -> Result<bool, AppError> {
+        let item: EntityId = issue.id.into();
+        let values = self.load_values(RecordKind::Issue, &[item]).await?;
+        Ok(values.all_reach(item, chain, issue.issue_type))
     }
 
     /// The projects from the top down to this one: where the scope of a field is judged.
@@ -695,20 +763,22 @@ impl<S: AuthStore> Ctx<'_, S> {
             if !reaches || sets.iter().any(|set| set.field == field.id) {
                 continue;
             }
-            let default = current_default(definition);
-            if default.is_none() {
+            if must_be_asked_for(definition) {
                 let may_fill = viewer.field_level_for(item.issue_type, FieldKey::Own(field.id))
                     >= FieldLevel::CanChange;
-                if field.rules.required && may_fill {
+                if may_fill {
                     return Err(ErrorCode::FieldRequired.into());
                 }
                 continue;
             }
+            let Some(default) = current_default(definition) else {
+                continue;
+            };
             sets.push(Set {
                 field: field.id,
                 kind: field.kind,
                 old: None,
-                new: default,
+                new: Some(default),
             });
         }
         Ok(())

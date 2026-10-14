@@ -3,6 +3,7 @@ import { useLayout } from "@bugaboo/ui";
 import { useMemo } from "react";
 
 import { useVersionWatch } from "../../shared/editing/index.ts";
+import { useFormLayout } from "../layouts/index.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { readAgain } from "./issue-requests.ts";
 import { valuesOf } from "./issue-values.ts";
@@ -24,6 +25,11 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
   const layout = useLayout();
   const changes = useIssueChanges(detail, address);
   const { issue } = detail;
+  const form = useFormLayout({
+    project: issue.project?.short_name,
+    issueType: issue.issue_type?.id,
+    kind: "issue-page",
+  });
   const key = issue.key ?? address;
   const version = issue.version ?? 1;
   const watched = useMemo(
@@ -42,6 +48,7 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
       issueKey: key,
       ownFieldsHtml: detail.own_fields_html ?? [],
       mask: maskOf(detail),
+      form,
       version,
       onChange: (change) => {
         changes.change(valuesOf(change));

@@ -1,12 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { describe, expect, it } from "vitest";
 
-import {
-  keyedLiftSentencesOfPreview,
-  keyedSentencesOfPreview,
-  liftSentencesOfPreview,
-  sentencesOfPreview,
-} from "./preview-sentences.ts";
+import { keyedLiftSentencesOfPreview, personSentencesOfPreview } from "./preview-sentences.ts";
 import { asShortName } from "./short-name.ts";
 import type { Preview } from "./use-projects.ts";
 
@@ -21,6 +16,18 @@ function word(code: string) {
   return { code, message_key: `no.such.${code}` };
 }
 
+/** Every sentence of the preview, in order, as the long preview shows them. */
+function sentencesOfPreview(of: Preview): readonly string[] {
+  return personSentencesOfPreview(of).flatMap((group) => group.lines.map((line) => line.text));
+}
+
+/** The keys of the sentences of the preview, each made of its person's key and its own. */
+function keysOfPreview(of: Preview): readonly string[] {
+  return personSentencesOfPreview(of).flatMap((group) =>
+    group.lines.map((line) => `${group.key}:${line.key}`),
+  );
+}
+
 /** A preview with the given people and lifts. */
 function preview(people: Preview["people"], lifts: Preview["lifts"] = []): Preview {
   return {
@@ -30,6 +37,7 @@ function preview(people: Preview["people"], lifts: Preview["lifts"] = []): Previ
     blocked: lifts.length > 0,
     blocked_out_of_sight: false,
     truncated: false,
+    summary: { will_change: people.length, skipped: 0 },
     people,
     lifts,
   };
@@ -100,7 +108,7 @@ describe("prj_03 how people are named in the preview", () => {
 describe("prj_03 the preview of a refused move and of what this version cannot say", () => {
   it("names the people who could take away a No access that applies to them", () => {
     const refused = preview([], [{ person: cleo, project: web }]);
-    expect(liftSentencesOfPreview(refused)).toEqual([
+    expect(keyedLiftSentencesOfPreview(refused).map((line) => line.text)).toEqual([
       t("projects.line-lift", { person: "Cleo", project: "Website" }),
     ]);
   });
@@ -140,7 +148,7 @@ describe("prj_03 the keys of the sentences", () => {
       { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
       { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
     ];
-    const keys = keyedSentencesOfPreview(preview(same)).map((line) => line.key);
+    const keys = keysOfPreview(preview(same));
     // Two people with the same sentence are two lines, each with a key of its own.
     expect(keys).toEqual(["0:w:0", "1:w:0"]);
     expect(new Set(keys).size).toBe(keys.length);
@@ -161,5 +169,23 @@ describe("prj_01 the short name form", () => {
   it("turns the letters typed into capitals", () => {
     expect(asShortName("web2")).toBe("WEB2");
     expect(asShortName("Web")).toBe("WEB");
+  });
+});
+
+describe("m2c_f80 the preview grouped by person for the long preview", () => {
+  it("makes a group for each person with a sentence and leaves out a person with none", () => {
+    const groups = personSentencesOfPreview(
+      preview([
+        { person: cleo, projects: [{ project: web, now: nobody, after: viewer, ...none }] },
+        {
+          person: { shown: "former", label: "K7Q2" },
+          projects: [{ project: web, now: viewer, after: viewer, ...none }],
+        },
+      ]),
+    );
+    expect(groups.map((group) => group.person)).toEqual(["Cleo"]);
+    expect(groups[0]?.lines.map((line) => line.text)).toEqual([
+      t("projects.line-gains", { person: "Cleo", project: "Website", roles: "Viewer" }),
+    ]);
   });
 });
