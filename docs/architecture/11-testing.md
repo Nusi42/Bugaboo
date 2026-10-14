@@ -83,6 +83,20 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 4. *Website › Project settings › Check access*: pick Ana Moreno and read why she is a Contributor (through the group *External*) and that *Cost center* is hidden from her. Pick Ben Hale in *Android* to read that *No access* wins over his role.
 5. Sign out; sign in as the Guest of *Website* (see `dump.json`, the row with the role *Guest* on `WEB`) and as Ana: the tree shows *Website* with its sub-projects only, and the settings pages and *Mobile app* are not found.
 
+### The M3 exit demo on the sample
+
+`web/app/e2e/m3-exit-demo.spec.ts` (the steps are in `web/app/e2e/support/demo-m3-*.ts`) runs it in `cargo xtask ci`, on a phone and a computer, with axe in the four themes at every step; with `BB_SCREENSHOT_DIR` set the same run takes the pictures of the review page (`M3/demo/<step>-<phone|computer>-<theme>.png`, ten steps, four themes). It starts from two changes an administrator and a Project lead make through the API (the form of the Website gets *Assigned to* and an own field *Cost center* for everybody but Guests, because *Cost center* is a field of time entries until M6; Guests see no names of assigned people). By hand, with `cargo xtask dev --sample`:
+
+1. A Guest of the Website makes a bug with the short form (title and description, no priority, no person, no cost center).
+2. A Team member makes a bug with the full form: priority, *Cost center*, and a colleague assigned.
+3. The Team member relates that bug to two issues of the Website (*blocks*).
+4. The Team member takes the Guest's bug (assigns the colleague, writes the cost center); the Guest opens it and reads *Someone* for the colleague, with no *Cost center*. A Guest sees only the issues they made.
+5. The Team member edits the description; an administrator opens the same issue in a second browser and is told who is editing, presses *Edit anyway* and saves; the Team member's text is kept and offered with *Compare and save*.
+
+### Speed on the sample
+
+`web/app/e2e/perf-issues.spec.ts` (the Playwright project `speed`, which runs after every other project so nothing competes for the computer; by hand `--project=speed --no-deps`) measures the reads of an issue page (the issue, its relations, sub-issues, related issues, history, tags and labels, follow and followers, asked all at once as the browser does) and the first pages of every project's list on the ten thousand issues, then the same with ten people writing comments and one reading, and the preview of a move. PERF-01 is the 95th percentile under 100 ms, with the program the tests run against (`BB_SERVER_BIN` names another build); the numbers go to `test-results/perf-*.json`. On the sample, in a debug build: pages 38 ms, lists 44 ms, a comment with ten writers 64 ms (release: 18, 17 and 39 ms). `perf_05_…` (`bb-server`, both databases) counts the statements a read runs (`Database::statements_run`) and fails when an issue with many comments, relations, sub-issues and tags runs more than one with two, or a page of forty issues more than a page of five. Enforced by: TEST-SAMPLE-DATA (the sample the speed is measured on).
+
 ### Large dataset
 
 `cargo xtask dataset large --issues 1000000` builds the same shape at the PERF scale (500 people, 500 projects) for benchmarks.

@@ -90,18 +90,18 @@ struct Size {
     tags: usize,
 }
 
-/// Gives the issue `size` of everything the page reads: related issues, sub-issues, comments that
+/// Gives the issue `amount` of everything the page reads: related issues, sub-issues, comments that
 /// mention a person and name an issue, tags, and a follower.
 async fn fill(
     site: &Site<'_>,
     ada: &mut Browser,
     issue: &str,
     named_in_comments: &str,
-    size: Size,
+    amount: Size,
 ) -> Result<(), Failure> {
     let kinds = ada.send("GET", "/api/v1/relation-kinds", None).await?;
     let blocks = id_in(&kinds.body["items"][0], "id")?;
-    for number in 0..size.relations {
+    for number in 0..amount.relations {
         let other = id_in(
             ok(&site
                 .make(ada, &format!("Other {number} of {issue}"))
@@ -113,7 +113,7 @@ async fn fill(
             .send("POST", &format!("{ISSUES}/{issue}/relations"), Some(body))
             .await?)?;
     }
-    for number in 0..size.parts {
+    for number in 0..amount.parts {
         let part = id_in(
             ok(&site.make(ada, &format!("Part {number} of {issue}")).await?)?,
             "key",
@@ -123,7 +123,7 @@ async fn fill(
             .send("PUT", &format!("{ISSUES}/{part}/parent"), Some(body))
             .await?)?;
     }
-    for number in 0..size.comments {
+    for number in 0..amount.comments {
         // The same person and the same issue in every comment: a page names the same few things
         // over and over, and looks each of them up once.
         let text = format!("Comment {number} for @ada.admin about {named_in_comments}");
@@ -135,7 +135,7 @@ async fn fill(
             )
             .await?)?;
     }
-    for number in 0..size.tags {
+    for number in 0..amount.tags {
         let body = json!({"name": format!("tag{number}")});
         ok(&ada
             .send("POST", &format!("{ISSUES}/{issue}/tags"), Some(body))

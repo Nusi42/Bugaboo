@@ -393,11 +393,13 @@ impl FieldStore for AuthStorage {
             for row in transaction.fetch_all(&update).await? {
                 let id = row.id::<EntityId>(IssueRow::Id)?;
                 let now: i64 = row.get(IssueRow::Version)?;
-                if let Some((place, _)) = chunk.iter().find(|(_, each)| *each == id) {
-                    if let Some(slot) = versions.get_mut(*place) {
-                        // The version it had before the statement counted it up.
-                        *slot = Some(now - 1);
-                    }
+                let place = chunk
+                    .iter()
+                    .find(|(_, each)| *each == id)
+                    .map(|(place, _)| *place);
+                // The version it had before the statement counted it up.
+                if let Some(slot) = place.and_then(|place| versions.get_mut(place)) {
+                    *slot = Some(now - 1);
                 }
             }
         }
