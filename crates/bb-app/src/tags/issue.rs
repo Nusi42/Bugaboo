@@ -219,6 +219,23 @@ async fn count_version_up<S: AuthStore>(
     }
 }
 
+/// The end of the change that takes a tag or a label off an issue: when it was on the issue, the
+/// version of the issue counts up; when it was not (somebody took it off in between), nothing is
+/// found.
+async fn counted_after_take_off<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    taken_off: bool,
+    issue: IssueId,
+    now: Timestamp,
+    stopped: &Why,
+) -> Result<(), S::Error> {
+    if taken_off {
+        count_version_up::<S>(transaction, issue, now).await
+    } else {
+        Err(stopped.stop::<S>(ErrorCode::NotFound))
+    }
+}
+
 /// Shows the tags and labels of an issue and what the person may do with them.
 ///
 /// # Errors
@@ -358,11 +375,8 @@ pub async fn remove_tag<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::delete_issue_tag(transaction, id, tag).await? {
-                    count_version_up::<S>(transaction, id, now).await
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::NotFound))
-                }
+                let taken_off = S::delete_issue_tag(transaction, id, tag).await?;
+                counted_after_take_off::<S>(transaction, taken_off, id, now, &stopped).await
             })
         })
         .await
@@ -475,11 +489,8 @@ pub async fn remove_label<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::delete_issue_label(transaction, id, label).await? {
-                    count_version_up::<S>(transaction, id, now).await
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::NotFound))
-                }
+                let taken_off = S::delete_issue_label(transaction, id, label).await?;
+                counted_after_take_off::<S>(transaction, taken_off, id, now, &stopped).await
             })
         })
         .await
