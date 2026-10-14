@@ -1,11 +1,14 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
 
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
+import {
+  newIssueDialog as dialog,
+  openNewIssueDialog as openDialog,
+  prepareWeb,
+} from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
@@ -14,20 +17,6 @@ import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
-
-/** The dialog that makes an issue. */
-function dialog(page: Page) {
-  return page.getByRole("dialog", { name: t("issues.new-title"), exact: true });
-}
-
-/** Opens the dialog with the button of the bar: the sidebar on a computer, the bar of a phone. */
-async function openDialog(page: Page): Promise<void> {
-  await page
-    .getByRole("button", { name: t("issues.new"), exact: true })
-    .first()
-    .click();
-  await expect(dialog(page)).toBeVisible();
-}
 
 test("iss_11 the dialog asks for a title in words, and the issue is made with Create", async ({
   page,

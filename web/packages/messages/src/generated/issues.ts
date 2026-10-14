@@ -26,6 +26,7 @@ export const messages = {
   "issues.read-only": "Only people whose role allows it can change {field}.",
   "issues.add-field": "Add {field}",
   "issues.change": "Change",
+  "issues.change-field": "Change {field}",
   "issues.change-title": "Change the title",
   "issues.saved-at": "Saved · {time}",
   "issues.title-of": "{key} {title}",

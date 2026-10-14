@@ -5544,6 +5544,15 @@ pub fn issues_assign_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.change-field`.
+#[must_use]
+pub fn issues_change_field(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.change-field"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
 /// The message `issues.changed`.
 #[must_use]
 pub fn issues_changed(field: impl std::fmt::Display, value: impl std::fmt::Display) -> Message {
@@ -9022,6 +9031,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.assigned", "Assigned"),
     ("issues.bar", "Actions for this issue"),
     ("issues.change", "Change"),
+    ("issues.change-field", "Change {field}"),
     ("issues.change-title", "Change the title"),
     ("issues.changed", "{field} changed to {value}."),
     (

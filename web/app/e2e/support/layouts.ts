@@ -63,12 +63,18 @@ async function removeLayoutOfWeb(admin: ApiSession, editor: Schema<"LayoutEditor
   }
 }
 
-/** Saves the layout of *Bug* in the project WEB with *Due date* (for every role) at the end of the first section. */
-async function putDueDateInFirstSection(
+/** A field to put into a layout, and the roles it is for. */
+interface Placed {
+  readonly field: Schema<"EditorFieldBody">["field"];
+  readonly roles: readonly string[];
+}
+
+/** Saves the layout of a form with these fields at the end of its first section. */
+async function putFieldsInFirstSection(
   admin: ApiSession,
   editor: Schema<"LayoutEditorBody">,
   slot: NonNullable<Schema<"LayoutEditorBody">["layout"]>,
-  due: Schema<"EditorFieldBody">,
+  placed: readonly Placed[],
 ): Promise<void> {
   const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart };
   const taken = dataOf(
@@ -85,10 +91,12 @@ async function putDueDateInFirstSection(
     fields: section.fields.map(kept),
   }));
   const first = sections[0] ?? { tab: "", title: "", fields: [] };
-  const everyone = editor.roles.map((role) => role.id);
   sections.splice(0, 1, {
     ...first,
-    fields: [...first.fields, { field: due.field, roles: everyone }],
+    fields: [
+      ...first.fields,
+      ...placed.map((each) => ({ field: each.field, roles: [...each.roles] })),
+    ],
   });
   dataOf(
     await admin.client.PUT("/api/v1/layouts/{layout}", {
@@ -99,6 +107,50 @@ async function putDueDateInFirstSection(
   await admin.client.POST("/api/v1/edit-locks/release", {
     body: { what, lock_token: taken.lock_token },
   });
+}
+
+/** Saves the layout of *Bug* in the project WEB with *Due date* (for every role) at the end of the first section. */
+async function putDueDateInFirstSection(
+  admin: ApiSession,
+  editor: Schema<"LayoutEditorBody">,
+  slot: NonNullable<Schema<"LayoutEditorBody">["layout"]>,
+  due: Schema<"EditorFieldBody">,
+): Promise<void> {
+  const everyone = editor.roles.map((role) => role.id);
+  await putFieldsInFirstSection(admin, editor, slot, [{ field: due.field, roles: everyone }]);
+}
+
+/**
+ * Gives the new-issue form of *Bug* in the project WEB, for every role but the Guest, the fields
+ * with these names (an own field by its name, another by its key) besides what it asks for already (the project makes a layout of its own when it
+ * has none): the full form a Team member fills in, where a Guest gets the short one.
+ */
+export async function addToTheFormOfWeb(
+  admin: ApiSession,
+  names: readonly string[],
+): Promise<void> {
+  const bug = await firstIssueType(admin);
+  let editor = await webEditor(admin, bug);
+  if (editor.layout === undefined || editor.layout === null) {
+    editor = dataOf(
+      await admin.client.POST("/api/v1/layouts", {
+        body: { kind: "new-issue", project: "WEB", issue_type: bug },
+      }),
+    );
+  }
+  const guest = await roleId(admin, roleName.guest);
+  const others = editor.roles.map((role) => role.id).filter((role) => role !== guest);
+  const placed: Placed[] = [];
+  for (const name of names) {
+    const found = editor.available.find((field) => field.name === name || field.field === name);
+    if (found === undefined) {
+      throw new TypeError(`The form cannot take a field called ${name}.`);
+    }
+    placed.push({ field: found.field, roles: others });
+  }
+  if (editor.layout !== undefined && editor.layout !== null) {
+    await putFieldsInFirstSection(admin, editor, editor.layout, placed);
+  }
 }
 
 /**

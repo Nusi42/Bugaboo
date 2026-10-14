@@ -1,4 +1,6 @@
 import { dataOf, settingKeys, type SettingChoice } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
+import { expect, type Page } from "@playwright/test";
 
 import { ana, lea, makePeopleWithRoles, roleName } from "./access.ts";
 import { bob, makeAdmin, signInThroughApi } from "./accounts.ts";
@@ -167,4 +169,18 @@ export async function makeProjectWithIssue(
 ): Promise<MadeIssue> {
   await makeProject(admin, shortName, name);
   return makeIssue(admin, shortName, webIssues.login);
+}
+
+/** The dialog that makes an issue. */
+export function newIssueDialog(page: Page) {
+  return page.getByRole("dialog", { name: t("issues.new-title"), exact: true });
+}
+
+/** Opens the dialog with the button of the bar: the sidebar on a computer, the bar of a phone. */
+export async function openNewIssueDialog(page: Page): Promise<void> {
+  await page
+    .getByRole("button", { name: t("issues.new"), exact: true })
+    .first()
+    .click();
+  await expect(newIssueDialog(page)).toBeVisible();
 }

@@ -32,7 +32,11 @@ function AssignedField({ values, project, onChange }: Omit<NewIssueFieldProps, "
       </span>
       <Button
         look={buttonLook.quiet}
-        aria-label={t("issues.add-field", { field: name })}
+        aria-label={
+          values.assignedTo.length === 0
+            ? t("issues.add-field", { field: name })
+            : t("issues.change-field", { field: name })
+        }
         onPress={() => {
           setPicking(true);
         }}
