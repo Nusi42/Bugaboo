@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, LongPreview, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
+import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { keyedLiftSentencesOfPreview, personSentencesOfPreview } from "./preview-sentences.ts";
 import type { Preview } from "./use-projects.ts";
 
@@ -27,12 +28,10 @@ export function MovePreviewView({ preview }: { readonly preview: Preview }) {
           ) : null}
         </Alert>
       ) : null}
-      <LongPreview
+      <AppLongPreview
         summary={t("projects.preview-summary", { changed: preview.summary.will_change })}
         label={t("projects.preview-list")}
         nothing={t("projects.preview-nothing")}
-        showAll={(count) => t("common.show-all", { count })}
-        showFewer={t("common.show-fewer")}
         groups={groups.map((group) => ({
           key: group.key,
           heading: <strong>{group.person}</strong>,

@@ -1,7 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, LongPreview, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
+import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { listText } from "../../shared/list-text.ts";
 import { useChangePreview, type ChangeAsked, type SortingKind } from "./change-preview.ts";
 
@@ -14,12 +15,10 @@ function namesOf(names: readonly string[]): string {
 export function ChangePreviewView({ preview }: { readonly preview: Schema<"ChangePreviewBody"> }) {
   return (
     <div {...partOf(part.stack)}>
-      <LongPreview
+      <AppLongPreview
         summary={t("labels.preview-summary", { changed: preview.summary.will_change })}
         label={t("labels.preview-label")}
         nothing={t("labels.preview-nothing")}
-        showAll={(count) => t("common.show-all", { count })}
-        showFewer={t("common.show-fewer")}
         groups={preview.issues.map((each) => ({
           key: each.issue.id,
           heading: <strong>{each.issue.key}</strong>,

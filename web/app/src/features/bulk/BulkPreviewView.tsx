@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, LongPreview, partOf, part, type LongPreviewGroup } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part, type LongPreviewGroup } from "@bugaboo/ui";
 
+import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { changeValueText } from "../../shared/change-value.ts";
 import { fieldLabel } from "../history/index.ts";
 import { skipText, type BulkPreview, type BulkRow } from "./bulk.ts";
@@ -52,15 +53,13 @@ function groupOf(row: BulkRow, plain: string): LongPreviewGroup {
 export function BulkPreviewView({ preview, plain }: BulkPreviewViewProps) {
   return (
     <div {...partOf(part.stack)}>
-      <LongPreview
+      <AppLongPreview
         summary={t("bulk.summary", {
           changed: preview.summary.will_change,
           skipped: preview.summary.skipped,
         })}
         label={t("bulk.preview-label")}
         nothing={t("bulk.nothing")}
-        showAll={(count) => t("common.show-all", { count })}
-        showFewer={t("common.show-fewer")}
         groups={preview.rows.map((row) => groupOf(row, plain))}
       />
       {preview.runs_in_background ? (
