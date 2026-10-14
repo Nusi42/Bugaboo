@@ -11,6 +11,9 @@ import { viewports } from "./viewports.ts";
 const ports = readPorts();
 const portsForWorkers = ports.e2eWorkersTo - ports.e2eWorkersFrom + 1;
 
+/** The speed tests (PERF-01) run alone, after every other test, so no other test competes for the computer. */
+const speedFiles = "**/perf-issues.spec.ts";
+
 /** What runs in the WebKit phone project. */
 const webkitPhoneFiles = [
   "**/issues.spec.ts",
@@ -40,11 +43,15 @@ export default defineConfig({
       testMatch: "**/shell.spec.ts",
       use: { browserName: "chromium", viewport: viewports.tablet, hasTouch: true },
     },
-    { name: "desktop", use: { browserName: "chromium", viewport: viewports.computer } },
+    {
+      name: "desktop",
+      testIgnore: speedFiles,
+      use: { browserName: "chromium", viewport: viewports.computer },
+    },
     {
       name: "phone",
       // Ten browsers at once are shown on a computer; the phone has the locks in WebKit below.
-      testIgnore: "**/concurrent/**",
+      testIgnore: ["**/concurrent/**", speedFiles],
       use: { browserName: "chromium", viewport: viewports.phone, hasTouch: true },
     },
     // A phone in a browser that is not Chromium (M2-F12): only what a phone is used for most, the
@@ -53,6 +60,14 @@ export default defineConfig({
       name: "webkit-phone",
       testMatch: webkitPhoneFiles,
       use: { browserName: "webkit", viewport: viewports.phone, hasTouch: true },
+    },
+    // The speed of the pages of an issue and the lists on the sample (PERF-01, M3 WP-11): after the
+    // other projects, with every other worker idle. By hand: `--project=speed --no-deps`.
+    {
+      name: "speed",
+      testMatch: speedFiles,
+      dependencies: ["tablet", "desktop", "phone", "webkit-phone"],
+      use: { browserName: "chromium", viewport: viewports.computer },
     },
   ],
 });
