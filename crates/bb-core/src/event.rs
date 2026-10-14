@@ -222,6 +222,24 @@ impl DomainEvent {
             .iter()
             .any(|change| change.field == crate::version::FIELD)
     }
+
+    /// The version the record had after the event, when the event counted it up.
+    #[must_use]
+    pub fn version_after(&self) -> Option<i64> {
+        self.changes
+            .iter()
+            .find(|change| change.field == crate::version::FIELD)?
+            .after
+            .as_ref()?
+            .as_i64()
+    }
+
+    /// Whether the event changed `field` and left its record at a version after `version`.
+    #[must_use]
+    pub fn changes_field_after(&self, field: &str, version: i64) -> bool {
+        self.version_after().is_some_and(|after| after > version)
+            && self.changes.iter().any(|change| change.field == field)
+    }
 }
 
 #[cfg(test)]
@@ -257,6 +275,23 @@ mod tests {
         let event = sample();
         let json = serde_json::to_string(&event).unwrap();
         assert_eq!(serde_json::from_str::<DomainEvent>(&json).unwrap(), event);
+    }
+
+    #[test]
+    fn the_version_after_is_the_one_the_event_counted_up_to() {
+        let mut event = sample();
+        assert_eq!(event.version_after(), None);
+        assert!(!event.counted_version());
+        event.changes.push(FieldChange {
+            field: crate::version::FIELD.to_owned(),
+            before: Some(json!(3)),
+            after: Some(json!(4)),
+        });
+        assert_eq!(event.version_after(), Some(4));
+        assert!(event.counted_version());
+        assert!(event.changes_field_after("status", 3));
+        assert!(!event.changes_field_after("status", 4));
+        assert!(!event.changes_field_after("title", 3));
     }
 
     #[test]

@@ -15,7 +15,7 @@ mod input;
 pub mod issues;
 pub mod jobs;
 pub mod layouts;
-mod member;
+pub mod member;
 pub mod people;
 pub mod ports;
 pub mod preview;

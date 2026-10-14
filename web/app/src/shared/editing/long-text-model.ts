@@ -1,4 +1,4 @@
-import type { ErrorCode, Heartbeat, LockOutcome, Schema } from "@bugaboo/api-client";
+import type { DraftKeptCode, ErrorCode, Heartbeat, LockOutcome, Schema } from "@bugaboo/api-client";
 
 /** Somebody else is editing: who, since when, and whether the reader may take over. */
 export type HeldBySomebody = Schema<"HeldLockBody">;
@@ -68,7 +68,7 @@ export interface LongTextDeps {
   readonly askToFinish: () => Promise<void>;
   readonly heartbeat: (
     token: string,
-    draft: { readonly text: string; readonly base_version: number },
+    draft?: { readonly text: string; readonly base_version: number },
   ) => Promise<Heartbeat>;
   readonly release: (token: string) => Promise<void>;
   /** Saves the text under the lock; rejects with the error of the server. */
@@ -91,16 +91,22 @@ export interface LongTextDeps {
   readonly newEditorId: () => string;
 }
 
-/** The refusals of a save that are the lock's business, by the code of the error. */
-const lostReasons: ReadonlyMap<ErrorCode, LostReason> = new Map([
-  ["edit.lock_lost", "ran-out"],
-  ["edit.taken_over", "taken-over"],
-  ["edit.version_changed", "version-changed"],
-]);
+/**
+ * Why each refusal that keeps the text as a draft is the lock's business. The codes are the
+ * generated list of the server (`draftKeptCodes`), so a code added there fails to compile here
+ * until it has a reason.
+ */
+const lostReasons: Readonly<Record<DraftKeptCode, LostReason>> = {
+  "edit.lock_lost": "ran-out",
+  "edit.taken_over": "taken-over",
+  "edit.version_changed": "version-changed",
+};
+
+const lostReasonsByCode: ReadonlyMap<string, LostReason> = new Map(Object.entries(lostReasons));
 
 /** Why a save was refused for the lock's sake, from the code of the error; nothing for any other error. */
 export function lostReasonOf(code: ErrorCode | undefined): LostReason | undefined {
-  return code === undefined ? undefined : lostReasons.get(code);
+  return code === undefined ? undefined : lostReasonsByCode.get(code);
 }
 
 /** The newest of the drafts that differ from the saved text, or nothing. */

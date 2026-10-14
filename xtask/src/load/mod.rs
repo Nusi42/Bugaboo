@@ -1,0 +1,336 @@
+//! `cargo xtask load --people 10 [--minutes N] [--database sqlite|postgres]`: ten people work on
+//! the same issues through the API at speed, and the invariants of architecture §11 are checked
+//! afterwards (TEST-CONCURRENT).
+//!
+//! xtask builds the programs, starts the database of the run and runs the driver, a Node program
+//! (`tools/dev/load.json` names it). The driver starts the server of the load test on the port
+//! `loadTestServer` of `tools/dev/ports.json`, lets the people work and writes their book to a
+//! file. When the server has stopped, xtask runs `bb-load-check` on that book and the database of
+//! the run: the invariants are written there once, as they are for the test of the server.
+//! Without `--database` the run is made on both.
+
+mod layout;
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use anyhow::Context as _;
+use bb_dev_words::database::{DatabaseKind, parse as parse_database};
+
+use crate::db;
+use crate::output;
+use crate::repo::Repo;
+use crate::steps::{self, Profile};
+
+use layout::Layout;
+
+/// The command line of `cargo xtask load`.
+#[derive(clap::Args)]
+pub(crate) struct Arguments {
+    /// How many people work at the same time (default: tools/dev/load.json).
+    #[arg(long)]
+    people: Option<u32>,
+    /// How long they work, in minutes (default: the short run of tools/dev/load.json).
+    #[arg(long, conflicts_with = "nightly")]
+    minutes: Option<u32>,
+    /// The long run of the nightly job instead of the short one.
+    #[arg(long)]
+    nightly: bool,
+    /// Only this database (default: both).
+    #[arg(long, value_parser = parse_database)]
+    database: Option<DatabaseKind>,
+    /// The number the choices of the people are made from, to run a failure again.
+    #[arg(long)]
+    seed: Option<u64>,
+}
+
+impl Arguments {
+    /// What the command line asks for.
+    pub(crate) fn request(&self) -> Request {
+        Request {
+            people: self.people,
+            minutes: self.minutes,
+            nightly: self.nightly,
+            databases: self.database.into_iter().collect(),
+            seed: self.seed,
+        }
+    }
+}
+
+/// What `cargo xtask load` was asked to do.
+pub(crate) struct Request {
+    pub(crate) people: Option<u32>,
+    pub(crate) minutes: Option<u32>,
+    /// The long run of the nightly job.
+    pub(crate) nightly: bool,
+    /// The databases to run on; both when empty.
+    pub(crate) databases: Vec<DatabaseKind>,
+    pub(crate) seed: Option<u64>,
+}
+
+/// The folder of one run: the data folder of the server and the book of the people. It goes away
+/// with the run.
+struct RunFolder(PathBuf);
+
+impl RunFolder {
+    fn make(database: DatabaseKind) -> anyhow::Result<Self> {
+        let folder = std::env::temp_dir().join(format!(
+            "bugaboo-load-{}-{}",
+            database.code(),
+            std::process::id()
+        ));
+        // A folder of an earlier run that stopped half way must not be read as this run's.
+        let _ = fs::remove_dir_all(&folder);
+        fs::create_dir_all(&folder)
+            .with_context(|| format!("could not make {}", folder.display()))?;
+        Ok(Self(folder))
+    }
+
+    fn data(&self) -> PathBuf {
+        self.0.join("data")
+    }
+
+    fn book(&self) -> PathBuf {
+        self.0.join("book.json")
+    }
+}
+
+impl Drop for RunFolder {
+    fn drop(&mut self) {
+        // The folder is a leftover at worst; a failure to remove it must not hide how the run went.
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+/// The arguments of the driver for one run on one database.
+fn driver_arguments(
+    layout: &Layout,
+    request: &Request,
+    database: DatabaseKind,
+    folder: &RunFolder,
+) -> Vec<String> {
+    let people = request.people.unwrap_or(layout.people);
+    let minutes = if request.nightly {
+        layout.nightly_minutes
+    } else {
+        request.minutes.unwrap_or(layout.minutes)
+    };
+    let mut arguments = vec![
+        layout.driver.clone(),
+        "--people".to_owned(),
+        people.to_string(),
+        "--seconds".to_owned(),
+        (u64::from(minutes) * 60).to_string(),
+        "--database".to_owned(),
+        database.code().to_owned(),
+        "--data-dir".to_owned(),
+        folder.data().display().to_string(),
+        "--book".to_owned(),
+        folder.book().display().to_string(),
+    ];
+    if let Some(seed) = request.seed {
+        arguments.push("--seed".to_owned());
+        arguments.push(seed.to_string());
+    }
+    arguments
+}
+
+/// Runs the driver once; the address of the PostgreSQL database goes in the environment, never on
+/// the command line (it holds a password).
+fn run_driver(
+    root: &Path,
+    layout: &Layout,
+    arguments: &[String],
+    program: &Path,
+    url: Option<&str>,
+) -> anyhow::Result<bool> {
+    let mut command = Command::new("node");
+    command
+        .args(arguments)
+        .current_dir(root)
+        .env("BB_SERVER_BIN", program);
+    if let Some(url) = url {
+        command.env(&layout.database_variable, url);
+    }
+    Ok(command
+        .status()
+        .context("could not start node; run `cargo xtask setup`")?
+        .success())
+}
+
+/// Judges the run: `bb-load-check` reads the book and the database of the run.
+fn run_check(
+    root: &Path,
+    folder: &RunFolder,
+    checker: &Path,
+    url: Option<&str>,
+) -> anyhow::Result<bool> {
+    let mut command = Command::new(checker);
+    command.arg("--book").arg(folder.book()).current_dir(root);
+    match url {
+        Some(url) => command.arg("--database-url").arg(url),
+        None => command.arg("--data-dir").arg(folder.data()),
+    };
+    Ok(command
+        .status()
+        .with_context(|| format!("could not start {}", checker.display()))?
+        .success())
+}
+
+/// The programs a run uses.
+struct Programs {
+    server: PathBuf,
+    checker: PathBuf,
+}
+
+/// One run on one database: the people work, then the run is judged. PostgreSQL is the throwaway
+/// cluster of `cargo xtask db`, started for the run and stopped afterwards when this run started
+/// it.
+fn run_on(
+    repo: &Repo,
+    layout: &Layout,
+    request: &Request,
+    database: DatabaseKind,
+    programs: &Programs,
+) -> anyhow::Result<bool> {
+    output::info(&format!("load: {} ...", database.code()));
+    let folder = RunFolder::make(database)?;
+    let arguments = driver_arguments(layout, request, database, &folder);
+    let root = repo.root();
+    match database {
+        DatabaseKind::Sqlite => Ok(
+            run_driver(root, layout, &arguments, &programs.server, None)?
+                && run_check(root, &folder, &programs.checker, None)?,
+        ),
+        DatabaseKind::Postgres => db::with_postgres(repo, |postgres| {
+            let url = postgres.empty_database(&layout.database_name)?;
+            Ok(
+                run_driver(root, layout, &arguments, &programs.server, Some(&url))?
+                    && run_check(root, &folder, &programs.checker, Some(&url))?,
+            )
+        }),
+    }
+}
+
+/// Builds what the run needs, then runs on every database asked for; true when all of them held.
+pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
+    let layout = Layout::load(repo.root())?;
+    let mut plan = vec![steps::server_build(Profile::Debug)];
+    let app = repo
+        .root()
+        .join(steps::WEB_APP)
+        .join("dist")
+        .join("index.html");
+    if !app.is_file() {
+        plan.push(steps::web_build(repo.root()));
+    }
+    let built = steps::run(repo.root(), &plan)?;
+    let Some(server) = built.executable.filter(|_| built.passed) else {
+        return Ok(false);
+    };
+    let judge = steps::run(repo.root(), &[steps::load_check_build(Profile::Debug)])?;
+    let Some(checker) = judge.executable.filter(|_| judge.passed) else {
+        return Ok(false);
+    };
+    let programs = Programs { server, checker };
+    let databases = if request.databases.is_empty() {
+        DatabaseKind::ALL.to_vec()
+    } else {
+        request.databases.clone()
+    };
+    let mut all_held = true;
+    for database in databases {
+        // Every database is tried, so one failure does not hide the other.
+        all_held &= run_on(repo, &layout, request, database, &programs)?;
+    }
+    Ok(all_held)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn layout() -> Layout {
+        Layout::parse(
+            r#"{"driver":"driver.ts","databaseVariable":"V","databaseName":"d","people":10,"minutes":2,"nightlyMinutes":30}"#,
+        )
+        .unwrap()
+    }
+
+    fn folder() -> RunFolder {
+        // Not made on disk: the test only reads the names. The drop of a missing folder is harmless.
+        RunFolder(PathBuf::from("a-run-folder-that-is-never-made"))
+    }
+
+    fn request(people: Option<u32>, minutes: Option<u32>) -> Request {
+        Request {
+            people,
+            minutes,
+            nightly: false,
+            databases: Vec::new(),
+            seed: None,
+        }
+    }
+
+    /// The part of the arguments that says where the data and the book go.
+    fn places() -> [String; 4] {
+        [
+            "--data-dir".to_owned(),
+            folder().data().display().to_string(),
+            "--book".to_owned(),
+            folder().book().display().to_string(),
+        ]
+    }
+
+    #[test]
+    fn the_defaults_are_ten_people_for_two_minutes() {
+        let arguments = driver_arguments(
+            &layout(),
+            &request(None, None),
+            DatabaseKind::Sqlite,
+            &folder(),
+        );
+        assert_eq!(
+            arguments[..7],
+            [
+                "driver.ts",
+                "--people",
+                "10",
+                "--seconds",
+                "120",
+                "--database",
+                "sqlite"
+            ]
+        );
+        assert_eq!(arguments[7..], places());
+    }
+
+    #[test]
+    fn the_request_wins_over_the_defaults_and_the_seed_is_passed_on() {
+        let mut asked = request(Some(4), Some(30));
+        asked.seed = Some(7);
+        let arguments = driver_arguments(&layout(), &asked, DatabaseKind::Postgres, &folder());
+        assert_eq!(arguments[2], "4");
+        assert_eq!(arguments[4], "1800");
+        assert_eq!(arguments[6], "postgres");
+        assert_eq!(arguments[7..11], places());
+        assert_eq!(arguments[11..], ["--seed", "7"]);
+    }
+
+    #[test]
+    fn the_nightly_run_is_the_long_one() {
+        let mut asked = request(None, None);
+        asked.nightly = true;
+        let arguments = driver_arguments(&layout(), &asked, DatabaseKind::Sqlite, &folder());
+        assert_eq!(arguments[4], "1800");
+    }
+
+    #[test]
+    fn the_layout_of_this_repository_is_valid_and_its_driver_exists() {
+        let repo = Repo::discover().unwrap();
+        let layout = Layout::load(repo.root()).unwrap();
+        assert!(repo.root().join(&layout.driver).is_file());
+        assert!(layout.minutes < layout.nightly_minutes);
+    }
+}

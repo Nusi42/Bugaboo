@@ -6,15 +6,21 @@ import { CompareAndSave } from "./CompareAndSave.tsx";
 import { DescriptionEditor, DescriptionReading } from "./DescriptionEditor.tsx";
 import { DescriptionHead } from "./DescriptionHead.tsx";
 import { DescriptionNotes } from "./DescriptionNotes.tsx";
-import { descriptionWords, sectionId, type LongTextWords } from "./long-text-words.ts";
+import {
+  DESCRIPTION_PART,
+  descriptionWords,
+  sectionId,
+  type LongTextWords,
+} from "./long-text-words.ts";
 import type { IssueView } from "./slots.ts";
 import { useDescription, type Description } from "./use-description.ts";
 
 export interface LongTextBlockProps {
   /** The text as a long text being edited. */
   readonly description: Description;
-  /** The ID of the heading of the section. */
-  readonly titleId: string;
+  /** The ID of the issue and the part of it that the text is. */
+  readonly issue: string;
+  readonly which: string;
   /** The text rendered by the server; nothing when the person may not see it. */
   readonly html: SafeHtml | undefined;
   /** Whether there is a text at all. */
@@ -32,7 +38,8 @@ export interface LongTextBlockProps {
  */
 export function LongTextBlock({
   description,
-  titleId,
+  issue,
+  which,
   html,
   filled,
   canChange,
@@ -42,15 +49,17 @@ export function LongTextBlock({
   const editing = description.phase.kind !== "reading";
   const showCompare = comparing && editing;
   return (
-    <section {...partOf(part.issueSection)} aria-labelledby={titleId}>
+    <section {...partOf(part.issueSection)} aria-labelledby={sectionId(issue, which)}>
       <DescriptionHead
         description={description}
-        titleId={titleId}
+        titleId={sectionId(issue, which)}
         canChange={canChange}
         words={words}
       />
       <DescriptionNotes
         description={description}
+        issue={issue}
+        which={which}
         comparing={showCompare}
         onCompare={() => {
           setComparing(true);
@@ -95,7 +104,8 @@ export function DescriptionBlock({ issue, address, html, canChange }: Descriptio
   return (
     <LongTextBlock
       description={description}
-      titleId={sectionId(issue.id ?? address, "description")}
+      issue={issue.id ?? address}
+      which={DESCRIPTION_PART}
       html={html}
       filled={filled}
       canChange={canChange}

@@ -107,6 +107,7 @@ impl<S> AuthServices<S> {
             request,
             evaluations: Mutex::default(),
             via_key: AtomicBool::new(false),
+            image_hosts: Mutex::default(),
             acting: None,
             reason: Mutex::default(),
         }
@@ -148,6 +149,9 @@ pub struct Ctx<'a, S> {
     /// The request came with an access key, so what it changes is recorded as made through the
     /// API (the channel of its events).
     pub(crate) via_key: AtomicBool,
+    /// The hosts images in text may come from, read from the setting once for the request (a page
+    /// of comments asks for them once for each comment).
+    pub(crate) image_hosts: Mutex<Option<Vec<String>>>,
     /// The person a background job makes its changes as; none for a request, which has a session or
     /// an access key to tell who asks.
     pub(crate) acting: Option<ActingPerson>,

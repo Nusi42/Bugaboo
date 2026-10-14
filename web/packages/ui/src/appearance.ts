@@ -1,5 +1,6 @@
 import { settingChoices, settingDefaults, type SettingChoice } from "@bugaboo/api-client";
 
+import { Listeners } from "./listeners.ts";
 import {
   applyTheme,
   defaultThemeChoice,
@@ -142,7 +143,7 @@ export interface AppearanceSource {
  * `localStorage` can throw (blocked site data); then the choices last until the page is closed.
  */
 export function storageSource(getStore: StoreGetter = browserStorage): AppearanceSource {
-  const listeners = new Set<() => void>();
+  const listeners = new Listeners();
   let current: Appearance | null = null;
   return {
     read: () => {
@@ -152,16 +153,9 @@ export function storageSource(getStore: StoreGetter = browserStorage): Appearanc
     write: (next) => {
       current = next;
       writeStored(storageKey.appearance, JSON.stringify(next), getStore);
-      for (const listener of listeners) {
-        listener();
-      }
+      listeners.notify();
     },
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: listeners.subscribe,
   };
 }
 

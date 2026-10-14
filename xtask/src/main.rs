@@ -18,6 +18,7 @@ mod fakecc;
 #[path = "gen/mod.rs"]
 mod generate;
 mod hook;
+mod load;
 mod location;
 mod metadata;
 mod output;
@@ -86,6 +87,9 @@ enum Command {
         #[command(subcommand)]
         kind: DatasetKind,
     },
+    /// Ten people work on the same issues through the API at speed, and the invariants of
+    /// architecture §11 are checked afterwards (TEST-CONCURRENT). Both databases unless one is named.
+    Load(load::Arguments),
     /// Entry points for Claude Code hooks.
     Hook {
         #[command(subcommand)]
@@ -241,6 +245,7 @@ fn run() -> anyhow::Result<ExitCode> {
             };
             Ok(steps::exit_code(dataset::run(&repo, &request)?))
         }
+        Command::Load(arguments) => Ok(steps::exit_code(load::run(&repo, &arguments.request())?)),
         Command::Build { target } => Ok(steps::exit_code(build::run(
             repo.root(),
             target.as_deref(),

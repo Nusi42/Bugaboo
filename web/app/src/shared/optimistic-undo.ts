@@ -1,4 +1,5 @@
 import { browserSchedule, undoWindowMs, type Schedule } from "./optimistic.ts";
+import { createStore } from "./store.ts";
 
 /** One action that can still be taken back. */
 export interface UndoOffer {
@@ -94,19 +95,12 @@ export function createUndoStore(
   schedule: Schedule = browserSchedule,
   now: () => number = Date.now,
 ): UndoStore {
-  const listeners = new Set<() => void>();
   const countdowns = createCountdowns(schedule, now);
-  let offers: readonly UndoOffer[] = [];
+  const offers = createStore<readonly UndoOffer[]>([]);
   let nextId = 1;
-  const changed = (next: readonly UndoOffer[]): void => {
-    offers = next;
-    for (const listener of listeners) {
-      listener();
-    }
-  };
   const drop = (id: number): void => {
     countdowns.stop(id);
-    changed(offers.filter((offer) => offer.id !== id));
+    offers.replace(offers.snapshot().filter((offer) => offer.id !== id));
   };
   return {
     offer: (request) => {
@@ -115,14 +109,14 @@ export function createUndoStore(
       countdowns.start(id, () => {
         drop(id);
       });
-      changed([...offers, { id, ...request }]);
+      offers.replace([...offers.snapshot(), { id, ...request }]);
       return id;
     },
     pause: countdowns.pause,
     resume: countdowns.resume,
-    latest: () => offers.at(-1),
+    latest: () => offers.snapshot().at(-1),
     take: (id) => {
-      const found = offers.find((offer) => offer.id === id);
+      const found = offers.snapshot().find((offer) => offer.id === id);
       if (found === undefined) {
         return false;
       }
@@ -130,13 +124,8 @@ export function createUndoStore(
       found.undo();
       return true;
     },
-    list: () => offers,
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    list: offers.snapshot,
+    subscribe: offers.subscribe,
   };
 }
 

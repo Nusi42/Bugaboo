@@ -10,11 +10,14 @@ export type Ports = { readonly [Name in keyof typeof layout.offsets]: number };
 
 const portNames = Object.keys(layout.offsets);
 
-/** The variable that names the block of ports of a folder that is not called `bugaboo.winN`. */
-export const BLOCK_VARIABLE = "BUGABOO_PORT_BLOCK";
+/** The variable that names the block of ports of a folder that is not a numbered work folder. */
+export const BLOCK_VARIABLE = layout.blockVariable;
 
-/** `bugaboo.win3` is the third work folder (ADR-0024). */
-const WORK_FOLDER = /^bugaboo\.win(\d+)$/u;
+/** `<prefix>3` is the third work folder (ADR-0024); the prefix is the one of `ports.json`. */
+const WORK_FOLDER = new RegExp(
+  `^${layout.workFolderPrefix.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}(\\d+)$`,
+  "u",
+);
 
 function isPorts(value: Readonly<Record<string, number>>): value is Ports {
   return portNames.every((name) => Number.isInteger(value[name]));
@@ -32,7 +35,7 @@ function validBlock(value: number, source: string): number {
 
 /**
  * The block of ports for a folder (ADR-0023): the one `override` names (the value of
- * `BUGABOO_PORT_BLOCK`), else the N of a work folder `bugaboo.winN`, else block 1 (CI and every
+ * the block variable), else the N of a work folder `<prefix>N`, else block 1 (CI and every
  * other folder).
  */
 export function blockOf(folderName: string, override?: string): number {

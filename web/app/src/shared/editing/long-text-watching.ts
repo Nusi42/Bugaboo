@@ -6,12 +6,6 @@ import { EditingStore, ignore } from "./long-text-store.ts";
  * who is editing now (watched until they let go). `LongTextEditor` extends this.
  */
 export abstract class WatchingEditor extends EditingStore {
-  /**
-   * Counts the endings of an editing (cancel, dispose). A call that started before one and answers
-   * after it is stale: it takes nothing and starts nothing, and a lock it was given is let go.
-   */
-  protected generation = 0;
-
   /** The text in the box changed (the editor says how). */
   abstract readonly type: (text: string) => void;
 
@@ -21,11 +15,11 @@ export abstract class WatchingEditor extends EditingStore {
    * the box opens.
    */
   protected async findHolder(): Promise<void> {
-    const generation = this.generation;
+    const generation = this.lock.generation;
     const holder = await this.deps.peek().catch(() => null);
     // Only while nothing was typed: a person who started writing meets the lock when it is taken.
     if (
-      generation === this.generation &&
+      generation === this.lock.generation &&
       holder !== null &&
       this.state.phase.kind === "open" &&
       this.state.text === this.state.saved
@@ -39,9 +33,9 @@ export abstract class WatchingEditor extends EditingStore {
     if (this.state.phase.kind !== "held") {
       return;
     }
-    const generation = this.generation;
+    const generation = this.lock.generation;
     const holder = await this.deps.peek();
-    if (generation !== this.generation) {
+    if (generation !== this.lock.generation) {
       return;
     }
     if (holder === null) {

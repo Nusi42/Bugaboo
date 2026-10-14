@@ -28,8 +28,29 @@ pub struct ImageHosts {
 impl Masked for ImageHosts {}
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The hosts images in text may come from: the organization's setting `content.image-hosts`.
+    /// The hosts images in text may come from: the organization's setting `content.image-hosts`,
+    /// read once for the request (M3-F72); the next request reads it again.
     pub(crate) async fn image_hosts(&self) -> Result<Vec<String>, AppError> {
+        if let Some(known) = self.known_image_hosts() {
+            return Ok(known);
+        }
+        let hosts = self.read_image_hosts().await?;
+        self.remember_image_hosts(hosts.clone());
+        Ok(hosts)
+    }
+
+    fn known_image_hosts(&self) -> Option<Vec<String>> {
+        self.image_hosts.lock().ok().and_then(|known| known.clone())
+    }
+
+    fn remember_image_hosts(&self, hosts: Vec<String>) {
+        if let Ok(mut known) = self.image_hosts.lock() {
+            *known = Some(hosts);
+        }
+    }
+
+    /// The setting as the store has it now.
+    async fn read_image_hosts(&self) -> Result<Vec<String>, AppError> {
         let layers = self
             .store()
             .setting_layers(None, None)

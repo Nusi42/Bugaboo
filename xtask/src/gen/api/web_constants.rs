@@ -20,6 +20,8 @@ const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
+const ERROR_CODE_SOURCE: &str = "crates/bb-core/src/error_code.rs";
+const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
@@ -337,6 +339,11 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
     };
     let file = syn::parse_file(text).with_context(|| format!("{EDIT_SOURCE} is not Rust"))?;
     let number = |name: &str| number_const(&file, EDIT_SOURCE, name);
+    let kept = draft_kept_codes(&file, sources)?
+        .iter()
+        .map(|code| format!("{code:?}"))
+        .collect::<Vec<_>>()
+        .join(", ");
     let layout_part = text_const(text, "LAYOUT_PART")
         .with_context(|| format!("{EDIT_SOURCE} has no `const LAYOUT_PART` that is text"))?;
     Ok(format!(
@@ -358,6 +365,12 @@ export const draftTextMax = {};
 /** The most records one check of versions asks about. */
 export const versionsMax = {};
 
+/** The codes of the refusals of a save that keep the text as the person's draft. */
+export const draftKeptCodes = [{}] as const;
+
+/** One code of `draftKeptCodes`. */
+export type DraftKeptCode = (typeof draftKeptCodes)[number];
+
 /** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
 export const layoutEditPart = {layout_part:?};
 ",
@@ -367,7 +380,93 @@ export const layoutEditPart = {layout_part:?};
         number("DRAFT_KEEP_DAYS")?,
         number("DRAFT_TEXT_MAX")?,
         number("VERSIONS_MAX")?,
+        kept,
     ))
+}
+
+/// One row of the table of error codes: `Variant => ("text", status)`.
+struct CodeRow {
+    variant: String,
+    code: String,
+}
+
+impl syn::parse::Parse for CodeRow {
+    fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
+        syn::Attribute::parse_outer(input)?;
+        let variant: syn::Ident = input.parse()?;
+        input.parse::<syn::Token![=>]>()?;
+        let inner;
+        syn::parenthesized!(inner in input);
+        let code: syn::LitStr = inner.parse()?;
+        inner.parse::<syn::Token![,]>()?;
+        inner.parse::<syn::LitInt>()?;
+        Ok(Self {
+            variant: variant.to_string(),
+            code: code.value(),
+        })
+    }
+}
+
+/// The text of every error code by its variant, from `error_codes! { … }`.
+fn error_codes(sources: &[Source]) -> anyhow::Result<Vec<(String, String)>> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == ERROR_CODE_SOURCE) else {
+        bail!("{ERROR_CODE_SOURCE} is missing");
+    };
+    let file = syn::parse_file(text).with_context(|| format!("{ERROR_CODE_SOURCE} is not Rust"))?;
+    for item in &file.items {
+        let syn::Item::Macro(item) = item else {
+            continue;
+        };
+        if item.mac.path.is_ident("error_codes") {
+            let rows = item
+                .mac
+                .parse_body_with(
+                    syn::punctuated::Punctuated::<CodeRow, syn::Token![,]>::parse_terminated,
+                )
+                .with_context(|| {
+                    format!("{ERROR_CODE_SOURCE}: a line of `error_codes!` is not `Name => (\"text\", status)`")
+                })?;
+            return Ok(rows
+                .into_iter()
+                .map(|row| (row.variant, row.code))
+                .collect());
+        }
+    }
+    bail!("{ERROR_CODE_SOURCE} has no `error_codes! {{ … }}` table")
+}
+
+/// The codes of the list `DRAFT_KEPT_BY` of the edit module (`[ErrorCode::A, ErrorCode::B]`), in
+/// the order of the list.
+fn draft_kept_codes(file: &syn::File, sources: &[Source]) -> anyhow::Result<Vec<String>> {
+    let list = file
+        .items
+        .iter()
+        .find_map(|item| match item {
+            syn::Item::Const(item) if item.ident == DRAFT_KEPT_LIST => match &*item.expr {
+                syn::Expr::Array(array) => Some(array),
+                _ => None,
+            },
+            _ => None,
+        })
+        .with_context(|| {
+            format!("{EDIT_SOURCE} has no `const {DRAFT_KEPT_LIST}` that is a list")
+        })?;
+    let table = error_codes(sources)?;
+    list.elems
+        .iter()
+        .map(|element| {
+            let variant = match element {
+                syn::Expr::Path(path) => path.path.segments.last().map(|s| s.ident.to_string()),
+                _ => None,
+            }
+            .with_context(|| format!("{EDIT_SOURCE}: `{DRAFT_KEPT_LIST}` holds more than `ErrorCode::Name`"))?;
+            table
+                .iter()
+                .find(|(each, _)| *each == variant)
+                .map(|(_, code)| code.clone())
+                .with_context(|| format!("{DRAFT_KEPT_LIST} names `{variant}`, which {ERROR_CODE_SOURCE} does not list"))
+        })
+        .collect()
 }
 
 /// The text of `const NAME: &str = "…";` in a Rust source.
@@ -579,6 +678,43 @@ pub(super) const DEFAULT_LOOK: &str = \"day\";
         assert!(setting_keys(&[broken]).is_err());
     }
 
+    fn error_codes_source() -> Source {
+        (
+            ERROR_CODE_SOURCE.to_owned(),
+            "error_codes! {
+    /// Something.
+    NotFound => (\"resource.not_found\", 404),
+    /// Lost.
+    EditLockLost => (\"edit.lock_lost\", 409),
+    VersionChanged => (\"edit.version_changed\", 409),
+}
+"
+            .to_owned(),
+        )
+    }
+
+    #[test]
+    fn the_refusals_that_keep_a_draft_come_from_the_list_of_the_edit_module() {
+        let edit = (
+            EDIT_SOURCE.to_owned(),
+            "pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::VersionChanged];"
+                .to_owned(),
+        );
+        let file = syn::parse_file(&edit.1).unwrap();
+        let sources = [edit, error_codes_source()];
+        assert_eq!(
+            draft_kept_codes(&file, &sources).unwrap(),
+            ["edit.lock_lost", "edit.version_changed"]
+        );
+        assert!(draft_kept_codes(&file, &sources[..1]).is_err());
+        let unknown =
+            syn::parse_file("pub const DRAFT_KEPT_BY: [ErrorCode; 1] = [ErrorCode::Nope];")
+                .unwrap();
+        assert!(draft_kept_codes(&unknown, &sources).is_err());
+        let none = syn::parse_file("pub const OTHER: u8 = 1;").unwrap();
+        assert!(draft_kept_codes(&none, &sources).is_err());
+    }
+
     #[test]
     fn the_times_of_editing_come_from_the_edit_module() {
         let source = (
@@ -589,17 +725,24 @@ pub const WATCH_SECONDS: i64 = 30;
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
+pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::VersionChanged];
 pub const LAYOUT_PART: &str = \"layout\";
 "
             .to_owned(),
         );
-        let text = editing(&[source]).unwrap();
+        let text = editing(&[source, error_codes_source()]).unwrap();
         assert!(text.contains("leaseSeconds = 60;"), "{text}");
         assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
         assert!(text.contains("watchSeconds = 30;"), "{text}");
         assert!(text.contains("draftKeepDays = 30;"), "{text}");
         assert!(text.contains("draftTextMax = 100000;"), "{text}");
         assert!(text.contains("versionsMax = 50;"), "{text}");
+        assert!(
+            text.contains(
+                "draftKeptCodes = [\"edit.lock_lost\", \"edit.version_changed\"] as const;"
+            ),
+            "{text}"
+        );
         assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
         assert!(editing(&[]).is_err());
     }

@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 
+import { createStore } from "../../shared/store.ts";
+
 /** The layers that open over the page; one at a time. */
 export const overlays = {
   search: "search",
@@ -12,36 +14,21 @@ export const overlays = {
 /** The name of a layer. */
 export type OverlayName = (typeof overlays)[keyof typeof overlays];
 
-let open: OverlayName | null = null;
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function setOpen(next: OverlayName | null): void {
-  open = next;
-  for (const listener of listeners) {
-    listener();
-  }
-}
+const open = createStore<OverlayName | null>(null);
 
 /** Opens a layer; one that was open closes. */
 export function openOverlay(name: OverlayName): void {
-  setOpen(name);
+  open.replace(name);
 }
 
 /** Closes the layer that is open. */
 export function closeOverlay(): void {
-  setOpen(null);
+  open.replace(null);
 }
 
 /** Whether this layer is open. */
 export function useOverlayOpen(name: OverlayName): boolean {
-  return useSyncExternalStore(subscribe, () => open === name);
+  return useSyncExternalStore(open.subscribe, () => open.snapshot() === name);
 }
 
 /** The functions to hand to an `Overlay`. */

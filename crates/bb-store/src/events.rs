@@ -16,6 +16,7 @@ use bb_core::outbox::OutboxEntry;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
+use std::ops::ControlFlow;
 
 use crate::db::{Database, Row, StoredId, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
@@ -29,6 +30,22 @@ const EVENT_PAGE: u64 = 50;
 
 const ACTOR_PERSON: &str = "person";
 const ACTOR_SYSTEM: &str = "system";
+
+/// A query for events in the order they were committed (the outbox position), not by their IDs:
+/// an ID begins with its time and ends in random bits, so two events of one millisecond have no
+/// order there. The caller adds what it looks for.
+fn committed_events(order: Order) -> sea_query::SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns(event_columns().map(|column| (Event::Table, column)))
+        .from(Outbox::Table)
+        .inner_join(
+            Event::Table,
+            Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
+        )
+        .order_by((Outbox::Table, Outbox::Position), order);
+    select
+}
 
 impl Database {
     /// Runs `change` and appends `event` and its outbox entry, all in one transaction. If
@@ -74,13 +91,32 @@ impl Database {
         entity: &EntityRef,
         limit: u64,
     ) -> Result<Vec<DomainEvent>, StoreError> {
-        let mut select = Query::select();
+        let mut select = committed_events(Order::Asc);
         select
-            .columns(event_columns())
-            .from(Event::Table)
-            .and_where(Expr::col(Event::EntityKind).eq(entity.kind.as_str()))
-            .and_where(Expr::col(Event::EntityId).eq(entity.id.stored()))
-            .order_by(Event::Id, Order::Asc)
+            .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
+            .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
+            .limit(limit);
+        self.fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_event)
+            .collect()
+    }
+
+    /// The events about records of one kind, oldest first: what the check after a run reads to
+    /// count the comments of an issue (TEST-CONCURRENT).
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn events_of_kind(
+        &self,
+        kind: &EntityKind,
+        limit: u64,
+    ) -> Result<Vec<DomainEvent>, StoreError> {
+        let mut select = committed_events(Order::Asc);
+        select
+            .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(kind.as_str()))
             .limit(limit);
         self.fetch_all(&select)
             .await?
@@ -121,36 +157,85 @@ impl Database {
         entity: &EntityRef,
         wanted: impl Fn(&DomainEvent) -> bool + Send,
     ) -> Result<Option<DomainEvent>, StoreError> {
-        // The order they were committed in (the outbox position), not the time in their IDs: two
-        // events of the same millisecond have no order there.
+        let (found, _) = self
+            .scan_events_about(entity, |event| {
+                if wanted(event) {
+                    ControlFlow::Break(Some(event.clone()))
+                } else {
+                    ControlFlow::Continue(())
+                }
+            })
+            .await?;
+        Ok(found)
+    }
+
+    /// Whether an event about one record after `version` changed `field`. It reads the events from
+    /// the newest on and stops at the first one that is not after `version`: events are in version
+    /// order (the order they were committed), so the older ones cannot answer.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn field_changed_after(
+        &self,
+        entity: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        Ok(self.search_field_change(entity, field, version).await?.0)
+    }
+
+    /// `field_changed_after`, and how many events it read.
+    pub(crate) async fn search_field_change(
+        &self,
+        entity: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<(bool, usize), StoreError> {
+        let (found, read) = self
+            .scan_events_about(entity, |event| {
+                if event.changes_field_after(field, version) {
+                    ControlFlow::Break(Some(()))
+                } else if event.version_after().is_some_and(|after| after <= version) {
+                    ControlFlow::Break(None)
+                } else {
+                    ControlFlow::Continue(())
+                }
+            })
+            .await?;
+        Ok((found.is_some(), read))
+    }
+
+    /// Shows the events about one record to `visit`, the newest first, a page at a time, until it
+    /// breaks with the answer (`None` when the search ends without one) or the events end. Gives
+    /// back the answer and how many events `visit` saw.
+    async fn scan_events_about<T>(
+        &self,
+        entity: &EntityRef,
+        mut visit: impl FnMut(&DomainEvent) -> ControlFlow<Option<T>>,
+    ) -> Result<(Option<T>, usize), StoreError> {
         let mut before = i64::MAX;
+        let mut seen = 0;
         loop {
-            let mut select = Query::select();
+            let mut select = committed_events(Order::Desc);
             select
-                .columns(event_columns().map(|column| (Event::Table, column)))
                 .column((Outbox::Table, Outbox::Position))
-                .from(Outbox::Table)
-                .inner_join(
-                    Event::Table,
-                    Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
-                )
                 .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
                 .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
                 .and_where(Expr::col((Outbox::Table, Outbox::Position)).lt(before))
-                .order_by((Outbox::Table, Outbox::Position), Order::Desc)
                 .limit(EVENT_PAGE);
             let rows = self.fetch_all(&select).await?;
             for row in &rows {
                 let event = read_event(row)?;
-                if wanted(&event) {
-                    return Ok(Some(event));
+                seen += 1;
+                if let ControlFlow::Break(answer) = visit(&event) {
+                    return Ok((answer, seen));
                 }
             }
             match rows.last() {
                 Some(last) if rows.len() as u64 == EVENT_PAGE => {
                     before = last.get(Outbox::Position)?;
                 }
-                _ => return Ok(None),
+                _ => return Ok((None, seen)),
             }
         }
     }
@@ -166,18 +251,11 @@ impl Database {
         limit: u64,
     ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
         let done = self.outbox_position(consumer).await?;
-        let mut select = Query::select();
+        let mut select = committed_events(Order::Asc);
         select
-            .columns(event_columns().map(|column| (Event::Table, column)))
             .column((Outbox::Table, Outbox::Position))
             .column((Outbox::Table, Outbox::CreatedAt))
-            .from(Outbox::Table)
-            .inner_join(
-                Event::Table,
-                Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
-            )
             .and_where(Expr::col((Outbox::Table, Outbox::Position)).gt(done))
-            .order_by((Outbox::Table, Outbox::Position), Order::Asc)
             .limit(limit);
         self.fetch_all(&select)
             .await?
@@ -445,6 +523,50 @@ mod tests {
             assert_eq!(waiting[0].0.position, 1);
             assert_eq!(waiting[0].0.event_id, event.id);
             assert_eq!(waiting[0].1, event);
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_events_of_a_kind_are_found_oldest_first() -> TestResult {
+        each_database("test_concurrent_events_of_kind", async |db| {
+            let database = open(db).await?;
+            let mut ids = ids();
+            let first = event(&mut ids, 5);
+            let second = event(&mut ids, 6);
+            for each in [&first, &second] {
+                database.record_change(each, async |_| Ok(())).await?;
+            }
+            let found = database.events_of_kind(&first.entity.kind, 10).await?;
+            assert_eq!(found, [first.clone(), second]);
+            let none = EntityKind::new("comment")?;
+            assert!(database.events_of_kind(&none, 10).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0007_events_are_listed_in_the_order_they_were_committed() -> TestResult {
+        each_database("adr_0007_events_in_commit_order", async |db| {
+            let database = open(db).await?;
+            let mut ids = ids();
+            // Two events of one record whose IDs are in the other order than their commits: the
+            // ID has random bits, so within one millisecond it says nothing about the order.
+            let smaller = event(&mut ids, 5);
+            let mut bigger = event(&mut ids, 5);
+            bigger.entity = smaller.entity.clone();
+            assert!(smaller.id.stored() < bigger.id.stored());
+            for each in [&bigger, &smaller] {
+                database.record_change(each, async |_| Ok(())).await?;
+            }
+            let expected = [bigger.clone(), smaller.clone()];
+            assert_eq!(database.events_about(&smaller.entity, 10).await?, expected);
+            assert_eq!(
+                database.events_of_kind(&smaller.entity.kind, 10).await?,
+                expected
+            );
             Ok(())
         })
         .await

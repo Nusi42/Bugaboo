@@ -71,6 +71,14 @@ export const queryKeys = {
     all: ["history"],
     list: (issue: string, tab: string) => ["history", "list", issue, tab],
     versions: (comment: string) => ["history", "versions", comment],
+    /** Who changed a long text last, as of one version of the issue. */
+    changedBy: (issue: string, part: string, version: number) => [
+      "history",
+      "changed-by",
+      issue,
+      part,
+      version,
+    ],
   },
   followers: {
     all: ["followers"],

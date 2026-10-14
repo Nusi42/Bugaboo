@@ -16,7 +16,7 @@ use jiff::Timestamp;
 use sea_query::{Condition, Expr, ExprTrait as _, OnConflict, Order, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Reader, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Reader, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{EditDraftRow as Drafts, EditLockRow as Locks, EditNoticeRow as Notices};
 
@@ -80,6 +80,35 @@ async fn lock_in(
         .as_ref()
         .map(read_lock)
         .transpose()
+}
+
+impl Database {
+    /// Every lock row that is stored, an expired one too: the check after a run looks at what the
+    /// leases left (TEST-CONCURRENT).
+    ///
+    /// # Errors
+    /// Fails when the database fails or a row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn edit_lock_rows(&self) -> Result<Vec<EditLock>, StoreError> {
+        self.fetch_all(&lock_select())
+            .await?
+            .iter()
+            .map(read_lock)
+            .collect()
+    }
+
+    /// The draft of a person for a target, however old it is.
+    ///
+    /// # Errors
+    /// Fails when the database fails or the row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_draft(
+        &self,
+        author: UserId,
+        target: DraftTarget,
+    ) -> Result<Option<Draft>, StoreError> {
+        draft_in(&mut &*self, author, target, Timestamp::UNIX_EPOCH).await
+    }
 }
 
 /// Stores the lock if the thing has no row; `false` when somebody was faster.
@@ -333,6 +362,17 @@ impl EditStore for AuthStorage {
     ) -> Result<Option<DomainEvent>, StoreError> {
         self.database()
             .latest_event_about_where(record, DomainEvent::counted_version)
+            .await
+    }
+
+    async fn field_changed_since(
+        &self,
+        record: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        self.database()
+            .field_changed_after(record, field, version)
             .await
     }
 

@@ -25,6 +25,7 @@ bugaboo/
 │   ├── bb-wasm/            WebAssembly bindings for searchlang, markdown, validation
 │   ├── bb-testing/         test harness: runs one test body on SQLite and PostgreSQL (dev dependency only)
 │   ├── bb-sample/          sample-organization generator, developer tool (not shipped before OPS-12)
+│   ├── bb-load-check/      the invariants after a run of many people at once, written once; developer tool and test support (never shipped)
 │   └── bb-server/          the `bugaboo` binary: CLI, setup wizard, service install, wiring
 ├── xtask/                  the single check/build runner (cargo xtask …)
 ├── tools/                  check catalogue, pinned tool versions, dev ports
@@ -65,6 +66,7 @@ flowchart TB
   wasm["bb-wasm"]
   testing["bb-testing<br/>database test harness"]
   sample["bb-sample<br/>sample organization"]
+  loadcheck["bb-load-check<br/>invariants after a run"]
 
   server --> api & jobs & store & files & ai & notify & auth & app & core
   api --> app & auth & mcp & core & policy & words
@@ -90,6 +92,8 @@ flowchart TB
   app -. tests only .-> devwords
   server -. tests only .-> devwords
   sample --> app & store & core & policy & auth & devwords
+  loadcheck --> app & store & core
+  server -. tests only .-> loadcheck
 ```
 
 ### Dependency rules (checked by `cargo xtask check only ARCH-DEPS`)
@@ -97,7 +101,7 @@ flowchart TB
 1. `bb-core`, `bb-searchlang` and `bb-markdown` do no I/O and depend on no other Bugaboo crate except `bb-core` (searchlang and markdown not even that; `bb-core` and `bb-policy` use `bb-macros` for derives at compile time only), so they compile to WebAssembly.
 2. `bb-app` knows **ports** (traits) only. It never imports `bb-store`, `bb-files`, `bb-ai` or `bb-notify`. Tests run use cases against in-memory fakes.
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
-4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample` (`cargo xtask check only ARCH-HTTP-EDGE`).
+4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample`; the developer program `bb-load-check` (M3 WP-10) depends on `bb-store` to read the database of a load run, and wires no use case (`cargo xtask check only ARCH-HTTP-EDGE`).
 5. The browser app talks to the server only through `@bugaboo/api-client` (`cargo xtask check only ARCH-WEB-API`), and has no hand-written types for what the server sends (`LINT-API-TYPES`).
 6. A crate may name itself as a dev-dependency to switch on its own `testing` feature for its integration tests (`bb-api` does, for `Options::for_tests`); that is no edge between two crates (`cargo xtask check only ARCH-DEPS`).
 
@@ -170,6 +174,13 @@ The sample-organization generator (architecture §11): a library and a small pro
 
 - **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth`, `bb-dev-words` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
 - **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`) is in `xtask/src/checks/arch_http_edge.rs`.
+- **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
+
+### bb-load-check
+
+The invariants after a run of many people at once (architecture §11, TEST-CONCURRENT), written once. Two things end in it: the invariants test of the server (`test_concurrent_invariants_hold_after_a_run`, on both databases, in memory) and `cargo xtask load` (the Node driver writes its **book**, a JSON file of what each person kept, was refused and read, and `xtask` runs the small program `bb-load-check` on that book and the database of the run). Both call the same function, `check`, which reads the database through `bb-store` and judges it against the book in `judge.rs`, the only file in the repository that says what must hold. It is a separate crate so that `xtask` does not link the store (it runs the program as a process, as it runs `bb-sample`), and so that `bb-server` can use it in its tests without the program depending on test code.
+
+- **May depend on:** `bb-app` (the name of the member of a comment event), `bb-store`, `bb-core`. `bb-server` uses it in `[dev-dependencies]` only; nothing else depends on it.
 - **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
 
 ## Browser app (web/app)

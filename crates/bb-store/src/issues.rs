@@ -15,7 +15,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{LockClass, Reader, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, LockClass, Reader, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{IssueAliasRow, IssueAssigneeRow, IssueCounterRow, IssueRow, IssueTypeRow};
 
@@ -111,6 +111,18 @@ async fn issue_in(reader: &mut impl Reader, id: IssueId) -> Result<Option<Issue>
         .as_ref()
         .map(read_issue)
         .transpose()
+}
+
+impl Database {
+    /// The issue row with this ID, also one in the trash: what the check after a run compares the
+    /// events with (TEST-CONCURRENT).
+    ///
+    /// # Errors
+    /// Fails when the database fails or the row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_issue(&self, id: IssueId) -> Result<Option<Issue>, StoreError> {
+        issue_in(&mut &*self, id).await
+    }
 }
 
 async fn issue_at_in(

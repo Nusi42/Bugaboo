@@ -282,7 +282,7 @@ status = "active"
 
 [[check]]
 id = "ARCH-HTTP-EDGE"
-title = "Only bb-api and bb-mcp use HTTP crates; only bb-server and bb-sample wire adapters"
+title = "Only bb-api and bb-mcp use HTTP crates; only bb-server, bb-sample and bb-load-check depend on the adapters"
 rule = "architecture §4"
 tool = "xtask (cargo metadata: normal and build dependencies on HTTP crates and on the adapter crates)"
 when = ["push", "ci"]
@@ -681,7 +681,7 @@ status = "planned"
 id = "TEST-EDIT-LOCKS"
 title = "Edit locks and confirmed saves: lost lock, take-over, conflict and offline cases keep the person's text"
 rule = "ADR-0019, ISS-17"
-tool = "integration tests on both databases (the server part: the tests named iss_17_* and iss_11_*, with a record kind that exists only in tests); the Playwright scenarios come with M3 WP-10"
+tool = "integration tests on both databases (the server part: the tests named iss_17_* and iss_11_*, with a record kind that exists only in tests); the Playwright scenarios of three people at one description and of a lock holder whose network drops are in web/app/e2e/concurrent/locks.spec.ts"
 when = ["ci"]
 files = ["crates/bb-app/**", "crates/bb-server/**", "web/**"]
 status = "active"
@@ -718,10 +718,10 @@ status = "active"
 id = "TEST-CONCURRENT"
 title = "Ten people working at once: no lost text, no half-saved changes, locks expire, conflicts explained"
 rule = "architecture §11, ADR-0019"
-tool = "Playwright (10 contexts) + xtask load --people 10; short in CI, long nightly"
+tool = "xtask (the browser scenarios of ten Playwright contexts, the invariants test on both databases and the short run of `cargo xtask load` in ci are there and not switched off); the runs themselves: Playwright, the Rust tests and `cargo xtask load --people 10`, short in ci, `--nightly` for 30 minutes"
 when = ["ci", "nightly"]
-files = ["crates/**", "web/**"]
-status = "planned"
+files = ["crates/**", "web/**", "xtask/src/ci.rs", "xtask/src/load/**", "tools/dev/load.json"]
+status = "active"
 
 [[check]]
 id = "PLAN-TRACE"

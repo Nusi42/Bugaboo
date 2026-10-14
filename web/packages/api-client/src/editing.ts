@@ -1,6 +1,6 @@
 import { dataOf } from "./answer.ts";
 import type { Api } from "./client.ts";
-import { heartbeatSeconds, versionsMax } from "./editing.generated.ts";
+import { draftKeptCodes, heartbeatSeconds, versionsMax } from "./editing.generated.ts";
 import type { Schema } from "./readonly.ts";
 
 /**
@@ -24,6 +24,11 @@ export type LockOutcome = Schema<"LockOutcomeBody">;
 export type Heartbeat = Schema<"HeartbeatAnswerBody">;
 /** The text so far of a draft, with the version it started from. */
 export type DraftText = Schema<"DraftTextBody">;
+
+/** Whether a refusal of a save is one that keeps the text as the person's draft (the list of the server). */
+export function keepsTextAsDraft(code: string | undefined): boolean {
+  return code !== undefined && (draftKeptCodes as readonly string[]).includes(code);
+}
 
 /** The ID of an open editor: made when the editor opens, one for each tab. */
 export function newEditorId(): string {

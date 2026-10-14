@@ -62,6 +62,10 @@ pub trait EditStore: ChangeStore + 'static {
         /// counted_version`), however far back it is: where the conflict finds who changed the
         /// record last, when, and what.
         fn latest_version_event_about(record: &EntityRef) -> Option<DomainEvent>;
+        /// Whether a change after `version` of the record changed `field`: an event that counted
+        /// the version up past it and holds a change of that field. A long text is saved on a newer
+        /// version when only other fields changed since the person started.
+        fn field_changed_since(record: &EntityRef, field: &str, version: i64) -> bool;
         /// The notes for a person about a thing, oldest first; they are deleted as they are
         /// read, so each is shown once.
         fn take_edit_notices(recipient: UserId, what: &EditWhat) -> Vec<EditNotice>;

@@ -1,0 +1,9 @@
+{
+  "$comment": "Single source for `cargo xtask load` (architecture §11, TEST-CONCURRENT): xtask starts the database and runs the driver; the driver, a Node program, reads the same file for the name of the variable that carries the address of the PostgreSQL database and for the defaults. The short run is the one `cargo xtask ci` makes on both databases; the long one is for the nightly run.",
+  "driver": "web/tooling/load/main.ts",
+  "databaseVariable": "BB_LOAD_DATABASE_URL",
+  "databaseName": "bbload",
+  "people": 10,
+  "minutes": 2,
+  "nightlyMinutes": 30
+}

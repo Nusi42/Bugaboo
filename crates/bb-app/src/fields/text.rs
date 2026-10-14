@@ -44,6 +44,27 @@ pub struct SaveFieldText {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// A save is refused as stale when this text changed since the person started. A change of
+    /// another field of the issue is no conflict (`Ctx::version_for_text`: the lock covers the text
+    /// only); the text is kept as the draft when it is refused.
+    async fn ensure_text_version(
+        &self,
+        actor: &crate::access::Actor,
+        save: &TextSave,
+        current: &Issue,
+        key: FieldKey,
+    ) -> Result<(), AppError> {
+        let record = entity(RecordKind::Issue, current.id);
+        let version = self
+            .version_for_text(&record, &key.code(), save.version, current.version)
+            .await?;
+        if current.version == version {
+            return Ok(());
+        }
+        let stale = AppError::stale(record, Place::Project(current.project), actor.person.id);
+        Err(self.refused_keeping_draft(actor, save, stale).await)
+    }
+
     /// The issue and the long text field a save is for, once the person may change both.
     async fn text_target(
         &self,
@@ -139,14 +160,8 @@ pub async fn save_field_text<S: AuthStore>(
             .refused_keeping_draft(&actor, &save, violation.error().into())
             .await);
     }
-    if current.version != input.version {
-        let stale = AppError::stale(
-            entity(RecordKind::Issue, current.id),
-            Place::Project(current.project),
-            actor.person.id,
-        );
-        return Err(ctx.refused_keeping_draft(&actor, &save, stale).await);
-    }
+    ctx.ensure_text_version(&actor, &save, &current, key)
+        .await?;
     let stored = ctx
         .load_values(RecordKind::Issue, &[current.id.into()])
         .await?;

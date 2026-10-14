@@ -1,6 +1,7 @@
-import { conflictOf, type LockOutcome } from "@bugaboo/api-client";
+import { conflictOf } from "@bugaboo/api-client";
 
 import { codeOf } from "../errors.ts";
+import { EditLockSession, type Answer } from "./edit-lock-session.ts";
 import { lostReasonOf, startingState, type LongTextDeps } from "./long-text-model.ts";
 import { ignore } from "./long-text-store.ts";
 import { WatchingEditor } from "./long-text-watching.ts";
@@ -17,13 +18,34 @@ export type * from "./long-text-model.ts";
 /** The controller of one long text of one record. */
 export class LongTextEditor extends WatchingEditor {
   private baseVersion: number;
-  private readonly editor: string;
   private saveWhenLocked = false;
+  protected readonly lock = new EditLockSession(this.deps, {
+    draft: () =>
+      this.state.phase.kind === "locked"
+        ? { text: this.state.text, base_version: this.baseVersion }
+        : null,
+    onRanOut: "take-again",
+    onAsked: (from) => {
+      this.set({ asked: from });
+    },
+    onRetaking: () => {
+      this.set({ phase: { kind: "taking" } });
+    },
+    onRetaken: () => {
+      this.arrive();
+    },
+    onLost: (reason, by, problem) => {
+      this.saveWhenLocked = false;
+      this.set({
+        phase: { kind: "lost", reason, ...(by === undefined ? {} : { by }) },
+        ...(problem === undefined ? {} : { problem }),
+      });
+    },
+  });
 
   constructor(deps: LongTextDeps, source: { readonly saved: string; readonly version: number }) {
     super(deps, source);
     this.baseVersion = source.version;
-    this.editor = deps.newEditorId();
   }
 
   /** The record was read again: the text and version now. A box that is not open follows it. */
@@ -59,98 +81,40 @@ export class LongTextEditor extends WatchingEditor {
     this.set({ text });
     this.deps.browserDraft.write(text, this.baseVersion);
     if (phase.kind === "open" && text !== this.state.saved) {
-      void this.begin();
+      void this.begin(this.lock.take);
     }
   };
 
-  private async begin(): Promise<void> {
-    const generation = this.generation;
+  /** Asks for the lock (or takes it with *Edit anyway*) and takes the answer, unless it was overtaken. */
+  private async begin(how: () => Promise<Answer>): Promise<void> {
     this.set({ phase: { kind: "taking" }, problem: null });
     try {
-      this.arriveIfCurrent(await this.deps.take(this.editor), generation);
+      this.answered(await how());
     } catch (error) {
-      if (generation === this.generation) {
-        this.saveWhenLocked = false;
-        this.set({ phase: { kind: "open" }, problem: error });
-      }
+      this.saveWhenLocked = false;
+      this.set({ phase: { kind: "open" }, problem: error });
     }
   }
 
-  /** Like `arrive`, unless the editing ended meanwhile: then a lock that came is let go. */
-  private arriveIfCurrent(outcome: LockOutcome, generation: number): boolean {
-    if (generation === this.generation) {
-      this.arrive(outcome);
-      return true;
-    }
-    if (outcome.status === "taken") {
-      void this.deps.release(outcome.lock_token).catch(ignore);
-    }
-    return false;
-  }
-
-  /** The answer to asking for the lock (or to *Edit anyway*). */
-  private arrive(outcome: LockOutcome): void {
-    if (outcome.status === "held") {
+  private answered(answer: Answer): void {
+    if (answer.kind === "held") {
       this.saveWhenLocked = false;
       this.stopHeartbeats();
-      this.set({ phase: { kind: "held", lock: outcome } });
-      return;
+      this.set({ phase: { kind: "held", lock: answer.lock } });
+    } else if (answer.kind === "mine") {
+      this.arrive();
     }
-    this.token = outcome.lock_token;
+  }
+
+  /** The lock is the person's (the session beats for it): whatever watched a holder gives way. */
+  private arrive(): void {
     this.set({ phase: { kind: "locked" } });
-    // Whatever timer ran (watching a holder) gives way to the beat of the lock.
     this.stopHeartbeats();
-    this.stopBeats = this.deps.startHeartbeats(this.beat);
     if (this.saveWhenLocked) {
       this.saveWhenLocked = false;
       void this.save();
     }
   }
-
-  private readonly beat = async (): Promise<void> => {
-    const token = this.token;
-    if (token === null || this.state.phase.kind !== "locked") {
-      return;
-    }
-    const generation = this.generation;
-    const answer = await this.deps.heartbeat(token, {
-      text: this.state.text,
-      base_version: this.baseVersion,
-    });
-    if (generation !== this.generation) {
-      return;
-    }
-    const asked = answer.notices.find((notice) => notice.kind === "finish_asked");
-    if (asked !== undefined) {
-      this.set({ asked: asked.from });
-    }
-    if (answer.lock.status === "taken_over") {
-      this.stopHeartbeats();
-      this.set({ phase: { kind: "lost", reason: "taken-over", by: answer.lock.by } });
-    } else if (answer.lock.status === "ran_out") {
-      // The lease ran out (the tab slept): take the lock again if nobody has it.
-      this.stopHeartbeats();
-      this.token = null;
-      this.set({ phase: { kind: "taking" } });
-      try {
-        if (!this.arriveIfCurrent(await this.deps.take(this.editor), generation)) {
-          return;
-        }
-      } catch (problem) {
-        if (generation !== this.generation) {
-          return;
-        }
-        // The lock could not be asked for: the text stays in the box, and *Compare and save*
-        // takes the lock again.
-        this.set({ phase: { kind: "lost", reason: "ran-out" }, problem });
-        return;
-      }
-      const now = this.phaseNow();
-      if (now.kind === "held") {
-        this.set({ phase: { kind: "lost", reason: "ran-out", by: now.lock.holder } });
-      }
-    }
-  };
 
   /** Saves the text. Without a lock it takes one first (after *Compare and save*). */
   readonly save = async (): Promise<void> => {
@@ -166,11 +130,11 @@ export class LongTextEditor extends WatchingEditor {
     }
     if (phase.kind === "lost" || phase.kind === "held") {
       this.saveWhenLocked = true;
-      await this.begin();
+      await this.begin(this.lock.take);
       return;
     }
-    const token = this.token;
-    if (phase.kind !== "locked" || token === null) {
+    const token = this.lock.token;
+    if (phase.kind !== "locked" || token === undefined) {
       return;
     }
     this.set({ phase: { kind: "saving" }, problem: null });
@@ -195,8 +159,7 @@ export class LongTextEditor extends WatchingEditor {
       this.set({ phase: { kind: "locked" }, problem: error });
       return;
     }
-    this.stopHeartbeats();
-    this.token = null;
+    void this.lock.refused(reason);
     const by = conflictOf(error)?.changed_by;
     this.set({
       phase: { kind: "lost", reason, ...(by === null || by === undefined ? {} : { by }) },
@@ -209,22 +172,17 @@ export class LongTextEditor extends WatchingEditor {
   /** The text is saved or thrown away: nothing is held and no draft is kept. */
   private finish(): void {
     this.saveWhenLocked = false;
-    this.stopHeartbeats();
-    this.token = null;
+    this.lock.forget();
     this.deps.browserDraft.forget();
     this.set({ phase: { kind: "reading" }, offered: null, asked: null, problem: null });
   }
 
   /** Throws the editing away: the lock is let go and no draft is kept. */
   readonly cancel = (): void => {
-    this.generation += 1;
-    const token = this.token;
+    void this.lock.end();
     this.finish();
     this.set({ text: this.state.saved, startedFrom: this.state.saved });
     void this.deps.throwAwayServerDraft().catch(ignore);
-    if (token !== null) {
-      void this.deps.release(token).catch(ignore);
-    }
   };
 
   /** *Compare and save*: the person's choice of the text becomes the text, and is saved on the newest version. */
@@ -238,7 +196,7 @@ export class LongTextEditor extends WatchingEditor {
   /** *Ask Ana to finish*. */
   readonly askToFinish = async (): Promise<void> => {
     try {
-      await this.deps.askToFinish();
+      await this.lock.askToFinish();
     } catch (error) {
       this.set({ problem: error });
     }
@@ -249,9 +207,8 @@ export class LongTextEditor extends WatchingEditor {
     if (this.state.phase.kind !== "held") {
       return;
     }
-    const generation = this.generation;
     try {
-      this.arriveIfCurrent(await this.deps.editAnyway(this.editor), generation);
+      this.answered(await this.lock.editAnyway());
     } catch (error) {
       this.set({ problem: error });
     }
@@ -259,12 +216,7 @@ export class LongTextEditor extends WatchingEditor {
 
   /** The screen goes away: the beats stop and the lock is let go; the draft stays. */
   readonly dispose = (): void => {
-    this.generation += 1;
-    const token = this.token;
+    void this.lock.end();
     this.stopHeartbeats();
-    this.token = null;
-    if (token !== null) {
-      void this.deps.release(token).catch(ignore);
-    }
   };
 }

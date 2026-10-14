@@ -14,6 +14,7 @@ use std::fmt;
 
 use jiff::{SignedDuration, Timestamp};
 
+use crate::ErrorCode;
 use crate::event::{EntityKind, EntityRef};
 use crate::id::{EditorId, LockToken, ProjectId, UserId};
 use crate::personal::Entity;
@@ -32,6 +33,14 @@ pub const DRAFT_KEEP_DAYS: i64 = 30;
 pub const VERSIONS_MAX: u32 = 50;
 /// The most characters of the text of a draft.
 pub const DRAFT_TEXT_MAX: usize = 100_000;
+/// The refusals of a save that keep the text as the person's draft (ADR-0019). The one list: the use
+/// case that keeps the draft, the tests of the server and the browser all read it, and the browser
+/// gets it as `draftKeptCodes` from the generated client.
+pub const DRAFT_KEPT_BY: [ErrorCode; 3] = [
+    ErrorCode::EditLockLost,
+    ErrorCode::EditTakenOver,
+    ErrorCode::VersionChanged,
+];
 /// The part of a layout that its edit lock is about: a layout is edited as a whole (ADR-0027).
 pub const LAYOUT_PART: &str = "layout";
 /// The kind of job that deletes the drafts that outlived their keep period (ADR-0017).

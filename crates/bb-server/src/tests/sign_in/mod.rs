@@ -20,6 +20,7 @@ mod assignments_http;
 mod bulk_http;
 mod caching;
 mod comments_http;
+mod concurrent;
 mod editing;
 mod fields_http;
 mod fields_names;

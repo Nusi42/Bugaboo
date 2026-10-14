@@ -7,9 +7,12 @@ rust-version.workspace = true
 publish.workspace = true
 
 [features]
-# Test hooks that must not be in the program: `Database::migrate_up_to` (an older database) and
-# `Database::rename_table_for_tests` (a store that fails half way). Only `[dev-dependencies]` switch
-# it on, as for `fake-ids` of `bb-core` (M1-F56).
+# Test hooks that must not be in the program: `Database::migrate_up_to` (an older database),
+# `Database::rename_table_for_tests` (a store that fails half way), and the plain reads of the
+# invariants of a load run (`events_of_kind`, `edit_lock_rows`, `stored_draft`, `stored_issue`),
+# which ignore draft keeping, the trash and paging. Only `[dev-dependencies]` and the developer
+# tools `bb-sample` and `bb-load-check` switch it on (ARCH-DEPS), as for `fake-ids` of `bb-core`
+# (M1-F56).
 testing = []
 
 [dependencies]

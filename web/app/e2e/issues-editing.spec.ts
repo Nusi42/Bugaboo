@@ -1,10 +1,9 @@
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
-
 import { ada, bob } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { descriptionBox, openEditing, startEditing } from "./support/description.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
 import { issueOf, prepareWeb, versionOf } from "./support/issues.ts";
 import { holdBackLocks } from "./support/slow.ts";
@@ -16,23 +15,6 @@ import { issueAddress } from "../src/shared/paths.ts";
 
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
-
-/** The box the description is written in. */
-function descriptionBox(page: Page) {
-  return page.getByRole("textbox", { name: t("issue-field.description"), exact: true });
-}
-
-/** Opens the description of an issue for editing; the box is there unless somebody else edits. */
-async function openEditing(page: Page, key: string): Promise<void> {
-  await page.goto(issueAddress(key));
-  await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
-}
-
-/** Opens the box for the description of an issue. */
-async function startEditing(page: Page, key: string): Promise<void> {
-  await openEditing(page, key);
-  await expect(descriptionBox(page)).toBeVisible();
-}
 
 test("iss_17 the description is saved, rendered by the server, and the lock is let go", async ({
   page,

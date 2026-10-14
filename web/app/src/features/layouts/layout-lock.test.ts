@@ -1,6 +1,7 @@
 import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
+import { LockServer } from "../../shared/editing/lock-server-testing.ts";
 import { LayoutLockController, type LockDeps } from "./layout-lock.ts";
 
 const taken: LockOutcome = {
@@ -129,6 +130,11 @@ function orderRig() {
   };
 }
 
+/** The way to stop a heartbeat that nothing started. */
+function stopNothing(): void {
+  // Nothing runs, so nothing to stop.
+}
+
 /** Lets the answers of the doubles arrive. */
 async function settle(): Promise<void> {
   await new Promise<void>((done) => {
@@ -178,7 +184,7 @@ describe("iss_17 the edit lock on a layout", () => {
     expect(lock.snapshot().phase).toBe("mine");
   });
 
-  it("is lost when a heartbeat says the lease ran out, and stops beating", async () => {
+  it("is lost when a heartbeat says the lease ran out, and stops beating without a release", async () => {
     const { lock, beats, released } = rig(taken, ranOut);
     lock.start();
     await settle();
@@ -186,7 +192,7 @@ describe("iss_17 the edit lock on a layout", () => {
     await beat?.();
     expect(lock.snapshot()).toEqual({ phase: "lost" });
     expect(beats).toEqual([]);
-    expect(released).toEqual(["token-1"]);
+    expect(released).toEqual([]);
   });
 });
 
@@ -218,5 +224,50 @@ describe("iss_17 asking for the lock more than once", () => {
     await settle();
     expect(beats()).toBe(0);
     expect(released).toEqual(["token-1"]);
+  });
+});
+
+describe("iss_17 a refused save of a layout", () => {
+  it("lets the lock go before it is asked for again, so the next save goes through", async () => {
+    const server = new LockServer();
+    const lock = new LayoutLockController({
+      ...quiet,
+      take: server.take,
+      release: server.release,
+      startHeartbeats: () => stopNothing,
+    });
+    lock.start();
+    await settle();
+    expect(lock.snapshot()).toEqual({ phase: "mine", token: "T" });
+    // The layout changed meanwhile: the lock is let go, then asked for again.
+    lock.refused("version-changed");
+    lock.start();
+    await settle();
+    expect(server.calls).toEqual(["take", "release T"]);
+    server.arrive();
+    await settle();
+    expect(server.calls).toEqual(["take", "release T", "take"]);
+    expect(server.held).toBe("T");
+    expect(lock.snapshot()).toEqual({ phase: "mine", token: "T" });
+  });
+
+  it("asks again after a save that went through, when the server let go of the lock itself", async () => {
+    const server = new LockServer();
+    const lock = new LayoutLockController({
+      ...quiet,
+      take: server.take,
+      release: server.release,
+      startHeartbeats: () => stopNothing,
+    });
+    lock.start();
+    await settle();
+    lock.start();
+    await settle();
+    // The release of the old token is still on its way: nothing asks until it is through.
+    expect(server.calls).toEqual(["take", "release T"]);
+    server.arrive();
+    await settle();
+    expect(lock.snapshot()).toEqual({ phase: "mine", token: "T" });
+    expect(server.held).toBe("T");
   });
 });

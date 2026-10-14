@@ -8,6 +8,9 @@ export interface LongTextWords {
   readonly shortcut: boolean;
 }
 
+/** The part of an issue that the description is: what the lock and the drafts are about. */
+export const DESCRIPTION_PART = "description";
+
 /** The ID of the heading of a long text of an issue, for the section to name itself by. */
 export function sectionId(issue: string, part: string): string {
   return [issue, part].join("-");
