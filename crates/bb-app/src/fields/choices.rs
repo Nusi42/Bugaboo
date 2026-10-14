@@ -427,11 +427,13 @@ async fn record_combined<S: AuthStore>(
             }
         }
     }
-    for (item_kind, item) in holders {
-        if !touched.contains(&item) {
-            continue;
-        }
-        let version = S::touch_item(transaction, &item_kind, item, args.at).await?;
+    // Every item the change touches counts its version up, many in one statement.
+    let touched_items: Vec<(EntityKind, EntityId)> = holders
+        .into_iter()
+        .filter(|(_, item)| touched.contains(item))
+        .collect();
+    let versions = S::touch_items(transaction, &touched_items, args.at).await?;
+    for ((item_kind, item), version) in touched_items.into_iter().zip(versions) {
         let mut changes = vec![FieldChange {
             field: args.key.to_owned(),
             before: before

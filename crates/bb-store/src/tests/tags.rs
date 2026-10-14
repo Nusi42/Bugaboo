@@ -2,23 +2,17 @@
 //! capitals, a label's name is used once in its group, combining keeps one link for an issue that
 //! had both, and the suggestions only look at issues that are not in the trash.
 
-use bb_app::access::PolicyStore as _;
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_app::tags::TagStore;
-use bb_core::id::{
-    IdSource, IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId, UserId,
-};
-use bb_core::issue::{Issue, IssueIcon, IssueType, Priority, Status};
-use bb_core::issue_key::IssueCode;
+use bb_core::id::{IdSource, IssueId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::ChoiceColor;
-use bb_core::project::{Project, ShortName};
 use bb_core::tags::{IssueLabel, IssueTag, Label, LabelGroup, Tag};
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
 
 use super::*;
-use crate::test_support::{at, event, fixture, ids};
+use crate::test_support::{World, at, event, fixture, ids, world};
 
 async fn changed<T: Send>(
     storage: &AuthStorage,
@@ -35,80 +29,6 @@ fn tag(source: &mut impl IdSource, name: &str) -> Tag {
         color: ChoiceColor::Cat1,
         created_at: at(1),
         version: FIRST_VERSION,
-    }
-}
-
-fn issue(
-    source: &mut impl IdSource,
-    project: ProjectId,
-    issue_type: IssueTypeId,
-    number: i64,
-) -> Issue {
-    Issue {
-        id: IssueId::generate(source).unwrap(),
-        project,
-        issue_type,
-        code: IssueCode::counting(number),
-        title: format!("Issue {number}"),
-        description: String::new(),
-        status: Status::Open,
-        priority: Priority::Normal,
-        reported_by: UserId::generate(source),
-        created_at: at(1),
-        updated_at: at(1),
-        closed_at: None,
-        deleted_at: None,
-        version: FIRST_VERSION,
-    }
-}
-
-/// A project, a type and the issues the tests put tags and labels on.
-struct World {
-    project: ProjectId,
-    issues: Vec<Issue>,
-    person: UserId,
-}
-
-async fn world(storage: &AuthStorage, source: &mut impl IdSource, count: i64) -> World {
-    let project = ProjectId::generate(source).unwrap();
-    let issue_type = IssueTypeId::generate(source).unwrap();
-    let issues: Vec<Issue> = (1..=count)
-        .map(|number| issue(source, project, issue_type, number))
-        .collect();
-    let (row, kind, rows) = (
-        Project {
-            id: project,
-            parent: None,
-            short_name: ShortName::new("ACME").unwrap(),
-            name: "Acme".to_owned(),
-            version: FIRST_VERSION,
-        },
-        IssueType {
-            id: issue_type,
-            name: "Bug".to_owned(),
-            icon: IssueIcon::Bug,
-            position: 0,
-            retired_at: None,
-            version: FIRST_VERSION,
-        },
-        issues.clone(),
-    );
-    changed(storage, source, move |tx| {
-        Box::pin(async move {
-            AuthStorage::insert_project(tx, &row).await?;
-            AuthStorage::insert_issue_type(tx, &kind).await?;
-            for issue in &rows {
-                AuthStorage::insert_issue(tx, issue, &[]).await?;
-            }
-            Ok(())
-        })
-    })
-    .await
-    .unwrap();
-    World {
-        project,
-        issues,
-        person: UserId::generate(source),
     }
 }
 

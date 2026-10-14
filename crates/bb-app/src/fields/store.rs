@@ -79,6 +79,23 @@ pub trait FieldStore: IssueStore + 'static {
         fn set_field_retired(field: FieldId, at: Option<Timestamp>) -> ();
     }
 
+    /// Counts the versions of many items up at once, as [`Self::touch_item`] does for one, and
+    /// says the version each had, in the order of `items`. A store that can do it in fewer
+    /// statements says so by writing its own; this one asks for each item in turn.
+    fn touch_items(
+        transaction: &mut Self::Transaction,
+        items: &[(EntityKind, EntityId)],
+        at: Timestamp,
+    ) -> impl Future<Output = Result<Vec<Option<i64>>, Self::Error>> + Send {
+        async move {
+            let mut versions = Vec::with_capacity(items.len());
+            for (kind, id) in items {
+                versions.push(Self::touch_item(transaction, kind, *id, at).await?);
+            }
+            Ok(versions)
+        }
+    }
+
     /// Counts the version of an item up without changing anything else of it (its own fields
     /// changed): an issue or a project. Says the version it had, `None` for a kind of item that
     /// has none or an item that is not there.

@@ -23,7 +23,7 @@ use proptest::strategy::{Strategy, ValueTree};
 use proptest::test_runner::{Config, TestRunner};
 
 use super::*;
-use crate::test_support::{event, fixture, ids};
+use crate::test_support::{at, event, fixture, ids, world};
 
 /// Runs `write` as a change with its event, the way a use case does.
 async fn changed<T: Send>(
@@ -212,6 +212,94 @@ async fn cf_07_combining_two_choices_moves_every_value_and_keeps_one_row_for_an_
         assert_eq!(ids_of(items[2]), vec![major.to_bytes()]);
         // Nothing holds the combined choice any more.
         assert!(storage.items_with_choice(field, small).await?.is_empty());
+        Ok(())
+    })
+    .await
+}
+
+/// How many items hold a field in the test of chunks, and how many of them hold the first choice.
+const ITEMS: usize = 33_000;
+const MINOR: usize = ITEMS - 200;
+const ITEMS_COUNT: i64 = 33_000;
+
+#[tokio::test]
+async fn cf_07_a_choice_held_by_thousands_of_items_is_combined_in_chunks_and_each_item_counts_up()
+-> TestResult {
+    each_database("cf_07_combine_in_chunks", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        // More items than SQLite takes in one statement (32,766 values): every read and write has to
+        // be in chunks, and a choice held by a hundred thousand items was a failure before.
+        let world = world(storage, &mut source, ITEMS_COUNT).await;
+        let made = definition(&mut source, FieldType::PickOne, 1);
+        let (field, minor, major) = (made.field.id, made.choices[0].id, made.choices[1].id);
+        let stored = made.clone();
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::insert_field(tx, &stored).await })
+        })
+        .await?;
+        let issue_kind = EntityKind::from(RecordKind::Issue);
+        let items: Vec<EntityId> = world
+            .issues
+            .iter()
+            .map(|issue| EntityId::from(issue.id))
+            .collect();
+        // Most hold Minor, the last 200 hold Major.
+        let (kind, held) = (issue_kind.clone(), items.clone());
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move {
+                for (at, item) in held.iter().enumerate() {
+                    let choice = if at < MINOR { minor } else { major };
+                    let cells = FieldValue::Ids(vec![choice.to_bytes()]).to_cells();
+                    AuthStorage::put_field_value(tx, kind.clone(), *item, field, &cells).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+
+        // All the values are read back, though they need three statements.
+        let values = storage
+            .field_values(issue_kind.clone(), items.clone())
+            .await?;
+        assert_eq!(values.len(), ITEMS);
+
+        let touched = changed(storage, &mut source, move |tx| {
+            Box::pin(
+                async move { AuthStorage::combine_choice_values(tx, field, minor, major).await },
+            )
+        })
+        .await?;
+        assert_eq!(touched.len(), MINOR);
+        // Counting the versions up goes in the order given and says the version each had.
+        let mut counted = touched.clone();
+        counted.push((EntityKind::from(RecordKind::Field), EntityId::from(field)));
+        let versions = changed(storage, &mut source, move |tx| {
+            Box::pin(async move { AuthStorage::touch_items(tx, &counted, at(9)).await })
+        })
+        .await?;
+        assert_eq!(versions.len(), MINOR + 1);
+        assert!(
+            versions[..1_100]
+                .iter()
+                .all(|version| *version == Some(FIRST_VERSION))
+        );
+        // A kind of item that has no version says so, and the others are not disturbed by it.
+        assert_eq!(versions[MINOR], None);
+        let first = storage.issue(world.issues[0].id).await?.unwrap();
+        assert_eq!(
+            (first.version, first.updated_at),
+            (FIRST_VERSION + 1, at(9))
+        );
+        let last = storage.issue(world.issues[ITEMS - 1].id).await?.unwrap();
+        assert_eq!(last.version, FIRST_VERSION);
+        // Every item holds Major now.
+        let values = storage.field_values(issue_kind, items).await?;
+        assert!(values.iter().all(|found| {
+            FieldValue::from_cells(FieldType::PickOne, &found.cells)
+                .is_some_and(|value| value.ids() == [major.to_bytes()])
+        }));
         Ok(())
     })
     .await
