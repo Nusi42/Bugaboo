@@ -7,7 +7,14 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::Permission;
+use bb_app::bulk::BulkStore;
+use bb_app::context::SystemIds;
+use bb_app::ports::ChangeStore;
 use bb_app::roles::MakeRole;
+use bb_core::bulk::{BulkRun, BulkStatus};
+use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, RecordKind};
+use bb_core::id::{BulkRunId, EntityId, EventId};
+use bb_store::AuthStorage;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 use tower::ServiceExt as _;
@@ -21,12 +28,46 @@ fn get_routes() -> Vec<String> {
     operations()
         .iter()
         .filter(|operation| operation.method == Method::GET)
-        // The run of a change to many issues exists only after more than a thousand issues were
-        // changed at once; `iss_09_more_than_a_thousand_run_as_a_job` reads it, and the tag is
-        // made for every GET by the same layer.
-        .filter(|operation| operation.path != "/api/v1/bulk/runs/{run}")
         .map(|operation| operation.path.clone())
         .collect()
+}
+
+/// A run of a change to many issues that the person asked for and that is done, for the route that
+/// names one: its ID. A run exists only after more than a thousand issues were changed at once, so
+/// the row is written as the first request of such a change writes it.
+async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
+    let mut ids = SystemIds;
+    let run = BulkRun {
+        id: BulkRunId::generate(&mut ids)?,
+        person: person.parse().map_err(|_| "no person")?,
+        action: json!({"kind": "delete"}),
+        items: Vec::new(),
+        status: BulkStatus::Done,
+        done: 0,
+        changed: 0,
+        skipped: Vec::new(),
+        created_at: rig.clock_now(),
+        finished_at: Some(rig.clock_now()),
+    };
+    let event = DomainEvent {
+        id: EventId::generate(&mut ids)?,
+        time: rig.clock_now(),
+        actor: Actor::Person(run.person),
+        channel: Channel::Ui,
+        entity: EntityRef {
+            kind: EntityKind::from(RecordKind::BulkRun),
+            id: EntityId::from(run.id),
+        },
+        changes: Vec::new(),
+        reason: None,
+    };
+    let stored = run.clone();
+    ChangeStore::record_change(&rig.storage, &event, move |transaction| {
+        Box::pin(async move { AuthStorage::insert_bulk_run(transaction, &stored).await })
+    })
+    .await
+    .map_err(|error| error.to_string())?;
+    Ok(run.id.to_string())
 }
 
 /// The ID of a comment written on the issue, for the routes that name a comment.
@@ -126,6 +167,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let issue_key = an_issue_in_example(&mut ada).await?;
         // A comment and an own field, for the routes that name one.
         let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &issue_key).await?;
+        let run_id = a_run_of(&rig, &person_id).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -146,6 +188,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{issue}", &issue_key)
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
+                .replace("{run}", &run_id)
                 .replace("{project}", project);
             // The draft and the lock routes are about a record named in the query: the example
             // project.
