@@ -16,6 +16,10 @@ import { type Instance } from "./server.ts";
 export const PROJECT = "APP";
 export const SUB_PROJECT = "IOS";
 
+/** An issue of the sample that the issue screens open, and its project: the Website counts its IDs. */
+export const ISSUE = "WEB-12";
+export const ISSUE_PROJECT = "WEB";
+
 /** Who looks at a screen: nobody is signed in, or a person of the sample with a role. */
 export type Who = "nobody" | "administrator" | "teamMember" | "contributor" | "guest";
 

@@ -3,15 +3,18 @@ import {
   openCheckAccess,
   openInvitation,
   openMovePreview,
+  openNewIssue,
   openQuickSearch,
   openTree,
   secondStep,
 } from "./showcase-opens.ts";
-import { PROJECT, type Who } from "./showcase-sample.ts";
+import { ISSUE, ISSUE_PROJECT, PROJECT, type Who } from "./showcase-sample.ts";
 import { type Screen } from "./showcase.ts";
 import {
   addressInProject,
   groupAddress,
+  issueAddress,
+  issuePanelAddress,
   paths,
   personAddress,
   projectAddress,
@@ -161,4 +164,34 @@ export const screens: readonly Screen[] = [
   ),
   screen("home-guest", "guest", "The start page of a Guest", at(paths.home)),
   screen("project-guest", "guest", "A project as a Guest sees it", at(projectAddress(PROJECT))),
+  // The screens of issues (M3), after the others so the numbers of the pictures before them stay.
+  screen(
+    "issue",
+    "administrator",
+    "One issue in the focus view: its fields, description, parts, relations and history",
+    at(issueAddress(ISSUE)),
+  ),
+  screen(
+    "issue-panel",
+    "administrator",
+    "The issues of a project with one issue open in the side panel",
+    at(issuePanelAddress(ISSUE_PROJECT, ISSUE)),
+  ),
+  screen(
+    "new-issue",
+    "administrator",
+    "The new-issue form with its project, type, title and description",
+    openNewIssue,
+  ),
+  organization("issue-types", "the kinds of issue", at(paths.issueTypes)),
+  organization("fields", "the own fields of issues", at(paths.fields)),
+  organization("relation-kinds", "the kinds of relation between issues", at(paths.relationKinds)),
+  organization("labels", "the labels and tags of issues", at(paths.labels)),
+  organization("layouts", "which fields the forms of issues show, and to whom", at(paths.layouts)),
+  screen(
+    "issue-team-member",
+    "teamMember",
+    "One issue as a Team member sees it",
+    at(issueAddress(ISSUE)),
+  ),
 ];
