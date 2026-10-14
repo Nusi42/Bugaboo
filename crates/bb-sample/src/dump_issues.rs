@@ -18,7 +18,8 @@ use bb_app::tags::TagStore as _;
 use bb_core::event::{DomainEvent, EntityKind, RecordKind};
 use bb_core::id::{EntityId, IssueId, ProjectId};
 use bb_core::issue::Issue;
-use bb_core::relation::RelationKind;
+use bb_core::message::Message;
+use bb_core::relation::{RelationKind, STARTING_RELATION_KINDS};
 use jiff::Timestamp;
 use serde::Serialize;
 
@@ -186,7 +187,14 @@ impl Sample {
     ) -> Result<(), SampleError> {
         let storage = &self.storage;
         let kinds: Vec<RelationKind> = storage.relation_kinds().await?;
-        let blocks = kinds.first().map(|kind| kind.id);
+        // The kind *blocks* is the first of the starting kinds, found by its name.
+        let blocks_name = STARTING_RELATION_KINDS
+            .first()
+            .map(|starting| Message::from(starting.forward).render());
+        let blocks = kinds
+            .iter()
+            .find(|kind| Some(&kind.forward) == blocks_name.as_ref())
+            .map(|kind| kind.id);
         let mut edges: BTreeMap<IssueId, Vec<IssueId>> = BTreeMap::new();
         for issue in issues {
             let children = storage.sub_issues_of(issue.id).await?.len() as u64;

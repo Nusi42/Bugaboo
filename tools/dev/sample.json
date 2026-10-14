@@ -47,7 +47,7 @@
     ]
   },
   "issues": {
-    "$comment": "What the sample organization holds besides the people (architecture §11, 'Projects'): how many issues, in which projects and of which types, the own fields, labels and tags, and how many relations and comments. 'total' is the full sample (the demo and the browser tests); 'smallTotal' is the smaller one that cargo xtask dataset sample --check makes four times and cargo xtask dev --sample makes for development. Every other count is scaled from 'total' to the number asked for, and the check holds the made counts against these within 'tolerancePercent'. The names of types are the starting issue types; the fields are made through the same use case as the screen for own fields.",
+    "$comment": "What the sample organization holds besides the people (architecture §11, 'Projects'): how many issues, in which projects and of which types, the own fields, labels and tags, and how many relations and comments. 'total' is the full sample (the demo and the browser tests); 'smallTotal' is the smaller one that cargo xtask dataset sample --check makes four times and cargo xtask dev --sample makes for development. 'area' names the list of things in crates/bb-sample/data/issues.toml that the titles of a project are made from. Every other count is scaled from 'total' to the number asked for, and the check holds the made counts against these within 'tolerancePercent'. The names of types are the starting issue types; the fields are made through the same use case as the screen for own fields.",
     "total": 10000,
     "smallTotal": 500,
     "months": 18,
@@ -61,6 +61,7 @@
     "projects": [
       {
         "shortName": "APP",
+        "area": "app",
         "issues": 4800,
         "idMode": "random",
         "places": [
@@ -71,6 +72,7 @@
       },
       {
         "shortName": "WEB",
+        "area": "web",
         "issues": 3000,
         "idMode": "counting",
         "places": [
@@ -81,12 +83,14 @@
       },
       {
         "shortName": "OPS",
+        "area": "ops",
         "issues": 1800,
         "idMode": "random",
         "places": [{ "shortName": "OPS", "percent": 100 }]
       },
       {
         "shortName": "DOC",
+        "area": "doc",
         "issues": 400,
         "idMode": "counting",
         "places": [{ "shortName": "DOC", "percent": 100 }],

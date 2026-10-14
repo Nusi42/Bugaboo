@@ -220,7 +220,6 @@ async fn cf_07_combining_two_choices_moves_every_value_and_keeps_one_row_for_an_
 /// How many items hold a field in the test of chunks, and how many of them hold the first choice.
 const ITEMS: usize = 33_000;
 const MINOR: usize = ITEMS - 200;
-const ITEMS_COUNT: i64 = 33_000;
 
 #[tokio::test]
 async fn cf_07_a_choice_held_by_thousands_of_items_is_combined_in_chunks_and_each_item_counts_up()
@@ -231,7 +230,7 @@ async fn cf_07_a_choice_held_by_thousands_of_items_is_combined_in_chunks_and_eac
         let mut source = ids();
         // More items than SQLite takes in one statement (32,766 values): every read and write has to
         // be in chunks, and a choice held by a hundred thousand items was a failure before.
-        let world = world(storage, &mut source, ITEMS_COUNT).await;
+        let world = world(storage, &mut source, i64::try_from(ITEMS)?).await;
         let made = definition(&mut source, FieldType::PickOne, 1);
         let (field, minor, major) = (made.field.id, made.choices[0].id, made.choices[1].id);
         let stored = made.clone();
@@ -287,11 +286,15 @@ async fn cf_07_a_choice_held_by_thousands_of_items_is_combined_in_chunks_and_eac
         );
         // A kind of item that has no version says so, and the others are not disturbed by it.
         assert_eq!(versions[MINOR], None);
-        let first = storage.issue(world.issues[0].id).await?.unwrap();
-        assert_eq!(
-            (first.version, first.updated_at),
-            (FIRST_VERSION + 1, at(9))
-        );
+        // The first, the ones on both sides of the edges of chunks and the last that was touched.
+        for place in [0, 1, 499, 500, 501, 999, 1_000, 16_383, MINOR - 1] {
+            let touched = storage.issue(world.issues[place].id).await?.unwrap();
+            assert_eq!(
+                (touched.version, touched.updated_at),
+                (FIRST_VERSION + 1, at(9)),
+                "the issue at {place}"
+            );
+        }
         let last = storage.issue(world.issues[ITEMS - 1].id).await?.unwrap();
         assert_eq!(last.version, FIRST_VERSION);
         // Every item holds Major now.

@@ -33,6 +33,10 @@ use sqlx::{AssertSqlSafe, PgPool, Postgres, Row as _, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
 
+/// How many things one statement names at most (people, items): a statement may carry only so
+/// many bound values (32,766 in SQLite), so a long list of them is asked about in chunks.
+pub(crate) const STATEMENT_ITEMS: usize = 500;
+
 /// How long SQLite waits for another writer before it gives up.
 const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(10);
 /// The most connections SQLite gets: many readers; writers queue up on the database lock.

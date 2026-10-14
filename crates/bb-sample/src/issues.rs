@@ -11,18 +11,16 @@
 
 use std::collections::BTreeMap;
 
-use bb_app::auth::{SignIn, sign_in};
 use bb_app::comments::{AddComment, SaveComment, add_comment, save_comment};
 use bb_app::context::Clock as _;
 use bb_app::context::SystemIds;
-use bb_app::editing::{DraftText, SaveDraftQuery, TakeLockQuery, save_draft, take_lock};
+use bb_app::editing::{TakeLockQuery, take_lock};
 use bb_app::issues::{ChangeIssue, MakeIssue, change_issue, make_issue};
 use bb_app::relations::{AddRelation, SetParent, add_relation, set_parent};
 use bb_app::tags::{AddLabel, AddTag, add_label, add_tag};
 use bb_core::comment::{TEXT_PART, handle_of};
-use bb_core::edit::{DraftTarget, EditWhat};
+use bb_core::edit::EditWhat;
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::fields::Field;
 use bb_core::id::{CommentId, EditorId, IssueId, LockToken, UserId};
 use bb_core::relation::Direction;
 use bb_core::technical::TechnicalName;
@@ -31,26 +29,18 @@ use serde_json::{Value, json};
 
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, LeftBehind, World};
+use crate::issues_hands::Hands;
 use crate::issues_plan::{Action, FieldPick, Plan};
 use crate::issues_setup::{Setup, id_in, json};
 use crate::issues_time::Calendar;
 use crate::issues_words::{IssueWords, MENTION};
-use crate::organization::{Organization, workers};
+use crate::organization::Organization;
 
 /// The number of days in a month the history is counted in.
 const MONTH_DAYS: i64 = 30;
 /// How long before the sample ends the last working day ends, in seconds: room for the states the
 /// sample leaves behind (a lock held, a draft waiting).
 const END_ROOM: i64 = 86_400;
-/// A session is renewed when it was idle this long (the server ends it after thirty minutes).
-const IDLE_SECONDS: i64 = 25 * 60;
-/// A session is renewed when it is this old (the server ends it after twenty-four hours).
-const AGE_SECONDS: i64 = 20 * 3600;
-/// The most people who work on a day, out of all the workers.
-const PEOPLE_A_DAY: usize = 3;
-/// A person works on a day only when there are at least this many changes for them to make, so
-/// a sample with few changes does not sign in more people than it needs.
-const CHANGES_EACH: usize = 8;
 
 /// Everything the sample holds: the organization of M2 and the issues of M3.
 #[derive(Clone, Debug)]
@@ -141,126 +131,34 @@ impl Later for Everything {
     }
 }
 
-/// A session of a worker.
-struct Session {
-    token: String,
-    signed_in: i64,
-    used: i64,
-}
-
-/// The hands of the sample: the Team members who do the work, each signed in when they need to be.
-struct Hands<'a, 'w> {
-    world: &'a World<'w>,
-    calendar: Calendar,
-    /// The places in the roster of the people who work.
-    workers: Vec<usize>,
-    /// How many people work on a day.
-    a_day: usize,
-    sessions: BTreeMap<usize, Session>,
-}
-
-impl<'a, 'w> Hands<'a, 'w> {
-    fn new(world: &'a World<'w>, calendar: Calendar, changes: usize) -> Result<Self, SampleError> {
-        let workers = workers(world)?;
-        let calendar_days =
-            usize::try_from(calendar.length() / crate::issues_time::WORK_DAY).unwrap_or(1);
-        if workers.len() < PEOPLE_A_DAY {
-            return Err(SampleError::PersonMissing);
-        }
-        Ok(Self {
-            world,
-            calendar,
-            workers,
-            a_day: (changes / calendar_days.max(1) / CHANGES_EACH).clamp(1, PEOPLE_A_DAY),
-            sessions: BTreeMap::new(),
-        })
-    }
-
-    /// The person (a place in the roster) a pick stands for, on the day of a working second: one
-    /// of the few who work that day.
-    fn person(&self, working: i64, pick: u32) -> usize {
-        let day = usize::try_from(self.calendar.day(working)).unwrap_or(0);
-        let first = day * 5;
-        let at = (first + pick as usize % self.a_day) % self.workers.len();
-        self.workers[at]
-    }
-
-    /// Anyone of all the workers, by a pick (for who is assigned or mentioned).
-    fn anyone(&self, pick: u32) -> usize {
-        self.workers[pick as usize % self.workers.len()]
-    }
-
-    /// The secret of the session of a person, signed in again when the session ran out.
-    async fn token(&mut self, person: usize) -> Result<String, SampleError> {
-        let now = self.world.clock.now().as_second();
-        let previous = match self.sessions.get(&person) {
-            Some(session)
-                if now - session.used < IDLE_SECONDS && now - session.signed_in < AGE_SECONDS =>
-            {
-                let token = session.token.clone();
-                if let Some(session) = self.sessions.get_mut(&person) {
-                    session.used = now;
-                }
-                return Ok(token);
-            }
-            Some(session) => Some(session.token.clone()),
-            None => None,
-        };
-        let made = self
-            .world
-            .people
-            .get(person)
-            .ok_or(SampleError::PersonMissing)?;
-        let started = sign_in(
-            &self.world.services.ctx(self.world.request()),
-            SignIn {
-                email: made.person.email.clone(),
-                password: made.password.clone(),
-                previous_session: previous,
-            },
-        )
-        .await
-        .map_err(|error| SampleError::step(Step::SigningIn, &error))?;
-        self.sessions.insert(
-            person,
-            Session {
-                token: started.session_token.clone(),
-                signed_in: now,
-                used: now,
-            },
-        );
-        Ok(started.session_token)
-    }
-}
-
 /// Carries a plan out, step by step.
-struct Maker<'a, 'w> {
-    world: &'a World<'w>,
-    plan: &'a Plan,
-    names: &'a IssuePlan,
-    setup: &'a Setup,
-    hands: &'a mut Hands<'a, 'w>,
+pub(crate) struct Maker<'a, 'w> {
+    pub(crate) world: &'a World<'w>,
+    pub(crate) plan: &'a Plan,
+    pub(crate) names: &'a IssuePlan,
+    pub(crate) setup: &'a Setup,
+    pub(crate) hands: &'a mut Hands<'a, 'w>,
     /// The ID and the version of each issue that was made, and who made it.
-    issues: Vec<Option<MadeIssue>>,
+    pub(crate) issues: Vec<Option<MadeIssue>>,
     /// The ID of each comment that was written, who wrote it and its version.
-    comments: Vec<Option<MadeComment>>,
+    pub(crate) comments: Vec<Option<MadeComment>>,
 }
 
 #[derive(Clone, Debug)]
-struct MadeIssue {
-    id: IssueId,
-    version: i64,
+pub(crate) struct MadeIssue {
+    pub(crate) id: IssueId,
+    pub(crate) version: i64,
 }
 
 #[derive(Clone, Debug)]
-struct MadeComment {
+pub(crate) struct MadeComment {
     id: CommentId,
     author: usize,
     version: i64,
 }
 
 impl Maker<'_, '_> {
-    fn issue(&self, at: usize) -> Result<&MadeIssue, SampleError> {
+    pub(crate) fn issue(&self, at: usize) -> Result<&MadeIssue, SampleError> {
         self.issues
             .get(at)
             .and_then(Option::as_ref)
@@ -586,71 +484,5 @@ impl Maker<'_, '_> {
             Step::Relation,
         )?;
         Ok(())
-    }
-
-    /// The description of an issue, as the thing that is edited under a lock.
-    fn description_of(&self, at: usize) -> Result<EditWhat, SampleError> {
-        Ok(EditWhat {
-            record: EntityRef {
-                kind: RecordKind::Issue.into(),
-                id: self.issue(at)?.id.into(),
-            },
-            part: TechnicalName::new(Field::Description.code())
-                .map_err(|error| SampleError::step(Step::Editing, &error))?,
-        })
-    }
-
-    /// The states the sample leaves behind for the demo: one person is editing the description of
-    /// an issue (the lock holds for its lease, a minute, and then runs out like any lock), and
-    /// another has a draft of a description waiting.
-    async fn leave_states_behind(&mut self) -> Result<LeftBehind, SampleError> {
-        let end = self.world.start.as_second() - 120;
-        self.world
-            .clock
-            .set(jiff::Timestamp::from_second(end).map_err(|_| SampleError::Start(end))?);
-        let count = self.plan.issues.len();
-        let (locked, drafted) = (count / 2, count / 3);
-        let (holder, writer) = (self.hands.workers[0], self.hands.workers[1]);
-        let (lock_on, draft_on) = (self.description_of(locked)?, self.description_of(drafted)?);
-        let left = LeftBehind {
-            issues: u32::try_from(count).unwrap_or(0),
-            locks: vec![lock_on.clone()],
-            drafts: self
-                .world
-                .people
-                .get(writer)
-                .map(|made| (made.id, DraftTarget::Editing(draft_on.clone())))
-                .into_iter()
-                .collect(),
-        };
-        let ctx = self.world.services.ctx(self.world.request());
-        let token = self.hands.token(holder).await?;
-        take_lock(
-            &ctx,
-            TakeLockQuery {
-                session_token: token,
-                what: lock_on,
-                editor: EditorId::generate(&mut SystemIds),
-            },
-        )
-        .await
-        .map_err(|error| SampleError::step(Step::Editing, &error))?;
-        let token = self.hands.token(writer).await?;
-        let base = self.issue(drafted)?.version;
-        let text = format!("{}\n\n", self.plan.issues[drafted].description);
-        save_draft(
-            &ctx,
-            SaveDraftQuery {
-                session_token: token,
-                target: DraftTarget::Editing(draft_on),
-                draft: DraftText {
-                    text,
-                    base_version: Some(base),
-                },
-            },
-        )
-        .await
-        .map_err(|error| SampleError::step(Step::Editing, &error))?;
-        Ok(left)
     }
 }

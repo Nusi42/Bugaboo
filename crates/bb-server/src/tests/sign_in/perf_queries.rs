@@ -6,6 +6,7 @@
 //! The statements are counted by the database itself (`Database::statements_run`): the number
 //! before and after a request.
 
+use bb_app::access::StartingRole;
 use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
@@ -88,10 +89,12 @@ struct Size {
     parts: usize,
     comments: usize,
     tags: usize,
+    labels: usize,
+    followers: usize,
 }
 
 /// Gives the issue `amount` of everything the page reads: related issues, sub-issues, comments that
-/// mention a person and name an issue, tags, and a follower.
+/// mention a person and name an issue, tags, labels, and followers.
 async fn fill(
     site: &Site<'_>,
     ada: &mut Browser,
@@ -141,6 +144,32 @@ async fn fill(
             .send("POST", &format!("{ISSUES}/{issue}/tags"), Some(body))
             .await?)?;
     }
+    for number in 0..amount.labels {
+        let made = ada
+            .send(
+                "POST",
+                "/api/v1/labels",
+                Some(json!({"name": format!("label {number} of {issue}")})),
+            )
+            .await?;
+        let label = id_in(ok(&made)?, "id")?;
+        ok(&ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{issue}/labels"),
+                Some(json!({"label": label})),
+            )
+            .await?)?;
+    }
+    // The followers are people of their own: each follows the issue from their own session. Both
+    // issues of the test have as many, because every different person on a page costs the
+    // statements of their own access (M3-F113).
+    for number in 0..amount.followers {
+        let name = format!("fan{number}-{}", issue.to_lowercase());
+        let (mut fan, _) = site.person(StartingRole::TeamMember, &name).await?;
+        fan.send("PUT", &format!("{ISSUES}/{issue}/follow"), None)
+            .await?;
+    }
     ada.send("PUT", &format!("{ISSUES}/{issue}/follow"), None)
         .await?;
     Ok(())
@@ -160,12 +189,16 @@ async fn perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_is
             parts: 2,
             comments: 2,
             tags: 2,
+            labels: 2,
+            followers: 1,
         };
         let many = Size {
             relations: 8,
             parts: 6,
             comments: 12,
             tags: 5,
+            labels: 4,
+            followers: 1,
         };
         fill(&site, &mut ada, &quiet, &named, two).await?;
         fill(&site, &mut ada, &busy, &named, many).await?;

@@ -3,7 +3,7 @@
 
 use crate::issues_plan::PlannedIssue;
 use crate::issues_time::WORK_DAY;
-use crate::issues_words::{Area, IssueWords};
+use crate::issues_words::IssueWords;
 use crate::random::SeededRandom;
 
 /// How far from the comment its edit may be at most.
@@ -65,10 +65,9 @@ pub(crate) fn plan_comments(
         let issue = running
             .partition_point(|total| *total <= draw)
             .min(issues.len() - 1);
-        let area = Area::of_position(issues[issue].family);
         let room = (end - made_at[issue] - 20).clamp(0, COMMENT_WITHIN);
         let at = (made_at[issue] + 10 + random.skewed(room)).min(end);
-        let text = text(words, area, random);
+        let text = text(words, &issues[issue].area, random);
         let edit = random.chance(edited_percent).then(|| {
             let room = (end - at - 70).clamp(0, EDIT_WITHIN);
             let note = random
@@ -93,7 +92,7 @@ pub(crate) fn plan_comments(
 }
 
 /// What a comment says: a few sentences, sometimes with a mention.
-fn text(words: &IssueWords, area: Area, random: &mut SeededRandom) -> String {
+fn text(words: &IssueWords, area: &str, random: &mut SeededRandom) -> String {
     let lists = &words.comments;
     let mut sentences = Vec::new();
     let mut add = |list: &[String], random: &mut SeededRandom| {
@@ -130,9 +129,7 @@ mod tests {
     fn a_text_with_the_marker_has_a_mention_and_the_sentences_are_filled_in() {
         let words = IssueWords::bundled().unwrap();
         let mut random = SeededRandom::new(5);
-        let texts: Vec<String> = (0..200)
-            .map(|_| text(&words, Area::Web, &mut random))
-            .collect();
+        let texts: Vec<String> = (0..200).map(|_| text(&words, "web", &mut random)).collect();
         assert!(texts.iter().any(|text| has_mention(text)));
         assert!(texts.iter().any(|text| !has_mention(text)));
         for text in &texts {

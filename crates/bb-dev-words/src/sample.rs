@@ -103,6 +103,8 @@ pub struct TypeShare {
 pub struct ProjectIssues {
     /// The short name of the project.
     pub short_name: String,
+    /// The list of things (`[things]` of `issues.toml`) the titles of its issues are made from.
+    pub area: String,
     /// How many issues the project and its sub-projects have in the full sample.
     pub issues: u32,
     /// How its issues are given their IDs: `random` or `counting`.

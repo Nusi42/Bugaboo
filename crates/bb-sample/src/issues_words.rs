@@ -57,35 +57,6 @@ pub(crate) struct IssueWords {
     customers: Customers,
 }
 
-/// What kind of thing the words of a project are about.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Area {
-    App,
-    Web,
-    Ops,
-    Doc,
-}
-
-impl Area {
-    fn key(self) -> &'static str {
-        match self {
-            Self::App => "app",
-            Self::Web => "web",
-            Self::Ops => "ops",
-            Self::Doc => "doc",
-        }
-    }
-
-    /// The area of a top-level project, by its short name: the order of the projects in
-    /// `sample.json` is the order of the areas, and a project beyond them talks about the web.
-    pub(crate) fn of_position(position: usize) -> Self {
-        [Self::App, Self::Web, Self::Ops, Self::Doc]
-            .get(position)
-            .copied()
-            .unwrap_or(Self::Web)
-    }
-}
-
 impl IssueWords {
     /// The lists that are part of this program.
     ///
@@ -93,6 +64,11 @@ impl IssueWords {
     /// Fails when the bundled file is not usable (a test keeps it usable).
     pub(crate) fn bundled() -> Result<Self, SampleError> {
         Self::parse(BUNDLED)
+    }
+
+    /// Whether the file has a list of things for the area.
+    pub(crate) fn has_area(&self, area: &str) -> bool {
+        self.things.contains_key(area)
     }
 
     /// Lists from the text of an `issues.toml` file.
@@ -125,7 +101,7 @@ impl IssueWords {
     /// The template text filled in: `{thing}` from the things of the area and every other
     /// `{word}` from the list of that name; a first capital letter in the braces (`{Thing}`) makes
     /// the word start with one. A marker that names no list stays (the mention of a comment).
-    pub(crate) fn fill(&self, template: &str, area: Area, random: &mut SeededRandom) -> String {
+    pub(crate) fn fill(&self, template: &str, area: &str, random: &mut SeededRandom) -> String {
         let mut text = String::with_capacity(template.len() + 16);
         let mut rest = template;
         while let Some(open) = rest.find('{') {
@@ -136,7 +112,7 @@ impl IssueWords {
             let name = &rest[open + 1..open + close];
             let lower = name.to_lowercase();
             let list = if lower == "thing" {
-                self.things.get(area.key())
+                self.things.get(area)
             } else {
                 self.words.get(&lower)
             };
@@ -165,11 +141,7 @@ mod tests {
         let words = IssueWords::bundled().unwrap();
         let fill = |seed| {
             let mut random = SeededRandom::new(seed);
-            words.fill(
-                "{Thing} crashes when {when}; {verb}",
-                Area::App,
-                &mut random,
-            )
+            words.fill("{Thing} crashes when {when}; {verb}", "app", &mut random)
         };
         assert_eq!(fill(1), fill(1));
         assert_ne!(fill(1), fill(2));
@@ -182,7 +154,7 @@ mod tests {
     fn a_marker_without_a_list_stays_for_the_maker_to_fill_in() {
         let words = IssueWords::bundled().unwrap();
         let mut random = SeededRandom::new(3);
-        let text = words.fill("Thanks, {mention}.", Area::Web, &mut random);
+        let text = words.fill("Thanks, {mention}.", "web", &mut random);
         assert_eq!(text, format!("Thanks, {MENTION}."));
     }
 

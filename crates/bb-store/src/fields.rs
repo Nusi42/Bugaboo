@@ -19,7 +19,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Reader, Row, StoredId as _, Transaction, to_micros};
+use crate::db::{Reader, Row, STATEMENT_ITEMS, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     FieldChoiceRow, FieldIssueTypeRow, FieldProjectRow, FieldRow, FieldValueRow, IssueRow,
@@ -185,11 +185,6 @@ fn kind_text(kind: &EntityKind) -> String {
 fn kind_from(text: &str) -> Result<EntityKind, StoreError> {
     EntityKind::new(text).map_err(|_| StoreError::Corrupt("a kind of item"))
 }
-
-/// How many items one statement names at most: a statement may carry only so many bound values
-/// (32,766 in SQLite), and an item that a choice is combined into can number in the hundreds of
-/// thousands (M3-F60).
-const STATEMENT_ITEMS: usize = 500;
 
 async fn values_in(
     reader: &mut impl Reader,

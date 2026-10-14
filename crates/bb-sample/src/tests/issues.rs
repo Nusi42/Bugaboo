@@ -54,7 +54,7 @@ async fn the_issues_are_the_same_from_the_same_seed_on_both_databases() -> TestR
 }
 
 #[tokio::test]
-async fn test_sample_data_issues_of_both_databases_match_the_plan() -> TestResult {
+async fn test_sample_data_issues_match_the_plan() -> TestResult {
     each_database("test_sample_data_issues_match_the_plan", async |db| {
         let folder = tempfile::tempdir()?;
         let text =

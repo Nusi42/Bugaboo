@@ -126,6 +126,7 @@ mod tests {
         (0..count)
             .map(|at| PlannedIssue {
                 place: "APP".to_owned(),
+                area: "app".to_owned(),
                 family: at % 2,
                 kind: 0,
                 title: String::new(),

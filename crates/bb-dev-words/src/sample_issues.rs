@@ -4,6 +4,7 @@
 //! says in plain words what does not match. `xtask` (`cargo xtask dataset sample --check`) and the
 //! tests of `bb-sample` both ask it, so the plan is judged in one place.
 
+use bb_core::relation::STARTING_RELATION_KINDS;
 use serde_json::Value;
 
 use crate::sample::{IssuePlan, ProjectIssues, TypeShare};
@@ -91,7 +92,7 @@ impl IssuePlan {
         );
         judge.present(
             "relations of every kind",
-            u64::from(relations.map_or(0, serde_json::Map::len) >= 4),
+            u64::from(relations.map_or(0, serde_json::Map::len) >= STARTING_RELATION_KINDS.len()),
         );
         judge.present(
             "chain of *blocks* deeper than four steps",
@@ -223,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn test_sample_data_issues_match_the_plan() {
+    fn the_judge_accepts_what_the_plan_says_for_every_size_of_sample() {
         let plan = Layout::bundled().unwrap().issues;
         for asked in [plan.total, plan.small_total, 200] {
             let dump = made(&plan, asked);

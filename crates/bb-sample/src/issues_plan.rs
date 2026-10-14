@@ -9,21 +9,32 @@
 
 use std::collections::BTreeMap;
 
-use bb_core::issue::{Priority, Status};
-use bb_dev_words::sample::{FieldPlan, IssuePlan, TypeShare};
+use bb_core::issue::{Priority, STARTING_ISSUE_TYPES, Status};
+use bb_core::message::Message;
+use bb_dev_words::sample::{IssuePlan, TypeShare};
 
 use crate::comments::{PlannedComment, plan_comments};
 use crate::error::SampleError;
 use crate::fields::labels;
+use crate::issues_text::{describe, field_pick, priority};
 use crate::issues_time::{Calendar, WORK_DAY};
-use crate::issues_words::{Area, IssueWords, Templates};
+use crate::issues_words::IssueWords;
 use crate::random::SeededRandom;
 use crate::relations::{PlannedRelation, plan_relations};
 
-/// The name of the type whose issues take sub-issues.
-const GOAL: &str = "Goal";
-/// The name of the type whose issues have steps to reproduce.
-const BUG: &str = "Bug";
+/// The places of the types the plan treats in their own way among the starting issue types: the
+/// one with steps to reproduce, the one that is a feature, the one whose issues take sub-issues.
+const BUG_AT: usize = 0;
+const FEATURE_AT: usize = 2;
+const GOAL_AT: usize = 3;
+
+/// The name a starting issue type has, as the sample's plan writes it (`Bug`).
+fn starting_name(at: usize) -> String {
+    STARTING_ISSUE_TYPES
+        .get(at)
+        .map(|starting| Message::from(starting.name).render())
+        .unwrap_or_default()
+}
 /// A pick that the maker turns into a person: the plan does not know the people.
 const PICKS: usize = 1 << 20;
 
@@ -41,6 +52,8 @@ pub(crate) enum FieldPick {
 pub(crate) struct PlannedIssue {
     /// The short name of the project it is made in.
     pub(crate) place: String,
+    /// The list of things its title is made from.
+    pub(crate) area: String,
     /// The place of its top-level project in the plan.
     pub(crate) family: usize,
     /// The place of its type in the plan.
@@ -146,6 +159,14 @@ impl Plan {
         wanted: u32,
         calendar: &Calendar,
     ) -> Result<Self, SampleError> {
+        for project in &names.projects {
+            if !words.has_area(&project.area) {
+                return Err(SampleError::Layout(format!(
+                    "the project {} has the area {}, which issues.toml has no things for",
+                    project.short_name, project.area
+                )));
+            }
+        }
         let mut random = SeededRandom::new(seed ^ 0x155E_5A11);
         let mut issues = Vec::new();
         let per_project = allocate(
@@ -189,6 +210,7 @@ impl Plan {
             for (place, kind) in spots.into_iter().zip(typed) {
                 issues.push(PlannedIssue {
                     place: place.to_owned(),
+                    area: project.area.clone(),
                     family,
                     kind,
                     title: String::new(),
@@ -221,7 +243,6 @@ impl Plan {
     fn describe(&mut self, names: &IssuePlan, words: &IssueWords, random: &mut SeededRandom) {
         let all_labels = labels(names);
         for issue in &mut self.issues {
-            let area = Area::of_position(issue.family);
             let type_name = names
                 .types
                 .get(issue.kind)
@@ -232,16 +253,19 @@ impl Plan {
                 .get(issue.family)
                 .map(|project| project.short_name.as_str())
                 .unwrap_or_default();
-            let bug = type_name == BUG;
-            let templates = match type_name {
-                BUG => &words.bug,
-                "Feature" => &words.feature,
-                GOAL => &words.goal,
-                _ => &words.task,
+            let bug = type_name == starting_name(BUG_AT);
+            let templates = if bug {
+                &words.bug
+            } else if type_name == starting_name(FEATURE_AT) {
+                &words.feature
+            } else if type_name == starting_name(GOAL_AT) {
+                &words.goal
+            } else {
+                &words.task
             };
             let title = random.pick(&templates.titles).cloned().unwrap_or_default();
-            issue.title = words.fill(&title, area, random);
-            issue.description = describe(words, templates, bug, area, random);
+            issue.title = words.fill(&title, &issue.area, random);
+            issue.description = describe(words, templates, bug, &issue.area, random);
             issue.priority = priority(bug, random);
             issue.assignees = match random.below(100) {
                 0..=74 => vec![pick(random)],
@@ -393,7 +417,7 @@ impl Plan {
 
     /// Sub-issues: each goal takes a few of the issues made after it in the same project.
     fn give_sub_issues(&mut self, names: &IssuePlan, random: &mut SeededRandom) {
-        let goal = kind_of(&names.types, GOAL);
+        let goal = kind_of(&names.types, &starting_name(GOAL_AT));
         let mut places: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (at, issue) in self.issues.iter().enumerate() {
             places.entry(issue.place.clone()).or_default().push(at);
@@ -421,242 +445,5 @@ impl Plan {
     }
 }
 
-/// The priority of a new issue: bugs are more often urgent.
-fn priority(bug: bool, random: &mut SeededRandom) -> Priority {
-    let (low, normal, high) = if bug { (10, 60, 88) } else { (20, 80, 97) };
-    match random.below(100) {
-        roll if roll < low => Priority::Low,
-        roll if roll < normal => Priority::Normal,
-        roll if roll < high => Priority::High,
-        _ => Priority::Critical,
-    }
-}
-
-/// The long text of an issue, in Markdown.
-fn describe(
-    words: &IssueWords,
-    templates: &Templates,
-    bug: bool,
-    area: Area,
-    random: &mut SeededRandom,
-) -> String {
-    let fill = |list: &[String], random: &mut SeededRandom| {
-        let template = random.pick(list).cloned().unwrap_or_default();
-        words.fill(&template, area, random)
-    };
-    if bug {
-        let happens = fill(&templates.happens, random);
-        let steps: Vec<String> = (1..=3)
-            .map(|number| format!("{number}. {}", fill(&templates.steps, random)))
-            .collect();
-        let expected = fill(&templates.expected, random);
-        format!(
-            "## What happens\n\n{happens}\n\n## Steps\n\n{}\n\n## What should happen\n\n{expected}\n",
-            steps.join("\n")
-        )
-    } else {
-        let about = fill(&templates.about, random);
-        let more = if random.chance(50) {
-            format!("\n\n{}", fill(&templates.about, random))
-        } else {
-            String::new()
-        };
-        format!("{about}{more}\n")
-    }
-}
-
-/// The value of an own field for an issue of this type in this top-level project: nothing when
-/// the field is not used there or the issue has no value.
-fn field_pick(
-    field: &FieldPlan,
-    type_name: &str,
-    family: &str,
-    words: &IssueWords,
-    random: &mut SeededRandom,
-) -> Option<FieldPick> {
-    let for_type = field.issue_types.is_empty() || field.issue_types.iter().any(|n| n == type_name);
-    let for_project = field.projects.is_empty() || field.projects.iter().any(|n| n == family);
-    if !(for_type && for_project) {
-        return None;
-    }
-    match field.kind.as_str() {
-        // The mild choices come first in the list and are the common ones.
-        "pick-one" => {
-            let at = random.skewed(i64::try_from(field.choices.len()).unwrap_or(0));
-            Some(FieldPick::Choices(vec![usize::try_from(at).unwrap_or(0)]))
-        }
-        "pick-several" if random.chance(70) => {
-            let mut chosen = vec![random.below(field.choices.len())];
-            for _ in 0..random.below(3) {
-                let more = random.below(field.choices.len());
-                if !chosen.contains(&more) {
-                    chosen.push(more);
-                }
-            }
-            chosen.sort_unstable();
-            Some(FieldPick::Choices(chosen))
-        }
-        "text" if random.chance(40) => random
-            .pick(words.customers())
-            .map(|name| FieldPick::Text(name.clone())),
-        _ => None,
-    }
-}
-
 #[cfg(test)]
-mod tests {
-    use bb_dev_words::sample::Layout;
-
-    use super::*;
-
-    fn plan_of(wanted: u32, seed: u64) -> Plan {
-        let names = Layout::bundled().unwrap().issues;
-        let words = IssueWords::bundled().unwrap();
-        // About eighteen months of working time.
-        let calendar = Calendar::between(1_799_020_800, 1_799_020_800 + 548 * 86_400);
-        Plan::new(&names, &words, seed, wanted, &calendar).unwrap()
-    }
-
-    #[test]
-    fn a_share_is_whole_and_the_shares_make_the_total() {
-        assert_eq!(allocate(10, &[1, 1, 1]), [4, 3, 3]);
-        assert_eq!(allocate(100, &[45, 30, 20, 5]), [45, 30, 20, 5]);
-        assert_eq!(allocate(7, &[0, 0]), [0, 0]);
-        assert_eq!(
-            allocate(1000, &[4800, 3000, 1800, 400]),
-            [480, 300, 180, 40]
-        );
-        assert_eq!(allocate(0, &[1, 2]), [0, 0]);
-    }
-
-    #[test]
-    fn a_count_is_scaled_to_the_size_of_the_sample() {
-        assert_eq!(scaled(30_000, 10_000, 1000), 3000);
-        assert_eq!(scaled(3000, 10_000, 1000), 300);
-        assert_eq!(scaled(3000, 10_000, 0), 0);
-        assert_eq!(scaled(5, 0, 10), 0);
-    }
-
-    #[test]
-    fn the_plan_has_the_issues_per_project_and_per_type_of_the_layout() {
-        let plan = plan_of(1000, 42);
-        assert_eq!(plan.issues.len(), 1000);
-        let names = Layout::bundled().unwrap().issues;
-        let count = |family: usize| plan.issues.iter().filter(|i| i.family == family).count();
-        assert_eq!(
-            [count(0), count(1), count(2), count(3)],
-            [480, 300, 180, 40]
-        );
-        let of_type = |name: &str| {
-            let kind = kind_of(&names.types, name).unwrap();
-            plan.issues
-                .iter()
-                .filter(|issue| issue.kind == kind)
-                .count()
-        };
-        // 45, 30, 20 and 5 of a hundred, except that the Handbook has fewer bugs and more tasks.
-        assert!((430..=440).contains(&of_type("Bug")), "{}", of_type("Bug"));
-        assert!(
-            (310..=318).contains(&of_type("Task")),
-            "{}",
-            of_type("Task")
-        );
-        assert!((198..=202).contains(&of_type("Feature")));
-        assert!((49..=51).contains(&of_type("Goal")));
-        // The sub-projects hold their shares.
-        let in_place = |name: &str| plan.issues.iter().filter(|i| i.place == name).count();
-        assert_eq!(
-            [in_place("APP"), in_place("IOS"), in_place("AND")],
-            [48, 240, 192]
-        );
-    }
-
-    #[test]
-    fn the_same_seed_gives_the_same_plan_and_another_seed_another() {
-        let titles = |seed| {
-            plan_of(300, seed)
-                .issues
-                .into_iter()
-                .map(|issue| issue.title)
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(titles(42), titles(42));
-        assert_ne!(titles(42), titles(43));
-    }
-
-    #[test]
-    fn everything_comes_after_the_issue_it_is_about_and_the_steps_are_in_order_of_time() {
-        let plan = plan_of(500, 42);
-        assert!(plan.steps.windows(2).all(|pair| pair[0].at <= pair[1].at));
-        let mut made = vec![None; plan.issues.len()];
-        for step in &plan.steps {
-            match step.action {
-                Action::Make(issue) => made[issue] = Some(step.at),
-                Action::Parent(issue)
-                | Action::Tag(issue, _)
-                | Action::Label(issue, _)
-                | Action::Status(issue, _) => assert!(made[issue].is_some_and(|at| at <= step.at)),
-                Action::Comment(comment) => {
-                    let issue = plan.comments[comment].issue;
-                    assert!(made[issue].is_some_and(|at| at <= step.at));
-                }
-                Action::Edit(comment) => {
-                    assert!(
-                        plan.comments[comment]
-                            .edit
-                            .as_ref()
-                            .is_some_and(|e| e.at >= plan.comments[comment].at)
-                    );
-                }
-                Action::Relate(relation) => {
-                    let (from, to) = (plan.relations[relation].from, plan.relations[relation].to);
-                    assert!(made[from].is_some() && made[to].is_some());
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn goals_have_sub_issues_in_their_own_project_and_nobody_else_does() {
-        let plan = plan_of(1000, 42);
-        let names = Layout::bundled().unwrap().issues;
-        let goal = kind_of(&names.types, GOAL).unwrap();
-        let mut children = 0;
-        for issue in &plan.issues {
-            if let Some(parent) = issue.parent {
-                children += 1;
-                assert_eq!(plan.issues[parent].kind, goal);
-                assert_eq!(plan.issues[parent].place, issue.place);
-                assert_ne!(issue.kind, goal);
-            }
-        }
-        assert!(children >= 50, "{children}");
-    }
-
-    #[test]
-    fn own_fields_are_only_given_where_the_field_is_used() {
-        let plan = plan_of(1000, 42);
-        let names = Layout::bundled().unwrap().issues;
-        let severity = names
-            .fields
-            .iter()
-            .position(|f| f.name == "Severity")
-            .unwrap();
-        let bug = kind_of(&names.types, BUG).unwrap();
-        for issue in &plan.issues {
-            assert_eq!(issue.fields[severity].is_some(), issue.kind == bug);
-        }
-        assert!(
-            plan.issues
-                .iter()
-                .any(|issue| matches!(&issue.fields[2], Some(FieldPick::Text(_))))
-        );
-    }
-
-    #[test]
-    fn a_tiny_sample_still_has_everything_in_it() {
-        let plan = plan_of(30, 7);
-        assert_eq!(plan.issues.len(), 30);
-        assert!(!plan.comments.is_empty() && !plan.relations.is_empty());
-    }
-}
+mod tests;
