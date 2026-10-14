@@ -7,6 +7,7 @@ import {
 import { useSyncExternalStore } from "react";
 
 import type { MySettings } from "./my-settings.ts";
+import { createStore } from "./store.ts";
 import { oneOf, textOf } from "./setting-values.ts";
 
 /** How dates are written, as the setting says it. */
@@ -74,39 +75,27 @@ export function regionOf(settings?: MySettings): Region {
   };
 }
 
-let current: Region = deviceRegion;
-const listeners = new Set<() => void>();
+const current = createStore<Region>(deviceRegion);
 
 /** The region the formats use now. */
 export function currentRegion(): Region {
-  return current;
+  return current.snapshot();
 }
 
 /** Changes the region and tells everybody who shows times or numbers. */
 export function setRegion(next: Region): void {
+  const now = current.snapshot();
   const same =
-    next.timeZone === current.timeZone &&
-    next.dateFormat === current.dateFormat &&
-    next.numberFormat === current.numberFormat &&
-    next.firstDay === current.firstDay;
-  if (same) {
-    return;
-  }
-  current = next;
-  for (const listener of listeners) {
-    listener();
+    next.timeZone === now.timeZone &&
+    next.dateFormat === now.dateFormat &&
+    next.numberFormat === now.numberFormat &&
+    next.firstDay === now.firstDay;
+  if (!same) {
+    current.replace(next);
   }
 }
 
 /** The region, for a component that shows times or numbers: it shows them again when it changes. */
 export function useRegion(): Region {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-    () => current,
-  );
+  return useSyncExternalStore(current.subscribe, current.snapshot);
 }

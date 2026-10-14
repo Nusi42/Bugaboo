@@ -1,6 +1,6 @@
 import type { EditLockSession } from "./edit-lock-session.ts";
 import { startingState, type Editing, type LongTextDeps } from "./long-text-model.ts";
-import { Store } from "./store.ts";
+import { Store } from "../store.ts";
 
 /**
  * What a screen subscribes to: the state of an editing, and the timer that watches a holder. The

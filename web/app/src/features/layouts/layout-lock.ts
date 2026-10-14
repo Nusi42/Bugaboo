@@ -6,7 +6,7 @@ import {
   type SessionDeps,
 } from "../../shared/editing/edit-lock-session.ts";
 import type { LostReason } from "../../shared/editing/long-text-model.ts";
-import { Store } from "../../shared/editing/store.ts";
+import { Store } from "../../shared/store.ts";
 
 /** Where the person stands with the edit lock on a layout (ADR-0019, ADR-0027 decision 6). */
 export type LockState =
