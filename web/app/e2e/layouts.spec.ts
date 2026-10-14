@@ -14,6 +14,7 @@ import {
   editWhenYouCan,
   openLayoutOfBugs,
   prepareLayouts,
+  setLayoutOfWeb,
   saveSectionInAnotherWindow,
 } from "./support/layouts.ts";
 import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
@@ -24,7 +25,6 @@ import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 // the short one while a Team member's is the full one.
 
 test.use({ preparation: { run: prepareLayouts } });
-test.describe.configure({ mode: "serial" });
 
 const dialogName = t("issues.new-title");
 
@@ -123,6 +123,7 @@ test("cfg_01 a lead customizes the new-issue form, and a Guest gets the short fo
   browser,
   server,
 }) => {
+  await setLayoutOfWeb(server, "inherited");
   await signIn(page, ada);
   await customizeFromDialog(page);
   await moveDueDateIntoSection(page);
@@ -145,6 +146,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   browser,
   server,
 }) => {
+  await setLayoutOfWeb(server, "customized");
   await signIn(page, ada);
   await openLayoutOfBugs(page);
   const row = rowOf(page, dueDate).last();
@@ -156,7 +158,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   const up = row.getByRole("button", {
     name: t("layouts.field-up", { name: dueDate }),
   });
-  // The first test left its lock for a minute: the same person may take the editing over.
+  // An earlier window of the same person may still hold the lock for a minute: the same person may take the editing over.
   await editWhenYouCan(page, up);
   await up.focus();
   await page.keyboard.press("Enter");
@@ -181,7 +183,9 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
 
 test("cfg_01 a field is moved and added with the keyboard alone, and its drag handle is not announced", async ({
   page,
+  server,
 }) => {
+  await setLayoutOfWeb(server, "customized");
   await signIn(page, ada);
   await openLayoutOfBugs(page);
   const up = rowOf(page, dueDate)
@@ -222,6 +226,7 @@ test("cfg_01 a layout that changed while it was edited shows the new one and kee
   browser,
   server,
 }) => {
+  await setLayoutOfWeb(server, "customized");
   await signIn(page, ada);
   await openLayoutOfBugs(page);
   const add = page.getByRole("button", { name: t("layouts.add-section"), exact: true });
