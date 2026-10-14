@@ -233,6 +233,13 @@ impl DomainEvent {
             .as_ref()?
             .as_i64()
     }
+
+    /// Whether the event changed `field` and left its record at a version after `version`.
+    #[must_use]
+    pub fn changes_field_after(&self, field: &str, version: i64) -> bool {
+        self.version_after().is_some_and(|after| after > version)
+            && self.changes.iter().any(|change| change.field == field)
+    }
 }
 
 #[cfg(test)]
@@ -282,6 +289,9 @@ mod tests {
         });
         assert_eq!(event.version_after(), Some(4));
         assert!(event.counted_version());
+        assert!(event.changes_field_after("status", 3));
+        assert!(!event.changes_field_after("status", 4));
+        assert!(!event.changes_field_after("title", 3));
     }
 
     #[test]

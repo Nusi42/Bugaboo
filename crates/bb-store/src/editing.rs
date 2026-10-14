@@ -371,14 +371,9 @@ impl EditStore for AuthStorage {
         field: &str,
         version: i64,
     ) -> Result<bool, StoreError> {
-        Ok(self
-            .database()
-            .latest_event_about_where(record, |event| {
-                event.version_after().is_some_and(|after| after > version)
-                    && event.changes.iter().any(|change| change.field == field)
-            })
-            .await?
-            .is_some())
+        self.database()
+            .field_changed_after(record, field, version)
+            .await
     }
 
     async fn take_edit_notices(

@@ -16,6 +16,7 @@ use bb_core::outbox::OutboxEntry;
 use bb_core::technical::TechnicalName;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
+use std::ops::ControlFlow;
 
 use crate::db::{Database, Row, StoredId, Transaction, from_micros, to_micros};
 use crate::error::StoreError;
@@ -33,7 +34,7 @@ const ACTOR_SYSTEM: &str = "system";
 /// A query for events in the order they were committed (the outbox position), not by their IDs:
 /// an ID begins with its time and ends in random bits, so two events of one millisecond have no
 /// order there. The caller adds what it looks for.
-fn committed_events() -> sea_query::SelectStatement {
+fn committed_events(order: Order) -> sea_query::SelectStatement {
     let mut select = Query::select();
     select
         .columns(event_columns().map(|column| (Event::Table, column)))
@@ -42,7 +43,7 @@ fn committed_events() -> sea_query::SelectStatement {
             Event::Table,
             Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
         )
-        .order_by((Outbox::Table, Outbox::Position), Order::Asc);
+        .order_by((Outbox::Table, Outbox::Position), order);
     select
 }
 
@@ -90,7 +91,7 @@ impl Database {
         entity: &EntityRef,
         limit: u64,
     ) -> Result<Vec<DomainEvent>, StoreError> {
-        let mut select = committed_events();
+        let mut select = committed_events(Order::Asc);
         select
             .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
             .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
@@ -113,7 +114,7 @@ impl Database {
         kind: &EntityKind,
         limit: u64,
     ) -> Result<Vec<DomainEvent>, StoreError> {
-        let mut select = committed_events();
+        let mut select = committed_events(Order::Asc);
         select
             .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(kind.as_str()))
             .limit(limit);
@@ -156,36 +157,85 @@ impl Database {
         entity: &EntityRef,
         wanted: impl Fn(&DomainEvent) -> bool + Send,
     ) -> Result<Option<DomainEvent>, StoreError> {
-        // The order they were committed in (the outbox position), not the time in their IDs: two
-        // events of the same millisecond have no order there.
+        let (found, _) = self
+            .scan_events_about(entity, |event| {
+                if wanted(event) {
+                    ControlFlow::Break(Some(event.clone()))
+                } else {
+                    ControlFlow::Continue(())
+                }
+            })
+            .await?;
+        Ok(found)
+    }
+
+    /// Whether an event about one record after `version` changed `field`. It reads the events from
+    /// the newest on and stops at the first one that is not after `version`: events are in version
+    /// order (the order they were committed), so the older ones cannot answer.
+    ///
+    /// # Errors
+    /// Fails when the database fails or a stored event is unreadable.
+    pub async fn field_changed_after(
+        &self,
+        entity: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<bool, StoreError> {
+        Ok(self.search_field_change(entity, field, version).await?.0)
+    }
+
+    /// `field_changed_after`, and how many events it read.
+    pub(crate) async fn search_field_change(
+        &self,
+        entity: &EntityRef,
+        field: &str,
+        version: i64,
+    ) -> Result<(bool, usize), StoreError> {
+        let (found, read) = self
+            .scan_events_about(entity, |event| {
+                if event.changes_field_after(field, version) {
+                    ControlFlow::Break(Some(()))
+                } else if event.version_after().is_some_and(|after| after <= version) {
+                    ControlFlow::Break(None)
+                } else {
+                    ControlFlow::Continue(())
+                }
+            })
+            .await?;
+        Ok((found.is_some(), read))
+    }
+
+    /// Shows the events about one record to `visit`, the newest first, a page at a time, until it
+    /// breaks with the answer (`None` when the search ends without one) or the events end. Gives
+    /// back the answer and how many events `visit` saw.
+    async fn scan_events_about<T>(
+        &self,
+        entity: &EntityRef,
+        mut visit: impl FnMut(&DomainEvent) -> ControlFlow<Option<T>>,
+    ) -> Result<(Option<T>, usize), StoreError> {
         let mut before = i64::MAX;
+        let mut seen = 0;
         loop {
-            let mut select = Query::select();
+            let mut select = committed_events(Order::Desc);
             select
-                .columns(event_columns().map(|column| (Event::Table, column)))
                 .column((Outbox::Table, Outbox::Position))
-                .from(Outbox::Table)
-                .inner_join(
-                    Event::Table,
-                    Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
-                )
                 .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
                 .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
                 .and_where(Expr::col((Outbox::Table, Outbox::Position)).lt(before))
-                .order_by((Outbox::Table, Outbox::Position), Order::Desc)
                 .limit(EVENT_PAGE);
             let rows = self.fetch_all(&select).await?;
             for row in &rows {
                 let event = read_event(row)?;
-                if wanted(&event) {
-                    return Ok(Some(event));
+                seen += 1;
+                if let ControlFlow::Break(answer) = visit(&event) {
+                    return Ok((answer, seen));
                 }
             }
             match rows.last() {
                 Some(last) if rows.len() as u64 == EVENT_PAGE => {
                     before = last.get(Outbox::Position)?;
                 }
-                _ => return Ok(None),
+                _ => return Ok((None, seen)),
             }
         }
     }
@@ -201,18 +251,11 @@ impl Database {
         limit: u64,
     ) -> Result<Vec<(OutboxEntry, DomainEvent)>, StoreError> {
         let done = self.outbox_position(consumer).await?;
-        let mut select = Query::select();
+        let mut select = committed_events(Order::Asc);
         select
-            .columns(event_columns().map(|column| (Event::Table, column)))
             .column((Outbox::Table, Outbox::Position))
             .column((Outbox::Table, Outbox::CreatedAt))
-            .from(Outbox::Table)
-            .inner_join(
-                Event::Table,
-                Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
-            )
             .and_where(Expr::col((Outbox::Table, Outbox::Position)).gt(done))
-            .order_by((Outbox::Table, Outbox::Position), Order::Asc)
             .limit(limit);
         self.fetch_all(&select)
             .await?
