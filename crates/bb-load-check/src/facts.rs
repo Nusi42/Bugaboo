@@ -23,7 +23,7 @@ pub type Failure = Box<dyn Error + Send + Sync>;
 pub struct IssueFacts {
     /// The readable ID of the issue.
     pub key: String,
-    /// The version after each event about the issue that counted one, oldest first.
+    /// The version after each event about the issue that counted one, in the order they were committed.
     pub event_versions: Vec<i64>,
     /// How many events wrote a comment on the issue.
     pub comment_events: usize,

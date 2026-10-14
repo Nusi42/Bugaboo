@@ -30,6 +30,22 @@ const EVENT_PAGE: u64 = 50;
 const ACTOR_PERSON: &str = "person";
 const ACTOR_SYSTEM: &str = "system";
 
+/// A query for events in the order they were committed (the outbox position), not by their IDs:
+/// an ID begins with its time and ends in random bits, so two events of one millisecond have no
+/// order there. The caller adds what it looks for.
+fn committed_events() -> sea_query::SelectStatement {
+    let mut select = Query::select();
+    select
+        .columns(event_columns().map(|column| (Event::Table, column)))
+        .from(Outbox::Table)
+        .inner_join(
+            Event::Table,
+            Expr::col((Outbox::Table, Outbox::EventId)).equals((Event::Table, Event::Id)),
+        )
+        .order_by((Outbox::Table, Outbox::Position), Order::Asc);
+    select
+}
+
 impl Database {
     /// Runs `change` and appends `event` and its outbox entry, all in one transaction. If
     /// `change` fails, nothing is written.
@@ -74,13 +90,10 @@ impl Database {
         entity: &EntityRef,
         limit: u64,
     ) -> Result<Vec<DomainEvent>, StoreError> {
-        let mut select = Query::select();
+        let mut select = committed_events();
         select
-            .columns(event_columns())
-            .from(Event::Table)
-            .and_where(Expr::col(Event::EntityKind).eq(entity.kind.as_str()))
-            .and_where(Expr::col(Event::EntityId).eq(entity.id.stored()))
-            .order_by(Event::Id, Order::Asc)
+            .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(entity.kind.as_str()))
+            .and_where(Expr::col((Event::Table, Event::EntityId)).eq(entity.id.stored()))
             .limit(limit);
         self.fetch_all(&select)
             .await?
@@ -100,12 +113,9 @@ impl Database {
         kind: &EntityKind,
         limit: u64,
     ) -> Result<Vec<DomainEvent>, StoreError> {
-        let mut select = Query::select();
+        let mut select = committed_events();
         select
-            .columns(event_columns())
-            .from(Event::Table)
-            .and_where(Expr::col(Event::EntityKind).eq(kind.as_str()))
-            .order_by(Event::Id, Order::Asc)
+            .and_where(Expr::col((Event::Table, Event::EntityKind)).eq(kind.as_str()))
             .limit(limit);
         self.fetch_all(&select)
             .await?
@@ -489,6 +499,31 @@ mod tests {
             assert_eq!(found, [first.clone(), second]);
             let none = EntityKind::new("comment")?;
             assert!(database.events_of_kind(&none, 10).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0007_events_are_listed_in_the_order_they_were_committed() -> TestResult {
+        each_database("adr_0007_events_in_commit_order", async |db| {
+            let database = open(db).await?;
+            let mut ids = ids();
+            // Two events of one record whose IDs are in the other order than their commits: the
+            // ID has random bits, so within one millisecond it says nothing about the order.
+            let smaller = event(&mut ids, 5);
+            let mut bigger = event(&mut ids, 5);
+            bigger.entity = smaller.entity.clone();
+            assert!(smaller.id.stored() < bigger.id.stored());
+            for each in [&bigger, &smaller] {
+                database.record_change(each, async |_| Ok(())).await?;
+            }
+            let expected = [bigger.clone(), smaller.clone()];
+            assert_eq!(database.events_about(&smaller.entity, 10).await?, expected);
+            assert_eq!(
+                database.events_of_kind(&smaller.entity.kind, 10).await?,
+                expected
+            );
             Ok(())
         })
         .await

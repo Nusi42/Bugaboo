@@ -53,14 +53,12 @@ fn events_and_versions(book: &Book, issue: &IssueFacts) -> Vec<String> {
             issue.version
         ));
     }
-    // Event IDs begin with their time and end in random bytes, so two events of the same
-    // millisecond come in any order: what counts is that each version is there exactly once.
-    let mut counted = issue.event_versions.clone();
-    counted.sort_unstable();
-    if counted != counting(2, issue.version) {
+    // The events come in the order they were committed (the outbox), so the versions must run up
+    // one by one in that order: a change committed out of order is found too.
+    if issue.event_versions != counting(2, issue.version) {
         found.push(format!(
-            "{key}: the events of its changes have the versions {:?}, not 2 up to {}",
-            counted, issue.version
+            "{key}: the events of its changes have the versions {:?}, not 2 up to {} in the order they were committed",
+            issue.event_versions, issue.version
         ));
     }
     let written = book.comments.iter().filter(|each| *each == key).count();
@@ -290,10 +288,10 @@ mod tests {
     }
 
     #[test]
-    fn test_concurrent_events_of_one_millisecond_may_come_in_any_order() {
+    fn test_concurrent_events_must_count_the_versions_in_the_order_they_were_committed() {
         let (book, mut facts) = good_run();
         facts.issues[0].event_versions = vec![3, 2];
-        assert!(judge(&book, &facts, &afterwards()).is_empty());
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
         facts.issues[0].event_versions = vec![3, 3];
         assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
     }
