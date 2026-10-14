@@ -121,6 +121,10 @@ enum DatasetKind {
         /// Which database to make it on (default sqlite).
         #[arg(long, conflicts_with = "check", value_parser = parse_database)]
         database: Option<DatabaseKind>,
+        /// How many issues to make (default: the full sample of tools/dev/sample.json; the
+        /// comments, relations and the rest are scaled to it).
+        #[arg(long, conflicts_with = "check")]
+        issues: Option<u32>,
         /// The folder for the data folder and the sign-in details (default: the folder that
         /// tools/dev/sample.json names).
         #[arg(long, conflicts_with = "check")]
@@ -233,12 +237,14 @@ fn run() -> anyhow::Result<ExitCode> {
                 DatasetKind::Sample {
                     seed,
                     database,
+                    issues,
                     out,
                     check,
                 },
         } => {
             let request = dataset::Request {
                 seed,
+                issues,
                 database: database.unwrap_or(DatabaseKind::Sqlite),
                 out,
                 check,

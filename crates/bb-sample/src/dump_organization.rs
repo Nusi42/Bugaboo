@@ -6,6 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use bb_app::access::{PolicyStore as _, RoleRecord, StartingRole};
+use bb_app::fields::FieldStore as _;
 use bb_app::projects::ProjectStore as _;
 use bb_core::access::{AppliesTo, Assignment, Group};
 use bb_core::fields::FieldKey;
@@ -185,6 +186,14 @@ impl Sample {
     /// starting roles are the starting levels, written down in the docs).
     async fn dump_levels(&self, read: &Read) -> Result<Vec<DumpLevel>, SampleError> {
         let storage = &self.storage;
+        // An own field is named by an ID in its levels, which is random by design: the dump
+        // names it as people do.
+        let own_fields: BTreeMap<String, String> = storage
+            .field_definitions()
+            .await?
+            .into_iter()
+            .map(|definition| (definition.field.id.to_string(), definition.field.name))
+            .collect();
         let mut levels = Vec::new();
         for record in &read.roles {
             let mut places: Vec<Option<ProjectId>> = read
@@ -204,7 +213,10 @@ impl Sample {
                         role: record.role.name.clone(),
                         project: read.names.project(place),
                         about: "field",
-                        subject: field.code().into_owned(),
+                        subject: {
+                            let key = field.code().into_owned();
+                            own_fields.get(&key).cloned().unwrap_or(key)
+                        },
                         level: level.code(),
                     });
                 }

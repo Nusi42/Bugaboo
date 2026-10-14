@@ -6,7 +6,7 @@
 //! label that counts the records of a kind in the order they first show up (`person#3`), so the
 //! dump still says which events and log entries are about the same record. No secret is in it.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use bb_app::access::{PolicyStore as _, StartingRole};
 use bb_app::auth::{AccountStore as _, SecondStepStore as _};
@@ -15,6 +15,7 @@ use bb_core::id::{EntityId, UserId};
 use bb_core::technical::TechnicalName;
 use serde::Serialize;
 
+use crate::dump_issues::DumpIssues;
 use crate::dump_organization::{DumpAssignment, DumpGroup, DumpLevel, DumpProject, DumpRole};
 use crate::error::SampleError;
 use crate::generate::Sample;
@@ -36,6 +37,7 @@ pub struct Dump {
     projects: Vec<DumpProject>,
     assignments: Vec<DumpAssignment>,
     levels: Vec<DumpLevel>,
+    issues: DumpIssues,
     events: Vec<DumpEvent>,
     security_log: Vec<DumpLogEntry>,
 }
@@ -85,23 +87,21 @@ struct DumpLogEntry {
 /// Replaces IDs by labels in the order they first show up.
 #[derive(Default)]
 struct Labels {
-    seen: Vec<([u8; 16], String)>,
+    seen: HashMap<[u8; 16], String>,
+    /// How many records of each kind have a label.
+    counted: HashMap<String, usize>,
 }
 
 impl Labels {
     /// The label of the record `id` of the `kind`; a new record gets the next number of its kind.
     fn label(&mut self, kind: &str, id: [u8; 16]) -> String {
-        if let Some((_, label)) = self.seen.iter().find(|(known, _)| *known == id) {
+        if let Some(label) = self.seen.get(&id) {
             return label.clone();
         }
-        let number = self
-            .seen
-            .iter()
-            .filter(|(_, label)| label.split_once('#').is_some_and(|(of, _)| of == kind))
-            .count()
-            + 1;
+        let number = self.counted.entry(kind.to_owned()).or_default();
+        *number += 1;
         let label = format!("{kind}#{number}");
-        self.seen.push((id, label.clone()));
+        self.seen.insert(id, label.clone());
         label
     }
 
@@ -179,12 +179,17 @@ impl Sample {
 
         let reader =
             TechnicalName::new(READER).map_err(|error| SampleError::Store(error.to_string()))?;
-        let events = self
+        let raw: Vec<DomainEvent> = self
             .database
             .outbox_after(&reader, LIMIT)
             .await?
             .into_iter()
-            .map(|(_, event)| dump_event(&mut labels, &event))
+            .map(|(_, event)| event)
+            .collect();
+        let issues = self.issues(&raw).await?;
+        let events = raw
+            .iter()
+            .map(|event| dump_event(&mut labels, event))
             .collect();
         let security_log = self
             .database
@@ -212,6 +217,7 @@ impl Sample {
             projects: organization.projects,
             assignments: organization.assignments,
             levels: organization.levels,
+            issues,
             events,
             security_log,
         })
@@ -241,6 +247,10 @@ fn labelled(labels: &mut Labels, field: &str, value: serde_json::Value) -> serde
     }
 }
 
+/// The name of the kind of record the values of a change are labelled as: the field in the change
+/// (`reported-by`), or `own-field` for a field somebody made, which is written by its ID.
+const OWN_FIELD: &str = "own-field";
+
 fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
     DumpEvent {
         time: event.time.to_string(),
@@ -250,16 +260,23 @@ fn dump_event(labels: &mut Labels, event: &DomainEvent) -> DumpEvent {
         changes: event
             .changes
             .iter()
-            .map(|change| DumpChange {
-                field: change.field.clone(),
-                before: change
-                    .before
-                    .clone()
-                    .map(|value| labelled(labels, &change.field, value)),
-                after: change
-                    .after
-                    .clone()
-                    .map(|value| labelled(labels, &change.field, value)),
+            .map(|change| {
+                // An own field is named by an ID in its events, which is random by design.
+                let (field, kind) = match id_bytes(&change.field) {
+                    Some(id) => (labels.label(OWN_FIELD, id), OWN_FIELD),
+                    None => (change.field.clone(), change.field.as_str()),
+                };
+                DumpChange {
+                    field,
+                    before: change
+                        .before
+                        .clone()
+                        .map(|value| labelled(labels, kind, value)),
+                    after: change
+                        .after
+                        .clone()
+                        .map(|value| labelled(labels, kind, value)),
+                }
             })
             .collect(),
         reason: event.reason.clone(),

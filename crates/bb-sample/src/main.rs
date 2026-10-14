@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
 use bb_dev_words::database::{DatabaseKind, parse as parse_database};
-use bb_sample::{DEFAULT_SEED, Layout, Options, Organization, Output, SampleError, Target, make};
+use bb_sample::{DEFAULT_SEED, Everything, Layout, Options, Output, SampleError, Target, make};
 use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 use jiff::Timestamp;
 
@@ -38,6 +38,8 @@ struct Args {
     // Its help names the environment variable of the layout, so it is set in `arguments`.
     #[arg(long, default_value_t = DatabaseKind::Sqlite, value_parser = parse_database)]
     database: DatabaseKind,
+    #[arg(long, help = text(message::CLI_HELP_SAMPLE_ISSUES))]
+    issues: Option<u32>,
     #[arg(long, help = text(message::CLI_HELP_SAMPLE_OUT))]
     out: PathBuf,
 }
@@ -57,7 +59,11 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         seed: args.seed,
         start,
     };
-    let sample = make(&options, &output.data_folder(), &target, &mut Organization).await?;
+    let mut everything = match args.issues {
+        Some(issues) => Everything::new(issues)?,
+        None => Everything::full()?,
+    };
+    let sample = make(&options, &output.data_folder(), &target, &mut everything).await?;
     sample.verify_security_log().await?;
     output.write_dump(&sample.dump().await?.to_json()?)?;
     output.write_sign_in(&sample.sign_in_text())?;

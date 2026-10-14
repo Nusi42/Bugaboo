@@ -45,5 +45,105 @@
       { "shortName": "OPS", "name": "Operations", "subProjects": [] },
       { "shortName": "DOC", "name": "Handbook", "subProjects": [] }
     ]
+  },
+  "issues": {
+    "$comment": "What the sample organization holds besides the people (architecture §11, 'Projects'): how many issues, in which projects and of which types, the own fields, labels and tags, and how many relations and comments. 'total' is the full sample (the demo and the browser tests); 'smallTotal' is the smaller one that cargo xtask dataset sample --check makes four times and cargo xtask dev --sample makes for development. Every other count is scaled from 'total' to the number asked for, and the check holds the made counts against these within 'tolerancePercent'. The names of types are the starting issue types; the fields are made through the same use case as the screen for own fields.",
+    "total": 10000,
+    "smallTotal": 500,
+    "months": 18,
+    "tolerancePercent": 10,
+    "types": [
+      { "name": "Bug", "percent": 45 },
+      { "name": "Task", "percent": 30 },
+      { "name": "Feature", "percent": 20 },
+      { "name": "Goal", "percent": 5 }
+    ],
+    "projects": [
+      {
+        "shortName": "APP",
+        "issues": 4800,
+        "idMode": "random",
+        "places": [
+          { "shortName": "APP", "percent": 10 },
+          { "shortName": "IOS", "percent": 50 },
+          { "shortName": "AND", "percent": 40 }
+        ]
+      },
+      {
+        "shortName": "WEB",
+        "issues": 3000,
+        "idMode": "counting",
+        "places": [
+          { "shortName": "WEB", "percent": 10 },
+          { "shortName": "SHOP", "percent": 50 },
+          { "shortName": "BLOG", "percent": 40 }
+        ]
+      },
+      {
+        "shortName": "OPS",
+        "issues": 1800,
+        "idMode": "random",
+        "places": [{ "shortName": "OPS", "percent": 100 }]
+      },
+      {
+        "shortName": "DOC",
+        "issues": 400,
+        "idMode": "counting",
+        "places": [{ "shortName": "DOC", "percent": 100 }],
+        "types": [
+          { "name": "Bug", "percent": 10 },
+          { "name": "Task", "percent": 65 },
+          { "name": "Feature", "percent": 20 },
+          { "name": "Goal", "percent": 5 }
+        ]
+      }
+    ],
+    "fields": [
+      {
+        "name": "Severity",
+        "kind": "pick-one",
+        "issueTypes": ["Bug"],
+        "projects": [],
+        "choices": ["Minor", "Major", "Critical", "Blocker"]
+      },
+      {
+        "name": "Platforms",
+        "kind": "pick-several",
+        "issueTypes": [],
+        "projects": ["APP", "WEB"],
+        "choices": ["iOS", "Android", "Web", "Server"]
+      },
+      {
+        "name": "Customer",
+        "kind": "text",
+        "issueTypes": [],
+        "projects": ["OPS", "WEB"],
+        "choices": []
+      }
+    ],
+    "labelGroups": [
+      {
+        "name": "Area",
+        "pickOne": true,
+        "labels": ["Sign-in", "Payments", "Search", "Settings", "Onboarding", "Reports"]
+      },
+      { "name": "Effort", "pickOne": true, "labels": ["Small", "Medium", "Large"] }
+    ],
+    "labels": ["Needs design", "Good first issue", "Waiting for a vendor"],
+    "tags": [
+      "accessibility",
+      "crash",
+      "performance",
+      "security",
+      "translation",
+      "regression",
+      "customer-request",
+      "tech-debt",
+      "release-blocker",
+      "quick-win"
+    ],
+    "relations": 3000,
+    "comments": 30000,
+    "editedCommentsPercent": 5
   }
 }

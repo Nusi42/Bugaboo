@@ -35,10 +35,6 @@ route = "GET /api/v1/auth/two-step"
 property = "backup_codes_left"
 reason = "The caller's own backup codes: a person may see everything about their own sign-in data."
 
-[[counting]]
-folder = "crates/bb-sample/src/dump.rs"
-reason = "The labels of the dump of the sample organization (person#1) only let two dumps be compared; they are never shown to anybody and never stored (TEST-SAMPLE-DATA)."
-
 [[exempt]]
 route = "GET /api/v1/groups/{group_id}"
 property = "projects"

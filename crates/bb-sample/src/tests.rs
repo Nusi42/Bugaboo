@@ -14,6 +14,8 @@ use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
 use serde_json::Value;
 
+mod issues;
+
 use crate::{
     ACCESS_KEYS, DEFAULT_SEED, EMAIL_DOMAIN, LATER_SECONDS, Later, NameList, Options, Organization,
     PEOPLE, ROLE_MIX, STEP_SECONDS, Sample, SampleError, Step, Target, World, make,

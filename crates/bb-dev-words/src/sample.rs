@@ -49,6 +49,107 @@ pub struct Layout {
     pub database_url_variable: String,
     /// What the groups, projects and custom roles of the organization are called.
     pub organization: OrganizationNames,
+    /// What the organization holds besides the people: the issues and what belongs to them.
+    pub issues: IssuePlan,
+}
+
+/// What the sample holds in issues (architecture §11, *Projects*): the counts of the full sample,
+/// which are scaled to the number asked for.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssuePlan {
+    /// How many issues the full sample has (the demo and the browser tests).
+    pub total: u32,
+    /// How many the smaller sample has that `--check` makes four times and `cargo xtask dev --sample`
+    /// makes for development.
+    pub small_total: u32,
+    /// How many months back the first issue was made.
+    pub months: u32,
+    /// How far a made count may be from the plan, in percent of the plan.
+    pub tolerance_percent: u32,
+    /// The share of each issue type, in percent (together 100).
+    pub types: Vec<TypeShare>,
+    /// The issues of each top-level project, and how they are spread over its places.
+    pub projects: Vec<ProjectIssues>,
+    /// The own fields to make.
+    pub fields: Vec<FieldPlan>,
+    /// The groups of labels with their labels.
+    pub label_groups: Vec<LabelGroupPlan>,
+    /// The labels that are in no group.
+    pub labels: Vec<String>,
+    /// The tags issues carry.
+    pub tags: Vec<String>,
+    /// How many relations the full sample has.
+    pub relations: u32,
+    /// How many comments the full sample has.
+    pub comments: u32,
+    /// How many of a hundred comments were edited.
+    pub edited_comments_percent: u32,
+}
+
+/// The share of an issue type.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypeShare {
+    /// The name of the starting issue type.
+    pub name: String,
+    /// Its share, in percent.
+    pub percent: u32,
+}
+
+/// The issues of one top-level project.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectIssues {
+    /// The short name of the project.
+    pub short_name: String,
+    /// How many issues the project and its sub-projects have in the full sample.
+    pub issues: u32,
+    /// How its issues are given their IDs: `random` or `counting`.
+    pub id_mode: String,
+    /// Where the issues are: the project itself and its sub-projects, with their shares.
+    pub places: Vec<Place>,
+    /// Another share of the types than the one of the whole sample, if the project has one.
+    #[serde(default)]
+    pub types: Option<Vec<TypeShare>>,
+}
+
+/// A project that holds issues, and its share of the issues of its top-level project.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Place {
+    /// The short name of the project.
+    pub short_name: String,
+    /// Its share, in percent.
+    pub percent: u32,
+}
+
+/// An own field to make.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldPlan {
+    /// What it is called.
+    pub name: String,
+    /// The kind of information, as its word (`pick-one`, `pick-several`, `text`).
+    pub kind: String,
+    /// The names of the issue types it is for; none means all.
+    pub issue_types: Vec<String>,
+    /// The short names of the projects it is used in; none means all.
+    pub projects: Vec<String>,
+    /// The choices of a field that has them.
+    pub choices: Vec<String>,
+}
+
+/// A group of labels.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LabelGroupPlan {
+    /// What it is called.
+    pub name: String,
+    /// Whether an issue has at most one label of the group.
+    pub pick_one: bool,
+    /// The labels of the group.
+    pub labels: Vec<String>,
 }
 
 /// What the people of the sample read as the names of its groups, projects and custom roles. The
@@ -115,6 +216,39 @@ fn named<'a>(
         .ok_or_else(|| LayoutError(format!("{kind}.{key} is missing")))
 }
 
+impl IssuePlan {
+    /// Whether the plan adds up: shares of 100, places that are projects of the layout.
+    fn check(&self) -> Result<(), LayoutError> {
+        let sum = |shares: &[TypeShare]| shares.iter().map(|share| share.percent).sum::<u32>();
+        let bad = |what: &str| Err(LayoutError(format!("issues: {what}")));
+        if sum(&self.types) != 100 {
+            return bad("the shares of the types are not 100");
+        }
+        for project in &self.projects {
+            if project
+                .places
+                .iter()
+                .map(|place| place.percent)
+                .sum::<u32>()
+                != 100
+            {
+                return bad("the places of a project do not make 100");
+            }
+            if project
+                .types
+                .as_ref()
+                .is_some_and(|types| sum(types) != 100)
+            {
+                return bad("the shares of the types of a project are not 100");
+            }
+        }
+        if self.total == 0 || self.small_total == 0 || self.months == 0 {
+            return bad("a count is 0");
+        }
+        Ok(())
+    }
+}
+
 impl Layout {
     /// The layout that is part of this program.
     ///
@@ -151,6 +285,7 @@ impl Layout {
                     .map(|sub| (&sub.short_name, &sub.name)),
             )
         });
+        layout.issues.check()?;
         if names.iter().any(|name| name.trim().is_empty())
             || organization
                 .groups
@@ -177,6 +312,14 @@ mod tests {
         assert!(!layout.sign_in_file.is_empty());
         assert!(layout.database_url_variable.starts_with("BB_SAMPLE_"));
         assert_eq!(layout.organization.projects.len(), 4);
+        assert_eq!(layout.issues.projects.len(), 4);
+        let planned: u32 = layout
+            .issues
+            .projects
+            .iter()
+            .map(|project| project.issues)
+            .sum();
+        assert_eq!(planned, layout.issues.total);
         assert_eq!(layout.organization.group("backend").unwrap(), "Backend");
         assert!(layout.organization.role("no-such-role").is_err());
     }

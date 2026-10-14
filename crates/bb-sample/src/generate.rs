@@ -19,10 +19,12 @@ use bb_app::auth::{
     CreatedInvitation, IssueSetupCode, MakeAccessKey, NoFailureLimit, RequestInfo,
     SecondStepStore as _, SignOut, StartCodeApp, Started, issue_setup_code, make_access_key,
 };
+use bb_app::comments::CommentRecords;
 use bb_app::context::Clock as _;
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_auth::{CsrfKey, PasswordHasher, TotpSecret};
 use bb_core::access_key::KeyChoice;
+use bb_core::edit::{DraftTarget, EditWhat};
 use bb_core::id::UserId;
 use bb_core::message::{self, Message};
 use bb_core::settings::{
@@ -106,6 +108,10 @@ pub struct World<'a> {
     pub people: &'a [MadePerson],
     /// The clock of the sample; [`World::tick`] moves it on a second before each change.
     pub clock: &'a SampleClock,
+    /// The moment the sample ends (`--start`): what comes after the people ends before it.
+    pub start: Timestamp,
+    /// The seed the sample is made from.
+    pub seed: u64,
 }
 
 impl World<'_> {
@@ -127,8 +133,31 @@ impl World<'_> {
 /// people are wanted. A step runs once, after every person exists and before the administrator
 /// signs out.
 pub trait Later {
+    /// How long before the organization the people join, in seconds: the time that what follows
+    /// the people has to work in. None by default, so the people join in the hours before `start`.
+    fn history_seconds(&self) -> i64 {
+        0
+    }
+
+    /// What the step left behind that the dump looks for again.
+    fn left_behind(&self) -> LeftBehind {
+        LeftBehind::default()
+    }
+
     /// Makes whatever follows the people.
     fn after_people(&mut self, world: &World<'_>) -> impl Future<Output = Result<(), SampleError>>;
+}
+
+/// What the sample made that the dump looks for again to say it is there: how many issues it was
+/// asked to make, and the locks and drafts it left behind.
+#[derive(Clone, Debug, Default)]
+pub struct LeftBehind {
+    /// How many issues the sample was asked to make.
+    pub issues: u32,
+    /// The texts somebody is editing.
+    pub locks: Vec<EditWhat>,
+    /// The drafts waiting: who wrote them and what they are for.
+    pub drafts: Vec<(UserId, DraftTarget)>,
 }
 
 /// The step that follows the people today: none.
@@ -148,6 +177,7 @@ pub struct Sample {
     pub(crate) database: Database,
     pub(crate) storage: AuthStorage,
     pub(crate) seal: LogSeal,
+    pub(crate) left_behind: LeftBehind,
 }
 
 impl Sample {
@@ -237,7 +267,10 @@ pub async fn make<L: Later>(
 ) -> Result<Sample, SampleError> {
     let plan = roster(options.seed, &NameList::bundled()?)?;
     let count = i64::try_from(plan.len()).unwrap_or(0);
-    let first_moment = moment(options.start, -(count * STEP_SECONDS + LATER_SECONDS))?;
+    let first_moment = moment(
+        options.start,
+        -(count * STEP_SECONDS + LATER_SECONDS + later.history_seconds()),
+    )?;
     let clock = Arc::new(SampleClock::at(first_moment));
 
     let Opened {
@@ -255,7 +288,9 @@ pub async fn make<L: Later>(
         csrf,
         Arc::new(NoFailureLimit),
         Message::from(message::APP_NAME).render(),
-    );
+    )
+    // The comments of the issues are texts that are edited under a lock, like the server has it.
+    .with_records(Arc::new(CommentRecords::new(storage.clone())));
     let api: &dyn AuthApi = &services;
 
     let mut made: Vec<MadePerson> = Vec::with_capacity(plan.len());
@@ -315,11 +350,14 @@ pub async fn make<L: Later>(
             administrator_session: &administrator_session,
             people: &made,
             clock: &clock,
+            start: options.start,
+            seed: options.seed,
         })
         .await?;
     sign_out(api, administrator_session).await?;
 
     Ok(Sample {
+        left_behind: later.left_behind(),
         options: *options,
         people: made,
         database,
