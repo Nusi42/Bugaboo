@@ -74,6 +74,16 @@ pub trait IssueStore: ProjectStore + 'static {
         /// Writes the type, title, description, status, priority, update date and closed date of
         /// `issue`, counts its version up, and says whether it was still at `version`.
         fn update_issue(issue: &Issue, version: i64) -> bool;
+        /// Puts an issue into another project with a code of that project, sets the date it
+        /// changed, counts its version up, and says whether the issue was still at `version`. The
+        /// old code is kept with `insert_issue_alias`.
+        fn move_issue(
+            id: IssueId,
+            project: ProjectId,
+            code: &IssueCode,
+            version: i64,
+            now: Timestamp
+        ) -> bool;
         /// Replaces the people an issue is assigned to.
         fn replace_assignees(issue: IssueId, assignees: &[IssueAssignee]) -> ();
         /// Puts an issue into the trash (a date) or takes it out (`None`), counts its version up,

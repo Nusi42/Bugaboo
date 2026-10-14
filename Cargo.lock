@@ -520,6 +520,11 @@ version = "0.0.0"
 [[package]]
 name = "bb-jobs"
 version = "0.0.0"
+dependencies = [
+ "bb-app",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "bb-macros"
@@ -599,6 +604,7 @@ dependencies = [
  "bb-auth",
  "bb-core",
  "bb-dev-words",
+ "bb-jobs",
  "bb-store",
  "bb-testing",
  "clap",

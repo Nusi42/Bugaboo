@@ -48,6 +48,12 @@ export {
 export { layoutForWidth, layoutModes, useLayout, type LayoutMode } from "./layout.ts";
 export { Link, type LinkProps } from "./Link.tsx";
 export {
+  LongPreview,
+  type LongPreviewGroup,
+  type LongPreviewLine,
+  type LongPreviewProps,
+} from "./LongPreview.tsx";
+export {
   MarkdownEditor,
   type MarkdownEditorLabels,
   type MarkdownEditorProps,

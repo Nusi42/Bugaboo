@@ -46,6 +46,25 @@ impl ItemValues {
         self.values.contains_key(&item)
     }
 
+    /// Whether every own field the item has a value in is offered in a project whose projects from
+    /// the top down are `chain`, for an issue of this type: whether the item can live on there
+    /// without losing a value.
+    pub(crate) fn all_reach(
+        &self,
+        item: EntityId,
+        chain: &[ProjectId],
+        issue_type: IssueTypeId,
+    ) -> bool {
+        self.values.get(&item).is_none_or(|values| {
+            values.keys().all(|field| {
+                self.definitions
+                    .iter()
+                    .find(|definition| definition.field.id == *field)
+                    .is_none_or(|definition| definition.scope.reaches(chain, Some(issue_type)))
+            })
+        })
+    }
+
     /// The value the item holds for a field.
     pub(crate) fn value(&self, item: EntityId, field: FieldId) -> Option<&FieldValue> {
         self.values.get(&item)?.get(&field)
@@ -301,6 +320,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(ErrorCode::FieldNotHere.into());
         }
         Ok(used_for)
+    }
+
+    /// Whether an issue can live on in a project whose projects from the top down are `chain`
+    /// without losing the value of an own field: every field it has a value in is used there.
+    pub(crate) async fn fields_follow(
+        &self,
+        issue: &bb_core::issue::Issue,
+        chain: &[ProjectId],
+    ) -> Result<bool, AppError> {
+        let item: EntityId = issue.id.into();
+        let values = self.load_values(RecordKind::Issue, &[item]).await?;
+        Ok(values.all_reach(item, chain, issue.issue_type))
     }
 
     /// The projects from the top down to this one: where the scope of a field is judged.

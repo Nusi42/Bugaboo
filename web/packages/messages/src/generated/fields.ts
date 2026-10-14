@@ -71,10 +71,6 @@ export const messages = {
   "fields.scope-types-help":
     "Tick the issue types that have the field. With none ticked, every issue type has it.",
   "fields.projects-legend": "Add a project",
-  "fields.projects-search": "Find a project",
-  "fields.projects-list": "Projects",
-  "fields.projects-nothing": "No project found.",
-  "fields.projects-more": "Show more projects",
   "fields.see-title": "Who can see it",
   "fields.see-help":
     "Each role sees a field as Hidden, Can see or Can change. A new field starts with Can see for everyone who sees the project, and Can change from Team member up.",

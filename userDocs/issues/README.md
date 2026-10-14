@@ -7,6 +7,7 @@ An **issue** is anything that is being tracked: a bug, a task, an idea. Every is
 - [Issue IDs](issue-ids.md): `WEB-K7Q2X` or `WEB-142`, and what happens when a project changes from one to the other
 - [Issue types](issue-types.md): Bug, Task, Feature and Goal, and how an administrator changes them
 - [Sub-issues and relations](relations.md): parts of an issue, *blocks* and *duplicate of*, and the kinds of relation
+- [Changing many issues at once](change-many.md): tick issues, read what would change, apply, and undo
 - [Comments, mentions, history and following](comments.md): writing to each other, naming people, reading what changed, and keeping track
 
 ## Who sees and changes what

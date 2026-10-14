@@ -103,6 +103,14 @@ pub(crate) struct State {
     pub(crate) history_position: i64,
     pub(crate) field_definitions: Vec<crate::fields::Definition>,
     pub(crate) field_values: Vec<super::fake_fields::FakeValue>,
+    pub(crate) tags: Vec<bb_core::tags::Tag>,
+    pub(crate) tag_projects: Vec<bb_core::tags::TagProject>,
+    pub(crate) issue_tags: Vec<bb_core::tags::IssueTag>,
+    pub(crate) label_groups: Vec<bb_core::tags::LabelGroup>,
+    pub(crate) labels: Vec<bb_core::tags::Label>,
+    pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
+    pub(crate) jobs: Vec<bb_core::job::Job>,
+    pub(crate) bulk_runs: Vec<bb_core::bulk::BulkRun>,
     pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,
 }
 
@@ -192,9 +200,9 @@ impl ChangeStore for FakeStore {
     type Transaction = Tx;
     type Error = FakeError;
 
-    async fn record_change<'a, T: Send + 'a>(
+    async fn record_changes<'a, T: Send + 'a>(
         &'a self,
-        event: &'a DomainEvent,
+        events: &'a [DomainEvent],
         change: impl for<'t> FnOnce(&'t mut Tx) -> BoxFuture<'t, Result<T, FakeError>> + Send + 'a,
     ) -> Result<T, FakeError> {
         let state = {
@@ -211,7 +219,7 @@ impl ChangeStore for FakeStore {
         let result = change(&mut tx).await?;
         let mut shared = self.lock();
         shared.state = tx.state;
-        shared.events.push(event.clone());
+        shared.events.extend(events.iter().cloned());
         shared.events.extend(tx.follow_ups);
         Ok(result)
     }

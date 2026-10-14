@@ -169,6 +169,24 @@ impl RelationStore for FakeStore {
         Ok(true)
     }
 
+    async fn count_up_issue_version(
+        tx: &mut Tx,
+        issue: IssueId,
+        now: Timestamp,
+    ) -> Result<Option<i64>, FakeError> {
+        let Some(found) = tx
+            .state
+            .issues
+            .iter_mut()
+            .find(|found| found.id == issue && found.deleted_at.is_none())
+        else {
+            return Ok(None);
+        };
+        found.updated_at = now;
+        found.version += 1;
+        Ok(Some(found.version))
+    }
+
     async fn lock_issue_parents(_tx: &mut Tx) -> Result<(), FakeError> {
         Ok(())
     }

@@ -17,8 +17,6 @@ export const messages = {
   "history.changed-long-text": "{who} changed {field}",
   "history.relation-added": "{who} added a relation: this issue {name} {issue}",
   "history.relation-removed": "{who} took away a relation: this issue {name} {issue}",
-  "history.field-other": "{field}",
-  "history.people-none": "nobody",
   "comments.write": "Write a comment",
   "comments.write-help": "Type @ and a name to mention someone.",
   "comments.add": "Comment",

@@ -23,6 +23,7 @@ mod fields;
 mod ids;
 mod issue_types;
 mod make;
+mod moving;
 mod read;
 mod store;
 mod types;
@@ -39,9 +40,10 @@ pub use issue_types::{
     make_starting_issue_types,
 };
 pub use make::make_issue;
+pub use moving::move_issue;
 pub use read::{issue, issues};
 pub use store::{IssueFound, IssueStore};
 pub use types::*;
 
-pub(crate) use fields::member;
-pub(crate) use ids::{ModeChange, plan_renewals_in, renew_in};
+pub(crate) use fields::{ensure_may_change, member};
+pub(crate) use ids::{ModeChange, plan_renewals_in, renew_or_queue_in};

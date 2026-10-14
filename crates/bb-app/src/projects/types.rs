@@ -17,6 +17,8 @@ use bb_core::project::{Project, ShortName};
 use bb_policy::{Masked, Permission, PersonRef};
 use serde::Serialize;
 
+use crate::preview::PreviewSummary;
+
 /// Make a project at the top level, or inside another project.
 pub struct MakeProject {
     /// The secret of the session of the request.
@@ -311,6 +313,9 @@ pub struct MovePreview {
     /// Something in a project the person cannot see also stops the move: one sentence says so,
     /// without a name or a number.
     pub blocked_out_of_sight: bool,
+    /// How many people are named below, the sentence on top of a long preview (M2C-F80): nobody is
+    /// skipped in a move.
+    pub summary: PreviewSummary,
     /// Who gains or loses access or changes role, where the person who asks can see the project.
     pub people: Vec<PersonChange>,
     /// Who could take away a *No access* after the move and could not before.

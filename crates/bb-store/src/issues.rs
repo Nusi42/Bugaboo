@@ -449,6 +449,27 @@ impl IssueStore for AuthStorage {
         Ok(transaction.execute(&update).await? > 0)
     }
 
+    async fn move_issue(
+        transaction: &mut Transaction,
+        id: IssueId,
+        project: ProjectId,
+        code: &IssueCode,
+        version: i64,
+        now: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(IssueRow::Table)
+            .value(IssueRow::Project, project.stored())
+            .value(IssueRow::Code, code.as_str())
+            .value(IssueRow::UpdatedAt, to_micros(now))
+            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+            .and_where(Expr::col(IssueRow::Id).eq(id.stored()))
+            .and_where(Expr::col(IssueRow::Version).eq(version))
+            .and_where(Expr::col(IssueRow::DeletedAt).is_null());
+        Ok(transaction.execute(&update).await? > 0)
+    }
+
     async fn replace_assignees(
         transaction: &mut Transaction,
         issue: IssueId,

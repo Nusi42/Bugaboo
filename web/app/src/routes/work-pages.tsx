@@ -54,6 +54,35 @@ export const relationKindsRoute = createRoute({
   },
 });
 
+const LabelsScreen = lazyRouteComponent(() => import("../features/labels/index.ts"), "LabelsPage");
+
+/** *Organization settings › Labels and tags*: the address says which group, label or tag is open. */
+export const labelsRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.labels,
+  validateSearch: (search: Readonly<Record<string, unknown>>): { open?: string | undefined } => ({
+    open: typeof search["open"] === "string" ? search["open"] : undefined,
+  }),
+  loader: loadsScreen(LabelsScreen),
+  component: function Labels() {
+    const { open } = useSearch({ strict: false });
+    const navigate = useNavigate();
+    return (
+      <OnlyWith path={paths.labels}>
+        <LabelsScreen
+          open={open}
+          onOpen={(id: string) => {
+            void navigate({ to: paths.labels, search: { open: id } });
+          }}
+          onClose={() => {
+            void navigate({ to: paths.labels, search: {} });
+          }}
+        />
+      </OnlyWith>
+    );
+  },
+});
+
 const OrganizationLayoutsScreen = lazyRouteComponent(
   () => import("../features/layouts/index.ts"),
   "OrganizationLayoutsScreen",

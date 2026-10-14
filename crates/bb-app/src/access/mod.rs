@@ -122,6 +122,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// sent as `Authorization: Bearer`). Use cases that judge a permission start here; what
     /// belongs to the owner's own sign-in data starts at `active` and so never opens for a key.
     pub(crate) async fn actor(&self, token_text: &str) -> Result<Actor, AppError> {
+        if let Some(acting) = &self.acting {
+            return Ok(acting.clone());
+        }
         if looks_like_access_key(token_text) {
             return self.key_actor(token_text).await;
         }

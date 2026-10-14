@@ -36,6 +36,22 @@ pub trait ChangeStore: Send + Sync {
         change: impl for<'t> FnOnce(&'t mut Self::Transaction) -> BoxFuture<'t, Result<T, Self::Error>>
         + Send
         + 'a,
+    ) -> impl Future<Output = Result<T, Self::Error>> + Send + 'a {
+        self.record_changes(std::slice::from_ref(event), change)
+    }
+
+    /// The same for a change that has more than one event of its own, or none besides the ones it
+    /// adds inside (`Transaction` follow-ups): a step of a job that renews the IDs of many issues
+    /// writes one event for each issue and nothing else.
+    ///
+    /// # Errors
+    /// Returns the error of `change`, or the error of the database.
+    fn record_changes<'a, T: Send + 'a>(
+        &'a self,
+        events: &'a [DomainEvent],
+        change: impl for<'t> FnOnce(&'t mut Self::Transaction) -> BoxFuture<'t, Result<T, Self::Error>>
+        + Send
+        + 'a,
     ) -> impl Future<Output = Result<T, Self::Error>> + Send + 'a;
 
     /// Runs `read` in one snapshot: everything it reads belongs together, and nothing is written.

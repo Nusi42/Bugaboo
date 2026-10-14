@@ -75,12 +75,14 @@ async function joinIssues(): Promise<void> {
   if (issuesJoined) {
     return;
   }
-  const [issues, fields, relations, history, follow] = await Promise.all([
+  const [issues, fields, relations, history, follow, labels, bulk] = await Promise.all([
     import("../features/issues/index.ts"),
     import("../features/fields/index.ts"),
     import("../features/relations/index.ts"),
     import("../features/history/index.ts"),
     import("../features/follow/index.ts"),
+    import("../features/labels/index.ts"),
+    import("../features/bulk/index.ts"),
   ]);
   if (!issuesJoined) {
     issuesJoined = true;
@@ -90,6 +92,8 @@ async function joinIssues(): Promise<void> {
     relations.registerRelationBlocks();
     history.registerHistoryBlock();
     follow.registerFollowersBlock();
+    labels.registerLabelBlocks();
+    bulk.registerBulk();
   }
 }
 

@@ -12,6 +12,7 @@
 use axum::http::StatusCode;
 use bb_app::access::{Permission, StartingRole};
 use bb_core::access::FieldLevel;
+use bb_core::layout::{LayoutKind, built_in_fields};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -287,7 +288,11 @@ async fn cfg_01_a_place_with_many_own_fields_can_be_customized_and_saved() -> Te
             .iter()
             .map(|section| section["fields"].as_array().map_or(0, Vec::len))
             .sum();
-        assert_eq!(placed, 101 + 5, "{editor}");
+        assert_eq!(
+            placed,
+            101 + built_in_fields(LayoutKind::IssuePage).len(),
+            "{editor}"
+        );
         // A save of the whole layout is not refused for its size.
         let (layout, version) = slot(&editor)?;
         let lock = token_of(&take_lock(&mut ada, &layout, AN_EDITOR).await?)?;

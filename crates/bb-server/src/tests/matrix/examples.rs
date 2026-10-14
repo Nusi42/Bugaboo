@@ -359,6 +359,33 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("changeChoice"),
     Example::route("reorderChoices"),
     Example::route("combineChoices"),
+    Example::with("getIssueSorting", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("addTag", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("removeTag", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("addLabel", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "removeLabel",
+        &[Quirk::AnIssueOfTheTarget, Quirk::NamesAMissingThing],
+    ),
+    Example::with("listTagSuggestions", &[Quirk::HidesUnseen]),
+    Example::route("listTags"),
+    Example::route("previewTagChange"),
+    Example::route("changeTag"),
+    Example::route("combineTags"),
+    Example::with("listLabels", &[Quirk::KeysActAsThePerson]),
+    Example::route("makeLabelGroup"),
+    Example::route("changeLabelGroup"),
+    Example::route("makeLabel"),
+    Example::route("previewLabelChange"),
+    Example::route("changeLabel"),
+    Example::route("combineLabels"),
+    Example::with("moveIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::route("previewBulkChange"),
+    Example::route("applyBulkChange"),
+    Example::with(
+        "getBulkRun",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
+    ),
     Example::with(
         "saveIssueFieldText",
         &[
@@ -756,6 +783,9 @@ pub(super) async fn request(
     if let Some(found) =
         super::examples_relations::relation_request(fixture, operation, browser).await?
     {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

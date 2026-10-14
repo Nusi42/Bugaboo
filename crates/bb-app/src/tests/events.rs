@@ -16,6 +16,7 @@ use super::scenarios_fields as sf;
 use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
 use super::scenarios_relations as sr;
+use super::scenarios_tags as st;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
 
@@ -89,6 +90,8 @@ table! {
     "edit_anyway" => s::edit_anyway_scenario,
     "release_stuck_lock" => s::release_stuck_lock_scenario,
     "make_issue" => si::make_issue_scenario,
+    "move_issue" => si::move_issue_scenario,
+    "apply_bulk" => si::apply_bulk_scenario,
     "change_issue" => si::change_issue_scenario,
     "save_description" => si::save_description_scenario,
     "delete_issue" => si::delete_issue_scenario,
@@ -116,6 +119,17 @@ table! {
     "reorder_choices" => sf::reorder_choices_scenario,
     "combine_choices" => sf::combine_choices_scenario,
     "save_field_text" => sf::save_field_text_scenario,
+    "add_tag" => st::add_tag_scenario,
+    "remove_tag" => st::remove_tag_scenario,
+    "change_tag" => st::change_tag_scenario,
+    "combine_tags" => st::combine_tags_scenario,
+    "make_label_group" => st::make_label_group_scenario,
+    "change_label_group" => st::change_label_group_scenario,
+    "make_label" => st::make_label_scenario,
+    "change_label" => st::change_label_scenario,
+    "combine_labels" => st::combine_labels_scenario,
+    "add_label" => st::add_label_scenario,
+    "remove_label" => st::remove_label_scenario,
     "make_layout" => sl::make_layout_scenario,
     "save_layout" => sl::save_layout_scenario,
     "delete_layout" => sl::delete_layout_scenario,
@@ -146,9 +160,13 @@ async fn adr_0007_every_command_use_case_appends_its_event() -> Outcome {
             .await
             .map_err(|error| format!("{name}: {error}"))?;
         assert!(added >= 1, "{name} appended no event");
-        // A change is one event; only the start of the program may make several changes at once.
-        if *name != "make_starting_roles" {
-            assert_eq!(added, 1, "{name} appended {added} events");
+        // A change is one event; only the start of the program may make several changes at once,
+        // and a move, which also writes the event of the new readable ID (a code that is given
+        // out inside the change cannot be in the event written before it).
+        match *name {
+            "make_starting_roles" => {}
+            "move_issue" => assert_eq!(added, 2, "{name} appended {added} events"),
+            _ => assert_eq!(added, 1, "{name} appended {added} events"),
         }
     }
     Ok(())

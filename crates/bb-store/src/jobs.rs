@@ -257,6 +257,28 @@ impl Database {
         Ok(self.execute(&update).await? > 0)
     }
 
+    /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn later_job_waits(
+        &self,
+        kind: &TechnicalName,
+        after: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(Expr::col(Columns::Id).count(), Computed::Total)
+            .from(Columns::Table)
+            .and_where(Expr::col(Columns::Kind).eq(kind.as_str()))
+            .and_where(Expr::col(Columns::State).eq(JobState::Queued.code()))
+            .and_where(Expr::col(Columns::RunAt).gt(to_micros(after)));
+        match self.fetch_optional(&select).await? {
+            Some(row) => Ok(row.get::<i64>(Computed::Total)? > 0),
+            None => Ok(false),
+        }
+    }
+
     /// How many jobs are in the queue, waiting or leased (not dead).
     ///
     /// # Errors

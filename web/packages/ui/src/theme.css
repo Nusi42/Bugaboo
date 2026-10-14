@@ -1967,15 +1967,6 @@ body {
   min-width: 0;
 }
 
-[data-part="projects.sentences"] {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  line-height: var(--lh-body);
-  padding-inline-start: var(--space-5);
-}
-
 [data-part="projects.alert-line"] {
   margin: 0;
 }
@@ -1987,6 +1978,94 @@ body {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+[data-part="long-preview"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+[data-part="long-preview.summary"] {
+  display: block;
+  margin: 0;
+  font-weight: var(--weight-bold);
+}
+
+[data-part="long-preview.groups"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+[data-part="long-preview.group"] {
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+[data-part="long-preview.group"][data-state~="skipped"] {
+  background: var(--bg-sunken);
+}
+
+[data-part="long-preview.group-head"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[data-part="long-preview.lines"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  line-height: var(--lh-body);
+  padding-inline-start: var(--space-4);
+}
+
+[data-part="chips"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-part="chip"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+[data-part="bulk-bar"] {
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+[data-part="bulk-progress"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 [data-part="project-tree.row"] {

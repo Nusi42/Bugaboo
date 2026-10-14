@@ -901,13 +901,21 @@ async fn priv_13_no_project_answer_holds_a_count() -> TestResult {
         for answer in &answers {
             assert_no_count(answer, "");
         }
+        // The summary of the preview counts the people the answer lists, not one more.
+        let moved = serde_json::to_value(preview(&org, &admin, quiet.id, Some(loud.id)).await?)?;
+        assert_eq!(
+            moved["summary"]["will_change"].as_u64(),
+            moved["people"].as_array().map(|people| people.len() as u64)
+        );
+        assert_eq!(moved["summary"]["skipped"], 0);
         Ok(())
     })
     .await
 }
 
 /// No member of the JSON is named like a count, and no member holds a number except the version
-/// of a project (a number of changes made to that one project, which counts nothing hidden).
+/// of a project (a number of changes made to that one project, which counts nothing hidden) and
+/// the two numbers of the summary of a preview, which count what the answer lists.
 fn assert_no_count(value: &serde_json::Value, path: &str) {
     match value {
         serde_json::Value::Object(members) => {
@@ -924,7 +932,11 @@ fn assert_no_count(value: &serde_json::Value, path: &str) {
                     assert!(!name.contains(counter), "{at} looks like a count");
                 }
                 if inner.is_number() {
-                    assert_eq!(name, "version", "{at} is a number");
+                    // The summary of a preview counts only the people the answer lists
+                    // (`people.len()`), which is checked where the answer is made.
+                    let summary =
+                        matches!(name.as_str(), "will_change" | "skipped") && path == "/summary";
+                    assert!(name == "version" || summary, "{at} is a number");
                 }
                 assert_no_count(inner, &at);
             }

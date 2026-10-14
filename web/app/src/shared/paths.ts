@@ -26,6 +26,7 @@ export const paths = {
   issueTypes: "/settings/issue-types",
   layouts: "/settings/layouts",
   relationKinds: "/settings/relation-kinds",
+  labels: "/settings/labels",
   fields: "/settings/fields",
   field: "/settings/fields/$field",
   roles: "/settings/roles",
@@ -92,6 +93,11 @@ export function groupAddress(id: string): string {
 /** The address of *Kinds of relation* with one kind open, `/settings/relation-kinds?open=<ID>`. */
 export function relationKindAddress(id: string): string {
   return `${paths.relationKinds}?open=${encodeURIComponent(id)}`;
+}
+
+/** The address of *Labels and tags* with one group, label or tag open, `/settings/labels?open=<ID>`. */
+export function labelsAddress(id: string): string {
+  return `${paths.labels}?open=${encodeURIComponent(id)}`;
 }
 
 /** The address of *Issue types* with one type open, `/settings/issue-types?open=<ID>`. */

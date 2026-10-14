@@ -9,7 +9,6 @@
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
-mod housekeeping;
 mod renewal;
 mod secrets;
 mod serve;

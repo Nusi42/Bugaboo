@@ -57,6 +57,10 @@ export const queryKeys = {
     all: ["relation-kinds"],
     list: () => ["relation-kinds", "list"],
   },
+  tags: {
+    all: ["tags"],
+    list: () => ["tags", "list"],
+  },
   issueRelations: {
     all: ["issue-relations"],
     header: (issue: string) => ["issue-relations", "header", issue],

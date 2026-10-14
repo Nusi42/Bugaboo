@@ -47,3 +47,8 @@ TEST-ISSUE-IDS, ARCH-NO-COUNTERS (see `tools/checks/catalog.toml`).
 - Records keep a UUIDv7 (time-ordered). A person's ID is a fully random UUIDv4 instead, so it does not show when the account was made.
 - `bb-core` does no I/O and builds for WebAssembly, so it never reads the clock or the system's random source. An ID is made from a time and random bytes that the caller passes in (`from_parts`, `IdSource`); the server's context supplies the real ones (WP-05).
 - Checked by ARCH-WASM (`bb-core` builds for `wasm32-unknown-unknown`) and the tests `person_ids_are_random_version_4` and `from_parts_puts_the_time_into_the_id` in `crates/bb-core/src/id.rs`.
+
+## Amendment (M3 WP-08)
+
+- **Renewal is a job after the first step (M3-F27).** Changing the mode of a project with at most 1,000 issues (`BULK_JOB_ABOVE`) renews all of them inside the change, as before. A bigger project renews the first 100 issues (`BULK_STEP`) inside the change and queues the job `issues.renew-ids`, which renews 100 more in each step, one change per step, until none is left. The payload names the project and the person who changed the mode, whose name stays on the event of each renewed ID. Issues made meanwhile already get codes of the new mode; a project whose mode changes again meanwhile is renewed to the mode it has now. Each step is idempotent (it renews only issues whose code is not of the mode).
+- **Moving an issue into another project** (ISS-09, WP-08) gives it a code of the new project's mode and short name in the same change, keeps the old key in `issue_alias`, and writes a second event (the key changed) next to the event of the project change, so the history names both.

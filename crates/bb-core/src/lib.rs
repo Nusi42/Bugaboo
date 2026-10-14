@@ -10,6 +10,7 @@ pub mod words;
 
 pub mod access;
 pub mod access_key;
+pub mod bulk;
 pub mod comment;
 pub mod edit;
 pub mod entities;
@@ -42,6 +43,7 @@ pub mod secret;
 pub mod security_log;
 pub mod settings;
 pub mod sign_in;
+pub mod tags;
 pub mod technical;
 pub mod text;
 pub mod version;

@@ -4,14 +4,36 @@
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::UserId;
+use bb_core::issue::Issue;
 use bb_core::version::counted_up;
 use bb_policy::Authorized;
 use serde_json::json;
 
 use super::fields::member;
 use super::types::{DeleteIssue, IssueView, RestoreIssue};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::projects::Why;
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The issue a person asks to put into the trash: they see it and may delete it. What the
+    /// preview of a change to many issues judges, and what deleting judges first.
+    ///
+    /// # Errors
+    /// The errors of [`delete_issue`].
+    pub(crate) async fn issue_to_delete(
+        &self,
+        actor: &Actor,
+        issue: &str,
+    ) -> Result<Issue, AppError> {
+        let (issue, held) = self.visible_issue(actor, issue).await?;
+        if held.may_delete_issue(issue.reported_by) {
+            Ok(issue)
+        } else {
+            Err(ErrorCode::Forbidden.into())
+        }
+    }
+}
 
 /// Puts an issue into the trash. The person needs *Delete issues* in the project and has to see
 /// the issue.
@@ -24,10 +46,7 @@ pub async fn delete_issue<S: AuthStore>(
     input: DeleteIssue,
 ) -> Result<Done, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    if !held.may_delete_issue(issue.reported_by) {
-        return Err(ErrorCode::Forbidden.into());
-    }
+    let issue = ctx.issue_to_delete(&actor, &input.issue).await?;
     let now = ctx.now();
     let id = issue.id;
     let event = ctx.event(

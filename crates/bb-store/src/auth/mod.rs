@@ -72,14 +72,14 @@ impl ChangeStore for AuthStorage {
     type Transaction = Transaction;
     type Error = StoreError;
 
-    fn record_change<'a, T: Send + 'a>(
+    fn record_changes<'a, T: Send + 'a>(
         &'a self,
-        event: &'a DomainEvent,
+        events: &'a [DomainEvent],
         change: impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<T, StoreError>>
         + Send
         + 'a,
     ) -> impl Future<Output = Result<T, StoreError>> + Send + 'a {
-        ChangeStore::record_change(&self.database, event, change)
+        ChangeStore::record_changes(&self.database, events, change)
     }
 
     fn read_snapshot<'a, T: Send + 'a>(

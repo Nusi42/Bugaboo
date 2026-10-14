@@ -68,3 +68,29 @@ pub(crate) mod follower {
 pub(crate) mod mentions {
     pub(crate) const READ: &str = "mentions-read";
 }
+
+/// The members of a tag.
+pub(crate) mod tag {
+    pub(crate) const NAME: &str = "name";
+    pub(crate) const COLOR: &str = "color";
+    pub(crate) const PROJECTS: &str = "projects";
+    /// The tag a tag was combined into, in the event of the tag that went away.
+    pub(crate) const COMBINED_INTO: &str = "combined-into";
+}
+
+/// The members of a label.
+pub(crate) mod label {
+    pub(crate) const NAME: &str = "name";
+    pub(crate) const COLOR: &str = "color";
+    pub(crate) const GROUP: &str = "group";
+    pub(crate) const RETIRED: &str = "retired";
+    /// The label a label was combined into, in the event of the label that went away.
+    pub(crate) const COMBINED_INTO: &str = "combined-into";
+}
+
+/// The members of a group of labels.
+pub(crate) mod label_group {
+    pub(crate) const NAME: &str = "name";
+    pub(crate) const PICK_ONE: &str = "pick-one";
+    pub(crate) const RETIRED: &str = "retired";
+}

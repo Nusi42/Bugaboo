@@ -34,6 +34,7 @@ use crate::comments::CommentView;
 use crate::fields::Definition;
 use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
+use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
 use bb_core::comment::Comment;
 use bb_core::issue::Issue;
@@ -47,6 +48,8 @@ pub(crate) enum Member {
     Own(FieldId),
     /// The issue type: shown to everyone who sees the issue.
     IssueType,
+    /// The project the issue was in or went to: shown where the reader sees that project.
+    Project,
     /// The issue it sits under, or an issue that sits under it: shown as a line the reader may
     /// see.
     Issue,
@@ -65,6 +68,7 @@ impl Member {
         }
         match name {
             issue_member::ISSUE_TYPE => Self::IssueType,
+            issue_member::PROJECT => Self::Project,
             issue_member::PARENT | issue_member::SUB_ISSUE => Self::Issue,
             _ => Self::Never,
         }
@@ -76,7 +80,7 @@ impl Member {
         match self {
             Self::Catalogue(field) => can_see(field.into()),
             Self::Own(field) => can_see(field.into()),
-            Self::IssueType | Self::Issue => true,
+            Self::IssueType | Self::Issue | Self::Project => true,
             Self::Never => false,
         }
     }
@@ -121,6 +125,13 @@ impl Batch<'_> {
 struct Reading<'a> {
     actor: &'a Actor,
     held: &'a Evaluation,
+    people: HashMap<(PeopleKind, UserId), PersonRef>,
+    maker: LineMaker,
+}
+
+/// What shows changes to a reader (see `Ctx::change_reader`).
+pub(crate) struct ChangeReader {
+    batch: Batch<'static>,
     people: HashMap<(PeopleKind, UserId), PersonRef>,
     maker: LineMaker,
 }
@@ -284,6 +295,18 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 None => None,
             },
+            Member::Catalogue(Field::Tags | Field::Labels) => Some(ChangeValue::Names {
+                names: value
+                    .as_array()
+                    .map(|items| {
+                        items
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .map(str::to_owned)
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            }),
             Member::Catalogue(field) => match field.person_kind() {
                 Some(kind) => Some(self.people_in(reading.held, kind, value).await?),
                 None => Some(ChangeValue::Text {
@@ -297,6 +320,16 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|name| ChangeValue::Text {
                     text: name.to_owned(),
                 }),
+            Member::Project => match value
+                .as_str()
+                .and_then(|text| text.parse::<bb_core::id::ProjectId>().ok())
+            {
+                Some(id) => self
+                    .project_seen(reading.actor, id)
+                    .await?
+                    .map(|project| ChangeValue::Project { project }),
+                None => None,
+            },
             Member::Issue => {
                 let Some(id) = value.as_str().and_then(|text| text.parse::<IssueId>().ok()) else {
                     return Ok(None);
@@ -312,19 +345,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// The fields of a row of changes that the reader may see; `None` when none of them is.
+    /// The fields of a change that the reader may see; `None` when none of them is.
     async fn field_changes(
         &self,
         reading: &mut Reading<'_>,
         issue_type: IssueTypeId,
         batch: &Batch<'_>,
-        row: &HistoryEntry,
+        changes: &[FieldChange],
     ) -> Result<Option<HistoryWhat>, AppError> {
         // The mask for the type of the issue now, built-in and own fields alike, so a field the
         // reader may not see on this type is in no row.
         let mask = reading.held.field_mask_for(Some(issue_type));
         let mut fields = Vec::new();
-        for change in visible_changes(&|field| mask.can_see(field), &row.changes) {
+        for change in visible_changes(&|field| mask.can_see(field), changes) {
             let member = Member::of(&change.field);
             let before = self
                 .change_value(reading, batch, member, change.before.as_ref())
@@ -333,7 +366,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .change_value(reading, batch, member, change.after.as_ref())
                 .await?;
             // A change of an issue that the reader may not see leaves nothing to show.
-            if member == Member::Issue && before.is_none() && after.is_none() {
+            if matches!(member, Member::Issue | Member::Project)
+                && before.is_none()
+                && after.is_none()
+            {
                 continue;
             }
             let name = match member {
@@ -348,6 +384,43 @@ impl<S: AuthStore> Ctx<'_, S> {
             });
         }
         Ok((!fields.is_empty()).then_some(HistoryWhat::Changes { fields }))
+    }
+
+    /// What reads changes that have not happened yet, as the history will show them: made once for
+    /// a preview, so the definitions of the fields and the people are read once for all of it.
+    pub(crate) async fn change_reader(&self) -> Result<ChangeReader, AppError> {
+        Ok(ChangeReader {
+            batch: self.batch_of(&[], &[]).await?,
+            people: HashMap::new(),
+            maker: self.line_maker().await?,
+        })
+    }
+
+    /// Changes that have not happened yet, shown as the history will show them to the actor: the
+    /// preview of a change to many issues says what will change in the words of the history.
+    pub(crate) async fn changes_as_read(
+        &self,
+        reader: &mut ChangeReader,
+        actor: &Actor,
+        held: &Evaluation,
+        issue: &Issue,
+        changes: &[FieldChange],
+    ) -> Result<Vec<FieldChangeView>, AppError> {
+        let mut reading = Reading {
+            actor,
+            held,
+            people: std::mem::take(&mut reader.people),
+            maker: std::mem::take(&mut reader.maker),
+        };
+        let read = self
+            .field_changes(&mut reading, issue.issue_type, &reader.batch, changes)
+            .await;
+        reader.people = reading.people;
+        reader.maker = reading.maker;
+        Ok(match read? {
+            Some(HistoryWhat::Changes { fields }) => fields,
+            _ => Vec::new(),
+        })
     }
 
     /// A relation added or taken away, as the issue it is shown on reads it; `None` when the
@@ -402,6 +475,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             name: kind.name(direction).to_owned(),
             issue: line,
         }))
+    }
+
+    /// The project, when the reader sees it.
+    async fn project_seen(
+        &self,
+        actor: &Actor,
+        id: bb_core::id::ProjectId,
+    ) -> Result<Option<ProjectRef>, AppError> {
+        let Some(found) = self
+            .store()
+            .project(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(None);
+        };
+        let held = self
+            .evaluation_of(actor, bb_policy::Place::Project(id))
+            .await?;
+        Ok(held.sees_project().then(|| ProjectRef::from(&found)))
     }
 
     /// The comments and the issues that the rows of a batch name, read once for the batch.
@@ -464,7 +557,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
                 } else {
-                    self.field_changes(reading, issue.issue_type, batch, row)
+                    self.field_changes(reading, issue.issue_type, batch, &row.changes)
                         .await?
                 }
             }
