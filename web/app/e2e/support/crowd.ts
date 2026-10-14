@@ -73,6 +73,7 @@ export const crowdIssues = {
   fields: "WEB-3",
   network: "WEB-4",
   bulk: ["WEB-5", "WEB-6", "WEB-7", "WEB-8"],
+  bulkEditing: ["WEB-9", "WEB-10", "WEB-11", "WEB-12"],
 } as const;
 
 /** The titles of the issues, in the order they are made. */
@@ -85,10 +86,14 @@ const titles = [
   "Many issues, second",
   "Many issues, third",
   "Many issues, fourth",
+  "Many issues under edit, first",
+  "Many issues under edit, second",
+  "Many issues under edit, third",
+  "Many issues under edit, fourth",
 ];
 
 /**
- * Gets a server ready for ten people: the project WEB with eight issues (WEB-1 to WEB-8), eight
+ * Gets a server ready for ten people: the project WEB with twelve issues (WEB-1 to WEB-12), eight
  * own fields of two choices, and nine Team members next to the administrator.
  */
 export async function prepareCrowd(server: Instance): Promise<void> {

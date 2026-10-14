@@ -12,6 +12,9 @@ import { type MadeIssue } from "./issues.ts";
 /** The status an issue can have. */
 type NewStatus = components["schemas"]["Status"];
 
+/** The status the scenarios change to, written once: the API value, and `status.done` on the screen. */
+export const done = "done" satisfies NewStatus;
+
 /** What is done to every issue of the selection (a body that is sent is not read-only). */
 type Action = components["schemas"]["BulkActionBody"];
 
@@ -99,4 +102,24 @@ export async function expectOneEventEach(
     known.map(({ issue, before }) => changesSince(session, issue, before)),
   );
   expect(fresh).toEqual(known.map(() => [fields]));
+}
+
+/** One issue of the scenario with its changes now; see `knowing`. */
+export async function knowingOne(session: ApiSession, issue: MadeIssue): Promise<Known> {
+  return { issue, before: await changesOf(session, issue) };
+}
+
+/** Events as their fields in one line each, in a fixed order. */
+function named(list: readonly (readonly string[])[]): string[] {
+  return list.map((fields) => fields.join(",")).toSorted();
+}
+
+/** The issue got these events since, each as its fields; the order of the events does not matter. */
+export async function expectEvents(
+  session: ApiSession,
+  known: Known,
+  events: readonly (readonly string[])[],
+): Promise<void> {
+  const fresh = await changesSince(session, known.issue, known.before);
+  expect(named(fresh)).toEqual(named(events));
 }

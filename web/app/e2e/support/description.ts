@@ -13,6 +13,11 @@ export function saveButton(page: Page) {
   return page.getByRole("button", { name: t("common.save"), exact: true });
 }
 
+/** The button of a text that was not saved because the issue changed: *Compare and save*. */
+export function compareAndSaveButton(page: Page) {
+  return page.getByRole("button", { name: t("issues.compare-and-save"), exact: true });
+}
+
 /** Opens the description of an issue for editing; the box is there unless somebody else edits. */
 export async function openEditing(page: Page, key: string): Promise<void> {
   await page.goto(issueAddress(key));

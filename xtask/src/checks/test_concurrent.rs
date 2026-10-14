@@ -39,12 +39,13 @@ const MAY_TOLERATE: [&str; 2] = [
 ];
 
 /// The browser scenarios the work package names (the work package, architecture §11).
-pub(super) const SCENARIOS: [&str; 5] = [
+pub(super) const SCENARIOS: [&str; 6] = [
     "iss_17_three_people_edit_one_description_and_the_first_text_is_kept",
     "iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_and_save",
     "iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_told",
     "iss_17_ten_people_change_ten_fields_of_one_issue_and_every_change_lands_once",
-    "iss_09_changing_many_issues_skips_the_one_somebody_is_editing_and_names_it",
+    "iss_09_changing_many_issues_skips_the_one_changed_since_the_preview_and_names_it",
+    "iss_09_changing_many_issues_changes_the_one_somebody_is_editing_and_their_text_is_saved_after",
 ];
 
 pub(crate) struct TestConcurrent;
@@ -253,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn bad_example_another_scenario_skips_itself_with_a_condition() {
+    fn bad_example_a_scenario_that_skips_itself_with_a_condition_is_found() {
         let mut specs = all_scenarios();
         specs[0].1.push_str("test.skip(slow, \"too slow\");");
         assert_eq!(scenarios(&specs).len(), 1);
