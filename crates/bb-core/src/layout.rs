@@ -64,6 +64,8 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::Priority,
             Field::AssignedTo,
             Field::ReportedBy,
+            Field::Tags,
+            Field::Labels,
         ],
         LayoutKind::NewIssue => &[Field::Description, Field::Priority, Field::AssignedTo],
     }
@@ -174,7 +176,7 @@ impl LayoutContent {
                 ),
                 section(
                     message::LAYOUT_SECTION_DETAILS.into(),
-                    built_in(&[Field::ReportedBy])
+                    built_in(&[Field::ReportedBy, Field::Tags, Field::Labels])
                         .into_iter()
                         .chain(own.iter().copied())
                         .collect(),
