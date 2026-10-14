@@ -10,6 +10,8 @@ import {
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { api } from "../../shared/api.ts";
+import { lostReasonOf } from "../../shared/editing/index.ts";
+import { codeOf } from "../../shared/errors.ts";
 import { personName } from "../../shared/person.ts";
 import { whatOf } from "./layouts.ts";
 import { LayoutLockController, type LockDeps, type LockState } from "./layout-lock.ts";
@@ -34,6 +36,11 @@ function depsOf(layout: string): LockDeps {
 export interface LayoutLock {
   readonly state: LockState;
   readonly retry: () => void;
+  /**
+   * A save of the layout is through, or was refused: a refusal for the lock's sake tells the lock
+   * first, so it is let go before it is asked for again, which both end in.
+   */
+  readonly settled: (error: unknown) => void;
   readonly editAnyway: () => void;
   readonly askToFinish: () => void;
 }
@@ -49,6 +56,13 @@ export function useLayoutLock(layout: string): LayoutLock {
   return {
     state,
     retry: lock.start,
+    settled: (error) => {
+      const reason = lostReasonOf(codeOf(error));
+      if (reason !== undefined) {
+        lock.refused(reason);
+      }
+      lock.start();
+    },
     editAnyway: lock.editAnyway,
     askToFinish: lock.askToFinish,
   };

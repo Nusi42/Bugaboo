@@ -68,7 +68,7 @@ export interface LongTextDeps {
   readonly askToFinish: () => Promise<void>;
   readonly heartbeat: (
     token: string,
-    draft: { readonly text: string; readonly base_version: number },
+    draft?: { readonly text: string; readonly base_version: number },
   ) => Promise<Heartbeat>;
   readonly release: (token: string) => Promise<void>;
   /** Saves the text under the lock; rejects with the error of the server. */

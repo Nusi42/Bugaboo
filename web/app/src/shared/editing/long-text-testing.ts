@@ -126,7 +126,7 @@ export class Seen {
       },
       askToFinish: () => this.note("ask"),
       heartbeat: (token, draft) => {
-        this.beats.push({ text: draft.text, base: draft.base_version });
+        this.beats.push({ text: draft?.text ?? "", base: draft?.base_version ?? 0 });
         this.log.push(`beat ${token}`);
         return Promise.resolve(stillHeld);
       },

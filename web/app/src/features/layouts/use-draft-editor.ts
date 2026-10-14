@@ -89,7 +89,9 @@ export function useDraftEditor(
             onSuccess: (saved) => {
               onSaved(saved.layout?.version);
             },
-            onSettled: lock.retry,
+            onSettled: (_saved, error) => {
+              lock.settled(error);
+            },
           },
         );
       }

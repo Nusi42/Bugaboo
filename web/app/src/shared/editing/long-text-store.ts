@@ -1,48 +1,30 @@
-import { startingState, type Editing, type LongTextDeps, type Phase } from "./long-text-model.ts";
-
-type Listener = () => void;
+import type { EditLockSession } from "./edit-lock-session.ts";
+import { startingState, type Editing, type LongTextDeps } from "./long-text-model.ts";
+import { Store } from "./store.ts";
 
 /**
- * What a screen subscribes to: the state of an editing, the lock token and the timer that goes with
- * it. The rules of editing are in `LongTextEditor`, which extends this.
+ * What a screen subscribes to: the state of an editing, and the timer that watches a holder. The
+ * lock is the session's. The rules of editing are in `LongTextEditor`, which extends this.
  */
-export abstract class EditingStore {
-  protected state: Editing;
-  private readonly listeners = new Set<Listener>();
-  protected token: string | null = null;
+export abstract class EditingStore extends Store<Editing> {
   protected stopBeats: (() => void) | null = null;
   protected readonly deps: LongTextDeps;
+  /** The hold on the lock: its token, its heartbeat, its generation. */
+  protected abstract readonly lock: EditLockSession;
 
   protected constructor(
     deps: LongTextDeps,
     source: { readonly saved: string; readonly version: number },
   ) {
+    super(startingState(source));
     this.deps = deps;
-    this.state = startingState(source);
   }
-
-  /** The state now: a new object whenever something changed. */
-  readonly snapshot = (): Editing => this.state;
-
-  readonly subscribe = (listener: Listener): (() => void) => {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
 
   protected set(change: Partial<Editing>): void {
-    this.state = { ...this.state, ...change };
-    for (const listener of this.listeners) {
-      listener();
-    }
+    this.replace({ ...this.state, ...change });
   }
 
-  /** The phase as it is now, for code that has awaited. */
-  protected phaseNow(): Phase {
-    return this.state.phase;
-  }
-
+  /** Stops the timer that watches a holder. */
   protected stopHeartbeats(): void {
     this.stopBeats?.();
     this.stopBeats = null;
