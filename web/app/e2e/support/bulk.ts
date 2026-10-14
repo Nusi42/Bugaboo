@@ -87,9 +87,16 @@ export interface Known {
 
 /** Remembers the changes of each issue as they are now. */
 export function knowing(session: ApiSession, issues: readonly MadeIssue[]): Promise<Known[]> {
-  return Promise.all(
-    issues.map(async (issue) => ({ issue, before: await changesOf(session, issue) })),
-  );
+  return Promise.all(issues.map((issue) => knowingOne(session, issue)));
+}
+
+/** What was remembered about one issue; see `knowing`. */
+export function knownOf(known: readonly Known[], issue: MadeIssue): Known {
+  const found = known.find((entry) => entry.issue.key === issue.key);
+  if (found === undefined) {
+    throw new Error(`Nothing was remembered about ${issue.key}.`);
+  }
+  return found;
 }
 
 /** Each issue got `fields` as the fields of one new event, and no other. */
@@ -104,22 +111,17 @@ export async function expectOneEventEach(
   expect(fresh).toEqual(known.map(() => [fields]));
 }
 
-/** One issue of the scenario with its changes now; see `knowing`. */
-export async function knowingOne(session: ApiSession, issue: MadeIssue): Promise<Known> {
+/** One issue of the scenario with its changes now. */
+async function knowingOne(session: ApiSession, issue: MadeIssue): Promise<Known> {
   return { issue, before: await changesOf(session, issue) };
 }
 
-/** Events as their fields in one line each, in a fixed order. */
-function named(list: readonly (readonly string[])[]): string[] {
-  return list.map((fields) => fields.join(",")).toSorted();
-}
-
-/** The issue got these events since, each as its fields; the order of the events does not matter. */
+/** The issue got these events since, each as its fields, newest first, as the history lists them. */
 export async function expectEvents(
   session: ApiSession,
   known: Known,
   events: readonly (readonly string[])[],
 ): Promise<void> {
   const fresh = await changesSince(session, known.issue, known.before);
-  expect(named(fresh)).toEqual(named(events));
+  expect(fresh).toEqual(events);
 }

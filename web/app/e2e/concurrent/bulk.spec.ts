@@ -11,7 +11,7 @@ import {
   expectEvents,
   expectOneEventEach,
   knowing,
-  knowingOne,
+  knownOf,
   statusOf,
 } from "../support/bulk.ts";
 import { readIssue } from "../support/crowd-checks.ts";
@@ -85,7 +85,6 @@ test("iss_09_changing_many_issues_changes_the_one_somebody_is_editing_and_their_
   const issues = await Promise.all(crowdIssues.bulkEditing.map((key) => issueOf(admin, key)));
   const mine = await issueOf(admin, underEdit);
   const known = await knowing(admin, issues);
-  const mineBefore = await knowingOne(admin, mine);
   const page = await signedInPage(browser, server, ada, look);
   await tickIssues(page, crowdIssues.bulkEditing);
   const dialog = await previewDoneOnScreen(page, crowdIssues.bulkEditing.length);
@@ -104,7 +103,8 @@ test("iss_09_changing_many_issues_changes_the_one_somebody_is_editing_and_their_
   await expect(compareAndSaveButton(editor)).toHaveCount(0);
   expect((await readIssue(admin, mine)).issue.description).toBe("Ben is still writing this");
   // Every issue got its status event; the one under edit got its text event as well, and no other.
+  // The history lists the newest first: the text was saved after the status changed.
   await expectOneEventEach(admin, known.slice(1), ["status"]);
-  await expectEvents(admin, mineBefore, [["status"], ["description"]]);
+  await expectEvents(admin, knownOf(known, mine), [["description"], ["status"]]);
   await admin.dispose();
 });
