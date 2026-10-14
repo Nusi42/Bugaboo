@@ -1092,31 +1092,44 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
     .await
 }
 
+/// A long text own field *Notes* and an issue with it, with the lock on that text taken by this
+/// browser: the field, the issue as made, its readable ID and the answer that took the lock.
+async fn locked_notes(
+    site: &Site<'_>,
+    ada: &mut Browser,
+) -> Result<(String, Value, String, Reply), Failure> {
+    let notes = make_field(
+        ada,
+        json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
+    )
+    .await?;
+    let field = id_of(&notes)?;
+    let made = ok(&site.make(ada, "Has notes").await?)?.clone();
+    let (id, key) = (
+        id_of(&made)?,
+        made["key"].as_str().ok_or("no key")?.to_owned(),
+    );
+    let taken = ada
+        .send(
+            "POST",
+            "/api/v1/edit-locks",
+            Some(json!({
+                "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
+                "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
+            })),
+        )
+        .await?;
+    assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+    Ok((field, made, key, taken))
+}
+
 #[tokio::test]
 async fn cf_01_a_long_text_own_field_is_saved_under_its_lock_and_comes_back_as_html() -> TestResult
 {
     each_database("cf_01_long_text", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let notes = make_field(
-            &mut ada,
-            json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
-        )
-        .await?;
-        let field = id_of(&notes)?;
-        let made = ok(&site.make(&mut ada, "Has notes").await?)?.clone();
-        let (id, key) = (id_of(&made)?, made["key"].as_str().ok_or("no key")?.to_owned());
-        let taken = ada
-            .send(
-                "POST",
-                "/api/v1/edit-locks",
-                Some(json!({
-                    "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
-                    "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
-                })),
-            )
-            .await?;
-        assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+        let (field, made, key, taken) = locked_notes(&site, &mut ada).await?;
         let saved = ada
             .send(
                 "PUT",
@@ -1146,12 +1159,23 @@ async fn cf_01_a_long_text_own_field_is_saved_under_its_lock_and_comes_back_as_h
             &rig,
             "rae@example.test",
             &[Permission::SeeProjects, Permission::SeeIssues],
-            &[(&field, None, FieldLevel::Hidden), ("title", None, FieldLevel::CanSee)],
+            &[
+                (&field, None, FieldLevel::Hidden),
+                ("title", None, FieldLevel::CanSee),
+            ],
         )
         .await?;
         let theirs = reader.send("GET", &format!("{ISSUES}/{key}"), None).await?;
-        assert!(!ok(&theirs)?.to_string().contains("bold"), "{}", theirs.body);
-        assert!(ok(&theirs)?["own_fields_html"].as_array().is_some_and(Vec::is_empty));
+        assert!(
+            !ok(&theirs)?.to_string().contains("bold"),
+            "{}",
+            theirs.body
+        );
+        assert!(
+            ok(&theirs)?["own_fields_html"]
+                .as_array()
+                .is_some_and(Vec::is_empty)
+        );
         Ok(())
     })
     .await
@@ -1162,25 +1186,7 @@ async fn adr_0019_a_change_of_another_field_does_not_refuse_a_long_own_field() -
     each_database("adr_0019_long_text_other_field", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let notes = make_field(
-            &mut ada,
-            json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
-        )
-        .await?;
-        let field = id_of(&notes)?;
-        let made = ok(&site.make(&mut ada, "Has notes").await?)?.clone();
-        let (id, key) = (id_of(&made)?, made["key"].as_str().ok_or("no key")?.to_owned());
-        let taken = ada
-            .send(
-                "POST",
-                "/api/v1/edit-locks",
-                Some(json!({
-                    "what": {"record": {"kind": "issue", "id": id}, "part": format!("field-{field}")},
-                    "editor_id": "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5",
-                })),
-            )
-            .await?;
-        assert_eq!(taken.body["status"], "taken", "{}", taken.body);
+        let (field, made, key, taken) = locked_notes(&site, &mut ada).await?;
         // Somebody renames the issue while the text is being written: the version counts up.
         let renamed = ada
             .send(
