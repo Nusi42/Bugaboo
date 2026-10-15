@@ -101,15 +101,7 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
-            ErrorCode::FieldRequired
-            | ErrorCode::FieldTooShort
-            | ErrorCode::FieldTooLong
-            | ErrorCode::FieldTooSmall
-            | ErrorCode::FieldTooBig
-            | ErrorCode::FieldNoMatch
-            | ErrorCode::FieldWrongValue
-            | ErrorCode::FieldUnknownChoice
-            | ErrorCode::FieldUnknownReference => SkipReason::FieldRule,
+            code if code.is_field_rule() => SkipReason::FieldRule,
             // Every other refusal has no word of its own.
             _ => SkipReason::NotValid,
         }),

@@ -165,6 +165,15 @@ error_codes! {
     Internal => ("server.internal", 500),
 }
 
+impl ErrorCode {
+    /// Whether the code says a value breaks the rule of its field (`field.*`, except
+    /// [`Self::FieldNotHere`], which says the field is not used here at all).
+    #[must_use]
+    pub fn is_field_rule(self) -> bool {
+        self.code().starts_with("field.") && self != Self::FieldNotHere
+    }
+}
+
 words_in_api!(
     ErrorCode,
     "What went wrong. Clients react to this text, which never changes."
@@ -279,6 +288,24 @@ mod tests {
 
     use super::*;
     use crate::UnknownWord;
+
+    #[test]
+    fn every_field_code_but_not_here_is_a_field_rule() {
+        let field_codes: Vec<ErrorCode> = ErrorCode::ALL
+            .into_iter()
+            .copied()
+            .filter(|code| code.code().starts_with("field."))
+            .collect();
+        assert!(field_codes.len() > 1);
+        for code in field_codes {
+            assert_eq!(
+                code.is_field_rule(),
+                code != ErrorCode::FieldNotHere,
+                "{code:?}"
+            );
+        }
+        assert!(!ErrorCode::Forbidden.is_field_rule());
+    }
 
     #[test]
     fn codes_are_unique_and_shaped_like_area_dot_name() {
