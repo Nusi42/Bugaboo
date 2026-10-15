@@ -39,7 +39,7 @@ export function TagForm({ tag }: { readonly tag: TagLine }) {
         />
         <SavedNote error={draft.error} saved={draft.saved} />
         <div {...partOf(part.row)}>
-          <SubmitButton isPending={draft.saving}>{t("labels.save")}</SubmitButton>
+          <SubmitButton isPending={draft.saving}>{t("common.save")}</SubmitButton>
         </div>
       </Form>
       <ShowChanges

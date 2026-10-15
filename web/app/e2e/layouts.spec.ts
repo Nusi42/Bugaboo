@@ -119,7 +119,7 @@ async function untickGuestAndSave(page: Page): Promise<void> {
   await roles.getByText(roleName.guest, { exact: true }).click();
   await expect(guest).not.toBeChecked();
   await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
-  await expect(page.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
 }
 
 test("cfg_01 a lead customizes the new-issue form, and a Guest gets the short form and a Team member the full one", async ({
@@ -167,7 +167,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   await up.focus();
   await page.keyboard.press("Enter");
   await expect(down).toBeEnabled();
-  await expect(page.getByText(t("layouts.unsaved"), { exact: true })).toBeVisible();
+  await expect(page.getByText(t("save.not-saved"), { exact: true })).toBeVisible();
   // Taking it off the form puts it with the fields that are not on it.
   await row.getByRole("button", { name: t("layouts.field-remove", { name: dueDate }) }).click();
   await expect(
@@ -175,7 +175,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
       .getByRole("list", { name: t("layouts.available"), exact: true })
       .getByText(dueDate, { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: t("layouts.discard"), exact: true }).click();
+  await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
 
   // Another lead opens the same layout: Ada holds the lock, so they are told.
   const other = await anotherBrowser(browser, server);
@@ -225,7 +225,7 @@ test("cfg_01 a field is moved and added with the keyboard alone, and its drag ha
   });
   await chooseByTyping(page, addTo, t("layouts.section", { number: "1" }));
   await expect(sectionList("1").getByText(dueDate, { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: t("layouts.discard"), exact: true }).click();
+  await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
 });
 
 test("cfg_01 a layout that changed while it was edited shows the new one and keeps the changes as a draft", async ({
@@ -265,6 +265,6 @@ test("cfg_01 a layout that changed while it was edited shows the new one and kee
   await expect(titles).toHaveCount(before + 1);
   await expect(titles.last()).toHaveValue("Mine");
   await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
-  await expect(page.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await expect(changed).toHaveCount(0);
 });

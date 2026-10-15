@@ -36,7 +36,7 @@ function DeleteComment({ comment }: { readonly comment: string }) {
               restore.mutate(params);
             }}
           >
-            {t("comments.undo")}
+            {t("common.undo")}
           </Button>
         </Alert>
       ) : null}

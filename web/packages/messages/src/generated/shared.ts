@@ -173,6 +173,7 @@ export const messages = {
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
   "common.undo": "Undo",
+  "common.issue-id": "Issue ID, for example WEB-142",
   "shell.search": "Search",
   "shell.narrow": "Narrow the menu",
   "nav.my-settings": "My settings",
@@ -196,6 +197,7 @@ export const messages = {
   "shortcut.title": "Keyboard shortcuts",
   "list.next": "Next",
   "list.previous": "Previous",
+  "focus.back": "Back to list",
   "appearance.light": "Theme when my device is light",
   "appearance.dark": "Theme when my device is dark",
   "appearance.spacing.legend": "Spacing",
@@ -218,6 +220,7 @@ export const messages = {
     "The preview could not be loaded. Check your connection and try again.",
   "save.saving": "Saving…",
   "save.saved": "Saved",
+  "save.saved-at": "Saved · {time}",
   "save.not-saved": "Not saved yet",
   "data-folder.open":
     "{part} {path} can be opened by other accounts on this computer. Bugaboo leaves it as it is, in case you set these rights on purpose. If nobody else should read it, remove the rights of the other accounts: on Linux run chmod go-rwx on it, on Windows open the Security tab of its properties.",
@@ -368,6 +371,8 @@ export const messages = {
   "issue-type.feature": "Feature",
   "issue-type.goal": "Goal",
   "nav.relation-kinds": "Kinds of relation",
+  "related-issues.kind-field": "What the relation means",
+  "history.title": "History",
   "history.tabs": "What to show",
   "history.people-none": "nobody",
   "error.issue.parent-circle":
@@ -490,6 +495,7 @@ export const messages = {
   "common.done": "Done",
   "issues.new": "New issue",
   "issues.description.edit": "Edit",
+  "issues.change-title": "Change the title",
   "editing.is-editing": "{name} is editing {thing} · since {since}",
   "editing.elsewhere":
     "You are editing {thing} in another window. Save or close it there. If that window is gone, wait a minute and try again.",
@@ -526,6 +532,10 @@ export const messages = {
   "common.show-fewer": "Show fewer",
   "nav.labels": "Labels and tags",
   "labels.pick-label": "Choose a label",
+  "issues.preview-summary":
+    "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
+  "issues.preview-label": "Issues in this change",
+  "issues.preview-nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
 } as const;

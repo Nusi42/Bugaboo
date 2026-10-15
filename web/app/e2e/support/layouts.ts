@@ -230,7 +230,7 @@ export async function saveSectionInAnotherWindow(
   await add.click();
   await other.getByLabel(t("layouts.section-title"), { exact: true }).last().fill(title);
   await other.getByRole("button", { name: t("layouts.save"), exact: true }).click();
-  await expect(other.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+  await expect(other.getByText(t("save.saved"), { exact: true })).toBeVisible();
 }
 
 /** Opens the editor of the new-issue form for the issue type *Bug*, whose layout the tests customize through `setLayoutOfWeb`. */

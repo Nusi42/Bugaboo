@@ -77,14 +77,12 @@ export interface MessageArguments {
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
-  "bulk.finished": { changed: number; skipped: number };
   "bulk.line-changes": { after: string | number; field: string | number };
   "bulk.line-relation": { issue: string | number; name: string | number };
   "bulk.progress": { done: string | number; total: string | number };
   "bulk.project-picked": { name: string | number };
   "bulk.result-done": { changed: number; skipped: number };
   "bulk.skipped-line": { issue: string | number; reason: string | number };
-  "bulk.summary": { changed: number; skipped: number };
   "bulk.title": { action: string | number; count: number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
@@ -222,8 +220,8 @@ export interface MessageArguments {
   "issues.lost-changed": { name: string | number };
   "issues.lost-taken-over": { name: string | number };
   "issues.page-title": { project: string | number };
+  "issues.preview-summary": { changed: number; skipped: number };
   "issues.read-only": { field: string | number };
-  "issues.saved-at": { time: string | number };
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
@@ -233,7 +231,6 @@ export interface MessageArguments {
   "labels.group-made": { name: string | number };
   "labels.label-made": { name: string | number };
   "labels.preview-line": { after: string | number; before: string | number };
-  "labels.preview-summary": { changed: number };
   "labels.tag-in-projects": { count: number };
   "labels.take-off": { name: string | number };
   "labels.take-project-off": { name: string | number };
@@ -343,6 +340,7 @@ export interface MessageArguments {
   "roles.used": { groups: number; people: number; places: string | number };
   "roles.used-by-nobody": { places: string | number };
   "roles.used-projects": { count: number };
+  "save.saved-at": { time: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };

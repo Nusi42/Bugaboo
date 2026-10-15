@@ -29,10 +29,12 @@ export async function previewDoneOnScreen(page: Page, count: number) {
   await page.getByRole("button", { name: t("bulk.action-change"), exact: true }).click();
   const dialog = page.getByRole("alertdialog");
   await dialog
-    .getByLabel(t("bulk.field-status"), { exact: true })
+    .getByLabel(t("issue-field.status"), { exact: true })
     .selectOption({ label: t("status.done") });
   await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
-  await expect(dialog.getByText(t("bulk.summary", { changed: count, skipped: 0 }))).toBeVisible();
+  await expect(
+    dialog.getByText(t("issues.preview-summary", { changed: count, skipped: 0 })),
+  ).toBeVisible();
   return dialog;
 }
 

@@ -54,12 +54,12 @@ export function BulkPreviewView({ preview, plain }: BulkPreviewViewProps) {
   return (
     <div {...partOf(part.stack)}>
       <AppLongPreview
-        summary={t("bulk.summary", {
+        summary={t("issues.preview-summary", {
           changed: preview.summary.will_change,
           skipped: preview.summary.skipped,
         })}
-        label={t("bulk.preview-label")}
-        nothing={t("bulk.nothing")}
+        label={t("issues.preview-label")}
+        nothing={t("issues.preview-nothing")}
         groups={preview.rows.map((row) => groupOf(row, plain))}
       />
       {preview.runs_in_background ? (

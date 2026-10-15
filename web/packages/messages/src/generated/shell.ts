@@ -32,7 +32,6 @@ export const messages = {
   "shortcut.intro":
     "Press these keys instead of clicking. Every shortcut also has a button on the page.",
   "shortcut.change-link": "Change the keys",
-  "focus.back": "Back to list",
   "focus.hide-list": "Hide list",
   "focus.show-list": "Show list",
   "panel.close": "Close the panel",

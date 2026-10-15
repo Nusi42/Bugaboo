@@ -35,8 +35,6 @@ export const messages = {
   "labels.label-made": "Made the label {name}.",
   "labels.field-name": "Name",
   "labels.field-color": "Color of {name}",
-  "labels.save": "Save",
-  "labels.saved": "Saved.",
   "labels.retire": "Retire",
   "labels.offer-again": "Offer again",
   "labels.retire-help":
@@ -49,11 +47,7 @@ export const messages = {
   "labels.take-project-off": "Take {name} off the list",
   "labels.show-changes": "Show what the new name changes",
   "labels.show-combine": "Show what combining changes",
-  "labels.preview-label": "Issues that change",
-  "labels.preview-nothing": "No issue changes.",
   "labels.preview-truncated": "More issues change than this list shows.",
-  "labels.preview-summary":
-    "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change.",
   "labels.preview-line": "From {before} to {after}",
   "labels.preview-no-names": "nothing",
   "labels.combine-title": "Combine into another",

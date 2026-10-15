@@ -42,7 +42,7 @@ function Added({
           onUndo(relation);
         }}
       >
-        {t("related-issues.undo")}
+        {t("common.undo")}
       </Button>
     </Alert>
   );
@@ -78,7 +78,7 @@ function Steps({
       />
       {chosen === null ? null : (
         <TextField
-          label={t("related-issues.issue-field")}
+          label={t("common.issue-id")}
           requiredMessage={t("error.field.required")}
           value={other}
           onChange={onOther}
@@ -89,7 +89,7 @@ function Steps({
           <SubmitButton isPending={pending}>{t("related-issues.add-it")}</SubmitButton>
         )}
         <Button look={buttonLook.quiet} onPress={chosen === null ? onCancel : onBack}>
-          {chosen === null ? t("related-issues.cancel") : t("related-issues.back")}
+          {chosen === null ? t("common.cancel") : t("related-issues.back")}
         </Button>
       </div>
     </>

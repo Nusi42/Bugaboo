@@ -36,7 +36,7 @@ export function EditGroup({ group }: { readonly group: LabelGroup }) {
         />
         <Switch label={t("labels.field-pick-one")} isSelected={pickOne} onChange={setPickOne} />
         <div {...partOf(part.row)}>
-          <SubmitButton isPending={change.isPending}>{t("labels.save")}</SubmitButton>
+          <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
         </div>
       </Form>
       <p {...partOf(part.muted)}>{t("labels.retire-help")}</p>

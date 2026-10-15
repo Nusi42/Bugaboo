@@ -54,9 +54,7 @@ export function EditRelationKind({ kind }: { readonly kind: RelationKindLine }) 
         }}
       />
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
-      {change.isSuccess ? (
-        <Alert tone={alertTone.success}>{t("relation-kinds.saved")}</Alert>
-      ) : null}
+      {change.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
     </div>
   );
 }

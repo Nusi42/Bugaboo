@@ -107,7 +107,6 @@ export const messages = {
   "fields.pick-take-out": "Take out",
   "fields.pick-take-out-name": "Take out {name}",
   "fields.pick-choose-name": "Choose {name}",
-  "fields.pick-issue-key": "ID of the issue, like WEB-12",
   "fields.pick-issue-find": "Find the issue",
   "fields.pick-no-issue": "No issue has that ID.",
   "fields.chosen-count": "{count, plural, one {# chosen} other {# chosen}}",

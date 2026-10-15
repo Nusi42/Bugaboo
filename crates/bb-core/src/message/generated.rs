@@ -384,20 +384,8 @@ pub const BULK_BAR: MessageKey = MessageKey::new("bulk.bar");
 /// The message `bulk.delete-text`.
 pub const BULK_DELETE_TEXT: MessageKey = MessageKey::new("bulk.delete-text");
 
-/// The message `bulk.field-kind`.
-pub const BULK_FIELD_KIND: MessageKey = MessageKey::new("bulk.field-kind");
-
 /// The message `bulk.field-label`.
 pub const BULK_FIELD_LABEL: MessageKey = MessageKey::new("bulk.field-label");
-
-/// The message `bulk.field-other`.
-pub const BULK_FIELD_OTHER: MessageKey = MessageKey::new("bulk.field-other");
-
-/// The message `bulk.field-priority`.
-pub const BULK_FIELD_PRIORITY: MessageKey = MessageKey::new("bulk.field-priority");
-
-/// The message `bulk.field-status`.
-pub const BULK_FIELD_STATUS: MessageKey = MessageKey::new("bulk.field-status");
 
 /// The message `bulk.issue-unknown`.
 pub const BULK_ISSUE_UNKNOWN: MessageKey = MessageKey::new("bulk.issue-unknown");
@@ -407,12 +395,6 @@ pub const BULK_KEEP: MessageKey = MessageKey::new("bulk.keep");
 
 /// The message `bulk.line-delete`.
 pub const BULK_LINE_DELETE: MessageKey = MessageKey::new("bulk.line-delete");
-
-/// The message `bulk.nothing`.
-pub const BULK_NOTHING: MessageKey = MessageKey::new("bulk.nothing");
-
-/// The message `bulk.preview-label`.
-pub const BULK_PREVIEW_LABEL: MessageKey = MessageKey::new("bulk.preview-label");
 
 /// The message `bulk.progress-label`.
 pub const BULK_PROGRESS_LABEL: MessageKey = MessageKey::new("bulk.progress-label");
@@ -722,9 +704,6 @@ pub const CODE_APP_TURNED_OFF: MessageKey = MessageKey::new("code-app.turned-off
 /// The message `comments.add`.
 pub const COMMENTS_ADD: MessageKey = MessageKey::new("comments.add");
 
-/// The message `comments.cancel`.
-pub const COMMENTS_CANCEL: MessageKey = MessageKey::new("comments.cancel");
-
 /// The message `comments.delete`.
 pub const COMMENTS_DELETE: MessageKey = MessageKey::new("comments.delete");
 
@@ -742,12 +721,6 @@ pub const COMMENTS_EDITING: MessageKey = MessageKey::new("comments.editing");
 
 /// The message `comments.mention-choices`.
 pub const COMMENTS_MENTION_CHOICES: MessageKey = MessageKey::new("comments.mention-choices");
-
-/// The message `comments.save`.
-pub const COMMENTS_SAVE: MessageKey = MessageKey::new("comments.save");
-
-/// The message `comments.undo`.
-pub const COMMENTS_UNDO: MessageKey = MessageKey::new("comments.undo");
 
 /// The message `comments.versions`.
 pub const COMMENTS_VERSIONS: MessageKey = MessageKey::new("comments.versions");
@@ -772,6 +745,9 @@ pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
 
 /// The message `common.done`.
 pub const COMMON_DONE: MessageKey = MessageKey::new("common.done");
+
+/// The message `common.issue-id`.
+pub const COMMON_ISSUE_ID: MessageKey = MessageKey::new("common.issue-id");
 
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
@@ -1333,9 +1309,6 @@ pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-gro
 /// The message `fields.pick-issue-find`.
 pub const FIELDS_PICK_ISSUE_FIND: MessageKey = MessageKey::new("fields.pick-issue-find");
 
-/// The message `fields.pick-issue-key`.
-pub const FIELDS_PICK_ISSUE_KEY: MessageKey = MessageKey::new("fields.pick-issue-key");
-
 /// The message `fields.pick-more`.
 pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
 
@@ -1828,17 +1801,6 @@ pub const ISSUE_ID_MODE_COUNTING: MessageKey = MessageKey::new("issue-id-mode.co
 /// The message `issue-id-mode.random`.
 pub const ISSUE_ID_MODE_RANDOM: MessageKey = MessageKey::new("issue-id-mode.random");
 
-/// The message `issue-ref.status-done`.
-pub const ISSUE_REF_STATUS_DONE: MessageKey = MessageKey::new("issue-ref.status-done");
-
-/// The message `issue-ref.status-in-progress`.
-pub const ISSUE_REF_STATUS_IN_PROGRESS: MessageKey =
-    MessageKey::new("issue-ref.status-in-progress");
-
-/// The message `issue-ref.status-not-started`.
-pub const ISSUE_REF_STATUS_NOT_STARTED: MessageKey =
-    MessageKey::new("issue-ref.status-not-started");
-
 /// The message `issue-type.bug`.
 pub const ISSUE_TYPE_BUG: MessageKey = MessageKey::new("issue-type.bug");
 
@@ -1886,9 +1848,6 @@ pub const ISSUE_TYPES_RETIRE_HELP: MessageKey = MessageKey::new("issue-types.ret
 
 /// The message `issue-types.retired`.
 pub const ISSUE_TYPES_RETIRED: MessageKey = MessageKey::new("issue-types.retired");
-
-/// The message `issue-types.saved`.
-pub const ISSUE_TYPES_SAVED: MessageKey = MessageKey::new("issue-types.saved");
 
 /// The message `issue-types.search`.
 pub const ISSUE_TYPES_SEARCH: MessageKey = MessageKey::new("issue-types.search");
@@ -1944,12 +1903,6 @@ pub const ISSUES_COMPARE_AND_SAVE: MessageKey = MessageKey::new("issues.compare-
 /// The message `issues.compare-intro`.
 pub const ISSUES_COMPARE_INTRO: MessageKey = MessageKey::new("issues.compare-intro");
 
-/// The message `issues.compare-keep-mine`.
-pub const ISSUES_COMPARE_KEEP_MINE: MessageKey = MessageKey::new("issues.compare-keep-mine");
-
-/// The message `issues.compare-keep-theirs`.
-pub const ISSUES_COMPARE_KEEP_THEIRS: MessageKey = MessageKey::new("issues.compare-keep-theirs");
-
 /// The message `issues.compare-mine`.
 pub const ISSUES_COMPARE_MINE: MessageKey = MessageKey::new("issues.compare-mine");
 
@@ -1961,9 +1914,6 @@ pub const ISSUES_COMPARE_SAVE_MINE: MessageKey = MessageKey::new("issues.compare
 
 /// The message `issues.compare-theirs`.
 pub const ISSUES_COMPARE_THEIRS: MessageKey = MessageKey::new("issues.compare-theirs");
-
-/// The message `issues.compare-title`.
-pub const ISSUES_COMPARE_TITLE: MessageKey = MessageKey::new("issues.compare-title");
 
 /// The message `issues.copy-link`.
 pub const ISSUES_COPY_LINK: MessageKey = MessageKey::new("issues.copy-link");
@@ -2001,9 +1951,6 @@ pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
 /// The message `issues.hide-details`.
 pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details");
 
-/// The message `issues.history`.
-pub const ISSUES_HISTORY: MessageKey = MessageKey::new("issues.history");
-
 /// The message `issues.keep-theirs-unnamed`.
 pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-theirs-unnamed");
 
@@ -2036,6 +1983,12 @@ pub const ISSUES_OF_PROJECT: MessageKey = MessageKey::new("issues.of-project");
 
 /// The message `issues.open-full-page`.
 pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-page");
+
+/// The message `issues.preview-label`.
+pub const ISSUES_PREVIEW_LABEL: MessageKey = MessageKey::new("issues.preview-label");
+
+/// The message `issues.preview-nothing`.
+pub const ISSUES_PREVIEW_NOTHING: MessageKey = MessageKey::new("issues.preview-nothing");
 
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
@@ -2178,14 +2131,8 @@ pub const LABELS_OFFER_AGAIN: MessageKey = MessageKey::new("labels.offer-again")
 /// The message `labels.pick-label`.
 pub const LABELS_PICK_LABEL: MessageKey = MessageKey::new("labels.pick-label");
 
-/// The message `labels.preview-label`.
-pub const LABELS_PREVIEW_LABEL: MessageKey = MessageKey::new("labels.preview-label");
-
 /// The message `labels.preview-no-names`.
 pub const LABELS_PREVIEW_NO_NAMES: MessageKey = MessageKey::new("labels.preview-no-names");
-
-/// The message `labels.preview-nothing`.
-pub const LABELS_PREVIEW_NOTHING: MessageKey = MessageKey::new("labels.preview-nothing");
 
 /// The message `labels.preview-truncated`.
 pub const LABELS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("labels.preview-truncated");
@@ -2198,12 +2145,6 @@ pub const LABELS_RETIRE_HELP: MessageKey = MessageKey::new("labels.retire-help")
 
 /// The message `labels.retired`.
 pub const LABELS_RETIRED: MessageKey = MessageKey::new("labels.retired");
-
-/// The message `labels.save`.
-pub const LABELS_SAVE: MessageKey = MessageKey::new("labels.save");
-
-/// The message `labels.saved`.
-pub const LABELS_SAVED: MessageKey = MessageKey::new("labels.saved");
 
 /// The message `labels.show-changes`.
 pub const LABELS_SHOW_CHANGES: MessageKey = MessageKey::new("labels.show-changes");
@@ -2276,9 +2217,6 @@ pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customiz
 pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("layouts.customize-organization");
 
-/// The message `layouts.discard`.
-pub const LAYOUTS_DISCARD: MessageKey = MessageKey::new("layouts.discard");
-
 /// The message `layouts.draft-drop`.
 pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop");
 
@@ -2322,12 +2260,6 @@ pub const LAYOUTS_ROLES_HIDDEN: MessageKey = MessageKey::new("layouts.roles-hidd
 /// The message `layouts.save`.
 pub const LAYOUTS_SAVE: MessageKey = MessageKey::new("layouts.save");
 
-/// The message `layouts.saved`.
-pub const LAYOUTS_SAVED: MessageKey = MessageKey::new("layouts.saved");
-
-/// The message `layouts.saving`.
-pub const LAYOUTS_SAVING: MessageKey = MessageKey::new("layouts.saving");
-
 /// The message `layouts.section-empty`.
 pub const LAYOUTS_SECTION_EMPTY: MessageKey = MessageKey::new("layouts.section-empty");
 
@@ -2357,9 +2289,6 @@ pub const LAYOUTS_TYPE_ALL: MessageKey = MessageKey::new("layouts.type-all");
 
 /// The message `layouts.unreadable`.
 pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
-
-/// The message `layouts.unsaved`.
-pub const LAYOUTS_UNSAVED: MessageKey = MessageKey::new("layouts.unsaved");
 
 /// The message `layouts.use-inherited`.
 pub const LAYOUTS_USE_INHERITED: MessageKey = MessageKey::new("layouts.use-inherited");
@@ -2967,12 +2896,6 @@ pub const RELATED_ISSUES_ADD_IT: MessageKey = MessageKey::new("related-issues.ad
 /// The message `related-issues.back`.
 pub const RELATED_ISSUES_BACK: MessageKey = MessageKey::new("related-issues.back");
 
-/// The message `related-issues.cancel`.
-pub const RELATED_ISSUES_CANCEL: MessageKey = MessageKey::new("related-issues.cancel");
-
-/// The message `related-issues.issue-field`.
-pub const RELATED_ISSUES_ISSUE_FIELD: MessageKey = MessageKey::new("related-issues.issue-field");
-
 /// The message `related-issues.kind-field`.
 pub const RELATED_ISSUES_KIND_FIELD: MessageKey = MessageKey::new("related-issues.kind-field");
 
@@ -2988,9 +2911,6 @@ pub const RELATED_ISSUES_NOTHING_TO_PICK: MessageKey =
 
 /// The message `related-issues.title`.
 pub const RELATED_ISSUES_TITLE: MessageKey = MessageKey::new("related-issues.title");
-
-/// The message `related-issues.undo`.
-pub const RELATED_ISSUES_UNDO: MessageKey = MessageKey::new("related-issues.undo");
 
 /// The message `relation-kind.blocks`.
 pub const RELATION_KIND_BLOCKS: MessageKey = MessageKey::new("relation-kind.blocks");
@@ -3050,9 +2970,6 @@ pub const RELATION_KINDS_RETIRE_HELP: MessageKey = MessageKey::new("relation-kin
 
 /// The message `relation-kinds.retired`.
 pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.retired");
-
-/// The message `relation-kinds.saved`.
-pub const RELATION_KINDS_SAVED: MessageKey = MessageKey::new("relation-kinds.saved");
 
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
@@ -4100,26 +4017,17 @@ pub const STATUS_OPEN: MessageKey = MessageKey::new("status.open");
 /// The message `sub-issues.add-it`.
 pub const SUB_ISSUES_ADD_IT: MessageKey = MessageKey::new("sub-issues.add-it");
 
-/// The message `sub-issues.field`.
-pub const SUB_ISSUES_FIELD: MessageKey = MessageKey::new("sub-issues.field");
-
 /// The message `sub-issues.more`.
 pub const SUB_ISSUES_MORE: MessageKey = MessageKey::new("sub-issues.more");
 
 /// The message `sub-issues.none`.
 pub const SUB_ISSUES_NONE: MessageKey = MessageKey::new("sub-issues.none");
 
-/// The message `sub-issues.part-of`.
-pub const SUB_ISSUES_PART_OF: MessageKey = MessageKey::new("sub-issues.part-of");
-
 /// The message `sub-issues.progress-label`.
 pub const SUB_ISSUES_PROGRESS_LABEL: MessageKey = MessageKey::new("sub-issues.progress-label");
 
 /// The message `sub-issues.title`.
 pub const SUB_ISSUES_TITLE: MessageKey = MessageKey::new("sub-issues.title");
-
-/// The message `sub-issues.undo`.
-pub const SUB_ISSUES_UNDO: MessageKey = MessageKey::new("sub-issues.undo");
 
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
@@ -4358,18 +4266,6 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
-/// The message `bulk.finished`.
-#[must_use]
-pub fn bulk_finished(changed: i64, skipped: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.finished"),
-        vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
-        ],
-    )
-}
-
 /// The message `bulk.line-changes`.
 #[must_use]
 pub fn bulk_line_changes(after: impl std::fmt::Display, field: impl std::fmt::Display) -> Message {
@@ -4435,18 +4331,6 @@ pub fn bulk_skipped_line(issue: impl std::fmt::Display, reason: impl std::fmt::D
         vec![
             ("issue", Value::Text(issue.to_string())),
             ("reason", Value::Text(reason.to_string())),
-        ],
-    )
-}
-
-/// The message `bulk.summary`.
-#[must_use]
-pub fn bulk_summary(changed: i64, skipped: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.summary"),
-        vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
         ],
     )
 }
@@ -5732,21 +5616,24 @@ pub fn issues_page_title(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.preview-summary`.
+#[must_use]
+pub fn issues_preview_summary(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.preview-summary"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
+    )
+}
+
 /// The message `issues.read-only`.
 #[must_use]
 pub fn issues_read_only(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.read-only"),
         vec![("field", Value::Text(field.to_string()))],
-    )
-}
-
-/// The message `issues.saved-at`.
-#[must_use]
-pub fn issues_saved_at(time: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.saved-at"),
-        vec![("time", Value::Text(time.to_string()))],
     )
 }
 
@@ -5947,15 +5834,6 @@ pub fn labels_preview_line(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
         ],
-    )
-}
-
-/// The message `labels.preview-summary`.
-#[must_use]
-pub fn labels_preview_summary(changed: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("labels.preview-summary"),
-        vec![("changed", Value::Number(changed))],
     )
 }
 
@@ -6954,6 +6832,15 @@ pub fn sample_error_too_few_names(people: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `save.saved-at`.
+#[must_use]
+pub fn save_saved_at(time: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("save.saved-at"),
+        vec![("time", Value::Text(time.to_string()))],
+    )
+}
+
 /// The message `security-log.broken`.
 #[must_use]
 pub fn security_log_broken(reason: impl std::fmt::Display, seq: impl std::fmt::Display) -> Message {
@@ -7816,25 +7703,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "bulk.delete-text",
         "The issues are deleted. You can undo this right after.",
     ),
-    ("bulk.field-kind", "Relation"),
     ("bulk.field-label", "Label"),
-    (
-        "bulk.field-other",
-        "The other issue, by its ID such as WEB-12",
-    ),
-    ("bulk.field-priority", "Priority"),
-    ("bulk.field-status", "Status"),
-    (
-        "bulk.finished",
-        "Done. {changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
-    ),
     ("bulk.issue-unknown", "an issue you cannot see"),
     ("bulk.keep", "Leave as it is"),
     ("bulk.line-changes", "{field}: {after}"),
     ("bulk.line-delete", "Is deleted"),
     ("bulk.line-relation", "This issue {name} {issue}"),
-    ("bulk.nothing", "None of the issues would change."),
-    ("bulk.preview-label", "Issues in this change"),
     ("bulk.progress", "{done} of {total} issues done"),
     ("bulk.progress-label", "How far the change is"),
     ("bulk.project-legend", "Move to"),
@@ -7853,10 +7727,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "bulk.stopped",
         "The change stopped. Some issues are changed and the rest are not.",
-    ),
-    (
-        "bulk.summary",
-        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
     ),
     (
         "bulk.title",
@@ -8141,15 +8011,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("code-app.turn-off-title", "Switch off the code app?"),
     ("code-app.turned-off", "The code app is switched off."),
     ("comments.add", "Comment"),
-    ("comments.cancel", "Cancel"),
     ("comments.delete", "Delete"),
     ("comments.deleted", "The comment is deleted."),
     ("comments.edit", "Edit"),
     ("comments.edited", "edited"),
     ("comments.editing", "Edit the comment"),
     ("comments.mention-choices", "Who you can mention"),
-    ("comments.save", "Save"),
-    ("comments.undo", "Undo"),
     ("comments.version-saved", "Version {version} · {when}"),
     ("comments.versions", "Earlier versions"),
     ("comments.versions-hide", "Hide earlier versions"),
@@ -8162,6 +8029,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
+    ("common.issue-id", "Issue ID, for example WEB-142"),
     ("common.loading", "Loading…"),
     ("common.off", "Off"),
     ("common.on", "On"),
@@ -8690,7 +8558,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.pick-chosen", "Chosen"),
     ("fields.pick-groups-list", "Groups you can choose"),
     ("fields.pick-issue-find", "Find the issue"),
-    ("fields.pick-issue-key", "ID of the issue, like WEB-12"),
     ("fields.pick-more", "Show more"),
     (
         "fields.pick-no-groups",
@@ -8992,9 +8859,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-icon.zap", "Lightning"),
     ("issue-id-mode.counting", "Counting IDs"),
     ("issue-id-mode.random", "Random IDs"),
-    ("issue-ref.status-done", "Done"),
-    ("issue-ref.status-in-progress", "In progress"),
-    ("issue-ref.status-not-started", "Not started"),
     ("issue-type.bug", "Bug"),
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
@@ -9021,7 +8885,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
     ),
     ("issue-types.retired", "Retired"),
-    ("issue-types.saved", "Saved."),
     ("issue-types.search", "Search issue types"),
     ("issues.add-field", "Add {field}"),
     ("issues.all-details", "All details"),
@@ -9072,15 +8935,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.compare-intro",
         "Your text is next to the newer version. For each paragraph that differs, choose which one to keep.",
     ),
-    ("issues.compare-keep", "Keep, paragraph {number}"),
-    ("issues.compare-keep-mine", "Your text"),
-    ("issues.compare-keep-theirs", "The newer version"),
+    (
+        "issues.compare-keep",
+        "Which text to keep for paragraph {number}",
+    ),
     ("issues.compare-mine", "Your text"),
     ("issues.compare-paragraph", "Paragraph {number}"),
     ("issues.compare-save", "Save the chosen text"),
     ("issues.compare-save-mine", "Keep all of mine"),
     ("issues.compare-theirs", "The newer version"),
-    ("issues.compare-title", "Compare and save"),
     ("issues.copy-link", "Copy the address"),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
@@ -9107,7 +8970,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your draft is kept if you close this window.",
     ),
     ("issues.hide-details", "Hide details"),
-    ("issues.history", "History"),
     ("issues.keep-theirs", "Keep {name}'s change"),
     ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.link-copied", "Address copied"),
@@ -9132,12 +8994,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.of-project", "Issues of this project"),
     ("issues.open-full-page", "Open full page"),
     ("issues.page-title", "Issues in {project}"),
+    ("issues.preview-label", "Issues in this change"),
+    ("issues.preview-nothing", "None of the issues would change."),
+    (
+        "issues.preview-summary",
+        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
+    ),
     ("issues.project", "Project"),
     (
         "issues.read-only",
         "Only people whose role allows it can change {field}.",
     ),
-    ("issues.saved-at", "Saved · {time}"),
     (
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
@@ -9258,14 +9125,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("labels.offer-again", "Offer again"),
     ("labels.pick-label", "Choose a label"),
-    ("labels.preview-label", "Issues that change"),
     ("labels.preview-line", "From {before} to {after}"),
     ("labels.preview-no-names", "nothing"),
-    ("labels.preview-nothing", "No issue changes."),
-    (
-        "labels.preview-summary",
-        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change.",
-    ),
     (
         "labels.preview-truncated",
         "More issues change than this list shows.",
@@ -9276,8 +9137,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A retired one can no longer be put on issues. The issues that have it keep it.",
     ),
     ("labels.retired", "Retired"),
-    ("labels.save", "Save"),
-    ("labels.saved", "Saved."),
     ("labels.show-changes", "Show what the new name changes"),
     ("labels.show-combine", "Show what combining changes"),
     ("labels.sorting-title", "Labels and tags"),
@@ -9318,7 +9177,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.delete-held",
         "{name} is editing this layout. It can be taken away when they have finished.",
     ),
-    ("layouts.discard", "Discard changes"),
     (
         "layouts.draft-changed",
         "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
@@ -9387,8 +9245,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("layouts.roles-page", "Who sees {name}"),
     ("layouts.save", "Save layout"),
-    ("layouts.saved", "The layout is saved."),
-    ("layouts.saving", "Saving …"),
     ("layouts.section", "Section {number}"),
     ("layouts.section-down", "Move section {number} down"),
     (
@@ -9413,7 +9269,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.unreadable",
         "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
     ),
-    ("layouts.unsaved", "You have changes that are not saved."),
     ("layouts.use-inherited", "Use the inherited layout again"),
     (
         "layouts.use-inherited-text",
@@ -9850,11 +9705,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("related-issues.add-it", "Add the relation"),
     ("related-issues.added", "{key} now {name} {other}."),
     ("related-issues.back", "Back"),
-    ("related-issues.cancel", "Cancel"),
-    (
-        "related-issues.issue-field",
-        "The other issue (for example WEB-142)",
-    ),
     ("related-issues.kind-field", "What the relation means"),
     ("related-issues.more", "Show more related issues"),
     ("related-issues.none", "No related issues yet."),
@@ -9867,7 +9717,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Take away the relation: {name} {other}",
     ),
     ("related-issues.title", "Related issues"),
-    ("related-issues.undo", "Undo"),
     ("relation-kind.blocks", "blocks"),
     ("relation-kind.causes", "causes"),
     ("relation-kind.duplicate-of", "duplicate of"),
@@ -9910,7 +9759,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
     ),
     ("relation-kinds.retired", "Retired"),
-    ("relation-kinds.saved", "Saved."),
     ("relation-kinds.search", "Search kinds of relation"),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),
@@ -10162,6 +10010,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sample.step.tags", "putting a tag or a label on an issue"),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),
+    ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
     ("search.clear", "Clear the search"),
     ("search.label", "Search"),
@@ -10849,16 +10698,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.open", "Open"),
     ("sub-issues.add-it", "Add"),
     ("sub-issues.added", "{key} is now a sub-issue."),
-    ("sub-issues.field", "Issue to add (for example WEB-142)"),
     ("sub-issues.more", "Show more sub-issues"),
     ("sub-issues.none", "No sub-issues yet."),
     ("sub-issues.not-part-of", "Take this issue out of {key}"),
-    ("sub-issues.part-of", "Part of"),
     ("sub-issues.progress", "{done} of {total} done"),
     ("sub-issues.progress-label", "How far the sub-issues are"),
     ("sub-issues.take-out", "Take {key} out of the sub-issues"),
     ("sub-issues.title", "Sub-issues"),
-    ("sub-issues.undo", "Undo"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),

@@ -119,9 +119,9 @@ function EditForm({
       />
       {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={save.isPending}>{t("comments.save")}</SubmitButton>
+        <SubmitButton isPending={save.isPending}>{t("common.save")}</SubmitButton>
         <Button look={buttonLook.quiet} onPress={onClose}>
-          {t("comments.cancel")}
+          {t("common.cancel")}
         </Button>
       </div>
     </Form>

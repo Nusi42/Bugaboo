@@ -40,7 +40,7 @@ export function IssueChoice({ field, onCommit }: OtherChoiceProps) {
           }}
         >
           <TextField
-            label={t("fields.pick-issue-key")}
+            label={t("common.issue-id")}
             requiredMessage={t("error.field.required")}
             value={key}
             onChange={setKey}

@@ -32,7 +32,7 @@ export function EditIssueType({ issueType }: { readonly issueType: IssueTypeLine
       />
       <IconField value={icon} onChange={setIcon} />
       {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
-      {save.isSuccess ? <Alert tone={alertTone.success}>{t("issue-types.saved")}</Alert> : null}
+      {save.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={save.isPending}>{t("common.save")}</SubmitButton>
       </div>

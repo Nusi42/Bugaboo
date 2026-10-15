@@ -51,7 +51,7 @@ function AddSubIssue({ issueKey }: { readonly issueKey: string }) {
       }}
     >
       <TextField
-        label={t("sub-issues.field")}
+        label={t("common.issue-id")}
         requiredMessage={t("error.field.required")}
         value={other}
         onChange={setOther}
@@ -69,7 +69,7 @@ function AddSubIssue({ issueKey }: { readonly issueKey: string }) {
               void put(added, null);
             }}
           >
-            {t("sub-issues.undo")}
+            {t("common.undo")}
           </Button>
         </Alert>
       )}
@@ -103,7 +103,7 @@ function PartOf({
 }) {
   return (
     <div {...partOf(part.row)}>
-      <span>{t("sub-issues.part-of")}</span>
+      <span>{t("issue-field.parent")}</span>
       <IssueRefLine issue={above}>
         {mayChange ? (
           <TakeOut child={issueKey} label={t("sub-issues.not-part-of", { key: above.key })} />

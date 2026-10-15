@@ -30,7 +30,7 @@ export function IssueMain({ detail, address, blocks }: IssueMainProps) {
       <SlotBlocks slot={issueSlots.ownFieldSections} blocks={blocks} />
       <SlotBlocks slot={issueSlots.subIssues} blocks={blocks} />
       <SlotBlocks slot={issueSlots.relatedIssues} blocks={blocks} />
-      <section id={historyId} aria-label={t("issues.history")}>
+      <section id={historyId} aria-label={t("history.title")}>
         <SlotBlocks slot={issueSlots.history} blocks={blocks} />
       </section>
     </div>

@@ -3,7 +3,6 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "history.title": "History",
   "history.tab-everything": "Everything",
   "history.tab-comments": "Comments",
   "history.tab-changes": "Changes",
@@ -22,11 +21,8 @@ export const messages = {
   "comments.add": "Comment",
   "comments.edited": "edited",
   "comments.edit": "Edit",
-  "comments.save": "Save",
-  "comments.cancel": "Cancel",
   "comments.delete": "Delete",
   "comments.deleted": "The comment is deleted.",
-  "comments.undo": "Undo",
   "comments.versions": "Earlier versions",
   "comments.versions-hide": "Hide earlier versions",
   "comments.version-saved": "Version {version} · {when}",

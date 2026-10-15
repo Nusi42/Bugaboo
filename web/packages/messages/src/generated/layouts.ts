@@ -50,16 +50,12 @@ export const messages = {
   "layouts.limited-page": "{role} can't see {field}: Field permissions",
   "layouts.limited-form": "{role} can't fill in {field}: Field permissions",
   "layouts.save": "Save layout",
-  "layouts.saved": "The layout is saved.",
-  "layouts.discard": "Discard changes",
-  "layouts.unsaved": "You have changes that are not saved.",
   "layouts.lost":
     "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
   "layouts.taking": "Getting ready to edit …",
   "layouts.tabs": "Sections of the form",
   "layouts.tab-other": "Other",
   "layouts.section-named": "Section {number}: {title}",
-  "layouts.saving": "Saving …",
   "layouts.inherited-hidden": "This form uses a layout that is set higher up.",
   "layouts.unreadable":
     "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
