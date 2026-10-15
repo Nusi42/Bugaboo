@@ -280,7 +280,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         let (comment, issue, held) = self.visible_comment(&actor, id, !into_trash).await?;
         let mine = comment.author == actor.person.id && held.allows(Permission::Comment);
         if !mine && !held.allows(Permission::ChangeIssues) {
-            return Err(ErrorCode::Forbidden.into());
+            // Whoever may not take a comment out of the trash is not told that it is in it.
+            return Err(if into_trash {
+                ErrorCode::Forbidden
+            } else {
+                ErrorCode::NotFound
+            }
+            .into());
         }
         let (before, after) = if into_trash {
             (None, Some(json!(self.now().to_string())))

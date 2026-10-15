@@ -143,3 +143,46 @@ async fn sec_06_one_text_resolves_a_bounded_number_of_mentions_and_issue_ids() -
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_whoever_may_not_restore_a_comment_is_not_told_it_is_in_the_trash() -> TestResult {
+    each_database("sec_06_comment_trash", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = site.make(&mut ada, "Printer jams").await?;
+        let issue = ok(&issue)?["key"].as_str().ok_or("no key")?.to_owned();
+        let written = ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{issue}/comments"),
+                Some(json!({"text": "First."})),
+            )
+            .await?;
+        let id = ok(&written)?["id"].as_str().ok_or("no id")?.to_owned();
+        ok_no_content(
+            &ada.send("DELETE", &format!("/api/v1/comments/{id}"), None)
+                .await?,
+        );
+        // A Viewer sees the issue and may not change it: the comment in the trash and one that is
+        // not there answer alike.
+        let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
+        let in_trash = vera
+            .send("POST", &format!("/api/v1/comments/{id}/restore"), None)
+            .await?;
+        let missing = vera
+            .send(
+                "POST",
+                "/api/v1/comments/01890a5d-ac96-774b-bcce-b302099a8057/restore",
+                None,
+            )
+            .await?;
+        assert_eq!(in_trash.code(), "resource.not_found", "{}", in_trash.body);
+        assert_eq!(missing.code(), "resource.not_found", "{}", missing.body);
+        Ok(())
+    })
+    .await
+}
+
+fn ok_no_content(reply: &super::http::Reply) {
+    assert_eq!(reply.status, StatusCode::NO_CONTENT, "{}", reply.body);
+}

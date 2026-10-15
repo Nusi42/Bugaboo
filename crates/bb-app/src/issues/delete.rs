@@ -82,8 +82,9 @@ pub async fn delete_issue<S: AuthStore>(
 /// for putting it there, and has to see the issue.
 ///
 /// # Errors
-/// `resource.not_found` for an issue that does not exist, is not in the trash or that the person
-/// may not see, `access.forbidden` without *Delete issues*.
+/// `resource.not_found` for an issue that does not exist, is not in the trash, that the person
+/// may not see or that they may not take out: whoever lacks *Delete issues* is not told that an
+/// issue is in the trash (SEC-06).
 pub async fn restore_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RestoreIssue,
@@ -91,7 +92,7 @@ pub async fn restore_issue<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.trashed_issue(&actor, &input.issue).await?;
     if !held.may_delete_issue(issue.reported_by) {
-        return Err(ErrorCode::Forbidden.into());
+        return Err(ErrorCode::NotFound.into());
     }
     let id = issue.id;
     let event = ctx.event(

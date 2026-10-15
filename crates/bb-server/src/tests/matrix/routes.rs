@@ -148,6 +148,9 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                     || ((example.has(Quirk::HidesUnseen) || on_the_target) && !held.sees()))
             {
                 Expect::NotFound
+            } else if example.has(Quirk::InTheTrash) {
+                // Whoever may not take it out is not told that it is in the trash.
+                Expect::NotFound
             } else {
                 Expect::Forbidden
             }

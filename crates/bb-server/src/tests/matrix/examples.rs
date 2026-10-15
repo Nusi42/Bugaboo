@@ -54,6 +54,10 @@ pub(super) enum Quirk {
     /// `resource.not_found`, as for an issue that is not there; a person who sees the issue and
     /// lacks the permission of the route is refused.
     AnIssueOfTheTarget,
+    /// The route takes something out of the trash: a person who sees the issue and lacks the
+    /// permission is told `resource.not_found`, as for something that is not in the trash, and
+    /// not that they are refused (SEC-06).
+    InTheTrash,
     /// The route lists the issues of the target project: anybody who sees the project gets a list
     /// (without *See issues*, of the issues they reported), and anybody else
     /// `resource.not_found`.
@@ -307,7 +311,10 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changeIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("saveIssueDescription", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteIssue", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("restoreIssue", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "restoreIssue",
+        &[Quirk::AnIssueOfTheTarget, Quirk::InTheTrash],
+    ),
     Example::with("listRelationKinds", &[Quirk::KeysActAsThePerson]),
     Example::route("makeRelationKind"),
     Example::route("changeRelationKind"),
@@ -320,7 +327,10 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("addComment", &[Quirk::AnIssueOfTheTarget]),
     Example::with("saveComment", &[Quirk::AnIssueOfTheTarget]),
     Example::with("deleteComment", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("restoreComment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "restoreComment",
+        &[Quirk::AnIssueOfTheTarget, Quirk::InTheTrash],
+    ),
     Example::with("listCommentVersions", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
     Example::route("listMentions"),
