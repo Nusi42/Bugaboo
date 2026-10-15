@@ -11,19 +11,19 @@ import {
   part,
 } from "@bugaboo/ui";
 
-import { lockCanBeRetaken, type LongText, type LostReason } from "../../shared/editing/index.ts";
+import { editedThing } from "../../shared/editing/edited-thing.ts";
+import {
+  lockCanBeRetaken,
+  type LongText,
+  type LostReason,
+  type Who,
+} from "../../shared/editing/index.ts";
+import { LostNote } from "../../shared/editing/LostNote.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 
 /** No image from another host in a comment being written: the hosts come with the issue page. */
 const noImageHosts: readonly string[] = [];
-
-/** The sentence that says why the text was not saved, for each reason (the messages of the server). */
-const lostMessage = {
-  "ran-out": "error.edit.lock-lost",
-  "taken-over": "error.edit.taken-over",
-  "version-changed": "error.edit.version-changed",
-} as const satisfies Record<LostReason, string>;
 
 /** What the person typed, kept as a draft and shown while someone else holds the lock. */
 export function KeptText({ text }: { readonly text: string }) {
@@ -36,22 +36,19 @@ export function KeptText({ text }: { readonly text: string }) {
 }
 
 /** Why the text was not saved, with *Try again* where taking the lock again can help. */
-function LostNote({
+function Lost({
   reason,
+  by,
   onRetry,
 }: {
   readonly reason: LostReason;
+  readonly by: Who | undefined;
   readonly onRetry: () => void;
 }) {
   return (
-    <Alert tone={alertTone.warning}>
-      <div {...partOf(part.issueNote)}>
-        <span>{t(lostMessage[reason])}</span>
-        {lockCanBeRetaken(reason) ? (
-          <Button onPress={onRetry}>{t("common.try-again")}</Button>
-        ) : null}
-      </div>
-    </Alert>
+    <LostNote reason={reason} by={by} thing={editedThing.comment}>
+      {lockCanBeRetaken(reason) ? <Button onPress={onRetry}>{t("common.try-again")}</Button> : null}
+    </LostNote>
   );
 }
 
@@ -77,7 +74,9 @@ export function CommentBox({
       {long.problem === null || long.problem === undefined ? null : (
         <Alert tone={alertTone.danger}>{messageOf(long.problem)}</Alert>
       )}
-      {phase.kind === "lost" ? <LostNote reason={phase.reason} onRetry={long.save} /> : null}
+      {phase.kind === "lost" ? (
+        <Lost reason={phase.reason} by={phase.by} onRetry={long.save} />
+      ) : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={saving}>{t("common.save")}</SubmitButton>
         <Button look={buttonLook.quiet} onPress={long.cancel}>

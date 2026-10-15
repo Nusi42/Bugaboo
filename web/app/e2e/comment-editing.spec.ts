@@ -113,7 +113,7 @@ test("iss_05 a comment whose editing was taken over keeps the typed text and can
   // Try again takes the lock again and saves the text that was typed.
   await refuseNextSave(page, "edit.taken_over", "error.edit.taken-over");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
-  await expect(page.getByText(t("error.edit.taken-over"))).toBeVisible();
+  await expect(page.getByText(t("editing.lost-taken-over", { name: "someone" }))).toBeVisible();
   await page.getByRole("button", { name: t("common.try-again"), exact: true }).click();
   await expect(page.getByText(typed)).toBeVisible();
   await expect(editor).toHaveCount(0);
@@ -128,19 +128,19 @@ test("iss_05 a draft of a comment that was kept is offered when the editor opens
   const editor = page.getByRole("textbox", { name: t("comments.editing"), exact: true });
   const typed = "Words that must not be lost.";
   await editor.fill(typed);
-  // The lock ran out: the save is refused, and the text is kept as a draft.
-  await refuseNextSave(page, "edit.lock_lost", "error.edit.lock-lost");
-  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
-  await expect(page.getByText(t("error.edit.lock-lost"))).toBeVisible();
-  // The person closes the editor, which lets go of the lock and keeps the draft.
-  await page.getByRole("button", { name: t("common.close"), exact: true }).click();
-  // Later: the page is read again, the editor is opened, and the draft is offered.
+  // Close leaves the text as a draft and lets go of the lock.
+  await page
+    .getByRole("button", { name: t("common.close"), exact: true })
+    .first()
+    .click();
+  await expect(editor).toHaveCount(0);
+  // Later: the page is read again, the editor is opened, and the draft is offered; the lock is
+  // free, so Continue puts the text back in the box.
   await page.reload();
   await showComments(page);
   await editButton(page).click();
   await page.getByRole("button", { name: /^Continue your draft from/u }).click();
-  // The text is back, in the box, or (the old lock has not run out yet) shown and kept.
-  await expect(page.getByText(typed).or(editor)).toBeVisible();
+  await expect(editor).toHaveValue(typed);
 });
 
 test("iss_05 the words of a comment's buttons say whose comment it is", async ({

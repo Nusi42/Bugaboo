@@ -147,6 +147,8 @@ export interface MessageArguments {
   "editing.draft-found": { thing: string | number; when: string | number };
   "editing.elsewhere": { thing: string | number };
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
+  "editing.lost-changed": { name: string | number; thing: string | number };
+  "editing.lost-taken-over": { name: string | number };
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.project-title": { project: string | number };
   "field.unknown-name": { field: string | number };
@@ -221,8 +223,6 @@ export interface MessageArguments {
   "issues.deleted": { key: string | number };
   "issues.draft-found-form": { when: string | number };
   "issues.keep-theirs": { name: string | number };
-  "issues.lost-changed": { name: string | number };
-  "issues.lost-taken-over": { name: string | number };
   "issues.page-title": { project: string | number };
   "issues.read-only": { field: string | number };
   "issues.refused-at-field": { field: string | number; reason: string | number };

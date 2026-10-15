@@ -505,6 +505,10 @@ export const messages = {
   "editing.ask-to-finish": "Ask {name} to finish",
   "editing.edit-anyway": "Edit anyway",
   "editing.draft-found": "You have a draft of {thing} from {when}.",
+  "editing.lost-ran-out":
+    "Not saved yet: you were away for a while, so your editing time ran out. Your text is kept.",
+  "editing.lost-taken-over": "Not saved yet: {name} took over the editing. Your text is kept.",
+  "editing.lost-changed": "Not saved yet: {name} changed {thing} after you. Your text is kept.",
   "editing.draft-continue": "Continue your draft from {when}",
   "editing.draft-drop": "Throw the draft away",
   "shortcut.new-issue": "Make a new issue",

@@ -61,11 +61,6 @@ export const messages = {
   "issues.changed-after-you": "The description changed after you started.",
   "issues.changed-after-you-by": "{name} changed the description after you started.",
   "issues.show-changes": "Show changes",
-  "issues.lost-ran-out":
-    "Not saved yet: you were away for a while, so your editing time ran out. Your text is kept.",
-  "issues.lost-taken-over": "Not saved yet: {name} took over the editing. Your text is kept.",
-  "issues.lost-changed":
-    "Not saved yet: {name} changed the description after you. Your text is kept.",
   "issues.compare-and-save": "Compare and save",
   "issues.compare-intro":
     "Your text is next to the newer version. For each paragraph that differs, choose which one to keep.",

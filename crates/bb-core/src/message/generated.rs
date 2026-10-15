@@ -822,6 +822,9 @@ pub const EDITING_DRAFT_DROP: MessageKey = MessageKey::new("editing.draft-drop")
 /// The message `editing.edit-anyway`.
 pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway");
 
+/// The message `editing.lost-ran-out`.
+pub const EDITING_LOST_RAN_OUT: MessageKey = MessageKey::new("editing.lost-ran-out");
+
 /// The message `editing.text-kept`.
 pub const EDITING_TEXT_KEPT: MessageKey = MessageKey::new("editing.text-kept");
 
@@ -1962,9 +1965,6 @@ pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied")
 
 /// The message `issues.list`.
 pub const ISSUES_LIST: MessageKey = MessageKey::new("issues.list");
-
-/// The message `issues.lost-ran-out`.
-pub const ISSUES_LOST_RAN_OUT: MessageKey = MessageKey::new("issues.lost-ran-out");
 
 /// The message `issues.missing-project`.
 pub const ISSUES_MISSING_PROJECT: MessageKey = MessageKey::new("issues.missing-project");
@@ -4972,6 +4972,30 @@ pub fn editing_is_editing(
     )
 }
 
+/// The message `editing.lost-changed`.
+#[must_use]
+pub fn editing_lost_changed(
+    name: impl std::fmt::Display,
+    thing: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.lost-changed"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("thing", Value::Text(thing.to_string())),
+        ],
+    )
+}
+
+/// The message `editing.lost-taken-over`.
+#[must_use]
+pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.lost-taken-over"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `field-permissions.intro-project`.
 #[must_use]
 pub fn field_permissions_intro_project(project: impl std::fmt::Display) -> Message {
@@ -5627,24 +5651,6 @@ pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
 pub fn issues_keep_theirs(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.keep-theirs"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `issues.lost-changed`.
-#[must_use]
-pub fn issues_lost_changed(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.lost-changed"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `issues.lost-taken-over`.
-#[must_use]
-pub fn issues_lost_taken_over(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.lost-taken-over"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -8259,6 +8265,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "editing.is-editing",
         "{name} is editing {thing} · since {since}",
     ),
+    (
+        "editing.lost-changed",
+        "Not saved yet: {name} changed {thing} after you. Your text is kept.",
+    ),
+    (
+        "editing.lost-ran-out",
+        "Not saved yet: you were away for a while, so your editing time ran out. Your text is kept.",
+    ),
+    (
+        "editing.lost-taken-over",
+        "Not saved yet: {name} took over the editing. Your text is kept.",
+    ),
     ("editing.text-kept", "What you typed is kept as a draft:"),
     (
         "editing.text-kept-on-close",
@@ -9057,18 +9075,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
-    (
-        "issues.lost-changed",
-        "Not saved yet: {name} changed the description after you. Your text is kept.",
-    ),
-    (
-        "issues.lost-ran-out",
-        "Not saved yet: you were away for a while, so your editing time ran out. Your text is kept.",
-    ),
-    (
-        "issues.lost-taken-over",
-        "Not saved yet: {name} took over the editing. Your text is kept.",
-    ),
     (
         "issues.missing-project",
         "Choose a project first, then you can create and start another.",
