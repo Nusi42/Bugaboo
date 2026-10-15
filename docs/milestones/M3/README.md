@@ -2,7 +2,7 @@
 
 Goal, features and exit demo: see [04-milestones.md](../../04-milestones.md) (M3). Rules: "Working in a folder", "Life of a work package" and "Definition of done" in [04-milestones.md](../../04-milestones.md), the [coding standards](../../coding-standards.md) (the SSOT/DRY/ODR review gate of §1 blocks a merge) and the [glossary](../../glossary.md).
 
-M3 builds issues from nothing: no issue table, no issue permission, and empty `bb-markdown` and `bb-wasm` crates exist today. It runs in **four waves**. A wave starts when the previous one is merged to `main`. At most four builders run at once.
+M3 builds issues from nothing: no issue table, no issue permission, and empty `bb-markdown` and `bb-wasm` crates exist today. It ran in **four waves**, then wave 5 (exit fixes) and waves 6–8 (the new look from the approved UX concept). A wave starts when the previous one is merged to `main`. At most four builders run at once.
 
 | Wave | WP | Name | Who | Folder / branch |
 |------|----|------|-----|-----------------|
@@ -20,6 +20,9 @@ M3 builds issues from nothing: no issue table, no issue permission, and empty `b
 | 5 | [WP-12](WP-12-exit-security-fixes.md) | Exit review: security and privacy fixes | Builder | `bugaboo.win2` / `WIN2` |
 | 5 | [WP-13](WP-13-exit-words-and-screens-fixes.md) | Exit review: words, screens and accessibility fixes | Builder | `bugaboo.win3` / `WIN3` |
 | 5 | [WP-14](WP-14-exit-structure-fixes.md) | Exit review: structure fixes (one source for each fact) | Builder | `bugaboo.win4` / `WIN4` |
+| 6 | [WP-15](WP-15-ux-concept-into-the-docs.md) | The approved UX concept into the UX design | Lead | `bugaboo.win1` / `WIN1` |
+| 7 | [WP-16](WP-16-theme-and-parts.md) | The new look: theme tokens and shared parts (window, row state, status and priority) | Builder | `bugaboo.win2` / `WIN2` |
+| 8 | [WP-17](WP-17-screens-in-the-new-look.md) | The M3 screens in the new look, and three visible bugs | Builder | `bugaboo.win3` / `WIN3` |
 
 Progress (which package is building, merged, reviewed) is kept only in [`docs/STATUS.md`](../../STATUS.md).
 
@@ -35,6 +38,10 @@ The maintainer answers the questions at the end of this page (M3-Q1 … M3-Q10).
 | 2 | WP-02, WP-03, WP-04 | Own fields hang on issues and projects (WP-03); the issue page shows Markdown (WP-02) and edits with locks and versions (WP-04); comments render Markdown and lock while being edited |
 | 3 | WP-05, WP-06, WP-07 | Tags and labels are fields on the issue page; changing many issues needs the list and every field kind; the layout editor places own fields; ten people at once need every editing screen |
 | 4 | everything | The sample organization is made through the use cases of all packages, and the exit demo uses the screens of all of them |
+| 5 | WP-11 | The exit review's findings, split by kind so the three packages touch different files |
+| 6 | wave 5 | Review finding: the screens were untidy; a UX concept was approved; the UX design must say it before anyone builds it |
+| 7 | WP-15 | The tokens and parts take their numbers from the UX design |
+| 8 | WP-16 | The screens use only the new parts, so they cannot start before them |
 
 Inside wave 2, WP-06 owns the issue page. In its first pushed commit (on day one) it adds `web/app/src/features/issues/slots.ts`: one named slot for each block of the main column and the fields panel, with the props each block gets. WP-05 and WP-07 build their blocks as components in their own feature folders against that signature, register them in one added line each, and never edit WP-06's other files. Until WP-06 is merged they test their blocks on their own; the lead connects anything left at merge. Inside wave 3, WP-10 merges last: it runs the scenarios against the finished screens.
 

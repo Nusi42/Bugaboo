@@ -63,6 +63,7 @@ flowchart LR
 - No second definition, copied logic or hand-kept duplicate knowledge (SSOT, DRY, ODR review gate, coding-standards §1); LINT-DRY green.
 - Reviewed by a reviewer agent; findings fixed.
 - Screenshots in four themes on computer and phone for every changed screen.
+- Screens follow the ten rules of UX design §1; the reviewer checks alignment, padding and state colors on every screenshot.
 
 ### Testing in every milestone
 
@@ -280,6 +281,7 @@ A session can end at any time, and a new one starts in the master and continues 
 - Tags and labels; changing many issues at once with a preview
 - Following issues
 - Sample organization, part 2: about 10,000 issues, comments, relations, own fields
+- The approved UX concept: the UX design, theme tokens and shared parts, then the M3 screens in the new look
 
 **Demo (exit):** In the sample organization: create a bug as a Guest (short form) and as a Team member (full form), relate it to two issues, edit the description in two browsers at once (lock, Edit anyway, Compare and save).
 
@@ -393,7 +395,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 **Work packages (outline):**
 
-- Timeline (Gantt chart): rows, zoom, drag, dependencies as relations, unscheduled tray, phone list
+- Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list
 - Theme editor with readability ratings; personal and organization themes; import and export
 - Touch gestures and phone polish across all screens
 
