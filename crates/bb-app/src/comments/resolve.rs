@@ -10,13 +10,17 @@
 //! - A group puts the comment into each member's *Mentions*, a role into those who have it where
 //!   the issue is (a cap, `MENTION_RECIPIENTS_MAX`, keeps a big group from filling the table).
 
+use std::sync::{Arc, PoisonError};
+
 use bb_core::access::PeopleLevel;
 use bb_core::comment::{MENTION_RECIPIENTS_MAX, Mention, MentionTarget, names_the_handle};
 use bb_core::id::{CommentId, GroupId, RoleId, UserId};
 use bb_core::issue::Issue;
 use bb_core::issue_key::IssueKey;
 use bb_core::people_kinds::PeopleKind;
-use bb_markdown::{Options, Token, TokenKind, render};
+use bb_markdown::{
+    MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS, Options, Token, TokenKind, render,
+};
 use bb_policy::{Evaluation, PeopleContext, row_reaches};
 
 use crate::access::Actor;
@@ -72,7 +76,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .known
             .handles
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(PoisonError::into_inner)
             .get(&key)
             .copied();
         if let Some(known) = known {
@@ -82,9 +86,65 @@ impl<S: AuthStore> Ctx<'_, S> {
         self.known
             .handles
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(PoisonError::into_inner)
             .insert(key, named);
         Ok(named)
+    }
+
+    /// The names of the groups, read once for the request.
+    async fn group_names(&self) -> Result<Arc<Vec<(GroupId, String)>>, AppError> {
+        if let Some(known) = self
+            .known
+            .group_names
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+        {
+            return Ok(known);
+        }
+        let names: Vec<(GroupId, String)> = self
+            .store()
+            .groups()
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|group| (group.id, group.name))
+            .collect();
+        let names = Arc::new(names);
+        *self
+            .known
+            .group_names
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(Arc::clone(&names));
+        Ok(names)
+    }
+
+    /// The names of the roles, read once for the request.
+    async fn role_names(&self) -> Result<Arc<Vec<(RoleId, String)>>, AppError> {
+        if let Some(known) = self
+            .known
+            .role_names
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+        {
+            return Ok(known);
+        }
+        let names: Vec<(RoleId, String)> = self
+            .store()
+            .roles()
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|record| (record.role.id, record.role.name))
+            .collect();
+        let names = Arc::new(names);
+        *self
+            .known
+            .role_names
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(Arc::clone(&names));
+        Ok(names)
     }
 
     /// The one thing a handle names, asked of the store.
@@ -112,16 +172,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         if level != PeopleLevel::Hidden {
-            for group in self.store().groups().await.map_err(failed)? {
-                if names_the_handle(handle, &group.name) {
-                    found.push(Named::Group(group.id));
+            for (id, name) in self.group_names().await?.iter() {
+                if names_the_handle(handle, name) {
+                    found.push(Named::Group(*id));
                 }
             }
         }
         if level == PeopleLevel::RoleOnly {
-            for record in self.store().roles().await.map_err(failed)? {
-                if names_the_handle(handle, &record.role.name) {
-                    found.push(Named::Role(record.role.id));
+            for (id, name) in self.role_names().await?.iter() {
+                if names_the_handle(handle, name) {
+                    found.push(Named::Role(*id));
                 }
             }
         }
@@ -144,15 +204,27 @@ impl<S: AuthStore> Ctx<'_, S> {
         let level = held.people_level(PeopleKind::Mentions, PeopleContext::Ordinary);
         let mut resolution = Resolution::default();
         let mut maker = None;
+        let (mut mentions, mut issue_ids) = (0, 0);
         for (index, token) in tokens.iter().enumerate() {
             let written = &text[token.start..token.end];
+            // Past the limits a token stays text, without a look-up: a hostile text cannot make a
+            // page cost thousands of statements for everybody who reads it.
+            let (count, most) = match token.kind {
+                TokenKind::IssueId => (&mut issue_ids, MAX_RESOLVED_ISSUE_IDS),
+                TokenKind::Mention => (&mut mentions, MAX_RESOLVED_MENTIONS),
+            };
+            *count += 1;
+            if *count > most {
+                resolution.plain.push(index);
+                continue;
+            }
             let named = match token.kind {
                 TokenKind::IssueId => {
                     let known = self
                         .known
                         .issue_ids
                         .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .unwrap_or_else(PoisonError::into_inner)
                         .get(&(actor.person.id, written.to_owned()))
                         .copied();
                     let seen = if let Some(known) = known {
@@ -179,7 +251,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                         self.known
                             .issue_ids
                             .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .unwrap_or_else(PoisonError::into_inner)
                             .insert((actor.person.id, written.to_owned()), seen);
                         seen
                     };

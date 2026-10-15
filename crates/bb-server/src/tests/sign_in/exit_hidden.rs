@@ -3,6 +3,7 @@
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
+use bb_markdown::{MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS};
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
@@ -90,6 +91,54 @@ async fn sec_06_the_description_makes_a_chip_only_of_what_the_reader_may_see() -
         let read = ada.send("GET", &format!("{ISSUES}/{theirs}"), None).await?;
         let html = ok(&read)?["description_html"].as_str().ok_or("no html")?;
         assert_eq!(html.matches("data-kind=\"issue-id\"").count(), 2, "{html}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_06_one_text_resolves_a_bounded_number_of_mentions_and_issue_ids() -> TestResult {
+    each_database("sec_06_token_limits", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let home = site.make(&mut ada, "Where it is written").await?;
+        let home = ok(&home)?["key"].as_str().ok_or("no key")?.to_owned();
+        let mut handles = Vec::new();
+        for number in 0..MAX_RESOLVED_MENTIONS + 5 {
+            let name = format!("Team{number:03}");
+            ok(&ada
+                .send("POST", "/api/v1/groups", Some(json!({"name": name})))
+                .await?)?;
+            handles.push(format!("@team{number:03}"));
+        }
+        let mut keys = Vec::new();
+        for number in 0..MAX_RESOLVED_ISSUE_IDS + 5 {
+            let made = site.make(&mut ada, &format!("Issue {number}")).await?;
+            keys.push(ok(&made)?["key"].as_str().ok_or("no key")?.to_owned());
+        }
+        let text = format!("{} and {}", handles.join(" "), keys.join(" "));
+        let written = ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{home}/comments"),
+                Some(json!({"text": text})),
+            )
+            .await?;
+        let html = ok(&written)?["html"].as_str().ok_or("no html")?.to_owned();
+        assert_eq!(
+            html.matches("data-kind=\"mention\"").count(),
+            MAX_RESOLVED_MENTIONS,
+            "the mentions past the limit stay text"
+        );
+        assert_eq!(
+            html.matches("data-kind=\"issue-id\"").count(),
+            MAX_RESOLVED_ISSUE_IDS,
+            "the issue IDs past the limit stay text"
+        );
+        assert!(
+            html.contains(&handles[handles.len() - 1]),
+            "the last stays text"
+        );
         Ok(())
     })
     .await

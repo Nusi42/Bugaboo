@@ -154,6 +154,9 @@ pub(crate) struct Known {
     >,
     /// Whether a reader sees the issue an ID in a text names.
     pub(crate) issue_ids: Mutex<HashMap<(UserId, String), bool>>,
+    /// The names of the groups and of the roles, read once for all the handles of a request.
+    pub(crate) group_names: Mutex<Option<Arc<Vec<(bb_core::id::GroupId, String)>>>>,
+    pub(crate) role_names: Mutex<Option<Arc<Vec<(bb_core::id::RoleId, String)>>>>,
 }
 
 /// The services plus the request, which is what a use case takes.

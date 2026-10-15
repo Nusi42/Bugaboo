@@ -43,6 +43,14 @@ pub const MAX_MENTION_CHARS: usize = 64;
 /// make an answer many times the size of the text.
 pub const MAX_TOKENS: usize = 2_000;
 
+/// The most mentions of one text that the server tries to name; the rest stay plain text. Each
+/// distinct name costs a search of the people, so a text of two thousand different names must not
+/// make every page load that shows it expensive for every reader (SEC-06, DoS).
+pub const MAX_RESOLVED_MENTIONS: usize = 50;
+
+/// The most issue IDs of one text that the server looks up; the rest stay plain text.
+pub const MAX_RESOLVED_ISSUE_IDS: usize = 100;
+
 /// What the renderer needs to know about the organization.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Options {
