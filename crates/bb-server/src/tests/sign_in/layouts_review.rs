@@ -16,9 +16,9 @@ use bb_core::layout::{LayoutKind, built_in_fields};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{id_of, make_field, reader_of};
+use super::fields_http::{make_field, reader_of};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{Site, ok};
+use super::issues_site::{Site, id_in, ok};
 use super::layouts_http::{
     AN_EDITOR, ANOTHER_EDITOR, LAYOUTS, customize, editor_of, form_of, role_named, save, slot,
     take_lock,
@@ -50,7 +50,7 @@ async fn cfg_01_a_lead_who_may_not_know_a_field_never_reads_its_id_and_keeps_it_
     each_database("cfg_01_unknown_field", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let salary = id_of(
+        let salary = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Salary band", "kind": "text", "applies_to": "issues"}),
@@ -322,7 +322,7 @@ async fn cf_03_a_required_field_with_a_default_is_not_asked_for_on_the_form() ->
     each_database("cf_03_required_with_default", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let asked = id_of(
+        let asked = id_in(
             &make_field(
                 &mut ada,
                 json!({
@@ -332,7 +332,7 @@ async fn cf_03_a_required_field_with_a_default_is_not_asked_for_on_the_form() ->
             )
             .await?,
         )?;
-        let defaulted = id_of(
+        let defaulted = id_in(
             &make_field(
                 &mut ada,
                 json!({

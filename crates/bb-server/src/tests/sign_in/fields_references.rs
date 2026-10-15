@@ -9,9 +9,9 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{FIELDS, id_of, make_field, reader_of, set_levels, severity};
+use super::fields_http::{FIELDS, make_field, reader_of, set_levels, severity};
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_in, ok, version_of};
 use super::policy_rig::Member;
 
 /// A person who does not exist.
@@ -31,21 +31,15 @@ fn ids_of(listed: &Value) -> Result<Vec<String>, Failure> {
 async fn set_on_issue(
     who: &mut Browser,
     issue: &Value,
-    version: &Value,
+    version: i64,
     fields: Value,
 ) -> Result<Reply, Failure> {
     who.send(
         "PATCH",
-        &format!("{ISSUES}/{}", issue["key"].as_str().ok_or("no key")?),
+        &format!("{ISSUES}/{}", key_in(issue)?),
         Some(json!({"version": version, "fields": fields})),
     )
     .await
-}
-
-/// The version an issue has now.
-async fn version_of(who: &mut Browser, issue: &Value) -> Result<Value, Failure> {
-    let path = format!("{ISSUES}/{}", issue["key"].as_str().ok_or("no key")?);
-    Ok(ok(&who.send("GET", &path, None).await?)?["issue"]["version"].clone())
 }
 
 /// The status and the code of an answer; no code for a success.
@@ -66,7 +60,7 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
     each_database("cf_01_people_rule", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let tester = id_of(
+        let tester = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
@@ -109,9 +103,8 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
         assert!(!ids_of(ok(&none)?)?.contains(&gus_id), "{}", none.body);
         // The server judges a name the same way: the Guest in the issue they reported, not in
         // one they cannot see; nobody who has no role or does not exist.
-        let version = version_of(&mut ada, &by_gus).await?;
-        let named =
-            set_on_issue(&mut filler, &by_gus, &version, json!({ &tester: gus_id })).await?;
+        let version = version_of(&mut ada, &key_in(&by_gus)?).await?;
+        let named = set_on_issue(&mut filler, &by_gus, version, json!({ &tester: gus_id })).await?;
         assert_eq!(outcome(&named), (StatusCode::OK, ""), "{}", named.body);
         // A person who is not there: an ID like the Guest's, with another last letter.
         let other_end = if gus_id.ends_with('a') { 'b' } else { 'a' };
@@ -122,9 +115,9 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
             (&by_gus, gone),
         ];
         for (issue, person) in refusals {
-            let version = version_of(&mut ada, issue).await?;
+            let version = version_of(&mut ada, &key_in(issue)?).await?;
             let refused =
-                set_on_issue(&mut filler, issue, &version, json!({ &tester: person })).await?;
+                set_on_issue(&mut filler, issue, version, json!({ &tester: person })).await?;
             assert_eq!(
                 outcome(&refused),
                 (StatusCode::BAD_REQUEST, "field.unknown_reference"),
@@ -142,14 +135,14 @@ async fn cf_08_a_person_in_a_field_of_a_project_has_to_see_the_project() -> Test
     each_database("cf_08_people_rule", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let sponsor = id_of(
+        let sponsor = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Sponsor", "kind": "person", "applies_to": "projects"}),
             )
             .await?,
         )?;
-        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let me = id_in(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
         let outsider = site.outsider("olga").await?.to_string();
         let project = format!("{PROJECTS}/{}", site.acme);
         let version = ok(&ada.send("GET", &project, None).await?)?["project"]["version"].clone();
@@ -198,7 +191,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
     each_database("cf_01_issue_rule", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let duplicate = id_of(
+        let duplicate = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Duplicate of", "kind": "issue", "applies_to": "issues"}),
@@ -227,7 +220,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
             let refused = set_on_issue(
                 &mut maker,
                 &theirs,
-                &theirs["version"],
+                theirs["version"].as_i64().ok_or("no version")?,
                 json!({ &duplicate: named }),
             )
             .await?;
@@ -242,7 +235,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
         let named = set_on_issue(
             &mut ada,
             &hidden,
-            &hidden["version"],
+            hidden["version"].as_i64().ok_or("no version")?,
             json!({ &duplicate: theirs["id"] }),
         )
         .await?;
@@ -259,11 +252,11 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
         let (key, minor, major) = (
-            id_of(&level)?,
-            id_of(&level["choices"][0])?,
-            id_of(&level["choices"][1])?,
+            id_in(&level)?,
+            id_in(&level["choices"][0])?,
+            id_in(&level["choices"][1])?,
         );
-        let tester = id_of(
+        let tester = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
@@ -271,7 +264,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
             .await?,
         )?;
         let (_, vic) = site.person(StartingRole::Viewer, "vic").await?;
-        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let me = id_in(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
         let made = ok(&ada
             .send(
                 "POST",
@@ -288,7 +281,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
         let changed = set_on_issue(
             &mut ada,
             &made,
-            &made["version"],
+            made["version"].as_i64().ok_or("no version")?,
             json!({ &key: &major, &tester: me }),
         )
         .await?;
@@ -312,15 +305,15 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
             )
             .await?;
         // Undo sends the old values on the version the change made: accepted.
-        let version = version_of(&mut ada, &made).await?;
+        let version = version_of(&mut ada, &key_in(&made)?).await?;
         let values = json!({ &key: &minor, &tester: vic.to_string() });
-        let undone = set_on_issue(&mut ada, &made, &version, values).await?;
+        let undone = set_on_issue(&mut ada, &made, version, values).await?;
         assert_eq!(outcome(&undone), (StatusCode::OK, ""), "{}", undone.body);
         // The same values after another change are no Undo: they are judged as new values.
-        let version = version_of(&mut ada, &made).await?;
+        let version = version_of(&mut ada, &key_in(&made)?).await?;
         let again = json!({ &key: &major, &tester: me });
-        ok(&set_on_issue(&mut ada, &made, &version, again).await?)?;
-        let version = version_of(&mut ada, &made).await?;
+        ok(&set_on_issue(&mut ada, &made, version, again).await?)?;
+        let version = version_of(&mut ada, &key_in(&made)?).await?;
         let path = format!("{ISSUES}/{}", made["key"].as_str().ok_or("no key")?);
         let renamed = ada
             .send(
@@ -330,8 +323,8 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
             )
             .await?;
         ok(&renamed)?;
-        let version = version_of(&mut ada, &made).await?;
-        let late = set_on_issue(&mut ada, &made, &version, json!({ &key: &minor })).await?;
+        let version = version_of(&mut ada, &key_in(&made)?).await?;
+        let late = set_on_issue(&mut ada, &made, version, json!({ &key: &minor })).await?;
         assert_eq!(
             outcome(&late),
             (StatusCode::BAD_REQUEST, "field.unknown_choice"),
@@ -341,7 +334,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
         let late = set_on_issue(
             &mut ada,
             &made,
-            &version,
+            version,
             json!({ &tester: vic.to_string() }),
         )
         .await?;
@@ -379,7 +372,7 @@ async fn offered_and_accepted(
     let (assigned, in_field) = (ids_of(&assigned)?, ids_of(&in_field)?);
     let mut seen = Vec::new();
     for person in people {
-        let version = version_of(ada, &made).await?;
+        let version = version_of(ada, &key_in(&made)?).await?;
         let path = format!("{ISSUES}/{key}");
         let assign = viewer
             .send(
@@ -388,8 +381,8 @@ async fn offered_and_accepted(
                 Some(json!({"version": version, "assigned_to": [person]})),
             )
             .await?;
-        let version = version_of(ada, &made).await?;
-        let field = set_on_issue(viewer, &made, &version, json!({ tester: person })).await?;
+        let version = version_of(ada, &key_in(&made)?).await?;
+        let field = set_on_issue(viewer, &made, version, json!({ tester: person })).await?;
         seen.push((
             person.clone(),
             assigned.contains(person),
@@ -406,7 +399,7 @@ async fn cf_01_every_person_the_list_offers_is_accepted_and_no_other() -> TestRe
     each_database("cf_01_list_and_check_agree", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let tester = id_of(
+        let tester = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
@@ -417,7 +410,7 @@ async fn cf_01_every_person_the_list_offers_is_accepted_and_no_other() -> TestRe
         let (_, cora) = site.person(StartingRole::Contributor, "cora").await?;
         let (_, vera) = site.person(StartingRole::Viewer, "vera").await?;
         let outsider = site.outsider("olga").await?;
-        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let me = id_in(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
         let people: Vec<String> = [tim_id, cora, vera, outsider]
             .iter()
             .map(ToString::to_string)

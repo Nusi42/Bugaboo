@@ -8,11 +8,11 @@ use std::collections::BTreeMap;
 use bb_app::access::StartingRole;
 use bb_app::issues::MakeIssue;
 use bb_core::bulk::BULK_JOB_ABOVE;
-use bb_testing::{Failure, TestResult, each_database};
+use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Reply, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::http::rig_and_app;
+use super::issues_site::{ISSUES, PROJECTS, Site, key_of, ok};
 use super::rig::Rig;
 
 const PREVIEW: &str = "/api/v1/bulk/preview";
@@ -21,13 +21,6 @@ const RUNS: &str = "/api/v1/bulk/runs";
 
 fn done() -> Value {
     json!({"kind": "change", "change": {"status": "done"}})
-}
-
-fn key_of(reply: &Reply) -> Result<String, Failure> {
-    ok(reply)?["key"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer holds no issue ID".into())
 }
 
 /// What the preview says about each issue: whether it is skipped and why.

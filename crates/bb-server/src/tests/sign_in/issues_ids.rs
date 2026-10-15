@@ -18,7 +18,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{ADA_EMAIL, Browser, rig_and_app};
-use super::issues_site::{ISSUES, Site, ok};
+use super::issues_site::{ISSUES, Site, key_in, ok};
 use super::rig::Rig;
 
 const MODE_KEY: &str = "issues.id-mode";
@@ -35,11 +35,6 @@ async fn mode(ada: &mut Browser, value: Option<&str>) -> Result<(), Failure> {
     };
     ok(&reply)?;
     Ok(())
-}
-
-/// The readable ID in an answer.
-fn key_of(reply: &Value) -> Result<String, Failure> {
-    Ok(reply["key"].as_str().ok_or("no issue ID")?.to_owned())
 }
 
 /// The code of an issue ID (`ACME-142` is `142`).
@@ -195,7 +190,7 @@ async fn iss_01a_an_old_id_keeps_working_after_the_issue_moves() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let made = site.make(&mut ada, "Moves twice").await?;
-        let (first, version) = (key_of(ok(&made)?)?, made.body["version"].clone());
+        let (first, version) = (key_in(ok(&made)?)?, made.body["version"].clone());
         let other =
             |short_name: &'static str| json!({"short_name": short_name, "name": short_name});
         let mut projects = Vec::new();
@@ -213,7 +208,7 @@ async fn iss_01a_an_old_id_keeps_working_after_the_issue_moves() -> TestResult {
                 Some(json!({"project": projects[0], "version": version})),
             )
             .await?;
-        let (second, version) = (key_of(ok(&moved)?)?, moved.body["version"].clone());
+        let (second, version) = (key_in(ok(&moved)?)?, moved.body["version"].clone());
         assert!(second.starts_with("BETA-"), "{second}");
         // The second move gives it an ID of GAMMA; both earlier IDs still open it.
         let moved = ada
@@ -223,7 +218,7 @@ async fn iss_01a_an_old_id_keeps_working_after_the_issue_moves() -> TestResult {
                 Some(json!({"project": projects[1], "version": version})),
             )
             .await?;
-        let third = key_of(ok(&moved)?)?;
+        let third = key_in(ok(&moved)?)?;
         assert!(third.starts_with("GAMMA-"), "{third}");
         for old in [&first, &second, &third] {
             let found = ada.send("GET", &format!("{ISSUES}/{old}"), None).await?;
@@ -275,8 +270,8 @@ async fn iss_01a_a_trashed_issue_is_renewed_too_and_never_blocks_making_issues()
     each_database("iss_01a_trashed_renewed", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let kept = key_of(ok(&site.make(&mut ada, "Kept").await?)?)?;
-        let trashed = key_of(ok(&site.make(&mut ada, "Trashed").await?)?)?;
+        let kept = key_in(ok(&site.make(&mut ada, "Kept").await?)?)?;
+        let trashed = key_in(ok(&site.make(&mut ada, "Trashed").await?)?)?;
         let gone = ada
             .send("DELETE", &format!("{ISSUES}/{trashed}"), None)
             .await?;
@@ -312,7 +307,7 @@ async fn iss_01a_a_change_of_the_mode_writes_one_event_for_each_issue_it_renews(
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut before = BTreeSet::new();
         for title in ["One", "Two", "Three"] {
-            before.insert(key_of(ok(&site.make(&mut ada, title).await?)?)?);
+            before.insert(key_in(ok(&site.make(&mut ada, title).await?)?)?);
         }
         // One of them is in the trash: it is renewed as well.
         let trashed = before.iter().next().ok_or("no issue")?.clone();
@@ -389,7 +384,7 @@ async fn iss_01a_makes_and_changes_at_the_moment_of_a_mode_change_finish_in_one_
         let mut paths = Vec::new();
         for number in 0..4 {
             let made = site.make(&mut ada, &format!("Before {number}")).await?;
-            paths.push(format!("{ISSUES}/{}", key_of(ok(&made)?)?));
+            paths.push(format!("{ISSUES}/{}", key_in(ok(&made)?)?));
         }
         // Four people change an issue each, four make issues, and the mode changes, all at once.
         let email = ADA_EMAIL;
@@ -453,7 +448,7 @@ async fn iss_01a_a_second_switch_to_counting_continues_the_counter() -> TestResu
     each_database("iss_01a_second_switch", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let first = key_of(ok(&site.make(&mut ada, "First").await?)?)?;
+        let first = key_in(ok(&site.make(&mut ada, "First").await?)?)?;
         mode(&mut ada, Some("counting")).await?;
         let opened = ada.send("GET", &format!("{ISSUES}/ACME-1"), None).await?;
         assert_eq!(ok(&opened)?["issue"]["title"], "First");

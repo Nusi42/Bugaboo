@@ -5,13 +5,12 @@
 //! the matrix in the target project (`examples_issues::an_issue`). The routes of the people who
 //! look after tags and labels make what they work on first, as the administrator.
 
-use bb_app::issues::IssueQuery;
 use bb_app::tags::{AddTag, MakeLabel, MakeLabelGroup};
 use bb_testing::Failure;
 use serde_json::json;
 
 use super::examples::Request;
-use super::examples_issues::an_issue;
+use super::examples_issues::{an_issue, version_of};
 use super::routes::Fixture;
 use crate::sign_in_tests::rig::Rig;
 
@@ -61,25 +60,6 @@ async fn a_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .into_value()
         .id
         .to_string())
-}
-
-/// The version of an issue.
-async fn version_of(fixture: &Fixture<'_>, issue: &str) -> Result<i64, Failure> {
-    Ok(fixture
-        .rig()
-        .api()
-        .issue(
-            Rig::info(),
-            IssueQuery {
-                session_token: fixture.admin_session().to_owned(),
-                issue: issue.to_owned(),
-            },
-        )
-        .await
-        .map_err(|error| error.to_string())?
-        .into_value()
-        .issue
-        .version)
 }
 
 /// The request of a route of tags, labels, moving or changing many issues, if the operation is one.

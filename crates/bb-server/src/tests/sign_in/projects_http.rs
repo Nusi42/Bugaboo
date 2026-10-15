@@ -6,15 +6,9 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, called, rig_and_app};
+use super::issues_site::id_in;
 
 const PROJECTS: &str = "/api/v1/projects";
-
-fn id_of(reply: &Value) -> Result<String, &'static str> {
-    reply["id"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or("the answer holds no id")
-}
 
 fn short_names(list: &Value) -> Vec<&str> {
     list["items"]
@@ -62,7 +56,7 @@ async fn prj_01_projects_are_made_over_http_by_the_rules_of_the_form() -> TestRe
         let acme = make(&mut ada, None, "ACME", "Acme").await?;
         assert_eq!(acme.status, StatusCode::OK, "{}", acme.body);
         assert_eq!(acme.body["version"], 1);
-        let acme_id = id_of(&acme.body)?;
+        let acme_id = id_in(&acme.body)?;
         let bad = make(&mut ada, None, "acme", "Acme").await?;
         assert_eq!(
             (bad.status, bad.code()),
@@ -85,7 +79,7 @@ async fn prj_01_projects_are_made_over_http_by_the_rules_of_the_form() -> TestRe
 async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> TestResult {
     each_database("prj_02_http_list", async |db| {
         let (mut ada, _app) = administrator(db).await?;
-        let acme_id = id_of(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
+        let acme_id = id_in(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
         make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
         let top = ada.send("GET", PROJECTS, None).await?;
         assert_eq!(top.status, StatusCode::OK);
@@ -127,9 +121,9 @@ async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> 
 async fn prj_01_a_project_is_shown_by_its_address_and_changed_over_http() -> TestResult {
     each_database("prj_01_http_change", async |db| {
         let (mut ada, _app) = administrator(db).await?;
-        let acme_id = id_of(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
+        let acme_id = id_in(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
         let web = make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
-        let web_id = id_of(&web.body)?;
+        let web_id = id_in(&web.body)?;
         let one = ada.send("GET", &format!("{PROJECTS}/WEB"), None).await?;
         assert_eq!(one.status, StatusCode::OK, "{}", one.body);
         assert_eq!(one.body["trail"][0]["short_name"], "ACME");
@@ -209,12 +203,12 @@ async fn prj_03_a_move_is_previewed_and_done_over_http() -> TestResult {
         let mut ada = Browser::signed_in(&app, &rig).await?;
         let project =
             |short_name: &'static str| json!({"short_name": short_name, "name": short_name});
-        let acme = id_of(
+        let acme = id_in(
             &ada.send("POST", PROJECTS, Some(project("ACME")))
                 .await?
                 .body,
         )?;
-        let web = id_of(&ada.send("POST", PROJECTS, Some(project("WEB"))).await?.body)?;
+        let web = id_in(&ada.send("POST", PROJECTS, Some(project("WEB"))).await?.body)?;
 
         let preview = ada
             .send(

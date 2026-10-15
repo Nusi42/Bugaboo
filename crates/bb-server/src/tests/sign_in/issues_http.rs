@@ -7,16 +7,9 @@ use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Reply, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, key_in, ok};
 
 const TYPES: &str = "/api/v1/issue-types";
-
-fn key_of(reply: &Value) -> Result<String, &'static str> {
-    reply["key"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or("the answer holds no issue ID")
-}
 
 /// The titles of a page, in the order of the page.
 fn titles(list: &Reply) -> Vec<&str> {
@@ -63,7 +56,7 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         assert_eq!(issue["version"], 1);
         assert_eq!(issue["reported_by"]["id"], cora_id.to_string());
         assert!(issue.get("closed_at").is_none());
-        let key = key_of(issue)?;
+        let key = key_in(issue)?;
         assert!(key.starts_with("ACME-"), "{key}");
         let path = format!("{ISSUES}/{key}");
         let renamed = cora
@@ -85,7 +78,7 @@ async fn iss_01_a_person_makes_and_changes_an_issue_they_may() -> TestResult {
         );
         // Another person's issue is not hers to change, though she sees it.
         let adas = site.make(&mut ada, "Ada's issue").await?;
-        let adas_path = format!("{ISSUES}/{}", key_of(ok(&adas)?)?);
+        let adas_path = format!("{ISSUES}/{}", key_in(ok(&adas)?)?);
         let theirs = cora
             .send("PATCH", &adas_path, Some(json!({"version": 1, "title": "Mine"})))
             .await?;
@@ -128,9 +121,9 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let made = site.make(&mut ada, "A secret").await?;
-        let random_key = key_of(ok(&made)?)?;
+        let random_key = key_in(ok(&made)?)?;
         let internal = ok(&made)?["id"].as_str().ok_or("no id")?.to_owned();
-        let trashed = key_of(ok(&site.make(&mut ada, "In the trash").await?)?)?;
+        let trashed = key_in(ok(&site.make(&mut ada, "In the trash").await?)?)?;
         let deleted = ada
             .send("DELETE", &format!("{ISSUES}/{trashed}"), None)
             .await?;
@@ -147,7 +140,7 @@ async fn iss_01_a_hidden_issue_answers_not_found_like_a_missing_one() -> TestRes
         let counted = ada
             .send("GET", &format!("{ISSUES}/{random_key}"), None)
             .await?;
-        let counting_key = key_of(&ok(&counted)?["issue"])?;
+        let counting_key = key_in(&ok(&counted)?["issue"])?;
         assert_ne!(counting_key, random_key);
         let in_trash_now = ada
             .send("GET", &format!("{ISSUES}/{trashed}"), None)
@@ -232,7 +225,7 @@ async fn iss_01_who_may_change_their_own_issues_may_change_its_type_but_not_that
         // Changing the type takes the right to change the issue and no field of its own
         // (`Evaluation::may_change_issue`): *Change own issues* is enough on one's own.
         let own = site.make(&mut cora, "Mine").await?;
-        let own_path = format!("{ISSUES}/{}", key_of(ok(&own)?)?);
+        let own_path = format!("{ISSUES}/{}", key_in(ok(&own)?)?);
         let moved = cora
             .send(
                 "PATCH",
@@ -242,7 +235,7 @@ async fn iss_01_who_may_change_their_own_issues_may_change_its_type_but_not_that
             .await?;
         assert_eq!(ok(&moved)?["issue_type"]["name"], "Task");
         let theirs = site.make(&mut ada, "Ada's").await?;
-        let their_path = format!("{ISSUES}/{}", key_of(ok(&theirs)?)?);
+        let their_path = format!("{ISSUES}/{}", key_in(ok(&theirs)?)?);
         let refused = cora
             .send(
                 "PATCH",
@@ -268,7 +261,7 @@ async fn iss_01_a_guest_sees_only_the_issues_they_reported() -> TestResult {
         let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
         ok(&site.make(&mut ada, "Ada's issue").await?)?;
         let own = site.make(&mut gus, "Gus found a bug").await?;
-        let own_key = key_of(ok(&own)?)?;
+        let own_key = key_in(ok(&own)?)?;
         let list = format!("{PROJECTS}/ACME/issues?fields=title");
         let seen = gus.send("GET", &list, None).await?;
         assert_eq!(titles(&seen), ["Gus found a bug"]);
@@ -302,7 +295,7 @@ async fn iss_01_a_stale_version_is_refused() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
         let made = site.make(&mut ada, "Two people at once").await?;
-        let path = format!("{ISSUES}/{}", key_of(ok(&made)?)?);
+        let path = format!("{ISSUES}/{}", key_in(ok(&made)?)?);
         let first = tim
             .send(
                 "PATCH",
@@ -345,7 +338,7 @@ async fn iss_01_an_issue_goes_to_the_trash_and_comes_back_with_undo() -> TestRes
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut cora, _) = site.person(StartingRole::Contributor, "cora").await?;
         let made = site.make(&mut cora, "Mistake").await?;
-        let key = key_of(ok(&made)?)?;
+        let key = key_in(ok(&made)?)?;
         let path = format!("{ISSUES}/{key}");
         // A Contributor may not delete, not even her own.
         let refused = cora.send("DELETE", &path, None).await?;
@@ -390,7 +383,7 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let made = site.make(&mut ada, "A bug").await?;
-        let path = format!("{ISSUES}/{}", key_of(ok(&made)?)?);
+        let path = format!("{ISSUES}/{}", key_in(ok(&made)?)?);
         let types = ada.send("GET", TYPES, None).await?;
         let names: Vec<&str> = types.body["items"]
             .as_array()
@@ -527,7 +520,7 @@ async fn iss_01_a_stale_change_after_undo_or_a_new_mode_names_who_counted_the_ve
         let (mut cora, _) = site.person(StartingRole::Contributor, "cora").await?;
         let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
         let made = site.make(&mut cora, "Looked at version 1").await?;
-        let path = format!("{ISSUES}/{}", key_of(ok(&made)?)?);
+        let path = format!("{ISSUES}/{}", key_in(ok(&made)?)?);
         // The trash and its undo count the version up (3), by Ada: no field of the issue changed.
         let deleted = ada.send("DELETE", &path, None).await?;
         assert_eq!(deleted.status, StatusCode::NO_CONTENT);
@@ -553,7 +546,7 @@ async fn iss_01_a_stale_change_after_undo_or_a_new_mode_names_who_counted_the_ve
             )
             .await?;
         ok(&switched)?;
-        let key = key_of(&ok(&ada.send("GET", &path, None).await?)?["issue"])?;
+        let key = key_in(&ok(&ada.send("GET", &path, None).await?)?["issue"])?;
         let late = tim
             .send(
                 "PATCH",

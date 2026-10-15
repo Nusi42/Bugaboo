@@ -8,13 +8,13 @@
 //! refused for the reason the table says.
 
 use bb_app::comments::AddComment;
-use bb_app::relations::{AddRelation, IssueRelationsQuery, MakeRelationKind, RelationKindsQuery};
+use bb_app::relations::{AddRelation, MakeRelationKind, RelationKindsQuery};
 use bb_core::relation::Direction;
 use bb_testing::Failure;
 use serde_json::json;
 
 use super::examples::Request;
-use super::examples_issues::an_issue;
+use super::examples_issues::{an_issue, version_of};
 use super::routes::Fixture;
 use crate::sign_in_tests::http::Browser;
 use crate::sign_in_tests::rig::Rig;
@@ -105,24 +105,6 @@ async fn lock_for(browser: &mut Browser, comment: &str) -> Result<String, Failur
         .as_str()
         .unwrap_or(NOBODYS_RANDOM_ID)
         .to_owned())
-}
-
-/// The version of the issue (for the routes that change it).
-async fn version_of(fixture: &Fixture<'_>, issue: &str) -> Result<i64, Failure> {
-    let found = fixture
-        .rig()
-        .api()
-        .issue_relations(
-            Rig::info(),
-            IssueRelationsQuery {
-                session_token: fixture.admin_session().to_owned(),
-                issue: issue.to_owned(),
-            },
-        )
-        .await
-        .map_err(|error| error.to_string())?
-        .into_value();
-    Ok(found.version)
 }
 
 /// The request of a route of relations, comments, history or following, if the operation is one.
