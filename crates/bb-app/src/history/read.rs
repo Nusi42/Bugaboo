@@ -241,9 +241,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 };
                 match people {
                     Ok(people) => Some(ChangeValue::People { people }),
-                    Err(error) => {
-                        // A stored value that cannot be read is no value for the reader.
-                        tracing::warn!(%error, "a value of a person field in the history cannot be read");
+                    Err(_) => {
+                        // A stored value that cannot be read is no value for the reader. The error of
+                        // the reader can hold the value itself, which names a person, so it is not
+                        // logged (DATA-LOGS).
+                        tracing::warn!("a value of a person field in the history cannot be read");
                         None
                     }
                 }
