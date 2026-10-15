@@ -318,6 +318,9 @@ pub const BULK_SKIP_CHANGED_SINCE: MessageKey = MessageKey::new("bulk-skip.chang
 /// The message `bulk-skip.field-missing`.
 pub const BULK_SKIP_FIELD_MISSING: MessageKey = MessageKey::new("bulk-skip.field-missing");
 
+/// The message `bulk-skip.field-rule`.
+pub const BULK_SKIP_FIELD_RULE: MessageKey = MessageKey::new("bulk-skip.field-rule");
+
 /// The message `bulk-skip.limit-reached`.
 pub const BULK_SKIP_LIMIT_REACHED: MessageKey = MessageKey::new("bulk-skip.limit-reached");
 
@@ -7706,6 +7709,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "It has a value in a field the other project does not use",
     ),
     (
+        "bulk-skip.field-rule",
+        "A value of the issue breaks the rule of its field",
+    ),
+    (
         "bulk-skip.limit-reached",
         "It has as many relations as an issue can hold",
     ),
@@ -7717,10 +7724,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "bulk-skip.not-found",
         "It was deleted, or you can no longer see it",
     ),
-    (
-        "bulk-skip.not-valid",
-        "A value of the issue breaks the rule of its field",
-    ),
+    ("bulk-skip.not-valid", "This change cannot be made to it"),
     ("bulk-skip.nothing-to-change", "It is like that already"),
     ("bulk-skip.relation-exists", "The relation is there already"),
     (

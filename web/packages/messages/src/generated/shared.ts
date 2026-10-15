@@ -494,6 +494,7 @@ export const messages = {
   "conflict.field-only": "{field}",
   "common.done": "Done",
   "issues.new": "New issue",
+  "issues.create-another-why": "Write a title first, then you can create and start another.",
   "issues.description.edit": "Edit the description",
   "editing.is-editing": "{name} is editing {thing} · since {since}",
   "editing.elsewhere":
@@ -518,7 +519,8 @@ export const messages = {
   "bulk-skip.relation-exists": "The relation is there already",
   "bulk-skip.same-issue": "An issue cannot be related to itself",
   "bulk-skip.limit-reached": "It has as many relations as an issue can hold",
-  "bulk-skip.not-valid": "A value of the issue breaks the rule of its field",
+  "bulk-skip.field-rule": "A value of the issue breaks the rule of its field",
+  "bulk-skip.not-valid": "This change cannot be made to it",
   "bulk-status.queued": "Waiting",
   "bulk-status.running": "Working",
   "bulk-status.done": "Done",

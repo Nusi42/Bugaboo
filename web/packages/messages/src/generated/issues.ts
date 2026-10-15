@@ -13,7 +13,6 @@ export const messages = {
   "issues.type": "Type",
   "issues.create": "Create",
   "issues.create-another": "Create and start another",
-  "issues.create-another-why": "Write a title first, then you can create and start another.",
   "issues.created": "{key} was created.",
   "issues.draft-kept": "Your draft is kept if you close this form.",
   "issues.draft-found": "You have a draft of this description from {when}.",

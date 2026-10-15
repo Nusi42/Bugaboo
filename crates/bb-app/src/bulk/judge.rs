@@ -101,6 +101,16 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
+            ErrorCode::FieldRequired
+            | ErrorCode::FieldTooShort
+            | ErrorCode::FieldTooLong
+            | ErrorCode::FieldTooSmall
+            | ErrorCode::FieldTooBig
+            | ErrorCode::FieldNoMatch
+            | ErrorCode::FieldWrongValue
+            | ErrorCode::FieldUnknownChoice
+            | ErrorCode::FieldUnknownReference => SkipReason::FieldRule,
+            // Every other refusal has no word of its own.
             _ => SkipReason::NotValid,
         }),
         other => Err(other),
@@ -293,6 +303,10 @@ mod tests {
             code: ErrorCode::FieldTooLong,
             field: "x".to_owned(),
         };
-        assert_eq!(skip_of(too_long), Ok(SkipReason::NotValid));
+        assert_eq!(skip_of(too_long), Ok(SkipReason::FieldRule));
+        assert_eq!(
+            skip_of(AppError::Refused(ErrorCode::InvalidRequest)),
+            Ok(SkipReason::NotValid)
+        );
     }
 }

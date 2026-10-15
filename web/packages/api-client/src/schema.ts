@@ -6577,6 +6577,7 @@ export interface components {
       | "relation-exists"
       | "same-issue"
       | "limit-reached"
+      | "field-rule"
       | "not-valid";
     /** @description Where the value that counts comes from. */
     SourceBody: {
