@@ -11,6 +11,8 @@ export interface SidePanelProps {
   /** What stands in the heading instead of the plain name, such as a title that is changed in place. */
   readonly heading?: ReactNode;
   readonly onClose: () => void;
+  /** What the close button is called; where the panel takes the whole screen it is *Back to list*. */
+  readonly closeLabel?: string;
   readonly children: ReactNode;
 }
 
@@ -19,7 +21,7 @@ export interface SidePanelProps {
  * view. It takes the focus when it opens, closes with Esc or its button, and gives the focus back
  * to what had it before.
  */
-export function SidePanel({ title, heading, onClose, children }: SidePanelProps) {
+export function SidePanel({ title, heading, onClose, closeLabel, children }: SidePanelProps) {
   const titleBox = useTakeFocus<HTMLHeadingElement>();
   const panel = useEscape<HTMLElement>(onClose);
   return (
@@ -28,7 +30,11 @@ export function SidePanel({ title, heading, onClose, children }: SidePanelProps)
         <h2 ref={titleBox} tabIndex={-1} {...partOf(part.sidePanelTitle)}>
           {heading ?? title}
         </h2>
-        <IconButton icon={iconName.close} label={t("panel.close")} onPress={onClose} />
+        <IconButton
+          icon={iconName.close}
+          label={closeLabel ?? t("panel.close")}
+          onPress={onClose}
+        />
       </div>
       <div {...partOf(part.stack)}>{children}</div>
     </aside>
