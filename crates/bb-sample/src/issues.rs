@@ -175,7 +175,7 @@ impl Maker<'_, '_> {
         }
     }
 
-    /// The people, as the people of the roster, whom picks stand for.
+    /// The people, as the people of the plan of the people, whom picks stand for.
     fn assignees(&self, picks: &[u32]) -> Vec<UserId> {
         let mut people: Vec<UserId> = Vec::new();
         for pick in picks {

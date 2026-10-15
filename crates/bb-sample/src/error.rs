@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use bb_core::message::{self, Message, MessageKey};
 use bb_dev_words::sample::LayoutError;
 
-use crate::roster::PEOPLE;
+use crate::people_plan::PEOPLE;
 
 /// What the sample was doing when a use case refused.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

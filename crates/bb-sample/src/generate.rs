@@ -40,7 +40,7 @@ use crate::clock::SampleClock;
 use crate::error::{SampleError, Step};
 use crate::names::NameList;
 use crate::password::random_password;
-use crate::roster::{ACCESS_KEYS, SamplePerson, roster};
+use crate::people_plan::{ACCESS_KEYS, SamplePerson, sample_people};
 
 /// The seed of the sample when nobody names another one.
 pub const DEFAULT_SEED: u64 = 42;
@@ -128,7 +128,7 @@ impl World<'_> {
 }
 
 /// The extension point: what comes after the people. [`crate::Organization`] fills it in with the
-/// groups, the roles of the roster, the projects and the assignments, made through the use cases
+/// groups, the roles of the plan of the people, the projects and the assignments, made through the use cases
 /// of the policy engine, the projects and the roles. [`NothingMore`] stands in where only the
 /// people are wanted. A step runs once, after every person exists and before the administrator
 /// signs out.
@@ -265,7 +265,7 @@ pub async fn make<L: Later>(
     target: &Target,
     later: &mut L,
 ) -> Result<Sample, SampleError> {
-    let plan = roster(options.seed, &NameList::bundled()?)?;
+    let plan = sample_people(options.seed, &NameList::bundled()?)?;
     let count = i64::try_from(plan.len()).unwrap_or(0);
     let first_moment = moment(
         options.start,
