@@ -1,7 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { Checkbox, IssueTypeIcon, Link, partOf, part } from "@bugaboo/ui";
 
+import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
+
 import type { IssueLine } from "./issues.ts";
 
 export interface IssueRowProps {
@@ -29,7 +31,7 @@ export function IssueRow({ line, href, selected, current, onSelect }: IssueRowPr
       <span {...partOf(part.issueRowMeta)}>
         <span>{t(`status.${line.status}`)}</span>
         <span>{t(`priority.${line.priority}`)}</span>
-        <span>{line.assignedTo.map((person) => personName(person)).join(", ")}</span>
+        <span>{listText(line.assignedTo.map((person) => personName(person)))}</span>
       </span>
     </li>
   );

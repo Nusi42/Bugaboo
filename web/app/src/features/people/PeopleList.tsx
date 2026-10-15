@@ -10,7 +10,8 @@ import {
   Virtualizer,
 } from "react-aria-components";
 
-import { heldText, listOf } from "../../shared/access-words.ts";
+import { heldText } from "../../shared/access-words.ts";
+import { detailsText, listText } from "../../shared/list-text.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { personAddress } from "../../shared/paths.ts";
 import { type PersonLine, linesOf, usePeople } from "./people.ts";
@@ -28,13 +29,13 @@ function factsOf(person: PersonLine): string {
     parts.push(
       person.groups.length === 0
         ? t("people.no-groups")
-        : t("people.in-groups", { groups: listOf(person.groups.map((group) => group.name)) }),
+        : t("people.in-groups", { groups: listText(person.groups.map((group) => group.name)) }),
     );
   }
   if (person.roles.length > 0) {
-    parts.push(listOf(person.roles.map(heldText)));
+    parts.push(listText(person.roles.map(heldText)));
   }
-  return parts.join(" · ");
+  return detailsText(parts);
 }
 
 interface RowsProps {

@@ -1,5 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
-import { locale, t, type MessageKey } from "@bugaboo/messages";
+import { t, type MessageKey } from "@bugaboo/messages";
 
 /** Where a role given to somebody counts, as the API names it. */
 export type WhereItCounts = Schema<"AppliesToBody">;
@@ -44,9 +44,4 @@ export function permissionSentence(permission: Schema<"Permission">): MessageKey
 /** The heading of a topic of the permissions (`permission-topic.<topic>`). */
 export function topicHeading(topic: Schema<"Topic">): MessageKey {
   return `permission-topic.${topic}`;
-}
-
-/** Names in a sentence: `Ana, Ben and Cleo`, in the words of the language. */
-export function listOf(names: readonly string[]): string {
-  return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(names);
 }

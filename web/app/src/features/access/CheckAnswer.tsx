@@ -1,8 +1,9 @@
-import { isMessageKey, locale, t } from "@bugaboo/messages";
+import { isMessageKey, t } from "@bugaboo/messages";
 import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
 import { groupLevels, type LevelEntry } from "./group-levels.ts";
@@ -104,11 +105,6 @@ interface LevelSectionProps {
   };
 }
 
-/** How the names of a group are told: a list in words. */
-function listOf(names: readonly string[]): string {
-  return new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
-}
-
 /**
  * The fields (or kinds) with their level and the reasons. Fields that have the same level for the
  * same reason are told together, so each reason is read once; every one can be shown on its own.
@@ -152,7 +148,7 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
                       ? words.all
                       : at === 0
                         ? words.allOther
-                        : listOf(group.names)}
+                        : listText(group.names)}
                   </p>
                   <span {...partOf(part.strong)}>{levelName(group.level)}</span>
                 </div>

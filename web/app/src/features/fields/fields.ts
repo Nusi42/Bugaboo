@@ -4,6 +4,7 @@ import type { IssueBlockProps } from "../issues/index.ts";
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
+import { detailsText } from "../../shared/list-text.ts";
 import type { Picked } from "../../shared/reference.ts";
 
 /** The values of the own fields of an item, by the key of the field, as the server sent them. */
@@ -113,6 +114,18 @@ export function scopeText(field: OwnField): string {
     return t("fields.scope-everywhere");
   }
   return t("fields.scope-projects", { count: projects });
+}
+
+/** What is special about a field, said in words next to its name: its kind, where it is used, retired. */
+export function detailsOf(field: OwnField): string {
+  return detailsText(
+    [
+      typeName(field.kind),
+      t(`field-for.${field.applies_to}`),
+      scopeText(field),
+      field.retired ? t("fields.retired") : null,
+    ].filter((word) => word !== null),
+  );
 }
 
 /** The choice with this ID in a field. */

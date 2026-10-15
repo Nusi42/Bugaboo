@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
+import { listText } from "../../shared/list-text.ts";
 import { QueryGate } from "../shell/index.ts";
 import { useFieldUsage, type OwnField } from "./fields.ts";
 import { IssueTypeBoxes } from "./IssueTypeBoxes.tsx";
@@ -71,7 +72,7 @@ function WhereUsed({ field }: { readonly field: OwnField }) {
           {field.scope.issue_types.length === 0 ? null : (
             <p {...partOf(part.muted)}>
               {t("fields.used-types", {
-                names: field.scope.issue_types.map((each) => each.name).join(", "),
+                names: listText(field.scope.issue_types.map((each) => each.name)),
               })}
             </p>
           )}
