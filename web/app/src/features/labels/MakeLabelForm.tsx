@@ -36,7 +36,7 @@ export function MakeLabelForm({ groups }: { readonly groups: readonly LabelGroup
     >
       <TextField
         label={t("labels.field-label-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

@@ -22,7 +22,7 @@ export function TagForm({ tag }: { readonly tag: TagLine }) {
       >
         <TextField
           label={t("labels.field-name")}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={draft.name}
           onChange={draft.setName}
         />

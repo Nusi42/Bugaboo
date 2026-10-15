@@ -13,7 +13,7 @@ export function NameField({ value, onChange }: FieldProps) {
       label={t("field.name")}
       description={t("field.name-help")}
       autoComplete={autoComplete.name}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       value={value}
       onChange={onChange}
     />
@@ -27,7 +27,7 @@ export function EmailField({ value, onChange }: FieldProps) {
       label={t("field.email")}
       kind={fieldKind.email}
       autoComplete={autoComplete.email}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       emailMessage={t("validation.email")}
       value={value}
       onChange={onChange}
@@ -48,7 +48,7 @@ export function NewPasswordField({ value, onChange, problem }: NewPasswordFieldP
       description={t("field.password-help")}
       kind={fieldKind.password}
       autoComplete={autoComplete.newPassword}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       errorMessage={problem}
       value={value}
       onChange={onChange}

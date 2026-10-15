@@ -27,7 +27,7 @@ export function RoleName({ id, name, version }: RoleNameProps) {
     >
       <TextField
         label={t("roles.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={typed}
         onChange={setTyped}
       />

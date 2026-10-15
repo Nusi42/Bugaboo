@@ -30,7 +30,7 @@ export function EditGroup({ group }: { readonly group: LabelGroup }) {
       >
         <TextField
           label={t("labels.field-name")}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={name}
           onChange={setName}
         />

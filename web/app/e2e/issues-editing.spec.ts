@@ -128,7 +128,8 @@ test("adr_0019 a short value that somebody changed first shows Keep their value 
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.low"),
   });
-  await expect(page.getByText(/changed Priority to Critical/u)).toBeVisible();
+  // The note says first that nothing was saved.
+  await expect(page.getByText(/^Not saved: .+ changed Priority to Critical/u)).toBeVisible();
   await expectGoodInEveryLook(page);
   await page.getByRole("button", { name: t("issues.use-mine"), exact: true }).click();
   await expect(page.getByText(/^Saved/u).first()).toBeVisible();

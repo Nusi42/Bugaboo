@@ -26,7 +26,7 @@ export function EditIssueType({ issueType }: { readonly issueType: IssueTypeLine
     >
       <TextField
         label={t("issue-types.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

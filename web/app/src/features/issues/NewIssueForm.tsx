@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Form, partOf, part } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
+import { fieldOf, messageOf } from "../../shared/errors.ts";
 import { DraftOffer } from "./DraftOffer.tsx";
 import { NewIssueActions } from "./NewIssueActions.tsx";
 import { NewIssueFields } from "./NewIssueFields.tsx";
@@ -22,6 +22,9 @@ export interface NewIssueFormProps {
 export function NewIssueForm({ onMade, onClose }: NewIssueFormProps) {
   const form = useNewIssue();
   const { project, values, offered } = form;
+  // A refusal about a field is shown at that field, if the form has it; any other at the bottom.
+  const refusedField = fieldOf(form.error);
+  const atField = refusedField !== undefined && form.layout.shows(refusedField);
   return (
     <Form
       onSubmit={() => {
@@ -49,10 +52,13 @@ export function NewIssueForm({ onMade, onClose }: NewIssueFormProps) {
           types={form.types}
           project={project.shortName}
           layout={form.layout}
+          refusal={atField ? { field: refusedField, message: messageOf(form.error) } : undefined}
           onChange={form.change}
         />
       )}
-      {form.error === null ? null : <Alert tone={alertTone.danger}>{messageOf(form.error)}</Alert>}
+      {form.error === null || atField ? null : (
+        <Alert tone={alertTone.danger}>{messageOf(form.error)}</Alert>
+      )}
       <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
       <NewIssueActions form={form} onMade={onMade} onClose={onClose} />
     </Form>

@@ -10,7 +10,6 @@ export const messages = {
   "issues.new-title": "New issue",
   "issues.project": "Project",
   "issues.type": "Type",
-  "issues.title-required": "Title (required)",
   "issues.create": "Create",
   "issues.create-another": "Create and start another",
   "issues.created": "{key} was created.",

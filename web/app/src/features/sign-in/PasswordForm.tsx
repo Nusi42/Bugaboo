@@ -30,7 +30,7 @@ export function PasswordForm() {
         label={t("field.email")}
         kind={fieldKind.email}
         autoComplete={autoComplete.username}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         emailMessage={t("validation.email")}
         value={email}
         onChange={setEmail}
@@ -39,7 +39,7 @@ export function PasswordForm() {
         label={t("field.password")}
         kind={fieldKind.password}
         autoComplete={autoComplete.currentPassword}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={password}
         onChange={setPassword}
       />

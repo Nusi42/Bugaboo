@@ -2052,9 +2052,6 @@ pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-pane
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
 
-/// The message `issues.title-required`.
-pub const ISSUES_TITLE_REQUIRED: MessageKey = MessageKey::new("issues.title-required");
-
 /// The message `issues.type`.
 pub const ISSUES_TYPE: MessageKey = MessageKey::new("issues.type");
 
@@ -4145,9 +4142,6 @@ pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
 
-/// The message `validation.required`.
-pub const VALIDATION_REQUIRED: MessageKey = MessageKey::new("validation.required");
-
 /// The message `access-keys.delete-name`.
 #[must_use]
 pub fn access_keys_delete_name(name: impl std::fmt::Display) -> Message {
@@ -5169,6 +5163,15 @@ pub fn fields_combine_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.combine-title"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.label-required`.
+#[must_use]
+pub fn fields_label_required(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.label-required"),
+        vec![("field", Value::Text(field.to_string()))],
     )
 }
 
@@ -8386,7 +8389,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That does not have the form this field asks for.",
     ),
     ("error.field.not-here", "This field is not used here."),
-    ("error.field.required", "This field has to be filled in."),
+    ("error.field.required", "Must be filled in"),
     (
         "error.field.too-big",
         "That is higher than this field allows.",
@@ -8640,7 +8643,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.field-help", "Help text"),
     ("fields.field-name", "Name"),
-    ("fields.field-required", "It has to be filled in"),
+    ("fields.field-required", "Must be filled in"),
     ("fields.for-question", "What is it for?"),
     ("fields.hidden-reference", "Not shown"),
     (
@@ -8648,6 +8651,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Fields are the pieces of information on an issue or a project. Add the fields your organization needs, and decide who sees and fills in each one under Field permissions.",
     ),
     ("fields.kind-question", "What kind of information?"),
+    ("fields.label-required", "{field} (required)"),
     ("fields.list", "Fields"),
     ("fields.long-empty", "Nothing is written here yet."),
     ("fields.look", "Look"),
@@ -9143,7 +9147,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.side-panel-view", "Side panel view"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
-    ("issues.title-required", "Title (required)"),
     ("issues.type", "Type"),
     ("issues.unassign", "Take away"),
     ("issues.unassign-name", "Take {name} away"),
@@ -9329,7 +9332,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.field-remove", "Take {name} off this form"),
     (
         "layouts.field-required",
-        "Required: it stays on the form for everybody who can fill it in.",
+        "Must be filled in: it stays on the form for everybody who can fill it in.",
     ),
     ("layouts.field-up", "Move {name} up"),
     ("layouts.fields-of", "Fields of section {number}"),
@@ -10892,5 +10895,4 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "validation.email",
         "Type an e-mail address like name@example.com.",
     ),
-    ("validation.required", "Please fill this in."),
 ];

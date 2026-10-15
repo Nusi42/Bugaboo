@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Checkbox, SelectField, Switch, TextField, partOf, part, fieldKind } from "@bugaboo/ui";
 import { useState, type ReactNode } from "react";
 
-import { boxWords } from "./box-words.ts";
+import { boxWords, labelOf } from "./box-words.ts";
 import type { OwnField, KindWord, Sent } from "./fields.ts";
 import { MomentEditor } from "./MomentEditor.tsx";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
@@ -124,7 +124,7 @@ function YesNoEditor({ field, value, onCommit }: ValueEditorProps) {
 }
 
 /** A list with the choices that are not retired, and the one the value has. */
-function PickOneEditor({ field, value, onCommit }: ValueEditorProps) {
+function PickOneEditor({ field, value, onCommit, problem }: ValueEditorProps) {
   const current = typeof value === "string" ? value : "";
   const choices = pickable(field, current === "" ? [] : [current]).map((choice) => ({
     value: choice.id,
@@ -133,7 +133,7 @@ function PickOneEditor({ field, value, onCommit }: ValueEditorProps) {
   const mayBeEmpty = field.rules.required !== true || current === "";
   return (
     <SelectField
-      {...boxWords(field)}
+      {...boxWords(field, problem)}
       choices={[
         ...(mayBeEmpty ? [{ value: "", label: t("fields.nothing-picked") }] : []),
         ...choices,
@@ -153,7 +153,7 @@ function PickSeveralEditor({ field, value, onCommit, problem }: ValueEditorProps
     : [];
   return (
     <fieldset {...partOf(part.choiceGroup)}>
-      <legend {...partOf(part.choiceGroupLegend)}>{field.name}</legend>
+      <legend {...partOf(part.choiceGroupLegend)}>{labelOf(field)}</legend>
       {pickable(field, current).map((choice) => (
         <Checkbox
           key={choice.id}

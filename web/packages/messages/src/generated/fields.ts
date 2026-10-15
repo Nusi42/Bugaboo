@@ -22,7 +22,7 @@ export const messages = {
   "fields.field-choices": "Choices",
   "fields.field-choices-help":
     "One choice on each line. You can change names, colors and icons on the field page.",
-  "fields.field-required": "It has to be filled in",
+  "fields.field-required": "Must be filled in",
   "fields.make": "Make the field",
   "fields.basics": "Basics",
   "fields.never-to-assistant": "Never send this field to the assistant",

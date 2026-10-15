@@ -79,7 +79,7 @@ function Steps({
       {chosen === null ? null : (
         <TextField
           label={t("related-issues.issue-field")}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={other}
           onChange={onOther}
         />

@@ -17,6 +17,8 @@ export interface SelectFieldProps<Value extends string> {
   readonly label: string;
   /** Help under the name. */
   readonly description?: string;
+  /** A problem the server found with the value: shown under the field. */
+  readonly errorMessage?: string | undefined;
   /**
    * The name is there for screen readers and voice control only, for a list of many fields that
    * each stand next to what they are about (a table of levels). Never the way to save room when
@@ -28,6 +30,30 @@ export interface SelectFieldProps<Value extends string> {
   readonly onChange: (value: Value) => void;
 }
 
+/** The choices of the list, as the browser's own options. */
+function Options({ choices }: { readonly choices: readonly SelectChoice<string>[] }) {
+  return choices.map((choice) => (
+    <option key={choice.value} value={choice.value} disabled={choice.disabled === true}>
+      {choice.label}
+    </option>
+  ));
+}
+
+/** What the server found wrong with the value, under the list. */
+function ErrorNote({ id, text }: { readonly id: string; readonly text: string | undefined }) {
+  return text === undefined ? null : (
+    <span id={id} {...partOf(part.fieldError)}>
+      {text}
+    </span>
+  );
+}
+
+/** The IDs of the notes under a field, for `aria-describedby`; nothing when there are none. */
+function describedByOf(...ids: readonly (string | null)[]): string | undefined {
+  const present = ids.filter((each) => each !== null);
+  return present.length === 0 ? undefined : present.join(" ");
+}
+
 /**
  * One choice out of many, in the list of the browser: it works with a keyboard and a screen
  * reader as it is, and a phone shows its own picker. For few choices that fit on a line,
@@ -36,6 +62,7 @@ export interface SelectFieldProps<Value extends string> {
 export function SelectField<Value extends string>({
   label,
   description,
+  errorMessage,
   hideLabel = false,
   choices,
   value,
@@ -44,6 +71,11 @@ export function SelectField<Value extends string>({
   const id = useId();
   const select = useRef<HTMLSelectElement>(null);
   const helpId = `${id}-help`;
+  const errorId = `${id}-error`;
+  const describedBy = describedByOf(
+    description === undefined ? null : helpId,
+    errorMessage === undefined ? null : errorId,
+  );
   return (
     <div {...partOf(part.field)}>
       <label {...partOf(part.fieldLabel)} htmlFor={id}>
@@ -59,7 +91,8 @@ export function SelectField<Value extends string>({
         id={id}
         {...partOf(part.fieldInput)}
         value={value}
-        {...(description === undefined ? {} : { "aria-describedby": helpId })}
+        {...(describedBy === undefined ? {} : { "aria-describedby": describedBy })}
+        {...(errorMessage === undefined ? {} : { "aria-invalid": true })}
         onChange={() => {
           const chosen = choices.find((choice) => choice.value === select.current?.value);
           if (chosen !== undefined) {
@@ -67,12 +100,9 @@ export function SelectField<Value extends string>({
           }
         }}
       >
-        {choices.map((choice) => (
-          <option key={choice.value} value={choice.value} disabled={choice.disabled === true}>
-            {choice.label}
-          </option>
-        ))}
+        <Options choices={choices} />
       </select>
+      <ErrorNote id={errorId} text={errorMessage} />
     </div>
   );
 }

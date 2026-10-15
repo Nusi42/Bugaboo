@@ -52,7 +52,7 @@ function AddSubIssue({ issueKey }: { readonly issueKey: string }) {
     >
       <TextField
         label={t("sub-issues.field")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={other}
         onChange={setOther}
       />

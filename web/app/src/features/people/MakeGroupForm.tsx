@@ -26,7 +26,7 @@ export function MakeGroupForm() {
     >
       <TextField
         label={t("groups.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

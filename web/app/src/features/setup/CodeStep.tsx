@@ -30,7 +30,7 @@ export function CodeStep({ code, onChange, problem, onNext }: CodeStepProps) {
           label={t("first-run.code.label")}
           description={t("first-run.code.help")}
           autoComplete={autoComplete.off}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={code}
           onChange={onChange}
         />

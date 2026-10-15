@@ -158,6 +158,7 @@ export interface MessageArguments {
   "fields.combine-name": { name: string | number };
   "fields.combine-text": { into: string | number; name: string | number };
   "fields.combine-title": { name: string | number };
+  "fields.label-required": { field: string | number };
   "fields.pick-choose-name": { name: string | number };
   "fields.pick-take-out-name": { name: string | number };
   "fields.scope-projects": { count: number };

@@ -7,6 +7,11 @@ export function codeOf(error: unknown): ErrorCode | undefined {
   return error instanceof ApiError ? error.problem?.code : undefined;
 }
 
+/** The field a refusal is about (the word of a built-in field or the ID of an own field), if it names one. */
+export function fieldOf(error: unknown): string | undefined {
+  return error instanceof ApiError ? (error.problem?.field ?? undefined) : undefined;
+}
+
 /**
  * What to tell the person about an error. The server names the message; one that this version
  * of the app does not know, or no answer at all, becomes "not available right now".

@@ -43,7 +43,11 @@ async function openNewIssue(page: Page) {
 /** The dialog of this person, once its form is there: the description is on every form. */
 async function openedForm(page: Page) {
   const dialog = await openNewIssue(page);
-  await expect(dialog.getByLabel(t("issues.title-required"), { exact: true })).toBeVisible();
+  await expect(
+    dialog.getByLabel(t("fields.label-required", { field: t("issue-field.title") }), {
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(
     dialog.getByText(t("issue-field.description"), { exact: true }).first(),
   ).toBeVisible();

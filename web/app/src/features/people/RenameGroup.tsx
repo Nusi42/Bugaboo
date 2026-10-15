@@ -24,7 +24,7 @@ export function RenameGroup({ group }: { readonly group: GroupLine }) {
     >
       <TextField
         label={t("groups.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />
