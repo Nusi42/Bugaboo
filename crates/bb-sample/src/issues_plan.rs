@@ -6,10 +6,14 @@
 //! The plan is worked out from the counts of `tools/dev/sample.json` scaled to the number of
 //! issues asked for, and from the seed: the same numbers give the same plan. Time is counted in
 //! working seconds ([`Calendar`]).
+//!
+//! The file is longer than 400 lines (coding-standards §2) because the plan is one thing worked
+//! out in one pass (the issues, then what happens to them in time); its words, its tests and the
+//! text of an issue are already in files of their own.
 
 use std::collections::BTreeMap;
 
-use bb_core::issue::{Priority, STARTING_ISSUE_TYPES, Status};
+use bb_core::issue::{IssueIcon, Priority, STARTING_ISSUE_TYPES, Status};
 use bb_core::message::Message;
 use bb_dev_words::sample::{IssuePlan, TypeShare};
 
@@ -22,16 +26,13 @@ use crate::issues_words::IssueWords;
 use crate::random::SeededRandom;
 use crate::relations::{PlannedRelation, plan_relations};
 
-/// The places of the types the plan treats in their own way among the starting issue types: the
-/// one with steps to reproduce, the one that is a feature, the one whose issues take sub-issues.
-const BUG_AT: usize = 0;
-const FEATURE_AT: usize = 2;
-const GOAL_AT: usize = 3;
-
-/// The name a starting issue type has, as the sample's plan writes it (`Bug`).
-fn starting_name(at: usize) -> String {
+/// The name the starting issue type with this icon has, as the sample's plan writes it (`Bug`):
+/// the bug has steps to reproduce, the one with sparkles is the feature, the one with a flag is the
+/// goal whose issues take sub-issues.
+fn starting_name(icon: IssueIcon) -> String {
     STARTING_ISSUE_TYPES
-        .get(at)
+        .iter()
+        .find(|starting| starting.icon == icon)
         .map(|starting| Message::from(starting.name).render())
         .unwrap_or_default()
 }
@@ -242,6 +243,11 @@ impl Plan {
     /// Gives every issue its text, priority, people, own fields, tags and labels.
     fn describe(&mut self, names: &IssuePlan, words: &IssueWords, random: &mut SeededRandom) {
         let all_labels = labels(names);
+        let (bug_name, feature_name, goal_name) = (
+            starting_name(IssueIcon::Bug),
+            starting_name(IssueIcon::Sparkles),
+            starting_name(IssueIcon::Flag),
+        );
         for issue in &mut self.issues {
             let type_name = names
                 .types
@@ -253,12 +259,12 @@ impl Plan {
                 .get(issue.family)
                 .map(|project| project.short_name.as_str())
                 .unwrap_or_default();
-            let bug = type_name == starting_name(BUG_AT);
+            let bug = type_name == bug_name;
             let templates = if bug {
                 &words.bug
-            } else if type_name == starting_name(FEATURE_AT) {
+            } else if type_name == feature_name {
                 &words.feature
-            } else if type_name == starting_name(GOAL_AT) {
+            } else if type_name == goal_name {
                 &words.goal
             } else {
                 &words.task
@@ -417,7 +423,7 @@ impl Plan {
 
     /// Sub-issues: each goal takes a few of the issues made after it in the same project.
     fn give_sub_issues(&mut self, names: &IssuePlan, random: &mut SeededRandom) {
-        let goal = kind_of(&names.types, &starting_name(GOAL_AT));
+        let goal = kind_of(&names.types, &starting_name(IssueIcon::Flag));
         let mut places: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (at, issue) in self.issues.iter().enumerate() {
             places.entry(issue.place.clone()).or_default().push(at);

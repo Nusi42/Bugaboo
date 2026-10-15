@@ -113,7 +113,7 @@ fn everything_comes_after_the_issue_it_is_about_and_the_steps_are_in_order_of_ti
 fn goals_have_sub_issues_in_their_own_project_and_nobody_else_does() {
     let plan = plan_of(1000, 42);
     let names = Layout::bundled().unwrap().issues;
-    let goal = kind_of(&names.types, &starting_name(GOAL_AT)).unwrap();
+    let goal = kind_of(&names.types, &starting_name(IssueIcon::Flag)).unwrap();
     let mut children = 0;
     for issue in &plan.issues {
         if let Some(parent) = issue.parent {
@@ -135,7 +135,7 @@ fn own_fields_are_only_given_where_the_field_is_used() {
         .iter()
         .position(|f| f.name == "Severity")
         .unwrap();
-    let bug = kind_of(&names.types, &starting_name(BUG_AT)).unwrap();
+    let bug = kind_of(&names.types, &starting_name(IssueIcon::Bug)).unwrap();
     for issue in &plan.issues {
         assert_eq!(issue.fields[severity].is_some(), issue.kind == bug);
     }

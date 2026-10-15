@@ -28,7 +28,9 @@ export async function theGuestSeesSomeone(page: Page, server: Instance): Promise
   await page.goto(issueAddress(made.guestKey));
   await expect(page.getByRole("heading", { name: GUEST_BUG })).toBeVisible();
   await expect(page.getByText(t("projects.person-someone"), { exact: true }).first()).toBeVisible();
-  await expect(page.getByText(taken.assigned.join(""), { exact: true })).toHaveCount(0);
+  await Promise.all(
+    taken.assigned.map((name) => expect(page.getByText(name, { exact: true })).toHaveCount(0)),
+  );
   await expect(page.getByText(COST_CENTER)).toHaveCount(0);
   await expect(page.getByText(costCenter, { exact: true })).toHaveCount(0);
   await goodInFourThemes(page, "06-guest-sees-someone");

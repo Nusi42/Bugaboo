@@ -8,6 +8,10 @@
 //! comes from the seed, so the same seed makes the same issues, and the readable IDs of the
 //! projects with *Random IDs* are the only thing that differs from run to run (the dump leaves
 //! them out).
+//!
+//! The file is longer than 400 lines (coding-standards §2) because every kind of step is one
+//! small method of the one `Maker` that holds the made issues and comments; the sessions and the
+//! states left behind are already in files of their own.
 
 use std::collections::BTreeMap;
 
