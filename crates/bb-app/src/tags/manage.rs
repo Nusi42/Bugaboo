@@ -397,10 +397,10 @@ pub async fn combine_tags<S: AuthStore>(
     }
     if from.version != input.version || into.version != input.into_version {
         // The record that changed is the one to tell about: *Use mine* sends its version next.
-        let changed = if into.version != input.into_version {
-            into.id
-        } else {
+        let changed = if into.version == input.into_version {
             from.id
+        } else {
+            into.id
         };
         return Err(AppError::stale(
             entity(RecordKind::Tag, changed),

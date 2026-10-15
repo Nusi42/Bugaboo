@@ -204,10 +204,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         let at = run.done;
         run.status = status;
         run.finished_at = Some(self.now());
-        self.store()
+        let counted = self
+            .store()
             .save_bulk_progress(run, at)
             .await
             .map_err(|error| internal::<S>(&error))?;
+        if !counted {
+            // Another worker counted an issue first and goes on with the run: not this one's end.
+            tracing::warn!("the end of a run was not saved: another worker moved it on");
+        }
         Ok(())
     }
 

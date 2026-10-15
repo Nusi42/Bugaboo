@@ -6,15 +6,12 @@
 //! server by `bb-markdown` for the reader (the mark `x-safe-html`). Saving a new text is the save
 //! of a long text: it takes the token of the edit lock besides the version (ARCH-VERSIONED).
 
-use std::str::FromStr as _;
-
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::comments::{
     AddComment, CommentTextView, CommentVersionsQuery, CommentView, DeleteComment, MentionChoice,
     MentionChoicesQuery, MentionItem, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
 };
-use bb_core::ErrorCode;
 use bb_core::comment::MentionTarget;
 use bb_core::id::{CommentId, LockToken};
 use bb_policy::{Masked, PersonRef};
@@ -280,8 +277,7 @@ async fn save_comment(
     ApiJson(body): ApiJson<SaveCommentBody>,
 ) -> Result<Response, ApiError> {
     let comment = path_id::<CommentId>(&comment)?;
-    let lock_token = LockToken::from_str(&body.lock_token)
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))?;
+    let lock_token = body_id::<LockToken>(&body.lock_token)?;
     let saved = auth
         .api()?
         .save_comment(

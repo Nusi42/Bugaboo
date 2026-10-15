@@ -14,7 +14,6 @@ use bb_app::auth::{
     AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, DeleteAccessKey, MakeAccessKey,
     ProjectChoice, ProjectChoicesQuery, RequireSessionQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::access_key::KeyChoice;
 use bb_core::id::{AccessKeyId, ProjectId};
 use bb_policy::{Masked, Permission, Topic};
@@ -28,7 +27,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
-use super::path_id;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -317,11 +316,10 @@ async fn make_access_key(
         )
         .await?;
     let ApiJson(body) = body?;
-    let invalid = || ApiError::new(ErrorCode::InvalidRequest);
     let projects = body
         .projects
         .iter()
-        .map(|project| project.parse::<ProjectId>().map_err(|_| invalid()))
+        .map(|project| body_id::<ProjectId>(project))
         .collect::<Result<Vec<_>, _>>()?;
     let created = auth
         .api()?
