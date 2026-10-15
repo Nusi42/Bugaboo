@@ -83,14 +83,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         ),
         AppError,
     > {
-        let not_found = || AppError::Refused(ErrorCode::NotFound);
         let comment = self
             .store()
             .comment(id)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|comment| comment.deleted_at.is_some() == trashed)
-            .ok_or_else(not_found)?;
+            .filter(|comment| comment.deleted_at.is_some() == trashed);
+        let Some(comment) = comment else {
+            // The same work as for a comment whose issue the actor may not see (an issue read and an
+            // evaluation), so the answers cannot be told apart.
+            return Err(self
+                .not_found_like_a_hidden_issue(actor, &id.to_string())
+                .await);
+        };
         let (issue, held) = self
             .visible_issue(actor, &comment.issue.to_string())
             .await?;

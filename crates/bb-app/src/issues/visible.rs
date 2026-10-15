@@ -78,6 +78,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(held.sees_issue(issue.reported_by).then_some(held))
     }
 
+    /// The answer for a comment or a relation that is not there: it does the work that a hidden one
+    /// costs (an issue is looked for and the actor's rights are evaluated), so the time it takes does
+    /// not tell the two apart. `thing` is the ID of the missing comment or relation, which no issue
+    /// has.
+    pub(crate) async fn not_found_like_a_hidden_issue(
+        &self,
+        actor: &Actor,
+        thing: &str,
+    ) -> AppError {
+        match self.visible_issue(actor, thing).await {
+            Err(error) => error,
+            Ok(_) => AppError::Refused(ErrorCode::NotFound),
+        }
+    }
+
     async fn seen_issue(
         &self,
         actor: &Actor,

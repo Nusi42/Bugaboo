@@ -132,3 +132,77 @@ async fn prj_01_a_person_who_may_only_make_sub_projects_in_a_project_they_cannot
     assert_eq!(hidden, not_found, "a project they cannot see is not there");
     Ok(())
 }
+
+#[tokio::test]
+async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_cost_the_same_reads() -> Outcome {
+    use bb_core::id::{CommentId, RelationId};
+    use bb_core::relation::Direction;
+
+    use super::scenarios::a_project;
+    use super::scenarios_issues::an_issue;
+    use super::scenarios_relations::{a_comment, a_kind};
+    use crate::comments::{DeleteComment, delete_comment};
+    use crate::relations::{AddRelation, RemoveRelation, add_relation, remove_relation};
+
+    let world = World::new().await?;
+    let project = a_project(&world, "SECRET").await?;
+    let (first, second) = (
+        an_issue(&world, project).await?,
+        an_issue(&world, project).await?,
+    );
+    let comment = a_comment(&world, first).await?;
+    let kind = a_kind(&world).await?;
+    let relation = add_relation(
+        &world.ctx(),
+        AddRelation {
+            session_token: world.admin.session_token.clone(),
+            issue: first.to_string(),
+            other: second.to_string(),
+            kind,
+            direction: Direction::Forward,
+        },
+    )
+    .await?
+    .into_value()
+    .id;
+    // Bob has no role anywhere: for him the comment and the relation are not there.
+    let bob = world.person("bob@example.test").await?.session_token;
+    let nobody = "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c";
+    let (missing_comment, missing_relation) = (
+        nobody.parse::<CommentId>().map_err(|_| "no ID")?,
+        nobody.parse::<RelationId>().map_err(|_| "no ID")?,
+    );
+    let mut counted = Vec::new();
+    for (comment, relation) in [(comment, relation), (missing_comment, missing_relation)] {
+        let before = world.store.reads();
+        let answer = delete_comment(
+            &world.ctx(),
+            DeleteComment {
+                session_token: bob.clone(),
+                comment,
+            },
+        )
+        .await
+        .err();
+        let comment_reads = world.store.reads() - before;
+        let before = world.store.reads();
+        let removed = remove_relation(
+            &world.ctx(),
+            RemoveRelation {
+                session_token: bob.clone(),
+                relation,
+            },
+        )
+        .await
+        .err();
+        let relation_reads = world.store.reads() - before;
+        let not_found = Some(AppError::Refused(ErrorCode::NotFound));
+        assert_eq!((answer, removed), (not_found.clone(), not_found));
+        counted.push((comment_reads, relation_reads));
+    }
+    assert_eq!(
+        counted[0], counted[1],
+        "a hidden and a missing one read the store as often"
+    );
+    Ok(())
+}
