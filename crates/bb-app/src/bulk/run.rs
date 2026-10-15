@@ -32,6 +32,15 @@ pub(crate) fn step_payload(run: BulkRunId) -> Value {
     serde_json::json!({ RUN_KEY: run.to_string() })
 }
 
+/// The run that the payload of a step names.
+fn run_named(payload: &Value) -> Result<BulkRunId, AppError> {
+    payload
+        .get(RUN_KEY)
+        .and_then(Value::as_str)
+        .and_then(|text| text.parse().ok())
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// How far a run is, as the person who asked for it reads it: the issues it left alone as
     /// that person sees them.
@@ -71,11 +80,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// `request.invalid` for a payload that names no run, and the error of the store.
     pub(crate) async fn run_bulk_step(&self, payload: &Value) -> Result<(), AppError> {
-        let id: BulkRunId = payload
-            .get(RUN_KEY)
-            .and_then(Value::as_str)
-            .and_then(|text| text.parse().ok())
-            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+        let id = run_named(payload)?;
         let Some(mut run) = self
             .store()
             .bulk_run(id)
@@ -172,6 +177,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.queue_next_step(id).await?;
         }
         Ok(())
+    }
+
+    /// Ends the run of a step that gave up (its job is on the dead-letter list) as failed, with
+    /// what it did so far, so the person who asked reads an end and not a run that never ends.
+    ///
+    /// # Errors
+    /// The error of the store.
+    pub(crate) async fn fail_bulk_run(&self, payload: &Value) -> Result<(), AppError> {
+        let Some(mut run) = self
+            .store()
+            .bulk_run(run_named(payload)?)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
+            return Ok(());
+        };
+        if matches!(run.status, BulkStatus::Done | BulkStatus::Failed) {
+            return Ok(());
+        }
+        self.end_run(&mut run, BulkStatus::Failed).await
     }
 
     /// Ends a run that cannot go on, with what it did so far.

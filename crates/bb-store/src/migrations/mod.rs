@@ -16,7 +16,7 @@ use jiff::Timestamp;
 use sea_query::{
     ColumnDef, DeleteStatement, Expr, IndexCreateStatement, InsertStatement, Order,
     PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
-    TableCreateStatement,
+    TableCreateStatement, UpdateStatement,
 };
 use sha2::{Digest as _, Sha256};
 
@@ -36,6 +36,7 @@ mod m0009_fields;
 mod m0010_relations;
 mod m0011_tags;
 mod m0012_layouts;
+mod m0013_job_kinds;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -56,6 +57,8 @@ pub(crate) enum Step {
     Alter(TableAlterStatement),
     /// Delete rows that no longer have a meaning.
     Delete(DeleteStatement),
+    /// Rewrite values the program names differently now.
+    Update(UpdateStatement),
 }
 
 /// One migration.
@@ -95,6 +98,10 @@ impl Definition {
                     statement.build(PostgresQueryBuilder),
                 ],
                 Step::Delete(statement) => [
+                    statement.to_string(SqliteQueryBuilder),
+                    statement.to_string(PostgresQueryBuilder),
+                ],
+                Step::Update(statement) => [
                     statement.to_string(SqliteQueryBuilder),
                     statement.to_string(PostgresQueryBuilder),
                 ],
@@ -169,6 +176,11 @@ const ALL: &[Definition] = &[
         version: 12,
         name: "layouts",
         steps: || Ok(m0012_layouts::steps()),
+    },
+    Definition {
+        version: 13,
+        name: "job_kinds",
+        steps: || Ok(m0013_job_kinds::steps()),
     },
 ];
 
@@ -280,6 +292,9 @@ impl Database {
                         transaction.execute(&statement).await?;
                     }
                     Step::Delete(statement) => {
+                        transaction.execute(&statement).await?;
+                    }
+                    Step::Update(statement) => {
                         transaction.execute(&statement).await?;
                     }
                 }

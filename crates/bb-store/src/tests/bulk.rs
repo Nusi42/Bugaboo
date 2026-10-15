@@ -8,6 +8,7 @@ use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus, SkipReason};
 use bb_core::id::{BulkRunId, IdSource, IssueId, JobId, UserId};
+use bb_core::job::{FailureKind, FailureOutcome};
 use bb_core::technical::TechnicalName;
 use bb_testing::{TestResult, each_database};
 use jiff::SignedDuration;
@@ -133,10 +134,18 @@ async fn iss_09_a_job_queued_on_its_own_waits_for_its_time() -> TestResult {
             .await?;
         assert_eq!(due.len(), 1);
         let failure = TechnicalName::new("job.failed")?;
+        let outcome = storage
+            .fail_job(
+                due[0].id,
+                &worker,
+                &failure,
+                FailureKind::Temporary,
+                at(101),
+            )
+            .await?;
         assert!(
-            storage
-                .fail_job(due[0].id, &worker, &failure, at(101))
-                .await?
+            matches!(outcome, Some(FailureOutcome::Retry(_))),
+            "{outcome:?}"
         );
         Ok(())
     })
@@ -149,7 +158,7 @@ async fn iss_09_a_job_that_waits_for_later_is_told_by_its_kind() -> TestResult {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
         let mut source = ids();
-        let kind = TechnicalName::new("editing.purge_drafts")?;
+        let kind = TechnicalName::new(bb_app::jobs::kind::PURGE_DRAFTS)?;
         let other = TechnicalName::new("history.catch-up")?;
         assert!(!storage.later_job_waits(&kind, at(10)).await?);
         storage

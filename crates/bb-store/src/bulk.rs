@@ -7,19 +7,14 @@
 //! the check that two workers never count the same issue twice.
 
 use bb_app::bulk::BulkStore;
-use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus};
-use bb_core::id::{BulkRunId, JobId, UserId};
-use bb_core::job::Job;
-use bb_core::technical::TechnicalName;
-use jiff::{SignedDuration, Timestamp};
+use bb_core::id::{BulkRunId, UserId};
+use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Query, SelectStatement};
-use serde_json::Value;
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
-use crate::jobs::{NewJob, enqueue};
 use crate::schema::BulkRunRow;
 
 fn run_select() -> SelectStatement {
@@ -57,77 +52,6 @@ fn read_run(row: &Row) -> Result<BulkRun, StoreError> {
         created_at: row.time(BulkRunRow::CreatedAt)?,
         finished_at: row.optional_time(BulkRunRow::FinishedAt)?,
     })
-}
-
-fn new_job(kind: &TechnicalName, payload: &Value, run_at: Timestamp) -> NewJob {
-    NewJob {
-        kind: kind.clone(),
-        payload: payload.clone(),
-        run_at,
-        max_attempts: JOB_ATTEMPTS_MAX,
-    }
-}
-
-impl JobStore for AuthStorage {
-    async fn lease_jobs(
-        &self,
-        worker: &TechnicalName,
-        now: Timestamp,
-        lease: SignedDuration,
-        limit: u64,
-    ) -> Result<Vec<Job>, StoreError> {
-        self.database().lease_jobs(worker, now, lease, limit).await
-    }
-
-    async fn complete_job(&self, id: JobId, worker: &TechnicalName) -> Result<bool, StoreError> {
-        self.database().complete_job(id, worker).await
-    }
-
-    async fn fail_job(
-        &self,
-        id: JobId,
-        worker: &TechnicalName,
-        failure: &TechnicalName,
-        now: Timestamp,
-    ) -> Result<bool, StoreError> {
-        Ok(self
-            .database()
-            .fail_job(id, worker, failure, now)
-            .await?
-            .is_some())
-    }
-
-    async fn later_job_waits(
-        &self,
-        kind: &TechnicalName,
-        after: Timestamp,
-    ) -> Result<bool, StoreError> {
-        self.database().later_job_waits(kind, after).await
-    }
-
-    async fn queue_job(
-        &self,
-        id: JobId,
-        kind: &TechnicalName,
-        payload: &Value,
-        run_at: Timestamp,
-        now: Timestamp,
-    ) -> Result<(), StoreError> {
-        self.database()
-            .enqueue_job(id, &new_job(kind, payload, run_at), now)
-            .await
-    }
-
-    async fn enqueue_job(
-        transaction: &mut Transaction,
-        id: JobId,
-        kind: &TechnicalName,
-        payload: &Value,
-        run_at: Timestamp,
-        now: Timestamp,
-    ) -> Result<(), StoreError> {
-        enqueue(transaction, id, &new_job(kind, payload, run_at), now).await
-    }
 }
 
 impl BulkStore for AuthStorage {

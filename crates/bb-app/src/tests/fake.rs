@@ -130,6 +130,8 @@ pub(crate) struct Shared {
     pub(crate) changes_fail: bool,
     /// The reads of what the engine decides with fail as the database does when it breaks.
     pub(crate) policy_reads_fail: bool,
+    /// How many more times the saving of the progress of a run fails.
+    pub(crate) progress_failures: usize,
 }
 
 /// The in-memory store. Cheap to clone; all clones are the same store.
@@ -176,6 +178,12 @@ impl FakeStore {
     /// while a request asks who may do what.
     pub(crate) fn fail_policy_reads(&self, fails: bool) {
         self.lock().policy_reads_fail = fails;
+    }
+
+    /// Makes the next `times` savings of the progress of a run fail, as the database does when it
+    /// breaks for a while.
+    pub(crate) fn fail_bulk_progress(&self, times: usize) {
+        self.lock().progress_failures = times;
     }
 
     /// Reads from the state.

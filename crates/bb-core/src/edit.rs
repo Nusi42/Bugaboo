@@ -43,8 +43,6 @@ pub const DRAFT_KEPT_BY: [ErrorCode; 3] = [
 ];
 /// The part of a layout that its edit lock is about: a layout is edited as a whole (ADR-0027).
 pub const LAYOUT_PART: &str = "layout";
-/// The kind of job that deletes the drafts that outlived their keep period (ADR-0017).
-pub const PURGE_DRAFTS_JOB: &str = "editing.purge_drafts";
 
 const SECONDS_PER_DAY: i64 = 86_400;
 

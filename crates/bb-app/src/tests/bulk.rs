@@ -574,3 +574,100 @@ async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
     );
     Ok(())
 }
+
+/// A run of three issues that waits for its first step, with that step in the queue.
+async fn run_with_a_step_waiting(
+    world: &World,
+) -> Result<bb_core::bulk::BulkRun, Box<dyn std::error::Error + Send + Sync>> {
+    use bb_core::bulk::{BulkItem, BulkRun};
+    use bb_core::id::{BulkRunId, JobId};
+
+    use crate::jobs::{JobStore as _, kind, kind_name};
+
+    let project = a_project(world, "ACME").await?;
+    let mut items = Vec::new();
+    for _ in 0..3 {
+        items.push(BulkItem {
+            issue: an_issue(world, project).await?,
+            version: 1,
+        });
+    }
+    let now = world.ctx().now();
+    let run = BulkRun {
+        id: BulkRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        person: world.admin.person.id,
+        action: serde_json::to_value(done())?,
+        items,
+        status: BulkStatus::Queued,
+        done: 0,
+        changed: 0,
+        skipped: Vec::new(),
+        created_at: now,
+        finished_at: None,
+    };
+    world.store.lock().state.bulk_runs.push(run.clone());
+    world
+        .store
+        .queue_job(
+            JobId::generate(&mut bb_core::id::SequentialIds::default())?,
+            &kind_name(kind::BULK_STEP)?,
+            &crate::bulk::step_payload(run.id),
+            now,
+            now,
+        )
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(run)
+}
+
+#[tokio::test]
+async fn adr_0017_a_step_that_keeps_failing_ends_its_run_as_failed() -> Outcome {
+    use bb_core::job::JobState;
+
+    let world = World::new().await?;
+    let run = run_with_a_step_waiting(&world).await?;
+    // The store cannot save the progress for every start of the step: the job goes through all
+    // its starts and lands on the dead-letter list, and the run says so instead of staying
+    // "running". The saving that ends the run works again.
+    world
+        .store
+        .fail_bulk_progress(usize::try_from(crate::jobs::JOB_ATTEMPTS_MAX)?);
+    for _ in 0..crate::jobs::JOB_ATTEMPTS_MAX {
+        world.ctx().run_due_jobs().await?;
+    }
+    let shared = world.store.lock();
+    assert_eq!(shared.state.jobs[0].state, JobState::Dead);
+    let ended = &shared.state.bulk_runs[0];
+    assert_eq!(ended.id, run.id);
+    assert_eq!(ended.status, BulkStatus::Failed);
+    assert!(ended.finished_at.is_some());
+    Ok(())
+}
+
+#[tokio::test]
+async fn adr_0017_a_step_that_is_refused_is_not_started_again() -> Outcome {
+    use bb_core::id::JobId;
+    use bb_core::job::JobState;
+
+    use crate::jobs::{JobStore as _, kind, kind_name};
+
+    let world = World::new().await?;
+    let now = world.ctx().now();
+    // A step whose payload names no run can never work, whatever the store does.
+    world
+        .store
+        .queue_job(
+            JobId::generate(&mut bb_core::id::SequentialIds::default())?,
+            &kind_name(kind::BULK_STEP)?,
+            &serde_json::json!({}),
+            now,
+            now,
+        )
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(world.ctx().run_due_jobs().await?, 1);
+    let shared = world.store.lock();
+    assert_eq!(shared.state.jobs[0].state, JobState::Dead);
+    assert_eq!(shared.state.jobs[0].attempts, 1, "no second start");
+    Ok(())
+}
