@@ -42,7 +42,9 @@ export function offerUndo(action: BulkAction, result: BulkResult, message: strin
   undoStore.offer({
     message,
     undo: () => {
-      void Promise.all(issues.map((issue) => takeBack(action, issue))).then(() => {
+      // Whatever each one answers, the screens read again: they show what is true now, also when
+      // one of the issues could not be taken back.
+      void Promise.allSettled(issues.map((issue) => takeBack(action, issue))).then(() => {
         refreshIssues();
         refreshLabels();
       });

@@ -97,14 +97,17 @@ impl ImageHostsCache {
             device: Device::default(),
         };
         // Without a database, or when the read fails, the base policy applies: no image from
-        // outside.
-        let hosts = match self.auth.api() {
-            Ok(api) => api
-                .document_image_hosts(request, DocumentImagesQuery)
-                .await
-                .map(|found| found.hosts)
-                .unwrap_or_default(),
-            Err(_) => Vec::new(),
+        // outside. That answer is not kept: the next page load reads again, so a read that failed
+        // once does not shut the images out for the time a good answer is kept.
+        let Ok(api) = self.auth.api() else {
+            return Vec::new();
+        };
+        let hosts = match api.document_image_hosts(request, DocumentImagesQuery).await {
+            Ok(found) => found.hosts,
+            Err(error) => {
+                tracing::warn!(cause = %error, "the image hosts could not be read; no image from outside for this page");
+                return Vec::new();
+            }
         };
         *self.kept.lock().await = Some((Instant::now(), hosts.clone()));
         hosts

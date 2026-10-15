@@ -343,7 +343,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) async fn conflict_of(&self, stale: &Stale) -> AppError {
         match self.try_conflict(stale).await {
             Ok(conflict) => AppError::Conflict(Box::new(conflict)),
-            Err(_) => AppError::Refused(ErrorCode::VersionChanged),
+            Err(error) => {
+                tracing::warn!(cause = %error, "the conflict answer could not be made; the plain refusal is sent");
+                AppError::Refused(ErrorCode::VersionChanged)
+            }
         }
     }
 

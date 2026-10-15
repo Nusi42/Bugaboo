@@ -89,10 +89,9 @@ pub(super) struct Selection<'a> {
 /// The error, when it is no reason to skip one issue.
 pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     match error {
-        AppError::Stale(_) | AppError::Refused(ErrorCode::VersionChanged) => {
-            Ok(SkipReason::ChangedSince)
-        }
+        AppError::Stale(_) => Ok(SkipReason::ChangedSince),
         AppError::Refused(code) => Ok(match code {
+            ErrorCode::VersionChanged => SkipReason::ChangedSince,
             ErrorCode::NotFound => SkipReason::NotFound,
             ErrorCode::Forbidden => SkipReason::NotAllowed,
             ErrorCode::IssueTypeRetired => SkipReason::TypeMissing,
@@ -100,7 +99,56 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
-            _ => SkipReason::NotValid,
+            // Every other refusal says the single change would not take this issue as it is. The
+            // codes are listed so a new one is a decision made here, not a silent "not valid".
+            ErrorCode::WrongCredentials
+            | ErrorCode::WrongSecondStepCode
+            | ErrorCode::WrongSetupCode
+            | ErrorCode::PasswordTooShort
+            | ErrorCode::PasswordBreached
+            | ErrorCode::InvitationInvalid
+            | ErrorCode::SignUpRefused
+            | ErrorCode::PasskeyRejected
+            | ErrorCode::SecondStepRequired
+            | ErrorCode::AccessKeyNotAllowed
+            | ErrorCode::NotSignedIn
+            | ErrorCode::CannotLift
+            | ErrorCode::WouldLockOut
+            | ErrorCode::TooMuch
+            | ErrorCode::RoleInUse
+            | ErrorCode::AssignmentConflict
+            | ErrorCode::SettingLocked
+            | ErrorCode::SettingHostsNotBare
+            | ErrorCode::MoveLiftsNoAccess
+            | ErrorCode::MoveIntoItself
+            | ErrorCode::ProjectTooDeep
+            | ErrorCode::MovePreviewChanged
+            | ErrorCode::ParentCircle
+            | ErrorCode::PickOneConflict
+            | ErrorCode::FieldRequired
+            | ErrorCode::FieldTooShort
+            | ErrorCode::FieldTooLong
+            | ErrorCode::FieldTooSmall
+            | ErrorCode::FieldTooBig
+            | ErrorCode::FieldNoMatch
+            | ErrorCode::FieldWrongValue
+            | ErrorCode::FieldUnknownChoice
+            | ErrorCode::FieldUnknownReference
+            | ErrorCode::NameTaken
+            | ErrorCode::InvalidRequest
+            | ErrorCode::UnknownField
+            | ErrorCode::BadCursor
+            | ErrorCode::WrongOrigin
+            | ErrorCode::WrongToken
+            | ErrorCode::MethodNotAllowed
+            | ErrorCode::TimedOut
+            | ErrorCode::TooLarge
+            | ErrorCode::EditLockLost
+            | ErrorCode::EditTakenOver
+            | ErrorCode::EditInProgress
+            | ErrorCode::TooManyRequests
+            | ErrorCode::Unavailable
+            | ErrorCode::Internal => SkipReason::NotValid,
         }),
         other => Err(other),
     }
