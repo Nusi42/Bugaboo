@@ -38,12 +38,36 @@ test("iss_11 the dialog asks for a title in words, and the issue is made with Cr
   await expect(page.getByRole("heading", { name: /A new problem/u })).toBeVisible();
 });
 
+test("iss_11 typing the title does not move the buttons under the form", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  await openDialog(page);
+  // The note about what is missing comes and goes with the title; a finger that is on its way to
+  // Cancel must not find another button there.
+  // Measured when the form has its fields; before that the layout is still on its way.
+  await expect(
+    dialog(page).getByRole("textbox", { name: t("issue-field.description"), exact: true }),
+  ).toBeVisible();
+  const cancel = dialog(page).getByRole("button", { name: t("common.cancel"), exact: true });
+  const before = await cancel.boundingBox();
+  await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("Half written");
+  await expect(
+    dialog(page).getByRole("button", { name: t("issues.create-another"), exact: true }),
+  ).toBeEnabled();
+  expect(await cancel.boundingBox()).toEqual(before);
+});
+
 test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after Create", async ({
   page,
 }) => {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await openDialog(page);
+  // The fields of the layout arrive after the dialog opens and push the buttons down; press Cancel
+  // when they are there.
+  await expect(
+    dialog(page).getByRole("textbox", { name: t("issue-field.description"), exact: true }),
+  ).toBeVisible();
   await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("Half written");
   await expect(dialog(page).getByText(t("issues.draft-kept"))).toBeVisible();
   await dialog(page)

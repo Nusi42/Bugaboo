@@ -55,27 +55,28 @@ export function NewIssueActions({ form, onMade, onClose }: NewIssueActionsProps)
   const why = useId();
   const missing = missingForCreate(form);
   return (
-    <div {...partOf(part.issueSectionActions)}>
-      {missing === undefined ? null : (
-        <p id={why} {...partOf(part.muted)}>
-          {t(missing)}
-        </p>
-      )}
-      <CustomizeThisForm form={form} />
-      <Button look={buttonLook.quiet} onPress={onClose}>
-        {t("common.cancel")}
-      </Button>
-      <Button
-        isDisabled={missing !== undefined}
-        {...(missing === undefined ? {} : { "aria-describedby": why })}
-        isPending={form.pending}
-        onPress={() => {
-          form.create(true, onMade);
-        }}
-      >
-        {t("issues.create-another")}
-      </Button>
-      <SubmitButton isPending={form.pending}>{t("issues.create")}</SubmitButton>
-    </div>
+    <>
+      <div {...partOf(part.issueSectionActions)}>
+        <CustomizeThisForm form={form} />
+        <Button look={buttonLook.quiet} onPress={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          isDisabled={missing !== undefined}
+          {...(missing === undefined ? {} : { "aria-describedby": why })}
+          isPending={form.pending}
+          onPress={() => {
+            form.create(true, onMade);
+          }}
+        >
+          {t("issues.create-another")}
+        </Button>
+        <SubmitButton isPending={form.pending}>{t("issues.create")}</SubmitButton>
+      </div>
+      {/* Under the buttons, and always there, so it changing never moves the button a finger is aiming at. */}
+      <p id={why} {...partOf(part.muted)}>
+        {t(missing ?? "issues.ready-to-create")}
+      </p>
+    </>
   );
 }

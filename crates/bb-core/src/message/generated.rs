@@ -1999,6 +1999,9 @@ pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
 
+/// The message `issues.ready-to-create`.
+pub const ISSUES_READY_TO_CREATE: MessageKey = MessageKey::new("issues.ready-to-create");
+
 /// The message `issues.sheet`.
 pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
 
@@ -9099,6 +9102,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "issues.read-only",
         "Only people whose role allows it can change {field}.",
+    ),
+    (
+        "issues.ready-to-create",
+        "Nothing is missing: you can create the issue.",
     ),
     ("issues.refused-at-field", "{field}: {reason}"),
     (
