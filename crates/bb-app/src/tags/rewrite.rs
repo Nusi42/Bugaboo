@@ -21,9 +21,10 @@ use crate::member::{label as label_member, tag as tag_member};
 use crate::preview::PreviewSummary;
 use crate::projects::Why;
 
-/// How many issues are read at a time while a change walks through every issue that has a tag or a
-/// label.
-const CHUNK: u64 = 200;
+/// How many issues a walk through the issues of a tag, a label or a group of labels reads at a
+/// time. It is about the size of an answer the walk holds, not about the database: the store cuts
+/// a long list into statements itself.
+pub(super) const ISSUES_PER_READ: u64 = 200;
 
 /// Which kind of thing is renamed or combined.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -121,7 +122,7 @@ struct Link {
 }
 
 impl Rewrite {
-    /// The issues that have `from`, after `after`, at most [`CHUNK`].
+    /// The issues that have `from`, after `after`, at most [`ISSUES_PER_READ`].
     async fn issues_with<S: AuthStore>(
         &self,
         transaction: &mut S::Transaction,
@@ -130,11 +131,11 @@ impl Rewrite {
         match self.sorted {
             Sorted::Tag => {
                 let from = TagId::from_bytes(self.from.to_bytes()).map_err(|_| S::aborted())?;
-                S::issues_with_tag_in(transaction, from, after, CHUNK).await
+                S::issues_with_tag_in(transaction, from, after, ISSUES_PER_READ).await
             }
             Sorted::Label => {
                 let from = LabelId::from_bytes(self.from.to_bytes()).map_err(|_| S::aborted())?;
-                S::issues_with_label_in(transaction, from, after, CHUNK).await
+                S::issues_with_label_in(transaction, from, after, ISSUES_PER_READ).await
             }
         }
     }
@@ -240,7 +241,7 @@ impl Rewrite {
                     after: self.after(&mine, &names),
                 });
             }
-            if issues.len() < usize::try_from(CHUNK).unwrap_or(usize::MAX) {
+            if issues.len() < usize::try_from(ISSUES_PER_READ).unwrap_or(usize::MAX) {
                 break;
             }
             after = Some(last);
@@ -296,7 +297,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut maker = self.line_maker().await?;
         let mut issues = Vec::new();
         let mut seen = 0_usize;
-        for page in touched.chunks(usize::try_from(CHUNK).unwrap_or(usize::MAX)) {
+        for page in touched.chunks(usize::try_from(ISSUES_PER_READ).unwrap_or(usize::MAX)) {
             let ids: Vec<IssueId> = page.iter().map(|each| each.issue).collect();
             let found = self.issues_named(&ids).await?;
             for each in page {

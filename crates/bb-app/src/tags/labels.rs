@@ -20,7 +20,7 @@ use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
+use super::rewrite::{Combining, ISSUES_PER_READ, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeLabel, ChangeLabelGroup, CombineLabels, LabelChangePreviewQuery, LabelGroupView,
     LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, TagChangePreview,
@@ -29,9 +29,6 @@ use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, se
 use crate::input::clean_text;
 use crate::member::{label as member, label_group as group_member};
 use crate::projects::Why;
-
-/// How many issues are read at a time while the labels of a group are counted per issue.
-const CHUNK: u64 = 200;
 
 /// The groups and the labels as they are stored.
 struct Catalogue {
@@ -84,7 +81,8 @@ async fn two_of_in<S: AuthStore>(
     for label in labels {
         let mut after = None;
         loop {
-            let issues = S::issues_with_label_in(transaction, *label, after, CHUNK).await?;
+            let issues =
+                S::issues_with_label_in(transaction, *label, after, ISSUES_PER_READ).await?;
             for issue in &issues {
                 let seen = counted.entry(*issue).or_insert(0);
                 *seen += 1;
@@ -92,7 +90,7 @@ async fn two_of_in<S: AuthStore>(
                     return Ok(true);
                 }
             }
-            if issues.len() < usize::try_from(CHUNK).unwrap_or(usize::MAX) {
+            if issues.len() < usize::try_from(ISSUES_PER_READ).unwrap_or(usize::MAX) {
                 break;
             }
             after = issues.last().copied();

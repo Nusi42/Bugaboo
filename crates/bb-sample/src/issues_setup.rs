@@ -18,6 +18,7 @@ use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_app::tags::{MakeLabel, MakeLabelGroup, TagStore as _, make_label, make_label_group};
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LabelId, ProjectId, RelationKindId};
 use bb_core::own_fields::{FieldFor, FieldType, Rules, Scope};
+use bb_core::paging::PAGE_SIZE_MAX;
 use bb_core::settings::{ISSUES_ID_MODE, SettingValue};
 use bb_dev_words::sample::{FieldPlan, IssuePlan};
 use serde::Serialize;
@@ -25,9 +26,6 @@ use serde_json::Value;
 
 use crate::error::{SampleError, Step};
 use crate::generate::World;
-
-/// The most a page of the lists read here holds.
-const PAGE: u32 = 200;
 
 /// An own field that was made, with the IDs of its choices in the order of the plan.
 #[derive(Clone, Debug)]
@@ -85,7 +83,7 @@ impl Setup {
                 IssueTypesQuery {
                     session_token: token.to_owned(),
                     cursor: None,
-                    limit: PAGE,
+                    limit: PAGE_SIZE_MAX,
                 },
             )
             .await,
@@ -105,7 +103,7 @@ impl Setup {
                 RelationKindsQuery {
                     session_token: token.to_owned(),
                     cursor: None,
-                    limit: PAGE,
+                    limit: PAGE_SIZE_MAX,
                 },
             )
             .await,

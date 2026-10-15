@@ -13,7 +13,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction, to_micros};
+use crate::db::{Row, STATEMENT_ITEMS, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, TagProjectRow, TagRow,
@@ -169,8 +169,14 @@ fn contains_pattern(text: &str) -> String {
     pattern
 }
 
-fn ids_of(ids: &[IssueId]) -> Vec<Vec<u8>> {
-    ids.iter().map(|id| id.stored()).collect()
+/// The IDs in order and once each, cut into chunks that one statement can bind
+/// ([`STATEMENT_ITEMS`]); asking about the chunks one after the other, each ordered by issue,
+/// gives the same order as one statement would.
+fn sorted_chunks(ids: &[IssueId]) -> Vec<Vec<Vec<u8>>> {
+    let mut stored: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
+    stored.sort();
+    stored.dedup();
+    stored.chunks(STATEMENT_ITEMS).map(<[_]>::to_vec).collect()
 }
 
 impl TagStore for AuthStorage {
@@ -319,42 +325,38 @@ impl TagStore for AuthStorage {
         transaction: &mut Transaction,
         issues: Vec<IssueId>,
     ) -> Result<Vec<IssueTag>, StoreError> {
-        if issues.is_empty() {
-            return Ok(Vec::new());
+        let mut found = Vec::new();
+        for chunk in sorted_chunks(&issues) {
+            let mut select = issue_tag_select();
+            select
+                .and_where(Expr::col(IssueTagRow::Issue).is_in(chunk))
+                .order_by(IssueTagRow::Issue, Order::Asc)
+                .order_by(IssueTagRow::AddedAt, Order::Asc)
+                .order_by(IssueTagRow::Tag, Order::Asc);
+            for row in transaction.fetch_all(&select).await? {
+                found.push(read_issue_tag(&row)?);
+            }
         }
-        let mut select = issue_tag_select();
-        select
-            .and_where(Expr::col(IssueTagRow::Issue).is_in(ids_of(&issues)))
-            .order_by(IssueTagRow::Issue, Order::Asc)
-            .order_by(IssueTagRow::AddedAt, Order::Asc)
-            .order_by(IssueTagRow::Tag, Order::Asc);
-        transaction
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_issue_tag)
-            .collect()
+        Ok(found)
     }
 
     async fn labels_of_issues_in(
         transaction: &mut Transaction,
         issues: Vec<IssueId>,
     ) -> Result<Vec<IssueLabel>, StoreError> {
-        if issues.is_empty() {
-            return Ok(Vec::new());
+        let mut found = Vec::new();
+        for chunk in sorted_chunks(&issues) {
+            let mut select = issue_label_select();
+            select
+                .and_where(Expr::col(IssueLabelRow::Issue).is_in(chunk))
+                .order_by(IssueLabelRow::Issue, Order::Asc)
+                .order_by(IssueLabelRow::AddedAt, Order::Asc)
+                .order_by(IssueLabelRow::Label, Order::Asc);
+            for row in transaction.fetch_all(&select).await? {
+                found.push(read_issue_label(&row)?);
+            }
         }
-        let mut select = issue_label_select();
-        select
-            .and_where(Expr::col(IssueLabelRow::Issue).is_in(ids_of(&issues)))
-            .order_by(IssueLabelRow::Issue, Order::Asc)
-            .order_by(IssueLabelRow::AddedAt, Order::Asc)
-            .order_by(IssueLabelRow::Label, Order::Asc);
-        transaction
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_issue_label)
-            .collect()
+        Ok(found)
     }
 
     async fn used_tags(
