@@ -1,5 +1,6 @@
-//! What one issue may hold (M3-F78): at most `RELATIONS_MAX` relations and `SUB_ISSUES_MAX`
-//! sub-issues, counted in the change itself and with every row, also rows the person may not see.
+//! What a store may hold (M3-F78): at most `RELATIONS_MAX` relations and `SUB_ISSUES_MAX` sub-issues
+//! for an issue, `FIELDS_MAX` own fields and `CHOICES_MAX` choices of a field; counted in the change
+//! itself, with every row, also rows the person may not see. A full store answers `limit.reached`.
 
 use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, Assignment, Group, GroupMember};
@@ -178,5 +179,55 @@ async fn iss_05_a_comment_reaches_no_more_people_than_the_limit_and_is_kept() ->
     assert_eq!(rows.len(), MENTION_RECIPIENTS_MAX);
     let distinct: std::collections::BTreeSet<_> = rows.iter().map(|row| row.recipient).collect();
     assert_eq!(distinct.len(), MENTION_RECIPIENTS_MAX);
+    Ok(())
+}
+
+#[tokio::test]
+async fn cf_01_a_full_store_of_fields_and_choices_answers_limit_reached() -> Outcome {
+    use bb_core::own_fields::{CHOICES_MAX, FIELDS_MAX, FieldType};
+
+    use super::scenarios_fields::{a_field, new_field};
+    use crate::fields::{AddChoice, add_choice, make_field};
+
+    let world = World::new().await?;
+    // A field with as many choices as it may hold takes no more.
+    let names: Vec<String> = (0..CHOICES_MAX)
+        .map(|number| format!("Level {number}"))
+        .collect();
+    let names: Vec<&str> = names.iter().map(String::as_str).collect();
+    let crowded = a_field(&world, "Crowded", FieldType::PickOne, &names)
+        .await
+        .map_err(text)?;
+    let refused = add_choice(
+        &world.ctx(),
+        AddChoice {
+            session_token: token(&world),
+            field: crowded.id,
+            version: crowded.version,
+            name: "One more".to_owned(),
+            color: None,
+            icon: None,
+        },
+    )
+    .await;
+    assert_eq!(
+        refused.err(),
+        Some(AppError::Refused(ErrorCode::LimitReached))
+    );
+    // The organization holds as many fields as it may, and no more.
+    for number in 1..FIELDS_MAX {
+        a_field(&world, &format!("Field {number}"), FieldType::Text, &[])
+            .await
+            .map_err(text)?;
+    }
+    let refused = make_field(
+        &world.ctx(),
+        new_field(&world, "One field too many", FieldType::Text, &[]),
+    )
+    .await;
+    assert_eq!(
+        refused.err(),
+        Some(AppError::Refused(ErrorCode::LimitReached))
+    );
     Ok(())
 }

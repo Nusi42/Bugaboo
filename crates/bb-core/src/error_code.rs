@@ -97,8 +97,10 @@ error_codes! {
     ParentCircle => ("issue.parent_circle", 409),
     /// Those two issues are related in that way already (ISS-04).
     RelationExists => ("relation.exists", 409),
-    /// An issue holds as many relations or sub-issues as it may. The count includes what the
-    /// person may not see, as it is a limit of storage, so the answer names no issue.
+    /// Something holds as many as it may: an issue its relations or sub-issues, the organization
+    /// its tags, labels or own fields, a field its choices. A full store always answers this code,
+    /// never `request.invalid`. The count includes what the person may not see, as it is a limit of
+    /// storage, so the answer names no issue.
     LimitReached => ("limit.reached", 409),
     /// A tag is limited to other projects than the one of the issue (TAG-01).
     TagNotHere => ("tag.not_here", 409),
