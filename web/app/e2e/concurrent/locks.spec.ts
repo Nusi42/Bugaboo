@@ -1,4 +1,9 @@
-import { heartbeatSeconds, leaseSeconds, readDraft } from "@bugaboo/api-client";
+import {
+  descriptionEditPart,
+  heartbeatSeconds,
+  leaseSeconds,
+  readDraft,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { ada, type Person, signInThroughApi } from "../support/accounts.ts";
@@ -43,7 +48,11 @@ async function draftOf(server: Instance, person: Person, key: string) {
   const admin = await signedInAdmin(server);
   try {
     const issue = await issueOf(admin, key);
-    return await readDraft(session.client, { kind: "issue", id: issue.id, part: "description" });
+    return await readDraft(session.client, {
+      kind: "issue",
+      id: issue.id,
+      part: descriptionEditPart,
+    });
   } finally {
     await Promise.all([session.dispose(), admin.dispose()]);
   }

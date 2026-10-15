@@ -7,6 +7,8 @@ export { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
 export type { ReadonlyDeep, Schema } from "./readonly.ts";
 export {
   draftKeepDays,
+  commentEditPart,
+  descriptionEditPart,
   draftKeptCodes,
   draftTextMax,
   heartbeatSeconds,
@@ -52,9 +54,12 @@ export {
   fieldForWords,
   fieldTypeWords,
   fieldWords,
+  historyTabWords,
   issueIconWords,
   layoutKindWords,
   lookWords,
+  newIssuePriority,
+  newIssueStatus,
   priorityWords,
   statusGroupWords,
   statusWords,

@@ -4,6 +4,7 @@ import {
   sendHeartbeat,
   startHeartbeats,
   takeEditLock,
+  commentEditPart,
   type EditWhat,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
@@ -36,7 +37,7 @@ type LockState =
 
 /** The part of a comment that is edited under a lock: its text. */
 function whatOf(comment: string): EditWhat {
-  return { record: { kind: "comment", id: comment }, part: "text" };
+  return { record: { kind: "comment", id: comment }, part: commentEditPart };
 }
 
 /**

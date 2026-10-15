@@ -131,7 +131,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         ),
         Generated::new(
             WORDS_PATH,
-            format_with_oxfmt(repo, WORDS_PATH, &web_constants::words(&spec)?)?,
+            format_with_oxfmt(repo, WORDS_PATH, &web_constants::words(&spec, &sources)?)?,
         ),
         Generated::new(
             SAFE_HTML_PATH,

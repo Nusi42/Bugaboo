@@ -1,4 +1,4 @@
-import { dataOf, settingKeys, type SettingChoice } from "@bugaboo/api-client";
+import { dataOf, descriptionEditPart, settingKeys, type SettingChoice } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
@@ -72,7 +72,7 @@ export async function saveDescription(
   const taken = dataOf(
     await session.client.POST("/api/v1/edit-locks", {
       body: {
-        what: { record: { kind: "issue", id: issue.id }, part: "description" },
+        what: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
         editor_id: crypto.randomUUID(),
       },
     }),
@@ -135,7 +135,7 @@ export async function assignTo(
 export async function holdDescription(session: ApiSession, issue: MadeIssue): Promise<void> {
   await session.client.POST("/api/v1/edit-locks", {
     body: {
-      what: { record: { kind: "issue", id: issue.id }, part: "description" },
+      what: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
       editor_id: crypto.randomUUID(),
     },
   });

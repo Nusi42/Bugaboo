@@ -1,4 +1,4 @@
-import type { Schema } from "@bugaboo/api-client";
+import { historyTabWords, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
@@ -11,9 +11,9 @@ import { queryKeys } from "../../shared/query-keys.ts";
 /** One item of the history of an issue: a comment, one field that changed, or a relation. */
 export type HistoryEntry = Schema<"HistoryEntryItem">;
 
-/** The tabs of the history, in the order they are shown (the words the server knows). */
-export const historyTabs = ["everything", "comments", "changes"] as const;
-export type HistoryTabName = (typeof historyTabs)[number];
+/** The tabs of the history, in the order they are shown (the words the server lists). */
+export const historyTabs = historyTabWords;
+export type HistoryTabName = Schema<"HistoryTab">;
 
 /** The history of an issue, newest first, a page at a time. */
 export function useHistory(issue: string, tab: HistoryTabName) {

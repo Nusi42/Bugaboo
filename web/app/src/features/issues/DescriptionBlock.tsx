@@ -1,4 +1,4 @@
-import type { SafeHtml } from "@bugaboo/api-client";
+import { descriptionEditPart, type SafeHtml } from "@bugaboo/api-client";
 import { partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
@@ -6,12 +6,7 @@ import { CompareAndSave } from "./CompareAndSave.tsx";
 import { DescriptionEditor, DescriptionReading } from "./DescriptionEditor.tsx";
 import { DescriptionHead } from "./DescriptionHead.tsx";
 import { DescriptionNotes } from "./DescriptionNotes.tsx";
-import {
-  DESCRIPTION_PART,
-  descriptionWords,
-  sectionId,
-  type LongTextWords,
-} from "./long-text-words.ts";
+import { descriptionWords, sectionId, type LongTextWords } from "./long-text-words.ts";
 import type { IssueView } from "./slots.ts";
 import { useDescription, type Description } from "./use-description.ts";
 
@@ -105,7 +100,7 @@ export function DescriptionBlock({ issue, address, html, canChange }: Descriptio
     <LongTextBlock
       description={description}
       issue={issue.id ?? address}
-      which={DESCRIPTION_PART}
+      which={descriptionEditPart}
       html={html}
       filled={filled}
       canChange={canChange}

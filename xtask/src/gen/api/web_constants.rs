@@ -20,6 +20,8 @@ const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
 const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
+const COMMENT_SOURCE: &str = "crates/bb-core/src/comment.rs";
+const ISSUE_SOURCE: &str = "crates/bb-core/src/issue.rs";
 const ERROR_CODE_SOURCE: &str = "crates/bb-core/src/error_code.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
@@ -150,7 +152,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// a status or a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 10] = [
+const WORD_LISTS: [&str; 11] = [
     "IssueIcon",
     "Status",
     "StatusGroup",
@@ -161,6 +163,7 @@ const WORD_LISTS: [&str; 10] = [
     "Look",
     "ChoiceColor",
     "LayoutKind",
+    "HistoryTab",
 ];
 
 /// `IssueIcon` as `issueIconWords`.
@@ -179,7 +182,7 @@ fn words_name(schema: &str) -> String {
 
 /// The words of the vocabularies in [`WORD_LISTS`], in the order of the Rust list, as constants for
 /// the browser client.
-pub(super) fn words(spec: &str) -> anyhow::Result<String> {
+pub(super) fn words(spec: &str, sources: &[Source]) -> anyhow::Result<String> {
     let spec: serde_json::Value =
         serde_json::from_str(spec).context("the API description is not JSON")?;
     let mut out = String::from(TS_HEADER);
@@ -205,7 +208,68 @@ export const {} = [{}] as const;
             words.join(", ")
         );
     }
+    let Some((_, issues)) = sources.iter().find(|(path, _)| path == ISSUE_SOURCE) else {
+        bail!("{ISSUE_SOURCE} is missing");
+    };
+    let _ = write!(
+        out,
+        "/** The status a new issue starts with: the server decides, the form shows it. */
+export const newIssueStatus = {:?};
+
+/** The priority a new issue has when the form does not say: the server decides, the form shows it. */
+export const newIssuePriority = {:?};
+",
+        new_word(issues, "Status")?,
+        new_word(issues, "Priority")?
+    );
     Ok(out)
+}
+
+/// The word of the variant that `impl Name { const NEW: Self = Self::Variant; }` names, from the
+/// `words!` table of the enum `Name`.
+fn new_word(source: &str, name: &str) -> anyhow::Result<String> {
+    let file = syn::parse_file(source).with_context(|| format!("{ISSUE_SOURCE} is not Rust"))?;
+    let variant = file
+        .items
+        .iter()
+        .find_map(|item| match item {
+            syn::Item::Impl(item) if is_type(&item.self_ty, name) => {
+                item.items.iter().find_map(|each| match each {
+                    syn::ImplItem::Const(each) if each.ident == "NEW" => match &each.expr {
+                        syn::Expr::Path(path) => {
+                            path.path.segments.last().map(|s| s.ident.to_string())
+                        }
+                        _ => None,
+                    },
+                    _ => None,
+                })
+            }
+            _ => None,
+        })
+        .with_context(|| {
+            format!("{ISSUE_SOURCE} has no `impl {name} {{ const NEW: Self = Self::… }}`")
+        })?;
+    let table = file
+        .items
+        .iter()
+        .find_map(|item| match item {
+            syn::Item::Macro(item) if item.mac.path.is_ident("words") => {
+                let text = item.mac.tokens.to_string();
+                text.contains(&format!("enum {name} ")).then_some(text)
+            }
+            _ => None,
+        })
+        .with_context(|| format!("{ISSUE_SOURCE} has no `words!` table for `{name}`"))?;
+    let after = table
+        .split_once(&format!("{variant} =>"))
+        .and_then(|(_, rest)| rest.split('"').nth(1))
+        .with_context(|| format!("`{name}` has no word for `{variant}`"))?;
+    Ok(after.to_owned())
+}
+
+/// Whether the type is the plain name `name`.
+fn is_type(ty: &syn::Type, name: &str) -> bool {
+    matches!(ty, syn::Type::Path(path) if path.path.is_ident(name))
 }
 
 /// The mark that says a property holds HTML the server rendered.
@@ -344,8 +408,16 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
         .map(|code| format!("{code:?}"))
         .collect::<Vec<_>>()
         .join(", ");
-    let layout_part = text_const(text, "LAYOUT_PART")
-        .with_context(|| format!("{EDIT_SOURCE} has no `const LAYOUT_PART` that is text"))?;
+    let part = |name: &str| {
+        text_const(text, name)
+            .with_context(|| format!("{EDIT_SOURCE} has no `const {name}` that is text"))
+    };
+    let (layout_part, description_part) = (part("LAYOUT_PART")?, part("DESCRIPTION_PART")?);
+    let Some((_, comments)) = sources.iter().find(|(path, _)| path == COMMENT_SOURCE) else {
+        bail!("{COMMENT_SOURCE} is missing");
+    };
+    let comment_part = text_const(comments, "TEXT_PART")
+        .with_context(|| format!("{COMMENT_SOURCE} has no `const TEXT_PART` that is text"))?;
     Ok(format!(
         "{TS_HEADER}/** How long an edit lock lasts after the last heartbeat, in seconds. */
 export const leaseSeconds = {};
@@ -373,6 +445,12 @@ export type DraftKeptCode = (typeof draftKeptCodes)[number];
 
 /** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
 export const layoutEditPart = {layout_part:?};
+
+/** The name of the part of an issue that holds its description. */
+export const descriptionEditPart = {description_part:?};
+
+/** The name of the part of a comment that holds its text. */
+export const commentEditPart = {comment_part:?};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
@@ -727,10 +805,15 @@ pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
 pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::VersionChanged];
 pub const LAYOUT_PART: &str = \"layout\";
+pub const DESCRIPTION_PART: &str = \"description\";
 "
             .to_owned(),
         );
-        let text = editing(&[source, error_codes_source()]).unwrap();
+        let comment = (
+            COMMENT_SOURCE.to_owned(),
+            "pub const TEXT_PART: &str = \"text\";".to_owned(),
+        );
+        let text = editing(&[source, comment, error_codes_source()]).unwrap();
         assert!(text.contains("leaseSeconds = 60;"), "{text}");
         assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
         assert!(text.contains("watchSeconds = 30;"), "{text}");
@@ -744,6 +827,11 @@ pub const LAYOUT_PART: &str = \"layout\";
             "{text}"
         );
         assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
+        assert!(
+            text.contains("descriptionEditPart = \"description\";"),
+            "{text}"
+        );
+        assert!(text.contains("commentEditPart = \"text\";"), "{text}");
         assert!(editing(&[]).is_err());
     }
 
@@ -755,14 +843,28 @@ pub const LAYOUT_PART: &str = \"layout\";
             .collect::<Vec<_>>()
             .join(",");
         let spec = format!(r#"{{"components":{{"schemas":{{{schemas}}}}}}}"#);
-        let text = words(&spec).unwrap();
+        let issues = (
+            ISSUE_SOURCE.to_owned(),
+            "impl Status { pub const NEW: Self = Self::Open; }
+impl Priority { pub const NEW: Self = Self::Normal; }
+words! { pub enum Status { Open => \"open\", Done => \"done\" } }
+words! { pub enum Priority { Low => \"low\", Normal => \"normal\" } }"
+                .to_owned(),
+        );
+        let text = words(&spec, std::slice::from_ref(&issues)).unwrap();
+        assert!(text.contains("newIssueStatus = \"open\";"), "{text}");
+        assert!(text.contains("newIssuePriority = \"normal\";"), "{text}");
         assert!(
             text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),
             "{text}"
         );
         assert!(text.contains("export const choiceColorWords = [\"bug\", \"flag\"] as const;"));
-        assert!(words("{}").is_err());
-        assert!(words("not json").is_err());
+        assert!(words("{}", &[issues]).is_err());
+        assert!(words("not json", &[]).is_err());
+        assert!(
+            words(&spec, &[]).is_err(),
+            "the source of the issue is missing"
+        );
     }
 
     #[test]

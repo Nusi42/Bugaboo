@@ -92,3 +92,12 @@ export const choiceColorWords = [
 
 /** Every word of `LayoutKind`, in the order the server lists them. */
 export const layoutKindWords = ["new-issue", "issue-page"] as const;
+
+/** Every word of `HistoryTab`, in the order the server lists them. */
+export const historyTabWords = ["everything", "comments", "changes"] as const;
+
+/** The status a new issue starts with: the server decides, the form shows it. */
+export const newIssueStatus = "open";
+
+/** The priority a new issue has when the form does not say: the server decides, the form shows it. */
+export const newIssuePriority = "normal";

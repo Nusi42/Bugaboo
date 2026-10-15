@@ -30,3 +30,9 @@ export type DraftKeptCode = (typeof draftKeptCodes)[number];
 
 /** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
 export const layoutEditPart = "layout";
+
+/** The name of the part of an issue that holds its description. */
+export const descriptionEditPart = "description";
+
+/** The name of the part of a comment that holds its text. */
+export const commentEditPart = "text";
