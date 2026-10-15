@@ -11,13 +11,9 @@ use std::str::FromStr;
 use bb_app::access::{Authorized, Masked};
 use bb_app::auth::AppError;
 use bb_app::fields::{MakeField, NewChoice, make_field};
-use bb_app::issues::{
-    IssueTypesQuery, MakeStartingIssueTypes, issue_types, make_starting_issue_types,
-};
+use bb_app::issues::{IssueTypesQuery, issue_types};
 use bb_app::projects::ProjectStore as _;
-use bb_app::relations::{
-    MakeStartingRelationKinds, RelationKindsQuery, make_starting_relation_kinds, relation_kinds,
-};
+use bb_app::relations::{RelationKindsQuery, relation_kinds};
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_app::tags::{MakeLabel, MakeLabelGroup, TagStore as _, make_label, make_label_group};
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LabelId, ProjectId, RelationKindId};
@@ -82,14 +78,6 @@ impl Setup {
     ) -> Result<Self, SampleError> {
         let ctx = world.services.ctx(world.request());
         let step = Step::IssueTypes;
-        world.tick();
-        make_starting_issue_types(&ctx, MakeStartingIssueTypes)
-            .await
-            .map_err(|error| SampleError::step(step, &error))?;
-        world.tick();
-        make_starting_relation_kinds(&ctx, MakeStartingRelationKinds)
-            .await
-            .map_err(|error| SampleError::step(step, &error))?;
 
         let found = json(
             issue_types(

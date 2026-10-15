@@ -3293,9 +3293,6 @@ pub const SAMPLE_STEP_ROLE: MessageKey = MessageKey::new("sample.step.role");
 /// The message `sample.step.settings`.
 pub const SAMPLE_STEP_SETTINGS: MessageKey = MessageKey::new("sample.step.settings");
 
-/// The message `sample.step.setup-code`.
-pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setup-code");
-
 /// The message `sample.step.signing-in`.
 pub const SAMPLE_STEP_SIGNING_IN: MessageKey = MessageKey::new("sample.step.signing-in");
 
@@ -10160,7 +10157,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.settings",
         "choosing how a project gives out issue IDs",
     ),
-    ("sample.step.setup-code", "using the setup code"),
     ("sample.step.signing-in", "signing in to do the work"),
     ("sample.step.signing-out", "signing out"),
     ("sample.step.starting-roles", "making the starting roles"),

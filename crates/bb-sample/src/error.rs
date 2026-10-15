@@ -14,10 +14,8 @@ use crate::roster::PEOPLE;
 pub enum Step {
     /// Making the password hasher.
     PasswordHasher,
-    /// Making the starting roles.
+    /// The first start: the starting roles, issue types and kinds of relation, and the setup code.
     StartingRoles,
-    /// Using the setup code.
-    SetupCode,
     /// Making the first administrator.
     FirstAdministrator,
     /// Inviting a person.
@@ -77,7 +75,6 @@ impl Step {
         Message::from(match self {
             Self::PasswordHasher => message::SAMPLE_STEP_PASSWORD_HASHER,
             Self::StartingRoles => message::SAMPLE_STEP_STARTING_ROLES,
-            Self::SetupCode => message::SAMPLE_STEP_SETUP_CODE,
             Self::FirstAdministrator => message::SAMPLE_STEP_FIRST_ADMINISTRATOR,
             Self::Invitation => message::SAMPLE_STEP_INVITATION,
             Self::AcceptingInvitation => message::SAMPLE_STEP_ACCEPTING_INVITATION,

@@ -21,6 +21,7 @@ mod bulk_http;
 mod caching;
 mod comments_http;
 mod concurrent;
+mod conflict_http;
 mod editing;
 mod fields_http;
 mod fields_names;

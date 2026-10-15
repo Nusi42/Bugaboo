@@ -773,7 +773,6 @@
   "sample.error.database-url": "The environment variable {variable} must hold the address of an empty PostgreSQL database.",
   "sample.step.password-hasher": "making the password hasher",
   "sample.step.starting-roles": "making the starting roles",
-  "sample.step.setup-code": "using the setup code",
   "sample.step.first-administrator": "making the first administrator",
   "sample.step.invitation": "inviting a person",
   "sample.step.accepting-invitation": "accepting an invitation",

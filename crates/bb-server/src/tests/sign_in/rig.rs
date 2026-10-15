@@ -6,17 +6,15 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use bb_api::FailureLimits;
 use bb_app::access::Permission;
-use bb_app::access::{MakeStartingRoles, PolicyStore as _, make_starting_roles};
+use bb_app::access::PolicyStore as _;
 use bb_app::auth::{
     AcceptInvitation, AppError, AuthApi, AuthServices, AuthenticateQuery, CompleteSetup,
-    CreateInvitation, IssueSetupCode, RequestInfo, SignIn, Started, issue_setup_code,
+    CreateInvitation, RequestInfo, SignIn, Started,
 };
-use bb_app::comments::CommentRecords;
 use bb_app::context::Clock;
 use bb_app::context::SystemIds;
-use bb_app::editing::{ChainedRecords, EditableRecords};
-use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
-use bb_app::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
+use bb_app::editing::EditableRecords;
+use bb_app::first_start::first_start;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
@@ -211,30 +209,14 @@ impl Rig {
             FailureLimits::new(shape.tries.per_minute()),
             "Bugaboo".to_owned(),
         );
-        // The comments are always known as records; a test adds the kinds of its own.
-        let comments: Arc<dyn EditableRecords> = Arc::new(CommentRecords::new(storage.clone()));
-        let services = Arc::new(services.with_records(match records {
-            Some(records) => Arc::new(ChainedRecords::new(vec![records, comments])),
-            None => comments,
-        }));
-        // The first start, as the wiring does it: the starting roles first, then the setup code.
+        let services = match records {
+            Some(records) => services.with_records(records),
+            None => services,
+        };
+        let services = Arc::new(services);
+        // The first start, as the wiring does it.
         let code = if shape.first_start == FirstStart::Made {
-            make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
-                .await
-                .map_err(|error| error.to_string())?;
-            make_starting_issue_types(
-                &services.ctx(RequestInfo::default()),
-                MakeStartingIssueTypes,
-            )
-            .await
-            .map_err(|error| error.to_string())?;
-            make_starting_relation_kinds(
-                &services.ctx(RequestInfo::default()),
-                MakeStartingRelationKinds,
-            )
-            .await
-            .map_err(|error| error.to_string())?;
-            issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
+            first_start(&services)
                 .await
                 .map_err(|error| error.to_string())?
         } else {

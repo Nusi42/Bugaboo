@@ -337,7 +337,8 @@ async fn tag_03_combining_tags_needs_the_versions_the_person_looked_at() -> Outc
     )
     .await
     .err();
-    assert_eq!(stale, Some(AppError::Refused(ErrorCode::VersionChanged)));
+    // The answer names the record, so the conflict can say what changed (ADR-0019 amendment).
+    assert!(matches!(stale, Some(AppError::Stale(_))), "{stale:?}");
     combine_tags(
         &world.ctx(),
         CombineTags {

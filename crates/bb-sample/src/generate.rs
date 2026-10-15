@@ -13,14 +13,14 @@ use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 
-use bb_app::access::{Authorized, MakeStartingRoles, Masked, make_starting_roles};
+use bb_app::access::{Authorized, Masked};
 use bb_app::auth::{
     AcceptInvitation, AuthApi, AuthServices, CompleteSetup, ConfirmCodeApp, CreateInvitation,
-    CreatedInvitation, IssueSetupCode, MakeAccessKey, NoFailureLimit, RequestInfo,
-    SecondStepStore as _, SignOut, StartCodeApp, Started, issue_setup_code, make_access_key,
+    CreatedInvitation, MakeAccessKey, NoFailureLimit, RequestInfo, SecondStepStore as _, SignOut,
+    StartCodeApp, Started, make_access_key,
 };
-use bb_app::comments::CommentRecords;
 use bb_app::context::Clock as _;
+use bb_app::first_start::first_start;
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_auth::{CsrfKey, PasswordHasher, TotpSecret};
 use bb_core::access_key::KeyChoice;
@@ -288,9 +288,7 @@ pub async fn make<L: Later>(
         csrf,
         Arc::new(NoFailureLimit),
         Message::from(message::APP_NAME).render(),
-    )
-    // The comments of the issues are texts that are edited under a lock, like the server has it.
-    .with_records(Arc::new(CommentRecords::new(storage.clone())));
+    );
     let api: &dyn AuthApi = &services;
 
     let mut made: Vec<MadePerson> = Vec::with_capacity(plan.len());
@@ -372,13 +370,11 @@ async fn first_administrator(
     person: &SamplePerson,
     password: &str,
 ) -> Result<Started, SampleError> {
-    // The roles come first: whoever sets the organization up gets the Administrator role.
-    make_starting_roles(&services.ctx(request()), MakeStartingRoles)
+    // The first start, as the server does it: the roles first, so whoever sets the
+    // organization up gets the Administrator role.
+    let code = first_start(services)
         .await
-        .map_err(|error| SampleError::step(Step::StartingRoles, &error))?;
-    let code = issue_setup_code(&services.ctx(request()), IssueSetupCode)
-        .await
-        .map_err(|error| SampleError::step(Step::SetupCode, &error))?
+        .map_err(|error| SampleError::step(Step::StartingRoles, &error))?
         .ok_or(SampleError::SetupClosed)?;
     let api: &dyn AuthApi = services;
     api.complete_setup(
