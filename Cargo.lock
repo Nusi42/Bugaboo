@@ -618,7 +618,6 @@ dependencies = [
  "bb-dev-words",
  "bb-jobs",
  "bb-load-check",
- "bb-markdown",
  "bb-store",
  "bb-testing",
  "clap",

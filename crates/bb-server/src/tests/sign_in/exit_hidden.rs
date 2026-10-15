@@ -3,7 +3,7 @@
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
-use bb_markdown::{MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS};
+use bb_app::comments::{MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS};
 use bb_testing::{TestResult, each_database};
 use serde_json::json;
 
