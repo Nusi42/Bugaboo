@@ -2,7 +2,7 @@
 //! something are named after what they do; inputs that only read end in `Query` (ARCH-EVENTS).
 //! Everything that is given back is wrapped in `Authorized<T>` by the use case.
 
-use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
+use bb_core::id::{IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_core::tags::{Label, LabelGroup, Tag};
 use bb_policy::Masked;
@@ -144,6 +144,9 @@ pub struct TagSuggestionsQuery {
     pub project: String,
     /// What has been typed.
     pub text: String,
+    /// The issue type of the issue the tag goes on, when it is known (the issue page, the new-issue
+    /// form): its level for *Tags* decides. Without it the lowest level across types counts.
+    pub issue_type: Option<IssueTypeId>,
 }
 
 /// The tags to offer: the ones used in projects the person sees that fit the project and the text.

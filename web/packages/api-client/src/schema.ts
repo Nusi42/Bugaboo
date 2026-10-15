@@ -19627,6 +19627,8 @@ export interface operations {
       query?: {
         /** @description What has been typed so far; empty offers the first tags by name. */
         text?: string;
+        /** @description The ID of the issue type of the issue the tag goes on, when it is known. */
+        issue_type?: string;
       };
       header?: never;
       path: {

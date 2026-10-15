@@ -42,7 +42,7 @@ export function TagsPart({
         }
       />
       {body.may_change_tags && project !== undefined ? (
-        <AddTag issue={issueKey} project={project} />
+        <AddTag issue={issueKey} project={project} issueType={body.issue_type.id} />
       ) : null}
       {takeOff.isError ? <Alert tone={alertTone.danger}>{messageOf(takeOff.error)}</Alert> : null}
     </>

@@ -38,7 +38,7 @@ pub async fn tag_suggestions<S: AuthStore>(
     let Some(found) = found.filter(|_| held.sees_project()) else {
         return Err(AppError::Refused(ErrorCode::NotFound));
     };
-    if !held.field_mask_for(None).can_see(Field::Tags) {
+    if !held.field_mask_for(input.issue_type).can_see(Field::Tags) {
         // Tags are hidden from the role here: nothing to offer, and no hint that some exist.
         return Ok(held.authorize(TagSuggestions { tags: Vec::new() }));
     }
@@ -46,11 +46,7 @@ pub async fn tag_suggestions<S: AuthStore>(
     let text = clean_tag_search(&input.text)?;
     let candidates = ctx
         .store()
-        .used_tags(
-            &ctx.issue_sight(&actor, &shown, Some(Field::Tags)).await?,
-            &text,
-            CANDIDATES,
-        )
+        .used_tags(&shown.issue_sight(), &text, CANDIDATES)
         .await
         .map_err(|error| internal::<S>(&error))?;
     let limits = ctx

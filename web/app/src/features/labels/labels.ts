@@ -84,12 +84,12 @@ export function useIssueSorting(issue: string) {
   });
 }
 
-/** The tags to offer in a project while a person types. */
-export function useTagSuggestions(project: string, text: string) {
+/** The tags to offer in a project, for an issue of this type, while a person types. */
+export function useTagSuggestions(project: string, issueType: string, text: string) {
   return api.query.useQuery(
     "get",
     "/api/v1/projects/{project}/tag-suggestions",
-    { params: { path: { project }, query: { text } } },
+    { params: { path: { project }, query: { text, issue_type: issueType } } },
     { enabled: text.trim() !== "" },
   );
 }

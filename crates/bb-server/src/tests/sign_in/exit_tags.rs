@@ -131,6 +131,20 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
             .await?;
         assert!(names(ok(&hidden)?, "tags").is_empty(), "{}", hidden.body);
         assert!(names(&hidden.body, "labels").is_empty(), "{}", hidden.body);
+        // The type of the issue decides: for a bug the role sees Tags and is offered the tag, and
+        // without a type the lowest level across types counts.
+        let base = format!("{PROJECTS}/ACME/tag-suggestions?text=secret");
+        let typed = hal
+            .send("GET", &format!("{base}&issue_type={}", site.bug), None)
+            .await?;
+        assert_eq!(
+            names(ok(&typed)?, "tags"),
+            ["secret-plan"],
+            "{}",
+            typed.body
+        );
+        let untyped = hal.send("GET", &base, None).await?;
+        assert!(names(ok(&untyped)?, "tags").is_empty(), "{}", untyped.body);
         // A person who sees the field nowhere is offered no tag at all.
         let (mut ivy, _) = person_with_levels(
             &site,

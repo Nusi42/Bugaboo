@@ -262,3 +262,48 @@ async fn perf_05_a_page_of_forty_issues_runs_as_many_statements_as_a_page_of_fiv
     })
     .await
 }
+
+#[tokio::test]
+async fn perf_05_tag_suggestions_run_as_many_statements_for_twelve_projects_as_for_two()
+-> TestResult {
+    each_database("perf_05_suggestions", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = id_in(ok(&site.make(&mut ada, "One").await?)?, "key")?;
+        ok(&ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{issue}/tags"),
+                Some(json!({"name": "plan"})),
+            )
+            .await?)?;
+        let path = format!("{PROJECTS}/{}/tag-suggestions?text=pl", site.acme);
+        let mut counter = Counter::on(&rig.database);
+        ok(&ada.send("GET", &path, None).await?)?;
+        counter.take();
+        ok(&ada.send("GET", &path, None).await?)?;
+        let on_two = counter.take();
+        for number in 0..10 {
+            ok(&ada
+                .send(
+                    "POST",
+                    PROJECTS,
+                    Some(
+                        json!({"short_name": format!("P{number}"), "name": format!("P {number}")}),
+                    ),
+                )
+                .await?)?;
+        }
+        counter.take();
+        let found = ada.send("GET", &path, None).await?;
+        assert_eq!(ok(&found)?["tags"][0]["name"], "plan");
+        let on_twelve = counter.take();
+        assert!(on_two > 0, "the counter sees nothing");
+        assert_eq!(
+            on_two, on_twelve,
+            "more projects must not run more statements"
+        );
+        Ok(())
+    })
+    .await
+}

@@ -16946,6 +16946,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of the issue type of the issue the tag goes on, when it is known.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

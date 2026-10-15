@@ -34,7 +34,9 @@ pub const VERSIONS_MAX: u32 = 50;
 /// The most drafts one person keeps at once, so unsaved text cannot fill the disk.
 pub const DRAFTS_PER_AUTHOR_MAX: u64 = 200;
 /// The most characters of the text of a draft: a draft is a long text not yet saved, so the same limit.
-pub const DRAFT_TEXT_MAX: usize = crate::text::LONG_TEXT_MAX;
+pub const DRAFT_TEXT_MAX: usize = 100_000;
+// The generator of the browser constants reads the number above; this keeps it the long text limit.
+const _: () = assert!(DRAFT_TEXT_MAX == crate::text::LONG_TEXT_MAX);
 /// The refusals of a save that keep the text as the person's draft (ADR-0019). The one list: the use
 /// case that keeps the draft, the tests of the server and the browser all read it, and the browser
 /// gets it as `draftKeptCodes` from the generated client.
