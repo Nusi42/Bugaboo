@@ -92,9 +92,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(comment) = comment else {
             // The same work as for a comment whose issue the actor may not see (an issue read and an
             // evaluation), so the answers cannot be told apart.
-            return Err(self
-                .not_found_like_a_hidden_issue(actor, &id.to_string())
-                .await);
+            return Err(self.not_found_like_a_hidden_issue(actor).await);
         };
         let (issue, held) = self
             .visible_issue(actor, &comment.issue.to_string())

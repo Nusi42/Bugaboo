@@ -239,12 +239,7 @@ pub async fn remove_relation<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     let Some(relation) = relation else {
-        // The same work as for a relation whose issue the person may not see (an issue read and an
-        // evaluation), so the answers cannot be told apart.
-        ctx.visible_issue(&actor, &input.relation.to_string())
-            .await
-            .ok();
-        return Err(AppError::Refused(ErrorCode::NotFound));
+        return Err(ctx.not_found_like_a_hidden_issue(&actor).await);
     };
     let (from, held_from) = ctx
         .visible_issue(&actor, &relation.from.to_string())

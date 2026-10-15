@@ -307,3 +307,64 @@ async fn perf_05_tag_suggestions_run_as_many_statements_for_twelve_projects_as_f
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_statements()
+-> TestResult {
+    each_database("sec_06_equal_statements", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        // A Guest sees the project ACME and only the issues they reported.
+        let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
+        let first = id_in(ok(&site.make(&mut ada, "Ada's first").await?)?, "key")?;
+        let second = id_in(ok(&site.make(&mut ada, "Ada's second").await?)?, "key")?;
+        let comment = ok(&ada
+            .send(
+                "POST",
+                &format!("{ISSUES}/{first}/comments"),
+                Some(json!({"text": "Hidden."})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no comment")?
+            .to_owned();
+        let kinds = ada.send("GET", "/api/v1/relation-kinds", None).await?;
+        let kind = id_in(&kinds.body["items"][0], "id")?;
+        let relation = id_in(
+            ok(&ada
+                .send(
+                    "POST",
+                    &format!("{ISSUES}/{first}/relations"),
+                    Some(json!({"other": second, "kind": kind, "direction": "forward"})),
+                )
+                .await?)?,
+            "id",
+        )?;
+        let nobody = "01890a5d-ac96-774b-bcce-b302099a8057";
+        let mut counter = Counter::on(&rig.database);
+        let mut count = async |path: String| -> Result<(String, usize), Failure> {
+            counter.take();
+            let reply = gus.send("DELETE", &path, None).await?;
+            Ok((reply.code().to_owned(), counter.take()))
+        };
+        for (hidden, missing) in [
+            (
+                format!("/api/v1/comments/{comment}"),
+                format!("/api/v1/comments/{nobody}"),
+            ),
+            (
+                format!("/api/v1/relations/{relation}"),
+                format!("/api/v1/relations/{nobody}"),
+            ),
+        ] {
+            let hidden = count(hidden).await?;
+            let missing = count(missing).await?;
+            assert_eq!(hidden.0, "resource.not_found");
+            assert_eq!(missing.0, "resource.not_found");
+            assert!(hidden.1 > 0, "the counter sees nothing");
+            assert_eq!(hidden.1, missing.1, "the same statements");
+        }
+        Ok(())
+    })
+    .await
+}

@@ -78,19 +78,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(seen_by(&held, issue, place).then_some(held))
     }
 
-    /// The answer for a comment or a relation that is not there: it does the work that a hidden one
-    /// costs (an issue is looked for and the actor's rights are evaluated), so the time it takes does
-    /// not tell the two apart. `thing` is the ID of the missing comment or relation, which no issue
-    /// has.
-    pub(crate) async fn not_found_like_a_hidden_issue(
-        &self,
-        actor: &Actor,
-        thing: &str,
-    ) -> AppError {
-        match self.visible_issue(actor, thing).await {
-            Err(error) => error,
-            Ok(_) => AppError::Refused(ErrorCode::NotFound),
+    /// The answer for a comment or a relation that is not there: it does the work that one whose
+    /// issue the person cannot see costs (a read that stands for the issue, and the evaluation of the
+    /// rights in a project), so the time it takes does not tell the two apart.
+    pub(crate) async fn not_found_like_a_hidden_issue(&self, actor: &Actor) -> AppError {
+        let tree = match self.store().project_tree().await {
+            Ok(tree) => tree,
+            Err(error) => return internal::<S>(&error),
+        };
+        if let Some(project) = tree.first() {
+            // Only the work counts, not the answer.
+            self.evaluation_of(actor, Place::Project(project.id))
+                .await
+                .ok();
         }
+        AppError::Refused(ErrorCode::NotFound)
     }
 
     async fn seen_issue(
