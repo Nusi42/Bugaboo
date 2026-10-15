@@ -102,18 +102,11 @@ pub async fn issue<S: AuthStore>(
     } else {
         Vec::new()
     };
-    let image_hosts = ctx.image_hosts().await?;
-    let description_html = bb_markdown::render(
-        &issue.description,
-        &bb_markdown::Options {
-            image_hosts: image_hosts.clone(),
-            ..bb_markdown::Options::default()
-        },
-    )
-    .html;
-    let own_fields_html = ctx
-        .long_texts_html(&held, issue.issue_type, &view, &image_hosts)
+    // A mention or an issue ID is a chip only when the reader may see what it names (SEC-06).
+    let description_html = ctx
+        .html_of(&actor, &held, &issue, &issue.description)
         .await?;
+    let own_fields_html = ctx.long_texts_html(&actor, &held, &issue, &view).await?;
     Ok(held.authorize(IssueDetail {
         issue: view,
         description_html,

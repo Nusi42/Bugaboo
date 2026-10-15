@@ -429,31 +429,24 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// issue of this type and that has a text.
     pub(crate) async fn long_texts_html(
         &self,
+        actor: &Actor,
         viewer: &Evaluation,
-        issue_type: IssueTypeId,
+        issue: &bb_core::issue::Issue,
         view: &IssueView,
-        image_hosts: &[String],
     ) -> Result<Vec<OwnHtml>, AppError> {
         let mut shown = Vec::new();
         for definition in self.field_catalogue().await?.iter() {
             let field = &definition.field;
             let key = FieldKey::Own(field.id);
             if !field.kind.is_long_text()
-                || viewer.field_level_for(Some(issue_type), key) < FieldLevel::CanSee
+                || viewer.field_level_for(Some(issue.issue_type), key) < FieldLevel::CanSee
             {
                 continue;
             }
             let Some(Value::String(text)) = view.own_fields.0.get(&key.code().into_owned()) else {
                 continue;
             };
-            let html = bb_markdown::render(
-                text.as_str(),
-                &bb_markdown::Options {
-                    image_hosts: image_hosts.to_vec(),
-                    ..bb_markdown::Options::default()
-                },
-            )
-            .html;
+            let html = self.html_of(actor, viewer, issue, text).await?;
             shown.push(OwnHtml { field: key, html });
         }
         Ok(shown)

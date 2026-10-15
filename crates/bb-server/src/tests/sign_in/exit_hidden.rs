@@ -56,3 +56,41 @@ async fn sec_06_taking_out_a_parent_the_person_cannot_see_changes_nothing_and_sa
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_the_description_makes_a_chip_only_of_what_the_reader_may_see() -> TestResult {
+    each_database("sec_06_description_chips", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
+        let secret = site.make(&mut ada, "Ada's secret").await?;
+        let secret = ok(&secret)?["key"].as_str().ok_or("no key")?.to_owned();
+        let own = site.make(&mut gus, "Another problem of Gus").await?;
+        let own = ok(&own)?["key"].as_str().ok_or("no key")?.to_owned();
+        let made = gus
+            .send(
+                "POST",
+                &format!("/api/v1/projects/{}/issues", site.acme),
+                Some(json!({
+                    "issue_type": site.bug,
+                    "title": "Gus's problem",
+                    "description": format!("See {secret} and {own}."),
+                })),
+            )
+            .await?;
+        let theirs = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
+        let read = gus.send("GET", &format!("{ISSUES}/{theirs}"), None).await?;
+        let html = ok(&read)?["description_html"]
+            .as_str()
+            .ok_or("no html")?
+            .to_owned();
+        assert_eq!(html.matches("data-kind=\"issue-id\"").count(), 1, "{html}");
+        assert!(html.contains(&secret) && html.contains(&own), "{html}");
+        // Ada sees both as chips.
+        let read = ada.send("GET", &format!("{ISSUES}/{theirs}"), None).await?;
+        let html = ok(&read)?["description_html"].as_str().ok_or("no html")?;
+        assert_eq!(html.matches("data-kind=\"issue-id\"").count(), 2, "{html}");
+        Ok(())
+    })
+    .await
+}
