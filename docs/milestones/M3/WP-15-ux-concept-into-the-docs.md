@@ -1,7 +1,7 @@
 # WP-15 — The UX concept into the UX design
 
 **Wave 6 (the look) · Folder / branch:** `bugaboo.win1` / `WIN1` (lead)
-**Features:** UX-01, UX-04, THM-01, PLAN-01…05, PLAN-08 (words and pictures only); UX design §1, §3, §4.2, §4.4, §4.5, §4.7, §6, §7, §8.
+**Features:** UX-01, UX-04, THM-01, PLAN-01…05, PLAN-08, ISS-16 (words and pictures only); UX design §1, §3, §4.2, §4.4, §4.5, §4.7, §4.15, §6, §7, §8.
 **Source:** the approved UX concept (proposal 3, a published design canvas, not linked here). It answers the review of the M3 screenshots, which found edges that don't line up, text against borders, dialogs that can't grow, no color per issue state.
 
 ## Goal
@@ -21,9 +21,10 @@ The UX design (`docs/02-ux-design.html`) says exactly what the concept shows, wi
 5. **§4.4 Issue page:** menu narrowed to icons, slim list, text column at most 780, the big status button in its group color, Details as name-and-value rows that save in place with *Saved* and *Undo*; descriptions and comments keep *Edit* and *Save* (edit lock).
 6. **§4.5 New issue and §6 (windows):** a form opens as a window: *Minimize* (the draft waits as a bar at the bottom), *Maximize* / *Restore down* (maximized fills the whole page, menu included), *Close* (the draft is kept), in the Windows order at the top right; resize at the edges and the corner, smallest 480 × 360, start width 760; the form rearranges itself to the window's own width (one column below 880, fields at the side from 880, text centered from 1200); title and buttons stay while the form scrolls; the size is remembered per person and form. Esc and the keyboard behave as in a dialog (focus stays inside while it is not minimized). A question stays a small fixed dialog (440). On a phone a window is a full screen.
 7. **§4.7 Timeline:** replace the sketch with the concept: rows by goal (foldable), goal bracket, release diamond with its date, bars in the status colors with priority edges and the done part darker, dependency arrows, *Deadline drivers* outlining the chain in the accent color, today as an accent line with a label (red means Critical now), week scale with shaded weekends, a selected bar with handles, a dot to drag a dependency and a small card with *Set dates…* and *Add dependency…*, the *Not scheduled yet* tray, the legend, Undo after every drag; on the phone a list by goal with a small span on a seven-week scale.
-8. **§3 Layout and §8:** the computer layout map (menu 64 or 240, list 320, text at most 780, Details 300–340) and that color never stands alone.
-9. **Glossary:** *Minimize*, *Maximize*, *Restore down* (window buttons, common words), *Deadline drivers*, *Not scheduled yet* if missing.
-10. **04-milestones.md:** M7's timeline outline points to UX §4.7; the definition of done gains "screens follow the ten rules of UX §1; the reviewer checks alignment, padding and state colors on every screenshot".
+8. **§4.15 Relation map:** the sample added: issue cards carry the row state (tint by status group, priority edge, status icon, ID, type, title), the start issue has an accent border and a *Start* tab, each kind of relation has its own line, arrow and word in a label that never touches a line, clicking an issue fades everything not on its chain back to the start and shows that chain as numbered sentences in the side panel with *Put in the middle* and *Open issue*, *Steps away* and *Follow* above the map, *Picture* or *List*, zoom with *Fit*, and the meaning of lines and cards beside the map; on the phone the list form, grouped by steps away.
+9. **§3 Layout and §8:** the computer layout map (menu 64 or 240, list 320, text at most 780, Details 300–340) and that color never stands alone.
+10. **Glossary:** *Minimize*, *Maximize*, *Restore down* (window buttons, common words), *Deadline drivers*, *Not scheduled yet* if missing.
+11. **04-milestones.md:** M7's timeline outline points to UX §4.7; the definition of done gains "screens follow the ten rules of UX §1; the reviewer checks alignment, padding and state colors on every screenshot".
 
 ## Checks
 
