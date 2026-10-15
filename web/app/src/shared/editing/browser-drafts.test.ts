@@ -1,5 +1,5 @@
 import type { DraftTarget } from "@bugaboo/api-client";
-import { draftKeepDays } from "@bugaboo/api-client";
+import { draftKeepDays, msPerSecond, secondsPerDay } from "@bugaboo/api-client";
 import type { KeyStore } from "@bugaboo/ui";
 import { describe, expect, it } from "vitest";
 
@@ -49,7 +49,7 @@ describe("iss_17 the browser keeps a draft for each person and each target", () 
   it("drops a draft past its keep period, and keeps the others", () => {
     const { store } = memory();
     writeBrowserDraft("ana", description, { text: "Old", baseVersion: 1 }, now, store);
-    const later = now + (draftKeepDays + 1) * 86_400_000;
+    const later = now + (draftKeepDays + 1) * secondsPerDay * msPerSecond;
     writeBrowserDraft("ana", newIssue, { text: "New", baseVersion: null }, later, store);
     expect(readBrowserDraft("ana", description, later, store)).toBeNull();
     expect(readBrowserDraft("ana", newIssue, later, store)?.text).toBe("New");

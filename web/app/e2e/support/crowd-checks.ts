@@ -1,4 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, pageSizeMax, type Schema } from "@bugaboo/api-client";
 
 import { type ApiSession } from "./api.ts";
 import { type MadeIssue, readIssue } from "./issues.ts";
@@ -10,14 +10,14 @@ export type Changes = Readonly<Record<string, readonly string[]>>;
 async function historyPage(
   session: ApiSession,
   issue: MadeIssue,
-  tab: "changes" | "comments",
+  tab: Schema<"HistoryTab">,
   cursor?: string,
 ) {
   return dataOf(
     await session.client.GET("/api/v1/issues/{issue}/history", {
       params: {
         path: { issue: issue.key },
-        query: { tab, limit: 100, ...(cursor === undefined ? {} : { cursor }) },
+        query: { tab, limit: pageSizeMax, ...(cursor === undefined ? {} : { cursor }) },
       },
     }),
   );

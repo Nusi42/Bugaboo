@@ -1,9 +1,10 @@
-import { firstVersion, type Schema } from "@bugaboo/api-client";
+import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { MarkdownView, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
+import { versionOf } from "../../shared/version.ts";
 import { CommentActions } from "./CommentActions.tsx";
 import { CommentEditor } from "./CommentEditor.tsx";
 import { CommentVersions } from "./CommentVersions.tsx";
@@ -24,7 +25,7 @@ export function CommentEntry({ entry }: { readonly entry: Schema<"HistoryEntryIt
       {editing && id !== undefined && id !== null ? (
         <CommentEditor
           comment={id}
-          version={entry.version ?? firstVersion}
+          version={versionOf(entry)}
           text={entry.text ?? ""}
           onClose={() => {
             setEditing(false);
