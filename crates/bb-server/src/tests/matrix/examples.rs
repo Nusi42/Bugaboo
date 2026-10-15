@@ -280,6 +280,7 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[
             Quirk::AtTheTargetProject,
             Quirk::HidesUnseen,
+            Quirk::AlsoNeeds(Permission::ChangeProjectSettings),
             Quirk::NamesAMissingThing,
             Quirk::SessionOnly,
         ],

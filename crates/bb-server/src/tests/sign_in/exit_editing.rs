@@ -189,3 +189,66 @@ async fn sec_06_a_person_keeps_a_bounded_number_of_drafts() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too() -> TestResult {
+    each_database("sec_04_release_stuck", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (_, id) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let levels = [
+            (Field::Title.into(), None, FieldLevel::CanChange),
+            (Field::Description.into(), None, FieldLevel::CanChange),
+        ];
+        let (mut ray, _) = person_with_levels(
+            &site,
+            &rig,
+            "ray",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::EditAnyway,
+            ],
+            &levels,
+        )
+        .await?;
+        let (mut kay, _) = person_with_levels(
+            &site,
+            &rig,
+            "kay",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::ChangeIssues,
+                Permission::EditAnyway,
+            ],
+            &levels,
+        )
+        .await?;
+        ok(&take(&mut ada, &id, "description").await?)?;
+        let release = json!({"what": what(&id, "description")});
+        let refused = ray
+            .send(
+                "POST",
+                &format!("{LOCKS}/release-stuck"),
+                Some(release.clone()),
+            )
+            .await?;
+        assert_eq!(refused.code(), "access.forbidden", "{}", refused.body);
+        // The lock is still Ada's.
+        let held = ada
+            .send(
+                "GET",
+                &format!("{LOCKS}?kind=issue&id={id}&part=description"),
+                None,
+            )
+            .await?;
+        assert!(held.body["held"].is_object(), "{}", held.body);
+        let freed = kay
+            .send("POST", &format!("{LOCKS}/release-stuck"), Some(release))
+            .await?;
+        assert_eq!(freed.status, StatusCode::NO_CONTENT, "{}", freed.body);
+        Ok(())
+    })
+    .await
+}

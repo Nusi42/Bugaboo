@@ -411,6 +411,8 @@ pub async fn release_stuck_lock<S: AuthStore>(
     let facts = ctx
         .facts_for_part(&actor, &input.what, Need::Change)
         .await?;
+    // Like *Edit anyway*: ending somebody's editing is for a person who may change the record.
+    ctx.require(&actor, facts.edit, facts.place).await?;
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)
         .await?;
