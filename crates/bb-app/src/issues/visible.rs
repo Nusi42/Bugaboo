@@ -82,6 +82,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// issue the person cannot see costs (a read that stands for the issue, and the evaluation of the
     /// rights in a project), so the time it takes does not tell the two apart.
     pub(crate) async fn not_found_like_a_hidden_issue(&self, actor: &Actor) -> AppError {
+        // The tree is read because the rights are evaluated for a project, as for a hidden issue,
+        // and a missing thing has no project of its own; evaluating the organization instead ran
+        // fewer statements (measured on both databases, `perf_queries.rs`).
         let tree = match self.store().project_tree().await {
             Ok(tree) => tree,
             Err(error) => return internal::<S>(&error),

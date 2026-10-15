@@ -327,7 +327,8 @@ impl EditStore for AuthStorage {
             );
         transaction.execute(&insert).await?;
         // Past the cap the oldest drafts of the person go, in the same change, so a save is never
-        // refused for the number of drafts (ADR-0019) and two saves cannot both pass the cap.
+        // refused for the number of drafts (ADR-0019). Two saves at the same moment on PostgreSQL
+        // can end one over the cap; the next save brings it back, which is harmless.
         let mut oldest = Query::select();
         oldest
             .column(Drafts::Target)
