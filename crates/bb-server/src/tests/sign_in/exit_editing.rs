@@ -19,6 +19,7 @@ use super::issues_site::{Site, ok};
 const LOCKS: &str = "/api/v1/edit-locks";
 const DRAFTS: &str = "/api/v1/drafts";
 const AN_EDITOR: &str = "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5";
+const A_TOKEN: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
 
 fn what(issue: &str, part: &str) -> Value {
     json!({"record": {"kind": "issue", "id": issue}, "part": part})
@@ -150,7 +151,7 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
 }
 
 #[tokio::test]
-async fn sec_06_a_person_keeps_a_bounded_number_of_drafts() -> TestResult {
+async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> TestResult {
     each_database("sec_06_draft_cap", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
@@ -160,31 +161,50 @@ async fn sec_06_a_person_keeps_a_bounded_number_of_drafts() -> TestResult {
                 issue_of_type(&site, &mut ada, &site.bug, &format!("Issue {number}")).await?;
             let kept = draft(&mut ada, &id, "description").await?;
             assert_eq!(kept.status, StatusCode::OK, "{number}: {}", kept.body);
+            rig.clock.advance(1);
             if number == 0 {
                 first = id;
             }
         }
+        // A new draft at the cap is kept, and the oldest one goes.
         let (_, one_more) = issue_of_type(&site, &mut ada, &site.bug, "One more").await?;
-        let refused = draft(&mut ada, &one_more, "description").await?;
-        assert_eq!(refused.code(), "limit.reached", "{}", refused.body);
-        // A draft that is kept already is replaced, whatever the count.
-        assert_eq!(
-            draft(&mut ada, &first, "description").await?.status,
-            StatusCode::OK
-        );
-        // Throwing one away makes room.
-        let thrown = ada
+        let kept = draft(&mut ada, &one_more, "description").await?;
+        assert_eq!(kept.status, StatusCode::OK, "{}", kept.body);
+        let read = |id: &str| format!("{DRAFTS}?kind=issue&id={id}&part=description");
+        assert!(ada.send("GET", &read(&first), None).await?.body["draft"].is_null());
+        assert!(ada.send("GET", &read(&one_more), None).await?.body["draft"].is_object());
+        // A save with a lock nobody holds is refused as before (`edit.lock_lost`), and the text is kept as
+        // the draft, though the person is at the cap.
+        rig.clock.advance(1);
+        let (other, other_id) = issue_of_type(&site, &mut ada, &site.bug, "Another").await?;
+        let lost = ada
             .send(
-                "POST",
-                "/api/v1/drafts/throw-away",
-                Some(json!({"kind": "issue", "id": first, "part": "description"})),
+                "PUT",
+                &format!("/api/v1/issues/{other}/description"),
+                Some(json!({
+                    "version": 1,
+                    "lock_token": A_TOKEN,
+                    "text": "Typed",
+                })),
             )
             .await?;
-        assert_eq!(thrown.status, StatusCode::NO_CONTENT, "{}", thrown.body);
-        assert_eq!(
-            draft(&mut ada, &one_more, "description").await?.status,
-            StatusCode::OK
-        );
+        assert_eq!(lost.code(), "edit.lock_lost", "{}", lost.body);
+        let kept = ada.send("GET", &read(&other_id), None).await?;
+        assert_eq!(kept.body["draft"]["text"], "Typed", "{}", kept.body);
+        // The heartbeat of a lock keeps renewing and keeping the text.
+        let locked = ok(&take(&mut ada, &one_more, "description").await?)?.clone();
+        let beat = ada
+            .send(
+                "POST",
+                &format!("{LOCKS}/heartbeat"),
+                Some(json!({
+                    "what": what(&one_more, "description"),
+                    "lock_token": locked["lock_token"],
+                    "draft": {"text": "Still typing", "base_version": 1},
+                })),
+            )
+            .await?;
+        assert_eq!(beat.status, StatusCode::OK, "{}", beat.body);
         Ok(())
     })
     .await

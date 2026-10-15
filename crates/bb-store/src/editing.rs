@@ -300,7 +300,8 @@ impl EditStore for AuthStorage {
         Ok(released)
     }
 
-    async fn save_draft(&self, draft: &Draft) -> Result<(), StoreError> {
+    async fn save_draft(&self, draft: &Draft, keep: u64) -> Result<(), StoreError> {
+        let mut transaction = self.database().begin().await?;
         let mut insert = Query::insert();
         insert
             .into_table(Drafts::Table)
@@ -324,23 +325,30 @@ impl EditStore for AuthStorage {
                     .update_columns([Drafts::Text, Drafts::BaseVersion, Drafts::SavedAt])
                     .to_owned(),
             );
-        self.database().execute(&insert).await.map(|_| ())
-    }
-
-    async fn count_drafts(
-        &self,
-        author: UserId,
-        not_before: Timestamp,
-        limit: u64,
-    ) -> Result<u64, StoreError> {
-        let mut select = Query::select();
-        select
-            .column(Drafts::SavedAt)
+        transaction.execute(&insert).await?;
+        // Past the cap the oldest drafts of the person go, in the same change, so a save is never
+        // refused for the number of drafts (ADR-0019) and two saves cannot both pass the cap.
+        let mut oldest = Query::select();
+        oldest
+            .column(Drafts::Target)
             .from(Drafts::Table)
-            .and_where(Expr::col(Drafts::Author).eq(author.stored()))
-            .and_where(Expr::col(Drafts::SavedAt).gte(to_micros(not_before)))
-            .limit(limit);
-        Ok(self.database().fetch_all(&select).await?.len() as u64)
+            .and_where(Expr::col(Drafts::Author).eq(draft.author.stored()))
+            .and_where(Expr::col(Drafts::Target).ne(draft.target.key()))
+            .order_by(Drafts::SavedAt, Order::Asc)
+            .order_by(Drafts::Target, Order::Asc);
+        let rows = transaction.fetch_all(&oldest).await?;
+        let others = usize::try_from(keep.saturating_sub(1)).unwrap_or(usize::MAX);
+        for row in rows.iter().take(rows.len().saturating_sub(others)) {
+            let mut delete = Query::delete();
+            delete.from_table(Drafts::Table).cond_where(
+                Condition::all()
+                    .add(Expr::col(Drafts::Author).eq(draft.author.stored()))
+                    .add(Expr::col(Drafts::Target).eq(row.get::<String>(Drafts::Target)?)),
+            );
+            transaction.execute(&delete).await?;
+        }
+        transaction.commit().await?;
+        Ok(())
     }
 
     async fn delete_draft(&self, author: UserId, target: &DraftTarget) -> Result<bool, StoreError> {

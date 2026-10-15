@@ -54,8 +54,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Keeps the text as the draft of `author` for the target, in place of an older one.
     ///
     /// # Errors
-    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters, `limit.reached` for a new
-    /// draft when the person keeps [`DRAFTS_PER_AUTHOR_MAX`] already.
+    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters. A person keeps
+    /// [`DRAFTS_PER_AUTHOR_MAX`] drafts at most: past that their oldest draft goes, and a save is
+    /// never refused for it (ADR-0019).
     pub(crate) async fn keep_draft(
         &self,
         author: UserId,
@@ -64,25 +65,6 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Timestamp, AppError> {
         if text.text.chars().count() > DRAFT_TEXT_MAX {
             return Err(ErrorCode::TooLarge.into());
-        }
-        // A new draft counts against the cap; one that replaces an older one does not.
-        let not_before = self.draft_not_before()?;
-        let failed = |error| internal::<S>(&error);
-        let replaces = self
-            .store()
-            .draft(author, target.clone(), not_before)
-            .await
-            .map_err(failed)?
-            .is_some();
-        if !replaces
-            && self
-                .store()
-                .count_drafts(author, not_before, DRAFTS_PER_AUTHOR_MAX)
-                .await
-                .map_err(failed)?
-                >= DRAFTS_PER_AUTHOR_MAX
-        {
-            return Err(ErrorCode::LimitReached.into());
         }
         let saved_at = self.now();
         let draft = Draft {
@@ -93,7 +75,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             saved_at,
         };
         self.store()
-            .save_draft(&draft)
+            .save_draft(&draft, DRAFTS_PER_AUTHOR_MAX)
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(saved_at)
