@@ -646,8 +646,14 @@ pub async fn combine_labels<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     if from.version != input.version || into.version != input.into_version {
+        // The record that changed is the one to tell about: *Use mine* sends its version next.
+        let changed = if into.version != input.into_version {
+            into.id
+        } else {
+            from.id
+        };
         return Err(AppError::stale(
-            entity(RecordKind::Label, from.id),
+            entity(RecordKind::Label, changed),
             Place::Organization,
             actor.person.id,
         ));

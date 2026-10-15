@@ -18,7 +18,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 24] = [
+const VERSIONED: [&str; 25] = [
     "changeSignUpPolicy",
     "saveComment",
     "changeField",
@@ -37,6 +37,7 @@ const VERSIONED: [&str; 24] = [
     "changeLabel",
     "combineLabels",
     "saveLayout",
+    "deleteLayout",
     "changeProject",
     "changeRelationKind",
     "changeRole",
@@ -55,6 +56,8 @@ struct Save {
     version: i64,
     /// The part to take the edit lock on first, for a long text.
     lock: Option<Value>,
+    /// The route takes the version in the query (`?version=`), not in a body.
+    in_query: bool,
 }
 
 impl Save {
@@ -70,7 +73,13 @@ impl Save {
             body,
             version: version.as_i64().ok_or("the record shows no version")?,
             lock: None,
+            in_query: false,
         })
+    }
+
+    fn in_the_query(mut self) -> Self {
+        self.in_query = true;
+        self
     }
 
     fn under_lock(mut self, record: &Value, part: &str) -> Self {
@@ -108,7 +117,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "changeLabelGroup" | "changeLabel" | "combineLabels" | "changeTag" | "combineTags" => {
             prepare_labels(id, site, ada).await
         }
-        "saveLayout" => prepare_layout(id, ada).await,
+        "saveLayout" | "deleteLayout" => prepare_layout(id, ada).await,
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
         }
@@ -410,6 +419,22 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
 
 async fn prepare_layout(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
     match id {
+        "deleteLayout" => {
+            let project = made(
+                ada,
+                PROJECTS,
+                json!({"short_name": "DELTA", "name": "Delta"}),
+            )
+            .await?;
+            let editor = customize(ada, text(&project, "id")?).await?;
+            Ok(Save::new(
+                "DELETE",
+                format!("{LAYOUTS}/{}", text(&editor["layout"], "id")?),
+                Value::Null,
+                &editor["layout"]["version"],
+            )?
+            .in_the_query())
+        }
         "saveLayout" => {
             let editor = customize(ada, "ACME").await?;
             let layout = text(&editor["layout"], "id")?;
@@ -436,7 +461,12 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
                 .await
                 .map_err(|error| format!("{id}: setting up: {error}"))?;
             let mut body = save.body.clone();
-            body["version"] = json!(save.version + AHEAD);
+            let mut path = save.path.clone();
+            if save.in_query {
+                path = format!("{path}?version={}", save.version + AHEAD);
+            } else {
+                body["version"] = json!(save.version + AHEAD);
+            }
             if let Some(what) = &save.lock {
                 let taken = ada
                     .send(
@@ -447,13 +477,55 @@ async fn iss_17_every_route_with_a_version_answers_a_stale_save_with_the_current
                     .await?;
                 body["lock_token"] = ok(&taken)?["lock_token"].clone();
             }
-            let stale = ada.send(save.method, &save.path, Some(body)).await?;
+            let body = (!save.in_query).then_some(body);
+            let stale = ada.send(save.method, &path, body).await?;
             assert_eq!(stale.status, StatusCode::CONFLICT, "{id}: {}", stale.body);
             assert_eq!(stale.code(), "edit.version_changed", "{id}: {}", stale.body);
             assert_eq!(
                 stale.body["conflict"]["version"],
                 json!(save.version),
                 "{id}: the answer names the version the record has now: {}",
+                stale.body
+            );
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_17_a_combine_with_only_a_stale_into_version_names_the_record_combined_into()
+-> TestResult {
+    each_database("iss_17_conflict_into_version", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        for id in ["combineLabels", "combineTags"] {
+            let save = prepare(id, &site, &mut ada).await?;
+            // The record it goes into changes once, so the two versions differ.
+            let (kind, name) = if id == "combineLabels" {
+                ("labels", "renamed label")
+            } else {
+                ("tags", "renamed-tag")
+            };
+            let renamed = ada
+                .send(
+                    "PATCH",
+                    &format!("/api/v1/{kind}/{}", text(&save.body, "into")?),
+                    Some(json!({"version": save.body["into_version"], "name": name})),
+                )
+                .await?;
+            let into_version = ok(&renamed)?["version"].as_i64().ok_or("no version")?;
+            assert_ne!(into_version, save.version);
+            let mut body = save.body.clone();
+            // The record combined away is as the person saw it; the one it goes into is not.
+            body["version"] = json!(save.version);
+            body["into_version"] = json!(into_version + AHEAD);
+            let stale = ada.send(save.method, &save.path, Some(body)).await?;
+            assert_eq!(stale.code(), "edit.version_changed", "{id}: {}", stale.body);
+            assert_eq!(
+                stale.body["conflict"]["version"],
+                json!(into_version),
+                "{id}: the answer names the record it goes into: {}",
                 stale.body
             );
         }
@@ -480,7 +552,11 @@ fn iss_17_the_table_has_a_row_for_every_route_that_takes_a_version() -> TestResu
             Some(name) => &description["components"]["schemas"][name],
             None => schema,
         };
-        if schema["properties"].get("version").is_some()
+        let in_query = operation["parameters"].as_array().is_some_and(|each| {
+            each.iter()
+                .any(|parameter| parameter["name"] == "version" && parameter["in"] == "query")
+        });
+        if (schema["properties"].get("version").is_some() || in_query)
             && let Some(id) = operation["operationId"].as_str()
         {
             found.insert(id.to_owned());
