@@ -1,4 +1,4 @@
-import { draftKeepDays, type DraftTarget } from "@bugaboo/api-client";
+import { draftKeepDays, msPerSecond, secondsPerDay, type DraftTarget } from "@bugaboo/api-client";
 import {
   browserStorage,
   forgetStored,
@@ -30,8 +30,6 @@ export interface BrowserDraft {
 /** What is kept under the key: the drafts by their address. */
 type Drafts = Readonly<Record<string, BrowserDraft>>;
 
-const MS_PER_DAY = 86_400_000;
-
 /** What a draft is for, as one text: the kind, then the record and part, or the project. */
 export function addressOf(person: string, target: DraftTarget): string {
   const what =
@@ -57,7 +55,7 @@ function isDraft(value: unknown): value is BrowserDraft {
 /** Whether a draft is still within its keep period at `nowMs`. */
 function isKept(draft: BrowserDraft, nowMs: number): boolean {
   const savedAt = Date.parse(draft.savedAt);
-  return !Number.isNaN(savedAt) && nowMs - savedAt < draftKeepDays * MS_PER_DAY;
+  return !Number.isNaN(savedAt) && nowMs - savedAt < draftKeepDays * secondsPerDay * msPerSecond;
 }
 
 /** The drafts that are kept now; what is not a draft, or too old, is left out. */

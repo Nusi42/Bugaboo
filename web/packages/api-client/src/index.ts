@@ -10,6 +10,7 @@ export {
   commentEditPart,
   descriptionEditPart,
   firstVersion,
+  secondsPerDay,
   draftKeptCodes,
   draftTextMax,
   heartbeatSeconds,
@@ -50,6 +51,7 @@ export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export { decimalDigits, decimalParts, ownFieldPartPrefix } from "./fields.generated.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
+export { msPerSecond, secondsPerHour, secondsPerMinute } from "./time.ts";
 export {
   choiceColorWords,
   fieldForWords,

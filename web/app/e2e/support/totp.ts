@@ -1,3 +1,4 @@
+import { msPerSecond } from "@bugaboo/api-client";
 import { createHmac } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
@@ -50,7 +51,7 @@ export function codeApp(secret: string): CodeApp {
     next: async () => {
       const wanted = Math.max(last + 1, stepOf(Date.now()));
       // The server accepts a code up to one step ahead of its clock.
-      const ready = (wanted - 1) * STEP_SECONDS * 1000;
+      const ready = (wanted - 1) * STEP_SECONDS * msPerSecond;
       await sleep(Math.max(0, ready - Date.now() + 100));
       last = wanted;
       return codeAt(secret, wanted);

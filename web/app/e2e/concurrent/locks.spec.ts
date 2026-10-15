@@ -2,6 +2,7 @@ import {
   descriptionEditPart,
   heartbeatSeconds,
   leaseSeconds,
+  msPerSecond,
   readDraft,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
@@ -109,7 +110,7 @@ test("iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_a
 }) => {
   // The lock frees within the lease and the page notices within a few seconds more: the time the
   // test may take is the one of the configuration plus the time it waits for that.
-  test.setTimeout(test.info().timeout + (leaseSeconds + noticeSeconds) * 1000);
+  test.setTimeout(test.info().timeout + (leaseSeconds + noticeSeconds) * msPerSecond);
   const look = { viewport, hasTouch };
   const holder = await signedInPage(browser, server, ben, look);
   const next = await signedInPage(browser, server, cleo, look);
@@ -124,7 +125,7 @@ test("iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_a
   // Within a minute (the lease) and the time the box takes to notice, the lock is free and the
   // box opens for the next person, who writes and saves.
   await expect(descriptionBox(next)).toBeVisible({
-    timeout: (leaseSeconds + noticeSeconds) * 1000,
+    timeout: (leaseSeconds + noticeSeconds) * msPerSecond,
   });
   await descriptionBox(next).fill("Cleo's text, written while Ben was away");
   await saveButton(next).click();

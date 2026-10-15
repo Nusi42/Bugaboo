@@ -24,6 +24,7 @@ const COMMENT_SOURCE: &str = "crates/bb-core/src/comment.rs";
 const ISSUE_SOURCE: &str = "crates/bb-core/src/issue.rs";
 const ERROR_CODE_SOURCE: &str = "crates/bb-core/src/error_code.rs";
 const VERSION_SOURCE: &str = "crates/bb-core/src/version.rs";
+const TIME_SOURCE: &str = "crates/bb-core/src/time.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
@@ -420,6 +421,11 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
     let versions =
         syn::parse_file(versions).with_context(|| format!("{VERSION_SOURCE} is not Rust"))?;
     let first_version = number_const(&versions, VERSION_SOURCE, "FIRST_VERSION")?;
+    let Some((_, time)) = sources.iter().find(|(path, _)| path == TIME_SOURCE) else {
+        bail!("{TIME_SOURCE} is missing");
+    };
+    let time = syn::parse_file(time).with_context(|| format!("{TIME_SOURCE} is not Rust"))?;
+    let seconds_per_day = number_const(&time, TIME_SOURCE, "SECONDS_PER_DAY")?;
     let Some((_, comments)) = sources.iter().find(|(path, _)| path == COMMENT_SOURCE) else {
         bail!("{COMMENT_SOURCE} is missing");
     };
@@ -461,6 +467,9 @@ export const commentEditPart = {comment_part:?};
 
 /** The version a new record starts with. */
 export const firstVersion = {first_version};
+
+/** The seconds in a day: the keep periods and lifetimes counted in days are 24 hours long. */
+export const secondsPerDay = {seconds_per_day};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
@@ -827,7 +836,11 @@ pub const DESCRIPTION_PART: &str = \"description\";
             VERSION_SOURCE.to_owned(),
             "pub const FIRST_VERSION: i64 = 1;".to_owned(),
         );
-        let text = editing(&[source, comment, version, error_codes_source()]).unwrap();
+        let time = (
+            TIME_SOURCE.to_owned(),
+            "pub const SECONDS_PER_DAY: i64 = 86_400;".to_owned(),
+        );
+        let text = editing(&[source, comment, version, time, error_codes_source()]).unwrap();
         assert!(text.contains("leaseSeconds = 60;"), "{text}");
         assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
         assert!(text.contains("watchSeconds = 30;"), "{text}");
@@ -847,6 +860,7 @@ pub const DESCRIPTION_PART: &str = \"description\";
         );
         assert!(text.contains("commentEditPart = \"text\";"), "{text}");
         assert!(text.contains("firstVersion = 1;"), "{text}");
+        assert!(text.contains("secondsPerDay = 86400;"), "{text}");
         assert!(editing(&[]).is_err());
     }
 
