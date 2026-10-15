@@ -403,6 +403,19 @@ impl TagStore for AuthStorage {
                             ),
                     ),
             )
+            .cond_where(
+                sight
+                    .hidden
+                    .iter()
+                    .fold(Cond::all(), |cond, (project, issue_type)| {
+                        cond.add(
+                            Expr::col((IssueRow::Table, IssueRow::Project))
+                                .ne(project.stored())
+                                .or(Expr::col((IssueRow::Table, IssueRow::IssueType))
+                                    .ne(issue_type.stored())),
+                        )
+                    }),
+            )
             .and_where(
                 Expr::col((TagRow::Table, TagRow::NameKey))
                     .like(LikeExpr::new(contains_pattern(&name_key(part))).escape('\\')),

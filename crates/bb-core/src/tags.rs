@@ -8,7 +8,7 @@
 
 use jiff::Timestamp;
 
-use crate::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
+use crate::id::{IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
 use crate::own_fields::ChoiceColor;
 use crate::personal::Entity;
 
@@ -54,6 +54,9 @@ pub struct IssueSight {
     pub own: Vec<ProjectId>,
     /// The viewer.
     pub person: UserId,
+    /// The issues of these types in these projects are not read: the role hides the field the
+    /// lookup is about (*Tags*) for the type there.
+    pub hidden: Vec<(ProjectId, IssueTypeId)>,
     /// Also count the issues in the trash (to ask whether a tag is used at all, never to show).
     pub with_trashed: bool,
 }

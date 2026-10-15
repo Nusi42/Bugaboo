@@ -9,10 +9,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use bb_core::id::{ProjectId, UserId};
+use bb_core::access::FieldLevel;
+use bb_core::fields::Field;
+use bb_core::id::{IssueTypeId, ProjectId, RoleId, UserId};
 use bb_core::project::Project;
 use bb_core::tags::IssueSight;
-use bb_policy::{Narrowing, Permission, Place, Policy, Tree};
+use bb_policy::{LevelRules, Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
 use crate::access::Actor;
@@ -62,6 +64,48 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 impl Shown {
+    /// The roles the person holds anywhere, whose levels decide what they read.
+    pub(crate) fn role_ids(&self) -> Vec<RoleId> {
+        self.policy.roles.iter().map(|role| role.id).collect()
+    }
+
+    /// Gives the policy the levels of the person's roles (`level_rules_of_roles`), so that a
+    /// decision about a field can be made for every project in memory.
+    pub(crate) fn with_levels(mut self, rules: LevelRules) -> Self {
+        self.policy.rules = rules;
+        self
+    }
+
+    /// Which issues the person reads where their role lets them see `field` (SEC-06), judged for
+    /// every project and issue type in memory: a project where the field is hidden for every type is
+    /// left out, and the types for which it is hidden in the others are named in `hidden`. Needs
+    /// [`Self::with_levels`].
+    pub(crate) fn issue_sight_with(&self, field: Field, types: &[IssueTypeId]) -> IssueSight {
+        let mut sight = self.issue_sight();
+        let mut kept = Vec::new();
+        for list in [&mut sight.all, &mut sight.own] {
+            list.retain(|project| {
+                let Some(held) = self.held_in(*project) else {
+                    return false;
+                };
+                let hidden: Vec<IssueTypeId> = types
+                    .iter()
+                    .copied()
+                    .filter(|issue_type| {
+                        held.field_level_for(Some(*issue_type), field) < FieldLevel::CanSee
+                    })
+                    .collect();
+                if hidden.len() == types.len() {
+                    return false;
+                }
+                kept.extend(hidden.into_iter().map(|issue_type| (*project, issue_type)));
+                true
+            });
+        }
+        sight.hidden = kept;
+        sight
+    }
+
     /// Which issues the person reads in the projects they see (SEC-06): every issue where they hold
     /// *See issues*, only the ones they reported elsewhere. Decided from the rows already in memory,
     /// so it costs no statement for a project.
@@ -71,6 +115,7 @@ impl Shown {
             own: Vec::new(),
             person: self.person,
             with_trashed: false,
+            hidden: Vec::new(),
         };
         for project in &self.visible {
             if self.allows(*project, Permission::SeeIssues) {
@@ -90,6 +135,7 @@ impl Shown {
             own: Vec::new(),
             person: self.person,
             with_trashed: true,
+            hidden: Vec::new(),
         }
     }
 
@@ -101,14 +147,17 @@ impl Shown {
     /// Whether the person holds the permission in the project, from the same rows and the same
     /// engine as every other decision.
     pub(crate) fn allows(&self, project: ProjectId, permission: Permission) -> bool {
-        self.policy
-            .evaluate_as(
-                self.person,
-                self.key.as_ref(),
-                &self.tree,
-                Place::Project(project),
-            )
+        self.held_in(project)
             .is_some_and(|held| held.allows(permission))
+    }
+
+    fn held_in(&self, project: ProjectId) -> Option<std::sync::Arc<bb_policy::Evaluation>> {
+        self.policy.evaluate_as(
+            self.person,
+            self.key.as_ref(),
+            &self.tree,
+            Place::Project(project),
+        )
     }
 
     /// The parent a stored project has, whether the person sees it or not: only for comparing

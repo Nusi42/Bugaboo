@@ -169,6 +169,16 @@ impl PolicyStore for AuthStorage {
         }))
     }
 
+    async fn level_rules_of_roles(&self, roles: Vec<RoleId>) -> Result<LevelRules, StoreError> {
+        if roles.is_empty() {
+            return Ok(LevelRules::default());
+        }
+        let mut transaction = self.database().begin_read().await?;
+        Ok(loading::rules_of(&mut transaction, Which::All)
+            .await?
+            .of_roles(&roles.into_iter().collect()))
+    }
+
     async fn groups(&self) -> Result<Vec<Group>, StoreError> {
         groups::groups(&mut self.database()).await
     }

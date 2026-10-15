@@ -104,6 +104,7 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
             own: Vec::new(),
             person: world.person,
             with_trashed: false,
+            hidden: Vec::new(),
         };
         let found = storage.used_tags(&everything, "LOG", 10).await?;
         assert_eq!(
@@ -120,6 +121,7 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
             own: Vec::new(),
             person: world.person,
             with_trashed: false,
+            hidden: Vec::new(),
         };
         assert!(storage.used_tags(&elsewhere, "log", 10).await?.is_empty());
         // Where a person sees only their own issues, only the tags on those are offered.
@@ -128,6 +130,7 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
             own: vec![world.project],
             person,
             with_trashed: false,
+            hidden: Vec::new(),
         };
         let reporter = world.issues[0].reported_by;
         assert_eq!(storage.used_tags(&own(reporter), "", 10).await?.len(), 2);

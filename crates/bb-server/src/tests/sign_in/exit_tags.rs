@@ -361,3 +361,51 @@ async fn sec_06_the_answer_of_adding_a_label_leaves_out_tags_the_type_hides() ->
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_a_tag_used_only_where_the_type_hides_tags_is_not_offered() -> TestResult {
+    each_database("sec_06_tags_per_type", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let task = other_type(&site, &mut ada).await?;
+        // Tags are seen on every type, except on a task.
+        let (mut uma, _) = person_with_levels(
+            &site,
+            &rig,
+            "uma",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+            &[
+                (Field::Title.into(), None, FieldLevel::CanSee),
+                (Field::Tags.into(), None, FieldLevel::CanSee),
+                (Field::Tags.into(), Some(&task), FieldLevel::Hidden),
+            ],
+        )
+        .await?;
+        let (bug, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (job, _) = issue_of_type(&site, &mut ada, &task, "A task").await?;
+        tag(&mut ada, &bug, "shared-bug").await?;
+        tag(&mut ada, &job, "shared-task").await?;
+        let base = format!("{PROJECTS}/ACME/tag-suggestions?text=shared");
+        // For a bug the tag of a bug is offered, and the one that only a task has is not.
+        let typed = uma
+            .send("GET", &format!("{base}&issue_type={}", site.bug), None)
+            .await?;
+        assert_eq!(names(ok(&typed)?, "tags"), ["shared-bug"], "{}", typed.body);
+        // A type that does not exist is no type: the lowest level across types counts, which
+        // hides Tags, and the general level is not a way round it.
+        let nowhere = "01890a5d-ac96-774b-bcce-b302099a8057";
+        let unknown = uma
+            .send("GET", &format!("{base}&issue_type={nowhere}"), None)
+            .await?;
+        assert!(names(ok(&unknown)?, "tags").is_empty(), "{}", unknown.body);
+        let none = uma.send("GET", &base, None).await?;
+        assert!(names(ok(&none)?, "tags").is_empty(), "{}", none.body);
+        // Ada sees Tags for every type and is offered both.
+        let all = ada
+            .send("GET", &format!("{base}&issue_type={}", site.bug), None)
+            .await?;
+        assert_eq!(names(ok(&all)?, "tags"), ["shared-bug", "shared-task"]);
+        Ok(())
+    })
+    .await
+}

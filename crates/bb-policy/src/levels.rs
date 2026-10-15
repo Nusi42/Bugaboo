@@ -267,6 +267,23 @@ impl LevelRules {
         K::rules_in_mut(self).push(rule);
     }
 
+    /// The rules of these roles wherever they are set: for the organization and for every project.
+    #[must_use]
+    pub fn of_roles(&self, roles: &BTreeSet<RoleId>) -> Self {
+        let applies = |role: RoleId, _project: Option<ProjectId>| roles.contains(&role);
+        Self {
+            fields: filtered(&self.fields, applies),
+            people: filtered(&self.people, applies),
+            typed: self
+                .typed
+                .iter()
+                .filter(|rule| applies(rule.role, rule.project))
+                .copied()
+                .collect(),
+            own_fields: self.own_fields.clone(),
+        }
+    }
+
     /// The rules of these roles that apply at a place: their own, and those set for a project of
     /// `chain`. A role's rule for any other project is no part of the place.
     #[must_use]

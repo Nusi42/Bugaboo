@@ -8,6 +8,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
+use bb_core::id::IssueTypeId;
 use bb_core::tags::{TAG_SUGGESTIONS_MAX, tag_allowed_in};
 use bb_policy::{Authorized, Place};
 
@@ -30,6 +31,22 @@ pub async fn tag_suggestions<S: AuthStore>(
 ) -> Result<Authorized<TagSuggestions>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let shown = ctx.shown_to(&actor).await?;
+    let types: Vec<IssueTypeId> = ctx
+        .store()
+        .issue_types()
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .iter()
+        .map(|issue_type| issue_type.id)
+        .collect();
+    // A type that does not exist is no type: the lowest level across types counts (fail closed).
+    let issue_type = input.issue_type.filter(|id| types.contains(id));
+    let rules = ctx
+        .store()
+        .level_rules_of_roles(shown.role_ids())
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let shown = shown.with_levels(rules);
     let found = ctx.find_project(&input.project).await?;
     let place = found.as_ref().map_or(Place::Organization, |found| {
         Place::Project(found.project.id)
@@ -38,7 +55,7 @@ pub async fn tag_suggestions<S: AuthStore>(
     let Some(found) = found.filter(|_| held.sees_project()) else {
         return Err(AppError::Refused(ErrorCode::NotFound));
     };
-    if !held.field_mask_for(input.issue_type).can_see(Field::Tags) {
+    if !held.field_mask_for(issue_type).can_see(Field::Tags) {
         // Tags are hidden from the role here: nothing to offer, and no hint that some exist.
         return Ok(held.authorize(TagSuggestions { tags: Vec::new() }));
     }
@@ -46,7 +63,11 @@ pub async fn tag_suggestions<S: AuthStore>(
     let text = clean_tag_search(&input.text)?;
     let candidates = ctx
         .store()
-        .used_tags(&shown.issue_sight(), &text, CANDIDATES)
+        .used_tags(
+            &shown.issue_sight_with(Field::Tags, &types),
+            &text,
+            CANDIDATES,
+        )
         .await
         .map_err(|error| internal::<S>(&error))?;
     let limits = ctx
