@@ -13,14 +13,14 @@ use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 
-use bb_app::access::{Authorized, MakeStartingRoles, Masked, make_starting_roles};
+use bb_app::access::{Authorized, Masked};
 use bb_app::auth::{
     AcceptInvitation, AuthApi, AuthServices, CompleteSetup, ConfirmCodeApp, CreateInvitation,
-    CreatedInvitation, IssueSetupCode, MakeAccessKey, NoFailureLimit, RequestInfo,
-    SecondStepStore as _, SignOut, StartCodeApp, Started, issue_setup_code, make_access_key,
+    CreatedInvitation, MakeAccessKey, NoFailureLimit, RequestInfo, SecondStepStore as _, SignOut,
+    StartCodeApp, Started, make_access_key,
 };
-use bb_app::comments::CommentRecords;
 use bb_app::context::Clock as _;
+use bb_app::first_start::first_start;
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_auth::{CsrfKey, PasswordHasher, TotpSecret};
 use bb_core::access_key::KeyChoice;
@@ -40,7 +40,7 @@ use crate::clock::SampleClock;
 use crate::error::{SampleError, Step};
 use crate::names::NameList;
 use crate::password::random_password;
-use crate::roster::{ACCESS_KEYS, SamplePerson, roster};
+use crate::people_plan::{ACCESS_KEYS, SamplePerson, sample_people};
 
 /// The seed of the sample when nobody names another one.
 pub const DEFAULT_SEED: u64 = 42;
@@ -128,7 +128,7 @@ impl World<'_> {
 }
 
 /// The extension point: what comes after the people. [`crate::Organization`] fills it in with the
-/// groups, the roles of the roster, the projects and the assignments, made through the use cases
+/// groups, the roles of the plan of the people, the projects and the assignments, made through the use cases
 /// of the policy engine, the projects and the roles. [`NothingMore`] stands in where only the
 /// people are wanted. A step runs once, after every person exists and before the administrator
 /// signs out.
@@ -265,7 +265,7 @@ pub async fn make<L: Later>(
     target: &Target,
     later: &mut L,
 ) -> Result<Sample, SampleError> {
-    let plan = roster(options.seed, &NameList::bundled()?)?;
+    let plan = sample_people(options.seed, &NameList::bundled()?)?;
     let count = i64::try_from(plan.len()).unwrap_or(0);
     let first_moment = moment(
         options.start,
@@ -288,9 +288,7 @@ pub async fn make<L: Later>(
         csrf,
         Arc::new(NoFailureLimit),
         Message::from(message::APP_NAME).render(),
-    )
-    // The comments of the issues are texts that are edited under a lock, like the server has it.
-    .with_records(Arc::new(CommentRecords::new(storage.clone())));
+    );
     let api: &dyn AuthApi = &services;
 
     let mut made: Vec<MadePerson> = Vec::with_capacity(plan.len());
@@ -372,13 +370,11 @@ async fn first_administrator(
     person: &SamplePerson,
     password: &str,
 ) -> Result<Started, SampleError> {
-    // The roles come first: whoever sets the organization up gets the Administrator role.
-    make_starting_roles(&services.ctx(request()), MakeStartingRoles)
+    // The first start, as the server does it: the roles first, so whoever sets the
+    // organization up gets the Administrator role.
+    let code = first_start(services)
         .await
-        .map_err(|error| SampleError::step(Step::StartingRoles, &error))?;
-    let code = issue_setup_code(&services.ctx(request()), IssueSetupCode)
-        .await
-        .map_err(|error| SampleError::step(Step::SetupCode, &error))?
+        .map_err(|error| SampleError::step(Step::FirstStart, &error))?
         .ok_or(SampleError::SetupClosed)?;
     let api: &dyn AuthApi = services;
     api.complete_setup(

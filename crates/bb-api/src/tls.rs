@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use bb_core::time::SECONDS_PER_DAY;
 use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, date_time_ymd};
 use rustls::ServerConfig;
 use rustls::crypto::ring::default_provider;
@@ -27,7 +28,6 @@ const NAMES_FILE: &str = "self-signed-names.txt";
 /// How long a generated certificate is valid, and how long before its end it is renewed.
 const VALID_DAYS: i64 = 365;
 const RENEW_BEFORE_DAYS: i64 = 30;
-const SECONDS_PER_DAY: i64 = 86_400;
 /// Names every generated certificate is valid for: this computer.
 const LOCAL_NAMES: [&str; 3] = ["localhost", "127.0.0.1", "::1"];
 const COMMON_NAME: &str = "Bugaboo";
@@ -558,7 +558,7 @@ mod tests {
 
     #[test]
     fn sec_10_a_generated_certificate_reports_its_end() {
-        let now = 1_800_000_000;
+        let now = bb_dev_words::accounts::CLOCK_START;
         let (pem, _) = generate(&wanted_names(&[]), now).unwrap();
         let der = CertificateDer::from_pem_slice(pem.as_bytes()).unwrap();
         let end = not_after(&der).unwrap();

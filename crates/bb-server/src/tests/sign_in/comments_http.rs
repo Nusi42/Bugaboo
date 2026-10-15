@@ -17,26 +17,12 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{ISSUES, Site, ok};
+use super::issues_site::{ISSUES, Site, id_of, key_of, ok};
 use super::policy_rig::Member;
 use super::rig::Rig;
 
 /// An editor id for the lock requests of these tests.
 const AN_EDITOR: &str = "7b0c1e2a-3d4f-4a5b-8c6d-7e8f9a0b1c2d";
-
-fn key_of(reply: &Reply) -> Result<String, Failure> {
-    ok(reply)?["key"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer holds no issue ID".into())
-}
-
-fn id_of(reply: &Reply) -> Result<String, Failure> {
-    ok(reply)?["id"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer holds no ID".into())
-}
 
 /// Writes a comment; the answer.
 async fn comment(browser: &mut Browser, issue: &str, text: &str) -> Result<Reply, Failure> {

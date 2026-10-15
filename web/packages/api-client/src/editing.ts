@@ -1,6 +1,7 @@
 import { dataOf } from "./answer.ts";
 import type { Api } from "./client.ts";
 import { draftKeptCodes, heartbeatSeconds, versionsMax } from "./editing.generated.ts";
+import { msPerSecond } from "./time.ts";
 import type { Schema } from "./readonly.ts";
 
 /**
@@ -171,7 +172,7 @@ export function startHeartbeatsOn<Handle>(
       .finally(() => {
         running = false;
       });
-  }, heartbeatSeconds * 1000);
+  }, heartbeatSeconds * msPerSecond);
   return () => {
     timers.stop(timer);
   };

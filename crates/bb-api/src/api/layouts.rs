@@ -31,6 +31,7 @@ use super::auth::{
 };
 use super::issues::IssueTypeRef;
 use super::projects::ProjectRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
 /// A section of a form as the person who asks sees it.
@@ -307,15 +308,9 @@ pub(crate) struct DeleteLayoutParams {
     version: i64,
 }
 
-/// The ID in a request; a text that is no ID is not a valid request.
-fn id_in_request<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
-    text.parse()
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-}
-
 /// The issue type in a request, if one is named.
 fn issue_type_in(text: Option<&str>) -> Result<Option<IssueTypeId>, ApiError> {
-    text.map(id_in_request::<IssueTypeId>).transpose()
+    text.map(body_id::<IssueTypeId>).transpose()
 }
 
 fn section_input(body: &SectionInputBody) -> Result<SectionInput, ApiError> {
@@ -332,7 +327,7 @@ fn section_input(body: &SectionInputBody) -> Result<SectionInput, ApiError> {
                     roles: field
                         .roles
                         .iter()
-                        .map(|role| id_in_request::<RoleId>(role))
+                        .map(|text| body_id::<RoleId>(text))
                         .collect::<Result<_, _>>()?,
                 })
             })
@@ -457,11 +452,9 @@ async fn save_layout(
             info,
             SaveLayout {
                 session_token,
-                layout: layout
-                    .parse::<LayoutId>()
-                    .map_err(|_| ApiError::new(ErrorCode::NotFound))?,
+                layout: path_id::<LayoutId>(&layout)?,
                 version: body.version,
-                lock_token: id_in_request::<LockToken>(&body.lock_token)?,
+                lock_token: body_id::<LockToken>(&body.lock_token)?,
                 sections: body
                     .sections
                     .iter()
@@ -495,9 +488,7 @@ async fn delete_layout(
             info,
             DeleteLayout {
                 session_token,
-                layout: layout
-                    .parse::<LayoutId>()
-                    .map_err(|_| ApiError::new(ErrorCode::NotFound))?,
+                layout: path_id::<LayoutId>(&layout)?,
                 version: params.version,
             },
         )

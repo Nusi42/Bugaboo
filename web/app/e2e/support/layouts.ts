@@ -1,12 +1,11 @@
 import { dataOf, layoutEditPart, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { expect, type Browser, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
-import { addressInProject, paths } from "../../src/shared/paths.ts";
+import { addressInProject, paths, projectIssuesAddress } from "../../src/shared/paths.ts";
 import { roleId, roleName, setFieldLevel, signedInAdmin } from "./access.ts";
-import { ada } from "./accounts.ts";
-import { anotherBrowser, signIn } from "./flows.ts";
-import { firstIssueType, prepareWeb } from "./issues.ts";
+import { makeOwnField } from "./fields.ts";
+import { firstIssueType, newIssueDialog, openNewIssueDialog, prepareWeb } from "./issues.ts";
 import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 
@@ -21,11 +20,7 @@ export const dueDate = "Due date";
 export async function prepareLayouts(server: Instance): Promise<void> {
   await prepareWeb(server);
   const admin = await signedInAdmin(server);
-  const made = dataOf(
-    await admin.client.POST("/api/v1/fields", {
-      body: { name: dueDate, kind: "date", applies_to: "issues" },
-    }),
-  );
+  const made = await makeOwnField(admin, dueDate, "date");
   await setFieldLevel(
     admin,
     { role: await roleId(admin, roleName.guest), field: made.id },
@@ -214,16 +209,10 @@ export async function chooseByTyping(page: Page, list: Locator, choice: string):
 }
 
 /**
- * The same person, in another window, opens the layout of *Bug*, takes the editing over, adds a
+ * The same person, signed in in another window (`other`), opens the layout of *Bug*, takes the editing over, adds a
  * section with this title and saves.
  */
-export async function saveSectionInAnotherWindow(
-  browser: Browser,
-  server: Instance,
-  title: string,
-): Promise<void> {
-  const other = await anotherBrowser(browser, server);
-  await signIn(other, ada);
+export async function saveSectionInAnotherWindow(other: Page, title: string): Promise<void> {
   await openLayoutOfBugs(other);
   const add = other.getByRole("button", { name: t("layouts.add-section"), exact: true });
   await editWhenYouCan(other, add);
@@ -231,6 +220,13 @@ export async function saveSectionInAnotherWindow(
   await other.getByLabel(t("layouts.section-title"), { exact: true }).last().fill(title);
   await other.getByRole("button", { name: t("layouts.save"), exact: true }).click();
   await expect(other.getByText(t("save.saved"), { exact: true })).toBeVisible();
+}
+
+/** The dialog that makes an issue in the project WEB, opened with the button of the bar. */
+export async function openNewIssueOfWeb(page: Page) {
+  await page.goto(projectIssuesAddress("WEB"));
+  await openNewIssueDialog(page);
+  return newIssueDialog(page);
 }
 
 /** Opens the editor of the new-issue form for the issue type *Bug*, whose layout the tests customize through `setLayoutOfWeb`. */

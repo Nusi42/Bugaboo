@@ -92,7 +92,6 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     apply: after,
     send: sendAndNote(id, { held: setHeld, savedAt: setSavedAt }),
   });
-  const fallback = detail.issue.version ?? 1;
   const run = (values: IssueValues, version: number): void => {
     setHeld(null);
     mutation.change({ values, version });
@@ -100,11 +99,11 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
   return {
     change: (values) => {
       const before = valuesBefore(detail, values);
-      run(values, versionNow(address, fallback));
+      run(values, versionNow(address, detail.issue));
       undoStore.offer({
         message: changeSentence(values),
         undo: () => {
-          run(before, versionNow(address, fallback));
+          run(before, versionNow(address, detail.issue));
         },
       });
     },
@@ -122,7 +121,7 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
               readAgain(address);
             },
             useMine: () => {
-              run(held.edit.values, held.conflict.version ?? versionNow(address, fallback));
+              run(held.edit.values, held.conflict.version ?? versionNow(address, detail.issue));
             },
           },
   };

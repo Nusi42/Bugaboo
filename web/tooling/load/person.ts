@@ -2,6 +2,7 @@ import {
   ApiError,
   conflictOf,
   dataOf,
+  descriptionEditPart,
   editAnyway,
   heartbeatSeconds,
   keepsTextAsDraft,
@@ -39,7 +40,7 @@ export interface Context {
 const MOST_TRIES = 40;
 
 function whatOf(work: Work): EditWhat {
-  return { record: { kind: "issue", id: work.id }, part: "description" };
+  return { record: { kind: "issue", id: work.id }, part: descriptionEditPart };
 }
 
 /** The code of a refusal, or nothing for a failure that is not one. */
@@ -141,7 +142,7 @@ async function keptAsDraft(context: Context, work: Work, text: string): Promise<
   const draft = await readDraft(context.client, {
     kind: "issue",
     id: work.id,
-    part: "description",
+    part: descriptionEditPart,
   });
   context.book.drafted({
     holder: context.holder,

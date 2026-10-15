@@ -1,5 +1,5 @@
 //! Who is in the sample organization: 50 people with the mix of roles of architecture §11, made
-//! from the seed alone. The roster is the plan; `generate` makes the people it names through the
+//! from the seed alone. The plan lists the people; `generate` makes the people it names through the
 //! use cases.
 //!
 //! The role of each person is recorded here; `organization` gives it to them as assignments, directly
@@ -144,7 +144,7 @@ impl SamplePerson {
 ///
 /// # Errors
 /// Fails when the list of names is too short for 50 different people.
-pub fn roster(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, SampleError> {
+pub fn sample_people(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, SampleError> {
     let mut random = SeededRandom::new(seed);
     let mut roles: Vec<StartingRole> = ROLE_MIX
         .iter()
@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn there_are_fifty_different_people_with_the_mix_of_architecture_11() {
-        let people = roster(42, &names()).unwrap();
+        let people = sample_people(42, &names()).unwrap();
         assert_eq!(people.len(), PEOPLE);
         assert_eq!(
             ROLE_MIX.iter().map(|(_, count)| count).sum::<usize>(),
@@ -256,7 +256,7 @@ mod tests {
     #[test]
     fn the_people_the_demos_name_are_the_same_whatever_the_seed() {
         for seed in [1, 42, 9_999] {
-            let people = roster(seed, &names()).unwrap();
+            let people = sample_people(seed, &names()).unwrap();
             assert_eq!(people[0].name, "Ada Brandt");
             assert_eq!(people[0].role, StartingRole::Administrator);
             let find = |name: &str| people.iter().find(|person| person.name == name).unwrap();
@@ -269,15 +269,15 @@ mod tests {
 
     #[test]
     fn the_same_seed_gives_the_same_people_and_another_seed_other_people() {
-        let first = roster(42, &names()).unwrap();
-        assert_eq!(first, roster(42, &names()).unwrap());
-        assert_ne!(first, roster(43, &names()).unwrap());
+        let first = sample_people(42, &names()).unwrap();
+        assert_eq!(first, sample_people(42, &names()).unwrap());
+        assert_ne!(first, sample_people(43, &names()).unwrap());
     }
 
     #[test]
     fn every_address_is_under_the_reserved_domain_and_every_name_is_from_the_list() {
         let list = names();
-        for person in roster(42, &list).unwrap() {
+        for person in sample_people(42, &list).unwrap() {
             assert!(
                 person.email.ends_with(&format!("@{EMAIL_DOMAIN}")),
                 "{}",
@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn a_few_people_have_a_code_app() {
-        let people = roster(42, &names()).unwrap();
+        let people = sample_people(42, &names()).unwrap();
         let with: Vec<&SamplePerson> = people.iter().filter(|person| person.code_app).collect();
         assert_eq!(with.len(), 5);
         assert!(with.iter().all(|person| !person.is_fixed()));
@@ -297,7 +297,7 @@ mod tests {
 
     #[test]
     fn three_people_have_an_access_key_and_never_the_people_the_demos_name() {
-        let people = roster(42, &names()).unwrap();
+        let people = sample_people(42, &names()).unwrap();
         let mut keys: Vec<(usize, StartingRole)> = people
             .iter()
             .filter_map(|person| person.access_key.map(|at| (at, person.role)))
@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn the_people_live_in_many_time_zones_and_write_dates_and_numbers_in_chosen_ways() {
-        let people = roster(42, &names()).unwrap();
+        let people = sample_people(42, &names()).unwrap();
         let zones: BTreeSet<&str> = people
             .iter()
             .map(|person| person.region.time_zone.as_str())
@@ -341,6 +341,6 @@ mod tests {
     #[test]
     fn a_list_that_is_too_short_is_an_error_and_not_an_endless_loop() {
         let short = NameList::parse("first = [\"Ana\"]\nlast = [\"Moreno\", \"Hale\"]").unwrap();
-        assert!(roster(42, &short).is_err());
+        assert!(sample_people(42, &short).is_err());
     }
 }

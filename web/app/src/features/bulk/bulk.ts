@@ -3,8 +3,6 @@ import { isMessageKey, t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys } from "../../shared/query-keys.ts";
 
 /** What is done to many issues at once: one of five things. */
 export type BulkAction = Schema<"BulkActionBody">;
@@ -94,9 +92,4 @@ export function targetsOf(preview: BulkPreview): { issue: string; version: numbe
 export function skipText(reason: Schema<"SkipReason">): string {
   const key = `bulk-skip.${reason}`;
   return isMessageKey(key) ? t(key) : reason;
-}
-
-/** Reads the lists of issues and what an issue shows about itself again: many issues changed. */
-export function refreshIssues(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
 }

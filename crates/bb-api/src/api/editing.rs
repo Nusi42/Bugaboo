@@ -34,6 +34,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized, done,
 };
+use super::body_id;
 use crate::errors::{ApiError, ApiJson, ApiQuery};
 
 /// A record, by its kind and ID.
@@ -80,14 +81,6 @@ impl EditWhatBody {
                 .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))?,
         })
     }
-}
-
-fn editor(text: &str) -> Result<EditorId, ApiError> {
-    EditorId::from_str(text).map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-}
-
-fn token(text: &str) -> Result<LockToken, ApiError> {
-    LockToken::from_str(text).map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
 }
 
 /// Which thing a person wants the lock on, and from which open editor.
@@ -354,7 +347,7 @@ impl DraftTargetBody {
                 .what()?,
             )),
             (None, None, Some(project)) => Ok(DraftTarget::NewRecord {
-                project: ProjectId::from_str(project).map_err(|_| invalid())?,
+                project: body_id::<ProjectId>(project)?,
                 kind: EntityKind::new(&self.kind).map_err(|_| invalid())?,
             }),
             _ => Err(invalid()),
@@ -481,7 +474,7 @@ async fn take_edit_lock(
             TakeLockQuery {
                 session_token,
                 what: body.what.what()?,
-                editor: editor(&body.editor_id)?,
+                editor: body_id::<EditorId>(&body.editor_id)?,
             },
         )
         .await?;
@@ -561,7 +554,7 @@ async fn heartbeat_edit_lock(
             HeartbeatQuery {
                 session_token,
                 what: body.what.what()?,
-                token: token(&body.lock_token)?,
+                token: body_id::<LockToken>(&body.lock_token)?,
                 draft: body.draft.map(DraftText::from),
             },
         )
@@ -590,7 +583,7 @@ async fn release_edit_lock(
             ReleaseLockQuery {
                 session_token,
                 what: body.what.what()?,
-                token: token(&body.lock_token)?,
+                token: body_id::<LockToken>(&body.lock_token)?,
             },
         )
         .await?;
@@ -661,7 +654,7 @@ async fn edit_anyway(
             EditAnyway {
                 session_token,
                 what: body.what.what()?,
-                editor: editor(&body.editor_id)?,
+                editor: body_id::<EditorId>(&body.editor_id)?,
             },
         )
         .await?;

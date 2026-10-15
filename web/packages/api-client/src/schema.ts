@@ -4059,6 +4059,11 @@ export interface components {
      * @enum {string}
      */
     HistoryEntryKind: "comment" | "change" | "relation";
+    /**
+     * @description Which rows of the history of an issue to list: everything, only the comments, or only the changes.
+     * @enum {string}
+     */
+    HistoryTab: "everything" | "comments" | "changes";
     /** @description The hosts that images in text may come from, already split into one host for each item. */
     ImageHostsBody: {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */

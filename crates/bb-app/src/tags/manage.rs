@@ -281,7 +281,11 @@ pub async fn change_tag<S: AuthStore>(
     let shown = ctx.shown_to(&actor).await?;
     let tag = ctx.known_tag(&catalogue, &shown, input.tag).await?.clone();
     if tag.version != input.version {
-        return Err(ErrorCode::VersionChanged.into());
+        return Err(AppError::stale(
+            entity(RecordKind::Tag, tag.id),
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let name = match &input.name {
         Some(name) => clean_text(name, TAG_NAME_MAX)?,
@@ -357,7 +361,13 @@ pub async fn change_tag<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+                &entity(RecordKind::Tag, id),
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     let catalogue = ctx.tag_catalogue().await?;
     let stored = catalogue.tag(tag.id)?;
     Ok(held.authorize(Ctx::<S>::tag_view(&catalogue, &shown, stored)))
@@ -386,7 +396,17 @@ pub async fn combine_tags<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     if from.version != input.version || into.version != input.into_version {
-        return Err(ErrorCode::VersionChanged.into());
+        // The record that changed is the one to tell about: *Use mine* sends its version next.
+        let changed = if into.version == input.into_version {
+            from.id
+        } else {
+            into.id
+        };
+        return Err(AppError::stale(
+            entity(RecordKind::Tag, changed),
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let rewrite = Rewrite {
         sorted: Sorted::Tag,
@@ -428,7 +448,13 @@ pub async fn combine_tags<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+                &entity(RecordKind::Tag, ids.0),
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     let catalogue = ctx.tag_catalogue().await?;
     let kept = catalogue.tag(into.id)?;
     Ok(held.authorize(Ctx::<S>::tag_view(&catalogue, &shown, kept)))

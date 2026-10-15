@@ -15,16 +15,8 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{ISSUES, Site, ok};
+use super::issues_site::{ISSUES, Site, key_of, ok};
 use super::rig::Rig;
-
-/// The key of the issue an answer is about.
-fn key_of(reply: &Reply) -> Result<String, Failure> {
-    ok(reply)?["key"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer holds no issue ID".into())
-}
 
 /// The keys of the issues in a list.
 fn keys(list: &Reply) -> Vec<String> {

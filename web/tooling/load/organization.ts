@@ -1,9 +1,7 @@
-import { settingKeys } from "@bugaboo/api-client";
-
 import { giveRole, roleName } from "../../app/e2e/support/access.ts";
 import { ada, makeAdmin, makePerson, ownId, type Person } from "../../app/e2e/support/accounts.ts";
 import { type ApiSession } from "../../app/e2e/support/api.ts";
-import { makeIssue } from "../../app/e2e/support/issues.ts";
+import { countIssueIds, makeIssue } from "../../app/e2e/support/issues.ts";
 import { makeProject } from "../../app/e2e/support/projects.ts";
 import { inOrder } from "../../app/e2e/support/sequence.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
@@ -34,10 +32,7 @@ export async function prepare(
   readonly issues: readonly Work[];
 }> {
   const admin = await makeAdmin(server);
-  await admin.client.PUT("/api/v1/settings/{key}", {
-    params: { path: { key: settingKeys.issuesIdMode } },
-    body: { value: "counting" },
-  });
+  await countIssueIds(admin);
   await makeProject(admin, "LOAD", "Load");
   const issues: Work[] = [];
   await inOrder(

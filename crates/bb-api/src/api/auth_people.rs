@@ -4,11 +4,9 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::{
-    AcceptInvitation, AppError, ChangeSignUpPolicy, CompleteSetup, CreateInvitation,
-    InvitationLookupQuery, InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy,
-    SignUpPolicyQuery,
+    AcceptInvitation, ChangeSignUpPolicy, CompleteSetup, CreateInvitation, InvitationLookupQuery,
+    InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::id::InvitationId;
 use bb_policy::{Authorized, Masked};
 use serde::{Deserialize, Serialize};
@@ -16,11 +14,13 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::cursor_error;
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, PreviousSession, Session, SignedInBody, answer, answer_authorized, done,
     signed_in,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -321,11 +321,7 @@ async fn list_invitations(
     // nothing about the fields or cursors of the list. A cursor that does not open is passed on
     // as one the use case cannot read, so its answer comes after the check of the person; the
     // fields are judged last, once the mask of the person is known.
-    let position = params.position(INVITATIONS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(INVITATIONS_LIST);
     let page = auth
         .api()?
         .invitations(
@@ -337,12 +333,8 @@ async fn list_invitations(
             },
         )
         .await
-        .map_err(|error| match error {
-            // The only thing the use case can find invalid is the cursor.
-            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
-            other => ApiError::from(other),
-        })?;
-    position?;
+        .map_err(cursor_error)?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(InvitationItem::from).collect(),
         next: page.next_cursor,
@@ -407,9 +399,7 @@ async fn revoke_invitation(
     Session(session_token): Session,
     ApiPath(invitation_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let invitation_id: InvitationId = invitation_id
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let invitation_id: InvitationId = path_id(&invitation_id)?;
     auth.api()?
         .revoke_invitation(
             info,

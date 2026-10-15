@@ -21,6 +21,7 @@ mod bulk_http;
 mod caching;
 mod comments_http;
 mod concurrent;
+mod conflict_http;
 mod editing;
 mod fields_http;
 mod fields_names;
@@ -37,6 +38,7 @@ mod issues_site;
 mod layouts_http;
 mod layouts_review;
 mod lists;
+mod long_text_http;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.
 #[path = "../matrix/mod.rs"]

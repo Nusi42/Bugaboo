@@ -3,8 +3,9 @@
 //!
 //! Locks, drafts and the check of versions work on any record by its [`EntityRef`]. A kind of record
 //! (issues, comments, …) says what it is by implementing [`EditableRecords`] and handing it to
-//! the services (`AuthServices::with_records`); nothing in the editing code names a kind. The
-//! project is the one kind that `bb-app` knows itself, because its version is stored since M2.
+//! the services (`AuthServices::with_records`). The kinds `bb-app` keeps itself (project, issue,
+//! comment, layout, …) are built in: a program plugs in no kind of them, and the editing code
+//! names them in one place (`facts_of` here, `version_now` in `conflict.rs`).
 
 use std::sync::Arc;
 
@@ -165,6 +166,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.issue_facts(actor, record).await?
         } else if record.kind == EntityKind::from(RecordKind::Layout) {
             self.layout_facts(record).await?
+        } else if record.kind == EntityKind::from(RecordKind::Comment) {
+            self.comment_facts(actor.person.id, record).await?
         } else {
             self.services
                 .records

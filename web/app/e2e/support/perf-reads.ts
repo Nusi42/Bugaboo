@@ -1,4 +1,4 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, pageSizeDefault, pageSizeMax } from "@bugaboo/api-client";
 import { expect } from "@playwright/test";
 
 import { type ApiSession } from "./api.ts";
@@ -12,8 +12,8 @@ import { inOrder } from "./sequence.ts";
 export const PAGES = 200;
 /** How many times the list of each project is read. */
 export const LISTS = 6;
-/** The size of a page of the list, as the screen asks for it. */
-export const PAGE_LEN = 50;
+/** The size of a page of the list, as the screen asks for it (the usual page of the server). */
+export const PAGE_LEN = pageSizeDefault;
 /** How many pages of a list are read one after the other, as a person scrolls. */
 export const PAGES_OF_A_LIST = 3;
 
@@ -142,7 +142,7 @@ export async function readTree(
   times: Readonly<Times>,
 ): Promise<void> {
   const list = await timed(() =>
-    session.client.GET("/api/v1/projects", { params: { query: { limit: 100 } } }),
+    session.client.GET("/api/v1/projects", { params: { query: { limit: pageSizeMax } } }),
   );
   times.add("read: the list of projects", list.ms);
   const preview = await timed(() =>
@@ -207,17 +207,6 @@ export function firstOf<T>(items: readonly T[]): T {
     throw new Error("There is nothing in the list.");
   }
   return first;
-}
-
-/** A field of the sample with its choices, found by name. */
-export async function fieldNamed(session: ApiSession, name: string) {
-  const list = dataOf(await session.client.GET("/api/v1/fields"));
-  for (const field of list.fields) {
-    if (field.name === name) {
-      return field;
-    }
-  }
-  throw new Error(`The sample has no field called ${name}.`);
 }
 
 /** The ID of the choice with this name among the choices of a field. */

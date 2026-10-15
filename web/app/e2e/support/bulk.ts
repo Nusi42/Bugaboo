@@ -2,8 +2,8 @@ import { dataOf, type components, type Schema } from "@bugaboo/api-client";
 import { expect } from "@playwright/test";
 
 import { type ApiSession } from "./api.ts";
-import { type Changes, changesOf, changesSince, readIssue } from "./crowd-checks.ts";
-import { type MadeIssue } from "./issues.ts";
+import { type Changes, changesOf, changesSince } from "./crowd-checks.ts";
+import { type MadeIssue, readIssue } from "./issues.ts";
 
 // Changing many issues (ISS-09, M3 WP-08), as the API description has it: a preview that reads the
 // issues, then the change, which takes back the versions the preview read. This file is the one

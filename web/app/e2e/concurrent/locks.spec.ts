@@ -1,9 +1,15 @@
-import { heartbeatSeconds, leaseSeconds, readDraft } from "@bugaboo/api-client";
+import {
+  descriptionEditPart,
+  heartbeatSeconds,
+  leaseSeconds,
+  msPerSecond,
+  readDraft,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { ada, type Person, signInThroughApi } from "../support/accounts.ts";
 import { signedInAdmin } from "../support/access.ts";
-import { lostNote, savedNote, signedInPage } from "../support/crowd-pages.ts";
+import { lostNote, signedInPage } from "../support/crowd-pages.ts";
 import { ben, cleo, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import {
   descriptionBox,
@@ -16,7 +22,7 @@ import {
 } from "../support/description.ts";
 import { expect, test } from "../support/fixtures.ts";
 import { type Instance } from "../support/server.ts";
-import { issueOf } from "../support/issues.ts";
+import { issueOf, savedNote } from "../support/issues.ts";
 
 // Ten people at the same time, the screens (architecture §11, M3 WP-10, TEST-CONCURRENT and
 // TEST-EDIT-LOCKS): the people look at the pages, and the tests read what the pages tell them.
@@ -43,7 +49,11 @@ async function draftOf(server: Instance, person: Person, key: string) {
   const admin = await signedInAdmin(server);
   try {
     const issue = await issueOf(admin, key);
-    return await readDraft(session.client, { kind: "issue", id: issue.id, part: "description" });
+    return await readDraft(session.client, {
+      kind: "issue",
+      id: issue.id,
+      part: descriptionEditPart,
+    });
   } finally {
     await Promise.all([session.dispose(), admin.dispose()]);
   }
@@ -100,7 +110,7 @@ test("iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_a
 }) => {
   // The lock frees within the lease and the page notices within a few seconds more: the time the
   // test may take is the one of the configuration plus the time it waits for that.
-  test.setTimeout(test.info().timeout + (leaseSeconds + noticeSeconds) * 1000);
+  test.setTimeout(test.info().timeout + (leaseSeconds + noticeSeconds) * msPerSecond);
   const look = { viewport, hasTouch };
   const holder = await signedInPage(browser, server, ben, look);
   const next = await signedInPage(browser, server, cleo, look);
@@ -115,7 +125,7 @@ test("iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_a
   // Within a minute (the lease) and the time the box takes to notice, the lock is free and the
   // box opens for the next person, who writes and saves.
   await expect(descriptionBox(next)).toBeVisible({
-    timeout: (leaseSeconds + noticeSeconds) * 1000,
+    timeout: (leaseSeconds + noticeSeconds) * msPerSecond,
   });
   await descriptionBox(next).fill("Cleo's text, written while Ben was away");
   await saveButton(next).click();

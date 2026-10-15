@@ -3171,6 +3171,9 @@ pub const SAMPLE_STEP_FIELDS: MessageKey = MessageKey::new("sample.step.fields")
 pub const SAMPLE_STEP_FIRST_ADMINISTRATOR: MessageKey =
     MessageKey::new("sample.step.first-administrator");
 
+/// The message `sample.step.first-start`.
+pub const SAMPLE_STEP_FIRST_START: MessageKey = MessageKey::new("sample.step.first-start");
+
 /// The message `sample.step.group`.
 pub const SAMPLE_STEP_GROUP: MessageKey = MessageKey::new("sample.step.group");
 
@@ -3213,17 +3216,11 @@ pub const SAMPLE_STEP_ROLE: MessageKey = MessageKey::new("sample.step.role");
 /// The message `sample.step.settings`.
 pub const SAMPLE_STEP_SETTINGS: MessageKey = MessageKey::new("sample.step.settings");
 
-/// The message `sample.step.setup-code`.
-pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setup-code");
-
 /// The message `sample.step.signing-in`.
 pub const SAMPLE_STEP_SIGNING_IN: MessageKey = MessageKey::new("sample.step.signing-in");
 
 /// The message `sample.step.signing-out`.
 pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.signing-out");
-
-/// The message `sample.step.starting-roles`.
-pub const SAMPLE_STEP_STARTING_ROLES: MessageKey = MessageKey::new("sample.step.starting-roles");
 
 /// The message `sample.step.tags`.
 pub const SAMPLE_STEP_TAGS: MessageKey = MessageKey::new("sample.step.tags");
@@ -7734,7 +7731,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "bulk-skip.limit-reached",
-        "It has as many relations as an issue can hold",
+        "It already has as many of these as it can hold",
     ),
     (
         "bulk-skip.not-allowed",
@@ -8410,7 +8407,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.limit.reached",
-        "That is as many as one issue can hold. Take some away first.",
+        "There is no room for more of these. Take some away first.",
     ),
     (
         "error.name.taken",
@@ -10084,6 +10081,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.first-administrator",
         "making the first administrator",
     ),
+    ("sample.step.first-start", "getting the organization ready"),
     ("sample.step.group", "making a group"),
     ("sample.step.group-member", "putting a person into a group"),
     (
@@ -10110,10 +10108,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.settings",
         "choosing how a project gives out issue IDs",
     ),
-    ("sample.step.setup-code", "using the setup code"),
     ("sample.step.signing-in", "signing in to do the work"),
     ("sample.step.signing-out", "signing out"),
-    ("sample.step.starting-roles", "making the starting roles"),
     ("sample.step.tags", "putting a tag or a label on an issue"),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),

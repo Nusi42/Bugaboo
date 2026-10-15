@@ -378,7 +378,7 @@ export const messages = {
   "history.people-none": "nobody",
   "error.issue.parent-circle":
     "That would make a circle of issues or a chain that is too long. Choose another issue.",
-  "error.limit.reached": "That is as many as one issue can hold. Take some away first.",
+  "error.limit.reached": "There is no room for more of these. Take some away first.",
   "error.relation.exists": "Those two issues are related in that way already.",
   "status.open": "Open",
   "status.in-progress": "In progress",
@@ -525,7 +525,7 @@ export const messages = {
   "bulk-skip.tag-not-here": "It has a tag that is not for the other project",
   "bulk-skip.relation-exists": "The relation is there already",
   "bulk-skip.same-issue": "An issue cannot be related to itself",
-  "bulk-skip.limit-reached": "It has as many relations as an issue can hold",
+  "bulk-skip.limit-reached": "It already has as many of these as it can hold",
   "bulk-skip.field-rule": "A value of the issue breaks the rule of its field",
   "bulk-skip.not-valid": "This change cannot be made to it",
   "bulk-status.queued": "Waiting",

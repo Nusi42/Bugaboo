@@ -2,12 +2,12 @@
 //! sub-projects and who has which role where, made through the use cases the API calls, as the
 //! first administrator.
 //!
-//! The *plan* is data and rules: [`plan`] works out from the roster who is in which group and which
+//! The *plan* is data and rules: [`plan`] works out from the plan of the people who is in which group and which
 //! rows of *Who has which role* there are, and has no database in it, so its tests are quick. The
 //! *making* ([`Organization`]) follows the plan step by step, one change every second of the
 //! sample's clock.
 //!
-//! The mix of roles of the roster is given in four ways, so every kind of row is there for the
+//! The mix of roles of the plan of the people is given in four ways, so every kind of row is there for the
 //! screens and for *Check access* to explain: for the whole organization, on a project (and its
 //! sub-projects), through a group, and as *No access* on a sub-project.
 
@@ -28,7 +28,7 @@ use bb_core::project::ShortName;
 
 use crate::error::{SampleError, Step};
 use crate::generate::{Later, World};
-use crate::roster::SamplePerson;
+use crate::people_plan::SamplePerson;
 use bb_dev_words::sample::{Layout, OrganizationNames};
 
 /// A role the plan gives: one of the six starting roles, or a custom role of the sample (by the
@@ -39,7 +39,7 @@ pub(crate) enum RoleKey {
     Custom(&'static str),
 }
 
-/// Who a row is for: a person (their place in the roster) or a group (its key).
+/// Who a row is for: a person (their place in the plan of the people) or a group (its key).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Holder {
     Person(usize),
@@ -66,7 +66,7 @@ pub(crate) struct Row {
 /// Everything the plan says.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Plan {
-    /// The people of each group (their places in the roster), in the order of [`GROUPS`].
+    /// The people of each group (their places in the plan of the people), in the order of [`GROUPS`].
     pub(crate) members: Vec<(&'static str, Vec<usize>)>,
     /// The rows, in the order they are given.
     pub(crate) rows: Vec<Row>,
@@ -76,7 +76,7 @@ pub(crate) struct Plan {
 struct GroupRule {
     /// The key of the group in `sample.json`.
     key: &'static str,
-    /// The people of this role (in the roster) are its members.
+    /// The people of this role (in the plan of the people) are its members.
     of: StartingRole,
     /// The role it gives.
     grants: RoleKey,
@@ -164,7 +164,7 @@ struct Builder<'a> {
 }
 
 impl Builder<'_> {
-    /// The people of a role in the order of the roster, except that the people the demos name come
+    /// The people of a role in the order of the plan of the people, except that the people the demos name come
     /// first (Ana is the first Contributor, Ben the first Team member, whatever the seed).
     fn of(&self, role: StartingRole) -> Vec<usize> {
         let mut found: Vec<usize> = self
@@ -309,7 +309,7 @@ impl Builder<'_> {
     }
 }
 
-/// Works out the groups and the rows from the roster.
+/// Works out the groups and the rows from the plan of the people.
 pub(crate) fn plan(people: &[SamplePerson], names: &OrganizationNames) -> Plan {
     let mut builder = Builder {
         people,
@@ -332,7 +332,7 @@ pub(crate) fn plan(people: &[SamplePerson], names: &OrganizationNames) -> Plan {
     }
 }
 
-/// The people who can do the work on every issue of the sample (their places in the roster): the
+/// The people who can do the work on every issue of the sample (their places in the plan of the people): the
 /// Administrators and the Team members for the whole organization, without the person who may
 /// not enter a sub-project and without the people who must use a code app to sign in.
 pub(crate) fn workers(world: &World<'_>) -> Result<Vec<usize>, SampleError> {
@@ -669,10 +669,10 @@ mod tests {
 
     use super::*;
     use crate::names::NameList;
-    use crate::roster::roster;
+    use crate::people_plan::sample_people;
 
     fn made() -> (Vec<SamplePerson>, OrganizationNames, Plan) {
-        let people = roster(42, &NameList::bundled().unwrap()).unwrap();
+        let people = sample_people(42, &NameList::bundled().unwrap()).unwrap();
         let names = Layout::bundled().unwrap().organization;
         let plan = plan(&people, &names);
         (people, names, plan)

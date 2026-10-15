@@ -13,13 +13,10 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use bb_api::tls::ServedCertificate;
 use bb_api::{AuthHandle, FailureLimits, ProbeHandle};
-use bb_app::access::{MakeStartingRoles, make_starting_roles};
-use bb_app::auth::{AuthServices, IssueSetupCode, RequestInfo, issue_setup_code};
-use bb_app::comments::CommentRecords;
+use bb_app::auth::{AuthServices, RequestInfo};
 use bb_app::context::SystemClock;
-use bb_app::issues::{MakeStartingIssueTypes, make_starting_issue_types};
+use bb_app::first_start::first_start;
 use bb_app::ports::SetupCodeFile;
-use bb_app::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
 use bb_store::{AuthStorage, Database, LogSeal};
@@ -126,9 +123,6 @@ pub(crate) async fn wire(
     let seal = LogSeal::new(&keys, data.security_log_anchor());
     let csrf = CsrfKey::from_bytes(keys.csrf_key().to_bytes());
     let storage = AuthStorage::new(database.clone(), keys, seal.clone());
-    // The kinds of record that can be locked, drafted and watched besides the ones bb-app keeps.
-    let records = Arc::new(CommentRecords::new(storage.clone()));
-
     let name = Message::from(message::APP_NAME).render();
     // Passkeys are tied to a host name; a server reached by an IP address cannot offer them.
     let passkeys = RelyingParty::from_public_url(&settings.public_url, &name)
@@ -146,7 +140,6 @@ pub(crate) async fn wire(
         FailureLimits::new(settings.limits.sign_in_failures_per_minute),
         name,
     )
-    .with_records(records)
     .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())));
     let probe = Probe::new(
         database,
@@ -156,27 +149,9 @@ pub(crate) async fn wire(
         services.log_writes(),
         data.root().to_path_buf(),
     );
-    // The starting roles are made once, here at the first start, and the people who were
-    // administrators in M1 get their role (ADR-0025, decisions 4 and 5); then the setup code,
-    // while nobody can manage roles yet.
-    make_starting_roles(&services.ctx(RequestInfo::default()), MakeStartingRoles)
-        .await
-        .map_err(|error| anyhow!(error.to_string()))?;
-    // The issue types (Bug, Task, Feature, Goal) are made once as well (ISS-02).
-    make_starting_issue_types(
-        &services.ctx(RequestInfo::default()),
-        MakeStartingIssueTypes,
-    )
-    .await
-    .map_err(|error| anyhow!(error.to_string()))?;
-    // So are the kinds of relation (blocks, duplicate of, causes, related to; ISS-04).
-    make_starting_relation_kinds(
-        &services.ctx(RequestInfo::default()),
-        MakeStartingRelationKinds,
-    )
-    .await
-    .map_err(|error| anyhow!(error.to_string()))?;
-    let setup_code = issue_setup_code(&services.ctx(RequestInfo::default()), IssueSetupCode)
+    // The first start: the starting roles (and the Administrator role of the people who were
+    // administrators in M1), the issue types and kinds of relation, then the setup code.
+    let setup_code = first_start(&services)
         .await
         .map_err(|error| anyhow!(error.to_string()))?
         .map(|code| code.as_str().to_owned());

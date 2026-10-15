@@ -33,9 +33,19 @@ use sqlx::{AssertSqlSafe, PgPool, Postgres, Row as _, Sqlite, SqlitePool};
 
 use crate::error::StoreError;
 
-/// How many things one statement names at most (people, items): a statement may carry only so
-/// many bound values (32,766 in SQLite), so a long list of them is asked about in chunks.
-pub(crate) const STATEMENT_ITEMS: usize = 500;
+/// How many values one statement binds at most. SQLite allows 32,766 and PostgreSQL 65,535, so the
+/// smaller counts, less a little room for the values a statement binds besides its list. This is
+/// the one limit: what is asked about or written in bulk is cut into chunks that fit it, here in
+/// the store, and no caller chunks for it.
+pub(crate) const BIND_LIMIT: usize = 32_000;
+
+/// How many things one statement names when each is one bound value (people, items).
+pub(crate) const STATEMENT_ITEMS: usize = BIND_LIMIT;
+
+/// How many rows one insert writes at most when each row binds `columns` values.
+pub(crate) const fn rows_per_insert(columns: usize) -> usize {
+    BIND_LIMIT / columns
+}
 
 /// How long SQLite waits for another writer before it gives up.
 const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(10);

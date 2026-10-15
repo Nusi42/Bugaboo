@@ -13,6 +13,7 @@ import {
   openIssuesIn,
   prepareWeb,
   webIssues,
+  savedNote,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
@@ -58,11 +59,11 @@ test("iss_01 status and priority change in place and say Saved", async ({ page }
   await page.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
     label: t("status.in-progress"),
   });
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   // Kept: the page is read again from the server.
   await page.reload();
   await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveValue(

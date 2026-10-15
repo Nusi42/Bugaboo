@@ -18,7 +18,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 use std::ops::ControlFlow;
 
-use crate::db::{Database, Row, StoredId, Transaction, from_micros, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, from_micros, rows_per_insert, to_micros};
 use crate::error::StoreError;
 use crate::schema::{Event, Outbox, OutboxPosition};
 
@@ -377,10 +377,6 @@ async fn transaction_has_no_row(
     Ok(transaction.fetch_optional(&select).await?.is_none())
 }
 
-/// How many events one statement inserts: the bind variables of a statement are limited (nine
-/// for each event here), and SQLite's older limit of 999 is the smallest.
-const EVENTS_PER_STATEMENT: usize = 100;
-
 /// Appends the events and their outbox entries, in the order given, inside the transaction of the
 /// change. The positions are taken with one statement for all of them and the rows are written
 /// many to a statement, so a change that writes an event for each of thousands of issues is a
@@ -410,7 +406,7 @@ pub(crate) async fn append_events(
     let first = last - (count - 1);
 
     let mut position = first;
-    for chunk in events.chunks(EVENTS_PER_STATEMENT) {
+    for chunk in events.chunks(rows_per_insert(event_columns().len())) {
         let mut insert = Query::insert();
         insert.into_table(Event::Table).columns(event_columns());
         let mut outbox = Query::insert();

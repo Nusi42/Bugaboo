@@ -538,7 +538,7 @@ mod tests {
     }
 
     fn now() -> Timestamp {
-        Timestamp::from_second(1_800_000_000).unwrap()
+        Timestamp::from_second(bb_dev_words::accounts::CLOCK_START).unwrap()
     }
 
     fn person() -> UserId {

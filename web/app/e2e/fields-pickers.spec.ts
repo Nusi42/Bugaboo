@@ -1,11 +1,10 @@
-import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./support/access.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
-import { fieldNamed, pickableGroup, preparePickers } from "./support/fields.ts";
+import { fieldOf, pickableGroup, preparePickers } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { makeIssue } from "./support/issues.ts";
@@ -108,7 +107,7 @@ test("cf_04 the issue page with own fields and a long text is good in all four l
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  const notes = fieldNamed(dataOf(await admin.client.GET("/api/v1/fields")).fields, "Notes");
+  const notes = await fieldOf(admin, "Notes");
   const paragraph = "Steps to see it: open the page, wait, and the window closes by itself. ";
   const longText = [
     `# Notes\n\n${paragraph.repeat(12)}`,

@@ -6,7 +6,8 @@ use bb_app::access::{Permission, StartingRole};
 use bb_testing::{TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::people_http::{id_of, ids_of, start};
+use super::issues_site::id_of;
+use super::people_http::{ids_of, start};
 
 /// The permissions in an answer, as their keys.
 fn permissions_of(role: &Value) -> Vec<&str> {

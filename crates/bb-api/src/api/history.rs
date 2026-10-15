@@ -319,11 +319,7 @@ async fn list_issue_history(
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(tab): ApiQuery<TabParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(HISTORY_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(HISTORY_LIST);
     let page = auth
         .api()?
         .history(
@@ -338,7 +334,7 @@ async fn list_issue_history(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().flat_map(items_of).collect(),
         next: page.next_cursor,

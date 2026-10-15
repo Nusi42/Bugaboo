@@ -13,7 +13,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_in, ok};
 use super::policy_rig::Member;
 use super::rig::Rig;
 
@@ -23,11 +23,6 @@ pub(super) const FIELDS: &str = "/api/v1/fields";
 pub(super) async fn make_field(browser: &mut Browser, body: Value) -> Result<Value, Failure> {
     let made = browser.send("POST", FIELDS, Some(body)).await?;
     Ok(ok(&made)?.clone())
-}
-
-/// The ID of a field or a choice in an answer.
-pub(super) fn id_of(value: &Value) -> Result<String, Failure> {
-    Ok(value["id"].as_str().ok_or("no ID")?.to_owned())
 }
 
 /// The path of the issues of ACME.
@@ -70,7 +65,7 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
             }),
         )
         .await?;
-        let key = id_of(&customer)?;
+        let key = id_in(&customer)?;
         // A refusal names the field it is about, so the form can show it there (M3 WP-13).
         let refused = |reply: &Reply, code: &str, field: &str| {
             assert_eq!(
@@ -128,14 +123,14 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
         );
         // A choice the field does not offer.
         let level = severity(&mut ada).await?;
-        let level_key = id_of(&level)?;
+        let level_key = id_in(&level)?;
         refused(
             &ada.send(
                 "PATCH",
                 &path,
                 Some(json!({
                     "version": version,
-                    "fields": { id_of(&level)?: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c" },
+                    "fields": { id_in(&level)?: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c" },
                 })),
             )
             .await?,
@@ -172,7 +167,7 @@ async fn cf_03_a_field_for_one_project_is_not_offered_elsewhere() -> TestResult 
             }),
         )
         .await?;
-        let key = id_of(&field)?;
+        let key = id_in(&field)?;
         // Offered in ACME, not in BETA.
         let in_acme = ada.send("GET", &format!("{FIELDS}?project=ACME"), None).await?;
         assert_eq!(ok(&in_acme)?["fields"].as_array().map(Vec::len), Some(1));
@@ -311,7 +306,7 @@ async fn cf_06_an_own_field_follows_its_level_per_role_and_per_issue_type() -> T
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
-        let (key, major) = (id_of(&level)?, id_of(&level["choices"][1])?);
+        let (key, major) = (id_in(&level)?, id_in(&level["choices"][1])?);
         let (in_bug, in_task) = an_issue_per_type(&site, &mut ada, &key, &major).await?;
         // A role that sees the field in general (the starting level for it) but not for Bug.
         let see = [
@@ -441,9 +436,9 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
-        let (key, major) = (id_of(&level)?, id_of(&level["choices"][1])?);
+        let (key, major) = (id_in(&level)?, id_in(&level["choices"][1])?);
         // A long text is sent as HTML next to the values: hidden, it is in no answer either.
-        let notes = id_of(
+        let notes = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
@@ -505,7 +500,7 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         assert_eq!(hidden.code(), "access.forbidden");
         // Ada changes the own field; the writer, with the old version, is told who changed what:
         // the field that is hidden from them is not among the fields, nor in the values now.
-        let minor = id_of(&level["choices"][0])?;
+        let minor = id_in(&level["choices"][0])?;
         ok(&ada
             .send(
                 "PATCH",
@@ -551,9 +546,9 @@ async fn cf_07_combining_two_choices_moves_every_value_and_keeps_a_record() -> T
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
         let (key, minor, major) = (
-            id_of(&level)?,
-            id_of(&level["choices"][0])?,
-            id_of(&level["choices"][1])?,
+            id_in(&level)?,
+            id_in(&level["choices"][0])?,
+            id_in(&level["choices"][1])?,
         );
         let mut issues = Vec::new();
         for (title, choice) in [("First", &major), ("Second", &minor), ("Third", &major)] {
@@ -630,7 +625,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
-        let (key, major) = (id_of(&level)?, id_of(&level["choices"][1])?);
+        let (key, major) = (id_in(&level)?, id_in(&level["choices"][1])?);
         let old = ok(&ada
             .send(
                 "POST",
@@ -720,7 +715,7 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
             }),
         )
         .await?;
-        let (salary_id, beta_id) = (id_of(&salary)?, id_of(&only_beta)?);
+        let (salary_id, beta_id) = (id_in(&salary)?, id_in(&only_beta)?);
         // A lead who decides what roles see and checks access, with the salary band hidden.
         let mut lead = reader_of(
             &site,
@@ -740,7 +735,7 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
         )
         .await?;
         let me = lead.send("GET", "/api/v1/auth/me", None).await?;
-        let lena = id_of(ok(&me)?)?;
+        let lena = id_in(ok(&me)?)?;
         // The same answers for Ada, who manages fields, do name them.
         let table = ada.send("GET", "/api/v1/field-permissions", None).await?;
         assert!(ok(&table)?.to_string().contains("Salary band"));
@@ -804,8 +799,8 @@ async fn move_preview_hides(
     // The move preview: a project with a sub-project (and a field that is only for the
     // sub-project) moves below ACME, where Pia has a role that reads all three fields.
     let make = |short: &'static str| json!({"short_name": short, "name": short});
-    let moved = id_of(&ada.send("POST", PROJECTS, Some(make("MOVED"))).await?.body)?;
-    let sub = id_of(&ada.send("POST", PROJECTS, Some(make("MSUB"))).await?.body)?;
+    let moved = id_in(&ada.send("POST", PROJECTS, Some(make("MOVED"))).await?.body)?;
+    let sub = id_in(&ada.send("POST", PROJECTS, Some(make("MSUB"))).await?.body)?;
     let into_moved = ada
         .send(
             "POST",
@@ -831,7 +826,7 @@ async fn move_preview_hides(
         }),
     )
     .await?;
-    let sub_id = id_of(&sub_only)?;
+    let sub_id = id_in(&sub_only)?;
     let pia = site.org.person().await?;
     let reads = site
         .org
@@ -925,7 +920,7 @@ async fn cf_06_an_own_field_never_starts_with_a_default_that_cannot_be_kept() ->
             json!({"name": "Region", "kind": "text", "applies_to": "issues", "default_value": "North"}),
         )
         .await?;
-        let key = id_of(&field)?;
+        let key = id_in(&field)?;
         let made = ok(&site.make(&mut ada, "Uses the default").await?)?.clone();
         assert_eq!(made["own_fields"][&key], "North");
         let tightened = ada
@@ -958,7 +953,7 @@ async fn reference_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
             json!({"name": name, "kind": kind, "applies_to": "issues"}),
         )
         .await?;
-        keys.push(id_of(&made)?);
+        keys.push(id_in(&made)?);
     }
     Ok(keys)
 }
@@ -1029,8 +1024,8 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         let [tester, reviewers, team, duplicate, notes] = keys.as_slice() else {
             return Err("five fields".into());
         };
-        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
-        let group = id_of(ok(&ada
+        let me = id_in(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let group = id_in(ok(&ada
             .send("POST", "/api/v1/groups", Some(json!({"name": "Core"})))
             .await?)?)?;
         let first = ok(&site.make(&mut ada, "The first").await?)?.clone();
@@ -1128,10 +1123,10 @@ async fn locked_notes(
         json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
     )
     .await?;
-    let field = id_of(&notes)?;
+    let field = id_in(&notes)?;
     let made = ok(&site.make(ada, "Has notes").await?)?.clone();
     let (id, key) = (
-        id_of(&made)?,
+        id_in(&made)?,
         made["key"].as_str().ok_or("no key")?.to_owned(),
     );
     let taken = take_notes_lock(ada, &id, &field).await?;
@@ -1191,79 +1186,6 @@ async fn cf_01_a_long_text_own_field_is_saved_under_its_lock_and_comes_back_as_h
                 .as_array()
                 .is_some_and(Vec::is_empty)
         );
-        Ok(())
-    })
-    .await
-}
-
-#[tokio::test]
-async fn adr_0019_a_change_of_another_field_does_not_refuse_a_long_own_field() -> TestResult {
-    each_database("adr_0019_long_text_other_field", async |db| {
-        let (rig, app) = rig_and_app(db).await?;
-        let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (field, made, key, taken) = locked_notes(&site, &mut ada).await?;
-        // Somebody renames the issue while the text is being written: the version counts up.
-        let renamed = ada
-            .send(
-                "PATCH",
-                &format!("{ISSUES}/{key}"),
-                Some(json!({"version": made["version"], "title": "Renamed"})),
-            )
-            .await?;
-        assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.body);
-        let saved = ada
-            .send(
-                "PUT",
-                &format!("{ISSUES}/{key}/fields/{field}/text"),
-                Some(json!({
-                    "version": made["version"],
-                    "lock_token": taken.body["lock_token"],
-                    "text": "Steps",
-                })),
-            )
-            .await?;
-        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
-        assert_eq!(saved.body["title"], "Renamed");
-        Ok(())
-    })
-    .await
-}
-
-#[tokio::test]
-async fn adr_0019_a_stale_version_refuses_a_long_own_field_whose_text_changed() -> TestResult {
-    each_database("adr_0019_long_text_stale", async |db| {
-        let (rig, app) = rig_and_app(db).await?;
-        let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (field, made, key, taken) = locked_notes(&site, &mut ada).await?;
-        let path = format!("{ISSUES}/{key}/fields/{field}/text");
-        // The text itself changes meanwhile (the save lets the lock go).
-        let first = ada
-            .send(
-                "PUT",
-                &path,
-                Some(json!({
-                    "version": made["version"],
-                    "lock_token": taken.body["lock_token"],
-                    "text": "First",
-                })),
-            )
-            .await?;
-        assert_eq!(first.status, StatusCode::OK, "{}", first.body);
-        let id = id_of(&made)?;
-        let again = take_notes_lock(&mut ada, &id, &field).await?;
-        let stale = ada
-            .send(
-                "PUT",
-                &path,
-                Some(json!({
-                    "version": made["version"],
-                    "lock_token": again.body["lock_token"],
-                    "text": "My text",
-                })),
-            )
-            .await?;
-        assert_eq!(stale.status, StatusCode::CONFLICT, "{}", stale.body);
-        assert_eq!(stale.code(), "edit.version_changed");
         Ok(())
     })
     .await

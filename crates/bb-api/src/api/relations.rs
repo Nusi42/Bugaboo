@@ -12,7 +12,6 @@ use bb_app::relations::{
     MakeRelationKind, RelatedIssuesQuery, RelationKindView, RelationKindsQuery, RelationView,
     RemoveRelation, SetParent, SubIssuesQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::id::{RelationId, RelationKindId};
 use bb_core::issue::{Status, StatusGroup};
 use bb_core::relation::Direction;
@@ -29,6 +28,7 @@ use super::auth::{
 };
 use super::issues::IssueTypeRef;
 use super::projects::ProjectRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -257,11 +257,6 @@ pub(crate) struct ParentBody {
     parent: Option<String>,
 }
 
-fn kind_id(text: &str) -> Result<RelationKindId, ApiError> {
-    text.parse()
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-}
-
 /// The kinds of relation in the order they are offered in, a page at a time, retired ones too.
 /// Open to everybody who is signed in.
 #[utoipa::path(
@@ -278,11 +273,7 @@ async fn list_relation_kinds(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(KINDS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(KINDS_LIST);
     let page = auth
         .api()?
         .relation_kinds(
@@ -295,7 +286,7 @@ async fn list_relation_kinds(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(RelationKindItem::from).collect(),
         next: page.next_cursor,
@@ -365,9 +356,7 @@ async fn change_relation_kind(
     ApiPath(kind): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeRelationKindBody>,
 ) -> Result<Response, ApiError> {
-    let kind: RelationKindId = kind
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let kind: RelationKindId = path_id(&kind)?;
     let changed = auth
         .api()?
         .change_relation_kind(
@@ -431,11 +420,7 @@ async fn list_sub_issues(
     ApiPath(issue): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(SUB_ISSUES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(SUB_ISSUES_LIST);
     let page = auth
         .api()?
         .sub_issues(
@@ -449,7 +434,7 @@ async fn list_sub_issues(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(IssueRef::from).collect(),
         next: page.next_cursor,
@@ -479,11 +464,7 @@ async fn list_related_issues(
     ApiPath(issue): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(RELATED_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(RELATED_LIST);
     let page = auth
         .api()?
         .related_issues(
@@ -497,7 +478,7 @@ async fn list_related_issues(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(RelatedIssueItem::from).collect(),
         next: page.next_cursor,
@@ -579,7 +560,7 @@ async fn add_relation(
                 session_token,
                 issue,
                 other: body.other,
-                kind: kind_id(&body.kind)?,
+                kind: body_id::<RelationKindId>(&body.kind)?,
                 direction: body.direction,
             },
         )
@@ -607,9 +588,7 @@ async fn remove_relation(
     Session(session_token): Session,
     ApiPath(relation): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let relation: RelationId = relation
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let relation: RelationId = path_id(&relation)?;
     auth.api()?
         .remove_relation(
             info,

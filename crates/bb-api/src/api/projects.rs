@@ -8,12 +8,10 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::auth::AppError;
 use bb_app::projects::{
     ChangeProject, MakeProject, MoveRight, ProjectDetail, ProjectItem as AppProjectItem,
     ProjectQuery, ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
 use bb_core::id::ProjectId;
 use bb_core::own_fields_value::OwnValues;
@@ -23,10 +21,12 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::cursor_error;
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -237,11 +237,6 @@ pub(crate) struct ChangeProjectBody {
     fields: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
-/// The ID in an address of the API; a text that is no ID names no project.
-pub(crate) fn project_id(text: &str) -> Result<ProjectId, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
-}
-
 /// The projects the person sees, a page at a time: the top of the tree, the projects inside one,
 /// or the projects that a search finds. Needs no permission of its own: it lists what the person
 /// may see, which is nothing for a person without a role.
@@ -262,14 +257,22 @@ async fn list_projects(
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
     // the use case cannot read, so its answer comes after the check of the person.
-    let position = params.position(PROJECTS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
-    let inside = filter.inside.as_deref().map(project_id).transpose();
-    let outside = filter.outside.as_deref().map(project_id).transpose();
-    let movable = filter.movable.as_deref().map(project_id).transpose();
+    let (cursor, bad_cursor) = params.start(PROJECTS_LIST);
+    let inside = filter
+        .inside
+        .as_deref()
+        .map(path_id::<ProjectId>)
+        .transpose();
+    let outside = filter
+        .outside
+        .as_deref()
+        .map(path_id::<ProjectId>)
+        .transpose();
+    let movable = filter
+        .movable
+        .as_deref()
+        .map(path_id::<ProjectId>)
+        .transpose();
     let page = auth
         .api()?
         .projects(
@@ -285,12 +288,8 @@ async fn list_projects(
             },
         )
         .await
-        .map_err(|error| match error {
-            // The only thing the use case can find invalid is the cursor.
-            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
-            other => ApiError::from(other),
-        })?;
-    position?;
+        .map_err(cursor_error)?;
+    bad_cursor?;
     // A project that is no ID is a project that is not there.
     inside?;
     outside?;
@@ -393,7 +392,7 @@ async fn make_sub_project(
     ApiPath(parent): ApiPath<String>,
     ApiJson(body): ApiJson<NewProjectBody>,
 ) -> Result<Response, ApiError> {
-    let parent = project_id(&parent)?;
+    let parent = path_id::<ProjectId>(&parent)?;
     let made = auth
         .api()?
         .make_project(
@@ -436,7 +435,7 @@ async fn change_project(
     ApiPath(project): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeProjectBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
+    let project = path_id::<ProjectId>(&project)?;
     let changed = auth
         .api()?
         .change_project(

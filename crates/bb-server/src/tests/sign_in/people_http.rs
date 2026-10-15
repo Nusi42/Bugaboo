@@ -6,7 +6,8 @@ use axum::http::StatusCode;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::http::{Browser, Reply, rig_and_app};
+use super::http::{Browser, rig_and_app};
+use super::issues_site::id_of;
 
 /// What a test body of this family gets: the administrator, signed in.
 pub(super) struct Organization {
@@ -18,14 +19,6 @@ pub(super) async fn start(db: &bb_testing::TestDatabase) -> Result<Organization,
     let (rig, app) = rig_and_app(db).await?;
     let ada = Browser::signed_in(&app, &rig).await?;
     Ok(Organization { ada })
-}
-
-/// The ID in an answer.
-pub(super) fn id_of(reply: &Reply) -> Result<String, Failure> {
-    reply.body["id"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| format!("the answer holds no id: {}", reply.body).into())
 }
 
 /// The IDs of the items of a page, in the order they come.

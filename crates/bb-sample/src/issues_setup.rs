@@ -11,17 +11,14 @@ use std::str::FromStr;
 use bb_app::access::{Authorized, Masked};
 use bb_app::auth::AppError;
 use bb_app::fields::{MakeField, NewChoice, make_field};
-use bb_app::issues::{
-    IssueTypesQuery, MakeStartingIssueTypes, issue_types, make_starting_issue_types,
-};
+use bb_app::issues::{IssueTypesQuery, issue_types};
 use bb_app::projects::ProjectStore as _;
-use bb_app::relations::{
-    MakeStartingRelationKinds, RelationKindsQuery, make_starting_relation_kinds, relation_kinds,
-};
+use bb_app::relations::{RelationKindsQuery, relation_kinds};
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
 use bb_app::tags::{MakeLabel, MakeLabelGroup, TagStore as _, make_label, make_label_group};
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LabelId, ProjectId, RelationKindId};
 use bb_core::own_fields::{FieldFor, FieldType, Rules, Scope};
+use bb_core::paging::PAGE_SIZE_MAX;
 use bb_core::settings::{ISSUES_ID_MODE, SettingValue};
 use bb_dev_words::sample::{FieldPlan, IssuePlan};
 use serde::Serialize;
@@ -29,9 +26,6 @@ use serde_json::Value;
 
 use crate::error::{SampleError, Step};
 use crate::generate::World;
-
-/// The most a page of the lists read here holds.
-const PAGE: u32 = 200;
 
 /// An own field that was made, with the IDs of its choices in the order of the plan.
 #[derive(Clone, Debug)]
@@ -82,14 +76,6 @@ impl Setup {
     ) -> Result<Self, SampleError> {
         let ctx = world.services.ctx(world.request());
         let step = Step::IssueTypes;
-        world.tick();
-        make_starting_issue_types(&ctx, MakeStartingIssueTypes)
-            .await
-            .map_err(|error| SampleError::step(step, &error))?;
-        world.tick();
-        make_starting_relation_kinds(&ctx, MakeStartingRelationKinds)
-            .await
-            .map_err(|error| SampleError::step(step, &error))?;
 
         let found = json(
             issue_types(
@@ -97,7 +83,7 @@ impl Setup {
                 IssueTypesQuery {
                     session_token: token.to_owned(),
                     cursor: None,
-                    limit: PAGE,
+                    limit: PAGE_SIZE_MAX,
                 },
             )
             .await,
@@ -117,7 +103,7 @@ impl Setup {
                 RelationKindsQuery {
                     session_token: token.to_owned(),
                     cursor: None,
-                    limit: PAGE,
+                    limit: PAGE_SIZE_MAX,
                 },
             )
             .await,

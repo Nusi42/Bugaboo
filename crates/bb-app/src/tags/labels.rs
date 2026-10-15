@@ -20,7 +20,7 @@ use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
-use super::rewrite::{Combining, Replacement, Rewrite, Sorted};
+use super::rewrite::{Combining, ISSUES_PER_READ, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeLabel, ChangeLabelGroup, CombineLabels, LabelChangePreviewQuery, LabelGroupView,
     LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, TagChangePreview,
@@ -29,9 +29,6 @@ use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, se
 use crate::input::clean_text;
 use crate::member::{label as member, label_group as group_member};
 use crate::projects::Why;
-
-/// How many issues are read at a time while the labels of a group are counted per issue.
-const CHUNK: u64 = 200;
 
 /// The groups and the labels as they are stored.
 struct Catalogue {
@@ -84,7 +81,8 @@ async fn two_of_in<S: AuthStore>(
     for label in labels {
         let mut after = None;
         loop {
-            let issues = S::issues_with_label_in(transaction, *label, after, CHUNK).await?;
+            let issues =
+                S::issues_with_label_in(transaction, *label, after, ISSUES_PER_READ).await?;
             for issue in &issues {
                 let seen = counted.entry(*issue).or_insert(0);
                 *seen += 1;
@@ -92,7 +90,7 @@ async fn two_of_in<S: AuthStore>(
                     return Ok(true);
                 }
             }
-            if issues.len() < usize::try_from(CHUNK).unwrap_or(usize::MAX) {
+            if issues.len() < usize::try_from(ISSUES_PER_READ).unwrap_or(usize::MAX) {
                 break;
             }
             after = issues.last().copied();
@@ -253,7 +251,11 @@ pub async fn change_label_group<S: AuthStore>(
     let catalogue = ctx.label_catalogue().await?;
     let group = catalogue.group(input.group)?.clone();
     if group.version != input.version {
-        return Err(ErrorCode::VersionChanged.into());
+        return Err(AppError::stale(
+            entity(RecordKind::LabelGroup, group.id),
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let name = match &input.name {
         Some(name) => clean_text(name, TAG_NAME_MAX)?,
@@ -277,28 +279,7 @@ pub async fn change_label_group<S: AuthStore>(
     {
         return Err(ErrorCode::PickOneConflict.into());
     }
-    let mut changes = Vec::new();
-    if group.name != name {
-        changes.push(FieldChange {
-            field: group_member::NAME.to_owned(),
-            before: Some(json!(group.name)),
-            after: Some(json!(name)),
-        });
-    }
-    if group.pick_one != pick_one {
-        changes.push(FieldChange {
-            field: group_member::PICK_ONE.to_owned(),
-            before: Some(json!(group.pick_one)),
-            after: Some(json!(pick_one)),
-        });
-    }
-    if group.retired_at.is_some() != retired_at.is_some() {
-        changes.push(FieldChange {
-            field: group_member::RETIRED.to_owned(),
-            before: Some(json!(group.retired_at.is_some())),
-            after: Some(json!(retired_at.is_some())),
-        });
-    }
+    let changes = group_differences(&group, &name, pick_one, retired_at);
     let event = ctx.event(
         by(actor.person.id),
         entity(RecordKind::LabelGroup, group.id),
@@ -333,7 +314,13 @@ pub async fn change_label_group<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+                &entity(RecordKind::LabelGroup, id),
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     let stored = ctx.label_catalogue().await?;
     Ok(held.authorize(LabelGroupView::from(stored.group(id)?)))
 }
@@ -483,7 +470,11 @@ pub async fn change_label<S: AuthStore>(
     let catalogue = ctx.label_catalogue().await?;
     let label = catalogue.label(input.label)?.clone();
     if label.version != input.version {
-        return Err(ErrorCode::VersionChanged.into());
+        return Err(AppError::stale(
+            entity(RecordKind::Label, label.id),
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let name = match &input.name {
         Some(name) => clean_text(name, TAG_NAME_MAX)?,
@@ -550,9 +541,47 @@ pub async fn change_label<S: AuthStore>(
             Box::pin(async move { write.run::<S>(transaction, &events, &stopped).await })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+                &entity(RecordKind::Label, id),
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     let stored = ctx.label_catalogue().await?;
     Ok(held.authorize(LabelView::from(stored.label(id)?)))
+}
+
+/// What a change of a group of labels changes, for its event.
+fn group_differences(
+    group: &LabelGroup,
+    name: &str,
+    pick_one: bool,
+    retired_at: Option<Timestamp>,
+) -> Vec<FieldChange> {
+    let mut changes = Vec::new();
+    if group.name != name {
+        changes.push(FieldChange {
+            field: group_member::NAME.to_owned(),
+            before: Some(json!(group.name)),
+            after: Some(json!(name)),
+        });
+    }
+    if group.pick_one != pick_one {
+        changes.push(FieldChange {
+            field: group_member::PICK_ONE.to_owned(),
+            before: Some(json!(group.pick_one)),
+            after: Some(json!(pick_one)),
+        });
+    }
+    if group.retired_at.is_some() != retired_at.is_some() {
+        changes.push(FieldChange {
+            field: group_member::RETIRED.to_owned(),
+            before: Some(json!(group.retired_at.is_some())),
+            after: Some(json!(retired_at.is_some())),
+        });
+    }
+    changes
 }
 
 /// What a change of a label changes, for its event.
@@ -617,7 +646,17 @@ pub async fn combine_labels<S: AuthStore>(
         return Err(ErrorCode::InvalidRequest.into());
     }
     if from.version != input.version || into.version != input.into_version {
-        return Err(ErrorCode::VersionChanged.into());
+        // The record that changed is the one to tell about: *Use mine* sends its version next.
+        let changed = if into.version == input.into_version {
+            from.id
+        } else {
+            into.id
+        };
+        return Err(AppError::stale(
+            entity(RecordKind::Label, changed),
+            Place::Organization,
+            actor.person.id,
+        ));
     }
     let into_pick_one = into
         .group
@@ -666,7 +705,13 @@ pub async fn combine_labels<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
+        .map_err(|error| {
+            why.answer::<S>(&error, ErrorCode::VersionChanged).about(
+                &entity(RecordKind::Label, ids.0),
+                Place::Organization,
+                actor.person.id,
+            )
+        })?;
     let stored = ctx.label_catalogue().await?;
     Ok(held.authorize(LabelView::from(stored.label(into.id)?)))
 }

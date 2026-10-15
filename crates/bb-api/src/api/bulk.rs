@@ -16,7 +16,6 @@ use bb_app::bulk::{
     BulkResult, BulkRow, BulkRunQuery, BulkRunView, BulkSkipped, BulkTarget,
 };
 use bb_app::history::{ChangeValue, FieldChangeView};
-use bb_core::ErrorCode;
 use bb_core::bulk::{BulkStatus, SkipReason};
 use bb_core::id::{BulkRunId, LabelId, RelationKindId, UserId};
 use bb_core::issue::{Priority, Status};
@@ -36,6 +35,7 @@ use super::auth::{
 use super::previews::PreviewSummaryBody;
 use super::projects::ProjectRef;
 use super::relations::IssueRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// What a person asks for in the fields of many issues: what is left out stays as it is.
@@ -88,7 +88,6 @@ pub(crate) enum BulkActionBody {
 impl BulkActionBody {
     /// The action as the use cases take it.
     fn into_action(self) -> Result<BulkAction, ApiError> {
-        let invalid = || ApiError::new(ErrorCode::InvalidRequest);
         Ok(match self {
             Self::Change { change } => BulkAction::Change {
                 change: BulkChange {
@@ -99,7 +98,7 @@ impl BulkActionBody {
                         .map(|people| {
                             people
                                 .iter()
-                                .map(|text| text.parse::<UserId>().map_err(|_| invalid()))
+                                .map(|text| body_id::<UserId>(text))
                                 .collect::<Result<Vec<_>, _>>()
                         })
                         .transpose()?,
@@ -108,16 +107,14 @@ impl BulkActionBody {
             },
             Self::Move { project } => BulkAction::Move { project },
             Self::AddLabel { label } => BulkAction::AddLabel {
-                label: label.parse::<LabelId>().map_err(|_| invalid())?,
+                label: body_id::<LabelId>(&label)?,
             },
             Self::AddRelation {
                 relation_kind,
                 direction,
                 other,
             } => BulkAction::AddRelation {
-                relation_kind: relation_kind
-                    .parse::<RelationKindId>()
-                    .map_err(|_| invalid())?,
+                relation_kind: body_id::<RelationKindId>(&relation_kind)?,
                 direction,
                 other,
             },
@@ -530,9 +527,7 @@ async fn get_bulk_run(
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let run: BulkRunId = run
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let run: BulkRunId = path_id(&run)?;
     let found = auth
         .api()?
         .bulk_run(info, BulkRunQuery { session_token, run })

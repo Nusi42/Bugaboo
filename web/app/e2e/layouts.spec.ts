@@ -1,7 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { lea, roleName } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -13,10 +12,12 @@ import {
   dueDate,
   editWhenYouCan,
   openLayoutOfBugs,
+  openNewIssueOfWeb,
   prepareLayouts,
   setLayoutOfWeb,
   saveSectionInAnotherWindow,
 } from "./support/layouts.ts";
+import { titleLabel } from "./support/issues.ts";
 import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 
 // Layouts and role-based forms (CFG-01, ISS-02, ISS-17, M3 WP-09): a project lead opens
@@ -26,28 +27,10 @@ import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 
 test.use({ preparation: { run: prepareLayouts } });
 
-const dialogName = t("issues.new-title");
-
-/** The dialog that makes an issue, opened with the button of the bar. */
-async function openNewIssue(page: Page) {
-  await page.goto(projectIssuesAddress("WEB"));
-  await page
-    .getByRole("button", { name: t("issues.new"), exact: true })
-    .first()
-    .click();
-  const dialog = page.getByRole("dialog", { name: dialogName, exact: true });
-  await expect(dialog).toBeVisible();
-  return dialog;
-}
-
 /** The dialog of this person, once its form is there: the description is on every form. */
 async function openedForm(page: Page) {
-  const dialog = await openNewIssue(page);
-  await expect(
-    dialog.getByLabel(t("fields.label-required", { field: t("issue-field.title") }), {
-      exact: true,
-    }),
-  ).toBeVisible();
+  const dialog = await openNewIssueOfWeb(page);
+  await expect(dialog.getByLabel(titleLabel(), { exact: true })).toBeVisible();
   await expect(
     dialog.getByText(t("issue-field.description"), { exact: true }).first(),
   ).toBeVisible();
@@ -61,7 +44,7 @@ function rowOf(page: Page, name: string) {
 
 /** Opens the editor from *Customize this form* in the dialog and makes the layout of the project. */
 async function customizeFromDialog(page: Page): Promise<void> {
-  const dialog = await openNewIssue(page);
+  const dialog = await openNewIssueOfWeb(page);
   await dialog.getByRole("button", { name: t("layouts.customize-form"), exact: true }).click();
   await expect(
     page.getByRole("heading", {
@@ -244,7 +227,9 @@ test("cfg_01 a layout that changed while it was edited shows the new one and kee
   await titles.last().fill("Mine");
 
   // The same person in another window takes the editing over and saves another change.
-  await saveSectionInAnotherWindow(browser, server, "Theirs");
+  const other = await anotherBrowser(browser, server);
+  await signIn(other, ada);
+  await saveSectionInAnotherWindow(other, "Theirs");
 
   // The first window learns at its next heartbeat that it lost the lock, asks for it again and
   // saves on the version it started from.

@@ -4,6 +4,7 @@ import { MarkdownView, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
+import { versionOf } from "../../shared/version.ts";
 import { CommentActions } from "./CommentActions.tsx";
 import { CommentEditor } from "./CommentEditor.tsx";
 import { CommentVersions } from "./CommentVersions.tsx";
@@ -26,7 +27,7 @@ export function CommentEntry({ entry }: { readonly entry: Schema<"HistoryEntryIt
       {editing && id !== undefined && id !== null ? (
         <CommentEditor
           comment={id}
-          version={entry.version ?? 1}
+          version={versionOf(entry)}
           text={entry.text ?? ""}
           reading={reading}
           onClose={() => {

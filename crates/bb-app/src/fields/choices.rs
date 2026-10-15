@@ -152,7 +152,7 @@ pub async fn add_choice<S: AuthStore>(
         return Err(ErrorCode::NameTaken.into());
     }
     if definition.choices.len() >= CHOICES_MAX {
-        return Err(ErrorCode::InvalidRequest.into());
+        return Err(ErrorCode::LimitReached.into());
     }
     let choice = FieldChoice {
         id: ChoiceId::generate(&mut ctx.ids())

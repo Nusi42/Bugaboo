@@ -12,6 +12,7 @@ use bb_app::projects::{
     FieldLevelChange, LiftView, MovePreview, MovePreviewQuery, MoveProject, PeopleLevelChange,
     PersonChange, ProjectChange, Standing,
 };
+use bb_core::id::ProjectId;
 use bb_policy::{Masked, Permission, PersonRef};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -22,8 +23,9 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
+use super::path_id;
 use super::previews::PreviewSummaryBody;
-use super::projects::{ProjectBody, ProjectRef, project_id};
+use super::projects::{ProjectBody, ProjectRef};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// A field of the move preview: a field of the catalogue is named by a message, an own field by
@@ -288,8 +290,8 @@ async fn preview_project_move(
     ApiPath(project): ApiPath<String>,
     ApiJson(body): ApiJson<WhereToBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
-    let to = body.to.as_deref().map(project_id).transpose()?;
+    let project = path_id::<ProjectId>(&project)?;
+    let to = body.to.as_deref().map(path_id::<ProjectId>).transpose()?;
     let preview = auth
         .api()?
         .preview_move(
@@ -332,8 +334,8 @@ async fn move_project(
     ApiPath(project): ApiPath<String>,
     ApiJson(body): ApiJson<MoveBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
-    let to = body.to.as_deref().map(project_id).transpose()?;
+    let project = path_id::<ProjectId>(&project)?;
+    let to = body.to.as_deref().map(path_id::<ProjectId>).transpose()?;
     let moved = auth
         .api()?
         .move_project(

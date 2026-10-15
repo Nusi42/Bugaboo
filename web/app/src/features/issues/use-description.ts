@@ -1,11 +1,11 @@
-import { dataOf } from "@bugaboo/api-client";
+import { dataOf, descriptionEditPart } from "@bugaboo/api-client";
 import { useCallback, useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { useLongText, type LongText } from "../../shared/editing/index.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
-import { DESCRIPTION_PART } from "./long-text-words.ts";
+import { versionOf } from "../../shared/version.ts";
 import type { IssueView } from "./slots.ts";
 
 /** The description of an issue as a long text being edited, and when it was last saved. */
@@ -59,7 +59,7 @@ export function useIssueLongText(
     id,
     part: which.part,
     saved: which.saved,
-    version: issue.version ?? 1,
+    version: versionOf(issue),
     save,
     refresh,
   });
@@ -85,7 +85,7 @@ export function useDescription(issue: IssueView, address: string): Description {
     [id],
   );
   return useIssueLongText(issue, address, {
-    part: DESCRIPTION_PART,
+    part: descriptionEditPart,
     saved: issue.description ?? "",
     save,
   });

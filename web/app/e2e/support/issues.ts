@@ -1,4 +1,10 @@
-import { dataOf, settingKeys, type SettingChoice } from "@bugaboo/api-client";
+import {
+  dataOf,
+  descriptionEditPart,
+  firstVersion,
+  settingKeys,
+  type SettingChoice,
+} from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
@@ -72,7 +78,7 @@ export async function saveDescription(
   const taken = dataOf(
     await session.client.POST("/api/v1/edit-locks", {
       body: {
-        what: { record: { kind: "issue", id: issue.id }, part: "description" },
+        what: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
         editor_id: crypto.randomUUID(),
       },
     }),
@@ -100,10 +106,7 @@ export const webIssues = {
 export async function prepareWeb(server: Instance): Promise<void> {
   const admin = await makeAdmin(server);
   // Counting issue IDs, so the tests can name them: WEB-1, WEB-2, WEB-3.
-  await admin.client.PUT("/api/v1/settings/{key}", {
-    params: { path: { key: settingKeys.issuesIdMode } },
-    body: { value: "counting" },
-  });
+  await countIssueIds(admin);
   await makeProject(admin, "WEB", "Website");
   await makeIssue(admin, "WEB", webIssues.login, "Steps:\n\n1. Reset the password");
   await makeIssue(admin, "WEB", webIssues.passkey);
@@ -135,17 +138,30 @@ export async function assignTo(
 export async function holdDescription(session: ApiSession, issue: MadeIssue): Promise<void> {
   await session.client.POST("/api/v1/edit-locks", {
     body: {
-      what: { record: { kind: "issue", id: issue.id }, part: "description" },
+      what: { record: { kind: "issue", id: issue.id }, part: descriptionEditPart },
       editor_id: crypto.randomUUID(),
     },
   });
 }
 
+/** The issue as the session reads it. */
+export async function readIssue(session: ApiSession, issue: Pick<MadeIssue, "key">) {
+  return dataOf(
+    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: issue.key } } }),
+  );
+}
+
+/** Makes the organization count its issue IDs (WEB-1, WEB-2, …) instead of making them up. */
+export async function countIssueIds(admin: ApiSession): Promise<void> {
+  await admin.client.PUT("/api/v1/settings/{key}", {
+    params: { path: { key: settingKeys.issuesIdMode } },
+    body: { value: "counting" },
+  });
+}
+
 /** An issue that exists already, found by its readable ID. */
 export async function issueOf(session: ApiSession, key: string): Promise<MadeIssue> {
-  const found = dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
-  );
+  const found = await readIssue(session, { key });
   const id = found.issue.id;
   if (id === undefined || id === null) {
     throw new TypeError(`The issue ${key} has no ID.`);
@@ -155,10 +171,7 @@ export async function issueOf(session: ApiSession, key: string): Promise<MadeIss
 
 /** The version an issue has now. */
 export async function versionOf(session: ApiSession, issue: MadeIssue): Promise<number> {
-  const found = dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: issue.key } } }),
-  );
-  return found.issue.version ?? 1;
+  return (await readIssue(session, issue)).issue.version ?? firstVersion;
 }
 
 /** Makes a project and one issue in it; the issue. */
@@ -169,6 +182,11 @@ export async function makeProjectWithIssue(
 ): Promise<MadeIssue> {
   await makeProject(admin, shortName, name);
   return makeIssue(admin, shortName, webIssues.login);
+}
+
+/** The *Saved* note of a page. */
+export function savedNote(page: Page) {
+  return page.getByText(new RegExp(`^${t("save.saved")}`, "u")).first();
 }
 
 /** The name of the box of the title on the form of a new issue: every required field says so. */
@@ -186,6 +204,15 @@ export async function openNewIssueDialog(page: Page): Promise<void> {
   await page
     .getByRole("button", { name: t("issues.new"), exact: true })
     .first()
+    .click();
+  await expect(newIssueDialog(page)).toBeVisible();
+}
+
+/** Opens the dialog with the button in the menu of a phone. */
+export async function openNewIssueDialogFromTheMenu(page: Page): Promise<void> {
+  await page
+    .getByRole("navigation", { name: t("shell.menu") })
+    .getByRole("button", { name: t("issues.new"), exact: true })
     .click();
   await expect(newIssueDialog(page)).toBeVisible();
 }

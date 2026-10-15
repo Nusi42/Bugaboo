@@ -5,12 +5,13 @@ import {
   CopyButton,
   InPlaceText,
   IssueTypeIcon,
+  type MenuAction,
   partOf,
   part,
 } from "@bugaboo/ui";
 
 import { known } from "../../shared/present.ts";
-import { linkTo, moreActions } from "./issue-actions.ts";
+import { linkTo } from "./issue-actions.ts";
 import type { IssueShow } from "./issue-show.ts";
 import type { IssueView } from "./slots.ts";
 
@@ -19,10 +20,9 @@ export interface IssueHeaderProps {
   readonly show: IssueShow;
   /** Whether the person may change the title. */
   readonly canChangeTitle: boolean;
-  readonly mayDelete: boolean;
+  /** What *More* offers. */
+  readonly actions: readonly MenuAction[];
   readonly onTitle: (title: string) => void;
-  /** Called by *More* when the issue goes away: the panel closes, or the page goes back to the list. */
-  readonly onClose: () => void;
   /** Open in the other way: from the panel to the full page, from the focus view to the panel. */
   readonly onSwitch: () => void;
 }
@@ -32,7 +32,7 @@ export interface IssueHeaderProps {
  * where it stands, *More* and the way to open it in the other view. The panel has its own *Close*.
  */
 export function IssueHeader(props: IssueHeaderProps) {
-  const { issue, show, canChangeTitle, mayDelete, onTitle, onClose, onSwitch } = props;
+  const { issue, show, canChangeTitle, actions, onTitle, onSwitch } = props;
   const key = issue.key ?? "";
   const issueType = known(issue.issue_type);
   const Heading = show === "focus" ? "h1" : "h2";
@@ -58,7 +58,7 @@ export function IssueHeader(props: IssueHeaderProps) {
           <Button onPress={onSwitch}>
             {show === "focus" ? t("issues.side-panel-view") : t("issues.open-full-page")}
           </Button>
-          <ActionMenu label={t("issues.more")} actions={moreActions(issue, mayDelete, onClose)} />
+          <ActionMenu label={t("issues.more")} actions={actions} />
         </div>
       </div>
       <Heading {...partOf(part.issueTitle)}>

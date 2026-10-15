@@ -1,3 +1,4 @@
+import { msPerSecond } from "@bugaboo/api-client";
 import { writeFileSync } from "node:fs";
 
 import { type Instance } from "../../app/e2e/support/server.ts";
@@ -25,9 +26,9 @@ export async function run(server: Instance, options: LoadOptions): Promise<strin
   const { sessions, ids, issues } = await prepare(server, options.people);
   const book = newBook();
   const started = Date.now();
-  const deadline = started + options.seconds * 1000;
+  const deadline = started + options.seconds * msPerSecond;
   // Nobody starts to edit under a lock once the lease could outlast the run.
-  const editUntil = deadline - QUIET_SECONDS * 1000;
+  const editUntil = deadline - QUIET_SECONDS * msPerSecond;
   await Promise.all(
     sessions.map((session, number) =>
       keepWorking({

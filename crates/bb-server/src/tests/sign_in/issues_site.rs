@@ -173,3 +173,41 @@ pub(super) fn ok(reply: &Reply) -> Result<&Value, Failure> {
         Err(format!("{}: {}", reply.status, reply.body).into())
     }
 }
+
+/// The text of a member of an answer.
+pub(super) fn text_in(answer: &Value, member: &str) -> Result<String, Failure> {
+    answer[member]
+        .as_str()
+        .map(str::to_owned)
+        .ok_or_else(|| format!("the answer holds no {member}: {answer}").into())
+}
+
+/// The readable ID (`ACME-142`) in an answer that is about an issue.
+pub(super) fn key_in(answer: &Value) -> Result<String, Failure> {
+    text_in(answer, "key")
+}
+
+/// The ID in an answer.
+pub(super) fn id_in(answer: &Value) -> Result<String, Failure> {
+    text_in(answer, "id")
+}
+
+/// The readable ID in the answer of a call that has to succeed.
+pub(super) fn key_of(reply: &Reply) -> Result<String, Failure> {
+    key_in(ok(reply)?)
+}
+
+/// The ID in the answer of a call that has to succeed.
+pub(super) fn id_of(reply: &Reply) -> Result<String, Failure> {
+    id_in(ok(reply)?)
+}
+
+/// The version an issue has now, read as `browser` sees it.
+pub(super) async fn version_of(browser: &mut Browser, issue: &str) -> Result<i64, Failure> {
+    let read = browser
+        .send("GET", &format!("{ISSUES}/{issue}"), None)
+        .await?;
+    Ok(ok(&read)?["issue"]["version"]
+        .as_i64()
+        .ok_or("no version")?)
+}

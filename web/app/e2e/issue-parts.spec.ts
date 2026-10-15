@@ -4,7 +4,7 @@ import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
+import { prepareWeb, savedNote } from "./support/issues.ts";
 import { addRelation } from "./support/relate.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
@@ -70,7 +70,7 @@ test("iss_06 a change shows in the history under Changes", async ({ page }) => {
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.getByRole("tab", { name: t("history.tab-changes"), exact: true }).click();
   await expect(page.getByText(/changed Priority from/u)).toBeVisible();
 });

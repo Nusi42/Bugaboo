@@ -1,11 +1,7 @@
+import { msPerSecond, secondsPerDay, secondsPerHour, secondsPerMinute } from "@bugaboo/api-client";
 import { locale } from "@bugaboo/messages";
 
 import { currentRegion, type NumberFormat, type Region } from "./region.ts";
-
-const SECONDS_PER_DAY = 86_400;
-const SECONDS_PER_HOUR = 3600;
-const SECONDS_PER_MINUTE = 60;
-const MS_PER_SECOND = 1000;
 
 /** The time zone option of `Intl`: left out for `device`, which is the zone of this device. */
 function zoneOf(region: Region): { readonly timeZone?: string } {
@@ -102,7 +98,7 @@ export function formatDay(moment: number, region: Region = currentRegion()): str
 
 /** Whole days from `nowMs` (milliseconds since 1970) to `moment`; negative when the moment has passed. */
 export function daysUntil(moment: string, nowMs: number): number {
-  return Math.floor((new Date(moment).getTime() - nowMs) / (MS_PER_SECOND * SECONDS_PER_DAY));
+  return Math.floor((new Date(moment).getTime() - nowMs) / (msPerSecond * secondsPerDay));
 }
 
 /** A number of seconds split into whole days, hours and minutes. */
@@ -112,17 +108,17 @@ export function splitUptime(seconds: number): {
   readonly minutes: number;
 } {
   return {
-    days: Math.floor(seconds / SECONDS_PER_DAY),
-    hours: Math.floor((seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR),
-    minutes: Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE),
+    days: Math.floor(seconds / secondsPerDay),
+    hours: Math.floor((seconds % secondsPerDay) / secondsPerHour),
+    minutes: Math.floor((seconds % secondsPerHour) / secondsPerMinute),
   };
 }
 
 /** The units a span of time is written in, from the longest to the shortest, with their length in seconds. */
 const SPAN_UNITS = [
-  { unit: "day", seconds: SECONDS_PER_DAY },
-  { unit: "hour", seconds: SECONDS_PER_HOUR },
-  { unit: "minute", seconds: SECONDS_PER_MINUTE },
+  { unit: "day", seconds: secondsPerDay },
+  { unit: "hour", seconds: secondsPerHour },
+  { unit: "minute", seconds: secondsPerMinute },
 ] as const;
 
 /** The longest whole unit that fits in a span of seconds, with how many of it; seconds count as 0 minutes. */
@@ -138,7 +134,7 @@ function spanIn(seconds: number): {
 
 /** Whole seconds from `moment` (ISO 8601 text) to `nowMs`; never negative (a clock that is a little behind). */
 function secondsSince(moment: string, nowMs: number): number {
-  return Math.max(0, Math.floor((nowMs - new Date(moment).getTime()) / MS_PER_SECOND));
+  return Math.max(0, Math.floor((nowMs - new Date(moment).getTime()) / msPerSecond));
 }
 
 /** How long ago a moment was, as people say it: "2 minutes ago", "yesterday"; "now" for under a minute. */

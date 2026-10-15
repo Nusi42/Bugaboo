@@ -1,5 +1,7 @@
 import type { RecordRef } from "@bugaboo/api-client";
 
+import { isNoAnswer } from "../errors.ts";
+
 /** A record on the screen and the version the screen has of it. */
 export interface Watched {
   readonly record: RecordRef;
@@ -70,20 +72,21 @@ export function startWatching(
       return;
     }
     lastCheck = env.now();
-    env
-      .ask(watched.map((one) => one.record))
-      .then(
-        (found) => {
-          const newer = newerThan(watched, found);
-          if (newer.length > 0) {
-            onNewer(newer);
-          }
-        },
-        () => {
-          // No answer now (offline, signed out): the next check tries again.
-        },
-      )
-      .catch(() => null);
+    void env.ask(watched.map((one) => one.record)).then(
+      (found) => {
+        const newer = newerThan(watched, found);
+        if (newer.length > 0) {
+          onNewer(newer);
+        }
+      },
+      (error: unknown) => {
+        // No answer now (offline, signed out): the next check tries again. A fault of the program
+        // is not "no answer" and is not hidden.
+        if (!isNoAnswer(error)) {
+          throw error;
+        }
+      },
+    );
   };
   const stops = [
     ...(watched.length === 0 ? [] : [env.repeat(seconds, check)]),

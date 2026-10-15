@@ -21,9 +21,9 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{id_of, make_field, set_levels};
+use super::fields_http::{make_field, set_levels};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{PROJECTS, Site, ok};
+use super::issues_site::{PROJECTS, Site, id_in, ok};
 
 pub(super) const LAYOUTS: &str = "/api/v1/layouts";
 pub(super) const LOCKS: &str = "/api/v1/edit-locks";
@@ -140,7 +140,7 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
     each_database("cfg_01_short_and_full", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let due = id_of(
+        let due = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Due date", "kind": "date", "applies_to": "issues"}),
@@ -226,7 +226,7 @@ async fn cfg_01_a_layout_never_shows_a_field_the_role_cannot_see_and_the_editor_
     each_database("cfg_01_field_permissions_win", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let cost = id_of(
+        let cost = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Cost center", "kind": "text", "applies_to": "issues"}),

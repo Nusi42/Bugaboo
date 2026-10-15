@@ -3,11 +3,10 @@ import { t } from "@bugaboo/messages";
 import { makePeopleWithRoles, roleName } from "./access.ts";
 import { ada, makeAdmin, type Person } from "./accounts.ts";
 import { makeOwnField } from "./fields.ts";
-import { makeIssue } from "./issues.ts";
+import { countIssueIds, makeIssue } from "./issues.ts";
 import { makeProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 import { inOrder } from "./sequence.ts";
-import { settingKeys } from "@bugaboo/api-client";
 
 // Ten people at the same time (architecture §11, M3 WP-10): the people, the project they work in,
 // and a browser of its own for each of them.
@@ -98,10 +97,7 @@ const titles = [
  */
 export async function prepareCrowd(server: Instance): Promise<void> {
   const admin = await makeAdmin(server);
-  await admin.client.PUT("/api/v1/settings/{key}", {
-    params: { path: { key: settingKeys.issuesIdMode } },
-    body: { value: "counting" },
-  });
+  await countIssueIds(admin);
   await makeProject(admin, "WEB", "Website");
   await inOrder(areaNames.map((name) => () => makeOwnField(admin, name, "pick-one", areaChoices)));
   await inOrder(

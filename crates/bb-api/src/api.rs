@@ -27,7 +27,8 @@ use axum::http::{HeaderMap, Method, header};
 use axum::middleware::{Next, from_fn, from_fn_with_state};
 use axum::response::{IntoResponse as _, Response};
 use bb_core::ErrorCode;
-use serde::Serialize;
+use bb_core::own_fields::Edit;
+use serde::{Deserialize, Deserializer, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -287,6 +288,27 @@ pub(crate) async fn method_not_allowed() -> ApiError {
 /// The answer for an address below `/api` that does not exist.
 pub(crate) fn not_found() -> Response {
     ApiError::new(ErrorCode::NotFound).into_response()
+}
+
+/// The ID in an address of the API; a text that is no ID names nothing, so it is not found.
+pub(crate) fn path_id<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
+    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
+}
+
+/// The ID in a request body or query; a text that is no ID is not a valid request.
+pub(crate) fn body_id<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
+    text.parse()
+        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
+}
+
+/// A member that is `Clear` when the request says `null` and `Keep` when it says nothing
+/// (`#[serde(default, deserialize_with = "crate::api::null_or_value")]`).
+pub(crate) fn null_or_value<'de, D, T>(deserializer: D) -> Result<Edit<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Edit::said)
 }
 
 #[cfg(test)]

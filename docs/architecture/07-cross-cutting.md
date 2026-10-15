@@ -69,7 +69,7 @@ flowchart LR
 
 One enum, `Permission` in `bb-policy`. The four tables of this section and the next one that carry a `GENERATED` comment (the catalogue and, for the starting roles, their permissions, field levels and *Who sees people* levels) are written from that code by `cargo xtask gen roles`; DOC-GENERATED fails when one differs, so they are never edited by hand. The key is also the value of `x-permission` in the API description; the sentence is the message `permission.<key>`; the topic is the message `permission-topic.<topic>`. *Counts* says where a permission counts (ADR-0025, decision 1); *Kind* is what an access key's choice keeps (decision 8). Routes that need no single catalogue permission declare `public`, `signed-in`, `own-account` or `by-record`; the last is for the routes of edit locks and drafts, which work on any record by its kind and ID: what a person needs to change a record depends on its kind (for a project *Change the project's name, short name and settings*, for an issue *Change issues*), so the route lets in whoever is signed in, or comes with an access key, and the use case judges the record. A permission that no route asks for yet, because a use case judges it and its screen and routes come later, is named in `tools/checks/permission-exemptions.toml` with a reason that names the follow-up; the entry must go when a route asks for the permission. Enforced by: ARCH-PERMS (every operation of the API description has `x-permission` with a key of the catalogue or one of the four words; every permission is asked by a route or named in the file; every permission and topic has its message).
 
-<!-- BEGIN GENERATED permission-catalogue by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED permission-catalogue by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 | Key | Topic | Counts | Kind | Sentence on the role page |
 |-----|-------|--------|------|---------------------------|
@@ -138,7 +138,7 @@ The evaluation is cached for the request and never longer (review: the cache liv
 
 Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, decision 4) and then changed like any role. In the order below, which is also the order for role labels. These are M2's permissions; issue, document and time permissions join with their milestones.
 
-<!-- BEGIN GENERATED starting-permissions by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED starting-permissions by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 | Permission | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -175,7 +175,7 @@ A Project lead holds these where the role is given, normally on their projects a
 
 **Starting field levels:**
 
-<!-- BEGIN GENERATED starting-field-levels by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED starting-field-levels by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 C = *Can change*, S = *Can see*, H = *Hidden*.
 
@@ -204,7 +204,7 @@ A Contributor sees *Cost center* at the start, so the M2 exit demo can hide it. 
 
 **Starting *Who sees people*:**
 
-<!-- BEGIN GENERATED starting-people-levels by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED starting-people-levels by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 N = *Names*, R = *Role only*, H = *Hidden*.
 
@@ -227,6 +227,8 @@ N = *Names*, R = *Role only*, H = *Hidden*.
 
 Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06) through one key type, `FieldKey`: either a built-in field of this catalogue or an own field (`FieldKey::Own(FieldId)`), so levels, masks, the field-permission page, history and `fields=` name both the same way and no list of own fields is written twice. A new own field starts *Can see* for every role that sees the project and *Can change* for Team member and above; whoever makes it can change that at once. Levels per issue type use the lookup of [ADR-0027](../adr/0027-layouts-and-rules-per-issue-type.md).
 
+<!-- BEGIN GENERATED field-catalogue by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
+
 | Key | Name | Belongs to | Holds a person |
 |-----|------|-----------|----------------|
 | `title` | Title | issue | – |
@@ -245,6 +247,8 @@ Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), 
 | `time-spent` | Time spent | issue (total of its time entries) | – |
 | `activity` | Activity | time entry (default on the issue) | – |
 | `cost-center` | Cost center | time entry (default on the issue and project) | – |
+
+<!-- END GENERATED field-catalogue -->
 
 A person in a field is shown only when the field is visible (mask) and then as its kind says (`PersonRef`).
 
@@ -355,7 +359,7 @@ Consumers are idempotent and resume from their last position after a restart.
 
 **In `bb-store`:** `Database::record_change` is the only way to write domain data: it runs the change, appends the event and the outbox entry, and commits all three or none. Outbox positions are handed out from a counter row that the change transaction locks until it commits, so positions become visible in order and a consumer that has seen position 7 cannot miss a 6 that commits later (the price: changes commit one after the other). Each consumer stores the last position it finished (`outbox_done`). Enforced by: the event tests of `bb-store`; ARCH-EVENTS (a command use case in `bb-app` must write through the `ChangeStore` port, whose method `record_change` `bb-store` implements); ARCH-SQL-EDGE (no other crate may write to the database).
 
-**Background jobs** (ADR-0017) are rows in the `job` table. A worker leases due jobs with one `UPDATE … RETURNING` statement (`FOR UPDATE SKIP LOCKED` on PostgreSQL); a lease that runs out puts the job back, every start counts as an attempt, failures wait 30 seconds doubled each time (at most an hour), and after the last attempt the job goes to the dead-letter list, which an administrator can requeue. Enforced by: the job tests of `bb-store`.
+**Background jobs** (ADR-0017) are rows in the `job` table. A worker leases due jobs with one `UPDATE … RETURNING` statement (`FOR UPDATE SKIP LOCKED` on PostgreSQL); a lease that runs out puts the job back, every start counts as an attempt, failures wait 30 seconds doubled each time (at most an hour), and after the last attempt the job goes to the dead-letter list (at once when the failure is permanent: a refusal can never succeed, so it is not started five times), and the use case that owns the work then ends it in a state people can read (a change to many issues ends as *failed*, with what it did so far). A dead job stays on the list; the store can give it a fresh start (`requeue_dead_job`), but no command or screen calls that yet (M3-F150). A kind of job is named `area.what-it-does`: lowercase words joined by hyphens, one constant in `bb_app::jobs::kind`. Enforced by: the job tests of `bb-store` and the tests of the dead job in `bb-app`.
 
 **The security log** (SEC-15) is append-only. Each entry stores the HMAC-SHA256 (under the log key, `keys/log.key`) of the previous entry's hash and all its own fields in a length-prefixed encoding. Because the key is not in the database, somebody who can only change the database (SQL injection, a stolen copy) cannot change an entry and hash the rest of the chain again; somebody who also holds the host's key files can, and that is outside what the log protects against. After every append, one line `seq hash signature` goes to an append-only anchor file outside the database (`logs/security-head.log`, owner-only). `verify_security_log` reads one consistent snapshot (no write lock) and reports the first entry that does not verify (a gap, a broken link, changed content, a missing or forged checkpoint, an anchor line with a wrong signature) and whether the database reaches the newest anchored entry with the same hash (cut off or replaced ends are `Truncated`); a log whose anchor file is missing verifies but says it is not anchored. After the keep period, whole blocks of 1000 entries are deleted from the start; before deleting, the job verifies those blocks from the previous checkpoint and that the first kept entry points to the last deleted hash, in the same transaction, and refuses otherwise. A checkpoint is left: place, hash and time of the deletion, signed with the log key, so the remaining entries still verify. The newest entry is never deleted. Network addresses are stored shortened (IPv4 `/24`, IPv6 `/48`). Enforced by: the hash-chain property tests (`sec_15_any_changed_row_breaks_the_chain`, `sec_15_a_rewritten_tail_without_the_key_does_not_verify`) and the security-log tests of `bb-store`.
 

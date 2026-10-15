@@ -1,12 +1,9 @@
-import { dataOf } from "@bugaboo/api-client";
+import { commentEditPart, dataOf } from "@bugaboo/api-client";
 import { useCallback, useEffect, useRef } from "react";
 
 import { api } from "../../shared/api.ts";
 import { useLongText, type LongText } from "../../shared/editing/index.ts";
 import { refreshHistory } from "../../shared/query-keys.ts";
-
-/** The part of a comment that is edited under a lock: its text. */
-const COMMENT_PART = "text";
 
 /** What the editor of a comment needs to know about the comment. */
 export interface CommentSource {
@@ -45,7 +42,7 @@ export function useCommentText(source: CommentSource, onDone: () => void): LongT
   const long = useLongText({
     kind: "comment",
     id: comment,
-    part: COMMENT_PART,
+    part: commentEditPart,
     saved: text,
     version,
     save,

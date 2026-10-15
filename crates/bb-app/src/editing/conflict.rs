@@ -19,7 +19,10 @@ use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
-use bb_core::id::{GroupId, IssueId, IssueTypeId, ProjectId, RoleId, UserId};
+use bb_core::id::{
+    FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
+    RelationKindId, RoleId, TagId, UserId,
+};
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
@@ -31,6 +34,7 @@ use super::records::Shown;
 use crate::auth::{AppError, AuthStore, Ctx, fixed_entity, internal};
 use bb_core::settings::SIGN_UP_POLICY;
 
+use crate::fields::member as fields_member;
 use crate::issues::member as issue_member;
 use crate::member;
 
@@ -83,6 +87,17 @@ impl AppError {
     }
 }
 
+/// The record with this ID, looked up by `look`, or `None` when the ID is no ID of that kind.
+async fn found<I, T, E, Looking: Future<Output = Result<Option<T>, E>>>(
+    id: Option<I>,
+    look: impl FnOnce(I) -> Looking,
+) -> Result<Option<T>, E> {
+    match id {
+        Some(id) => look(id).await,
+        None => Ok(None),
+    }
+}
+
 /// How the change of a field of a record that `bb-app` keeps itself is shown: only what is no
 /// personal data and no hidden project. Every other field stays out.
 fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
@@ -111,6 +126,28 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
             issue_member::issue_type::NAME,
             issue_member::issue_type::ICON,
             issue_member::issue_type::RETIRED,
+        ]
+    } else if *kind == EntityKind::from(RecordKind::Comment) {
+        &[member::comment::TEXT]
+    } else if *kind == EntityKind::from(RecordKind::Field) {
+        &[fields_member::NAME, fields_member::RETIRED]
+    } else if *kind == EntityKind::from(RecordKind::RelationKind) {
+        &[
+            member::relation_kind::FORWARD,
+            member::relation_kind::BACKWARD,
+            member::relation_kind::RETIRED,
+        ]
+    } else if *kind == EntityKind::from(RecordKind::LabelGroup) {
+        &[
+            member::label_group::NAME,
+            member::label_group::PICK_ONE,
+            member::label_group::RETIRED,
+        ]
+    } else if *kind == EntityKind::from(RecordKind::Label) {
+        &[
+            member::label::NAME,
+            member::label::COLOR,
+            member::label::RETIRED,
         ]
     } else if *kind == EntityKind::from(RecordKind::Setting) {
         &[
@@ -166,64 +203,137 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|definition| definition.field.kind))
     }
 
-    /// The version the record has now, if it is still there and the person may know about it.
+    /// The version the record has now, if it is still there and the person may know about it: one
+    /// table, by kind of record, for every route that takes a version (the kinds `bb-app` keeps
+    /// itself) and the kinds the program adds (`EditableRecords`).
     async fn version_now(&self, stale: &Stale) -> Result<Option<i64>, AppError> {
         let record = &stale.record;
-        let ours = |kind: RecordKind| record.kind == kind.into();
+        let bytes = record.id.to_bytes();
+        let store = self.store();
         let failed = |error| internal::<S>(&error);
-        if ours(RecordKind::Project) {
-            let found = match ProjectId::from_bytes(record.id.to_bytes()) {
-                Ok(id) => self.store().project(id).await.map_err(failed)?,
-                Err(_) => None,
-            };
-            return Ok(found.map(|project| project.version));
-        }
-        if ours(RecordKind::Group) {
-            let found = match GroupId::from_bytes(record.id.to_bytes()) {
-                Ok(id) => self.store().group(id).await.map_err(failed)?,
-                Err(_) => None,
-            };
-            return Ok(found.map(|group| group.version));
-        }
-        if ours(RecordKind::Setting) {
-            // The one setting record with a version: the sign-up policy.
-            let policy = fixed_entity(RecordKind::Setting, SIGN_UP_POLICY)?;
-            if *record == policy {
-                return Ok(Some(
-                    self.store()
-                        .sign_up_policy_version()
-                        .await
-                        .map_err(failed)?,
-                ));
+        let Some(kind) = RecordKind::from_code(record.kind.as_str()) else {
+            return self.version_by_kind(stale).await;
+        };
+        let version = match kind {
+            RecordKind::Project => found(ProjectId::from_bytes(bytes).ok(), |id| store.project(id))
+                .await
+                .map_err(failed)?
+                .map(|project| project.version),
+            RecordKind::Group => found(GroupId::from_bytes(bytes).ok(), |id| store.group(id))
+                .await
+                .map_err(failed)?
+                .map(|group| group.version),
+            RecordKind::Setting => {
+                // The one setting record with a version: the sign-up policy.
+                if *record == fixed_entity(RecordKind::Setting, SIGN_UP_POLICY)? {
+                    Some(store.sign_up_policy_version().await.map_err(failed)?)
+                } else {
+                    None
+                }
             }
-        }
-        if ours(RecordKind::IssueType) {
-            let found = match IssueTypeId::from_bytes(record.id.to_bytes()) {
-                Ok(id) => self.store().issue_type(id).await.map_err(failed)?,
-                Err(_) => None,
-            };
-            return Ok(found.map(|found| found.version));
-        }
-        if ours(RecordKind::Issue) {
-            let found = match IssueId::from_bytes(record.id.to_bytes()) {
-                Ok(id) => self.store().issue(id).await.map_err(failed)?,
-                Err(_) => None,
-            };
-            return Ok(found
+            RecordKind::IssueType => found(IssueTypeId::from_bytes(bytes).ok(), |id| {
+                store.issue_type(id)
+            })
+            .await
+            .map_err(failed)?
+            .map(|found| found.version),
+            RecordKind::Issue => found(IssueId::from_bytes(bytes).ok(), |id| store.issue(id))
+                .await
+                .map_err(failed)?
                 .filter(|issue| issue.deleted_at.is_none())
-                .map(|issue| issue.version));
-        }
-        if ours(RecordKind::Role) {
-            let found = match RoleId::from_bytes(record.id.to_bytes()) {
-                Ok(id) => self.store().role(id).await.map_err(failed)?,
-                Err(_) => None,
-            };
-            return Ok(found.map(|found| found.role.version));
-        }
+                .map(|issue| issue.version),
+            RecordKind::Role => found(RoleId::from_bytes(bytes).ok(), |id| store.role(id))
+                .await
+                .map_err(failed)?
+                .map(|found| found.role.version),
+            RecordKind::Field
+            | RecordKind::RelationKind
+            | RecordKind::Layout
+            | RecordKind::LabelGroup
+            | RecordKind::Label
+            | RecordKind::Tag => self.version_in_list(kind, bytes).await?,
+            RecordKind::Comment => self
+                .comment_facts(stale.viewer, record)
+                .await?
+                .map(|facts| facts.version),
+            _ => return self.version_by_kind(stale).await,
+        };
+        Ok(version)
+    }
+
+    /// The version of a field, a kind of relation, a layout, a group of labels, a label or a tag.
+    async fn version_in_list(
+        &self,
+        kind: RecordKind,
+        bytes: [u8; 16],
+    ) -> Result<Option<i64>, AppError> {
+        let store = self.store();
+        let failed = |error| internal::<S>(&error);
+        Ok(match kind {
+            RecordKind::Field => {
+                let id = FieldId::from_bytes(bytes).ok();
+                let definitions = self.field_catalogue().await?;
+                definitions
+                    .iter()
+                    .find(|definition| Some(definition.field.id) == id)
+                    .map(|definition| definition.field.version)
+            }
+            RecordKind::RelationKind => {
+                let id = RelationKindId::from_bytes(bytes).ok();
+                store
+                    .relation_kinds()
+                    .await
+                    .map_err(failed)?
+                    .iter()
+                    .find(|kind| Some(kind.id) == id)
+                    .map(|kind| kind.version)
+            }
+            RecordKind::Layout => found(LayoutId::from_bytes(bytes).ok(), |id| {
+                store.stored_layout(id)
+            })
+            .await
+            .map_err(failed)?
+            .map(|stored| stored.layout.version),
+            RecordKind::LabelGroup => {
+                let id = LabelGroupId::from_bytes(bytes).ok();
+                store
+                    .label_groups()
+                    .await
+                    .map_err(failed)?
+                    .iter()
+                    .find(|group| Some(group.id) == id)
+                    .map(|group| group.version)
+            }
+            RecordKind::Label => {
+                let id = LabelId::from_bytes(bytes).ok();
+                store
+                    .labels()
+                    .await
+                    .map_err(failed)?
+                    .iter()
+                    .find(|label| Some(label.id) == id)
+                    .map(|label| label.version)
+            }
+            RecordKind::Tag => {
+                let id = TagId::from_bytes(bytes).ok();
+                store
+                    .tags()
+                    .await
+                    .map_err(failed)?
+                    .iter()
+                    .find(|tag| Some(tag.id) == id)
+                    .map(|tag| tag.version)
+            }
+            _ => None,
+        })
+    }
+
+    /// The version of a kind of record the program adds to the services (`EditableRecords`).
+    async fn version_by_kind(&self, stale: &Stale) -> Result<Option<i64>, AppError> {
         Ok(self
             .services
             .records
-            .look_up(stale.viewer, record)
+            .look_up(stale.viewer, &stale.record)
             .await?
             .map(|facts| facts.version))
     }
@@ -233,7 +343,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) async fn conflict_of(&self, stale: &Stale) -> AppError {
         match self.try_conflict(stale).await {
             Ok(conflict) => AppError::Conflict(Box::new(conflict)),
-            Err(_) => AppError::Refused(ErrorCode::VersionChanged),
+            Err(error) => {
+                tracing::warn!(cause = %error, "the conflict answer could not be made; the plain refusal is sent");
+                AppError::Refused(ErrorCode::VersionChanged)
+            }
         }
     }
 

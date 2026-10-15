@@ -1,7 +1,7 @@
-import { useLayout } from "@bugaboo/ui";
+import { Alert, alertTone, useLayout } from "@bugaboo/ui";
 
 import { SidePanel } from "../shell/index.ts";
-import { moreActions } from "./issue-actions.ts";
+import { useMoreActions } from "./issue-actions.ts";
 import { IssueContent } from "./IssueContent.tsx";
 import { IssueHeader } from "./IssueHeader.tsx";
 import { PhoneBar } from "./PhoneBar.tsx";
@@ -27,19 +27,20 @@ export function IssueFrame(props: IssueFrameProps) {
   const layout = useLayout();
   const closeLabel = useCloseLabel();
   const { issue } = detail;
+  const { actions, refusal } = useMoreActions(issue, detail.may_delete, onClose);
   const inside = (
     <>
       <IssueHeader
         issue={issue}
         show={show}
         canChangeTitle={blocks.mask.changes("title")}
-        mayDelete={detail.may_delete}
+        actions={actions}
         onTitle={(title) => {
           changes.change({ title });
         }}
-        onClose={onClose}
         onSwitch={onSwitch}
       />
+      {refusal === null ? null : <Alert tone={alertTone.danger}>{refusal}</Alert>}
       <IssueContent
         detail={detail}
         address={address}
@@ -62,9 +63,7 @@ export function IssueFrame(props: IssueFrameProps) {
       ) : (
         inside
       )}
-      {layout === "phone" ? (
-        <PhoneBar actions={moreActions(issue, detail.may_delete, onClose)} />
-      ) : null}
+      {layout === "phone" ? <PhoneBar actions={actions} /> : null}
     </article>
   );
 }

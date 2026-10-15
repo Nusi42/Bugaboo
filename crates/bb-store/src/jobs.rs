@@ -7,12 +7,15 @@
 //! the job again. Every start counts as an attempt; failed jobs wait longer each time
 //! ([`backoff`]) and, after the last attempt, go to the dead-letter list.
 
+use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use bb_core::id::JobId;
-use bb_core::job::{Job, JobState};
+use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
 use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
 use sea_query::{Expr, ExprTrait as _, LockBehavior, LockType, Order, Query};
+use serde_json::Value;
 
+use crate::auth::AuthStorage;
 use crate::db::{Database, Dialect, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{Computed, Job as Columns};
@@ -30,20 +33,11 @@ pub struct NewJob {
     /// What kind of work it is.
     pub kind: TechnicalName,
     /// What the work needs to know.
-    pub payload: serde_json::Value,
+    pub payload: Value,
     /// The earliest moment it may run.
     pub run_at: Timestamp,
     /// After how many starts it goes to the dead-letter list.
     pub max_attempts: u32,
-}
-
-/// What happened to a job that a worker reported as failed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FailureOutcome {
-    /// It will run again at this moment.
-    Retry(Timestamp),
-    /// It failed too often and is on the dead-letter list.
-    Dead,
 }
 
 /// How long a job waits after its `attempts`-th start failed: 30 seconds, doubled each time,
@@ -168,8 +162,9 @@ impl Database {
     }
 
     /// Reports a job as failed, with a technical code (never an error message). It waits
-    /// [`backoff`] and runs again, or goes to the dead-letter list after its last attempt.
-    /// Returns `None` when `worker` does not hold the lease.
+    /// [`backoff`] and runs again, or goes to the dead-letter list after its last attempt, or at
+    /// once when the failure is [`FailureKind::Permanent`]. Returns `None` when `worker` does not
+    /// hold the lease.
     ///
     /// # Errors
     /// Fails when the database fails.
@@ -178,6 +173,7 @@ impl Database {
         id: JobId,
         worker: &TechnicalName,
         failure: &TechnicalName,
+        kind: FailureKind,
         now: Timestamp,
     ) -> Result<Option<FailureOutcome>, StoreError> {
         let mut transaction = self.begin().await?;
@@ -191,14 +187,15 @@ impl Database {
             return Ok(None);
         };
         let attempts = count(&row, Columns::Attempts)?;
-        let outcome = if attempts >= count(&row, Columns::MaxAttempts)? {
-            FailureOutcome::Dead
-        } else {
-            let at = now
-                .checked_add(backoff(attempts))
-                .map_err(|_| StoreError::Corrupt("a retry time"))?;
-            FailureOutcome::Retry(at)
-        };
+        let outcome =
+            if kind == FailureKind::Permanent || attempts >= count(&row, Columns::MaxAttempts)? {
+                FailureOutcome::Dead
+            } else {
+                let at = now
+                    .checked_add(backoff(attempts))
+                    .map_err(|_| StoreError::Corrupt("a retry time"))?;
+                FailureOutcome::Retry(at)
+            };
         let mut update = Query::update();
         update
             .table(Columns::Table)
@@ -375,6 +372,76 @@ fn read_job(row: &Row) -> Result<Job, StoreError> {
     })
 }
 
+fn new_job(kind: &TechnicalName, payload: &Value, run_at: Timestamp) -> NewJob {
+    NewJob {
+        kind: kind.clone(),
+        payload: payload.clone(),
+        run_at,
+        max_attempts: JOB_ATTEMPTS_MAX,
+    }
+}
+
+impl JobStore for AuthStorage {
+    async fn lease_jobs(
+        &self,
+        worker: &TechnicalName,
+        now: Timestamp,
+        lease: SignedDuration,
+        limit: u64,
+    ) -> Result<Vec<Job>, StoreError> {
+        self.database().lease_jobs(worker, now, lease, limit).await
+    }
+
+    async fn complete_job(&self, id: JobId, worker: &TechnicalName) -> Result<bool, StoreError> {
+        self.database().complete_job(id, worker).await
+    }
+
+    async fn fail_job(
+        &self,
+        id: JobId,
+        worker: &TechnicalName,
+        failure: &TechnicalName,
+        kind: FailureKind,
+        now: Timestamp,
+    ) -> Result<Option<FailureOutcome>, StoreError> {
+        self.database()
+            .fail_job(id, worker, failure, kind, now)
+            .await
+    }
+
+    async fn later_job_waits(
+        &self,
+        kind: &TechnicalName,
+        after: Timestamp,
+    ) -> Result<bool, StoreError> {
+        self.database().later_job_waits(kind, after).await
+    }
+
+    async fn queue_job(
+        &self,
+        id: JobId,
+        kind: &TechnicalName,
+        payload: &Value,
+        run_at: Timestamp,
+        now: Timestamp,
+    ) -> Result<(), StoreError> {
+        self.database()
+            .enqueue_job(id, &new_job(kind, payload, run_at), now)
+            .await
+    }
+
+    async fn enqueue_job(
+        transaction: &mut Transaction,
+        id: JobId,
+        kind: &TechnicalName,
+        payload: &Value,
+        run_at: Timestamp,
+        now: Timestamp,
+    ) -> Result<(), StoreError> {
+        enqueue(transaction, id, &new_job(kind, payload, run_at), now).await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -477,7 +544,9 @@ mod tests {
             let failure = name("mail.refused");
 
             database.lease_jobs(&worker, at(0), LEASE, 1).await?;
-            let first = database.fail_job(id, &worker, &failure, at(1)).await?;
+            let first = database
+                .fail_job(id, &worker, &failure, FailureKind::Temporary, at(1))
+                .await?;
             assert_eq!(first, Some(FailureOutcome::Retry(at(31))));
             assert!(
                 database
@@ -490,7 +559,9 @@ mod tests {
                 database.lease_jobs(&worker, at(31), LEASE, 1).await?.len(),
                 1
             );
-            let second = database.fail_job(id, &worker, &failure, at(32)).await?;
+            let second = database
+                .fail_job(id, &worker, &failure, FailureKind::Temporary, at(32))
+                .await?;
             assert_eq!(second, Some(FailureOutcome::Dead));
             assert_eq!(database.queued_job_count().await?, 0);
             let dead = database.dead_jobs(10).await?;
@@ -514,6 +585,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_failure_that_is_permanent_goes_to_the_dead_letter_list_at_once() -> TestResult {
+        each_database("adr_0017_permanent", async |db| {
+            let database = open(db).await?;
+            let id = JobId::generate(&mut ids())?;
+            database.enqueue_job(id, &mail(at(0), 5), at(0)).await?;
+            let worker = name("worker-1");
+            database.lease_jobs(&worker, at(0), LEASE, 1).await?;
+            let outcome = database
+                .fail_job(
+                    id,
+                    &worker,
+                    &name("job.failed"),
+                    FailureKind::Permanent,
+                    at(1),
+                )
+                .await?;
+            assert_eq!(
+                outcome,
+                Some(FailureOutcome::Dead),
+                "after one start of five"
+            );
+            assert_eq!(database.dead_jobs(10).await?.len(), 1);
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
     async fn bad_example_only_the_lease_holder_can_report_a_job() -> TestResult {
         each_database("adr_0017_wrong_worker", async |db| {
             let database = open(db).await?;
@@ -524,7 +623,9 @@ mod tests {
                 .await?;
             let other = name("worker-2");
             assert!(!database.complete_job(id, &other).await?);
-            let outcome = database.fail_job(id, &other, &name("x.y"), at(1)).await?;
+            let outcome = database
+                .fail_job(id, &other, &name("x.y"), FailureKind::Temporary, at(1))
+                .await?;
             assert_eq!(outcome, None);
             Ok(())
         })

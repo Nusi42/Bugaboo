@@ -22465,6 +22465,11 @@
         "description": "What an item of the history is.",
         "enum": ["comment", "change", "relation"]
       },
+      "HistoryTab": {
+        "type": "string",
+        "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
+        "enum": ["everything", "comments", "changes"]
+      },
       "ImageHostsBody": {
         "type": "object",
         "description": "The hosts that images in text may come from, already split into one host for each item.",

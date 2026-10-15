@@ -8,7 +8,6 @@ use bb_app::auth::{
     PasskeySignIn, PasskeySignInQuery, SecondStep, SessionsQuery, SignIn, SignOut,
     SignOutEverywhere, StatusQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::id::SessionId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -20,6 +19,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, MeBody, NotFoundAnswer, NotSignedInAnswer,
     PreviousSession, Session, SignedInBody, answer, answer_authorized, done, signed_in,
 };
+use super::path_id;
 use crate::cookies::Cookie;
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
@@ -427,9 +427,7 @@ async fn end_session(
     Session(session_token): Session,
     ApiPath(session_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let session_id: SessionId = session_id
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let session_id: SessionId = path_id(&session_id)?;
     let ended = auth
         .api()?
         .end_session(

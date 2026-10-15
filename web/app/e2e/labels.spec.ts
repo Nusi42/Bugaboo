@@ -6,7 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
+import { prepareWeb, savedNote } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
@@ -86,7 +86,7 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
   await page.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
     label: t("status.in-progress"),
   });
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveValue(
     "in-progress",

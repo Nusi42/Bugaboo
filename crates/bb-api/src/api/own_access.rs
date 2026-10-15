@@ -9,7 +9,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::{OwnChange, OwnLoss, OwnLossQuery};
-use bb_core::id::{AssignmentId, GroupId, RoleId, UserId};
+use bb_core::id::{AssignmentId, GroupId, ProjectId, RoleId, UserId};
 use bb_policy::{Masked, Permission};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -18,8 +18,7 @@ use utoipa_axum::routes;
 
 use super::assignments::{WhoBody, subject_of};
 use super::auth::{AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, answer_authorized};
-use super::people::parse;
-use super::projects::project_id;
+use super::path_id;
 use crate::errors::{ApiError, ApiJson};
 
 /// The change that is about to be made.
@@ -87,24 +86,24 @@ impl From<&OwnLoss> for OwnLossBody {
 fn change_of(body: OwnChangeBody) -> Result<OwnChange, ApiError> {
     Ok(match body {
         OwnChangeBody::RemoveAssignment { assignment } => {
-            OwnChange::RemoveAssignment(parse::<AssignmentId>(&assignment)?)
+            OwnChange::RemoveAssignment(path_id::<AssignmentId>(&assignment)?)
         }
         OwnChangeBody::NoAccess { who, project } => OwnChange::NoAccess {
             subject: subject_of(&who)?,
-            project: project_id(&project)?,
+            project: path_id::<ProjectId>(&project)?,
         },
         OwnChangeBody::LeaveGroup { group, person } => OwnChange::LeaveGroup {
-            group: parse::<GroupId>(&group)?,
-            person: parse::<UserId>(&person)?,
+            group: path_id::<GroupId>(&group)?,
+            person: path_id::<UserId>(&person)?,
         },
-        OwnChangeBody::DeleteGroup { group } => OwnChange::DeleteGroup(parse::<GroupId>(&group)?),
+        OwnChangeBody::DeleteGroup { group } => OwnChange::DeleteGroup(path_id::<GroupId>(&group)?),
         OwnChangeBody::ChangeRole { role, permissions } => OwnChange::ChangeRole {
-            role: parse::<RoleId>(&role)?,
+            role: path_id::<RoleId>(&role)?,
             permissions: permissions.into_iter().collect(),
         },
         OwnChangeBody::DeleteRole { role, replacement } => OwnChange::DeleteRole {
-            role: parse::<RoleId>(&role)?,
-            replacement: replacement.as_deref().map(parse::<RoleId>).transpose()?,
+            role: path_id::<RoleId>(&role)?,
+            replacement: replacement.as_deref().map(path_id::<RoleId>).transpose()?,
         },
     })
 }

@@ -43,6 +43,8 @@ routes = [
   "POST /api/v1/auth/invitations",
   "POST /api/v1/groups",
   "POST /api/v1/issue-types",
+  "POST /api/v1/label-groups",
+  "POST /api/v1/labels",
   "POST /api/v1/relation-kinds",
   "POST /api/v1/issues/{issue}/relations",
   "POST /api/v1/issues/{issue}/comments",
@@ -124,10 +126,6 @@ routes = [
   "DELETE /api/v1/issues/{issue}/labels/{label}",
 ]
 reason = "A tag or a label is put on an issue and taken off one at a time, like a relation: the change is a member of a set that the person names, not a new value of a field, so two people who add different ones never overwrite each other and the same one twice changes nothing. A change that is made counts the version of the issue up on the version stored now, so a preview that read the version sees that the issue changed (M3 WP-08)."
-
-[[exempt]]
-routes = ["POST /api/v1/label-groups", "POST /api/v1/labels"]
-reason = "Makes a new record; a record that does not exist yet has no version (M3 WP-08)."
 
 [[exempt]]
 routes = [

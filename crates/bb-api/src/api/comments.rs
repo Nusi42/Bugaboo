@@ -6,15 +6,12 @@
 //! server by `bb-markdown` for the reader (the mark `x-safe-html`). Saving a new text is the save
 //! of a long text: it takes the token of the edit lock besides the version (ARCH-VERSIONED).
 
-use std::str::FromStr as _;
-
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::comments::{
     AddComment, CommentTextView, CommentVersionsQuery, CommentView, DeleteComment, MentionChoice,
     MentionChoicesQuery, MentionItem, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
 };
-use bb_core::ErrorCode;
 use bb_core::comment::MentionTarget;
 use bb_core::id::{CommentId, LockToken};
 use bb_policy::{Masked, PersonRef};
@@ -29,6 +26,7 @@ use super::auth::{
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
 use super::relations::IssueRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -215,10 +213,6 @@ pub(crate) struct ChoiceSearch {
     search: Option<String>,
 }
 
-fn comment_id(text: &str) -> Result<CommentId, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
-}
-
 /// Writes a comment under an issue. Needs the permission *Comment* and the right to see the issue.
 #[utoipa::path(
     post,
@@ -282,9 +276,8 @@ async fn save_comment(
     ApiPath(comment): ApiPath<String>,
     ApiJson(body): ApiJson<SaveCommentBody>,
 ) -> Result<Response, ApiError> {
-    let comment = comment_id(&comment)?;
-    let lock_token = LockToken::from_str(&body.lock_token)
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))?;
+    let comment = path_id::<CommentId>(&comment)?;
+    let lock_token = body_id::<LockToken>(&body.lock_token)?;
     let saved = auth
         .api()?
         .save_comment(
@@ -327,7 +320,7 @@ async fn delete_comment(
             info,
             DeleteComment {
                 session_token,
-                comment: comment_id(&comment)?,
+                comment: path_id::<CommentId>(&comment)?,
             },
         )
         .await?;
@@ -360,7 +353,7 @@ async fn restore_comment(
             info,
             RestoreComment {
                 session_token,
-                comment: comment_id(&comment)?,
+                comment: path_id::<CommentId>(&comment)?,
             },
         )
         .await?;
@@ -384,25 +377,21 @@ async fn list_comment_versions(
     ApiPath(comment): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(VERSIONS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(VERSIONS_LIST);
     let page = auth
         .api()?
         .comment_versions(
             info,
             CommentVersionsQuery {
                 session_token,
-                comment: comment_id(&comment)?,
+                comment: path_id::<CommentId>(&comment)?,
                 cursor,
                 limit: params.limit(),
             },
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(CommentTextItem::from).collect(),
         next: page.next_cursor,
@@ -430,10 +419,7 @@ async fn list_mention_choices(
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(find): ApiQuery<ChoiceSearch>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(CHOICES_LIST);
-    position
-        .as_ref()
-        .map_err(|_| ApiError::new(ErrorCode::BadCursor))?;
+    params.position(CHOICES_LIST)?;
     let found = auth
         .api()?
         .mention_choices(
@@ -470,10 +456,7 @@ async fn list_mentions(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(MENTIONS_LIST);
-    position
-        .as_ref()
-        .map_err(|_| ApiError::new(ErrorCode::BadCursor))?;
+    params.position(MENTIONS_LIST)?;
     let found = auth
         .api()?
         .mentions(
@@ -510,10 +493,7 @@ async fn read_mentions(
     let comments = body
         .comments
         .iter()
-        .map(|text| {
-            text.parse::<CommentId>()
-                .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-        })
+        .map(|text| body_id::<CommentId>(text))
         .collect::<Result<Vec<_>, _>>()?;
     auth.api()?
         .read_mentions(

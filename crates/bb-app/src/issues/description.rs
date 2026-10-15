@@ -4,7 +4,7 @@
 //! and nothing is lost. Short values keep using [`change_issue`](super::change_issue).
 
 use bb_core::ErrorCode;
-use bb_core::edit::EditWhat;
+use bb_core::edit::{DESCRIPTION_PART, EditWhat};
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::UserId;
@@ -76,7 +76,7 @@ pub async fn save_description<S: AuthStore>(
     let event = ctx.event(by(actor.person.id), record.clone(), changes)?;
     let what = EditWhat {
         record,
-        part: TechnicalName::new(member::DESCRIPTION)
+        part: TechnicalName::new(DESCRIPTION_PART)
             .map_err(|error| AppError::Internal(error.to_string()))?,
     };
     let save = TextSave {

@@ -5,7 +5,7 @@
 //! issue of their own and nobody else's work gets in the way; and the actor, who reported none of
 //! them, shows what the rules about other people's issues say (*See issues*, *Change issues*).
 
-use bb_app::issues::{DeleteIssue, IssueTypesQuery, MakeIssue, MakeIssueType};
+use bb_app::issues::{DeleteIssue, IssueQuery, IssueTypesQuery, MakeIssue, MakeIssueType};
 use bb_core::issue::IssueIcon;
 use bb_testing::Failure;
 use serde_json::json;
@@ -35,6 +35,25 @@ async fn a_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .first()
         .map(|found| found.id.to_string())
         .ok_or_else(|| "the matrix has no issue type".into())
+}
+
+/// The version of an issue (for the routes that change it).
+pub(super) async fn version_of(fixture: &Fixture<'_>, issue: &str) -> Result<i64, Failure> {
+    Ok(fixture
+        .rig()
+        .api()
+        .issue(
+            Rig::info(),
+            IssueQuery {
+                session_token: fixture.admin_session().to_owned(),
+                issue: issue.to_owned(),
+            },
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .into_value()
+        .issue
+        .version)
 }
 
 /// A new issue in the target project, reported by the administrator of the matrix: its readable ID.
