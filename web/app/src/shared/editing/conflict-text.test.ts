@@ -23,7 +23,7 @@ describe("adr_0019 the sentence for a short value somebody else changed first", 
       conflict({ fields: ["priority"], current: { priority: "critical" } }),
       now,
     );
-    expect(text).toBe("Ben changed Priority to Critical 2 minutes ago.");
+    expect(text).toBe("Not saved: Ben changed Priority to Critical 2 minutes ago.");
   });
 
   it("lists more than one change", () => {
@@ -34,7 +34,9 @@ describe("adr_0019 the sentence for a short value somebody else changed first", 
       }),
       now,
     );
-    expect(text).toBe("Ben changed Status to In progress and Priority to High 2 minutes ago.");
+    expect(text).toBe(
+      "Not saved: Ben changed Status to In progress and Priority to High 2 minutes ago.",
+    );
   });
 
   it("names a long text without its words", () => {
@@ -42,14 +44,14 @@ describe("adr_0019 the sentence for a short value somebody else changed first", 
       conflict({ fields: ["description"], current: { description: "Secret words" } }),
       now,
     );
-    expect(text).toBe("Ben changed Description 2 minutes ago.");
+    expect(text).toBe("Not saved: Ben changed Description 2 minutes ago.");
   });
 });
 
 describe("adr_0019 the sentence names the person as the reader may see them", () => {
   it("shows Someone or the role when names are not for the reader", () => {
     expect(conflictSentence(conflict({ changed_by: { shown: "someone" } }), now)).toBe(
-      "Someone changed this issue 2 minutes ago.",
+      "Not saved: someone changed this issue 2 minutes ago.",
     );
     expect(
       conflictSentence(
@@ -60,7 +62,23 @@ describe("adr_0019 the sentence names the person as the reader may see them", ()
         }),
         now,
       ),
-    ).toBe("A Team member changed Title to New 2 minutes ago.");
+    ).toBe("Not saved: a Team member changed Title to New 2 minutes ago.");
+  });
+
+  it("has no stray space when the time is not known", () => {
+    expect(
+      conflictSentence(
+        conflict({
+          changed_at: null,
+          fields: ["priority"],
+          current: { priority: "critical" },
+        }),
+        now,
+      ),
+    ).toBe("Not saved: Ben changed Priority to Critical.");
+    expect(conflictSentence(conflict({ changed_at: null }), now)).toBe(
+      "Not saved: Ben changed this issue.",
+    );
   });
 
   it("leaves out a field the reader may not see and a change without words", () => {

@@ -25,7 +25,10 @@ export async function addRelation(
   }
   await page.getByRole("button", { name: t("related-issues.add"), exact: true }).click();
   await page.getByRole("radio", { name: meaning, exact: true }).check();
-  await page.getByLabel(t("related-issues.issue-field")).fill(other);
+  await page
+    .getByRole("region", { name: t("related-issues.title") })
+    .getByLabel(t("common.issue-id"))
+    .fill(other);
   await page.getByRole("button", { name: t("related-issues.add-it"), exact: true }).click();
   await expect(
     page.getByText(t("related-issues.added", { key: from, name: meaning, other })),

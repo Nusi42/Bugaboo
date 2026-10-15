@@ -5,8 +5,9 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
+import { listText } from "../../shared/list-text.ts";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
-import { personName } from "../../shared/person.ts";
+import { personNameInside } from "../../shared/person.ts";
 import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
 
 const reasonMessage = {
@@ -67,7 +68,7 @@ function FollowButton({ issue }: { readonly issue: string }) {
 
 /** The followers by name as the kind *Followers* says for the reader; shown on request. */
 function FollowerNames({ people }: { readonly people: readonly Schema<"PersonRef">[] }) {
-  return <p {...partOf(part.text)}>{people.map((person) => personName(person)).join(", ")}</p>;
+  return <p {...partOf(part.text)}>{listText(people.map((person) => personNameInside(person)))}</p>;
 }
 
 /** How many followers the first pages hold; a next page shows as a plus. */

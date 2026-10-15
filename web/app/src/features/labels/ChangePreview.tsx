@@ -8,7 +8,7 @@ import { useChangePreview, type ChangeAsked, type SortingKind } from "./change-p
 
 /** The names a tag or label list reads as, or a word for none. */
 function namesOf(names: readonly string[]): string {
-  return names.length === 0 ? t("labels.preview-no-names") : listText(names);
+  return names.length === 0 ? t("common.nothing") : listText(names);
 }
 
 /** What a rename or a combination would do to the issues the person sees, grouped by issue. */
@@ -16,9 +16,9 @@ export function ChangePreviewView({ preview }: { readonly preview: Schema<"Chang
   return (
     <div {...partOf(part.stack)}>
       <AppLongPreview
-        summary={t("labels.preview-summary", { changed: preview.summary.will_change })}
-        label={t("labels.preview-label")}
-        nothing={t("labels.preview-nothing")}
+        summary={t("preview.summary", { changed: preview.summary.will_change, skipped: 0 })}
+        label={t("preview.label")}
+        nothing={t("preview.nothing")}
         groups={preview.issues.map((each) => ({
           key: each.issue.id,
           heading: <strong>{each.issue.key}</strong>,

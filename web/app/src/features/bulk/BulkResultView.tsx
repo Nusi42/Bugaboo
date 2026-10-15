@@ -53,7 +53,7 @@ export function RunProgress({ run }: { readonly run: string }) {
     return (
       <div {...partOf(part.bulkProgress)}>
         <Alert tone={alertTone.success}>
-          {t("bulk.finished", { changed: data.changed, skipped: data.skipped_count })}
+          {t("bulk.result-done", { changed: data.changed, skipped: data.skipped_count })}
         </Alert>
         <SkippedList skipped={data.skipped} />
       </div>

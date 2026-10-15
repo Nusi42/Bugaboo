@@ -26,13 +26,13 @@ export function EditIssueType({ issueType }: { readonly issueType: IssueTypeLine
     >
       <TextField
         label={t("issue-types.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />
       <IconField value={icon} onChange={setIcon} />
       {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
-      {save.isSuccess ? <Alert tone={alertTone.success}>{t("issue-types.saved")}</Alert> : null}
+      {save.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={save.isPending}>{t("common.save")}</SubmitButton>
       </div>

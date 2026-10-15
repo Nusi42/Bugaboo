@@ -17,6 +17,7 @@ import {
   setLayoutOfWeb,
   saveSectionInAnotherWindow,
 } from "./support/layouts.ts";
+import { titleLabel } from "./support/issues.ts";
 import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 
 // Layouts and role-based forms (CFG-01, ISS-02, ISS-17, M3 WP-09): a project lead opens
@@ -29,7 +30,7 @@ test.use({ preparation: { run: prepareLayouts } });
 /** The dialog of this person, once its form is there: the description is on every form. */
 async function openedForm(page: Page) {
   const dialog = await openNewIssueOfWeb(page);
-  await expect(dialog.getByLabel(t("issues.title-required"), { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel(titleLabel(), { exact: true })).toBeVisible();
   await expect(
     dialog.getByText(t("issue-field.description"), { exact: true }).first(),
   ).toBeVisible();
@@ -101,7 +102,7 @@ async function untickGuestAndSave(page: Page): Promise<void> {
   await roles.getByText(roleName.guest, { exact: true }).click();
   await expect(guest).not.toBeChecked();
   await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
-  await expect(page.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
 }
 
 test("cfg_01 a lead customizes the new-issue form, and a Guest gets the short form and a Team member the full one", async ({
@@ -149,7 +150,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   await up.focus();
   await page.keyboard.press("Enter");
   await expect(down).toBeEnabled();
-  await expect(page.getByText(t("layouts.unsaved"), { exact: true })).toBeVisible();
+  await expect(page.getByText(t("save.not-saved"), { exact: true })).toBeVisible();
   // Taking it off the form puts it with the fields that are not on it.
   await row.getByRole("button", { name: t("layouts.field-remove", { name: dueDate }) }).click();
   await expect(
@@ -157,13 +158,16 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
       .getByRole("list", { name: t("layouts.available"), exact: true })
       .getByText(dueDate, { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: t("layouts.discard"), exact: true }).click();
+  await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
 
   // Another lead opens the same layout: Ada holds the lock, so they are told.
   const other = await anotherBrowser(browser, server);
   await signIn(other, ada);
   await openLayoutOfBugs(other);
-  await expect(other.getByText(/is editing this layout/u)).toBeVisible();
+  // The second window is the same person's, so the note says that, and *Save* waits.
+  await expect(
+    other.getByText(t("editing.elsewhere", { thing: t("editing.this-layout") })),
+  ).toBeVisible();
   await expect(other.getByRole("button", { name: t("layouts.save"), exact: true })).toBeDisabled();
 });
 
@@ -204,7 +208,7 @@ test("cfg_01 a field is moved and added with the keyboard alone, and its drag ha
   });
   await chooseByTyping(page, addTo, t("layouts.section", { number: "1" }));
   await expect(sectionList("1").getByText(dueDate, { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: t("layouts.discard"), exact: true }).click();
+  await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
 });
 
 test("cfg_01 a layout that changed while it was edited shows the new one and keeps the changes as a draft", async ({
@@ -232,7 +236,7 @@ test("cfg_01 a layout that changed while it was edited shows the new one and kee
   await expect(page.getByText(t("layouts.lost"), { exact: true })).toBeVisible({
     timeout: 45_000,
   });
-  await page.getByRole("button", { name: t("layouts.try-again"), exact: true }).click();
+  await page.getByRole("button", { name: t("common.try-again"), exact: true }).click();
   await editWhenYouCan(page, add);
   await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
 
@@ -246,6 +250,6 @@ test("cfg_01 a layout that changed while it was edited shows the new one and kee
   await expect(titles).toHaveCount(before + 1);
   await expect(titles.last()).toHaveValue("Mine");
   await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
-  await expect(page.getByText(t("layouts.saved"), { exact: true })).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await expect(changed).toHaveCount(0);
 });

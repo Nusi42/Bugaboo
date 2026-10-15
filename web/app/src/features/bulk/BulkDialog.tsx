@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, AskDialog, Button } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
-import { actionName } from "./action-names.ts";
+import { actionName, applyName } from "./action-names.ts";
 import { ActionFields } from "./ActionFields.tsx";
 import type { BulkApplied, BulkKind } from "./bulk.ts";
 import { BulkPreviewView } from "./BulkPreviewView.tsx";
@@ -35,8 +35,8 @@ export function BulkDialog({ kind, issues, isOpen, onOpenChange, onApplied }: Bu
         onOpenChange(open);
       }}
       title={t("bulk.title", { action: actionName(kind), count: issues.length })}
-      text={t("bulk.bar")}
-      confirmLabel={t("bulk.apply")}
+      text={t("bulk.dialog-text")}
+      confirmLabel={applyName(kind, issues.length)}
       cancelLabel={t("common.cancel")}
       confirmDisabled={!dialog.canApply}
       onConfirm={dialog.send}

@@ -21,11 +21,11 @@ test("iss_03 an issue becomes a sub-issue and the progress says how far the sub-
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await expect(page.getByRole("heading", { name: t("sub-issues.title") })).toBeVisible();
-  await page.getByLabel(t("sub-issues.field")).fill("WEB-2");
-  await page.getByRole("button", { name: t("sub-issues.add-it"), exact: true }).click();
+  const parts = page.getByRole("region", { name: t("sub-issues.title") });
+  await parts.getByLabel(t("common.issue-id")).fill("WEB-2");
+  await parts.getByRole("button", { name: t("sub-issues.add-it"), exact: true }).click();
   await expect(page.getByText(t("sub-issues.added", { key: "WEB-2" }))).toBeVisible();
   await page.reload();
-  const parts = page.getByRole("region", { name: t("sub-issues.title") });
   await expect(parts.getByText("WEB-2", { exact: true })).toBeVisible();
   await expect(parts.getByText(t("sub-issues.progress", { done: 0, total: 1 }))).toBeVisible();
   await expectGoodInEveryLook(page);

@@ -20,7 +20,7 @@ function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
       key: change.field,
       content: t("bulk.line-changes", {
         field: fieldNameOf({ code: change.field, name: change.name }),
-        after: changeValueText(change.field, change.after) ?? t("bulk.value-none"),
+        after: changeValueText(change.field, change.after) ?? t("common.nothing"),
       }),
     }));
   }
@@ -54,12 +54,12 @@ export function BulkPreviewView({ preview, plain }: BulkPreviewViewProps) {
   return (
     <div {...partOf(part.stack)}>
       <AppLongPreview
-        summary={t("bulk.summary", {
+        summary={t("preview.summary", {
           changed: preview.summary.will_change,
           skipped: preview.summary.skipped,
         })}
-        label={t("bulk.preview-label")}
-        nothing={t("bulk.nothing")}
+        label={t("preview.label")}
+        nothing={t("preview.nothing")}
         groups={preview.rows.map((row) => groupOf(row, plain))}
       />
       {preview.runs_in_background ? (

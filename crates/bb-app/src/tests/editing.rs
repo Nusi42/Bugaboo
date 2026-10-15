@@ -261,3 +261,27 @@ async fn iss_17_a_conflict_about_a_record_without_events_still_answers() -> Outc
     assert!(conflict.changed_by.is_none() && conflict.fields.is_empty());
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_17_edit_anyway_tries_again_when_other_writers_get_in_the_way() -> Outcome {
+    // On PostgreSQL ten people taking over one lock make a take-over find the row changed under
+    // it; the person must not see a failure for that, the change is tried again.
+    let world = World::new().await?;
+    world
+        .store
+        .lock()
+        .state
+        .contended_replaces
+        .store(2, std::sync::atomic::Ordering::SeqCst);
+    super::scenarios::edit_anyway_scenario(&world).await?;
+    assert_eq!(
+        world
+            .store
+            .lock()
+            .state
+            .contended_replaces
+            .load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+    Ok(())
+}

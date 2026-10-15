@@ -30,13 +30,13 @@ export function EditGroup({ group }: { readonly group: LabelGroup }) {
       >
         <TextField
           label={t("labels.field-name")}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={name}
           onChange={setName}
         />
         <Switch label={t("labels.field-pick-one")} isSelected={pickOne} onChange={setPickOne} />
         <div {...partOf(part.row)}>
-          <SubmitButton isPending={change.isPending}>{t("labels.save")}</SubmitButton>
+          <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
         </div>
       </Form>
       <p {...partOf(part.muted)}>{t("labels.retire-help")}</p>

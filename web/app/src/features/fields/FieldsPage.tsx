@@ -5,20 +5,8 @@ import { messageOf } from "../../shared/errors.ts";
 import { fieldAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
-import { scopeText, typeName, useFields, type OwnField } from "./fields.ts";
+import { detailsOf, useFields } from "./fields.ts";
 import { MakeFieldForm } from "./MakeFieldForm.tsx";
-
-/** What is special about a field, said in words next to its name: its kind, where it is used, retired. */
-function detailsOf(field: OwnField): string {
-  return [
-    typeName(field.kind),
-    t(`field-for.${field.applies_to}`),
-    scopeText(field),
-    field.retired ? t("fields.retired") : null,
-  ]
-    .filter((word) => word !== null)
-    .join(" · ");
-}
 
 /**
  * *Organization settings › Fields* (CF-01): the own fields as a list, each a link to its page, and

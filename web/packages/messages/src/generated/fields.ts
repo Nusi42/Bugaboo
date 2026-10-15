@@ -22,7 +22,7 @@ export const messages = {
   "fields.field-choices": "Choices",
   "fields.field-choices-help":
     "One choice on each line. You can change names, colors and icons on the field page.",
-  "fields.field-required": "It has to be filled in",
+  "fields.field-required": "Must be filled in",
   "fields.make": "Make the field",
   "fields.basics": "Basics",
   "fields.never-to-assistant": "Never send this field to the assistant",
@@ -60,7 +60,7 @@ export const messages = {
   "fields.used-everywhere":
     "{count, plural, =0 {No project has a value yet.} one {1 project has a value.} other {# projects have a value.}}",
   "fields.used-in-projects":
-    "{count, plural, =0 {Limited to no project you can see.} one {Used in 1 project.} other {Used in # projects.}}",
+    "{count, plural, =0 {No project you can see uses it.} one {Used in 1 project.} other {Used in # projects.}}",
   "fields.used-list": "Projects that use the field",
   "fields.used-types": "Issue types: {names}",
   "fields.scope-everywhere-switch": "Use it in every project",
@@ -107,7 +107,6 @@ export const messages = {
   "fields.pick-take-out": "Take out",
   "fields.pick-take-out-name": "Take out {name}",
   "fields.pick-choose-name": "Choose {name}",
-  "fields.pick-issue-key": "ID of the issue, like WEB-12",
   "fields.pick-issue-find": "Find the issue",
   "fields.pick-no-issue": "No issue has that ID.",
   "fields.chosen-count": "{count, plural, one {# chosen} other {# chosen}}",

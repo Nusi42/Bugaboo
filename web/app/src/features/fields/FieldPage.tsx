@@ -6,7 +6,7 @@ import { paths } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
 import { FieldSections } from "./FieldSections.tsx";
-import { scopeText, typeName, useField, type OwnField } from "./fields.ts";
+import { detailsOf, useField, type OwnField } from "./fields.ts";
 import { useChangeField } from "./use-change-field.ts";
 
 /** *Retire the field*: no new values, while the old ones stay. A switch, because it can be taken back. */
@@ -36,16 +36,7 @@ function Page({ field }: { readonly field: OwnField }) {
   return (
     <div {...partOf(part.stack)}>
       <Card heading={field.name} level={1}>
-        <p {...partOf(part.muted)}>
-          {[
-            typeName(field.kind),
-            t(`field-for.${field.applies_to}`),
-            scopeText(field),
-            field.retired ? t("fields.retired") : null,
-          ]
-            .filter((word) => word !== null)
-            .join(" · ")}
-        </p>
+        <p {...partOf(part.muted)}>{detailsOf(field)}</p>
         <Link href={paths.fields}>{t("fields.back")}</Link>
       </Card>
       <FieldSections field={field} />

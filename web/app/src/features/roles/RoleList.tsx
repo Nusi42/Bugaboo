@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, Link, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { detailsText } from "../../shared/list-text.ts";
 import { roleAddress } from "../../shared/paths.ts";
 import { roleLinesOf, useRoles } from "./roles.ts";
 
@@ -17,12 +18,12 @@ export function RoleList() {
           <li key={role.id} {...partOf(part.item)}>
             <Link href={roleAddress(role.id)}>{role.name}</Link>
             <span {...partOf(part.muted)}>
-              {[
-                role.starting === null ? t("roles.own") : t("roles.starting-badge"),
-                role.twoStep ? t("roles.two-step-badge") : null,
-              ]
-                .filter((word) => word !== null)
-                .join(" · ")}
+              {detailsText(
+                [
+                  role.starting === null ? t("roles.own") : t("roles.starting-badge"),
+                  role.twoStep ? t("roles.two-step-badge") : null,
+                ].filter((word) => word !== null),
+              )}
             </span>
           </li>
         ))}

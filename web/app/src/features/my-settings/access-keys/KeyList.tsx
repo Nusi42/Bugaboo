@@ -7,6 +7,7 @@ import { useAfterDelay } from "../../../shared/use-optimistic.ts";
 import { keysOptions, type AccessKey } from "./access-keys.ts";
 import { KeyRow } from "./KeyRow.tsx";
 import { useDeleteKey } from "./use-delete-key.ts";
+import { saveLabels } from "../../../shared/save-labels.ts";
 
 /** *Your access keys*: each with what it may do and where, and a way to delete it. */
 export function KeyList() {
@@ -34,14 +35,7 @@ export function KeyList() {
         </ul>
         {shapes ? <Skeleton /> : null}
       </div>
-      <SaveStatus
-        state={remove.saveState}
-        labels={{
-          saving: t("save.saving"),
-          saved: t("save.saved"),
-          "not-saved": t("save.not-saved"),
-        }}
-      />
+      <SaveStatus state={remove.saveState} labels={saveLabels()} />
       {remove.problem === null ? null : <Alert tone={alertTone.danger}>{remove.problem}</Alert>}
       {remove.saveState === "saved" ? (
         <Alert tone={alertTone.success}>{t("access-keys.deleted")}</Alert>

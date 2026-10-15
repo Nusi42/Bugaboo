@@ -11,8 +11,8 @@ const keys = { enter: "Enter", escape: "Escape" } as const;
 export interface InPlaceTextProps {
   /** What the text is, for screen readers: the name of the box while it is typed in. */
   readonly label: string;
-  /** What the button that starts changing the text says to screen readers, before the text. */
-  readonly changeLabel: string;
+  /** What the button that starts changing the text is called for screen readers (it holds the text). */
+  readonly buttonLabel: string;
   readonly value: string;
   /** The text may not be empty; otherwise an empty text is saved as it is. */
   readonly required?: boolean;
@@ -79,7 +79,7 @@ function Box({ label, value, required, onDone }: BoxProps) {
  */
 export function InPlaceText({
   label,
-  changeLabel,
+  buttonLabel,
   value,
   required = false,
   readOnly = false,
@@ -104,12 +104,11 @@ export function InPlaceText({
       />
     );
   }
-  const name = `${changeLabel}: ${value}`;
   return (
     <button
       type={buttonType.button}
       {...partOf(part.inPlaceButton)}
-      aria-label={name}
+      aria-label={buttonLabel}
       onClick={() => {
         setTyping(true);
       }}

@@ -46,7 +46,10 @@ words! {
         SameIssue => "same-issue",
         /// The issue holds as many of it as it may.
         LimitReached => "limit-reached",
-        /// The change is not valid for this issue (a value its field does not take).
+        /// A value of the issue breaks the rule of its field (it is too long, does not match, is
+        /// missing where the field must be filled in).
+        FieldRule => "field-rule",
+        /// The change cannot be made to this issue, for a reason that has no word of its own.
         NotValid => "not-valid",
     }
     messages name = "bulk-skip."

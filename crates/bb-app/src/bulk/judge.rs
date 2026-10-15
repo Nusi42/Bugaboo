@@ -90,7 +90,8 @@ pub(super) struct Selection<'a> {
 pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
     match error {
         AppError::Stale(_) => Ok(SkipReason::ChangedSince),
-        AppError::Refused(code) => Ok(match code {
+        // A refusal about one field is the same reason as without the field.
+        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => Ok(match code {
             ErrorCode::VersionChanged => SkipReason::ChangedSince,
             ErrorCode::NotFound => SkipReason::NotFound,
             ErrorCode::Forbidden => SkipReason::NotAllowed,
@@ -99,8 +100,10 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
-            // Every other refusal says the single change would not take this issue as it is. The
-            // codes are listed so a new one is a decision made here, not a silent "not valid".
+            code if code.is_field_rule() => SkipReason::FieldRule,
+            // Every other refusal says the single change would not take this issue as it is and has
+            // no word of its own. The codes are listed (the `field.*` ones are caught above) so a
+            // new one is a decision made here, not a silent "not valid".
             ErrorCode::WrongCredentials
             | ErrorCode::WrongSecondStepCode
             | ErrorCode::WrongSetupCode
@@ -318,5 +321,32 @@ impl<S: AuthStore> Ctx<'_, S> {
             name: name.to_owned(),
             other: Box::new(second.clone()),
         }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn iss_09_a_refusal_about_a_field_skips_the_issue_like_one_without_the_field() {
+        let at_field = AppError::RefusedAtField {
+            code: ErrorCode::FieldNotHere,
+            field: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c".to_owned(),
+        };
+        assert_eq!(skip_of(at_field), Ok(SkipReason::FieldMissing));
+        assert_eq!(
+            skip_of(AppError::Refused(ErrorCode::FieldNotHere)),
+            Ok(SkipReason::FieldMissing)
+        );
+        let too_long = AppError::RefusedAtField {
+            code: ErrorCode::FieldTooLong,
+            field: "x".to_owned(),
+        };
+        assert_eq!(skip_of(too_long), Ok(SkipReason::FieldRule));
+        assert_eq!(
+            skip_of(AppError::Refused(ErrorCode::InvalidRequest)),
+            Ok(SkipReason::NotValid)
+        );
     }
 }

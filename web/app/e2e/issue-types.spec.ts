@@ -62,7 +62,7 @@ test("iss_02 a type is renamed, given another icon and kept after the page is re
   await panel.getByRole("button", { name: t("common.save"), exact: true }).click();
   // The panel is named after the type, so it has the new name now.
   await expect(
-    page.getByRole("complementary", { name: "Chore" }).getByText(t("issue-types.saved")),
+    page.getByRole("complementary", { name: "Chore" }).getByText(t("save.saved")),
   ).toBeVisible();
   // The list is read again from the server, with the panel closed (a phone shows one thing at a
   // time).

@@ -91,7 +91,7 @@ test("cf_01 an issue is chosen for Duplicate of by its readable ID, and a wrong 
   await signIn(page, ada);
   await openIssueWithDetails(page, second.key);
   const dialog = await openChooser(page, "Duplicate of");
-  const key = dialog.getByLabel(t("fields.pick-issue-key"), { exact: true });
+  const key = dialog.getByLabel(t("common.issue-id"), { exact: true });
   await key.fill("WEB-9999");
   await dialog.getByRole("button", { name: t("fields.pick-issue-find"), exact: true }).click();
   await expect(dialog.getByRole("alert")).toBeVisible();

@@ -5,7 +5,7 @@ import { api } from "../../shared/api.ts";
 import { useLongText, type LongText } from "../../shared/editing/index.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
-import { versionOf } from "./issue-values.ts";
+import { versionOf } from "../../shared/version.ts";
 import type { IssueView } from "./slots.ts";
 
 /** The description of an issue as a long text being edited, and when it was last saved. */

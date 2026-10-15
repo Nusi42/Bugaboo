@@ -21,7 +21,9 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
       await expect(page.getByRole("checkbox", { name: key, exact: true })).toBeChecked();
     }),
   );
-  await expect(page.getByText(t("issues.selected", { count: keys.length }))).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: t("issues.selected", { count: keys.length }) }),
+  ).toBeVisible();
 }
 
 /** Chooses *Change status* to *Done* for the ticked issues and reads the preview; gives the dialog back. */
@@ -29,10 +31,12 @@ export async function previewDoneOnScreen(page: Page, count: number) {
   await page.getByRole("button", { name: t("bulk.action-change"), exact: true }).click();
   const dialog = page.getByRole("alertdialog");
   await dialog
-    .getByLabel(t("bulk.field-status"), { exact: true })
+    .getByLabel(t("issue-field.status"), { exact: true })
     .selectOption({ label: t("status.done") });
   await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
-  await expect(dialog.getByText(t("bulk.summary", { changed: count, skipped: 0 }))).toBeVisible();
+  await expect(
+    dialog.getByText(t("preview.summary", { changed: count, skipped: 0 })),
+  ).toBeVisible();
   return dialog;
 }
 
@@ -42,7 +46,9 @@ export async function applyAndExpectAllChanged(
   dialog: Locator,
   changed: number,
 ): Promise<void> {
-  await dialog.getByRole("button", { name: t("bulk.apply"), exact: true }).click();
+  await dialog
+    .getByRole("button", { name: t("bulk.apply", { count: changed }), exact: true })
+    .click();
   await expect(
     page.getByText(t("bulk.result-done", { changed, skipped: 0 })).first(),
   ).toBeVisible();
@@ -55,7 +61,9 @@ export async function applyAndExpectSkipped(
   changed: number,
   skipped: string,
 ): Promise<void> {
-  await dialog.getByRole("button", { name: t("bulk.apply"), exact: true }).click();
+  await dialog
+    .getByRole("button", { name: t("bulk.apply", { count: changed + 1 }), exact: true })
+    .click();
   await expect(
     page.getByText(t("bulk.result-done", { changed, skipped: 1 })).first(),
   ).toBeVisible();

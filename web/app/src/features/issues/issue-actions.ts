@@ -36,6 +36,18 @@ export function moreActions(
   return mayDelete ? [copy, remove] : [copy];
 }
 
+/** The same action, which first forgets the reason of the last refusal. */
+function withoutRefusal(action: MenuAction, forget: () => void): MenuAction {
+  return {
+    id: action.id,
+    label: action.label,
+    onAction: () => {
+      forget();
+      action.onAction();
+    },
+  };
+}
+
 /**
  * What *More* offers for an issue, and what to tell when a delete is refused: the page that is
  * still open says it.
@@ -46,12 +58,18 @@ export function useMoreActions(
   onClose: () => void,
 ): { readonly actions: MenuAction[]; readonly refusal: string | null } {
   const [refusal, setRefusal] = useState<string | null>(null);
-  const actions = moreActions(issue, mayDelete, {
+  const offered = moreActions(issue, mayDelete, {
     onDeleted: onClose,
     onRefused: (error) => {
       setRefusal(messageOf(error));
     },
   });
+  // Whatever is asked next starts without the reason of the last refusal.
+  const actions = offered.map((action) =>
+    withoutRefusal(action, () => {
+      setRefusal(null);
+    }),
+  );
   return { actions, refusal };
 }
 

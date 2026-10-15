@@ -21,7 +21,7 @@ export function LabelFields(props: LabelFieldsProps) {
     <>
       <TextField
         label={t("labels.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={props.name}
         onChange={props.onName}
       />

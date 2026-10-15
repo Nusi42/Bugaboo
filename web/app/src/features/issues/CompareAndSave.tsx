@@ -34,7 +34,7 @@ export function CompareAndSave({ mine, theirs, onSave, onClose }: CompareAndSave
     rows.map((_, at) => sideAt(at)),
   );
   return (
-    <section {...partOf(part.issueCompare)} aria-label={t("issues.compare-title")}>
+    <section {...partOf(part.issueCompare)} aria-label={t("issues.compare-and-save")}>
       <p {...partOf(part.text)}>{t("issues.compare-intro")}</p>
       {rows.map((row, at) => (
         <CompareRow

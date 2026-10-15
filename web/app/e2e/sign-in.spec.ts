@@ -51,7 +51,7 @@ test("auth_01 a wrong password and an unknown address get the same answer", asyn
 test("auth_01 empty fields are explained before anything is sent", async ({ page }) => {
   await page.goto(paths.signIn);
   await page.getByRole("button", { name: t("sign-in.submit"), exact: true }).click();
-  await expect(page.getByText(t("validation.required")).first()).toBeVisible();
+  await expect(page.getByText(t("error.field.required")).first()).toBeVisible();
   await page.getByLabel(t("field.email")).fill("no-at-sign");
   await page.getByLabel(t("field.password"), { exact: true }).fill("x");
   await page.getByRole("button", { name: t("sign-in.submit"), exact: true }).click();

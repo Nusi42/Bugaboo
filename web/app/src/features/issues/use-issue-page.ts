@@ -1,14 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { useLayout } from "@bugaboo/ui";
-import { useMemo } from "react";
 
-import { useVersionWatch } from "../../shared/editing/index.ts";
 import { useFormLayout } from "../layouts/index.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { readAgain } from "./issue-requests.ts";
-import { valuesOf, versionOf } from "./issue-values.ts";
+import { valuesOf } from "./issue-values.ts";
 import { maskOf, type IssueBlockProps, type IssueDetail } from "./slots.ts";
 import { useIssueChanges, type IssueChanges } from "./use-issue-changes.ts";
+import { useIssueWatch } from "./use-issue-watch.ts";
 
 /** What the parts of an open issue share: how it is changed, and what the blocks of other packages get. */
 export interface IssuePageState {
@@ -31,14 +29,7 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
     kind: "issue-page",
   });
   const key = issue.key ?? address;
-  const version = versionOf(issue);
-  const watched = useMemo(
-    () => [{ record: { kind: "issue", id: issue.id ?? address }, version }],
-    [issue.id, address, version],
-  );
-  useVersionWatch(watched, () => {
-    readAgain(address);
-  });
+  const version = useIssueWatch(issue, address);
   usePageTitle(t("issues.title-of", { key, title: issue.title ?? "" }));
   return {
     changes,

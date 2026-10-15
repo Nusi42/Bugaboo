@@ -17,7 +17,6 @@ export const messages = {
   "relation-kinds.field-backward": "Words for the second issue",
   "relation-kinds.make": "Make the kind of relation",
   "relation-kinds.made": "The kind of relation {name} is made.",
-  "relation-kinds.saved": "Saved.",
   "relation-kinds.retire-help":
     "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
   "relation-kinds.retire": "Retire the kind of relation",

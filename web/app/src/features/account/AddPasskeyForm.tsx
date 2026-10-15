@@ -22,7 +22,7 @@ export function AddPasskeyForm() {
       <TextField
         label={t("passkeys.name")}
         description={t("passkeys.name-help")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={label}
         onChange={setLabel}
       />

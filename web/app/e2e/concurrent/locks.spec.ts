@@ -76,10 +76,10 @@ test("iss_17_three_people_edit_one_description_and_the_first_text_is_kept", asyn
   await openEditing(taker, crowdIssues.description);
   await Promise.all([watcher, taker].map((other) => expectToldWhoIsEditing(other, ben.name)));
   await expect(
-    watcher.getByRole("button", { name: t("issues.ask-to-finish", { name: ben.name }) }),
+    watcher.getByRole("button", { name: t("editing.ask-to-finish", { name: ben.name }) }),
   ).toBeVisible();
   // Edit anyway moves the lock to the one who may take it.
-  await taker.getByRole("button", { name: t("issues.edit-anyway"), exact: true }).click();
+  await taker.getByRole("button", { name: t("editing.edit-anyway"), exact: true }).click();
   await descriptionBox(taker).fill("Ada's text, taken over");
   await saveButton(taker).click();
   await expect(savedNote(taker)).toBeVisible();

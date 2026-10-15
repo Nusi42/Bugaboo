@@ -215,7 +215,7 @@ test("sec_03 checking Ana's access in Website reads as a sentence with its reaso
   await expect(page.getByText(t("issue-field.title"), { exact: true })).toBeVisible();
 });
 
-test("sec_03 a lead who cannot see the project a role comes from reads a project you can't see", async ({
+test("sec_03 a lead who cannot see the project a role comes from reads a project you cannot see", async ({
   page,
 }) => {
   await signIn(page, lea);

@@ -24,14 +24,14 @@ describe("adr_0017 a tag or label counts the version up and the page knows it at
     queryClient.setQueryData(queryKeys.issues.one(address), detail);
     versionCounted(address, 5);
     // A status change made right after is made on the new version, not on the old one.
-    expect(versionNow(address, 1)).toBe(5);
+    expect(versionNow(address, { version: 1 })).toBe(5);
   });
 
   it("never takes the version back when an older answer comes in late", () => {
     queryClient.setQueryData(queryKeys.issues.one(address), detail);
     versionCounted(address, 6);
     versionCounted(address, 5);
-    expect(versionNow(address, 1)).toBe(6);
+    expect(versionNow(address, { version: 1 })).toBe(6);
   });
 
   it("leaves an issue that is not on screen alone", () => {

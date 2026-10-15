@@ -7,6 +7,7 @@ import { SessionRow } from "./SessionRow.tsx";
 import { SignOutEverywhere } from "./SignOutEverywhere.tsx";
 import { useEndSession } from "./use-end-session.ts";
 import { useSessionsView } from "./use-sessions-view.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 
 /** The sessions page: every place with its browser and system, and the way to sign out everywhere. */
 export function SessionsPage() {
@@ -31,14 +32,7 @@ export function SessionsPage() {
         </ul>
         {shapes ? <Skeleton /> : null}
       </div>
-      <SaveStatus
-        state={end.saveState}
-        labels={{
-          saving: t("save.saving"),
-          saved: t("save.saved"),
-          "not-saved": t("save.not-saved"),
-        }}
-      />
+      <SaveStatus state={end.saveState} labels={saveLabels()} />
       {end.problem === null ? null : <Alert tone={alertTone.danger}>{end.problem}</Alert>}
       {end.saveState === "saved" ? (
         <Alert tone={alertTone.success}>{t("sessions.ended")}</Alert>

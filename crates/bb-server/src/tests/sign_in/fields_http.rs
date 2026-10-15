@@ -66,10 +66,11 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
         )
         .await?;
         let key = id_in(&customer)?;
-        let refused = |reply: &Reply, code: &str| {
+        // A refusal names the field it is about, so the form can show it there (M3 WP-13).
+        let refused = |reply: &Reply, code: &str, field: &str| {
             assert_eq!(
-                (reply.status, reply.code()),
-                (StatusCode::BAD_REQUEST, code),
+                (reply.status, reply.code(), reply.body["field"].as_str()),
+                (StatusCode::BAD_REQUEST, code, Some(field)),
                 "{}",
                 reply.body
             );
@@ -77,18 +78,22 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
         refused(
             &make_with(&mut ada, &site.bug, json!({})).await?,
             "field.required",
+            &key,
         );
         refused(
             &make_with(&mut ada, &site.bug, json!({ &key: "Customer" })).await?,
             "field.too_long",
+            &key,
         );
         refused(
             &make_with(&mut ada, &site.bug, json!({ &key: "Ab1" })).await?,
             "field.no_match",
+            &key,
         );
         refused(
             &make_with(&mut ada, &site.bug, json!({ &key: 7 })).await?,
             "field.wrong_value",
+            &key,
         );
         let made = make_with(&mut ada, &site.bug, json!({ &key: "Acme" })).await?;
         let issue = ok(&made)?;
@@ -104,6 +109,7 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
             )
             .await?,
             "field.too_long",
+            &key,
         );
         refused(
             &ada.send(
@@ -113,9 +119,11 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
             )
             .await?,
             "field.required",
+            &key,
         );
         // A choice the field does not offer.
         let level = severity(&mut ada).await?;
+        let level_key = id_in(&level)?;
         refused(
             &ada.send(
                 "PATCH",
@@ -127,6 +135,7 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
             )
             .await?,
             "field.unknown_choice",
+            &level_key,
         );
         Ok(())
     })

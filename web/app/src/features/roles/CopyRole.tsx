@@ -33,7 +33,7 @@ export function CopyRole({ id, name }: CopyRoleProps) {
       <p {...partOf(part.muted)}>{t("roles.copy-help")}</p>
       <TextField
         label={t("roles.copy-field")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={typed}
         onChange={setTyped}
       />

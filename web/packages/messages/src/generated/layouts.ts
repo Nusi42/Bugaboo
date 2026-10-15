@@ -18,8 +18,8 @@ export const messages = {
   "layouts.inherited-type": "It is made for {type} only.",
   "layouts.customize-project": "Customize for {project}",
   "layouts.customize-organization": "Customize for the whole organization",
-  "layouts.use-inherited": "Use the inherited layout again",
-  "layouts.use-inherited-title": "Use the inherited layout again?",
+  "layouts.use-inherited": "Reset to default",
+  "layouts.use-inherited-title": "Reset to default?",
   "layouts.use-inherited-text":
     "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
   "layouts.fixed": "The title and the issue type are always asked for.",
@@ -43,26 +43,20 @@ export const messages = {
   "layouts.field-move-to": "Move {name} to another section",
   "layouts.field-remove": "Take {name} off this form",
   "layouts.field-drag": "Drag {name}",
-  "layouts.field-required": "Required: it stays on the form for everybody who can fill it in.",
+  "layouts.field-required":
+    "Must be filled in: it stays on the form for everybody who can fill it in.",
   "layouts.roles-page": "Who sees {name}",
   "layouts.roles-form": "Who is asked for {name}",
-  "layouts.limited-page": "{role} can't see {field}: Field permissions",
-  "layouts.limited-form": "{role} can't fill in {field}: Field permissions",
+  "layouts.limited-page": "{role} cannot see {field}: the field permissions hide it.",
+  "layouts.limited-form": "{role} cannot fill in {field}: the field permissions do not allow it.",
+  "layouts.limited-link": "Open field permissions",
   "layouts.save": "Save layout",
-  "layouts.saved": "The layout is saved.",
-  "layouts.discard": "Discard changes",
-  "layouts.unsaved": "You have changes that are not saved.",
-  "layouts.is-editing": "{name} is editing this layout · since {since}",
-  "layouts.ask-finish": "Ask {name} to finish",
-  "layouts.edit-anyway": "Edit anyway",
-  "layouts.try-again": "Try again",
   "layouts.lost":
-    "You are no longer editing this layout. Your changes are kept here. Ask for the lock again to save them.",
-  "layouts.taking": "Getting ready to edit …",
+    "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
+  "layouts.taking": "Getting ready to edit…",
   "layouts.tabs": "Sections of the form",
   "layouts.tab-other": "Other",
   "layouts.section-named": "Section {number}: {title}",
-  "layouts.saving": "Saving …",
   "layouts.inherited-hidden": "This form uses a layout that is set higher up.",
   "layouts.unreadable":
     "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
@@ -71,7 +65,7 @@ export const messages = {
   "layouts.draft-restore": "Put my changes back",
   "layouts.draft-drop": "Throw my changes away",
   "layouts.delete-held":
-    "{name} is editing this layout. It can be taken away when they have finished.",
+    "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
   "layouts.roles-hidden": "Which roles see a field is set by people who may decide what roles see.",
 } as const;
 

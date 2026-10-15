@@ -11,6 +11,7 @@ import {
 } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SaveBarProps {
   /** There are changes that are not saved. */
@@ -34,7 +35,7 @@ function stateOf({ dirty, saved }: Pick<SaveBarProps, "dirty" | "saved">): SaveS
   return saved ? "saved" : "idle";
 }
 
-/** *Save layout* and *Discard changes*, with what happened to the last save. */
+/** *Save layout* and *Throw my changes away*, with what happened to the last save. */
 export function SaveBar(props: SaveBarProps) {
   const { dirty, canSave, pending, error, onSave, onDiscard } = props;
   return (
@@ -52,16 +53,9 @@ export function SaveBar(props: SaveBarProps) {
           {t("layouts.save")}
         </Button>
         <Button isDisabled={!dirty} onPress={onDiscard}>
-          {t("layouts.discard")}
+          {t("layouts.draft-drop")}
         </Button>
-        <SaveStatus
-          state={stateOf(props)}
-          labels={{
-            saving: t("layouts.saving"),
-            saved: t("layouts.saved"),
-            "not-saved": t("layouts.unsaved"),
-          }}
-        />
+        <SaveStatus state={stateOf(props)} labels={saveLabels()} />
       </div>
     </>
   );

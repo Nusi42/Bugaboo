@@ -31,13 +31,13 @@ export function EditRelationKind({ kind }: { readonly kind: RelationKindLine }) 
       >
         <TextField
           label={t("relation-kinds.field-forward")}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={forward}
           onChange={setForward}
         />
         <TextField
           label={t("relation-kinds.field-backward")}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={backward}
           onChange={setBackward}
         />
@@ -54,9 +54,7 @@ export function EditRelationKind({ kind }: { readonly kind: RelationKindLine }) 
         }}
       />
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
-      {change.isSuccess ? (
-        <Alert tone={alertTone.success}>{t("relation-kinds.saved")}</Alert>
-      ) : null}
+      {change.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
     </div>
   );
 }

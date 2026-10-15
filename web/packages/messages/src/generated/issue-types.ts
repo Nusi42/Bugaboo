@@ -16,7 +16,6 @@ export const messages = {
   "issue-types.field-icon": "Icon",
   "issue-types.make": "Make the issue type",
   "issue-types.made": "The issue type {name} is made.",
-  "issue-types.saved": "Saved.",
   "issue-types.retire-help":
     "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
   "issue-types.retire": "Retire the issue type",

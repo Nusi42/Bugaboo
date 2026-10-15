@@ -9,7 +9,7 @@ export const messages = {
   "access.origin-here": "Set for this project",
   "access.origin-from": "From {project}",
   "access.origin-unset": "Nothing set, so it is hidden",
-  "access.hidden-project": "a project you can't see",
+  "access.hidden-project": "a project you cannot see",
   "access.reset": "Reset",
   "access.reset-label": "Reset {subject} for {role}",
   "access.ceiling": "You can set a level only up to your own. Levels above it cannot be picked.",

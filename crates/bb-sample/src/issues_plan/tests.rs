@@ -6,7 +6,10 @@ fn plan_of(wanted: u32, seed: u64) -> Plan {
     let names = Layout::bundled().unwrap().issues;
     let words = IssueWords::bundled().unwrap();
     // About eighteen months of working time.
-    let calendar = Calendar::between(1_799_020_800, 1_799_020_800 + 548 * 86_400);
+    let calendar = Calendar::between(
+        1_799_020_800,
+        1_799_020_800 + 548 * bb_core::time::SECONDS_PER_DAY,
+    );
     Plan::new(&names, &words, seed, wanted, &calendar).unwrap()
 }
 

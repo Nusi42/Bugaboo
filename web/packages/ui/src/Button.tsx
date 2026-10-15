@@ -39,6 +39,8 @@ export interface ButtonProps {
   readonly onPress?: () => void;
   /** The name for screen readers when the text alone is not enough, for example in a list. */
   readonly "aria-label"?: string;
+  /** The ID of the note that explains the button (why it waits). */
+  readonly "aria-describedby"?: string;
 }
 
 export function Button({

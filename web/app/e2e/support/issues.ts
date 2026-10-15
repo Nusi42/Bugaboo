@@ -189,6 +189,11 @@ export function savedNote(page: Page) {
   return page.getByText(new RegExp(`^${t("save.saved")}`, "u")).first();
 }
 
+/** The name of the box of the title on the form of a new issue: every required field says so. */
+export function titleLabel(): string {
+  return t("fields.label-required", { field: t("issue-field.title") });
+}
+
 /** The dialog that makes an issue. */
 export function newIssueDialog(page: Page) {
   return page.getByRole("dialog", { name: t("issues.new-title"), exact: true });

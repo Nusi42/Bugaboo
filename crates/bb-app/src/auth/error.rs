@@ -12,6 +12,14 @@ use crate::editing::{Conflict, Stale};
 pub enum AppError {
     /// The request was turned away for a reason a person may be told (an error code).
     Refused(ErrorCode),
+    /// A `field.*` refusal, with the field it is about (the word of a built-in field or the ID
+    /// of an own field), so the client can show it at that field.
+    RefusedAtField {
+        /// Why the value was refused.
+        code: ErrorCode,
+        /// The field, as the client names it.
+        field: String,
+    },
     /// The session of the cookie has ended (it ran out, was ended, or never was one): the same
     /// answer as [`ErrorCode::NotSignedIn`], and the browser is told to forget the cookie and
     /// what it kept (M2-F06). A session that is only not at the stage the request needs (the
@@ -38,7 +46,7 @@ impl AppError {
     #[must_use]
     pub const fn code(&self) -> Option<ErrorCode> {
         match self {
-            Self::Refused(code) => Some(*code),
+            Self::Refused(code) | Self::RefusedAtField { code, .. } => Some(*code),
             Self::SessionEnded => Some(ErrorCode::NotSignedIn),
             Self::Stale(_) | Self::Conflict(_) => Some(ErrorCode::VersionChanged),
             Self::Limited { .. } | Self::Internal(_) => None,
@@ -72,7 +80,9 @@ impl From<bb_auth::AuthError> for AppError {
 impl fmt::Display for AppError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Refused(code) => write!(formatter, "refused: {code}"),
+            Self::Refused(code) | Self::RefusedAtField { code, .. } => {
+                write!(formatter, "refused: {code}")
+            }
             Self::SessionEnded => write!(formatter, "refused: the session has ended"),
             Self::Stale(_) | Self::Conflict(_) => {
                 write!(formatter, "refused: {}", ErrorCode::VersionChanged)
