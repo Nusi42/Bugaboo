@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
-import { Overlay, overlayEdge, useLayout, useUpright } from "@bugaboo/ui";
+import { Overlay, overlayEdge } from "@bugaboo/ui";
 
 import { issueShow } from "./issue-show.ts";
 import { IssuePage } from "./IssuePage.tsx";
 import { useIssue } from "./issues.ts";
+import { useIssueTakesScreen } from "./use-issue-takes-screen.ts";
 
 export interface OpenIssueProps {
   /** The issue that is open next to the list, from the address. */
@@ -21,8 +22,7 @@ export interface OpenIssueProps {
  * both share the answer).
  */
 export function OpenIssue({ open, onFocus, onClose }: OpenIssueProps) {
-  const upright = useUpright();
-  const sheet = useLayout() === "tablet" && upright;
+  const { sheet } = useIssueTakesScreen();
   const found = useIssue(sheet ? open : undefined).data;
   const key = found?.issue.key;
   const page = (

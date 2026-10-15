@@ -74,6 +74,7 @@ export {
   type StorageKey,
   type StoreGetter,
 } from "./storage.ts";
+export { Announce } from "./Announce.tsx";
 export { SaveStatus, type SaveState, type SaveStatusProps } from "./SaveStatus.tsx";
 export {
   PickerHint,

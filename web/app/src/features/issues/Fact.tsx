@@ -2,6 +2,7 @@ import { Icon, iconName, SelectField, partOf, part, type SelectChoice } from "@b
 import { useRef, type ReactNode } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
+import { focusChoice } from "./focus-choice.ts";
 import { readOnlyReason } from "./read-only.ts";
 
 export interface FactProps {
@@ -63,7 +64,7 @@ export function ChoiceFact<Value extends string>({
       ? {}
       : {
           [shortcut]: () => {
-            box.current?.querySelector("select")?.focus();
+            focusChoice(box.current);
           },
         },
   );

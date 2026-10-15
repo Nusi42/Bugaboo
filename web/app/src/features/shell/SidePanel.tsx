@@ -31,7 +31,7 @@ export function SidePanel({ title, heading, onClose, closeLabel, children }: Sid
           {heading ?? title}
         </h2>
         <IconButton
-          icon={iconName.close}
+          icon={closeLabel === undefined ? iconName.close : iconName.back}
           label={closeLabel ?? t("panel.close")}
           onPress={onClose}
         />

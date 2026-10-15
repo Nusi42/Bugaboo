@@ -1,6 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
-import { VisuallyHidden } from "react-aria-components";
+import { Announce, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { SelectionBars } from "./SelectionBars.tsx";
 import type { IssueSelection } from "./use-selection.ts";
@@ -14,9 +13,7 @@ export function Selected({ selection }: { readonly selection: IssueSelection }) 
   return (
     <div {...partOf(part.stack)}>
       {/* The count is told as it changes (UX §8); the visible words are left out of the reading. */}
-      <VisuallyHidden>
-        <output>{count === 0 ? "" : t("issues.selected", { count })}</output>
-      </VisuallyHidden>
+      <Announce>{count === 0 ? "" : t("issues.selected", { count })}</Announce>
       {count === 0 ? null : (
         <span {...partOf(part.issueNote)}>
           <span aria-hidden>{t("issues.selected", { count })}</span>

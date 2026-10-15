@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { VisuallyHidden } from "react-aria-components";
 
+import { Announce } from "./Announce.tsx";
 import { Button } from "./Button.tsx";
 
 /** How long "Copied" stays on the button before it says "Copy" again. */
@@ -52,9 +52,7 @@ export function CopyButton({ text, label, name, copiedLabel }: CopyButtonProps) 
       >
         {copied ? copiedLabel : label}
       </Button>
-      <VisuallyHidden>
-        <output>{copied ? copiedLabel : ""}</output>
-      </VisuallyHidden>
+      <Announce>{copied ? copiedLabel : ""}</Announce>
     </>
   );
 }
