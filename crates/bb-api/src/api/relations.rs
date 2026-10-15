@@ -273,11 +273,7 @@ async fn list_relation_kinds(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(KINDS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(KINDS_LIST);
     let page = auth
         .api()?
         .relation_kinds(
@@ -290,7 +286,7 @@ async fn list_relation_kinds(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(RelationKindItem::from).collect(),
         next: page.next_cursor,
@@ -424,11 +420,7 @@ async fn list_sub_issues(
     ApiPath(issue): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(SUB_ISSUES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(SUB_ISSUES_LIST);
     let page = auth
         .api()?
         .sub_issues(
@@ -442,7 +434,7 @@ async fn list_sub_issues(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(IssueRef::from).collect(),
         next: page.next_cursor,
@@ -472,11 +464,7 @@ async fn list_related_issues(
     ApiPath(issue): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(RELATED_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(RELATED_LIST);
     let page = auth
         .api()?
         .related_issues(
@@ -490,7 +478,7 @@ async fn list_related_issues(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(RelatedIssueItem::from).collect(),
         next: page.next_cursor,

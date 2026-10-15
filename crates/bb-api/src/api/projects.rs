@@ -8,12 +8,10 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::auth::AppError;
 use bb_app::projects::{
     ChangeProject, MakeProject, MoveRight, ProjectDetail, ProjectItem as AppProjectItem,
     ProjectQuery, ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
 use bb_core::id::ProjectId;
 use bb_core::own_fields_value::OwnValues;
@@ -23,6 +21,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::cursor_error;
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
@@ -258,11 +257,7 @@ async fn list_projects(
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
     // the use case cannot read, so its answer comes after the check of the person.
-    let position = params.position(PROJECTS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(PROJECTS_LIST);
     let inside = filter
         .inside
         .as_deref()
@@ -293,12 +288,8 @@ async fn list_projects(
             },
         )
         .await
-        .map_err(|error| match error {
-            // The only thing the use case can find invalid is the cursor.
-            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
-            other => ApiError::from(other),
-        })?;
-    position?;
+        .map_err(cursor_error)?;
+    bad_cursor?;
     // A project that is no ID is a project that is not there.
     inside?;
     outside?;

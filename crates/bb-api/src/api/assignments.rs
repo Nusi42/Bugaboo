@@ -185,11 +185,7 @@ async fn list_rows(
     params: ListParams,
     project: Option<ProjectId>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(ASSIGNMENTS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(ASSIGNMENTS_LIST);
     let found = auth
         .api()?
         .assignments(
@@ -203,7 +199,7 @@ async fn list_rows(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let listed = found.map(|list| Listed {
         items: list.rows.iter().map(AssignmentItem::from).collect(),
         next: list.next_cursor,
@@ -235,11 +231,7 @@ async fn list_choices(
     filter: ChoicesFilter,
     project: Option<ProjectId>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(CHOICES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(CHOICES_LIST);
     let found = auth
         .api()?
         .assignment_choices(
@@ -255,7 +247,7 @@ async fn list_choices(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     choice_page(CHOICES_LIST, &params, found)
 }
 

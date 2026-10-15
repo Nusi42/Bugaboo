@@ -110,11 +110,7 @@ async fn list_issue_types(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(ISSUE_TYPES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(ISSUE_TYPES_LIST);
     let page = auth
         .api()?
         .issue_types(
@@ -127,7 +123,7 @@ async fn list_issue_types(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(IssueTypeItem::from).collect(),
         next: page.next_cursor,

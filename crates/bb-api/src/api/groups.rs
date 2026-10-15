@@ -239,11 +239,7 @@ async fn list_groups(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(GROUPS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(GROUPS_LIST);
     let found = auth
         .api()?
         .groups(
@@ -257,7 +253,7 @@ async fn list_groups(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let listed = found.map(|list| Listed {
         items: list.groups.iter().map(GroupItem::from).collect(),
         next: list.next_cursor,
@@ -425,11 +421,7 @@ async fn list_group_members(
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
     let group = path_id::<GroupId>(&group_id)?;
-    let position = params.position(MEMBERS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(MEMBERS_LIST);
     let found = auth
         .api()?
         .group_members(
@@ -443,7 +435,7 @@ async fn list_group_members(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let listed = found.map(|members: GroupMembers| Listed {
         items: members.members.iter().map(MemberItem::from).collect(),
         next: members.next_cursor,
@@ -552,11 +544,7 @@ async fn list_member_choices(
     ApiQuery(filter): ApiQuery<ChoiceFilter>,
 ) -> Result<Response, ApiError> {
     let group = path_id::<GroupId>(&group_id)?;
-    let position = params.position(CHOICES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(CHOICES_LIST);
     let found = auth
         .api()?
         .member_choices(
@@ -571,7 +559,7 @@ async fn list_member_choices(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     choice_page(CHOICES_LIST, &params, found)
 }
 

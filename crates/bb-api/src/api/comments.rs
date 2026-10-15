@@ -381,11 +381,7 @@ async fn list_comment_versions(
     ApiPath(comment): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(VERSIONS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(VERSIONS_LIST);
     let page = auth
         .api()?
         .comment_versions(
@@ -399,7 +395,7 @@ async fn list_comment_versions(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(CommentTextItem::from).collect(),
         next: page.next_cursor,
@@ -427,10 +423,7 @@ async fn list_mention_choices(
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(find): ApiQuery<ChoiceSearch>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(CHOICES_LIST);
-    position
-        .as_ref()
-        .map_err(|_| ApiError::new(ErrorCode::BadCursor))?;
+    params.position(CHOICES_LIST)?;
     let found = auth
         .api()?
         .mention_choices(
@@ -467,10 +460,7 @@ async fn list_mentions(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(MENTIONS_LIST);
-    position
-        .as_ref()
-        .map_err(|_| ApiError::new(ErrorCode::BadCursor))?;
+    params.position(MENTIONS_LIST)?;
     let found = auth
         .api()?
         .mentions(

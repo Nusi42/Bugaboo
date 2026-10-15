@@ -288,11 +288,7 @@ async fn list_roles(
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(filter): ApiQuery<RolesFilter>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(ROLES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(ROLES_LIST);
     let found = auth
         .api()?
         .roles(
@@ -307,7 +303,7 @@ async fn list_roles(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let listed = found.map(|list| Listed {
         items: list.roles.iter().map(RoleItem::from).collect(),
         next: list.next_cursor,

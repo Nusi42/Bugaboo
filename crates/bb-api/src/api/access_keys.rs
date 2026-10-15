@@ -11,7 +11,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::ProjectLabel;
 use bb_app::auth::{
-    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, AppError, DeleteAccessKey, MakeAccessKey,
+    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, DeleteAccessKey, MakeAccessKey,
     ProjectChoice, ProjectChoicesQuery, RequireSessionQuery,
 };
 use bb_core::ErrorCode;
@@ -23,6 +23,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use super::access_bodies::cursor_error;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
@@ -261,11 +262,7 @@ async fn list_access_keys(
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
     // Who asks is judged first, then the cursor, then the fields (the same order as every list).
-    let position = params.position(KEYS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(KEYS_LIST);
     let page = auth
         .api()?
         .access_keys(
@@ -277,12 +274,8 @@ async fn list_access_keys(
             },
         )
         .await
-        .map_err(|error| match error {
-            // The only thing the use case can find invalid is the cursor.
-            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
-            other => ApiError::from(other),
-        })?;
-    position?;
+        .map_err(cursor_error)?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(AccessKeyItem::from).collect(),
         next: page.next_cursor,
@@ -463,11 +456,7 @@ async fn list_project_choices(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(PROJECTS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(PROJECTS_LIST);
     let page = auth
         .api()?
         .project_choices(
@@ -479,12 +468,8 @@ async fn list_project_choices(
             },
         )
         .await
-        .map_err(|error| match error {
-            // The only thing the use case can find invalid is the cursor.
-            AppError::Refused(ErrorCode::InvalidRequest) => ApiError::new(ErrorCode::BadCursor),
-            other => ApiError::from(other),
-        })?;
-    position?;
+        .map_err(cursor_error)?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(ProjectChoiceItem::from).collect(),
         next: page.next_cursor,

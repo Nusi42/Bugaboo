@@ -650,11 +650,7 @@ async fn list_tags(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(TAGS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(TAGS_LIST);
     let page = auth
         .api()?
         .tags(
@@ -667,7 +663,7 @@ async fn list_tags(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(TagItem::from).collect(),
         next: page.next_cursor,

@@ -107,11 +107,7 @@ async fn list_people(
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
     // the use case cannot read, so its answer comes after the check of the person.
-    let position = params.position(PEOPLE_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(PEOPLE_LIST);
     let page = auth
         .api()?
         .people(
@@ -128,7 +124,7 @@ async fn list_people(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(PersonItem::from).collect(),
         next: page.next_cursor,
