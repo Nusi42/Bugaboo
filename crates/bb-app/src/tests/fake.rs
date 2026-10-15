@@ -88,7 +88,7 @@ pub(crate) struct State {
     pub(crate) locks: Vec<EditLock>,
     /// How many times replacing a lock still fails as contended (a test sets it). It is shared
     /// between the copies of the state, so a change that fails does not give the count back.
-    pub(crate) contended_replaces: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    pub(crate) contended_replaces: Arc<std::sync::atomic::AtomicUsize>,
     pub(crate) drafts: Vec<Draft>,
     pub(crate) notices: Vec<EditNotice>,
     pub(crate) issue_types: Vec<IssueType>,
