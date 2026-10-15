@@ -43,6 +43,19 @@ pub fn name_key(name: &str) -> String {
         .to_lowercase()
 }
 
+/// Which issues a viewer reads when tags are looked up for them (SEC-06): every issue of the
+/// projects in `all`, and only the issues `person` reported in the projects in `own`. A project the
+/// viewer does not see, or where the field is hidden from them, is in neither list.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IssueSight {
+    /// The projects where the viewer sees every issue.
+    pub all: Vec<ProjectId>,
+    /// The projects where the viewer sees only the issues they reported.
+    pub own: Vec<ProjectId>,
+    /// The viewer.
+    pub person: UserId,
+}
+
 /// A free word anyone who may change an issue puts on it (TAG-01).
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Tag {

@@ -69,6 +69,10 @@ pub(super) enum Quirk {
     /// The route declares one permission and its use case also needs this one on the record it
     /// names (*Edit anyway* takes over editing a record only for a person who may change it).
     AlsoNeeds(Permission),
+    /// The route names a tag that the example puts on an issue of the target project: a person who
+    /// holds the permission but does not read the issues there is told `resource.not_found`, as
+    /// for a tag that is not there (SEC-06).
+    NamesATagOfTheTarget,
     /// The route belongs to an open editor, a tab of a signed-in person: an access key is turned
     /// away from it, whatever the key may do (ADR-0019).
     SessionOnly,
@@ -369,9 +373,9 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::with("listTagSuggestions", &[Quirk::HidesUnseen]),
     Example::route("listTags"),
-    Example::route("previewTagChange"),
-    Example::route("changeTag"),
-    Example::route("combineTags"),
+    Example::with("previewTagChange", &[Quirk::NamesATagOfTheTarget]),
+    Example::with("changeTag", &[Quirk::NamesATagOfTheTarget]),
+    Example::with("combineTags", &[Quirk::NamesATagOfTheTarget]),
     Example::with("listLabels", &[Quirk::KeysActAsThePerson]),
     Example::route("makeLabelGroup"),
     Example::route("changeLabelGroup"),

@@ -100,21 +100,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The tags the person may know of: a tag without a limit, or one limited to or used in a
-    /// project they see. A tag only projects they do not see know is not there for them.
+    /// The tags the person may know of: one limited to a project they see, one used on an issue they
+    /// read, and one no issue has any more (so it can still be cleaned up). A tag that only issues
+    /// or projects they do not see know is not there for them (SEC-06).
     async fn known_tags(
         &self,
+        actor: &Actor,
         catalogue: &Catalogue,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<TagId>, AppError> {
-        let seen: Vec<ProjectId> = shown
-            .everything()
-            .iter()
-            .map(|project| project.id)
-            .collect();
+        let wanted = catalogue.tags.len() as u64;
         let used = self
             .store()
-            .used_tags(&seen, "", catalogue.tags.len() as u64)
+            .used_tags(&self.issue_sight(actor, shown, None).await?, "", wanted)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let used_anywhere = self
+            .store()
+            .used_tags(&shown.whole_sight(), "", wanted)
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(catalogue
@@ -122,9 +125,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .filter(|tag| {
                 let limited = catalogue.projects_of(tag.id);
-                limited.is_empty()
-                    || limited.iter().any(|project| shown.get(*project).is_some())
+                limited.iter().any(|project| shown.get(*project).is_some())
                     || used.iter().any(|found| found.id == tag.id)
+                    || !used_anywhere.iter().any(|found| found.id == tag.id)
             })
             .map(|tag| tag.id)
             .collect())
@@ -133,11 +136,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// A tag the person may know of, or `resource.not_found`.
     async fn known_tag<'a>(
         &self,
+        actor: &Actor,
         catalogue: &'a Catalogue,
         shown: &crate::projects::Shown,
         id: TagId,
     ) -> Result<&'a Tag, AppError> {
-        let known = self.known_tags(catalogue, shown).await?;
+        let known = self.known_tags(actor, catalogue, shown).await?;
         if !known.contains(&id) {
             return Err(ErrorCode::NotFound.into());
         }
@@ -158,7 +162,7 @@ pub async fn tags<S: AuthStore>(
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let known = ctx.known_tags(&catalogue, &shown).await?;
+    let known = ctx.known_tags(&actor, &catalogue, &shown).await?;
     let listed: Vec<&Tag> = catalogue
         .tags
         .iter()
@@ -189,7 +193,7 @@ pub async fn tag_change_preview<S: AuthStore>(
     let held = ctx.tag_manager(&actor).await?;
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let tag = ctx.known_tag(&catalogue, &shown, input.tag).await?;
+    let tag = ctx.known_tag(&actor, &catalogue, &shown, input.tag).await?;
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
             let name = clean_text(name, TAG_NAME_MAX)?;
@@ -204,7 +208,7 @@ pub async fn tag_change_preview<S: AuthStore>(
             }
         }
         (None, Some(into)) => {
-            let into = ctx.known_tag(&catalogue, &shown, into).await?;
+            let into = ctx.known_tag(&actor, &catalogue, &shown, into).await?;
             if into.id == tag.id {
                 return Err(ErrorCode::InvalidRequest.into());
             }
@@ -279,7 +283,10 @@ pub async fn change_tag<S: AuthStore>(
     }
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
-    let tag = ctx.known_tag(&catalogue, &shown, input.tag).await?.clone();
+    let tag = ctx
+        .known_tag(&actor, &catalogue, &shown, input.tag)
+        .await?
+        .clone();
     if tag.version != input.version {
         return Err(ErrorCode::VersionChanged.into());
     }
@@ -379,8 +386,12 @@ pub async fn combine_tags<S: AuthStore>(
     let catalogue = ctx.tag_catalogue().await?;
     let shown = ctx.shown_to(&actor).await?;
     let (from, into) = (
-        ctx.known_tag(&catalogue, &shown, input.tag).await?.clone(),
-        ctx.known_tag(&catalogue, &shown, input.into).await?.clone(),
+        ctx.known_tag(&actor, &catalogue, &shown, input.tag)
+            .await?
+            .clone(),
+        ctx.known_tag(&actor, &catalogue, &shown, input.into)
+            .await?
+            .clone(),
     );
     if from.id == into.id {
         return Err(ErrorCode::InvalidRequest.into());

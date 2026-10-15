@@ -6,7 +6,7 @@
 use std::future::Future;
 
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
-use bb_core::tags::{IssueLabel, IssueTag, Label, LabelGroup, Tag, TagProject};
+use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject};
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
@@ -42,9 +42,9 @@ pub trait TagStore: IssueStore + 'static {
     }
 
     reads! {
-        /// The tags used on issues that are not in the trash, in these projects, whose key holds
+        /// The tags used on the issues that are not in the trash and that the viewer reads, whose key holds
         /// `part`, by key, at most `limit`.
-        fn used_tags(projects: &[ProjectId], part: &str, limit: u64) -> Vec<Tag>;
+        fn used_tags(sight: &IssueSight, part: &str, limit: u64) -> Vec<Tag>;
     }
 
     writes! {

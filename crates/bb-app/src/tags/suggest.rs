@@ -1,12 +1,13 @@
 //! The tags to offer while a person types (TAG-01, M3-Q8).
 //!
-//! The list holds only tags that are used on issues in projects the person sees, so a tag that is
+//! The list holds only tags that are used on issues the person reads (all issues of a project where
+//! they hold *See issues*, their own elsewhere, none where *Tags* is hidden), so a tag that is
 //! used only in a project they cannot see is never offered, and it is not a way to find out that the
 //! project exists. A tag that is limited to other projects than the one the issue is in is left out,
 //! because it would be refused.
 
 use bb_core::ErrorCode;
-use bb_core::id::ProjectId;
+use bb_core::fields::Field;
 use bb_core::tags::{TAG_SUGGESTIONS_MAX, tag_allowed_in};
 use bb_policy::{Authorized, Place};
 
@@ -36,15 +37,18 @@ pub async fn tag_suggestions<S: AuthStore>(
     let Some(found) = found.filter(|_| held.sees_project()) else {
         return Err(AppError::Refused(ErrorCode::NotFound));
     };
+    if !held.field_mask_for(None).can_see(Field::Tags) {
+        // Tags are hidden from the role here: nothing to offer, and no hint that some exist.
+        return Ok(held.authorize(TagSuggestions { tags: Vec::new() }));
+    }
     let chain = ctx.chain_of(found.project.id).await?;
-    let seen: Vec<ProjectId> = shown
-        .everything()
-        .iter()
-        .map(|project| project.id)
-        .collect();
     let candidates = ctx
         .store()
-        .used_tags(&seen, &input.text, CANDIDATES)
+        .used_tags(
+            &ctx.issue_sight(&actor, &shown, Some(Field::Tags)).await?,
+            &input.text,
+            CANDIDATES,
+        )
         .await
         .map_err(|error| internal::<S>(&error))?;
     let limits = ctx

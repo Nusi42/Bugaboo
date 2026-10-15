@@ -7,7 +7,7 @@ use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_app::tags::TagStore;
 use bb_core::id::{IdSource, IssueId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{IssueLabel, IssueTag, Label, LabelGroup, Tag};
+use bb_core::tags::{IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag};
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
 
@@ -99,17 +99,41 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
             })
         })
         .await?;
-        let found = storage.used_tags(&[world.project], "LOG", 10).await?;
+        let everything = IssueSight {
+            all: vec![world.project],
+            own: Vec::new(),
+            person: world.person,
+        };
+        let found = storage.used_tags(&everything, "LOG", 10).await?;
         assert_eq!(
             found,
             vec![login.clone()],
             "the tag on the trashed issue is not offered"
         );
         // The characters of a pattern are text.
-        let found = storage.used_tags(&[world.project], "%_", 10).await?;
+        let found = storage.used_tags(&everything, "%_", 10).await?;
         assert_eq!(found, vec![other]);
         let nowhere = ProjectId::generate(&mut source).unwrap();
-        assert!(storage.used_tags(&[nowhere], "log", 10).await?.is_empty());
+        let elsewhere = IssueSight {
+            all: vec![nowhere],
+            own: Vec::new(),
+            person: world.person,
+        };
+        assert!(storage.used_tags(&elsewhere, "log", 10).await?.is_empty());
+        // Where a person sees only their own issues, only the tags on those are offered.
+        let own = |person| IssueSight {
+            all: Vec::new(),
+            own: vec![world.project],
+            person,
+        };
+        let reporter = world.issues[0].reported_by;
+        assert_eq!(storage.used_tags(&own(reporter), "", 10).await?.len(), 2);
+        assert!(
+            storage
+                .used_tags(&own(world.person), "", 10)
+                .await?
+                .is_empty()
+        );
         Ok(())
     })
     .await

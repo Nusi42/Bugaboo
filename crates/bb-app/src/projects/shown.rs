@@ -9,8 +9,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use bb_core::fields::Field;
 use bb_core::id::{ProjectId, UserId};
 use bb_core::project::Project;
+use bb_core::tags::IssueSight;
 use bb_policy::{Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
@@ -58,9 +60,49 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .collect(),
         })
     }
+
+    /// Which issues the actor reads in the projects they see (SEC-06): every issue where they hold
+    /// *See issues*, only the ones they reported elsewhere. With `field`, a project where their
+    /// role hides that field is left out.
+    pub(crate) async fn issue_sight(
+        &self,
+        actor: &Actor,
+        shown: &Shown,
+        field: Option<Field>,
+    ) -> Result<IssueSight, AppError> {
+        let mut sight = IssueSight {
+            all: Vec::new(),
+            own: Vec::new(),
+            person: actor.person.id,
+        };
+        for project in shown.everything() {
+            let held = self
+                .evaluation_of(actor, Place::Project(project.id))
+                .await?;
+            if field.is_some_and(|field| !held.field_mask_for(None).can_see(field)) {
+                continue;
+            }
+            if held.allows(Permission::SeeIssues) {
+                sight.all.push(project.id);
+            } else {
+                sight.own.push(project.id);
+            }
+        }
+        Ok(sight)
+    }
 }
 
 impl Shown {
+    /// Every issue of every project of the tree, whether the person sees it or not. Only for asking
+    /// whether a tag is used at all, never for showing what was found.
+    pub(crate) fn whole_sight(&self) -> IssueSight {
+        IssueSight {
+            all: self.projects.keys().copied().collect(),
+            own: Vec::new(),
+            person: self.person,
+        }
+    }
+
     /// Whether the person sees the project.
     pub(crate) fn sees(&self, project: ProjectId) -> bool {
         self.visible.contains(&project)

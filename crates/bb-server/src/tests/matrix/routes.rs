@@ -132,7 +132,13 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                 .flatten()
                 .all(|needed| held.permissions.contains(&needed))
             {
-                if at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees() {
+                let unknown_tag =
+                    example.has(Quirk::NamesATagOfTheTarget) && !reads_issues_of_the_target(actor);
+                if (at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees())
+                    || unknown_tag
+                {
+                    // A tag that exists only on an issue of the target project is not known to
+                    // whoever does not read the issues there (SEC-06, WP-12).
                     Expect::NotFound
                 } else {
                     Expect::Allowed
@@ -147,6 +153,12 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             }
         }
     }
+}
+
+/// Whether the actor reads the issues of the target project: they see it and hold *See issues*.
+fn reads_issues_of_the_target(actor: Actor) -> bool {
+    let held = standing(actor, Where::Target);
+    held.sees() && held.permissions.contains(&Permission::SeeIssues)
 }
 
 /// The refusals the matrix knows how to expect.
