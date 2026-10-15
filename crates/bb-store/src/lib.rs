@@ -66,6 +66,15 @@ mod test_support {
     use bb_testing::TestDatabase;
     use jiff::Timestamp;
 
+    use bb_app::access::PolicyStore as _;
+    use bb_app::issues::IssueStore as _;
+    use bb_app::ports::ChangeStore;
+    use bb_core::id::{IssueId, IssueTypeId, ProjectId};
+    use bb_core::issue::{Issue, IssueIcon, IssueType, Priority, Status};
+    use bb_core::issue_key::IssueCode;
+    use bb_core::project::{Project, ShortName};
+    use bb_core::version::FIRST_VERSION;
+
     use crate::{AuthStorage, Database, LogSeal};
 
     /// A moment `seconds` after 2026-01-01.
@@ -106,6 +115,84 @@ mod test_support {
             display_name: "Test Person".to_owned(),
             email: email.to_owned(),
             created_at: at(0),
+        }
+    }
+
+    pub(crate) fn issue(
+        source: &mut impl IdSource,
+        project: ProjectId,
+        issue_type: IssueTypeId,
+        number: i64,
+    ) -> Issue {
+        Issue {
+            id: IssueId::generate(source).unwrap(),
+            project,
+            issue_type,
+            code: IssueCode::counting(number),
+            title: format!("Issue {number}"),
+            description: String::new(),
+            status: Status::Open,
+            priority: Priority::Normal,
+            reported_by: UserId::generate(source),
+            created_at: at(1),
+            updated_at: at(1),
+            closed_at: None,
+            deleted_at: None,
+            version: FIRST_VERSION,
+        }
+    }
+
+    /// A project, a type and the issues the tests put tags and labels on.
+    pub(crate) struct World {
+        pub(crate) project: ProjectId,
+        pub(crate) issues: Vec<Issue>,
+        pub(crate) person: UserId,
+    }
+
+    pub(crate) async fn world(
+        storage: &AuthStorage,
+        source: &mut impl IdSource,
+        count: i64,
+    ) -> World {
+        let project = ProjectId::generate(source).unwrap();
+        let issue_type = IssueTypeId::generate(source).unwrap();
+        let issues: Vec<Issue> = (1..=count)
+            .map(|number| issue(source, project, issue_type, number))
+            .collect();
+        let (row, kind, rows) = (
+            Project {
+                id: project,
+                parent: None,
+                short_name: ShortName::new("ACME").unwrap(),
+                name: "Acme".to_owned(),
+                version: FIRST_VERSION,
+            },
+            IssueType {
+                id: issue_type,
+                name: "Bug".to_owned(),
+                icon: IssueIcon::Bug,
+                position: 0,
+                retired_at: None,
+                version: FIRST_VERSION,
+            },
+            issues.clone(),
+        );
+        ChangeStore::record_change(storage, &event(source, 5), move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_project(tx, &row).await?;
+                AuthStorage::insert_issue_type(tx, &kind).await?;
+                for issue in &rows {
+                    AuthStorage::insert_issue(tx, issue, &[]).await?;
+                }
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+        World {
+            project,
+            issues,
+            person: UserId::generate(source),
         }
     }
 

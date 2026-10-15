@@ -332,6 +332,43 @@ pub(crate) fn plan(people: &[SamplePerson], names: &OrganizationNames) -> Plan {
     }
 }
 
+/// The people who can do the work on every issue of the sample (their places in the roster): the
+/// Administrators and the Team members for the whole organization, without the person who may
+/// not enter a sub-project and without the people who must use a code app to sign in.
+pub(crate) fn workers(world: &World<'_>) -> Result<Vec<usize>, SampleError> {
+    let people: Vec<SamplePerson> = world
+        .people
+        .iter()
+        .map(|made| made.person.clone())
+        .collect();
+    let plan = plan(&people, &Layout::bundled()?.organization);
+    let mut kept_out: Vec<usize> = Vec::new();
+    let mut everywhere: Vec<usize> = Vec::new();
+    for row in &plan.rows {
+        match (&row.holder, row.grant, &row.project) {
+            (Holder::Person(at), Grant::NoAccess, _) => kept_out.push(*at),
+            (
+                Holder::Person(at),
+                Grant::Role(RoleKey::Starting(StartingRole::TeamMember)),
+                None,
+            ) => {
+                everywhere.push(*at);
+            }
+            _ => {}
+        }
+    }
+    Ok(people
+        .iter()
+        .enumerate()
+        .filter(|(at, person)| {
+            !person.code_app
+                && !kept_out.contains(at)
+                && (person.role == StartingRole::Administrator || everywhere.contains(at))
+        })
+        .map(|(at, _)| at)
+        .collect())
+}
+
 /// Makes the groups, roles, projects and rows of the plan.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Organization;

@@ -19,7 +19,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
-use crate::db::{Reader, Row, StoredId as _, Transaction, to_micros};
+use crate::db::{Reader, Row, STATEMENT_ITEMS, StoredId as _, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     FieldChoiceRow, FieldIssueTypeRow, FieldProjectRow, FieldRow, FieldValueRow, IssueRow,
@@ -191,9 +191,19 @@ async fn values_in(
     kind: &EntityKind,
     entities: &[EntityId],
 ) -> Result<Vec<StoredValues>, StoreError> {
-    if entities.is_empty() {
-        return Ok(Vec::new());
+    let mut found: Vec<StoredValues> = Vec::new();
+    for chunk in entities.chunks(STATEMENT_ITEMS) {
+        found.extend(values_of_chunk(reader, kind, chunk).await?);
     }
+    Ok(found)
+}
+
+/// The values of at most [`STATEMENT_ITEMS`] items of one kind, in one statement.
+async fn values_of_chunk(
+    reader: &mut impl Reader,
+    kind: &EntityKind,
+    entities: &[EntityId],
+) -> Result<Vec<StoredValues>, StoreError> {
     let mut select = Query::select();
     select
         .columns([
@@ -346,6 +356,49 @@ impl FieldStore for AuthStorage {
         choice: ChoiceId,
     ) -> Result<Vec<(EntityKind, EntityId)>, StoreError> {
         items_with_choice_in(transaction, field, choice).await
+    }
+
+    async fn touch_items(
+        transaction: &mut Transaction,
+        items: &[(EntityKind, EntityId)],
+        at: Timestamp,
+    ) -> Result<Vec<Option<i64>>, StoreError> {
+        let issue = EntityKind::from(RecordKind::Issue);
+        let mut versions: Vec<Option<i64>> = vec![None; items.len()];
+        // Issues, a chunk of them in one statement; any other kind of item one at a time.
+        let mut issues: Vec<(usize, EntityId)> = Vec::new();
+        for (place, (kind, id)) in items.iter().enumerate() {
+            if *kind == issue {
+                issues.push((place, *id));
+            } else if let Some(slot) = versions.get_mut(place) {
+                *slot = <Self as FieldStore>::touch_item(transaction, kind, *id, at).await?;
+            }
+        }
+        for chunk in issues.chunks(STATEMENT_ITEMS) {
+            let mut update = Query::update();
+            update
+                .table(IssueRow::Table)
+                .value(IssueRow::UpdatedAt, to_micros(at))
+                .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+                .and_where(
+                    Expr::col(IssueRow::Id)
+                        .is_in(chunk.iter().map(|(_, id)| id.stored()).collect::<Vec<_>>()),
+                )
+                .returning(Query::returning().columns([IssueRow::Id, IssueRow::Version]));
+            for row in transaction.fetch_all(&update).await? {
+                let id = row.id::<EntityId>(IssueRow::Id)?;
+                let now: i64 = row.get(IssueRow::Version)?;
+                let place = chunk
+                    .iter()
+                    .find(|(_, each)| *each == id)
+                    .map(|(place, _)| *place);
+                // The version it had before the statement counted it up.
+                if let Some(slot) = place.and_then(|place| versions.get_mut(place)) {
+                    *slot = Some(now - 1);
+                }
+            }
+        }
+        Ok(versions)
     }
 
     async fn projects_with_values(&self, field: FieldId) -> Result<Vec<ProjectId>, StoreError> {

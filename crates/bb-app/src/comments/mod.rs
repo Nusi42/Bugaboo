@@ -17,6 +17,7 @@ mod write;
 
 pub use read::{comment_versions, mention_choices, mentions, read_mentions};
 pub use records::CommentRecords;
+pub(crate) use resolve::Named;
 pub use store::CommentStore;
 pub use types::*;
 pub use write::{add_comment, delete_comment, restore_comment, save_comment};

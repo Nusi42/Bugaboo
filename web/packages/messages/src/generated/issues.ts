@@ -6,6 +6,7 @@ export const messages = {
   "issues.changed": "{field} changed to {value}.",
   "issues.changed-people":
     "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
+  "issues.sheet": "Issue",
   "issues.new-title": "New issue",
   "issues.project": "Project",
   "issues.type": "Type",
@@ -26,6 +27,7 @@ export const messages = {
   "issues.read-only": "Only people whose role allows it can change {field}.",
   "issues.add-field": "Add {field}",
   "issues.change": "Change",
+  "issues.change-field": "Change {field}",
   "issues.change-title": "Change the title",
   "issues.saved-at": "Saved · {time}",
   "issues.title-of": "{key} {title}",

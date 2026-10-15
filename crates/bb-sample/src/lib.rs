@@ -20,15 +20,27 @@ use clap as _;
 use tokio as _;
 
 mod clock;
+mod comments;
 mod dump;
+mod dump_issues;
 mod dump_organization;
 mod error;
+mod fields;
 mod folder;
 mod generate;
+mod issues;
+mod issues_hands;
+mod issues_plan;
+mod issues_setup;
+mod issues_states;
+mod issues_text;
+mod issues_time;
+mod issues_words;
 mod names;
 mod organization;
 mod password;
 mod random;
+mod relations;
 mod roster;
 #[cfg(test)]
 mod tests;
@@ -39,9 +51,10 @@ pub use dump::Dump;
 pub use error::{SampleError, Step};
 pub use folder::Output;
 pub use generate::{
-    DEFAULT_SEED, LATER_SECONDS, Later, MadePerson, NothingMore, Options, STEP_SECONDS, Sample,
-    Target, World, make,
+    DEFAULT_SEED, LATER_SECONDS, Later, LeftBehind, MadePerson, NothingMore, Options, STEP_SECONDS,
+    Sample, Target, World, make,
 };
+pub use issues::Everything;
 pub use names::NameList;
 pub use organization::Organization;
 pub use roster::{

@@ -13,6 +13,19 @@ export function saveButton(page: Page) {
   return page.getByRole("button", { name: t("common.save"), exact: true });
 }
 
+/** The button that saves the description, on a page where other fields have a *Save* of their own. */
+export function saveDescriptionButton(page: Page) {
+  // The nearest box around the text box that has a Save: the editor of the description. A box
+  // is found by what it holds (a role and a name), so no text is put into a path.
+  const save = page.getByRole("button", { name: t("common.save"), exact: true });
+  return page
+    .locator("div, form, section")
+    .filter({ has: descriptionBox(page) })
+    .filter({ has: save })
+    .last()
+    .getByRole("button", { name: t("common.save"), exact: true });
+}
+
 /** The button of a text that was not saved because the issue changed: *Compare and save*. */
 export function compareAndSaveButton(page: Page) {
   return page.getByRole("button", { name: t("issues.compare-and-save"), exact: true });

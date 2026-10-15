@@ -43,7 +43,11 @@ export function AssignedFact({ issue, mask, onChange }: AssignedFactProps) {
         {canChange ? (
           <Button
             look={buttonLook.quiet}
-            aria-label={people.length === 0 ? t("issues.add-field", { field: name }) : name}
+            aria-label={
+              people.length === 0
+                ? t("issues.add-field", { field: name })
+                : t("issues.change-field", { field: name })
+            }
             onPress={() => {
               setPicking(true);
             }}

@@ -643,6 +643,9 @@ pub const CLI_HELP_PORT: MessageKey = MessageKey::new("cli.help.port");
 /// The message `cli.help.public-url`.
 pub const CLI_HELP_PUBLIC_URL: MessageKey = MessageKey::new("cli.help.public-url");
 
+/// The message `cli.help.sample-issues`.
+pub const CLI_HELP_SAMPLE_ISSUES: MessageKey = MessageKey::new("cli.help.sample-issues");
+
 /// The message `cli.help.sample-out`.
 pub const CLI_HELP_SAMPLE_OUT: MessageKey = MessageKey::new("cli.help.sample-out");
 
@@ -2031,6 +2034,9 @@ pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
 
+/// The message `issues.sheet`.
+pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
+
 /// The message `issues.show-changes`.
 pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes");
 
@@ -3223,11 +3229,23 @@ pub const SAMPLE_STEP_ACCESS_KEY: MessageKey = MessageKey::new("sample.step.acce
 /// The message `sample.step.assignment`.
 pub const SAMPLE_STEP_ASSIGNMENT: MessageKey = MessageKey::new("sample.step.assignment");
 
+/// The message `sample.step.change`.
+pub const SAMPLE_STEP_CHANGE: MessageKey = MessageKey::new("sample.step.change");
+
 /// The message `sample.step.code-app`.
 pub const SAMPLE_STEP_CODE_APP: MessageKey = MessageKey::new("sample.step.code-app");
 
+/// The message `sample.step.comment`.
+pub const SAMPLE_STEP_COMMENT: MessageKey = MessageKey::new("sample.step.comment");
+
 /// The message `sample.step.dates`.
 pub const SAMPLE_STEP_DATES: MessageKey = MessageKey::new("sample.step.dates");
+
+/// The message `sample.step.editing`.
+pub const SAMPLE_STEP_EDITING: MessageKey = MessageKey::new("sample.step.editing");
+
+/// The message `sample.step.fields`.
+pub const SAMPLE_STEP_FIELDS: MessageKey = MessageKey::new("sample.step.fields");
 
 /// The message `sample.step.first-administrator`.
 pub const SAMPLE_STEP_FIRST_ADMINISTRATOR: MessageKey =
@@ -3239,8 +3257,20 @@ pub const SAMPLE_STEP_GROUP: MessageKey = MessageKey::new("sample.step.group");
 /// The message `sample.step.group-member`.
 pub const SAMPLE_STEP_GROUP_MEMBER: MessageKey = MessageKey::new("sample.step.group-member");
 
+/// The message `sample.step.history`.
+pub const SAMPLE_STEP_HISTORY: MessageKey = MessageKey::new("sample.step.history");
+
 /// The message `sample.step.invitation`.
 pub const SAMPLE_STEP_INVITATION: MessageKey = MessageKey::new("sample.step.invitation");
+
+/// The message `sample.step.issue`.
+pub const SAMPLE_STEP_ISSUE: MessageKey = MessageKey::new("sample.step.issue");
+
+/// The message `sample.step.issue-types`.
+pub const SAMPLE_STEP_ISSUE_TYPES: MessageKey = MessageKey::new("sample.step.issue-types");
+
+/// The message `sample.step.labels`.
+pub const SAMPLE_STEP_LABELS: MessageKey = MessageKey::new("sample.step.labels");
 
 /// The message `sample.step.levels`.
 pub const SAMPLE_STEP_LEVELS: MessageKey = MessageKey::new("sample.step.levels");
@@ -3254,17 +3284,29 @@ pub const SAMPLE_STEP_PROJECT: MessageKey = MessageKey::new("sample.step.project
 /// The message `sample.step.region`.
 pub const SAMPLE_STEP_REGION: MessageKey = MessageKey::new("sample.step.region");
 
+/// The message `sample.step.relation`.
+pub const SAMPLE_STEP_RELATION: MessageKey = MessageKey::new("sample.step.relation");
+
 /// The message `sample.step.role`.
 pub const SAMPLE_STEP_ROLE: MessageKey = MessageKey::new("sample.step.role");
 
+/// The message `sample.step.settings`.
+pub const SAMPLE_STEP_SETTINGS: MessageKey = MessageKey::new("sample.step.settings");
+
 /// The message `sample.step.setup-code`.
 pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setup-code");
+
+/// The message `sample.step.signing-in`.
+pub const SAMPLE_STEP_SIGNING_IN: MessageKey = MessageKey::new("sample.step.signing-in");
 
 /// The message `sample.step.signing-out`.
 pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.signing-out");
 
 /// The message `sample.step.starting-roles`.
 pub const SAMPLE_STEP_STARTING_ROLES: MessageKey = MessageKey::new("sample.step.starting-roles");
+
+/// The message `sample.step.tags`.
+pub const SAMPLE_STEP_TAGS: MessageKey = MessageKey::new("sample.step.tags");
 
 /// The message `save.not-saved`.
 pub const SAVE_NOT_SAVED: MessageKey = MessageKey::new("save.not-saved");
@@ -5502,6 +5544,15 @@ pub fn issues_assign_name(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.assign-name"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.change-field`.
+#[must_use]
+pub fn issues_change_field(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.change-field"),
+        vec![("field", Value::Text(field.to_string()))],
     )
 }
 
@@ -8025,6 +8076,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Where the sample is kept: sqlite (a file in the data folder) or postgres (the address of an empty database is in the environment variable {variable})",
     ),
     (
+        "cli.help.sample-issues",
+        "How many issues the sample is made with. Without it, the number of the plan in tools/dev/sample.json; the comments, relations and the rest are scaled to it",
+    ),
+    (
         "cli.help.sample-out",
         "The folder for the data folder, the sign-in details and the dump of the sample",
     ),
@@ -8979,6 +9034,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.assigned", "Assigned"),
     ("issues.bar", "Actions for this issue"),
     ("issues.change", "Change"),
+    ("issues.change-field", "Change {field}"),
     ("issues.change-title", "Change the title"),
     ("issues.changed", "{field} changed to {value}."),
     (
@@ -9082,6 +9138,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
     ),
+    ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Side panel view"),
     ("issues.someone", "Someone"),
@@ -10064,23 +10121,50 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("sample.step.access-key", "making an access key"),
     ("sample.step.assignment", "giving a role"),
+    ("sample.step.change", "changing an issue"),
     ("sample.step.code-app", "setting up a code app"),
+    ("sample.step.comment", "writing a comment"),
     ("sample.step.dates", "working out the dates"),
+    (
+        "sample.step.editing",
+        "editing a text under a lock, or keeping a draft",
+    ),
+    ("sample.step.fields", "making an own field"),
     (
         "sample.step.first-administrator",
         "making the first administrator",
     ),
     ("sample.step.group", "making a group"),
     ("sample.step.group-member", "putting a person into a group"),
+    (
+        "sample.step.history",
+        "reading the history of the issues from the events",
+    ),
     ("sample.step.invitation", "inviting a person"),
+    ("sample.step.issue", "making an issue"),
+    (
+        "sample.step.issue-types",
+        "making the starting issue types and kinds of relation",
+    ),
+    ("sample.step.labels", "making a group of labels or a label"),
     ("sample.step.levels", "setting what a role sees"),
     ("sample.step.password-hasher", "making the password hasher"),
     ("sample.step.project", "making a project"),
     ("sample.step.region", "choosing the region of a person"),
+    (
+        "sample.step.relation",
+        "making a relation or putting an issue under a goal",
+    ),
     ("sample.step.role", "making a role"),
+    (
+        "sample.step.settings",
+        "choosing how a project gives out issue IDs",
+    ),
     ("sample.step.setup-code", "using the setup code"),
+    ("sample.step.signing-in", "signing in to do the work"),
     ("sample.step.signing-out", "signing out"),
     ("sample.step.starting-roles", "making the starting roles"),
+    ("sample.step.tags", "putting a tag or a label on an issue"),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),
     ("save.saving", "Saving…"),

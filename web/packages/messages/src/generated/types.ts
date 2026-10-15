@@ -198,6 +198,7 @@ export interface MessageArguments {
   "issues.ask-to-finish": { name: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
+  "issues.change-field": { field: string | number };
   "issues.changed": { field: string | number; value: string | number };
   "issues.changed-after-you-by": { name: string | number };
   "issues.changed-own": { count: number };

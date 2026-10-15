@@ -26,6 +26,29 @@ impl SeededRandom {
         usize::try_from(wide >> 64).unwrap_or(0)
     }
 
+    /// A number from `0` up to but not including `bound`; `0` when `bound` is not above `0`.
+    pub(crate) fn below_i64(&mut self, bound: i64) -> i64 {
+        i64::try_from(self.below(usize::try_from(bound).unwrap_or(0))).unwrap_or(0)
+    }
+
+    /// Whether a chance of `percent` out of a hundred came up.
+    pub(crate) fn chance(&mut self, percent: u32) -> bool {
+        self.below(100) < usize::try_from(percent).unwrap_or(0)
+    }
+
+    /// A number from `0` up to but not including `bound` that is mostly small: the cube of an
+    /// even draw, so most delays are short and a few are long.
+    pub(crate) fn skewed(&mut self, bound: i64) -> i64 {
+        let part = i128::try_from(self.below(1000)).unwrap_or(0);
+        let cube = part * part * part;
+        i64::try_from(i128::from(bound.max(0)) * cube / 1_000_000_000).unwrap_or(0)
+    }
+
+    /// One of `items`; `None` when there are none.
+    pub(crate) fn pick<'a, T>(&mut self, items: &'a [T]) -> Option<&'a T> {
+        items.get(self.below(items.len()))
+    }
+
     /// Puts `items` in a new order (Fisher-Yates).
     pub(crate) fn shuffle<T>(&mut self, items: &mut [T]) {
         for last in (1..items.len()).rev() {

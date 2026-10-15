@@ -90,4 +90,20 @@ describe("cfg_01 the form asks only for what the layout shows", () => {
   it("drops the value of an own field that another type's form does not have", () => {
     expect(forForm(filled, (field) => field !== "f1").fields).toEqual({});
   });
+
+  it("sends the people and groups picked on the form as their IDs", () => {
+    const body = bodyOf({
+      ...filled,
+      fields: {
+        tester: { id: "u1", name: "Ada Brandt" },
+        team: [
+          { id: "g1", name: "QA" },
+          { id: "g2", name: "Docs" },
+        ],
+        customer: "Acme",
+        nothing: null,
+      },
+    });
+    expect(body.fields).toEqual({ tester: "u1", team: ["g1", "g2"], customer: "Acme" });
+  });
 });

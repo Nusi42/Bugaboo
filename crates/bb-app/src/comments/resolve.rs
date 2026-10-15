@@ -67,6 +67,33 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue: &Issue,
         handle: &str,
     ) -> Result<Option<Named>, AppError> {
+        let key = (issue.id, level, handle.to_owned());
+        let known = self
+            .known
+            .handles
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(&key)
+            .copied();
+        if let Some(known) = known {
+            return Ok(known);
+        }
+        let named = self.look_up_handle(level, issue, handle).await?;
+        self.known
+            .handles
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(key, named);
+        Ok(named)
+    }
+
+    /// The one thing a handle names, asked of the store.
+    async fn look_up_handle(
+        &self,
+        level: PeopleLevel,
+        issue: &Issue,
+        handle: &str,
+    ) -> Result<Option<Named>, AppError> {
         let mut found: Vec<Named> = Vec::new();
         let failed = |error| internal::<S>(&error);
         if level == PeopleLevel::Names {
@@ -121,22 +148,40 @@ impl<S: AuthStore> Ctx<'_, S> {
             let written = &text[token.start..token.end];
             let named = match token.kind {
                 TokenKind::IssueId => {
-                    let seen = match written.parse::<IssueKey>() {
-                        Ok(_) => match self.find_issue(written).await? {
-                            Some(found) => {
-                                if maker.is_none() {
-                                    maker = Some(self.line_maker().await?);
-                                }
-                                match maker.as_mut() {
-                                    Some(maker) => {
-                                        self.line_of(actor, maker, &found.issue).await?.is_some()
+                    let known = self
+                        .known
+                        .issue_ids
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .get(&(actor.person.id, written.to_owned()))
+                        .copied();
+                    let seen = if let Some(known) = known {
+                        known
+                    } else {
+                        let seen = match written.parse::<IssueKey>() {
+                            Ok(_) => match self.find_issue(written).await? {
+                                Some(found) => {
+                                    if maker.is_none() {
+                                        maker = Some(self.line_maker().await?);
                                     }
-                                    None => false,
+                                    match maker.as_mut() {
+                                        Some(maker) => self
+                                            .line_of(actor, maker, &found.issue)
+                                            .await?
+                                            .is_some(),
+                                        None => false,
+                                    }
                                 }
-                            }
-                            None => false,
-                        },
-                        Err(_) => false,
+                                None => false,
+                            },
+                            Err(_) => false,
+                        };
+                        self.known
+                            .issue_ids
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .insert((actor.person.id, written.to_owned()), seen);
+                        seen
                     };
                     if !seen {
                         resolution.plain.push(index);

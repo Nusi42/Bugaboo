@@ -57,6 +57,8 @@ fn in_folder(root: &Path, relative: &str) -> PathBuf {
 /// What `cargo xtask dataset sample` was asked to do.
 pub(crate) struct Request {
     pub(crate) seed: Option<u64>,
+    /// How many issues to make; the full sample of the layout when left out.
+    pub(crate) issues: Option<u32>,
     pub(crate) database: DatabaseKind,
     pub(crate) out: Option<PathBuf>,
     pub(crate) check: bool,
@@ -85,6 +87,7 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
                 seed: request.seed,
                 start: now()?,
                 database: request.database,
+                issues: request.issues,
                 out: &out,
             },
             (&layout, url),
@@ -139,6 +142,7 @@ pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
             seed: None,
             start: now()?,
             database: DatabaseKind::Sqlite,
+            issues: Some(layout.issues.small_total),
             out: &out,
         },
         (&layout, None),
@@ -149,8 +153,10 @@ pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
 }
 
 /// Builds the program and returns where it is; `None` when the build failed (cargo said why).
+/// It is built with optimisations: the full sample is about seventy thousand use cases one after
+/// the other, which take about twice as long in an unoptimised build.
 fn build_program(root: &Path) -> anyhow::Result<Option<PathBuf>> {
-    let built = steps::run(root, &[steps::sample_build(Profile::Debug)])?;
+    let built = steps::run(root, &[steps::sample_build(Profile::Release)])?;
     Ok(built.executable.filter(|_| built.passed))
 }
 
@@ -167,6 +173,7 @@ struct Arguments<'a> {
     seed: Option<u64>,
     start: i64,
     database: DatabaseKind,
+    issues: Option<u32>,
     out: &'a Path,
 }
 
@@ -190,6 +197,9 @@ fn program_command(
         .arg(arguments.database.code())
         .arg("--out")
         .arg(arguments.out);
+    if let Some(issues) = arguments.issues {
+        command.arg("--issues").arg(issues.to_string());
+    }
     if let Some(url) = url {
         command.env(&layout.database_url_variable, url);
     }
@@ -226,6 +236,7 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
                     seed,
                     start: CHECK_START,
                     database,
+                    issues: Some(layout.issues.small_total),
                     out: &out,
                 },
                 (&layout, url.as_deref()),
@@ -255,7 +266,12 @@ fn check(repo: &Repo, program: &Path, seed: Option<u64>) -> anyhow::Result<bool>
         }
         Ok(runs)
     })?;
-    let problems = test_sample_data::problems(&names, &layout.organization, &runs);
+    let problems = test_sample_data::problems(
+        &names,
+        &layout.organization,
+        Some((&layout.issues, layout.issues.small_total)),
+        &runs,
+    );
     for problem in &problems {
         output::info(&format!("TEST-SAMPLE-DATA: {problem}"));
     }
@@ -344,6 +360,7 @@ mod tests {
                 seed: Some(7),
                 start: 1_800_000_000,
                 database: DatabaseKind::Postgres,
+                issues: None,
                 out,
             },
             (&layout, Some("postgres://bugaboo:secret@127.0.0.1:1/x")),
@@ -381,6 +398,7 @@ mod tests {
                 seed: None,
                 start: 1,
                 database: DatabaseKind::Sqlite,
+                issues: None,
                 out: Path::new("out"),
             },
             (&layout, None),

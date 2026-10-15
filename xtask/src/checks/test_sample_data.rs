@@ -30,7 +30,13 @@
 //!    architecture §11 (their names are written once, in `tools/dev/sample.json`);
 //! 6. every role of the mix of architecture §11 (2 Administrators, 4 Project leads, 30 Team
 //!    members, 8 Contributors, 4 Viewers, 2 Guests) is in the dump and held by that many people;
-//! 7. every project has a Project lead, its own or one from a project above it.
+//! 7. every project has a Project lead, its own or one from a project above it;
+//! 8. the issues of the dump are the issues of the plan in `tools/dev/sample.json`, scaled to the
+//!    number the run was asked to make and within its tolerance: per project, place and type,
+//!    the relations of every kind with a chain deeper than four steps and one circle, the
+//!    comments (some edited), tags, labels, values of every own field, sub-issues, one edit lock
+//!    held and one draft waiting (the judging itself is `IssuePlan::problems` of `bb-dev-words`,
+//!    which the tests of `bb-sample` ask as well)).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -43,7 +49,7 @@ use super::{Check, Context, Finding};
 use crate::dataset::load_layout;
 use crate::source::read_text;
 use bb_core::text::CROCKFORD;
-use bb_dev_words::sample::{Layout, OrganizationNames};
+use bb_dev_words::sample::{IssuePlan, Layout, OrganizationNames};
 
 /// The list of names, written for Bugaboo. `bb-sample` reads the same file.
 pub(crate) const NAMES_FILE: &str = "crates/bb-sample/data/names.toml";
@@ -247,6 +253,7 @@ fn collect(
 pub(crate) fn problems(
     names: &NameList,
     organization: &OrganizationNames,
+    issues: Option<(&IssuePlan, u32)>,
     runs: &[Run],
 ) -> Vec<String> {
     let mut problems = Vec::new();
@@ -272,6 +279,9 @@ pub(crate) fn problems(
     for (label, dump) in &dumps {
         fictional(names, label, dump, &mut problems);
         the_organization(organization, label, dump, &mut problems);
+        if let Some((plan, asked)) = issues {
+            problems.extend(plan.problems(asked, label, dump));
+        }
     }
     for run in runs {
         for (file, bytes) in &run.scanned {
@@ -454,7 +464,7 @@ mod tests {
     }
 
     fn found(case: &str) -> Vec<String> {
-        problems(&names(), &organization(), &fixture("bad", case))
+        problems(&names(), &organization(), None, &fixture("bad", case))
     }
 
     #[test]
@@ -463,6 +473,7 @@ mod tests {
             problems(
                 &names(),
                 &organization(),
+                None,
                 &fixture("good", "the-same-everywhere")
             ),
             Vec::<String>::new()
@@ -584,7 +595,7 @@ mod tests {
 
     #[test]
     fn bad_example_no_dump_to_compare_and_no_people() {
-        assert!(!problems(&names(), &organization(), &[]).is_empty());
+        assert!(!problems(&names(), &organization(), None, &[]).is_empty());
         let empty = Run {
             label: "only".to_owned(),
             sign_in_file: layout().sign_in_file,
@@ -592,7 +603,7 @@ mod tests {
             needles: Vec::new(),
             scanned: Vec::new(),
         };
-        let found = problems(&names(), &organization(), &[empty]);
+        let found = problems(&names(), &organization(), None, &[empty]);
         assert!(found.iter().any(|p| p.contains("Fewer than two runs")));
         assert!(found.iter().any(|p| p.contains("no people")));
     }
@@ -664,7 +675,7 @@ mod tests {
             needles: needles_of(sign_in),
             scanned: vec![("data/keys.bin".to_owned(), b"header foobar".to_vec())],
         };
-        let found = problems(&names(), &organization(), &[leaking]);
+        let found = problems(&names(), &organization(), None, &[leaking]);
         assert!(
             found.iter().any(|p| p.contains("data/keys.bin holds")),
             "{found:?}"
@@ -696,7 +707,7 @@ mod tests {
                 needles: needles_of(&sign_in),
                 scanned: vec![(file.to_owned(), content)],
             };
-            let found = problems(&names(), &organization(), &[leaking]);
+            let found = problems(&names(), &organization(), None, &[leaking]);
             assert!(
                 found.iter().any(|p| p.contains(&format!("{file} holds"))),
                 "{file}: {found:?}"

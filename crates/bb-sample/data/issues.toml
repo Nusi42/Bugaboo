@@ -1,0 +1,313 @@
+# The words of the sample issues, written for Bugaboo (no third-party text). The titles,
+# descriptions and comments of the sample are put together from these lists with the sample's own
+# random numbers, so the same seed makes the same text. A word in curly braces is replaced:
+# {thing} by a thing of the project's area, {when} and {noun} by a word of the lists below,
+# {mention} by an @-mention of a person, {person} by the plain name of a person.
+# Nothing here names a real company, product or person.
+
+[things]
+app = [
+  "login screen",
+  "push notifications",
+  "profile page",
+  "offline mode",
+  "photo upload",
+  "payment sheet",
+  "dark mode",
+  "search",
+  "settings page",
+  "onboarding tour",
+  "order history",
+  "share sheet",
+  "barcode scanner",
+  "map view",
+  "chat",
+  "widget",
+  "language picker",
+]
+web = [
+  "checkout",
+  "product page",
+  "newsletter form",
+  "cookie banner",
+  "search results",
+  "blog archive",
+  "contact form",
+  "account page",
+  "cart",
+  "language switcher",
+  "sitemap",
+  "image gallery",
+  "RSS feed",
+  "price filter",
+  "wish list",
+]
+ops = [
+  "backup job",
+  "nightly build",
+  "certificate renewal",
+  "database failover",
+  "log shipping",
+  "alerting rules",
+  "deploy pipeline",
+  "monitoring dashboard",
+  "load balancer",
+  "queue workers",
+  "VPN access",
+  "storage quota",
+  "firewall rules",
+  "status page",
+]
+doc = [
+  "onboarding guide",
+  "release checklist",
+  "style guide",
+  "security policy",
+  "runbook",
+  "FAQ",
+  "glossary",
+  "API reference",
+  "translation guide",
+  "meeting notes template",
+  "support handbook",
+]
+
+[words]
+when = [
+  "the network drops",
+  "the phone is rotated",
+  "a name has an accent",
+  "the list is empty",
+  "two people edit at once",
+  "the session runs out",
+  "the file is larger than 10 MB",
+  "it returns from the background",
+  "the date is the last day of a month",
+  "the language is not English",
+  "the battery is low",
+  "the clock is wrong",
+  "there are more than 500 entries",
+  "the page is reloaded",
+]
+noun = [
+  "address",
+  "total",
+  "date",
+  "status",
+  "name",
+  "photo",
+  "currency",
+  "language",
+  "setting",
+  "draft",
+  "price",
+  "phone number",
+  "time zone",
+  "order",
+  "attachment",
+]
+verb = [
+  "Update",
+  "Review",
+  "Clean up",
+  "Move",
+  "Rename",
+  "Check",
+  "Measure",
+  "Document",
+  "Simplify",
+  "Retire",
+  "Test",
+  "Tidy",
+]
+reason = [
+  "the new design",
+  "the audit",
+  "the next release",
+  "a customer request",
+  "the move to the new servers",
+  "the privacy review",
+  "the translation work",
+  "the new brand colors",
+  "lower costs",
+  "fewer support calls",
+]
+action = [
+  "share an entry by link",
+  "pick a color",
+  "undo the last change",
+  "sort by date",
+  "export the list",
+  "save a search",
+  "pin an item",
+  "turn off a reminder",
+  "see what changed",
+  "choose a language",
+  "add a note",
+  "work offline",
+]
+quality = [
+  "fast",
+  "easy to find",
+  "accessible",
+  "reliable",
+  "clear for new people",
+  "ready for launch",
+  "cheaper to run",
+  "available in four languages",
+]
+segment = [
+  "small teams",
+  "schools",
+  "the first hundred customers",
+  "people on slow networks",
+  "our partners",
+  "new customers",
+  "people who use a screen reader",
+]
+
+[bug]
+titles = [
+  "{Thing} crashes when {when}",
+  "{Thing} shows the wrong {noun}",
+  "{Thing} does not save the {noun}",
+  "{Thing} is slow when {when}",
+  "{Thing} freezes when {when}",
+  "{Thing} looks broken on small screens",
+  "{Thing} loses the {noun} when {when}",
+  "{Thing} shows an error for no reason",
+  "{Thing} ignores the {noun}",
+  "Wrong {noun} in {thing}",
+]
+happens = [
+  "The {thing} does not do what people expect when {when}.",
+  "People told us that the {noun} in the {thing} is wrong when {when}.",
+  "We saw the {thing} fail three times this week, always when {when}.",
+  "Support got a call about the {thing}: the {noun} is not kept when {when}.",
+]
+steps = [
+  "Open the {thing}.",
+  "Sign in with a test account.",
+  "Switch to a second language.",
+  "Fill in the {noun} and press Save.",
+  "Wait for ten seconds.",
+  "Go back and open it again.",
+  "Turn off the network.",
+  "Scroll to the end of the list.",
+]
+expected = [
+  "The {noun} is kept and shown as typed.",
+  "Nothing is lost and no error shows.",
+  "The page answers within a second.",
+  "The same as on the other screens.",
+]
+
+[task]
+titles = [
+  "{Verb} the {thing} for {reason}",
+  "{Verb} the {thing}",
+  "{Verb} the {noun} in the {thing}",
+  "Prepare the {thing} for {reason}",
+]
+about = [
+  "This is needed for {reason}.",
+  "Part of the clean-up before the next release.",
+  "Small job; nobody should be blocked by it.",
+  "Agreed in the last planning meeting.",
+]
+
+[feature]
+titles = [
+  "Let people {action}",
+  "{Thing}: {action}",
+  "Add {action} to the {thing}",
+  "Show the {noun} in the {thing}",
+]
+about = [
+  "Customers asked for this several times.",
+  "It would make the {thing} much easier to use.",
+  "We could start small and add more later.",
+  "A competitor has it; ours should be simpler.",
+]
+
+[goal]
+titles = [
+  "Make the {thing} {quality}",
+  "{Thing}: ready for {segment}",
+  "Launch the new {thing} for {segment}",
+]
+about = [
+  "The goal is reached when every sub-issue is done.",
+  "This goal collects the work of the quarter.",
+  "We measure it with the numbers of the monthly report.",
+]
+
+[comments]
+first = [
+  "I can reproduce this.",
+  "I looked at it this morning.",
+  "Thanks for the report.",
+  "This is the same as last month, I think.",
+  "I have a first idea.",
+  "Not sure yet.",
+  "Just checking in.",
+  "Good catch.",
+  "I tried it on a second device.",
+]
+middle = [
+  "It only happens when {when}.",
+  "The {noun} is wrong in the log as well.",
+  "I added a note to the description.",
+  "It works on my machine, so it may depend on the data.",
+  "The fix is small, but it needs a test.",
+  "We should ask the customer for an example.",
+  "I would not do this before the release.",
+  "This looks like a regression from two weeks ago.",
+  "Moving it up because three customers asked.",
+  "Could be the {thing}, could be the server.",
+]
+last = [
+  "I will pick it up tomorrow.",
+  "Let us talk about it in the next meeting.",
+  "Please review when you have a moment.",
+  "Closing the loop here once it is tested.",
+  "I will ask around.",
+  "Setting it aside for now.",
+  "Done on my side.",
+]
+mentions = [
+  "{mention}, could you take a look?",
+  "{mention} knows this part best.",
+  "Thanks, {mention}.",
+  "{mention}, what do you think?",
+  "Over to you, {mention}.",
+]
+edits = [
+  "(Fixed a typo.)",
+  "Updated after the call with the customer.",
+  "Added the version I tested.",
+]
+
+[customers]
+names = [
+  "Alder Street Bakery",
+  "Birchwood School",
+  "Cobalt Cycles",
+  "Dunmore Clinic",
+  "Eastgate Books",
+  "Fernhill Farm Shop",
+  "Greenway Courier",
+  "Harbor Light Cafe",
+  "Ivory Tower Studio",
+  "Juniper Dental",
+  "Kestrel Outdoor",
+  "Lakeside Rowing Club",
+  "Maple Row Pharmacy",
+  "Northfield Council",
+  "Orchard Lane Library",
+  "Pinecrest Hotel",
+  "Quarry Bay Gallery",
+  "Riverbend Credit Union",
+  "Saltmarsh Fisheries",
+  "Tidewater Print Shop",
+]

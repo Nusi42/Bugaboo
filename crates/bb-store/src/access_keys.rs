@@ -17,7 +17,7 @@ use bb_policy::Permission;
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
 
-use crate::db::{Database, Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Row, STATEMENT_ITEMS, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::paging::after_last;
 use crate::schema::{
@@ -25,10 +25,6 @@ use crate::schema::{
     PasskeyRow, ProjectRow, RoleRow, TwoStep,
 };
 use crate::settings::Scopes;
-
-/// How many people are asked about at once, so the list of IDs stays below what the databases
-/// take in one statement.
-const CHUNK: usize = 500;
 
 fn key_columns() -> [AccessKeyRow; 9] {
     [
@@ -319,7 +315,7 @@ impl Database {
         }
         let holders: Vec<UserId> = holders.into_iter().collect();
         let mut without = Vec::new();
-        for chunk in holders.chunks(CHUNK) {
+        for chunk in holders.chunks(STATEMENT_ITEMS) {
             let ids: Vec<Vec<u8>> = chunk.iter().map(|id| id.stored()).collect();
             let mut have: BTreeSet<UserId> = BTreeSet::new();
             let mut code_apps = Query::select();

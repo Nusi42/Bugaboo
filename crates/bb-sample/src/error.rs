@@ -46,6 +46,30 @@ pub enum Step {
     Project,
     /// Giving a role or *No access*.
     Assignment,
+    /// Making the starting issue types and kinds of relation.
+    IssueTypes,
+    /// Choosing how a project gives out issue IDs.
+    Settings,
+    /// Making an own field.
+    Fields,
+    /// Making a group of labels or a label.
+    Labels,
+    /// Signing in to do the work.
+    SigningIn,
+    /// Making an issue.
+    Issue,
+    /// Changing an issue.
+    Change,
+    /// Putting a tag or a label on an issue.
+    Tags,
+    /// Making a relation or putting an issue under a goal.
+    Relation,
+    /// Writing a comment.
+    Comment,
+    /// Editing a text under a lock, or keeping a draft.
+    Editing,
+    /// Reading the history of the issues from the events.
+    History,
 }
 
 impl Step {
@@ -68,6 +92,18 @@ impl Step {
             Self::Levels => message::SAMPLE_STEP_LEVELS,
             Self::Project => message::SAMPLE_STEP_PROJECT,
             Self::Assignment => message::SAMPLE_STEP_ASSIGNMENT,
+            Self::IssueTypes => message::SAMPLE_STEP_ISSUE_TYPES,
+            Self::Settings => message::SAMPLE_STEP_SETTINGS,
+            Self::Fields => message::SAMPLE_STEP_FIELDS,
+            Self::Labels => message::SAMPLE_STEP_LABELS,
+            Self::SigningIn => message::SAMPLE_STEP_SIGNING_IN,
+            Self::Issue => message::SAMPLE_STEP_ISSUE,
+            Self::Change => message::SAMPLE_STEP_CHANGE,
+            Self::Tags => message::SAMPLE_STEP_TAGS,
+            Self::Relation => message::SAMPLE_STEP_RELATION,
+            Self::Comment => message::SAMPLE_STEP_COMMENT,
+            Self::Editing => message::SAMPLE_STEP_EDITING,
+            Self::History => message::SAMPLE_STEP_HISTORY,
         })
     }
 }

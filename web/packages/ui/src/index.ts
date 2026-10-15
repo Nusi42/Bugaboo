@@ -45,7 +45,7 @@ export {
   type IssueTypeIconName,
   type IssueTypeIconProps,
 } from "./IssueTypeIcon.tsx";
-export { layoutForWidth, layoutModes, useLayout, type LayoutMode } from "./layout.ts";
+export { layoutForWidth, layoutModes, useLayout, useUpright, type LayoutMode } from "./layout.ts";
 export { Link, type LinkProps } from "./Link.tsx";
 export {
   LongPreview,

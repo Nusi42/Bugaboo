@@ -247,6 +247,31 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(!guards::anybody_manages_roles(&state))
     }
 
+    /// The person with this ID, looked up once for the request.
+    pub(crate) async fn person_known(&self, id: UserId) -> Result<Option<Person>, AppError> {
+        let known = self
+            .known
+            .people
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(&id)
+            .cloned();
+        if let Some(known) = known {
+            return Ok(known);
+        }
+        let found = self
+            .store()
+            .person(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        self.known
+            .people
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(id, found.clone());
+        Ok(found)
+    }
+
     /// How `viewer` sees `person` as `kind` at `place` (PRIV-12): a name, the label of their
     /// first role there, or *Someone*. A person that does not exist is *Someone*.
     pub(crate) async fn person_ref(
@@ -256,12 +281,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         context: PeopleContext,
         person: UserId,
     ) -> Result<PersonRef, AppError> {
-        let Some(found) = self
-            .store()
-            .person(person)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
+        let Some(found) = self.person_known(person).await? else {
             return Ok(PersonRef::Someone);
         };
         // The role label is the person's own role at the place the viewer looks at.
