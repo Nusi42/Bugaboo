@@ -305,3 +305,52 @@ async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
+    each_database("sec_06_other_kinds_parts", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (key, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let comment = ok(&ada
+            .send(
+                "POST",
+                &format!("/api/v1/issues/{key}/comments"),
+                Some(json!({"text": "First."})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no comment")?
+            .to_owned();
+        let editor = super::layouts_http::customize(&mut ada, "ACME").await?;
+        let layout = editor["layout"]["id"].as_str().ok_or("no layout")?;
+        for (kind, id, good, bad) in [
+            ("comment", comment.as_str(), "text", "description"),
+            ("layout", layout, "layout", "text"),
+        ] {
+            let body = |part: &str| {
+                json!({
+                    "what": {"record": {"kind": kind, "id": id}, "part": part},
+                    "editor_id": AN_EDITOR,
+                })
+            };
+            let wrong = ada.send("POST", LOCKS, Some(body(bad))).await?;
+            assert_eq!(wrong.code(), "resource.not_found", "{kind}: {}", wrong.body);
+            let draft_bad = ada
+                .send(
+                    "PUT",
+                    DRAFTS,
+                    Some(json!({
+                        "target": {"kind": kind, "id": id, "part": bad},
+                        "draft": {"text": "typed", "base_version": 1},
+                    })),
+                )
+                .await?;
+            assert_eq!(draft_bad.code(), "resource.not_found", "{kind}");
+            let right = ada.send("POST", LOCKS, Some(body(good))).await?;
+            assert_eq!(ok(&right)?["status"], "taken", "{kind}");
+        }
+        Ok(())
+    })
+    .await
+}

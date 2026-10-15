@@ -312,3 +312,52 @@ async fn sec_06_a_name_with_an_invisible_character_and_a_long_search_are_refused
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_the_answer_of_adding_a_label_leaves_out_tags_the_type_hides() -> TestResult {
+    each_database("sec_06_label_answer", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let task = other_type(&site, &mut ada).await?;
+        // The role changes labels on a task and does not see its tags.
+        let (mut lia, _) = person_with_levels(
+            &site,
+            &rig,
+            "lia",
+            &[
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::ChangeIssues,
+            ],
+            &[
+                (Field::Title.into(), None, FieldLevel::CanSee),
+                (Field::Labels.into(), Some(&task), FieldLevel::CanChange),
+            ],
+        )
+        .await?;
+        let (job, _) = issue_of_type(&site, &mut ada, &task, "A task").await?;
+        tag(&mut ada, &job, "secret-plan").await?;
+        let label = ok(&ada
+            .send(
+                "POST",
+                "/api/v1/labels",
+                Some(json!({"name": "urgent", "group": null})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no label")?
+            .to_owned();
+        let put = lia
+            .send(
+                "POST",
+                &format!("{ISSUES}/{job}/labels"),
+                Some(json!({"label": label})),
+            )
+            .await?;
+        assert_eq!(names(ok(&put)?, "labels"), ["urgent"], "{}", put.body);
+        assert!(names(&put.body, "tags").is_empty(), "{}", put.body);
+        assert!(!put.body.to_string().contains("secret-plan"));
+        Ok(())
+    })
+    .await
+}
