@@ -38,18 +38,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some((issue, held)) = self.seen_issue_by_id(actor, id).await? else {
             return Ok(None);
         };
-        let place = Place::Project(issue.project);
-        let own = !held.allows(Permission::ChangeIssues)
-            && held.allows(Permission::ChangeOwnIssues)
-            && issue.reported_by == actor.person.id;
         Ok(Some(RecordFacts {
-            place,
+            place: Place::Project(issue.project),
             version: issue.version,
-            edit: if own {
-                Permission::ChangeOwnIssues
-            } else {
-                Permission::ChangeIssues
-            },
+            edit: held.permission_to_change_issue(issue.reported_by),
         }))
     }
 }

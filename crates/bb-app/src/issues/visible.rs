@@ -64,7 +64,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue: &Issue,
         place: Where,
     ) -> Result<Option<Arc<Evaluation>>, AppError> {
-        if (issue.deleted_at.is_some()) != (place == Where::Trash) {
+        if !is_in_place(issue, place) {
             return Ok(None);
         }
         let held = match self
@@ -75,7 +75,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Err(AppError::Refused(ErrorCode::NotFound)) => return Ok(None),
             Err(error) => return Err(error),
         };
-        Ok(held.sees_issue(issue.reported_by).then_some(held))
+        Ok(seen_by(&held, issue, place).then_some(held))
     }
 
     /// The answer for a comment or a relation that is not there: it does the work that a hidden one
@@ -111,6 +111,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             None => Err(AppError::Refused(ErrorCode::NotFound)),
         }
     }
+}
+
+/// Whether the issue is where it is looked for: among the issues that are there, or in the trash.
+fn is_in_place(issue: &Issue, place: Where) -> bool {
+    issue.deleted_at.is_some() == (place == Where::Trash)
+}
+
+/// Whether somebody with `held` in the project of the issue sees it there: it is where it is looked
+/// for and the person sees it. The one statement of it, for `seen_in` and for the kinds of record
+/// that sit under an issue (a comment).
+pub(crate) fn seen_by(held: &Evaluation, issue: &Issue, place: Where) -> bool {
+    is_in_place(issue, place) && held.sees_issue(issue.reported_by)
 }
 
 /// Where an issue is looked for: among the issues that are there, or in the trash.

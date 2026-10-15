@@ -10,6 +10,7 @@ use super::store::CommentStore;
 use crate::access::evaluation_in;
 use crate::auth::{AppError, AuthStore, internal};
 use crate::editing::{EditableRecords, RecordFacts, Shown};
+use crate::issues::{Where, seen_by};
 use crate::member::comment as member;
 use crate::ports::BoxFuture;
 
@@ -54,14 +55,14 @@ impl<S: AuthStore + Send + Sync> EditableRecords for CommentRecords<S> {
             let Some(held) = evaluation_in(&self.store, person, place).await? else {
                 return Ok(None);
             };
-            Ok((issue.deleted_at.is_none()
-                && held.sees_issue(issue.reported_by)
-                && held.allows(Permission::Comment))
-            .then_some(RecordFacts {
-                place,
-                version: comment.version,
-                edit: Permission::Comment,
-            }))
+            Ok(
+                (seen_by(&held, &issue, Where::Live) && held.allows(Permission::Comment))
+                    .then_some(RecordFacts {
+                        place,
+                        version: comment.version,
+                        edit: Permission::Comment,
+                    }),
+            )
         })
     }
 
