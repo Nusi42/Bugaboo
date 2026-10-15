@@ -7,6 +7,7 @@ import { signIn } from "./support/flows.ts";
 import {
   newIssueDialog as dialog,
   openNewIssueDialog as openDialog,
+  openNewIssueDialogFromTheMenu,
   prepareWeb,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
@@ -99,11 +100,7 @@ test("ux_05 the key c opens the dialog, and a phone has the button in its bar", 
       await expect(dialog(page)).toBeVisible();
     },
     phone: async () => {
-      await page
-        .getByRole("navigation", { name: t("shell.menu") })
-        .getByRole("button", { name: t("issues.new"), exact: true })
-        .click();
-      await expect(dialog(page)).toBeVisible();
+      await openNewIssueDialogFromTheMenu(page);
     },
   });
 });

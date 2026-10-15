@@ -1,7 +1,7 @@
 import { dataOf } from "@bugaboo/api-client";
 
 import { type ApiSession } from "./api.ts";
-import { type MadeIssue } from "./issues.ts";
+import { type MadeIssue, readIssue } from "./issues.ts";
 
 /** The changes in the history of an issue: for each event, the fields it changed. */
 export type Changes = Readonly<Record<string, readonly string[]>>;
@@ -70,13 +70,6 @@ export async function changesSince(
     }
   }
   return fresh;
-}
-
-/** The issue as the session reads it. */
-export async function readIssue(session: ApiSession, issue: MadeIssue) {
-  return dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: issue.key } } }),
-  );
 }
 
 /** A field or a choice by its ID and the name a person reads. */

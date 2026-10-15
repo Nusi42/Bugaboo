@@ -6,6 +6,7 @@ import { ada } from "./support/accounts.ts";
 import { lea } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
+import { openNewIssueDialogFromTheMenu } from "./support/issues.ts";
 import { dueDate, prepareLayouts } from "./support/layouts.ts";
 import { screenshotFolder, shot } from "./support/screenshots.ts";
 
@@ -48,12 +49,6 @@ test("the layout editor and the role-based form", async ({ page, browser, server
   await guest.setViewportSize(viewports.phoneForPictures);
   await signIn(guest, lea);
   await guest.goto(projectIssuesAddress("WEB"));
-  await guest
-    .getByRole("navigation", { name: t("shell.menu") })
-    .getByRole("button", { name: t("issues.new"), exact: true })
-    .click();
-  await expect(
-    guest.getByRole("dialog", { name: t("issues.new-title"), exact: true }),
-  ).toBeVisible();
+  await openNewIssueDialogFromTheMenu(guest);
   await shot(guest, "93-new-issue-guest", MILESTONE);
 });

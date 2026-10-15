@@ -4,6 +4,7 @@ import { type Browser, type BrowserContext, expect, type Page } from "@playwrigh
 import { type Person, signInThroughApi } from "./accounts.ts";
 import { crowd, crowdSize, type Edit } from "./crowd.ts";
 import { openIssueWithDetails } from "./flows.ts";
+import { savedNote } from "./issues.ts";
 import { type Instance } from "./server.ts";
 
 // The pages of ten people at the same time (architecture §11, M3 WP-10).
@@ -58,11 +59,6 @@ export async function openCrowd(
 /** Closes the browsers of the pages. */
 export async function closeCrowd(pages: readonly Page[]): Promise<void> {
   await Promise.all(pages.map((page) => page.context().close()));
-}
-
-/** The *Saved* note of a page. */
-export function savedNote(page: Page) {
-  return page.getByText(new RegExp(`^${t("save.saved")}`, "u")).first();
 }
 
 /** The note of a change that came second (*Ben changed Priority to Critical …*), with its two answers. */

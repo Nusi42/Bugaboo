@@ -8,7 +8,7 @@ import { t } from "@bugaboo/messages";
 
 import { ada, type Person, signInThroughApi } from "../support/accounts.ts";
 import { signedInAdmin } from "../support/access.ts";
-import { lostNote, savedNote, signedInPage } from "../support/crowd-pages.ts";
+import { lostNote, signedInPage } from "../support/crowd-pages.ts";
 import { ben, cleo, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import {
   descriptionBox,
@@ -21,7 +21,7 @@ import {
 } from "../support/description.ts";
 import { expect, test } from "../support/fixtures.ts";
 import { type Instance } from "../support/server.ts";
-import { issueOf } from "../support/issues.ts";
+import { issueOf, savedNote } from "../support/issues.ts";
 
 // Ten people at the same time, the screens (architecture §11, M3 WP-10, TEST-CONCURRENT and
 // TEST-EDIT-LOCKS): the people look at the pages, and the tests read what the pages tell them.

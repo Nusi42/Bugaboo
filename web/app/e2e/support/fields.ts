@@ -18,14 +18,19 @@ export function fieldNamed(
   return found;
 }
 
-/** Makes an own field for issues, through the API. */
+/** A field of the organization by its name, read through the API. */
+export async function fieldOf(session: ApiSession, name: string): Promise<Schema<"FieldBody">> {
+  return fieldNamed(dataOf(await session.client.GET("/api/v1/fields")).fields, name);
+}
+
+/** Makes an own field for issues, through the API; the field as the server made it. */
 export async function makeOwnField(
   admin: ApiSession,
   name: string,
   kind: Schema<"FieldType">,
   choices: readonly string[] = [],
-): Promise<void> {
-  dataOf(
+): Promise<Schema<"FieldBody">> {
+  return dataOf(
     await admin.client.POST("/api/v1/fields", {
       body: {
         name,

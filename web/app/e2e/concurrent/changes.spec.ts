@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 
 import { signedInAdmin } from "../support/access.ts";
-import { changesOf, changesSince, ownChoices, readIssue } from "../support/crowd-checks.ts";
+import { changesOf, changesSince, ownChoices } from "../support/crowd-checks.ts";
 import {
   openIssueAndWait,
   readyToChange,
@@ -10,7 +10,7 @@ import {
 } from "../support/crowd-pages.ts";
 import { areaNames, ben, cleo, crowdEdits, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import { expect, test } from "../support/fixtures.ts";
-import { issueOf } from "../support/issues.ts";
+import { issueOf, readIssue } from "../support/issues.ts";
 
 // Ten people at the same time, short values (architecture §11, M3 WP-10): a change that comes
 // second is told so in words and nothing is half saved; ten changes of ten fields all land.

@@ -14,8 +14,7 @@ import {
   knownOf,
   statusOf,
 } from "../support/bulk.ts";
-import { readIssue } from "../support/crowd-checks.ts";
-import { savedNote, signedInPage } from "../support/crowd-pages.ts";
+import { signedInPage } from "../support/crowd-pages.ts";
 import { ben, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import {
   compareAndSaveButton,
@@ -24,7 +23,7 @@ import {
   typeUnderLock,
 } from "../support/description.ts";
 import { expect, test } from "../support/fixtures.ts";
-import { issueOf } from "../support/issues.ts";
+import { issueOf, readIssue, savedNote } from "../support/issues.ts";
 
 // Changing many issues while somebody edits one of them (architecture §11, M3 WP-10, ISS-09). An
 // edit lock covers only the long text, so a change of another field of an issue is no reason to
