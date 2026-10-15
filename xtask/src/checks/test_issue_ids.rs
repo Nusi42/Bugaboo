@@ -147,7 +147,10 @@ mod tests {
     fn a_name_in_a_comment_is_not_a_test() {
         let mut sources = all_tests("each_database(\"x\", body).await");
         for (_, text) in &mut sources {
-            *text = text.replace("async fn iss_01a_an_old", "// async fn iss_01a_an_old");
+            *text = text.replace(
+                "async fn iss_01a_an_old_id_redirects",
+                "// async fn iss_01a_an_old_id_redirects",
+            );
         }
         assert_eq!(evaluate(&sources).len(), 1);
     }
