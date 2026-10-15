@@ -22,6 +22,7 @@ mod caching;
 mod comments_http;
 mod concurrent;
 mod editing;
+mod exit_hidden;
 mod exit_masks;
 mod exit_tags;
 mod fields_http;

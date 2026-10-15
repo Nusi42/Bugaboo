@@ -82,7 +82,13 @@ pub async fn set_parent<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .map(|row| row.parent);
     let wanted = above.as_ref().map(|parent| parent.id);
-    if current == wanted {
+    // A parent the person may not see is none to them: taking it out changes nothing they could
+    // know of, so it neither counts the version up nor tells them it is there (SEC-06).
+    let known = match current {
+        Some(id) => ctx.seen_issue_by_id(&actor, id).await?.map(|_| id),
+        None => None,
+    };
+    if known == wanted {
         let view = ctx.standing(&actor, &held, &child).await?.header;
         return Ok(held.authorize(view));
     }
