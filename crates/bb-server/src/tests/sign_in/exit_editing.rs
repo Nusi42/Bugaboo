@@ -254,7 +254,7 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
 }
 
 #[tokio::test]
-async fn sec_06_a_layout_is_not_known_to_who_may_not_edit_layouts() -> TestResult {
+async fn sec_06_a_layout_is_not_known_to_who_cannot_edit_layouts() -> TestResult {
     each_database("sec_06_layout_lock", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;

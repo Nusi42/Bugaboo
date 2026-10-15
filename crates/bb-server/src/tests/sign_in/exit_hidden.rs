@@ -145,7 +145,7 @@ async fn sec_06_one_text_resolves_a_bounded_number_of_mentions_and_issue_ids() -
 }
 
 #[tokio::test]
-async fn sec_06_whoever_may_not_restore_a_comment_is_not_told_it_is_in_the_trash() -> TestResult {
+async fn sec_06_whoever_cannot_restore_a_comment_is_not_told_it_is_in_the_trash() -> TestResult {
     each_database("sec_06_comment_trash", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
