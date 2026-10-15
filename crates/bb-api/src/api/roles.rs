@@ -24,7 +24,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
-use super::people::parse;
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -369,7 +369,7 @@ async fn get_role(
     Session(session_token): Session,
     ApiPath(role_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let role = parse::<RoleId>(&role_id)?;
+    let role = path_id::<RoleId>(&role_id)?;
     let found = auth
         .api()?
         .role(
@@ -409,7 +409,7 @@ async fn change_role(
     ApiPath(role_id): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeRoleBody>,
 ) -> Result<Response, ApiError> {
-    let role = parse::<RoleId>(&role_id)?;
+    let role = path_id::<RoleId>(&role_id)?;
     let changed = auth
         .api()?
         .change_role(
@@ -451,12 +451,12 @@ async fn delete_role(
     ApiPath(role_id): ApiPath<String>,
     ApiQuery(filter): ApiQuery<DeleteRoleFilter>,
 ) -> Result<Response, ApiError> {
-    let role = parse::<RoleId>(&role_id)?;
+    let role = path_id::<RoleId>(&role_id)?;
     // A replacement that is no ID is a role that is not there.
     let replacement = filter
         .replacement
         .as_deref()
-        .map(parse::<RoleId>)
+        .map(path_id::<RoleId>)
         .transpose()?;
     auth.api()?
         .delete_role(
@@ -497,7 +497,7 @@ async fn copy_role(
     ApiPath(role_id): ApiPath<String>,
     ApiJson(body): ApiJson<CopyRoleBody>,
 ) -> Result<Response, ApiError> {
-    let role = parse::<RoleId>(&role_id)?;
+    let role = path_id::<RoleId>(&role_id)?;
     let copied = auth
         .api()?
         .copy_role(
@@ -537,7 +537,7 @@ async fn reset_role(
     ApiPath(role_id): ApiPath<String>,
     ApiJson(body): ApiJson<ResetRoleBody>,
 ) -> Result<Response, ApiError> {
-    let role = parse::<RoleId>(&role_id)?;
+    let role = path_id::<RoleId>(&role_id)?;
     let reset = auth
         .api()?
         .reset_role(

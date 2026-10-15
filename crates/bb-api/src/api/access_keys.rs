@@ -27,6 +27,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -374,9 +375,7 @@ async fn delete_access_key(
             },
         )
         .await?;
-    let id: AccessKeyId = access_key_id
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let id: AccessKeyId = path_id(&access_key_id)?;
     auth.api()?
         .delete_access_key(info, DeleteAccessKey { session_token, id })
         .await?;

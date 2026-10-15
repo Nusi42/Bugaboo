@@ -21,6 +21,7 @@ use super::auth::{
     NotSignedInAnswer, PreviousSession, Session, SignedInBody, answer, answer_authorized, done,
     signed_in,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -407,9 +408,7 @@ async fn revoke_invitation(
     Session(session_token): Session,
     ApiPath(invitation_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let invitation_id: InvitationId = invitation_id
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let invitation_id: InvitationId = path_id(&invitation_id)?;
     auth.api()?
         .revoke_invitation(
             info,

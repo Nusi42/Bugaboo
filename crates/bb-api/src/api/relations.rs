@@ -12,7 +12,6 @@ use bb_app::relations::{
     MakeRelationKind, RelatedIssuesQuery, RelationKindView, RelationKindsQuery, RelationView,
     RemoveRelation, SetParent, SubIssuesQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::id::{RelationId, RelationKindId};
 use bb_core::issue::{Status, StatusGroup};
 use bb_core::relation::Direction;
@@ -29,6 +28,7 @@ use super::auth::{
 };
 use super::issues::IssueTypeRef;
 use super::projects::ProjectRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -257,11 +257,6 @@ pub(crate) struct ParentBody {
     parent: Option<String>,
 }
 
-fn kind_id(text: &str) -> Result<RelationKindId, ApiError> {
-    text.parse()
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-}
-
 /// The kinds of relation in the order they are offered in, a page at a time, retired ones too.
 /// Open to everybody who is signed in.
 #[utoipa::path(
@@ -365,9 +360,7 @@ async fn change_relation_kind(
     ApiPath(kind): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeRelationKindBody>,
 ) -> Result<Response, ApiError> {
-    let kind: RelationKindId = kind
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let kind: RelationKindId = path_id(&kind)?;
     let changed = auth
         .api()?
         .change_relation_kind(
@@ -579,7 +572,7 @@ async fn add_relation(
                 session_token,
                 issue,
                 other: body.other,
-                kind: kind_id(&body.kind)?,
+                kind: body_id::<RelationKindId>(&body.kind)?,
                 direction: body.direction,
             },
         )
@@ -607,9 +600,7 @@ async fn remove_relation(
     Session(session_token): Session,
     ApiPath(relation): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let relation: RelationId = relation
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let relation: RelationId = path_id(&relation)?;
     auth.api()?
         .remove_relation(
             info,

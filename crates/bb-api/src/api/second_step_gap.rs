@@ -5,7 +5,6 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::SecondStepGapQuery;
-use bb_core::ErrorCode;
 use bb_core::id::RoleId;
 use bb_policy::Masked;
 use serde::Serialize;
@@ -17,6 +16,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiPath};
 
 /// How many people with a role have no second step yet.
@@ -47,9 +47,7 @@ async fn get_second_step_gap(
     Session(session_token): Session,
     ApiPath(role_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let role: RoleId = role_id
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let role: RoleId = path_id(&role_id)?;
     let gap = auth
         .api()?
         .second_step_gap(

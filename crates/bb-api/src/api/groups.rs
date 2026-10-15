@@ -23,7 +23,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
-use super::people::parse;
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -316,7 +316,7 @@ async fn get_group(
     Session(session_token): Session,
     ApiPath(group_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
     let found = auth
         .api()?
         .group(
@@ -355,7 +355,7 @@ async fn rename_group(
     ApiPath(group_id): ApiPath<String>,
     ApiJson(body): ApiJson<RenameGroupBody>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
     let renamed = auth
         .api()?
         .rename_group(
@@ -394,7 +394,7 @@ async fn delete_group(
     Session(session_token): Session,
     ApiPath(group_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
     auth.api()?
         .delete_group(
             info,
@@ -424,7 +424,7 @@ async fn list_group_members(
     ApiPath(group_id): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
     let position = params.position(MEMBERS_LIST);
     let cursor = match &position {
         Ok(position) => position.clone(),
@@ -477,8 +477,8 @@ async fn add_group_member(
     Session(session_token): Session,
     ApiPath((group_id, person_id)): ApiPath<(String, String)>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
-    let person = parse::<UserId>(&person_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
+    let person = path_id::<UserId>(&person_id)?;
     auth.api()?
         .add_group_member(
             info,
@@ -517,8 +517,8 @@ async fn remove_group_member(
     Session(session_token): Session,
     ApiPath((group_id, person_id)): ApiPath<(String, String)>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
-    let person = parse::<UserId>(&person_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
+    let person = path_id::<UserId>(&person_id)?;
     auth.api()?
         .remove_group_member(
             info,
@@ -551,7 +551,7 @@ async fn list_member_choices(
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(filter): ApiQuery<ChoiceFilter>,
 ) -> Result<Response, ApiError> {
-    let group = parse::<GroupId>(&group_id)?;
+    let group = path_id::<GroupId>(&group_id)?;
     let position = params.position(CHOICES_LIST);
     let cursor = match &position {
         Ok(position) => position.clone(),

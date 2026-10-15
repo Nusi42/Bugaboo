@@ -32,6 +32,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
+use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::projects::ProjectRef;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
@@ -298,16 +299,10 @@ pub(crate) struct SaveDescriptionBody {
     text: String,
 }
 
-/// The ID in a request body or query; a text that is no ID is not a valid request.
-fn id_in_body<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
-    text.parse()
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-}
-
 /// The people in a request body.
 fn people_in_body(people: Option<&[String]>) -> Result<Option<Vec<UserId>>, ApiError> {
     people
-        .map(|people| people.iter().map(|text| id_in_body(text)).collect())
+        .map(|people| people.iter().map(|text| body_id(text)).collect())
         .transpose()
 }
 
@@ -413,9 +408,9 @@ async fn list_assignable_people(
                 search: find.search,
                 cursor,
                 limit: params.limit(),
-                field: wanted.field.as_deref().map(id_in_body).transpose()?,
+                field: wanted.field.as_deref().map(body_id).transpose()?,
                 issue: wanted.issue,
-                issue_type: wanted.issue_type.as_deref().map(id_in_body).transpose()?,
+                issue_type: wanted.issue_type.as_deref().map(body_id).transpose()?,
             },
         )
         .await
@@ -464,7 +459,7 @@ async fn make_issue(
     ApiPath(project): ApiPath<String>,
     ApiJson(body): ApiJson<NewIssueBody>,
 ) -> Result<Response, ApiError> {
-    let issue_type: IssueTypeId = id_in_body(&body.issue_type)?;
+    let issue_type: IssueTypeId = body_id(&body.issue_type)?;
     let assigned_to = people_in_body(body.assigned_to.as_deref())?;
     let made = auth
         .api()?
@@ -542,7 +537,7 @@ async fn change_issue(
     ApiPath(issue): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeIssueBody>,
 ) -> Result<Response, ApiError> {
-    let issue_type: Option<IssueTypeId> = body.issue_type.as_deref().map(id_in_body).transpose()?;
+    let issue_type: Option<IssueTypeId> = body.issue_type.as_deref().map(body_id).transpose()?;
     let assigned_to = people_in_body(body.assigned_to.as_deref())?;
     let changed = auth
         .api()?
@@ -592,7 +587,7 @@ async fn save_issue_description(
     ApiPath(issue): ApiPath<String>,
     ApiJson(body): ApiJson<SaveDescriptionBody>,
 ) -> Result<Response, ApiError> {
-    let lock_token = id_in_body(&body.lock_token)?;
+    let lock_token = body_id(&body.lock_token)?;
     let saved = auth
         .api()?
         .save_description(

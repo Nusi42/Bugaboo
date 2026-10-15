@@ -29,6 +29,7 @@ use super::auth::{
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
 use super::relations::IssueRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -215,10 +216,6 @@ pub(crate) struct ChoiceSearch {
     search: Option<String>,
 }
 
-fn comment_id(text: &str) -> Result<CommentId, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
-}
-
 /// Writes a comment under an issue. Needs the permission *Comment* and the right to see the issue.
 #[utoipa::path(
     post,
@@ -282,7 +279,7 @@ async fn save_comment(
     ApiPath(comment): ApiPath<String>,
     ApiJson(body): ApiJson<SaveCommentBody>,
 ) -> Result<Response, ApiError> {
-    let comment = comment_id(&comment)?;
+    let comment = path_id::<CommentId>(&comment)?;
     let lock_token = LockToken::from_str(&body.lock_token)
         .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))?;
     let saved = auth
@@ -327,7 +324,7 @@ async fn delete_comment(
             info,
             DeleteComment {
                 session_token,
-                comment: comment_id(&comment)?,
+                comment: path_id::<CommentId>(&comment)?,
             },
         )
         .await?;
@@ -360,7 +357,7 @@ async fn restore_comment(
             info,
             RestoreComment {
                 session_token,
-                comment: comment_id(&comment)?,
+                comment: path_id::<CommentId>(&comment)?,
             },
         )
         .await?;
@@ -395,7 +392,7 @@ async fn list_comment_versions(
             info,
             CommentVersionsQuery {
                 session_token,
-                comment: comment_id(&comment)?,
+                comment: path_id::<CommentId>(&comment)?,
                 cursor,
                 limit: params.limit(),
             },
@@ -510,10 +507,7 @@ async fn read_mentions(
     let comments = body
         .comments
         .iter()
-        .map(|text| {
-            text.parse::<CommentId>()
-                .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-        })
+        .map(|text| body_id::<CommentId>(text))
         .collect::<Result<Vec<_>, _>>()?;
     auth.api()?
         .read_mentions(

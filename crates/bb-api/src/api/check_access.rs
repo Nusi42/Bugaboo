@@ -30,6 +30,7 @@ use super::auth::{
     answer_authorized,
 };
 use super::field_permissions::{PlaceParams, RoleRefBody};
+use super::path_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -339,10 +340,7 @@ async fn check_access(
     ApiPath(who): ApiPath<PersonPath>,
     ApiQuery(place): ApiQuery<PlaceParams>,
 ) -> Result<Response, ApiError> {
-    let person: UserId = who
-        .person
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let person: UserId = path_id(&who.person)?;
     let project = place.project()?;
     let found = auth
         .api()?

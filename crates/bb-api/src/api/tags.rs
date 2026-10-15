@@ -16,11 +16,10 @@ use bb_app::tags::{
     LabelRef, LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, RemoveLabel, RemoveTag,
     TagChangePreview, TagChangePreviewQuery, TagRef, TagSuggestionsQuery, TagView, TagsQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::id::{LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::{ChoiceColor, Edit};
 use bb_policy::Masked;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -34,6 +33,7 @@ use super::issues::IssueTypeRef;
 use super::previews::PreviewSummaryBody;
 use super::projects::ProjectRef;
 use super::relations::IssueRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -395,15 +395,6 @@ pub(crate) struct NewLabelBody {
     group: Option<String>,
 }
 
-/// A field that is `Clear` when the request says `null` and `Keep` when it says nothing.
-fn null_or_value<'de, D, T>(deserializer: D) -> Result<Edit<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    Option::<T>::deserialize(deserializer).map(Edit::said)
-}
-
 /// What to change about a label: what is left out stays as it is.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ChangeLabelBody {
@@ -414,15 +405,11 @@ pub(crate) struct ChangeLabelBody {
     /// A new color.
     color: Option<ChoiceColor>,
     /// The ID of a new group; `null` takes the label out of its group.
-    #[serde(default, deserialize_with = "null_or_value")]
+    #[serde(default, deserialize_with = "crate::api::null_or_value")]
     #[schema(value_type = Option<String>)]
     group: Edit<String>,
     /// `true` retires the label, `false` offers it again.
     retired: Option<bool>,
-}
-
-fn id_of<Id: std::str::FromStr>(text: &str, otherwise: ErrorCode) -> Result<Id, ApiError> {
-    text.parse().map_err(|_| ApiError::new(otherwise))
 }
 
 /// The tags and labels of an issue and what the person may do with them.
@@ -522,7 +509,7 @@ async fn remove_tag(
             RemoveTag {
                 session_token,
                 issue,
-                tag: id_of::<TagId>(&tag, ErrorCode::NotFound)?,
+                tag: path_id::<TagId>(&tag)?,
             },
         )
         .await?;
@@ -561,7 +548,7 @@ async fn add_label(
             AddLabel {
                 session_token,
                 issue,
-                label: id_of::<LabelId>(&body.label, ErrorCode::InvalidRequest)?,
+                label: body_id::<LabelId>(&body.label)?,
             },
         )
         .await?;
@@ -598,7 +585,7 @@ async fn remove_label(
             RemoveLabel {
                 session_token,
                 issue,
-                label: id_of::<LabelId>(&label, ErrorCode::NotFound)?,
+                label: path_id::<LabelId>(&label)?,
             },
         )
         .await?;
@@ -720,13 +707,9 @@ async fn preview_tag_change(
             info,
             TagChangePreviewQuery {
                 session_token,
-                tag: id_of::<TagId>(&tag, ErrorCode::NotFound)?,
+                tag: path_id::<TagId>(&tag)?,
                 name: body.name,
-                into: body
-                    .into
-                    .as_deref()
-                    .map(|text| id_of::<TagId>(text, ErrorCode::InvalidRequest))
-                    .transpose()?,
+                into: body.into.as_deref().map(body_id::<TagId>).transpose()?,
             },
         )
         .await?;
@@ -763,7 +746,7 @@ async fn change_tag(
         .as_deref()
         .map(|each| {
             each.iter()
-                .map(|text| id_of::<ProjectId>(text, ErrorCode::InvalidRequest))
+                .map(|text| body_id::<ProjectId>(text))
                 .collect::<Result<Vec<_>, _>>()
         })
         .transpose()?;
@@ -773,7 +756,7 @@ async fn change_tag(
             info,
             ChangeTag {
                 session_token,
-                tag: id_of::<TagId>(&tag, ErrorCode::NotFound)?,
+                tag: path_id::<TagId>(&tag)?,
                 version: body.version,
                 name: body.name,
                 color: body.color,
@@ -815,9 +798,9 @@ async fn combine_tags(
             info,
             CombineTags {
                 session_token,
-                tag: id_of::<TagId>(&tag, ErrorCode::NotFound)?,
+                tag: path_id::<TagId>(&tag)?,
                 version: body.version,
-                into: id_of::<TagId>(&body.into, ErrorCode::InvalidRequest)?,
+                into: body_id::<TagId>(&body.into)?,
                 into_version: body.into_version,
             },
         )
@@ -911,7 +894,7 @@ async fn change_label_group(
             info,
             ChangeLabelGroup {
                 session_token,
-                group: id_of::<LabelGroupId>(&group, ErrorCode::NotFound)?,
+                group: path_id::<LabelGroupId>(&group)?,
                 version: body.version,
                 name: body.name,
                 pick_one: body.pick_one,
@@ -947,7 +930,7 @@ async fn make_label(
     let group = body
         .group
         .as_deref()
-        .map(|text| id_of::<LabelGroupId>(text, ErrorCode::InvalidRequest))
+        .map(body_id::<LabelGroupId>)
         .transpose()?;
     let made = auth
         .api()?
@@ -995,13 +978,9 @@ async fn preview_label_change(
             info,
             LabelChangePreviewQuery {
                 session_token,
-                label: id_of::<LabelId>(&label, ErrorCode::NotFound)?,
+                label: path_id::<LabelId>(&label)?,
                 name: body.name,
-                into: body
-                    .into
-                    .as_deref()
-                    .map(|text| id_of::<LabelId>(text, ErrorCode::InvalidRequest))
-                    .transpose()?,
+                into: body.into.as_deref().map(body_id::<LabelId>).transpose()?,
             },
         )
         .await?;
@@ -1036,7 +1015,7 @@ async fn change_label(
     let group = match body.group {
         Edit::Keep => Edit::Keep,
         Edit::Clear => Edit::Clear,
-        Edit::Set(text) => Edit::Set(id_of::<LabelGroupId>(&text, ErrorCode::InvalidRequest)?),
+        Edit::Set(text) => Edit::Set(body_id::<LabelGroupId>(&text)?),
     };
     let changed = auth
         .api()?
@@ -1044,7 +1023,7 @@ async fn change_label(
             info,
             ChangeLabel {
                 session_token,
-                label: id_of::<LabelId>(&label, ErrorCode::NotFound)?,
+                label: path_id::<LabelId>(&label)?,
                 version: body.version,
                 name: body.name,
                 color: body.color,
@@ -1087,9 +1066,9 @@ async fn combine_labels(
             info,
             CombineLabels {
                 session_token,
-                label: id_of::<LabelId>(&label, ErrorCode::NotFound)?,
+                label: path_id::<LabelId>(&label)?,
                 version: body.version,
-                into: id_of::<LabelId>(&body.into, ErrorCode::InvalidRequest)?,
+                into: body_id::<LabelId>(&body.into)?,
                 into_version: body.into_version,
             },
         )

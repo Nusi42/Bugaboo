@@ -12,7 +12,6 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::{FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable};
 use bb_app::roles::{RoleRef, SetFieldLevel};
-use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
@@ -27,7 +26,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
-use super::projects::project_id;
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
 /// Which place a table or a change is about.
@@ -42,7 +41,10 @@ pub(crate) struct PlaceParams {
 impl PlaceParams {
     /// The project, if one is named; a text that is no ID names a project that is not there.
     pub(super) fn project(&self) -> Result<Option<ProjectId>, ApiError> {
-        self.project.as_deref().map(project_id).transpose()
+        self.project
+            .as_deref()
+            .map(path_id::<ProjectId>)
+            .transpose()
     }
 }
 
@@ -61,14 +63,17 @@ pub(crate) struct TypeParams {
 impl TypeParams {
     /// The project, if one is named; a text that is no ID names a project that is not there.
     fn project(&self) -> Result<Option<ProjectId>, ApiError> {
-        self.project.as_deref().map(project_id).transpose()
+        self.project
+            .as_deref()
+            .map(path_id::<ProjectId>)
+            .transpose()
     }
 
     /// The issue type, if one is named; a text that is no ID names a type that is not there.
     fn issue_type(&self) -> Result<Option<IssueTypeId>, ApiError> {
         self.issue_type
             .as_deref()
-            .map(|text| text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound)))
+            .map(path_id::<IssueTypeId>)
             .transpose()
     }
 }
@@ -206,11 +211,6 @@ pub(crate) struct NewFieldLevelBody {
     level: Option<FieldLevel>,
 }
 
-/// The role of an address; a text that is no ID names a role that is not there.
-pub(super) fn role_id(text: &str) -> Result<RoleId, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
-}
-
 /// The path of one cell: a role and a field.
 #[derive(Deserialize)]
 pub(crate) struct FieldCellPath {
@@ -284,7 +284,7 @@ async fn change_field_permission(
 ) -> Result<Response, ApiError> {
     let project = place.project()?;
     let issue_type = place.issue_type()?;
-    let role = role_id(&path.role)?;
+    let role = path_id::<RoleId>(&path.role)?;
     auth.api()?
         .set_field_level(
             info,

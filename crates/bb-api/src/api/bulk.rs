@@ -33,6 +33,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer_authorized,
 };
+use super::path_id;
 use super::previews::PreviewSummaryBody;
 use super::projects::ProjectRef;
 use super::relations::IssueRef;
@@ -530,9 +531,7 @@ async fn get_bulk_run(
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let run: BulkRunId = run
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let run: BulkRunId = path_id(&run)?;
     let found = auth
         .api()?
         .bulk_run(info, BulkRunQuery { session_token, run })

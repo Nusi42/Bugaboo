@@ -27,6 +27,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -237,11 +238,6 @@ pub(crate) struct ChangeProjectBody {
     fields: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
-/// The ID in an address of the API; a text that is no ID names no project.
-pub(crate) fn project_id(text: &str) -> Result<ProjectId, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
-}
-
 /// The projects the person sees, a page at a time: the top of the tree, the projects inside one,
 /// or the projects that a search finds. Needs no permission of its own: it lists what the person
 /// may see, which is nothing for a person without a role.
@@ -267,9 +263,21 @@ async fn list_projects(
         Ok(position) => position.clone(),
         Err(_) => Some(String::new()),
     };
-    let inside = filter.inside.as_deref().map(project_id).transpose();
-    let outside = filter.outside.as_deref().map(project_id).transpose();
-    let movable = filter.movable.as_deref().map(project_id).transpose();
+    let inside = filter
+        .inside
+        .as_deref()
+        .map(path_id::<ProjectId>)
+        .transpose();
+    let outside = filter
+        .outside
+        .as_deref()
+        .map(path_id::<ProjectId>)
+        .transpose();
+    let movable = filter
+        .movable
+        .as_deref()
+        .map(path_id::<ProjectId>)
+        .transpose();
     let page = auth
         .api()?
         .projects(
@@ -393,7 +401,7 @@ async fn make_sub_project(
     ApiPath(parent): ApiPath<String>,
     ApiJson(body): ApiJson<NewProjectBody>,
 ) -> Result<Response, ApiError> {
-    let parent = project_id(&parent)?;
+    let parent = path_id::<ProjectId>(&parent)?;
     let made = auth
         .api()?
         .make_project(
@@ -436,7 +444,7 @@ async fn change_project(
     ApiPath(project): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeProjectBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
+    let project = path_id::<ProjectId>(&project)?;
     let changed = auth
         .api()?
         .change_project(

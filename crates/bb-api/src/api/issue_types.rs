@@ -5,7 +5,6 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{ChangeIssueType, IssueTypeView, IssueTypesQuery, MakeIssueType};
-use bb_core::ErrorCode;
 use bb_core::id::IssueTypeId;
 use bb_core::issue::IssueIcon;
 use bb_policy::Masked;
@@ -19,6 +18,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -200,9 +200,7 @@ async fn change_issue_type(
     ApiPath(issue_type): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeIssueTypeBody>,
 ) -> Result<Response, ApiError> {
-    let issue_type: IssueTypeId = issue_type
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let issue_type: IssueTypeId = path_id(&issue_type)?;
     let changed = auth
         .api()?
         .change_issue_type(
