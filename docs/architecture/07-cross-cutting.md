@@ -227,6 +227,8 @@ N = *Names*, R = *Role only*, H = *Hidden*.
 
 Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06) through one key type, `FieldKey`: either a built-in field of this catalogue or an own field (`FieldKey::Own(FieldId)`), so levels, masks, the field-permission page, history and `fields=` name both the same way and no list of own fields is written twice. A new own field starts *Can see* for every role that sees the project and *Can change* for Team member and above; whoever makes it can change that at once. Levels per issue type use the lookup of [ADR-0027](../adr/0027-layouts-and-rules-per-issue-type.md).
 
+<!-- BEGIN GENERATED field-catalogue by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+
 | Key | Name | Belongs to | Holds a person |
 |-----|------|-----------|----------------|
 | `title` | Title | issue | – |
@@ -245,6 +247,8 @@ Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), 
 | `time-spent` | Time spent | issue (total of its time entries) | – |
 | `activity` | Activity | time entry (default on the issue) | – |
 | `cost-center` | Cost center | time entry (default on the issue and project) | – |
+
+<!-- END GENERATED field-catalogue -->
 
 A person in a field is shown only when the field is visible (mask) and then as its kind says (`PersonRef`).
 

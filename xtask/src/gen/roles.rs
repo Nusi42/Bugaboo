@@ -1,14 +1,14 @@
 //! The tables of permissions and starting roles in architecture §7, written from the code of
 //! `bb-policy` (ADR-0025: the code is the source, never the page).
 //!
-//! Four tables of the page are generated: the permission catalogue and, for the six starting
-//! roles, their permissions, field levels and *Who sees people* levels. Each sits between a
+//! Five tables of the page are generated: the field catalogue, the permission catalogue and, for the
+//! six starting roles, their permissions, field levels and *Who sees people* levels. Each sits between a
 //! `BEGIN GENERATED` and an `END GENERATED` comment of the page; the text around them is written by
 //! hand. DOC-GENERATED fails when a table differs from what this makes, so nobody edits one by hand.
 
 use anyhow::{Context as _, bail};
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::fields::Field;
+use bb_core::fields::{BelongsTo, Field};
 use bb_core::message::{Message, MessageKey};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Permission, StartingRole};
@@ -56,6 +56,38 @@ fn capital(word: &str) -> String {
         .next()
         .map(|first| first.to_uppercase().chain(letters).collect())
         .unwrap_or_default()
+}
+
+/// What a field belongs to, in the words of the catalogue table.
+fn belongs_to(thing: BelongsTo) -> &'static str {
+    match thing {
+        BelongsTo::Issue => "issue",
+        BelongsTo::IssueTimeTotal => "issue (total of its time entries)",
+        BelongsTo::TimeEntry => "time entry (default on the issue)",
+        BelongsTo::TimeEntryWithProjectDefault => "time entry (default on the issue and project)",
+    }
+}
+
+/// The fields of the catalogue: the key, the name, what it belongs to and the kind of people
+/// information when it holds a person.
+fn field_catalogue() -> String {
+    let mut out = String::from(
+        "| Key | Name | Belongs to | Holds a person |
+|-----|------|-----------|----------------|
+",
+    );
+    for field in Field::ALL {
+        out.push_str(&row(&[
+            format!("`{}`", field.code()),
+            text(field.name()),
+            belongs_to(field.belongs_to()).to_owned(),
+            field.person_kind().map_or_else(
+                || "–".to_owned(),
+                |kind| format!("yes, kind *{}*", text(kind.name())),
+            ),
+        ]));
+    }
+    out
 }
 
 /// The permission catalogue.
@@ -160,8 +192,9 @@ fn starting_people_levels() -> String {
 }
 
 /// Every generated table of the page: its name in the comments, and its text.
-fn tables() -> [(&'static str, String); 4] {
+fn tables() -> [(&'static str, String); 5] {
     [
+        ("field-catalogue", field_catalogue()),
         ("permission-catalogue", permission_catalogue()),
         ("starting-permissions", starting_permissions()),
         ("starting-field-levels", starting_field_levels()),
@@ -225,6 +258,7 @@ mod tests {
     #[test]
     fn the_tables_have_a_row_for_every_permission_field_and_kind() {
         let counted = |table: &str| table.lines().filter(|line| line.starts_with("| ")).count();
+        assert_eq!(counted(&field_catalogue()), Field::ALL.len() + 1);
         assert_eq!(counted(&permission_catalogue()), Permission::ALL.len() + 1);
         assert_eq!(counted(&starting_permissions()), Permission::ALL.len() + 2);
         assert_eq!(counted(&starting_field_levels()), Field::ALL.len() + 1);
