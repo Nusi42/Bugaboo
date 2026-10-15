@@ -20,6 +20,7 @@ use serde_json::json;
 use super::types::{IssueRelations, SetParent};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::issues::InTrash;
 use crate::issues::member as issue_member;
 use crate::projects::Why;
 
@@ -128,7 +129,7 @@ pub async fn set_parent<S: AuthStore>(
                         return Err(stopped.stop::<S>(ErrorCode::ParentCircle));
                     }
                 }
-                if S::count_issue_up(transaction, child_id, Some(version), now)
+                if S::count_issue_up(transaction, child_id, Some(version), InTrash::NotFound, now)
                     .await?
                     .is_none()
                 {

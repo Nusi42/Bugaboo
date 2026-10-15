@@ -8,7 +8,7 @@ use bb_core::issue_key::IssueCode;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::issues::{IssueFound, IssueStore};
+use crate::issues::{InTrash, IssueFound, IssueStore};
 
 fn types_of(state: &State) -> Vec<IssueType> {
     let mut types = state.issue_types.clone();
@@ -265,15 +265,9 @@ impl IssueStore for FakeStore {
         Ok(1)
     }
 
-    async fn set_issue_code(
-        tx: &mut Tx,
-        id: IssueId,
-        code: &IssueCode,
-        now: Timestamp,
-    ) -> Result<(), FakeError> {
+    async fn set_issue_code(tx: &mut Tx, id: IssueId, code: &IssueCode) -> Result<(), FakeError> {
         if let Some(found) = tx.state.issues.iter_mut().find(|found| found.id == id) {
             found.code = code.clone();
-            found.updated_at = now;
             found.version += 1;
         }
         Ok(())
@@ -283,11 +277,12 @@ impl IssueStore for FakeStore {
         tx: &mut Tx,
         issue: IssueId,
         only_at: Option<i64>,
+        in_trash: InTrash,
         now: Timestamp,
     ) -> Result<Option<i64>, FakeError> {
         let Some(found) = tx.state.issues.iter_mut().find(|found| {
             found.id == issue
-                && found.deleted_at.is_none()
+                && (in_trash == InTrash::Counted || found.deleted_at.is_none())
                 && only_at.is_none_or(|version| found.version == version)
         }) else {
             return Ok(None);

@@ -17,8 +17,7 @@ use crate::auth::{
 };
 use crate::context::Clock;
 use crate::editing::EditableRecords;
-use crate::issues::{MakeStartingIssueTypes, make_starting_issue_types};
-use crate::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
+use crate::first_start::first_start;
 
 pub(crate) use bb_dev_words::accounts::{CLOCK_START, OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
@@ -89,19 +88,20 @@ impl World {
         })
     }
 
-    /// The first start, the issue types of the first start, and the first administrator, Ada.
+    /// The first start (`first_start`, as the server runs it), and the first administrator, Ada.
     pub(crate) async fn new() -> Result<Self, String> {
-        let world = Self::new_without_issue_types().await?;
-        make_starting_issue_types(&world.ctx(), MakeStartingIssueTypes)
+        let mut world = Self::bare()?;
+        let code = first_start(&world.services)
             .await
-            .map_err(text)?;
-        make_starting_relation_kinds(&world.ctx(), MakeStartingRelationKinds)
-            .await
-            .map_err(text)?;
+            .map_err(text)?
+            .ok_or("no setup code on a new store")?;
+        world.admin = world.first_administrator(code.as_str()).await?;
         Ok(world)
     }
 
-    /// The first start and the first administrator, before the issue types are made.
+    /// The first start and the first administrator, before the issue types are made. It does the
+    /// steps of `first_start` by hand and leaves out the issue types and the kinds of relation,
+    /// for the tests of a server that has none yet.
     pub(crate) async fn new_without_issue_types() -> Result<Self, String> {
         let mut world = Self::bare()?;
         let ctx = world.ctx();
@@ -112,10 +112,17 @@ impl World {
             .await
             .map_err(text)?
             .ok_or("no setup code on a new store")?;
-        let admin = complete_setup(
-            &ctx,
+        drop(ctx);
+        world.admin = world.first_administrator(code.as_str()).await?;
+        Ok(world)
+    }
+
+    /// Ada, the first administrator, made with the setup code.
+    async fn first_administrator(&self, code: &str) -> Result<Started, String> {
+        complete_setup(
+            &self.ctx(),
             CompleteSetup {
-                code: code.as_str().to_owned(),
+                code: code.to_owned(),
                 display_name: "Ada Admin".to_owned(),
                 email: "ada@example.test".to_owned(),
                 password: PASSWORD.to_owned(),
@@ -123,10 +130,7 @@ impl World {
             },
         )
         .await
-        .map_err(text)?;
-        drop(ctx);
-        world.admin = admin;
-        Ok(world)
+        .map_err(text)
     }
 
     /// The same server that also knows another kind of record.

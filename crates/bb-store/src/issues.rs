@@ -6,7 +6,7 @@
 //! of the product: `next_counting_number` raises the stored last number by one in the
 //! transaction, so two writers wait for each other and no number is skipped or given twice.
 
-use bb_app::issues::{IssueFound, IssueStore};
+use bb_app::issues::{InTrash, IssueFound, IssueStore};
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType, Priority, Status};
@@ -236,13 +236,16 @@ async fn insert_assignees(
     Ok(())
 }
 
-/// What counting the version of an issue up is, in every statement that does it: the version goes
-/// up by one and the date it changed is `now`. A statement that changes an issue in any way that
-/// counts as a change calls this, so no count-up leaves the date behind.
+/// The version of an issue goes up by one: the one place that says how.
+fn version_up(update: &mut UpdateStatement) -> &mut UpdateStatement {
+    update.value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+}
+
+/// What counting the version of an issue up is, in every statement that a person's change makes:
+/// the version goes up by one and the date it changed is `now`. Only the renewal of an ID counts
+/// the version up without the date (`set_issue_code`).
 pub(crate) fn counting_up(update: &mut UpdateStatement, now: Timestamp) -> &mut UpdateStatement {
-    update
-        .value(IssueRow::UpdatedAt, to_micros(now))
-        .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+    version_up(update.value(IssueRow::UpdatedAt, to_micros(now)))
 }
 
 impl IssueStore for AuthStorage {
@@ -565,13 +568,12 @@ impl IssueStore for AuthStorage {
         transaction: &mut Transaction,
         id: IssueId,
         code: &IssueCode,
-        now: Timestamp,
     ) -> Result<(), StoreError> {
         let mut update = Query::update();
         update
             .table(IssueRow::Table)
             .value(IssueRow::Code, code.as_str());
-        counting_up(&mut update, now).and_where(Expr::col(IssueRow::Id).eq(id.stored()));
+        version_up(&mut update).and_where(Expr::col(IssueRow::Id).eq(id.stored()));
         transaction.execute(&update).await.map(|_| ())
     }
 
@@ -579,14 +581,17 @@ impl IssueStore for AuthStorage {
         transaction: &mut Transaction,
         issue: IssueId,
         only_at: Option<i64>,
+        in_trash: InTrash,
         now: Timestamp,
     ) -> Result<Option<i64>, StoreError> {
         let mut update = Query::update();
         update.table(IssueRow::Table);
         counting_up(&mut update, now)
             .and_where(Expr::col(IssueRow::Id).eq(issue.stored()))
-            .and_where(Expr::col(IssueRow::DeletedAt).is_null())
             .returning_col(IssueRow::Version);
+        if in_trash == InTrash::NotFound {
+            update.and_where(Expr::col(IssueRow::DeletedAt).is_null());
+        }
         if let Some(version) = only_at {
             update.and_where(Expr::col(IssueRow::Version).eq(version));
         }

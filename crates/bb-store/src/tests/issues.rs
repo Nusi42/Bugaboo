@@ -1,7 +1,7 @@
 //! Counting the version of an issue up, on both databases (ADR-0017): every way of doing it adds
 //! one to the version and sets the date the issue changed, and the guards say what they promise.
 
-use bb_app::issues::IssueStore as _;
+use bb_app::issues::{InTrash, IssueStore as _};
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::id::IdSource;
 use bb_core::issue_key::IssueCode;
@@ -39,12 +39,16 @@ async fn adr_0017_every_count_up_adds_one_and_sets_the_date() -> TestResult {
 
         // With the version the person looked at, and then with a stale one.
         let counted = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::count_issue_up(tx, issue, Some(1), at(10)).await })
+            Box::pin(async move {
+                AuthStorage::count_issue_up(tx, issue, Some(1), InTrash::NotFound, at(10)).await
+            })
         })
         .await?;
         assert_eq!(counted, Some(2));
         let stale = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::count_issue_up(tx, issue, Some(1), at(11)).await })
+            Box::pin(async move {
+                AuthStorage::count_issue_up(tx, issue, Some(1), InTrash::NotFound, at(11)).await
+            })
         })
         .await?;
         assert_eq!(stale, None);
@@ -52,19 +56,22 @@ async fn adr_0017_every_count_up_adds_one_and_sets_the_date() -> TestResult {
 
         // Without a version: whatever it is.
         let counted = changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::count_issue_up(tx, issue, None, at(20)).await })
+            Box::pin(async move {
+                AuthStorage::count_issue_up(tx, issue, None, InTrash::NotFound, at(20)).await
+            })
         })
         .await?;
         assert_eq!(counted, Some(3));
 
-        // A new code, the trash and the way out of it count too.
+        // A new code counts the version up and leaves the date: a renewal is no edit by a person.
         let code = IssueCode::counting(77);
         changed(storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::set_issue_code(tx, issue, &code, at(30)).await })
+            Box::pin(async move { AuthStorage::set_issue_code(tx, issue, &code).await })
         })
         .await?;
-        assert_eq!(version_and_date(storage, issue).await?, (4, at(30)));
-        for (deleted_at, now, version) in [(Some(at(40)), at(40), 5), (None, at(50), 6)] {
+        assert_eq!(version_and_date(storage, issue).await?, (4, at(20)));
+        // The trash and the way out of it count, with the date.
+        for (deleted_at, now, version) in [(Some(at(40)), at(40), 5), (None, at(50), 7)] {
             changed(storage, &mut source, move |tx| {
                 Box::pin(
                     async move { AuthStorage::set_issue_deleted(tx, issue, deleted_at, now).await },
@@ -75,12 +82,22 @@ async fn adr_0017_every_count_up_adds_one_and_sets_the_date() -> TestResult {
             if deleted_at.is_some() {
                 // An issue in the trash is not counted up by the other kind of change.
                 let none = changed(storage, &mut source, move |tx| {
-                    Box::pin(
-                        async move { AuthStorage::count_issue_up(tx, issue, None, at(45)).await },
-                    )
+                    Box::pin(async move {
+                        AuthStorage::count_issue_up(tx, issue, None, InTrash::NotFound, at(45))
+                            .await
+                    })
                 })
                 .await?;
                 assert_eq!(none, None);
+                // A change of a value the issue holds counts it up in the trash too.
+                let counted = changed(storage, &mut source, move |tx| {
+                    Box::pin(async move {
+                        AuthStorage::count_issue_up(tx, issue, None, InTrash::Counted, at(46)).await
+                    })
+                })
+                .await?;
+                assert_eq!(counted, Some(6));
+                assert_eq!(version_and_date(storage, issue).await?, (6, at(46)));
             }
         }
         Ok(())
