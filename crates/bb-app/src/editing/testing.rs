@@ -1,8 +1,9 @@
 //! A kind of record that exists only in tests: a *note* in one project, with a version that a test
 //! counts up. Locks, drafts and the check of versions work on any record by its kind and ID, so the tests of
 //! them (in `bb-app` against the in-memory store, in `bb-server` against both databases) use this
-//! kind and need no table of any real record. Only the tests of this crate and the tests of the
-//! server switch the feature on.
+//! kind and need no table of any real record. Only the tests of this crate, the tests of the server
+//! and the developer tool `bb-sample` switch the feature on; a build of the whole workspace has it
+//! on for every crate (see `bb-store/Cargo.toml`), the program (`cargo build -p bb-server`) does not.
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, PoisonError};

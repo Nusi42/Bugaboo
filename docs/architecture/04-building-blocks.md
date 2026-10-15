@@ -103,7 +103,7 @@ flowchart TB
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample`; the developer program `bb-load-check` (M3 WP-10) depends on `bb-store` to read the database of a load run, and wires no use case (`cargo xtask check only ARCH-HTTP-EDGE`).
 5. The browser app talks to the server only through `@bugaboo/api-client` (`cargo xtask check only ARCH-WEB-API`), and has no hand-written types for what the server sends (`LINT-API-TYPES`).
-6. A crate may name itself as a dev-dependency to switch on its own `testing` feature for its integration tests (`bb-api` does, for `Options::for_tests`); that is no edge between two crates (`cargo xtask check only ARCH-DEPS`).
+6. A crate may name itself as a dev-dependency to switch on its own `testing` feature for its integration tests (`bb-api` does, for `Options::for_tests`); that is no edge between two crates (`cargo xtask check only ARCH-DEPS`). The same feature is on for every crate in a build of the whole workspace (`cargo build --workspace`), because cargo unifies the features that any member asks for; the shipped program is built with `cargo build -p bb-server` (`cargo xtask build`), which leaves the test hooks out.
 
 ## The core modules
 
