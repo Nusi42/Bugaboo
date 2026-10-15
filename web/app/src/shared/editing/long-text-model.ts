@@ -109,6 +109,17 @@ export function lostReasonOf(code: ErrorCode | undefined): LostReason | undefine
   return code === undefined ? undefined : lostReasonsByCode.get(code);
 }
 
+/** Whether taking the lock again can work after this loss: the time ran out or someone took over; a text that changed meanwhile needs more than the lock. */
+export function lockCanBeRetaken(reason: LostReason): boolean {
+  return reason === "ran-out" || reason === "taken-over";
+}
+
+/** The same from the code of a refusal: whether *Try again* can work, the text being kept. */
+export function retakingLockHelps(code?: ErrorCode): boolean {
+  const reason = lostReasonOf(code);
+  return reason !== undefined && lockCanBeRetaken(reason);
+}
+
 /** The newest of the drafts that differ from the saved text, or nothing. */
 export function newestDraft(
   found: readonly (OfferedDraft | null)[],

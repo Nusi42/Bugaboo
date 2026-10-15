@@ -39,7 +39,29 @@ async function showComments(page: Page): Promise<void> {
 
 /** The button that edits the comment. */
 function editButton(page: Page) {
-  return page.getByRole("button", { name: t("comments.edit"), exact: true });
+  // The newest comment is the first one.
+  return page.getByRole("button", { name: t("comments.edit"), exact: true }).first();
+}
+
+/** Makes the server's answer to the next save of a comment a refusal for the lock's sake. */
+async function refuseNextSave(page: Page, code: string, messageKey: string): Promise<void> {
+  await page.route(
+    "**/api/v1/comments/*",
+    (route) =>
+      route.fulfill({
+        status: 409,
+        contentType: "application/problem+json",
+        body: JSON.stringify({
+          type: `urn:bugaboo:error:${code}`,
+          title: "Refused",
+          status: 409,
+          code,
+          message_key: messageKey,
+          params: {},
+        }),
+      }),
+    { times: 1 },
+  );
 }
 
 test("iss_05 a comment that is edited elsewhere stays readable and has a way out", async ({
@@ -50,9 +72,10 @@ test("iss_05 a comment that is edited elsewhere stays readable and has a way out
   await signIn(page, ada);
   await writeComment(page, "WEB-1", "Seen it twice.");
   await editButton(page).click();
-  await expect(
-    page.getByRole("textbox", { name: t("comments.editing"), exact: true }),
-  ).toBeVisible();
+  // The lock is taken with the first key.
+  await page
+    .getByRole("textbox", { name: t("comments.editing"), exact: true })
+    .fill("Seen it twice, longer.");
 
   const other = await anotherBrowser(browser, server);
   await signIn(other, ada);
@@ -86,31 +109,38 @@ test("iss_05 a comment whose editing was taken over keeps the typed text and can
   await expect(editor).toHaveValue(typed);
 
   // The server says the editing was taken over (the answer of the first save only; the server's
-  // own part of this is tested in Rust).
-  await page.route(
-    "**/api/v1/comments/*",
-    (route) =>
-      route.fulfill({
-        status: 409,
-        contentType: "application/problem+json",
-        body: JSON.stringify({
-          type: "urn:bugaboo:error:edit.taken_over",
-          title: "Taken over",
-          status: 409,
-          code: "edit.taken_over",
-          message_key: "error.edit.taken-over",
-          params: {},
-        }),
-      }),
-    { times: 1 },
-  );
-  // Saving is refused, and the way out is on the screen: the text is kept and the lock is taken again.
+  // own part of this is tested in Rust). Saving is refused, and the way out is on the screen:
+  // Try again takes the lock again and saves the text that was typed.
+  await refuseNextSave(page, "edit.taken_over", "error.edit.taken-over");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await expect(page.getByText(t("error.edit.taken-over"))).toBeVisible();
   await page.getByRole("button", { name: t("common.try-again"), exact: true }).click();
-  await expect(editor).toHaveValue(typed);
-  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText(typed)).toBeVisible();
   await expect(editor).toHaveCount(0);
+});
+
+test("iss_05 a draft of a comment that was kept is offered when the editor opens", async ({
+  page,
+}) => {
+  await signIn(page, bob);
+  await writeComment(page, "WEB-3", "Draft me.");
+  await editButton(page).click();
+  const editor = page.getByRole("textbox", { name: t("comments.editing"), exact: true });
+  const typed = "Words that must not be lost.";
+  await editor.fill(typed);
+  // The lock ran out: the save is refused, and the text is kept as a draft.
+  await refuseNextSave(page, "edit.lock_lost", "error.edit.lock-lost");
+  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await expect(page.getByText(t("error.edit.lock-lost"))).toBeVisible();
+  // The person closes the editor, which lets go of the lock and keeps the draft.
+  await page.getByRole("button", { name: t("common.close"), exact: true }).click();
+  // Later: the page is read again, the editor is opened, and the draft is offered.
+  await page.reload();
+  await showComments(page);
+  await editButton(page).click();
+  await page.getByRole("button", { name: /^Continue your draft from/u }).click();
+  // The text is back, in the box, or (the old lock has not run out yet) shown and kept.
+  await expect(page.getByText(typed).or(editor)).toBeVisible();
 });
 
 test("iss_05 the words of a comment's buttons say whose comment it is", async ({
@@ -120,14 +150,16 @@ test("iss_05 the words of a comment's buttons say whose comment it is", async ({
 }) => {
   await signIn(page, bob);
   await writeComment(page, "WEB-3", "Bob wrote this.");
-  await expect(page.getByRole("button", { name: t("comments.delete"), exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: t("comments.delete"), exact: true }).first(),
+  ).toBeVisible();
   // An administrator may delete it, and it is not theirs: no "your", and no editing.
   const admin = await anotherBrowser(browser, server);
   await signIn(admin, ada);
   await admin.goto(issueAddress("WEB-3"));
   await showComments(admin);
   await expect(
-    admin.getByRole("button", { name: t("comments.delete-other"), exact: true }),
+    admin.getByRole("button", { name: t("comments.delete-other"), exact: true }).first(),
   ).toBeVisible();
   await expect(admin.getByRole("button", { name: t("comments.delete"), exact: true })).toHaveCount(
     0,

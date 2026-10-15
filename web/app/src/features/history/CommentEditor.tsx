@@ -1,97 +1,54 @@
 import { t } from "@bugaboo/messages";
-import { alertTone, Alert, Button, partOf, part } from "@bugaboo/ui";
-import { useState, type ReactNode } from "react";
+import { Button, partOf, part } from "@bugaboo/ui";
+import type { ReactNode } from "react";
 
+import { DraftOffered } from "../../shared/editing/DraftOffered.tsx";
 import { editedThing } from "../../shared/editing/edited-thing.ts";
 import { HeldNote } from "../../shared/editing/HeldNote.tsx";
-import { messageOf } from "../../shared/errors.ts";
-import { CommentEditForm } from "./CommentEditForm.tsx";
-import { useCommentLock } from "./use-comment-lock.ts";
+import { useNow } from "../../shared/use-now.ts";
+import { CommentBox, KeptText } from "./CommentBox.tsx";
+import { useCommentText, type CommentSource } from "./use-comment-text.ts";
 
-interface EditorProps {
-  readonly comment: string;
-  readonly version: number;
-  /** The text in the box; the screen keeps it, so it survives taking the lock again. */
-  readonly draft: string;
-  readonly onDraft: (text: string) => void;
-  /** The comment as it is read, shown while there is no form. */
+export interface CommentEditorProps extends CommentSource {
+  /** The comment as it is read, shown while someone else holds the lock. */
   readonly reading: ReactNode;
   readonly onClose: () => void;
-  /** Takes the lock again, with the text as it is. */
-  readonly onRetry: () => void;
-}
-
-/** One go at the lock on the comment: the form once it is held, else the comment with the note that says why not. */
-function LockedEditor(props: EditorProps) {
-  const lock = useCommentLock(props.comment);
-  const close = <Button onPress={props.onClose}>{t("common.close")}</Button>;
-  if (lock.status === "mine") {
-    return (
-      <CommentEditForm
-        comment={props.comment}
-        version={props.version}
-        draft={props.draft}
-        onDraft={props.onDraft}
-        token={lock.token}
-        onClose={props.onClose}
-        onRetry={props.onRetry}
-      />
-    );
-  }
-  if (lock.status === "held") {
-    return (
-      <>
-        {props.reading}
-        <HeldNote held={lock.held} thing={editedThing.comment}>
-          {close}
-        </HeldNote>
-      </>
-    );
-  }
-  if (lock.status === "failed") {
-    return (
-      <>
-        {props.reading}
-        <Alert tone={alertTone.danger}>
-          <div {...partOf(part.issueNote)}>
-            <span>{messageOf(lock.error)}</span>
-            {close}
-          </div>
-        </Alert>
-      </>
-    );
-  }
-  return props.reading;
 }
 
 /**
- * Edits the text of a comment (ISS-05, ADR-0019): under the lock, saved with its token and the
- * version the editor started from; every earlier text is kept by the server. While the form is
- * not open (the lock is somebody else's, or could not be taken) the comment stays readable, with
- * the note that says why and *Close*. When the lock ran out or was taken over, *Try again* takes
- * it again and the typed text stays.
+ * Edits the text of a comment (ISS-05, ADR-0019) the way the description is edited: under the
+ * lock, with the drafts of the browser and of the server, and a draft that was kept is offered
+ * when the editor opens. While someone else holds the lock the comment stays readable, with the
+ * note that says who; what the person typed stays visible and is kept as a draft, and *Close*
+ * leaves it there. When the lock ran out or was taken over, *Try again* takes it again.
  */
-export function CommentEditor(props: {
-  readonly comment: string;
-  readonly version: number;
-  readonly text: string;
-  readonly reading: ReactNode;
-  readonly onClose: () => void;
-}) {
-  const [attempt, setAttempt] = useState(0);
-  const [draft, setDraft] = useState(props.text);
+export function CommentEditor({ reading, onClose, ...source }: CommentEditorProps) {
+  const now = useNow();
+  const long = useCommentText(source, onClose);
+  const { phase, offered } = long;
   return (
-    <LockedEditor
-      key={attempt}
-      comment={props.comment}
-      version={props.version}
-      draft={draft}
-      onDraft={setDraft}
-      reading={props.reading}
-      onClose={props.onClose}
-      onRetry={() => {
-        setAttempt(attempt + 1);
-      }}
-    />
+    <>
+      {offered === null ? null : (
+        <DraftOffered
+          found={(when) => t("editing.draft-found", { thing: t(editedThing.comment), when })}
+          savedAt={offered.savedAt}
+          now={now}
+          onContinue={long.continueDraft}
+          onDrop={long.dropDraft}
+        />
+      )}
+      {phase.kind === "held" ? (
+        <>
+          {reading}
+          <HeldNote held={phase.lock} thing={editedThing.comment}>
+            <Button onPress={onClose}>{t("common.close")}</Button>
+          </HeldNote>
+          {long.text === source.text ? null : <KeptText text={long.text} />}
+          <p {...partOf(part.muted)}>{t("editing.text-kept-on-close")}</p>
+        </>
+      ) : (
+        <CommentBox long={long} onClose={onClose} />
+      )}
+    </>
   );
 }

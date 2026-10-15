@@ -816,8 +816,17 @@ pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.par
 pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
     MessageKey::new("data-folder.part.setup-code-file");
 
+/// The message `editing.draft-drop`.
+pub const EDITING_DRAFT_DROP: MessageKey = MessageKey::new("editing.draft-drop");
+
 /// The message `editing.edit-anyway`.
 pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway");
+
+/// The message `editing.text-kept`.
+pub const EDITING_TEXT_KEPT: MessageKey = MessageKey::new("editing.text-kept");
+
+/// The message `editing.text-kept-on-close`.
+pub const EDITING_TEXT_KEPT_ON_CLOSE: MessageKey = MessageKey::new("editing.text-kept-on-close");
 
 /// The message `editing.the-description`.
 pub const EDITING_THE_DESCRIPTION: MessageKey = MessageKey::new("editing.the-description");
@@ -1938,9 +1947,6 @@ pub const ISSUES_DESCRIPTION_EMPTY: MessageKey = MessageKey::new("issues.descrip
 
 /// The message `issues.details`.
 pub const ISSUES_DETAILS: MessageKey = MessageKey::new("issues.details");
-
-/// The message `issues.draft-drop`.
-pub const ISSUES_DRAFT_DROP: MessageKey = MessageKey::new("issues.draft-drop");
 
 /// The message `issues.draft-kept`.
 pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
@@ -4919,6 +4925,27 @@ pub fn editing_ask_to_finish(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `editing.draft-continue`.
+#[must_use]
+pub fn editing_draft_continue(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.draft-continue"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `editing.draft-found`.
+#[must_use]
+pub fn editing_draft_found(thing: impl std::fmt::Display, when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.draft-found"),
+        vec![
+            ("thing", Value::Text(thing.to_string())),
+            ("when", Value::Text(when.to_string())),
+        ],
+    )
+}
+
 /// The message `editing.elsewhere`.
 #[must_use]
 pub fn editing_elsewhere(thing: impl std::fmt::Display) -> Message {
@@ -5583,24 +5610,6 @@ pub fn issues_deleted(key: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.deleted"),
         vec![("key", Value::Text(key.to_string()))],
-    )
-}
-
-/// The message `issues.draft-continue`.
-#[must_use]
-pub fn issues_draft_continue(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.draft-continue"),
-        vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
-/// The message `issues.draft-found`.
-#[must_use]
-pub fn issues_draft_found(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.draft-found"),
-        vec![("when", Value::Text(when.to_string()))],
     )
 }
 
@@ -8235,6 +8244,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
     ),
     ("editing.ask-to-finish", "Ask {name} to finish"),
+    ("editing.draft-continue", "Continue your draft from {when}"),
+    ("editing.draft-drop", "Throw the draft away"),
+    (
+        "editing.draft-found",
+        "You have a draft of {thing} from {when}.",
+    ),
     ("editing.edit-anyway", "Edit anyway"),
     (
         "editing.elsewhere",
@@ -8243,6 +8258,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "editing.is-editing",
         "{name} is editing {thing} · since {since}",
+    ),
+    ("editing.text-kept", "What you typed is kept as a draft:"),
+    (
+        "editing.text-kept-on-close",
+        "What you typed is kept as a draft if you close this. Open it again to continue.",
     ),
     ("editing.the-description", "the description"),
     ("editing.this-comment", "this comment"),
@@ -9024,12 +9044,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.description.edit", "Edit the description"),
     ("issues.description.empty", "There is no description yet."),
     ("issues.details", "Details"),
-    ("issues.draft-continue", "Continue your draft from {when}"),
-    ("issues.draft-drop", "Throw the draft away"),
-    (
-        "issues.draft-found",
-        "You have a draft of this description from {when}.",
-    ),
     (
         "issues.draft-found-form",
         "You have a draft of a new issue from {when}.",

@@ -143,6 +143,8 @@ export interface MessageArguments {
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "data-folder.unknown": { part: string | number; path: string | number };
   "editing.ask-to-finish": { name: string | number };
+  "editing.draft-continue": { when: string | number };
+  "editing.draft-found": { thing: string | number; when: string | number };
   "editing.elsewhere": { thing: string | number };
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
   "field-permissions.intro-project": { project: string | number };
@@ -217,8 +219,6 @@ export interface MessageArguments {
   "issues.copy-link-of": { key: string | number };
   "issues.created": { key: string | number };
   "issues.deleted": { key: string | number };
-  "issues.draft-continue": { when: string | number };
-  "issues.draft-found": { when: string | number };
   "issues.draft-found-form": { when: string | number };
   "issues.keep-theirs": { name: string | number };
   "issues.lost-changed": { name: string | number };

@@ -27,6 +27,9 @@ describe("cfg_01 the save bar and the note of the lost lock do not say the same 
   it("keeps every other refusal, and a refusal for the lock while the lock is held", () => {
     const other = refused("access.forbidden");
     expect(shownSaveError(other, lost)).toBe(other);
+    // A text that changed meanwhile needs more than the lock: its own note says so.
+    const changed = refused("edit.version_changed");
+    expect(shownSaveError(changed, lost)).toBe(changed);
     const lockRefusal = refused("edit.lock_lost");
     expect(shownSaveError(lockRefusal, mine)).toBe(lockRefusal);
   });

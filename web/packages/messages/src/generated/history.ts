@@ -29,6 +29,9 @@ export const messages = {
   "comments.version-saved": "Version {version} · {when}",
   "comments.editing": "Edit the comment",
   "comments.mention-choices": "Who you can mention",
+  "editing.text-kept": "What you typed is kept as a draft:",
+  "editing.text-kept-on-close":
+    "What you typed is kept as a draft if you close this. Open it again to continue.",
 } as const;
 
 register(messages);
