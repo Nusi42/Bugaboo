@@ -129,14 +129,22 @@ export interface MessageArguments {
   "common.show-all": { count: string | number };
   "conflict.change": { field: string | number; value: string | number };
   "conflict.field-only": { field: string | number };
-  "conflict.sentence": { ago: string | number; changes: string | number; who: string | number };
-  "conflict.sentence-plain": { ago: string | number; who: string | number };
+  "conflict.sentence": {
+    ago: string | number;
+    changes: string | number;
+    timed: string;
+    who: string | number;
+  };
+  "conflict.sentence-plain": { ago: string | number; timed: string; who: string | number };
   "data-folder.create-failed": { path: string | number; reason: string | number };
   "data-folder.not-a-data-folder": { path: string | number };
   "data-folder.open": { part: string | number; path: string | number };
   "data-folder.own-certificate": { flag: string | number; path: string | number };
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "data-folder.unknown": { part: string | number; path: string | number };
+  "editing.ask-to-finish": { name: string | number };
+  "editing.elsewhere": { thing: string | number };
+  "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.project-title": { project: string | number };
   "field.unknown-name": { field: string | number };
@@ -195,7 +203,6 @@ export interface MessageArguments {
   "invitations.take-back-title": { email: string | number };
   "issue-types.made": { name: string | number };
   "issues.add-field": { field: string | number };
-  "issues.ask-to-finish": { name: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
   "issues.change-field": { field: string | number };
@@ -210,7 +217,6 @@ export interface MessageArguments {
   "issues.draft-continue": { when: string | number };
   "issues.draft-found": { when: string | number };
   "issues.draft-found-form": { when: string | number };
-  "issues.is-editing": { name: string | number; since: string | number };
   "issues.keep-theirs": { name: string | number };
   "issues.lost-changed": { name: string | number };
   "issues.lost-taken-over": { name: string | number };
@@ -230,7 +236,6 @@ export interface MessageArguments {
   "labels.tag-in-projects": { count: number };
   "labels.take-off": { name: string | number };
   "labels.take-project-off": { name: string | number };
-  "layouts.ask-finish": { name: string | number };
   "layouts.customize-project": { project: string | number };
   "layouts.delete-held": { name: string | number };
   "layouts.draft-changed": { when: string | number };
@@ -243,7 +248,6 @@ export interface MessageArguments {
   "layouts.fields-of": { number: string | number };
   "layouts.inherited-project": { project: string | number };
   "layouts.inherited-type": { type: string | number };
-  "layouts.is-editing": { name: string | number; since: string | number };
   "layouts.limited-form": { field: string | number; role: string | number };
   "layouts.limited-page": { field: string | number; role: string | number };
   "layouts.project-title": { project: string | number };

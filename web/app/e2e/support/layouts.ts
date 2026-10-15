@@ -190,7 +190,7 @@ export async function setLayoutOfWeb(
  * holds the lock (the lease lasts a minute after a window closed), takes the editing over.
  */
 export async function editWhenYouCan(page: Page, ready: Locator): Promise<void> {
-  const takeOver = page.getByRole("button", { name: t("layouts.edit-anyway"), exact: true });
+  const takeOver = page.getByRole("button", { name: t("editing.edit-anyway"), exact: true });
   // The editor is on its way (its buttons are switched off) until the lock is decided.
   await expect
     .poll(async () => (await takeOver.isVisible()) || (await ready.isEnabled()))

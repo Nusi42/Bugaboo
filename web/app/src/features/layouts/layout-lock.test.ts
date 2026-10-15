@@ -2,7 +2,8 @@ import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
 import { LockServer } from "../../shared/editing/lock-server-testing.ts";
-import { LayoutLockController, type LockDeps } from "./layout-lock.ts";
+import type { SessionDeps } from "../../shared/editing/edit-lock-session.ts";
+import { LayoutLockController } from "./layout-lock.ts";
 
 const taken: LockOutcome = {
   status: "taken",
@@ -35,7 +36,7 @@ const ranOut: Heartbeat = {
 function rig(first: LockOutcome, beat: Heartbeat) {
   const released: string[] = [];
   const beats: (() => Promise<unknown>)[] = [];
-  const deps: LockDeps = {
+  const deps: SessionDeps = {
     take: () => Promise.resolve(first),
     editAnyway: () => Promise.resolve(taken),
     askToFinish: () => Promise.resolve(),
@@ -51,7 +52,6 @@ function rig(first: LockOutcome, beat: Heartbeat) {
       };
     },
     newEditorId: () => "editor-1",
-    nameOf: () => "Ada",
   };
   return { lock: new LayoutLockController(deps), released, beats };
 }
@@ -61,7 +61,7 @@ function slowRig() {
   const released: string[] = [];
   let beats = 0;
   const answers: ((outcome: LockOutcome) => void)[] = [];
-  const deps: LockDeps = {
+  const deps: SessionDeps = {
     take: () =>
       new Promise<LockOutcome>((answer) => {
         answers.push(answer);
@@ -80,7 +80,6 @@ function slowRig() {
       };
     },
     newEditorId: () => "editor-1",
-    nameOf: () => "Ada",
   };
   return {
     lock: new LayoutLockController(deps),
@@ -96,7 +95,6 @@ const quiet = {
   askToFinish: () => Promise.resolve(),
   heartbeat: () => Promise.resolve(stillHeld),
   newEditorId: () => "editor-1",
-  nameOf: () => "Ada",
 };
 
 /** A lock whose release answers only when the test says so, and the order of its calls. */
@@ -104,7 +102,7 @@ function orderRig() {
   const calls: string[] = [];
   const answers: (() => void)[] = [];
   let beats = 0;
-  const deps: LockDeps = {
+  const deps: SessionDeps = {
     ...quiet,
     take: () => {
       calls.push("take");
@@ -175,9 +173,13 @@ describe("iss_17 the edit lock on a layout", () => {
     await settle();
     expect(lock.snapshot()).toEqual({
       phase: "held",
-      name: "Ada",
-      since: "2026-10-13T09:59:00Z",
-      canEditAnyway: true,
+      held: {
+        status: "held",
+        holder: { shown: "name", id: "p1", name: "Ada" },
+        since: "2026-10-13T09:59:00Z",
+        yours_elsewhere: false,
+        can_edit_anyway: true,
+      },
     });
     lock.editAnyway();
     await settle();

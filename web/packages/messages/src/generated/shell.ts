@@ -3,7 +3,6 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "common.try-again": "Try again",
   "shell.skip": "Skip to the content",
   "shell.menu": "Main menu",
   "shell.signed-in-as": "Signed in as {name}",

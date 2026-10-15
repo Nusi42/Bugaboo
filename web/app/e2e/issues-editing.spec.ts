@@ -47,7 +47,7 @@ test("iss_17 Ana types, Ben sees who is editing and uses Edit anyway, Ana's text
   ).toBeVisible();
   await expect(descriptionBox(page)).toHaveCount(0);
   await expectGoodInEveryLook(page);
-  await page.getByRole("button", { name: t("issues.edit-anyway"), exact: true }).click();
+  await page.getByRole("button", { name: t("editing.edit-anyway"), exact: true }).click();
   await descriptionBox(page).fill("Ben's text");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText("Ben's text")).toBeVisible();
@@ -74,7 +74,7 @@ test("iss_17 Ben asks Ana to finish and Ana is told at her next heartbeat", asyn
   await signIn(page, ada);
   await openEditing(page, "WEB-3");
   await page
-    .getByRole("button", { name: t("issues.ask-to-finish", { name: bob.name }), exact: true })
+    .getByRole("button", { name: t("editing.ask-to-finish", { name: bob.name }), exact: true })
     .click();
   // Ana's page sends a heartbeat every 15 seconds and shows the note that comes back.
   await expect(ana.getByText(t("issues.asked-to-finish", { name: ada.name }))).toBeVisible({

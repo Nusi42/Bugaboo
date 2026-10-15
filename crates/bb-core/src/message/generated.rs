@@ -740,9 +740,6 @@ pub const COMMENTS_EDITED: MessageKey = MessageKey::new("comments.edited");
 /// The message `comments.editing`.
 pub const COMMENTS_EDITING: MessageKey = MessageKey::new("comments.editing");
 
-/// The message `comments.lock-held`.
-pub const COMMENTS_LOCK_HELD: MessageKey = MessageKey::new("comments.lock-held");
-
 /// The message `comments.mention-choices`.
 pub const COMMENTS_MENTION_CHOICES: MessageKey = MessageKey::new("comments.mention-choices");
 
@@ -839,6 +836,18 @@ pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.par
 /// The message `data-folder.part.setup-code-file`.
 pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
     MessageKey::new("data-folder.part.setup-code-file");
+
+/// The message `editing.edit-anyway`.
+pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway");
+
+/// The message `editing.the-description`.
+pub const EDITING_THE_DESCRIPTION: MessageKey = MessageKey::new("editing.the-description");
+
+/// The message `editing.this-comment`.
+pub const EDITING_THIS_COMMENT: MessageKey = MessageKey::new("editing.this-comment");
+
+/// The message `editing.this-layout`.
+pub const EDITING_THIS_LAYOUT: MessageKey = MessageKey::new("editing.this-layout");
 
 /// The message `error.access.cannot-lift`.
 pub const ERROR_ACCESS_CANNOT_LIFT: MessageKey = MessageKey::new("error.access.cannot-lift");
@@ -1989,17 +1998,14 @@ pub const ISSUES_DRAFT_DROP: MessageKey = MessageKey::new("issues.draft-drop");
 /// The message `issues.draft-kept`.
 pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
 
-/// The message `issues.edit-anyway`.
-pub const ISSUES_EDIT_ANYWAY: MessageKey = MessageKey::new("issues.edit-anyway");
-
-/// The message `issues.editing-elsewhere`.
-pub const ISSUES_EDITING_ELSEWHERE: MessageKey = MessageKey::new("issues.editing-elsewhere");
-
 /// The message `issues.hide-details`.
 pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details");
 
 /// The message `issues.history`.
 pub const ISSUES_HISTORY: MessageKey = MessageKey::new("issues.history");
+
+/// The message `issues.keep-theirs-unnamed`.
+pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-theirs-unnamed");
 
 /// The message `issues.link-copied`.
 pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied");
@@ -2042,9 +2048,6 @@ pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes
 
 /// The message `issues.side-panel-view`.
 pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-panel-view");
-
-/// The message `issues.someone`.
-pub const ISSUES_SOMEONE: MessageKey = MessageKey::new("issues.someone");
 
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
@@ -2285,9 +2288,6 @@ pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop")
 /// The message `layouts.draft-restore`.
 pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
 
-/// The message `layouts.edit-anyway`.
-pub const LAYOUTS_EDIT_ANYWAY: MessageKey = MessageKey::new("layouts.edit-anyway");
-
 /// The message `layouts.field-required`.
 pub const LAYOUTS_FIELD_REQUIRED: MessageKey = MessageKey::new("layouts.field-required");
 
@@ -2351,9 +2351,6 @@ pub const LAYOUTS_TABS: MessageKey = MessageKey::new("layouts.tabs");
 
 /// The message `layouts.taking`.
 pub const LAYOUTS_TAKING: MessageKey = MessageKey::new("layouts.taking");
-
-/// The message `layouts.try-again`.
-pub const LAYOUTS_TRY_AGAIN: MessageKey = MessageKey::new("layouts.try-again");
 
 /// The message `layouts.type`.
 pub const LAYOUTS_TYPE: MessageKey = MessageKey::new("layouts.type");
@@ -4911,6 +4908,7 @@ pub fn conflict_field_only(field: impl std::fmt::Display) -> Message {
 pub fn conflict_sentence(
     ago: impl std::fmt::Display,
     changes: impl std::fmt::Display,
+    timed: &str,
     who: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
@@ -4918,6 +4916,7 @@ pub fn conflict_sentence(
         vec![
             ("ago", Value::Text(ago.to_string())),
             ("changes", Value::Text(changes.to_string())),
+            ("timed", Value::Text(timed.to_owned())),
             ("who", Value::Text(who.to_string())),
         ],
     )
@@ -4927,12 +4926,14 @@ pub fn conflict_sentence(
 #[must_use]
 pub fn conflict_sentence_plain(
     ago: impl std::fmt::Display,
+    timed: &str,
     who: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("conflict.sentence-plain"),
         vec![
             ("ago", Value::Text(ago.to_string())),
+            ("timed", Value::Text(timed.to_owned())),
             ("who", Value::Text(who.to_string())),
         ],
     )
@@ -5012,6 +5013,41 @@ pub fn data_folder_unknown(part: impl std::fmt::Display, path: impl std::fmt::Di
         vec![
             ("part", Value::Text(part.to_string())),
             ("path", Value::Text(path.to_string())),
+        ],
+    )
+}
+
+/// The message `editing.ask-to-finish`.
+#[must_use]
+pub fn editing_ask_to_finish(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.ask-to-finish"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `editing.elsewhere`.
+#[must_use]
+pub fn editing_elsewhere(thing: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.elsewhere"),
+        vec![("thing", Value::Text(thing.to_string()))],
+    )
+}
+
+/// The message `editing.is-editing`.
+#[must_use]
+pub fn editing_is_editing(
+    name: impl std::fmt::Display,
+    since: impl std::fmt::Display,
+    thing: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.is-editing"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("since", Value::Text(since.to_string())),
+            ("thing", Value::Text(thing.to_string())),
         ],
     )
 }
@@ -5520,15 +5556,6 @@ pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.ask-to-finish`.
-#[must_use]
-pub fn issues_ask_to_finish(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.ask-to-finish"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
 /// The message `issues.asked-to-finish`.
 #[must_use]
 pub fn issues_asked_to_finish(name: impl std::fmt::Display) -> Message {
@@ -5663,18 +5690,6 @@ pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.draft-found-form"),
         vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
-/// The message `issues.is-editing`.
-#[must_use]
-pub fn issues_is_editing(name: impl std::fmt::Display, since: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.is-editing"),
-        vec![
-            ("name", Value::Text(name.to_string())),
-            ("since", Value::Text(since.to_string())),
-        ],
     )
 }
 
@@ -5968,15 +5983,6 @@ pub fn labels_take_project_off(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `layouts.ask-finish`.
-#[must_use]
-pub fn layouts_ask_finish(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.ask-finish"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
 /// The message `layouts.customize-project`.
 #[must_use]
 pub fn layouts_customize_project(project: impl std::fmt::Display) -> Message {
@@ -6082,18 +6088,6 @@ pub fn layouts_inherited_type(type_: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.inherited-type"),
         vec![("type", Value::Text(type_.to_string()))],
-    )
-}
-
-/// The message `layouts.is-editing`.
-#[must_use]
-pub fn layouts_is_editing(name: impl std::fmt::Display, since: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.is-editing"),
-        vec![
-            ("name", Value::Text(name.to_string())),
-            ("since", Value::Text(since.to_string())),
-        ],
     )
 }
 
@@ -8150,10 +8144,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("comments.edit", "Edit"),
     ("comments.edited", "edited"),
     ("comments.editing", "Edit the comment"),
-    (
-        "comments.lock-held",
-        "Someone else is editing this comment.",
-    ),
     ("comments.mention-choices", "Who you can mention"),
     ("comments.save", "Save"),
     ("comments.undo", "Undo"),
@@ -8255,8 +8245,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("conflict.change", "{field} to {value}"),
     ("conflict.field-only", "{field}"),
-    ("conflict.sentence", "{who} changed {changes} {ago}."),
-    ("conflict.sentence-plain", "{who} changed this issue {ago}."),
+    (
+        "conflict.sentence",
+        "Not saved: {who} changed {changes}{timed, select, true { {ago}} other {}}.",
+    ),
+    (
+        "conflict.sentence-plain",
+        "Not saved: {who} changed this issue{timed, select, true { {ago}} other {}}.",
+    ),
     (
         "cookie.csrf.purpose",
         "Protects you from other websites that try to make Bugaboo do something in your name.",
@@ -8298,6 +8294,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "data-folder.unknown",
         "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
     ),
+    ("editing.ask-to-finish", "Ask {name} to finish"),
+    ("editing.edit-anyway", "Edit anyway"),
+    (
+        "editing.elsewhere",
+        "You are editing {thing} in another window. Save or close it there. If that window is gone, wait a minute and try again.",
+    ),
+    (
+        "editing.is-editing",
+        "{name} is editing {thing} · since {since}",
+    ),
+    ("editing.the-description", "the description"),
+    ("editing.this-comment", "this comment"),
+    ("editing.this-layout", "this layout"),
     (
         "error.access.cannot-lift",
         "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
@@ -8362,15 +8371,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.edit.lock-lost",
-        "Your editing time ran out. Your text is kept as a draft. Use Compare and save to keep your changes.",
+        "Not saved yet: your editing time ran out. Your text is kept as a draft.",
     ),
     (
         "error.edit.taken-over",
-        "Someone took over the editing. Your text is kept as a draft. Use Compare and save to keep your changes.",
+        "Not saved yet: someone took over the editing. Your text is kept as a draft.",
     ),
     (
         "error.edit.version-changed",
-        "Someone changed this while you were working. Use Compare and save to keep your changes.",
+        "Not saved yet: somebody changed this after you started. Your text is still here.",
     ),
     (
         "error.field.no-match",
@@ -9012,7 +9021,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-types.search", "Search issue types"),
     ("issues.add-field", "Add {field}"),
     ("issues.all-details", "All details"),
-    ("issues.ask-to-finish", "Ask {name} to finish"),
     (
         "issues.asked-to-finish",
         "{name} asked you to finish editing.",
@@ -9094,18 +9102,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.draft-kept",
         "Your draft is kept if you close this window.",
     ),
-    ("issues.edit-anyway", "Edit anyway"),
-    (
-        "issues.editing-elsewhere",
-        "You are editing this description in another window.",
-    ),
     ("issues.hide-details", "Hide details"),
     ("issues.history", "History"),
-    (
-        "issues.is-editing",
-        "{name} is editing the description · since {since}",
-    ),
-    ("issues.keep-theirs", "Keep {name}'s"),
+    ("issues.keep-theirs", "Keep {name}'s change"),
+    ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
     (
@@ -9141,7 +9141,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Side panel view"),
-    ("issues.someone", "Someone"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.title-required", "Title (required)"),
@@ -9304,7 +9303,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layout.section-details", "Details"),
     ("layout.section-main", "Main"),
     ("layouts.add-section", "Add a section"),
-    ("layouts.ask-finish", "Ask {name} to finish"),
     ("layouts.available", "Fields that are not on this form"),
     ("layouts.available-none", "Every field is on this form."),
     ("layouts.customize-form", "Customize this form"),
@@ -9324,7 +9322,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("layouts.draft-drop", "Throw my changes away"),
     ("layouts.draft-restore", "Put my changes back"),
-    ("layouts.edit-anyway", "Edit anyway"),
     ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
     ("layouts.field-drag", "Drag {name}"),
@@ -9359,10 +9356,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
     ),
     (
-        "layouts.is-editing",
-        "{name} is editing this layout · since {since}",
-    ),
-    (
         "layouts.limited-form",
         "{role} can't fill in {field}: Field permissions",
     ),
@@ -9372,7 +9365,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "layouts.lost",
-        "You are no longer editing this layout. Your changes are kept here. Ask for the lock again to save them.",
+        "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
     ),
     ("layouts.nav", "Layouts"),
     (
@@ -9411,7 +9404,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.tab-other", "Other"),
     ("layouts.tabs", "Sections of the form"),
     ("layouts.taking", "Getting ready to edit …"),
-    ("layouts.try-again", "Try again"),
     ("layouts.type", "Issue type"),
     ("layouts.type-all", "All issue types"),
     (

@@ -52,12 +52,8 @@ export const messages = {
   "layouts.saved": "The layout is saved.",
   "layouts.discard": "Discard changes",
   "layouts.unsaved": "You have changes that are not saved.",
-  "layouts.is-editing": "{name} is editing this layout · since {since}",
-  "layouts.ask-finish": "Ask {name} to finish",
-  "layouts.edit-anyway": "Edit anyway",
-  "layouts.try-again": "Try again",
   "layouts.lost":
-    "You are no longer editing this layout. Your changes are kept here. Ask for the lock again to save them.",
+    "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
   "layouts.taking": "Getting ready to edit …",
   "layouts.tabs": "Sections of the form",
   "layouts.tab-other": "Other",

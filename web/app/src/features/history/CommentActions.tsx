@@ -48,11 +48,14 @@ function DeleteComment({ comment }: { readonly comment: string }) {
 /** The buttons under a comment: what the reader may do with it. */
 export function CommentActions({
   comment,
+  editing,
   onEdit,
   onVersions,
   versionsShown,
 }: {
   readonly comment: Schema<"HistoryEntryItem">;
+  /** The editor is open: *Edit* would do nothing, so it is not offered. */
+  readonly editing: boolean;
   readonly onEdit: () => void;
   readonly onVersions: () => void;
   readonly versionsShown: boolean;
@@ -60,7 +63,7 @@ export function CommentActions({
   const id = comment.comment;
   return (
     <div {...partOf(part.row)}>
-      {comment.may_edit === true ? (
+      {comment.may_edit === true && !editing ? (
         <Button look={buttonLook.quiet} onPress={onEdit}>
           {t("comments.edit")}
         </Button>

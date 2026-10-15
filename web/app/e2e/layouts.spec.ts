@@ -177,7 +177,10 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
   const other = await anotherBrowser(browser, server);
   await signIn(other, ada);
   await openLayoutOfBugs(other);
-  await expect(other.getByText(/is editing this layout/u)).toBeVisible();
+  // The second window is the same person's, so the note says that, and *Save* waits.
+  await expect(
+    other.getByText(t("editing.elsewhere", { thing: t("editing.this-layout") })),
+  ).toBeVisible();
   await expect(other.getByRole("button", { name: t("layouts.save"), exact: true })).toBeDisabled();
 });
 
@@ -244,7 +247,7 @@ test("cfg_01 a layout that changed while it was edited shows the new one and kee
   await expect(page.getByText(t("layouts.lost"), { exact: true })).toBeVisible({
     timeout: 45_000,
   });
-  await page.getByRole("button", { name: t("layouts.try-again"), exact: true }).click();
+  await page.getByRole("button", { name: t("common.try-again"), exact: true }).click();
   await editWhenYouCan(page, add);
   await page.getByRole("button", { name: t("layouts.save"), exact: true }).click();
 

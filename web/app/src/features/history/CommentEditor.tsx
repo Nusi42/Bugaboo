@@ -5,6 +5,7 @@ import {
   startHeartbeats,
   takeEditLock,
   type EditWhat,
+  type Schema,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
@@ -18,9 +19,11 @@ import {
   partOf,
   part,
 } from "@bugaboo/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { api } from "../../shared/api.ts";
+import { editedThing } from "../../shared/editing/edited-thing.ts";
+import { HeldNote } from "../../shared/editing/HeldNote.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 import { refreshHistory } from "../../shared/query-keys.ts";
@@ -30,7 +33,7 @@ const noImageHosts: readonly string[] = [];
 
 type LockState =
   | { readonly status: "waiting" }
-  | { readonly status: "held" }
+  | { readonly status: "held"; readonly held: Schema<"HeldLockBody"> }
   | { readonly status: "mine"; readonly token: string }
   | { readonly status: "failed"; readonly error: unknown };
 
@@ -53,7 +56,7 @@ function useCommentLock(comment: string): LockState {
     takeEditLock(api.client, what, newEditorId())
       .then((outcome) => {
         if (outcome.status !== "taken") {
-          setState({ status: "held" });
+          setState({ status: "held", held: outcome });
           return;
         }
         const own = outcome.lock_token;
@@ -127,20 +130,45 @@ function EditForm({
 
 /**
  * Edits the text of a comment (ISS-05, ADR-0019): under the lock, saved with its token and the
- * version the editor started from; every earlier text is kept by the server.
+ * version the editor started from; every earlier text is kept by the server. While the form is
+ * not open (the lock is somebody else's, or could not be taken) the comment stays readable, with
+ * the note that says why and *Close*.
  */
 export function CommentEditor(props: {
   readonly comment: string;
   readonly version: number;
   readonly text: string;
+  /** The comment as it is read, shown while there is no form. */
+  readonly reading: ReactNode;
   readonly onClose: () => void;
 }) {
   const lock = useCommentLock(props.comment);
+  const close = <Button onPress={props.onClose}>{t("common.close")}</Button>;
+  if (lock.status === "mine") {
+    return <EditForm {...props} token={lock.token} />;
+  }
   if (lock.status === "held") {
-    return <Alert tone={alertTone.warning}>{t("comments.lock-held")}</Alert>;
+    return (
+      <>
+        {props.reading}
+        <HeldNote held={lock.held} thing={editedThing.comment}>
+          {close}
+        </HeldNote>
+      </>
+    );
   }
   if (lock.status === "failed") {
-    return <Alert tone={alertTone.danger}>{messageOf(lock.error)}</Alert>;
+    return (
+      <>
+        {props.reading}
+        <Alert tone={alertTone.danger}>
+          <div {...partOf(part.issueNote)}>
+            <span>{messageOf(lock.error)}</span>
+            {close}
+          </div>
+        </Alert>
+      </>
+    );
   }
-  return lock.status === "mine" ? <EditForm {...props} token={lock.token} /> : null;
+  return props.reading;
 }

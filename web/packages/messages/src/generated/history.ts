@@ -31,7 +31,6 @@ export const messages = {
   "comments.versions-hide": "Hide earlier versions",
   "comments.version-saved": "Version {version} · {when}",
   "comments.editing": "Edit the comment",
-  "comments.lock-held": "Someone else is editing this comment.",
   "comments.mention-choices": "Who you can mention",
 } as const;
 

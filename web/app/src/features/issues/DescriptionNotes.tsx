@@ -2,8 +2,10 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
-import { formatAgo, formatSince } from "../../shared/format.ts";
-import { personName } from "../../shared/person.ts";
+import { editedThing } from "../../shared/editing/edited-thing.ts";
+import { HeldNote } from "../../shared/editing/HeldNote.tsx";
+import { formatAgo } from "../../shared/format.ts";
+import { personName, personNameInside, someoneName } from "../../shared/person.ts";
 import { useNow } from "../../shared/use-now.ts";
 import type { Description } from "./use-description.ts";
 import { useWhoChanged } from "./use-who-changed.ts";
@@ -24,7 +26,7 @@ function Lost({ description, onCompare }: DescriptionNotesProps) {
   if (phase.kind !== "lost") {
     return null;
   }
-  const name = phase.by === undefined ? t("issues.someone") : personName(phase.by);
+  const name = phase.by === undefined ? someoneName("inside") : personNameInside(phase.by);
   const why = {
     "ran-out": t("issues.lost-ran-out"),
     "taken-over": t("issues.lost-taken-over", { name }),
@@ -40,31 +42,19 @@ function Lost({ description, onCompare }: DescriptionNotesProps) {
   );
 }
 
-/** Somebody else is editing the text: who, since when, and the two things the person can do. */
+/** Somebody else is editing the text: who, since when, and the things the person can do. */
 function Held({ description }: Pick<DescriptionNotesProps, "description">) {
   const { phase } = description;
-  const now = useNow();
   if (phase.kind !== "held") {
     return null;
   }
-  const { lock } = phase;
-  const name = personName(lock.holder);
   return (
-    <Alert tone={alertTone.info}>
-      <div {...partOf(part.issueNote)}>
-        <span>
-          {lock.yours_elsewhere
-            ? t("issues.editing-elsewhere")
-            : t("issues.is-editing", { name, since: formatSince(lock.since, now) })}
-        </span>
-        {lock.yours_elsewhere ? null : (
-          <Button onPress={description.askToFinish}>{t("issues.ask-to-finish", { name })}</Button>
-        )}
-        {lock.can_edit_anyway ? (
-          <Button onPress={description.editAnyway}>{t("issues.edit-anyway")}</Button>
-        ) : null}
-      </div>
-    </Alert>
+    <HeldNote
+      held={phase.lock}
+      thing={editedThing.description}
+      onAskToFinish={description.askToFinish}
+      onEditAnyway={description.editAnyway}
+    />
   );
 }
 
