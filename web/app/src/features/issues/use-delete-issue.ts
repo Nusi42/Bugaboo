@@ -41,9 +41,8 @@ export function deleteIssue(issue: IssueView, handlers: DeleteHandlers): void {
         },
       });
     },
-    (error: unknown) => {
-      refreshIssues();
-      handlers.onRefused(error);
-    },
+    // The page is not read again here: it would be replaced (the issue may be gone) and take the
+    // reason with it. The next visit reads what is true.
+    handlers.onRefused,
   );
 }
