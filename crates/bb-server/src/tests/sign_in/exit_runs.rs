@@ -1,6 +1,5 @@
 //! The exit review of M3 (WP-12), changes to many issues that go on in the background (ISS-09,
 //! SEC-12): the person who asked, and an administrator, can stop a run, and signing out everywhere
-//! or changing the password stops the runs of the person. and signing out everywhere
 //! or changing the password stops the runs of the person. Every flow runs on SQLite and PostgreSQL.
 
 use axum::http::StatusCode;
