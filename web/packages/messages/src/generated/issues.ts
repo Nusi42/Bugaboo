@@ -16,6 +16,7 @@ export const messages = {
   "issues.missing-title": "Write a title first, then you can create and start another.",
   "issues.missing-type": "Choose an issue type first, then you can create and start another.",
   "issues.missing-project": "Choose a project first, then you can create and start another.",
+  "issues.ready-to-create": "Nothing is missing: you can create the issue.",
   "issues.refused-at-field": "{field}: {reason}",
   "issues.created": "{key} was created.",
   "issues.draft-kept": "Your draft is kept if you close this form.",
