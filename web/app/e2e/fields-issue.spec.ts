@@ -7,7 +7,7 @@ import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
 import { fieldNamed, prepareFieldsIssue } from "./support/fields.ts";
-import { makeIssue } from "./support/issues.ts";
+import { makeIssue, savedNote } from "./support/issues.ts";
 
 // Own fields on the issue page (CF-01, CF-06, M3 WP-05 with WP-06): the fields are filled in on
 // the page, a long text is edited under its lock, and a field that is hidden from a Guest is not on
@@ -47,7 +47,7 @@ function keptAfter(page: Page): Promise<void> {
   );
   return answered.then(async (response) => {
     expect(response.ok()).toBe(true);
-    await expect(page.getByText(/^Saved/u)).toBeVisible();
+    await expect(savedNote(page)).toBeVisible();
   });
 }
 

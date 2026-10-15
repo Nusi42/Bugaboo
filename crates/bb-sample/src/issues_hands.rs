@@ -32,7 +32,7 @@ struct Session {
 pub(crate) struct Hands<'a, 'w> {
     world: &'a World<'w>,
     calendar: Calendar,
-    /// The places in the roster of the people who work.
+    /// The places in the plan of the people of the people who work.
     pub(crate) workers: Vec<usize>,
     /// How many people work on a day.
     a_day: usize,
@@ -60,7 +60,7 @@ impl<'a, 'w> Hands<'a, 'w> {
         })
     }
 
-    /// The person (a place in the roster) a pick stands for, on the day of a working second: one
+    /// The person (a place in the plan of the people) a pick stands for, on the day of a working second: one
     /// of the few who work that day.
     pub(crate) fn person(&self, working: i64, pick: u32) -> usize {
         let day = usize::try_from(self.calendar.day(working)).unwrap_or(0);

@@ -144,6 +144,18 @@ impl ListParams {
             .transpose()
     }
 
+    /// What a list route hands the use case and what it answers afterwards: the position to start
+    /// at, and the verdict on the cursor. A cursor that is not ours does not make the use case
+    /// skip its own judgement: it gets a position that no item has, judges who may list (a person
+    /// who may not is refused as such) and the route answers `request.bad_cursor` after it
+    /// (`bad_cursor?;`).
+    pub(crate) fn start(&self, list: &str) -> (Option<String>, Result<(), ApiError>) {
+        match self.position(list) {
+            Ok(position) => (position, Ok(())),
+            Err(error) => (Some(String::new()), Err(error)),
+        }
+    }
+
     /// How many items the page holds at most.
     pub(crate) fn limit(&self) -> u32 {
         bb_core::paging::page_size(self.limit)

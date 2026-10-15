@@ -6,13 +6,13 @@
 //! of the product: `next_counting_number` raises the stored last number by one in the
 //! transaction, so two writers wait for each other and no number is skipped or given twice.
 
-use bb_app::issues::{IssueFound, IssueStore};
+use bb_app::issues::{InTrash, IssueFound, IssueStore};
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType, Priority, Status};
 use bb_core::issue_key::IssueCode;
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement};
+use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement, UpdateStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Database, LockClass, Reader, Row, StoredId, Transaction, to_micros};
@@ -236,6 +236,18 @@ async fn insert_assignees(
     Ok(())
 }
 
+/// The version of an issue goes up by one: the one place that says how.
+fn version_up(update: &mut UpdateStatement) -> &mut UpdateStatement {
+    update.value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+}
+
+/// What counting the version of an issue up is, in every statement that a person's change makes:
+/// the version goes up by one and the date it changed is `now`. Only the renewal of an ID counts
+/// the version up without the date (`set_issue_code`).
+pub(crate) fn counting_up(update: &mut UpdateStatement, now: Timestamp) -> &mut UpdateStatement {
+    version_up(update.value(IssueRow::UpdatedAt, to_micros(now)))
+}
+
 impl IssueStore for AuthStorage {
     async fn issue_types_in(transaction: &mut Transaction) -> Result<Vec<IssueType>, StoreError> {
         let mut select = type_select();
@@ -453,9 +465,8 @@ impl IssueStore for AuthStorage {
             .value(IssueRow::Description, issue.description.as_str())
             .value(IssueRow::Status, issue.status.code())
             .value(IssueRow::Priority, issue.priority.code())
-            .value(IssueRow::UpdatedAt, to_micros(issue.updated_at))
-            .value(IssueRow::ClosedAt, issue.closed_at.map(to_micros))
-            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+            .value(IssueRow::ClosedAt, issue.closed_at.map(to_micros));
+        counting_up(&mut update, issue.updated_at)
             .and_where(Expr::col(IssueRow::Id).eq(issue.id.stored()))
             .and_where(Expr::col(IssueRow::Version).eq(version));
         Ok(transaction.execute(&update).await? > 0)
@@ -473,9 +484,8 @@ impl IssueStore for AuthStorage {
         update
             .table(IssueRow::Table)
             .value(IssueRow::Project, project.stored())
-            .value(IssueRow::Code, code.as_str())
-            .value(IssueRow::UpdatedAt, to_micros(now))
-            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+            .value(IssueRow::Code, code.as_str());
+        counting_up(&mut update, now)
             .and_where(Expr::col(IssueRow::Id).eq(id.stored()))
             .and_where(Expr::col(IssueRow::Version).eq(version))
             .and_where(Expr::col(IssueRow::DeletedAt).is_null());
@@ -499,13 +509,13 @@ impl IssueStore for AuthStorage {
         transaction: &mut Transaction,
         id: IssueId,
         deleted_at: Option<Timestamp>,
+        now: Timestamp,
     ) -> Result<bool, StoreError> {
         let mut update = Query::update();
         update
             .table(IssueRow::Table)
-            .value(IssueRow::DeletedAt, deleted_at.map(to_micros))
-            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
-            .and_where(Expr::col(IssueRow::Id).eq(id.stored()));
+            .value(IssueRow::DeletedAt, deleted_at.map(to_micros));
+        counting_up(&mut update, now).and_where(Expr::col(IssueRow::Id).eq(id.stored()));
         // Only an issue that is where the change expects it: not in the trash to put it there,
         // in the trash to take it out.
         update.and_where(if deleted_at.is_some() {
@@ -562,10 +572,34 @@ impl IssueStore for AuthStorage {
         let mut update = Query::update();
         update
             .table(IssueRow::Table)
-            .value(IssueRow::Code, code.as_str())
-            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
-            .and_where(Expr::col(IssueRow::Id).eq(id.stored()));
+            .value(IssueRow::Code, code.as_str());
+        version_up(&mut update).and_where(Expr::col(IssueRow::Id).eq(id.stored()));
         transaction.execute(&update).await.map(|_| ())
+    }
+
+    async fn count_issue_up(
+        transaction: &mut Transaction,
+        issue: IssueId,
+        only_at: Option<i64>,
+        in_trash: InTrash,
+        now: Timestamp,
+    ) -> Result<Option<i64>, StoreError> {
+        let mut update = Query::update();
+        update.table(IssueRow::Table);
+        counting_up(&mut update, now)
+            .and_where(Expr::col(IssueRow::Id).eq(issue.stored()))
+            .returning_col(IssueRow::Version);
+        if in_trash == InTrash::NotFound {
+            update.and_where(Expr::col(IssueRow::DeletedAt).is_null());
+        }
+        if let Some(version) = only_at {
+            update.and_where(Expr::col(IssueRow::Version).eq(version));
+        }
+        transaction
+            .fetch_optional(&update)
+            .await?
+            .map(|row| row.get(IssueRow::Version))
+            .transpose()
     }
 
     async fn lock_issue_codes(
@@ -614,3 +648,7 @@ impl IssueStore for AuthStorage {
         transaction.execute(&insert).await.map(|_| ())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/issues.rs"]
+mod tests;

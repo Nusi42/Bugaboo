@@ -12,5 +12,5 @@ export function SavedNote({ error, saved }: SavedNoteProps) {
   if (error !== null) {
     return <Alert tone={alertTone.danger}>{error}</Alert>;
   }
-  return saved ? <Alert tone={alertTone.success}>{t("labels.saved")}</Alert> : null;
+  return saved ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null;
 }

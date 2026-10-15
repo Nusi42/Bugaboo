@@ -81,7 +81,7 @@ function AddChoice({ field }: { readonly field: OwnField }) {
     >
       <TextField
         label={t("fields.add-choice")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

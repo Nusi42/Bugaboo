@@ -46,7 +46,7 @@ export function PasswordSection() {
           label={t("security.password.current")}
           kind={fieldKind.password}
           autoComplete={autoComplete.currentPassword}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           value={current}
           onChange={setCurrent}
         />
@@ -55,7 +55,7 @@ export function PasswordSection() {
           description={t("field.password-help")}
           kind={fieldKind.password}
           autoComplete={autoComplete.newPassword}
-          requiredMessage={t("validation.required")}
+          requiredMessage={t("error.field.required")}
           errorMessage={tooWeak ? messageOf(change.error) : undefined}
           value={next}
           onChange={(value) => {

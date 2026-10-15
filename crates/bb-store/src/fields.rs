@@ -376,10 +376,8 @@ impl FieldStore for AuthStorage {
         }
         for chunk in issues.chunks(STATEMENT_ITEMS) {
             let mut update = Query::update();
-            update
-                .table(IssueRow::Table)
-                .value(IssueRow::UpdatedAt, to_micros(at))
-                .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
+            update.table(IssueRow::Table);
+            crate::issues::counting_up(&mut update, at)
                 .and_where(
                     Expr::col(IssueRow::Id)
                         .is_in(chunk.iter().map(|(_, id)| id.stored()).collect::<Vec<_>>()),

@@ -10,25 +10,11 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_of, key_of, ok, version_of};
 
 const LABELS: &str = "/api/v1/labels";
 const GROUPS: &str = "/api/v1/label-groups";
 const TAGS: &str = "/api/v1/tags";
-
-fn key_of(reply: &super::http::Reply) -> Result<String, Failure> {
-    ok(reply)?["key"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer holds no issue ID".into())
-}
-
-fn id_of(reply: &super::http::Reply) -> Result<String, Failure> {
-    ok(reply)?["id"]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| "the answer holds no ID".into())
-}
 
 /// The names in a list of tags or labels of an issue.
 fn names(sorting: &Value, member: &str) -> Vec<String> {
@@ -362,14 +348,6 @@ async fn entity_of(ada: &mut Browser, issue: &str) -> Result<EntityRef, Failure>
         kind: RecordKind::Issue.into(),
         id: id.into(),
     })
-}
-
-/// The version of an issue now.
-async fn version_of(ada: &mut Browser, issue: &str) -> Result<i64, Failure> {
-    let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
-    Ok(ok(&read)?["issue"]["version"]
-        .as_i64()
-        .ok_or("no version")?)
 }
 
 /// The versions the events of an issue count up to, lowest first (the events of a test share one

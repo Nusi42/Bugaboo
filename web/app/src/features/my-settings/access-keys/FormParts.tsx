@@ -46,7 +46,7 @@ export function Basics({ draft }: PartProps) {
       <TextField
         label={t("access-keys.name")}
         description={t("access-keys.name-help")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={draft.name}
         onChange={draft.setName}
       />
@@ -82,7 +82,7 @@ export function Expiry({ draft, rules }: ExpiryProps) {
         days: rules.default_days,
         latest: formatDay(localDay(latestAt)),
       })}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       date={{ min: dayText(localDay(1)), max: latest }}
       value={draft.day ?? dayText(localDay(presetAt))}
       onChange={draft.setDay}
@@ -108,7 +108,7 @@ export function Send({ draft, needOne, problem, isPending, onCancel }: SendProps
         description={t("field.confirm-password-help")}
         kind={fieldKind.password}
         autoComplete={autoComplete.currentPassword}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={draft.password}
         onChange={draft.setPassword}
       />
@@ -116,7 +116,7 @@ export function Send({ draft, needOne, problem, isPending, onCancel }: SendProps
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       <div {...partOf(part.row, { variants: ["stretch"] })}>
         <SubmitButton isPending={isPending}>{t("access-keys.submit")}</SubmitButton>
-        <Button onPress={onCancel}>{t("access-keys.cancel")}</Button>
+        <Button onPress={onCancel}>{t("common.cancel")}</Button>
       </div>
     </>
   );

@@ -28,13 +28,13 @@ export function MakeRelationKindForm() {
     >
       <TextField
         label={t("relation-kinds.field-forward")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={forward}
         onChange={setForward}
       />
       <TextField
         label={t("relation-kinds.field-backward")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={backward}
         onChange={setBackward}
       />

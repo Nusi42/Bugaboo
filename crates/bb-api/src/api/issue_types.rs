@@ -5,7 +5,6 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{ChangeIssueType, IssueTypeView, IssueTypesQuery, MakeIssueType};
-use bb_core::ErrorCode;
 use bb_core::id::IssueTypeId;
 use bb_core::issue::IssueIcon;
 use bb_policy::Masked;
@@ -19,6 +18,7 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -110,11 +110,7 @@ async fn list_issue_types(
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(ISSUE_TYPES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(ISSUE_TYPES_LIST);
     let page = auth
         .api()?
         .issue_types(
@@ -127,7 +123,7 @@ async fn list_issue_types(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(IssueTypeItem::from).collect(),
         next: page.next_cursor,
@@ -200,9 +196,7 @@ async fn change_issue_type(
     ApiPath(issue_type): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeIssueTypeBody>,
 ) -> Result<Response, ApiError> {
-    let issue_type: IssueTypeId = issue_type
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let issue_type: IssueTypeId = path_id(&issue_type)?;
     let changed = auth
         .api()?
         .change_issue_type(

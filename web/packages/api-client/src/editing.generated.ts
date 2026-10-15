@@ -30,3 +30,15 @@ export type DraftKeptCode = (typeof draftKeptCodes)[number];
 
 /** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
 export const layoutEditPart = "layout";
+
+/** The name of the part of an issue that holds its description. */
+export const descriptionEditPart = "description";
+
+/** The name of the part of a comment that holds its text. */
+export const commentEditPart = "text";
+
+/** The version a new record starts with. */
+export const firstVersion = 1;
+
+/** The seconds in a day: the keep periods and lifetimes counted in days are 24 hours long. */
+export const secondsPerDay = 86400;

@@ -21,7 +21,7 @@ export const messages = {
   "second-step.back": "Back to sign in",
   "set-up-second-step.title": "Set up your second step",
   "set-up-second-step.why":
-    "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",
+    "Your administrator asks you to sign in with a second step. It keeps your account safe even if someone learns your password.",
   "set-up-second-step.how":
     "Choose a code app or a passkey below. When one of them is set up, you can go on.",
   "set-up-second-step.ready": "Your second step is set up.",

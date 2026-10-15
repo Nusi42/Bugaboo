@@ -1,8 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
-import { lostNote, savedNote, signedInPage, type ScreenLook } from "./crowd-pages.ts";
+import { lostNote, signedInPage, type ScreenLook } from "./crowd-pages.ts";
 import { goodInFourThemes } from "./demo.ts";
+import { savedNote } from "./issues.ts";
 import { made, theTwo } from "./demo-m3-state.ts";
 import {
   descriptionBox,
@@ -39,7 +40,7 @@ export async function twoPeopleEditTheDescription(
   await expectToldWhoIsEditing(other, first.name);
   await goodInFourThemes(other, "08-second-person-is-told");
   // Edit anyway moves the lock; the second person saves their text.
-  await other.getByRole("button", { name: t("issues.edit-anyway"), exact: true }).click();
+  await other.getByRole("button", { name: t("editing.edit-anyway"), exact: true }).click();
   await descriptionBox(other).fill(SECOND_TEXT);
   await saveDescriptionButton(other).click();
   await expect(savedNote(other)).toBeVisible();

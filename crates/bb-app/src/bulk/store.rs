@@ -8,8 +8,8 @@
 
 use std::future::Future;
 
-use bb_core::bulk::BulkRun;
-use bb_core::id::{BulkRunId, UserId};
+use bb_core::bulk::{BulkRun, BulkStatus, RunsToEnd};
+use bb_core::id::BulkRunId;
 use jiff::Timestamp;
 
 use crate::jobs::JobStore;
@@ -39,10 +39,9 @@ pub trait BulkStore: JobStore + 'static {
     writes! {
         /// Adds a run.
         fn insert_bulk_run(run: &BulkRun) -> ();
-        /// Ends the runs of a person that are not over yet as stopped, at `at`: the person signed
-        /// out everywhere or changed their password, so nothing goes on in their name. Says how many.
-        fn end_bulk_runs_of(person: UserId, at: Timestamp) -> u64;
-        /// Ends a run that is not over yet as stopped, at `at`; `false` when it was over already.
-        fn end_bulk_run(id: BulkRunId, at: Timestamp) -> bool;
+        /// Ends the runs named by `which` that are not over yet, as `status` (failed or stopped), at
+        /// `at`, and says how many ended. The one way a run is ended: a step that cannot go on, a
+        /// person who stops a run, and a person who signed out everywhere or changed their password.
+        fn end_bulk_runs(which: &RunsToEnd, status: BulkStatus, at: Timestamp) -> u64;
     }
 }

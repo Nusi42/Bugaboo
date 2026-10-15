@@ -21,8 +21,8 @@ use crate::{
     PEOPLE, ROLE_MIX, STEP_SECONDS, Sample, SampleError, Step, Target, World, make,
 };
 
-/// 2027-01-15 08:00:00 UTC: one start moment for every test, so the dates are always the same.
-const START: i64 = 1_800_000_000;
+/// One start moment for every test, so the dates are always the same.
+const START: i64 = bb_dev_words::accounts::CLOCK_START;
 
 fn options(seed: u64) -> Options {
     Options {
@@ -313,7 +313,7 @@ fn the_eight_groups(dump: &Value) -> Result<(), Failure> {
     Ok(())
 }
 
-/// The six starting roles with the mix of the roster, and the two custom roles.
+/// The six starting roles with the mix of the plan of the people, and the two custom roles.
 fn the_roles(dump: &Value) -> Result<(), Failure> {
     let mut roles: BTreeMap<&str, (bool, u64)> = BTreeMap::new();
     for role in members(dump, "roles")? {

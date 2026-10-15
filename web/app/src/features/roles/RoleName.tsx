@@ -27,12 +27,12 @@ export function RoleName({ id, name, version }: RoleNameProps) {
     >
       <TextField
         label={t("roles.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={typed}
         onChange={setTyped}
       />
       {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
-      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("roles.saved")}</Alert> : null}
+      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>

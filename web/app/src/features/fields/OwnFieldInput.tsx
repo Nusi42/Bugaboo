@@ -11,6 +11,8 @@ export interface OwnFieldInputProps {
   readonly value: unknown;
   /** Hands on the value as the API takes it, at every change. */
   readonly onChange: (value: Sent) => void;
+  /** What the server said was wrong with this field, in words: shown at the field. */
+  readonly problem?: string | undefined;
 }
 
 /**
@@ -18,7 +20,14 @@ export interface OwnFieldInputProps {
  * because the form is sent as a whole. The people it can point to are the ones the person may
  * name for an issue of this type.
  */
-export function OwnFieldInput({ field, project, issueType, value, onChange }: OwnFieldInputProps) {
+export function OwnFieldInput({
+  field,
+  project,
+  issueType,
+  value,
+  onChange,
+  problem,
+}: OwnFieldInputProps) {
   const found = useFields({ project }).data?.fields.find((each) => each.id === field);
   return found === undefined ? null : (
     <ValueEditor
@@ -27,6 +36,7 @@ export function OwnFieldInput({ field, project, issueType, value, onChange }: Ow
       issueType={issueType}
       value={value}
       live
+      problem={problem}
       onCommit={onChange}
     />
   );

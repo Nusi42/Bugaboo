@@ -9,10 +9,10 @@
 use bb_app::access::StartingRole;
 use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
-use serde_json::{Value, json};
+use serde_json::json;
 
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 
 /// The most statements any read of the issue page or the list may run, however much the issue has
 /// (a ceiling that a change to the code has to notice; the exact numbers are compared apart).
@@ -74,14 +74,6 @@ async fn counted_page(
     Ok(counts)
 }
 
-/// The ID in an answer that made something.
-fn id_in(reply: &Value, member: &str) -> Result<String, Failure> {
-    reply[member]
-        .as_str()
-        .map(str::to_owned)
-        .ok_or_else(|| format!("no {member} in {reply}").into())
-}
-
 /// How much an issue has besides itself.
 #[derive(Clone, Copy)]
 struct Size {
@@ -103,9 +95,9 @@ async fn fill(
     amount: Size,
 ) -> Result<(), Failure> {
     let kinds = ada.send("GET", "/api/v1/relation-kinds", None).await?;
-    let blocks = id_in(&kinds.body["items"][0], "id")?;
+    let blocks = text_in(&kinds.body["items"][0], "id")?;
     for number in 0..amount.relations {
-        let other = id_in(
+        let other = text_in(
             ok(&site
                 .make(ada, &format!("Other {number} of {issue}"))
                 .await?)?,
@@ -117,7 +109,7 @@ async fn fill(
             .await?)?;
     }
     for number in 0..amount.parts {
-        let part = id_in(
+        let part = text_in(
             ok(&site.make(ada, &format!("Part {number} of {issue}")).await?)?,
             "key",
         )?;
@@ -152,7 +144,7 @@ async fn fill(
                 Some(json!({"name": format!("label {number} of {issue}")})),
             )
             .await?;
-        let label = id_in(ok(&made)?, "id")?;
+        let label = text_in(ok(&made)?, "id")?;
         ok(&ada
             .send(
                 "POST",
@@ -181,9 +173,9 @@ async fn perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_is
     each_database("perf_05_issue_page", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let named = id_in(ok(&site.make(&mut ada, "Named").await?)?, "key")?;
-        let quiet = id_in(ok(&site.make(&mut ada, "Quiet").await?)?, "key")?;
-        let busy = id_in(ok(&site.make(&mut ada, "Busy").await?)?, "key")?;
+        let named = text_in(ok(&site.make(&mut ada, "Named").await?)?, "key")?;
+        let quiet = text_in(ok(&site.make(&mut ada, "Quiet").await?)?, "key")?;
+        let busy = text_in(ok(&site.make(&mut ada, "Busy").await?)?, "key")?;
         let two = Size {
             relations: 2,
             parts: 2,
@@ -229,7 +221,7 @@ async fn perf_05_a_page_of_forty_issues_runs_as_many_statements_as_a_page_of_fiv
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         for number in 0..40 {
-            let key = id_in(
+            let key = text_in(
                 ok(&site.make(&mut ada, &format!("Issue {number}")).await?)?,
                 "key",
             )?;
@@ -269,7 +261,7 @@ async fn perf_05_tag_suggestions_run_as_many_statements_for_twelve_projects_as_f
     each_database("perf_05_suggestions", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = id_in(ok(&site.make(&mut ada, "One").await?)?, "key")?;
+        let issue = text_in(ok(&site.make(&mut ada, "One").await?)?, "key")?;
         ok(&ada
             .send(
                 "POST",
@@ -316,8 +308,8 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_stat
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // A Guest sees the project ACME and only the issues they reported.
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let first = id_in(ok(&site.make(&mut ada, "Ada's first").await?)?, "key")?;
-        let second = id_in(ok(&site.make(&mut ada, "Ada's second").await?)?, "key")?;
+        let first = text_in(ok(&site.make(&mut ada, "Ada's first").await?)?, "key")?;
+        let second = text_in(ok(&site.make(&mut ada, "Ada's second").await?)?, "key")?;
         let comment = ok(&ada
             .send(
                 "POST",
@@ -329,8 +321,8 @@ async fn sec_06_a_hidden_comment_or_relation_and_a_missing_one_run_the_same_stat
             .ok_or("no comment")?
             .to_owned();
         let kinds = ada.send("GET", "/api/v1/relation-kinds", None).await?;
-        let kind = id_in(&kinds.body["items"][0], "id")?;
-        let relation = id_in(
+        let kind = text_in(&kinds.body["items"][0], "id")?;
+        let relation = text_in(
             ok(&ada
                 .send(
                     "POST",

@@ -8,9 +8,9 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{FIELDS, id_of, make_field, reader_of};
+use super::fields_http::{FIELDS, make_field, reader_of};
 use super::http::{Browser, Reply, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_in, ok};
 
 /// The permissions of somebody who sees and changes issues.
 const CHANGER: [Permission; 3] = [
@@ -43,7 +43,7 @@ async fn people_for(who: &mut Browser, site: &Site<'_>, query: &str) -> Result<R
 
 /// A person field of issues, made as the administrator; its ID.
 async fn person_field(ada: &mut Browser, name: &str) -> Result<String, Failure> {
-    id_of(
+    id_in(
         &make_field(
             ada,
             json!({"name": name, "kind": "person", "applies_to": "issues"}),
@@ -58,7 +58,7 @@ async fn cf_06_the_list_for_a_field_follows_its_level_for_the_issue_type() -> Te
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let tester = person_field(&mut ada, "Tester").await?;
-        let question = id_of(ok(&ada
+        let question = id_in(ok(&ada
             .send(
                 "POST",
                 "/api/v1/issue-types",
@@ -109,7 +109,7 @@ async fn cf_06_a_project_field_is_not_opened_by_an_issue_type() -> TestResult {
     each_database("cf_06_project_field_no_type", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let sponsor = id_of(
+        let sponsor = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Sponsor", "kind": "person", "applies_to": "projects"}),
@@ -143,7 +143,7 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let tester = person_field(&mut ada, "Tester").await?;
         let secret = person_field(&mut ada, "Secret").await?;
-        let note = id_of(
+        let note = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Note", "kind": "text", "applies_to": "issues"}),
@@ -155,7 +155,7 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
             json!({"name": "Old", "kind": "person", "applies_to": "issues"}),
         )
         .await?;
-        let old_id = id_of(&old)?;
+        let old_id = id_in(&old)?;
         let retired = ada
             .send(
                 "PATCH",
@@ -164,14 +164,14 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
             )
             .await?;
         ok(&retired)?;
-        let beta = id_of(ok(&ada
+        let beta = id_in(ok(&ada
             .send(
                 "POST",
                 PROJECTS,
                 Some(json!({"short_name": "BETA", "name": "Beta"})),
             )
             .await?)?)?;
-        let elsewhere = id_of(
+        let elsewhere = id_in(
             &make_field(
                 &mut ada,
                 json!({
@@ -237,7 +237,7 @@ async fn cf_07_undo_needs_the_right_to_change_the_field() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let tester = person_field(&mut ada, "Tester").await?;
         let (_, vic) = site.person(StartingRole::Viewer, "vic").await?;
-        let me = id_of(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
+        let me = id_in(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
         let made = ok(&site.make(&mut ada, "Undo me").await?)?.clone();
         ok(&set(&mut ada, &made, json!({ &tester: vic.to_string() })).await?)?;
         ok(&set(&mut ada, &made, json!({ &tester: me })).await?)?;
@@ -268,24 +268,24 @@ async fn cf_07_undo_does_not_put_back_a_group_or_an_issue_that_is_gone() -> Test
     each_database("cf_07_undo_gone", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let team = id_of(
+        let team = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Team", "kind": "group", "applies_to": "issues"}),
             )
             .await?,
         )?;
-        let twin = id_of(
+        let twin = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Twin", "kind": "issue", "applies_to": "issues"}),
             )
             .await?,
         )?;
-        let group = id_of(ok(&ada
+        let group = id_in(ok(&ada
             .send("POST", "/api/v1/groups", Some(json!({"name": "Core"})))
             .await?)?)?;
-        let other = id_of(ok(&ada
+        let other = id_in(ok(&ada
             .send("POST", "/api/v1/groups", Some(json!({"name": "Edge"})))
             .await?)?)?;
         let made = ok(&site.make(&mut ada, "Undo me").await?)?.clone();

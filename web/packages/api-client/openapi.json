@@ -22578,6 +22578,11 @@
         "description": "What an item of the history is.",
         "enum": ["comment", "change", "relation"]
       },
+      "HistoryTab": {
+        "type": "string",
+        "description": "Which rows of the history of an issue to list: everything, only the comments, or only the changes.",
+        "enum": ["everything", "comments", "changes"]
+      },
       "ImageHostsBody": {
         "type": "object",
         "description": "The hosts that images in text may come from, already split into one host for each item.",
@@ -26483,6 +26488,10 @@
             "$ref": "#/components/schemas/ErrorCode",
             "description": "What went wrong."
           },
+          "field": {
+            "type": ["string", "null"],
+            "description": "The field a `field.*` refusal is about: the word of a built-in field or the ID of an own\nfield, as the client sent it. Only a field the person may fill in is named, so it reveals\nnothing."
+          },
           "message_key": {
             "type": "string",
             "description": "The key of the message to show, in the message catalog."
@@ -27954,6 +27963,7 @@
           "relation-exists",
           "same-issue",
           "limit-reached",
+          "field-rule",
           "not-valid"
         ]
       },

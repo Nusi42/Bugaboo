@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 
 import type { Origin, ProjectLabel } from "./levels.ts";
 
-/** A project as a name in a sentence: its name, or *a project you can't see*. */
+/** A project as a name in a sentence: its name, or *a project you cannot see*. */
 export function projectText(project: ProjectLabel): string {
   return project.shown === "visible"
     ? (project.name ?? project.short_name ?? "")

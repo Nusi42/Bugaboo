@@ -76,7 +76,7 @@ Rules:
 | **Status change**        | Moving an issue from one status to another                         | transition                         |
 | **Who can do it**        | Rule: which people may make a status change                        | condition                          |
 | **Only if …**            | Rule: something that must be true first                            | condition                          |
-| **Must be filled in**    | Rule: fields that need a value first                               | validator                          |
+| **Must be filled in**    | Rule: fields that need a value first. The box is named *Customer (required)*, and a refusal says *Must be filled in* at that box | validator                          |
 | **Ask for**              | Fields shown in a small form during the status change              | transition screen                  |
 | **Starting workflow**    | The workflow every issue type uses until an organization makes its own (M4): *Open*, *In progress*, *Done*, and any status can follow any other | default workflow (in UI) |
 | **Then automatically …** | Actions that run after the change (assign, notify, fill a field)   | post-function                      |

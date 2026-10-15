@@ -80,6 +80,12 @@ pub(super) enum Quirk {
     /// The route belongs to an open editor, a tab of a signed-in person: an access key is turned
     /// away from it, whatever the key may do (ADR-0019).
     SessionOnly,
+    /// The route answers every signed-in actor and says in its answer what it did to each issue it
+    /// was asked about (changing many issues, ISS-09): the issue of the example, in the target
+    /// project, is left alone as *not found* when the actor does not see it, as *not allowed* when
+    /// they see it and lack *Change issues*, and is changed otherwise. The matrix reads that from
+    /// the answer, as a route that is let in says nothing else about the actor.
+    SkipsWhatItMayNotChange,
 }
 
 /// One row of the table: a route and what is special about it.
@@ -395,8 +401,8 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("changeLabel"),
     Example::route("combineLabels"),
     Example::with("moveIssue", &[Quirk::AnIssueOfTheTarget]),
-    Example::route("previewBulkChange"),
-    Example::route("applyBulkChange"),
+    Example::with("previewBulkChange", &[Quirk::SkipsWhatItMayNotChange]),
+    Example::with("applyBulkChange", &[Quirk::SkipsWhatItMayNotChange]),
     Example::with(
         "getBulkRun",
         &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],

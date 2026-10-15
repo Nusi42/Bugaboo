@@ -24,12 +24,12 @@ export function RenameGroup({ group }: { readonly group: GroupLine }) {
     >
       <TextField
         label={t("groups.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />
       {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
-      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("groups.saved")}</Alert> : null}
+      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>

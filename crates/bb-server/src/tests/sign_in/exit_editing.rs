@@ -12,9 +12,9 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::exit_masks::{issue_of_type, person_with_levels};
-use super::fields_http::{id_of, make_field};
+use super::fields_http::make_field;
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{Site, ok};
+use super::issues_site::{Site, id_in, ok};
 
 const LOCKS: &str = "/api/v1/edit-locks";
 const DRAFTS: &str = "/api/v1/drafts";
@@ -62,7 +62,7 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
     each_database("sec_06_valid_parts", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let notes = id_of(
+        let notes = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),

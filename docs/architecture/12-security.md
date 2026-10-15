@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M3 planned)
+## Scope (status: M3 built)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2) | Issues (M3), attachments and mail (M4), search language (M5), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments and mail (M4), search language (M5), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -107,7 +107,7 @@ The model is [ADR-0025](../adr/0025-roles-groups-and-assignments.md) and [§7, *
 
 ### Issues, text and editing (M3)
 
-M3 stores text that people write and shows it to others, and lets several people edit one issue. The packages add each row's test when they merge ([M3 plan](../milestones/M3/README.md)).
+M3 stores text that people write and shows it to others, and lets several people edit one issue. Each row names the test that proves it ([M3 plan](../milestones/M3/README.md)).
 
 | STRIDE | Threat | Mitigation | Proven by |
 |--------|--------|-----------|-----------|

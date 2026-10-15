@@ -1,11 +1,10 @@
-import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { signedInAdmin } from "./support/access.ts";
 import { ada, bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
-import { fieldNamed, pickableGroup, preparePickers } from "./support/fields.ts";
+import { fieldOf, pickableGroup, preparePickers } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { makeIssue } from "./support/issues.ts";
@@ -92,7 +91,7 @@ test("cf_01 an issue is chosen for Duplicate of by its readable ID, and a wrong 
   await signIn(page, ada);
   await openIssueWithDetails(page, second.key);
   const dialog = await openChooser(page, "Duplicate of");
-  const key = dialog.getByLabel(t("fields.pick-issue-key"), { exact: true });
+  const key = dialog.getByLabel(t("common.issue-id"), { exact: true });
   await key.fill("WEB-9999");
   await dialog.getByRole("button", { name: t("fields.pick-issue-find"), exact: true }).click();
   await expect(dialog.getByRole("alert")).toBeVisible();
@@ -108,7 +107,7 @@ test("cf_04 the issue page with own fields and a long text is good in all four l
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  const notes = fieldNamed(dataOf(await admin.client.GET("/api/v1/fields")).fields, "Notes");
+  const notes = await fieldOf(admin, "Notes");
   const paragraph = "Steps to see it: open the page, wait, and the window closes by itself. ";
   const longText = [
     `# Notes\n\n${paragraph.repeat(12)}`,

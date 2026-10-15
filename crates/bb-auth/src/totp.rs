@@ -131,6 +131,8 @@ impl TotpSecret {
 
 #[cfg(test)]
 mod tests {
+    use bb_dev_words::accounts::CLOCK_START;
+
     use super::*;
 
     fn at(seconds: i64) -> Timestamp {
@@ -140,11 +142,11 @@ mod tests {
     #[test]
     fn auth_03_the_current_code_is_accepted_once() {
         let secret = TotpSecret::generate().unwrap();
-        let now = at(1_800_000_000);
+        let now = at(CLOCK_START);
         let code = secret.code_at(now).unwrap();
         assert_eq!(code.len(), 6);
         let step = secret.check(&code, now, 0).unwrap().unwrap();
-        assert_eq!(step, 1_800_000_000 / 30);
+        assert_eq!(step, CLOCK_START / 30);
         // The same code again, or at any later moment of its step, is refused.
         assert_eq!(secret.check(&code, now, step).unwrap(), None);
         assert_eq!(secret.check(&code, at(1_800_000_010), step).unwrap(), None);
@@ -153,10 +155,10 @@ mod tests {
     #[test]
     fn auth_03_a_code_from_a_neighbouring_step_is_accepted_but_a_far_one_is_not() {
         let secret = TotpSecret::generate().unwrap();
-        let now = at(1_800_000_000);
-        let before = secret.code_at(at(1_800_000_000 - 30)).unwrap();
-        let after = secret.code_at(at(1_800_000_000 + 30)).unwrap();
-        let far = secret.code_at(at(1_800_000_000 + 90)).unwrap();
+        let now = at(CLOCK_START);
+        let before = secret.code_at(at(CLOCK_START - 30)).unwrap();
+        let after = secret.code_at(at(CLOCK_START + 30)).unwrap();
+        let far = secret.code_at(at(CLOCK_START + 90)).unwrap();
         assert!(secret.check(&before, now, 0).unwrap().is_some());
         assert!(secret.check(&after, now, 0).unwrap().is_some());
         assert_eq!(secret.check(&far, now, 0).unwrap(), None);
@@ -166,7 +168,7 @@ mod tests {
     fn auth_03_wrong_text_and_other_secrets_are_refused() {
         let secret = TotpSecret::generate().unwrap();
         let other = TotpSecret::generate().unwrap();
-        let now = at(1_800_000_000);
+        let now = at(CLOCK_START);
         for bad in ["", "12345", "1234567", "abcdef", "12 34 56"] {
             assert_eq!(secret.check(bad, now, 0).unwrap(), None, "{bad}");
         }

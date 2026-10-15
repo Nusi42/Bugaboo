@@ -24,7 +24,7 @@ export function CodeForm() {
         label={t("second-step.code")}
         description={t("second-step.code-help")}
         autoComplete={autoComplete.oneTimeCode}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         errorMessage={wrongCode ? messageOf(finish.error) : undefined}
         value={code}
         onChange={(value) => {

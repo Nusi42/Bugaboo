@@ -28,8 +28,6 @@ use crate::generate::Sample;
 
 /// How many issues a page of a project holds when the dump reads them all.
 const PAGE: u64 = 1000;
-/// How many issues are asked about in one query.
-const CHUNK: usize = 400;
 
 /// The issues of a project (with its sub-projects counted apart).
 #[derive(Debug, Default, Serialize)]
@@ -146,24 +144,20 @@ impl Sample {
         self.count_sub_issues_and_relations(&issues, &mut dump)
             .await?;
         let ids: Vec<IssueId> = issues.iter().map(|issue| issue.id).collect();
-        for chunk in ids.chunks(CHUNK) {
-            dump.tags_on_issues += storage.tags_of_issues(chunk.to_vec()).await?.len() as u64;
-            dump.labels_on_issues += storage.labels_of_issues(chunk.to_vec()).await?.len() as u64;
-        }
+        dump.tags_on_issues += storage.tags_of_issues(ids.clone()).await?.len() as u64;
+        dump.labels_on_issues += storage.labels_of_issues(ids.clone()).await?.len() as u64;
         let fields = storage.field_definitions().await?;
         let kind: EntityKind = RecordKind::Issue.into();
-        for chunk in ids.chunks(CHUNK) {
-            let entities: Vec<EntityId> = chunk.iter().map(|id| EntityId::from(*id)).collect();
-            for value in storage.field_values(kind.clone(), entities).await? {
-                if let Some(definition) = fields
-                    .iter()
-                    .find(|definition| definition.field.id == value.field)
-                {
-                    *dump
-                        .own_field_values
-                        .entry(definition.field.name.clone())
-                        .or_default() += 1;
-                }
+        let entities: Vec<EntityId> = ids.iter().map(|id| EntityId::from(*id)).collect();
+        for value in storage.field_values(kind, entities).await? {
+            if let Some(definition) = fields
+                .iter()
+                .find(|definition| definition.field.id == value.field)
+            {
+                *dump
+                    .own_field_values
+                    .entry(definition.field.name.clone())
+                    .or_default() += 1;
             }
         }
         for what in &self.left_behind.locks {

@@ -1,7 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { listOf } from "../../shared/access-words.ts";
+import { listText } from "../../shared/list-text.ts";
 
 /** What a group is used for, in a sentence: *Used for the whole organization and in 4 projects.* */
 export function groupUsedText(used: Schema<"GroupUsedByBody">): string {
@@ -14,5 +14,5 @@ export function groupUsedText(used: Schema<"GroupUsedByBody">): string {
   }
   return parts.length === 0
     ? t("groups.used-nothing")
-    : t("groups.used", { places: listOf(parts) });
+    : t("groups.used", { places: listText(parts) });
 }

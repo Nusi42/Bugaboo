@@ -31,8 +31,7 @@ use super::auth::{
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
 use super::groups::{ChoiceItem, choice_page};
-use super::people::parse;
-use super::projects::project_id;
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -171,8 +170,8 @@ pub(crate) struct NewProjectRowBody {
 /// Whom a body names. A person or group that is no ID is one that is not there.
 pub(super) fn subject_of(who: &WhoBody) -> Result<Subject, ApiError> {
     match (who.person.as_deref(), who.group.as_deref()) {
-        (Some(person), None) => parse::<UserId>(person).map(Subject::Person),
-        (None, Some(group)) => parse::<GroupId>(group).map(Subject::Group),
+        (Some(person), None) => path_id::<UserId>(person).map(Subject::Person),
+        (None, Some(group)) => path_id::<GroupId>(group).map(Subject::Group),
         // A row is for exactly one person or group.
         _ => Err(ApiError::new(ErrorCode::InvalidRequest)),
     }
@@ -186,11 +185,7 @@ async fn list_rows(
     params: ListParams,
     project: Option<ProjectId>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(ASSIGNMENTS_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(ASSIGNMENTS_LIST);
     let found = auth
         .api()?
         .assignments(
@@ -204,7 +199,7 @@ async fn list_rows(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let listed = found.map(|list| Listed {
         items: list.rows.iter().map(AssignmentItem::from).collect(),
         next: list.next_cursor,
@@ -236,11 +231,7 @@ async fn list_choices(
     filter: ChoicesFilter,
     project: Option<ProjectId>,
 ) -> Result<Response, ApiError> {
-    let position = params.position(CHOICES_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(CHOICES_LIST);
     let found = auth
         .api()?
         .assignment_choices(
@@ -256,7 +247,7 @@ async fn list_choices(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     choice_page(CHOICES_LIST, &params, found)
 }
 
@@ -304,7 +295,7 @@ async fn assign_role(
     ApiJson(body): ApiJson<NewOrganizationRowBody>,
 ) -> Result<Response, ApiError> {
     let subject = subject_of(&body.who)?;
-    let role = parse::<RoleId>(&body.role)?;
+    let role = path_id::<RoleId>(&body.role)?;
     give_row(
         auth,
         info,
@@ -337,7 +328,7 @@ async fn list_project_assignments(
     ApiPath(project): ApiPath<String>,
     ApiQuery(params): ApiQuery<ListParams>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
+    let project = path_id::<ProjectId>(&project)?;
     list_rows(auth, info, session_token, params, Some(project)).await
 }
 
@@ -367,10 +358,10 @@ async fn assign_project_role(
     ApiPath(project): ApiPath<String>,
     ApiJson(body): ApiJson<NewProjectRowBody>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
+    let project = path_id::<ProjectId>(&project)?;
     let subject = subject_of(&body.who)?;
     let given = match body.role.as_deref() {
-        Some(role) => Given::Role(parse::<RoleId>(role)?),
+        Some(role) => Given::Role(path_id::<RoleId>(role)?),
         None => Given::NoAccess,
     };
     give_row(
@@ -409,7 +400,7 @@ async fn remove_assignment(
     Session(session_token): Session,
     ApiPath(assignment_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let assignment = parse::<AssignmentId>(&assignment_id)?;
+    let assignment = path_id::<AssignmentId>(&assignment_id)?;
     auth.api()?
         .remove_assignment(
             info,
@@ -462,7 +453,7 @@ async fn list_project_assignment_choices(
     ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(filter): ApiQuery<ChoicesFilter>,
 ) -> Result<Response, ApiError> {
-    let project = project_id(&project)?;
+    let project = path_id::<ProjectId>(&project)?;
     list_choices(auth, info, session_token, params, filter, Some(project)).await
 }
 

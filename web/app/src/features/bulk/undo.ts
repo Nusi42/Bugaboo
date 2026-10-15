@@ -1,7 +1,8 @@
 import { api } from "../../shared/api.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { refreshLabels } from "../labels/index.ts";
-import { bulkKind, refreshIssues, type BulkAction, type BulkResult } from "./bulk.ts";
+import { bulkKind, type BulkAction, type BulkResult } from "./bulk.ts";
+import { refreshIssues } from "../../shared/query-keys.ts";
 
 /** The IDs of the issues a change really changed: the ones that were not skipped. */
 export function changedIssues(result: BulkResult): string[] {
@@ -42,7 +43,9 @@ export function offerUndo(action: BulkAction, result: BulkResult, message: strin
   undoStore.offer({
     message,
     undo: () => {
-      void Promise.all(issues.map((issue) => takeBack(action, issue))).then(() => {
+      // Whatever each one answers, the screens read again: they show what is true now, also when
+      // one of the issues could not be taken back.
+      void Promise.allSettled(issues.map((issue) => takeBack(action, issue))).then(() => {
         refreshIssues();
         refreshLabels();
       });

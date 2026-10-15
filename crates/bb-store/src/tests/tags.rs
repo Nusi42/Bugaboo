@@ -94,7 +94,7 @@ async fn tag_01_suggestions_only_look_at_live_issues_of_the_projects_asked_for()
                 for link in &links {
                     AuthStorage::insert_issue_tag(tx, link).await?;
                 }
-                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3))).await?;
+                AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3)).await?;
                 Ok(())
             })
         })
@@ -291,6 +291,46 @@ async fn tag_03_combining_labels_moves_every_link_once() -> TestResult {
         let expected: Vec<IssueId> = world.issues.iter().map(|issue| issue.id).collect();
         assert_eq!(on_new, expected);
         assert_eq!(storage.labels().await?, vec![new]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn adr_0017_more_issues_than_a_statement_can_bind_are_read_in_chunks() -> TestResult {
+    use crate::db::STATEMENT_ITEMS;
+
+    each_database("tag_01_many_issues", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 2).await;
+        let login = tag(&mut source, "login");
+        let links = [link(&world, 0, login.id), link(&world, 1, login.id)];
+        let row = login.clone();
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_tag(tx, &row).await?;
+                for link in &links {
+                    AuthStorage::insert_issue_tag(tx, link).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+        // Two real issues among more IDs than one statement binds, in no order.
+        let mut asked: Vec<IssueId> = (0..2 * STATEMENT_ITEMS + 7)
+            .map(|_| IssueId::generate(&mut source).unwrap())
+            .collect();
+        asked.insert(STATEMENT_ITEMS + 3, world.issues[1].id);
+        asked.push(world.issues[0].id);
+        let found = storage.tags_of_issues(asked.clone()).await?;
+        let mut expected = vec![world.issues[0].id, world.issues[1].id];
+        expected.sort_by_key(|id| id.to_bytes());
+        let mut got: Vec<IssueId> = found.iter().map(|each| each.issue).collect();
+        got.sort_by_key(|id| id.to_bytes());
+        assert_eq!(got, expected);
+        assert!(storage.labels_of_issues(asked).await?.is_empty());
         Ok(())
     })
     .await

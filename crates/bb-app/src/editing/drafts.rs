@@ -149,7 +149,7 @@ pub async fn throw_away_draft<S: AuthStore>(
 }
 
 /// Deletes the drafts, the notes for people who were editing, and the lock rows that ran out.
-/// What the background job of the kind `editing.purge_drafts` does (ADR-0017); safe to run again.
+/// What the background job of the kind `editing.purge-drafts` does (ADR-0017); safe to run again.
 /// Returns how many drafts went.
 ///
 /// # Errors

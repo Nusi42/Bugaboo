@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, SaveStatus, partOf, part, type SaveState } from "@bugaboo/ui";
 
 import { doNothing } from "../../shared/do-nothing.ts";
-import { formatTime } from "../../shared/format.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import type { LongTextWords } from "./long-text-words.ts";
 import type { Description } from "./use-description.ts";
@@ -38,17 +38,7 @@ export function DescriptionHead({ description, titleId, canChange, words }: Desc
       {canChange && description.phase.kind === "reading" ? (
         <Button onPress={description.open}>{t("issues.description.edit")}</Button>
       ) : null}
-      <SaveStatus
-        state={saveStateOf(description)}
-        labels={{
-          saving: t("save.saving"),
-          saved:
-            savedAt === null
-              ? t("save.saved")
-              : t("issues.saved-at", { time: formatTime(savedAt) }),
-          "not-saved": t("save.not-saved"),
-        }}
-      />
+      <SaveStatus state={saveStateOf(description)} labels={saveLabels(savedAt)} />
     </div>
   );
 }

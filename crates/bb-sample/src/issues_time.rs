@@ -3,8 +3,7 @@
 //! working day, so a delay of an hour or a day never lands on a night or a weekend; [`Calendar`]
 //! turns a working second into a moment.
 
-/// Seconds in a day.
-const DAY: i64 = 86_400;
+use bb_core::time::SECONDS_PER_DAY as DAY;
 /// When work starts on a working day, in seconds after midnight.
 const WORK_FROM: i64 = 8 * 3600;
 /// How long a working day is, in seconds.

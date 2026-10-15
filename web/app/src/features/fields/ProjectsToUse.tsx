@@ -6,6 +6,7 @@ import { keepPreviousData } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
+import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A project a field can be limited to. */
 export interface ProjectChoice {
@@ -36,7 +37,7 @@ export interface ProjectsToUseProps {
 function useProjectChoices(search: string) {
   return usePaged(
     {
-      queryKey: ["fields", "projects", search],
+      queryKey: queryKeys.fields.projectChoices(search),
       read: (after) =>
         api.client.GET("/api/v1/projects", {
           params: {

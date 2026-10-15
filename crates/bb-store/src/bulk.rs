@@ -7,34 +7,18 @@
 //! the check that two workers never count the same issue twice.
 
 use bb_app::bulk::BulkStore;
-use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
-use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus};
-use bb_core::id::{BulkRunId, JobId, UserId};
-use bb_core::job::Job;
-use bb_core::technical::TechnicalName;
-use jiff::{SignedDuration, Timestamp};
-use sea_query::{Expr, ExprTrait as _, Query, SelectStatement, UpdateStatement};
-use serde_json::Value;
+use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus, RunsToEnd};
+use bb_core::id::{BulkRunId, UserId};
+use jiff::Timestamp;
+use sea_query::{Expr, ExprTrait as _, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
-use crate::jobs::{NewJob, enqueue};
 use crate::schema::BulkRunRow;
 
 /// The statuses of a run that is not over.
 const NOT_OVER: [BulkStatus; 2] = [BulkStatus::Queued, BulkStatus::Running];
-
-/// The change that ends the runs that are not over as stopped, at `at`; the caller says which.
-fn ending(at: Timestamp) -> UpdateStatement {
-    let mut update = Query::update();
-    update
-        .table(BulkRunRow::Table)
-        .value(BulkRunRow::Status, BulkStatus::Stopped.code())
-        .value(BulkRunRow::FinishedAt, to_micros(at))
-        .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
-    update
-}
 
 fn run_select() -> SelectStatement {
     let mut select = Query::select();
@@ -71,77 +55,6 @@ fn read_run(row: &Row) -> Result<BulkRun, StoreError> {
         created_at: row.time(BulkRunRow::CreatedAt)?,
         finished_at: row.optional_time(BulkRunRow::FinishedAt)?,
     })
-}
-
-fn new_job(kind: &TechnicalName, payload: &Value, run_at: Timestamp) -> NewJob {
-    NewJob {
-        kind: kind.clone(),
-        payload: payload.clone(),
-        run_at,
-        max_attempts: JOB_ATTEMPTS_MAX,
-    }
-}
-
-impl JobStore for AuthStorage {
-    async fn lease_jobs(
-        &self,
-        worker: &TechnicalName,
-        now: Timestamp,
-        lease: SignedDuration,
-        limit: u64,
-    ) -> Result<Vec<Job>, StoreError> {
-        self.database().lease_jobs(worker, now, lease, limit).await
-    }
-
-    async fn complete_job(&self, id: JobId, worker: &TechnicalName) -> Result<bool, StoreError> {
-        self.database().complete_job(id, worker).await
-    }
-
-    async fn fail_job(
-        &self,
-        id: JobId,
-        worker: &TechnicalName,
-        failure: &TechnicalName,
-        now: Timestamp,
-    ) -> Result<bool, StoreError> {
-        Ok(self
-            .database()
-            .fail_job(id, worker, failure, now)
-            .await?
-            .is_some())
-    }
-
-    async fn later_job_waits(
-        &self,
-        kind: &TechnicalName,
-        after: Timestamp,
-    ) -> Result<bool, StoreError> {
-        self.database().later_job_waits(kind, after).await
-    }
-
-    async fn queue_job(
-        &self,
-        id: JobId,
-        kind: &TechnicalName,
-        payload: &Value,
-        run_at: Timestamp,
-        now: Timestamp,
-    ) -> Result<(), StoreError> {
-        self.database()
-            .enqueue_job(id, &new_job(kind, payload, run_at), now)
-            .await
-    }
-
-    async fn enqueue_job(
-        transaction: &mut Transaction,
-        id: JobId,
-        kind: &TechnicalName,
-        payload: &Value,
-        run_at: Timestamp,
-        now: Timestamp,
-    ) -> Result<(), StoreError> {
-        enqueue(transaction, id, &new_job(kind, payload, run_at), now).await
-    }
 }
 
 impl BulkStore for AuthStorage {
@@ -193,24 +106,25 @@ impl BulkStore for AuthStorage {
         Ok(self.database().fetch_optional(&select).await?.is_none())
     }
 
-    async fn end_bulk_runs_of(
+    async fn end_bulk_runs(
         transaction: &mut Transaction,
-        person: UserId,
+        which: &RunsToEnd,
+        status: BulkStatus,
         at: Timestamp,
     ) -> Result<u64, StoreError> {
-        let mut update = ending(at);
-        update.and_where(Expr::col(BulkRunRow::Person).eq(person.stored()));
+        let mut update = Query::update();
+        update
+            .table(BulkRunRow::Table)
+            .value(BulkRunRow::Status, status.code())
+            .value(BulkRunRow::FinishedAt, to_micros(at))
+            .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
+        match which {
+            RunsToEnd::One(id) => update.and_where(Expr::col(BulkRunRow::Id).eq(id.stored())),
+            RunsToEnd::OfPerson(person) => {
+                update.and_where(Expr::col(BulkRunRow::Person).eq(person.stored()))
+            }
+        };
         transaction.execute(&update).await
-    }
-
-    async fn end_bulk_run(
-        transaction: &mut Transaction,
-        id: BulkRunId,
-        at: Timestamp,
-    ) -> Result<bool, StoreError> {
-        let mut update = ending(at);
-        update.and_where(Expr::col(BulkRunRow::Id).eq(id.stored()));
-        Ok(transaction.execute(&update).await? > 0)
     }
 
     async fn insert_bulk_run(

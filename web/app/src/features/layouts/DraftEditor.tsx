@@ -5,6 +5,7 @@ import { Button, partOf, part } from "@bugaboo/ui";
 import { AvailableFields } from "./AvailableFields.tsx";
 import { KeptDraft } from "./KeptDraft.tsx";
 import { SaveBar } from "./SaveBar.tsx";
+import { shownSaveError } from "./save-error.ts";
 import { SectionCard } from "./SectionCard.tsx";
 import { useDraftEditor } from "./use-draft-editor.ts";
 import type { LayoutLock } from "./use-layout-lock.ts";
@@ -50,7 +51,7 @@ export function DraftEditor({ editor, lock, saved, onSaved }: DraftEditorProps) 
           canSave={state.canSave}
           pending={state.pending}
           saved={saved}
-          error={state.error}
+          error={shownSaveError(state.error, lock.state)}
           onSave={state.save}
           onDiscard={state.discard}
         />

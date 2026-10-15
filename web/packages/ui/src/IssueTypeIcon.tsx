@@ -50,13 +50,23 @@ export interface IssueTypeIconProps {
   readonly name: IssueTypeIconName;
   /** `small` is 16 px (in lists), `normal` 20 px. */
   readonly size?: IconSize;
+  /**
+   * The name of the type, where the icon stands alone and nothing next to it names the type (a
+   * row of a list): screen readers then read it. Without it the icon only decorates.
+   */
+  readonly label?: string;
 }
 
 /**
- * The icon of an issue type. It only decorates: the name of the type is always next to it
- * (principle 2), so screen readers skip it.
+ * The icon of an issue type. Where the name of the type is next to it (principle 2) it only
+ * decorates and screen readers skip it; where it stands alone it carries the name as `label`.
  */
-export function IssueTypeIcon({ name, size = iconSize.small }: IssueTypeIconProps) {
+export function IssueTypeIcon({ name, size = iconSize.small, label }: IssueTypeIconProps) {
   const Glyph = glyphs[name];
-  return <Glyph {...partOf(part.icon, { variants: [size === iconSize.small && "small"] })} />;
+  return (
+    <Glyph
+      {...partOf(part.icon, { variants: [size === iconSize.small && "small"] })}
+      {...(label === undefined ? {} : { role: "img", "aria-label": label })}
+    />
+  );
 }

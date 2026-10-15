@@ -6,6 +6,7 @@ use bb_auth::{
     domain_is_listed, same_digest,
 };
 use bb_core::ErrorCode;
+use bb_core::bulk::{BulkStatus, RunsToEnd};
 use bb_core::event::{Actor, RecordKind};
 use bb_core::id::{SessionId, UserId};
 use bb_core::person::Person;
@@ -421,7 +422,13 @@ pub async fn change_password<S: AuthStore>(
                 S::set_password(transaction, person_id, &hash, now).await?;
                 S::delete_sessions_of(transaction, person_id, None).await?;
                 // What the person started in the background does not go on after a new password.
-                S::end_bulk_runs_of(transaction, person_id, now).await?;
+                S::end_bulk_runs(
+                    transaction,
+                    &RunsToEnd::OfPerson(person_id),
+                    BulkStatus::Stopped,
+                    now,
+                )
+                .await?;
                 S::insert_session(transaction, &session).await
             })
         })

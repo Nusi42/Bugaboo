@@ -111,7 +111,7 @@ function ChoiceName({
     >
       <TextField
         label={t("fields.choice-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

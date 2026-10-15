@@ -6,7 +6,6 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{PeopleQuery, PersonLine, PersonQuery};
-use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -19,6 +18,7 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
     answer_authorized,
 };
+use super::path_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -107,11 +107,7 @@ async fn list_people(
 ) -> Result<Response, ApiError> {
     // Who asks is judged first (401 before 400): a cursor that does not open is passed on as one
     // the use case cannot read, so its answer comes after the check of the person.
-    let position = params.position(PEOPLE_LIST);
-    let cursor = match &position {
-        Ok(position) => position.clone(),
-        Err(_) => Some(String::new()),
-    };
+    let (cursor, bad_cursor) = params.start(PEOPLE_LIST);
     let page = auth
         .api()?
         .people(
@@ -128,7 +124,7 @@ async fn list_people(
         )
         .await
         .map_err(cursor_error)?;
-    position?;
+    bad_cursor?;
     let list = page.map(|page| Listed {
         items: page.items.iter().map(PersonItem::from).collect(),
         next: page.next_cursor,
@@ -153,7 +149,7 @@ async fn get_person(
     Session(session_token): Session,
     ApiPath(person_id): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let person = parse::<UserId>(&person_id)?;
+    let person = path_id::<UserId>(&person_id)?;
     let found = auth
         .api()?
         .person(
@@ -168,11 +164,6 @@ async fn get_person(
         person: PersonItem::from(&detail.line),
         created_at: detail.created_at.to_string(),
     }))
-}
-
-/// The ID in an address of the API; a text that is no ID names nothing.
-pub(crate) fn parse<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
 }
 
 /// The routes of the people.

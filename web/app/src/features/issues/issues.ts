@@ -66,13 +66,13 @@ export function useProjectIssues(project: string) {
   });
 }
 
-/** One issue by its readable or internal ID, with what the person may do with it. */
-export function useIssue(address: string) {
+/** One issue by its readable or internal ID, with what the person may do with it; nothing is read without an ID. */
+export function useIssue(address: string | undefined) {
+  const issue = address ?? "";
   return useQuery({
-    queryKey: queryKeys.issues.one(address),
+    queryKey: queryKeys.issues.one(issue),
     queryFn: async (): Promise<IssueDetail> =>
-      dataOf(
-        await api.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: address } } }),
-      ),
+      dataOf(await api.client.GET("/api/v1/issues/{issue}", { params: { path: { issue } } })),
+    enabled: address !== undefined,
   });
 }

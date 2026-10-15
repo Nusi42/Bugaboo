@@ -19,6 +19,7 @@ use crate::event::{EntityKind, EntityRef};
 use crate::id::{EditorId, LockToken, ProjectId, UserId};
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
+use crate::time::SECONDS_PER_DAY;
 
 /// How long a lock lasts after the last heartbeat, in seconds.
 pub const LEASE_SECONDS: i64 = 60;
@@ -45,12 +46,11 @@ pub const DRAFT_KEPT_BY: [ErrorCode; 3] = [
     ErrorCode::EditTakenOver,
     ErrorCode::VersionChanged,
 ];
+/// The part of an issue that holds its description: the name of the part in the lock, the draft and
+/// the event. It is the word of the field `description` (a test below says so).
+pub const DESCRIPTION_PART: &str = "description";
 /// The part of a layout that its edit lock is about: a layout is edited as a whole (ADR-0027).
 pub const LAYOUT_PART: &str = "layout";
-/// The kind of job that deletes the drafts that outlived their keep period (ADR-0017).
-pub const PURGE_DRAFTS_JOB: &str = "editing.purge_drafts";
-
-const SECONDS_PER_DAY: i64 = 86_400;
 
 /// How long a lock lasts after the last heartbeat.
 #[must_use]
@@ -296,7 +296,13 @@ pub struct EditNotice {
 mod tests {
     use super::*;
     use crate::event::RecordKind;
+    use crate::fields::Field;
     use crate::id::{EntityId, SequentialIds};
+
+    #[test]
+    fn the_description_part_is_the_word_of_the_description_field() {
+        assert_eq!(DESCRIPTION_PART, Field::Description.code());
+    }
 
     fn what(ids: &mut SequentialIds) -> EditWhat {
         EditWhat {

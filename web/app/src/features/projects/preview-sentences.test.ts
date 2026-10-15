@@ -74,7 +74,7 @@ describe("prj_03 the preview in plain sentences", () => {
         person: t("projects.person-role", { role: "Team member" }),
         project: "Website",
         before: "Viewer",
-        after: "Viewer, Guest",
+        after: "Viewer and Guest",
       }),
     ]);
   });

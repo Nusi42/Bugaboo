@@ -340,43 +340,6 @@ impl RelationStore for AuthStorage {
         Ok(transaction.execute(&delete).await? > 0)
     }
 
-    async fn count_issue_version_up(
-        transaction: &mut Transaction,
-        issue: IssueId,
-        version: i64,
-        now: Timestamp,
-    ) -> Result<bool, StoreError> {
-        let mut update = Query::update();
-        update
-            .table(IssueRow::Table)
-            .value(IssueRow::UpdatedAt, to_micros(now))
-            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
-            .and_where(Expr::col(IssueRow::Id).eq(issue.stored()))
-            .and_where(Expr::col(IssueRow::Version).eq(version))
-            .and_where(Expr::col(IssueRow::DeletedAt).is_null());
-        Ok(transaction.execute(&update).await? > 0)
-    }
-
-    async fn count_up_issue_version(
-        transaction: &mut Transaction,
-        issue: IssueId,
-        now: Timestamp,
-    ) -> Result<Option<i64>, StoreError> {
-        let mut update = Query::update();
-        update
-            .table(IssueRow::Table)
-            .value(IssueRow::UpdatedAt, to_micros(now))
-            .value(IssueRow::Version, Expr::col(IssueRow::Version).add(1))
-            .and_where(Expr::col(IssueRow::Id).eq(issue.stored()))
-            .and_where(Expr::col(IssueRow::DeletedAt).is_null())
-            .returning_col(IssueRow::Version);
-        transaction
-            .fetch_optional(&update)
-            .await?
-            .map(|row| row.get(IssueRow::Version))
-            .transpose()
-    }
-
     async fn lock_issue_parents(transaction: &mut Transaction) -> Result<(), StoreError> {
         transaction.advisory_lock(LockClass::IssueParents, 0).await
     }

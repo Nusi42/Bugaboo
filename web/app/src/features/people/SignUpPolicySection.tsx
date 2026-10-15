@@ -66,7 +66,7 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
       />
       {everybody ? <Alert tone={alertTone.warning}>{t("sign-up-policy.warning")}</Alert> : null}
       {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
-      {save.isSuccess ? <Alert tone={alertTone.success}>{t("sign-up-policy.saved")}</Alert> : null}
+      {save.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         {everybody ? (
           <ConfirmDialog

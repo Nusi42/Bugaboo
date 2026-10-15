@@ -1,8 +1,8 @@
 import { conflictOf, type Conflict } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
-import { conflictSentence } from "../../shared/editing/index.ts";
-import { personName, someoneName } from "../../shared/person.ts";
+import { changedByName, conflictSentence } from "../../shared/editing/index.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { useOptimisticMutation, type OptimisticMutation } from "../../shared/use-optimistic.ts";
@@ -29,17 +29,17 @@ interface Held {
 /** Somebody changed it first: the sentence, and the two answers. */
 export interface IssueConflict {
   readonly sentence: string;
-  /** Who changed it first, as the reader may see them: for *Keep Ben's*. */
-  readonly who: string;
+  /** The words of *Keep Ben's change*. */
+  readonly theirs: string;
   readonly keepTheirs: () => void;
   readonly useMine: () => void;
 }
 
-/** Who changed it first: a name, a role or *Someone*, as the reader may see them. */
-function whoChanged(conflict: Conflict): string {
-  return conflict.changed_by === null || conflict.changed_by === undefined
-    ? someoneName("start")
-    : personName(conflict.changed_by);
+/** *Keep Ben's change*; for a person who is not shown by name, *Keep their change*. */
+function keepTheirsText(conflict: Conflict): string {
+  return conflict.changed_by?.shown === "name"
+    ? t("issues.keep-theirs", { name: changedByName(conflict) })
+    : t("issues.keep-theirs-unnamed");
 }
 
 /** What a send tells the page: a change that came second, and the time of a save. */
@@ -92,7 +92,6 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     apply: after,
     send: sendAndNote(id, { held: setHeld, savedAt: setSavedAt }),
   });
-  const fallback = detail.issue.version ?? 1;
   const run = (values: IssueValues, version: number): void => {
     setHeld(null);
     mutation.change({ values, version });
@@ -100,11 +99,11 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
   return {
     change: (values) => {
       const before = valuesBefore(detail, values);
-      run(values, versionNow(address, fallback));
+      run(values, versionNow(address, detail.issue));
       undoStore.offer({
         message: changeSentence(values),
         undo: () => {
-          run(before, versionNow(address, fallback));
+          run(before, versionNow(address, detail.issue));
         },
       });
     },
@@ -116,13 +115,13 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
         ? null
         : {
             sentence: held.sentence,
-            who: whoChanged(held.conflict),
+            theirs: keepTheirsText(held.conflict),
             keepTheirs: () => {
               setHeld(null);
               readAgain(address);
             },
             useMine: () => {
-              run(held.edit.values, held.conflict.version ?? versionNow(address, fallback));
+              run(held.edit.values, held.conflict.version ?? versionNow(address, detail.issue));
             },
           },
   };

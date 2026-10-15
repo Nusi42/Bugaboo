@@ -1,4 +1,4 @@
-import { leaseSeconds } from "@bugaboo/api-client";
+import { leaseSeconds, secondsPerMinute } from "@bugaboo/api-client";
 
 import layout from "../../../tools/dev/load.json" with { type: "json" };
 
@@ -67,7 +67,7 @@ export function parseOptions(flags: readonly string[]): LoadOptions {
   if (database !== "sqlite" && database !== "postgres") {
     throw new TypeError(`--database is sqlite or postgres, not ${database}.`);
   }
-  const seconds = numberOf(flags, "--seconds", layout.minutes * 60);
+  const seconds = numberOf(flags, "--seconds", layout.minutes * secondsPerMinute);
   if (seconds < SHORTEST_SECONDS) {
     throw new TypeError(
       `--seconds is at least ${String(SHORTEST_SECONDS)}: the last ${String(QUIET_SECONDS)} are for the locks to run out.`,

@@ -3,6 +3,8 @@ import { dataOf } from "@bugaboo/api-client";
 import { roleId, roleName, setFieldLevel, setPeopleLevel } from "./access.ts";
 import { ownId, signInThroughApi } from "./accounts.ts";
 import { assignedTo, COST_CENTER, costCenter, made, theTwo } from "./demo-m3-state.ts";
+import { fieldOf, makeOwnField } from "./fields.ts";
+import { readIssue } from "./issues.ts";
 import { addToTheFormOfWeb } from "./layouts.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { type ApiSession } from "./api.ts";
@@ -18,11 +20,7 @@ import { type Instance } from "./server.ts";
 export async function prepareTheDemo(server: Instance): Promise<void> {
   const admin = await signInThroughApi(server, sampleAdministrator());
   // Cost center is a field of time entries until M6, so the Website asks for one of its own.
-  const field = dataOf(
-    await admin.client.POST("/api/v1/fields", {
-      body: { name: costCenter, kind: "text", applies_to: "issues" },
-    }),
-  );
+  const field = await makeOwnField(admin, costCenter, "text");
   const guest = await roleId(admin, roleName.guest);
   await setFieldLevel(admin, { role: guest, field: field.id }, "hidden");
   await addToTheFormOfWeb(admin, [assignedTo, costCenter]);
@@ -32,12 +30,7 @@ export async function prepareTheDemo(server: Instance): Promise<void> {
 
 /** The ID of the own field *Cost center* of the Website. */
 export async function costCenterField(session: ApiSession): Promise<string> {
-  for (const each of dataOf(await session.client.GET("/api/v1/fields")).fields) {
-    if (each.name === costCenter) {
-      return each.id;
-    }
-  }
-  throw new Error(`The organization has no field called ${costCenter}.`);
+  return (await fieldOf(session, costCenter)).id;
 }
 
 /** What the Team member sees of the Guest's bug after taking it. */
@@ -59,11 +52,7 @@ export async function takeTheGuestsBug(server: Instance): Promise<Taken> {
   const other = await signInThroughApi(server, second);
   const colleague = await ownId(other);
   await other.dispose();
-  const found = dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", {
-      params: { path: { issue: made.guestKey } },
-    }),
-  );
+  const found = await readIssue(session, { key: made.guestKey });
   const field = await costCenterField(session);
   const version = found.issue.version;
   if (typeof version !== "number") {

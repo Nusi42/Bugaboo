@@ -11,13 +11,16 @@ use std::collections::HashMap;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::IssueId;
+use bb_core::issue::Issue;
 use bb_core::relation::{IssueParent, SUB_ISSUE_DEPTH_MAX, SUB_ISSUES_MAX, check_parent};
 use bb_core::version::counted_up;
 use bb_policy::{Authorized, Place};
 use serde_json::json;
 
 use super::types::{IssueRelations, SetParent};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::issues::InTrash;
 use crate::issues::member as issue_member;
 use crate::projects::Why;
 
@@ -41,13 +44,30 @@ async fn chain_above<S: AuthStore>(
     Ok(chain)
 }
 
-/// The parent an issue has, and the parent as the person knows it. A parent the person may not see is
-/// none to them: taking it out changes nothing they could know of, so it neither counts the version
-/// up nor tells them it is there (SEC-06).
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The issue a request wants to put another under, if it names one: the person must see it and
+    /// be allowed to change it.
+    async fn named_parent(
+        &self,
+        actor: &Actor,
+        address: Option<&str>,
+    ) -> Result<Option<Issue>, AppError> {
+        let Some(address) = address else {
+            return Ok(None);
+        };
+        let (parent, held) = self.visible_issue(actor, address).await?;
+        if !held.may_change_issue(parent.reported_by) {
+            return Err(ErrorCode::Forbidden.into());
+        }
+        Ok(Some(parent))
+    }
+
+    /// The parent an issue has, and the parent as the person knows it. A parent the person may not
+    /// see is none to them: taking it out changes nothing they could know of, so it neither counts
+    /// the version up nor tells them it is there (SEC-06).
     async fn parents_of(
         &self,
-        actor: &crate::access::Actor,
+        actor: &Actor,
         child: IssueId,
     ) -> Result<(Option<IssueId>, Option<IssueId>), AppError> {
         let stored = self
@@ -82,16 +102,7 @@ pub async fn set_parent<S: AuthStore>(
     if !held.may_change_issue(child.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }
-    let above = match &input.parent {
-        Some(address) => {
-            let (parent, held_parent) = ctx.visible_issue(&actor, address).await?;
-            if !held_parent.may_change_issue(parent.reported_by) {
-                return Err(ErrorCode::Forbidden.into());
-            }
-            Some(parent)
-        }
-        None => None,
-    };
+    let above = ctx.named_parent(&actor, input.parent.as_deref()).await?;
     let record = entity(RecordKind::Issue, child.id);
     let place = Place::Project(child.project);
     if child.version != input.version {
@@ -134,7 +145,10 @@ pub async fn set_parent<S: AuthStore>(
                         return Err(stopped.stop::<S>(ErrorCode::ParentCircle));
                     }
                 }
-                if !S::count_issue_version_up(transaction, child_id, version, now).await? {
+                if S::count_issue_up(transaction, child_id, Some(version), InTrash::NotFound, now)
+                    .await?
+                    .is_none()
+                {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
                 match wanted {

@@ -39,9 +39,9 @@ mod issues_words;
 mod names;
 mod organization;
 mod password;
+mod people_plan;
 mod random;
 mod relations;
-mod roster;
 #[cfg(test)]
 mod tests;
 
@@ -57,6 +57,6 @@ pub use generate::{
 pub use issues::Everything;
 pub use names::NameList;
 pub use organization::Organization;
-pub use roster::{
-    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, SamplePerson, TIME_ZONES, roster,
+pub use people_plan::{
+    ACCESS_KEYS, EMAIL_DOMAIN, PEOPLE, ROLE_MIX, Region, SamplePerson, TIME_ZONES, sample_people,
 };

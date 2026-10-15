@@ -1,4 +1,4 @@
-import { versionsOf, watchSeconds } from "@bugaboo/api-client";
+import { msPerSecond, versionsOf, watchSeconds } from "@bugaboo/api-client";
 import { useEffect, useRef } from "react";
 
 import { api } from "../api.ts";
@@ -20,7 +20,7 @@ const browser: WatchEnv = {
   },
   hidden: () => document.visibilityState === "hidden",
   repeat: (seconds, run) => {
-    const timer = setInterval(run, seconds * 1000);
+    const timer = setInterval(run, seconds * msPerSecond);
     return () => {
       clearInterval(timer);
     };

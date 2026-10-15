@@ -5,7 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { descriptionBox, openEditing, startEditing } from "./support/description.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
-import { issueOf, prepareWeb, versionOf } from "./support/issues.ts";
+import { issueOf, prepareWeb, versionOf, savedNote } from "./support/issues.ts";
 import { holdBackLocks } from "./support/slow.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
@@ -23,7 +23,7 @@ test("iss_17 the description is saved, rendered by the server, and the lock is l
   await startEditing(page, "WEB-3");
   await descriptionBox(page).fill("It happens **every** Monday.");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await expect(page.locator("strong", { hasText: "every" })).toBeVisible();
   await page.reload();
   await expect(page.locator("strong", { hasText: "every" })).toBeVisible();
@@ -47,7 +47,7 @@ test("iss_17 Ana types, Ben sees who is editing and uses Edit anyway, Ana's text
   ).toBeVisible();
   await expect(descriptionBox(page)).toHaveCount(0);
   await expectGoodInEveryLook(page);
-  await page.getByRole("button", { name: t("issues.edit-anyway"), exact: true }).click();
+  await page.getByRole("button", { name: t("editing.edit-anyway"), exact: true }).click();
   await descriptionBox(page).fill("Ben's text");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
   await expect(page.getByText("Ben's text")).toBeVisible();
@@ -74,7 +74,7 @@ test("iss_17 Ben asks Ana to finish and Ana is told at her next heartbeat", asyn
   await signIn(page, ada);
   await openEditing(page, "WEB-3");
   await page
-    .getByRole("button", { name: t("issues.ask-to-finish", { name: bob.name }), exact: true })
+    .getByRole("button", { name: t("editing.ask-to-finish", { name: bob.name }), exact: true })
     .click();
   // Ana's page sends a heartbeat every 15 seconds and shows the note that comes back.
   await expect(ana.getByText(t("issues.asked-to-finish", { name: ada.name }))).toBeVisible({
@@ -92,7 +92,7 @@ test("iss_17 every key typed while the lock is still being asked for is kept", a
   await descriptionBox(page).pressSequentially("Typed key by key", { delay: 120 });
   await expect(descriptionBox(page)).toHaveValue("Typed key by key");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.reload();
   await expect(page.getByText("Typed key by key")).toBeVisible();
 });
@@ -106,7 +106,7 @@ test("iss_17 Save pressed before the lock has arrived saves as soon as it does",
   await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
   await descriptionBox(page).fill("Typed in a hurry");
   await page.getByRole("button", { name: t("common.save"), exact: true }).click();
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.reload();
   await expect(page.getByText("Typed in a hurry")).toBeVisible();
 });
@@ -128,10 +128,11 @@ test("adr_0019 a short value that somebody changed first shows Keep their value 
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.low"),
   });
-  await expect(page.getByText(/changed Priority to Critical/u)).toBeVisible();
+  // The note says first that nothing was saved.
+  await expect(page.getByText(/^Not saved: .+ changed Priority to Critical/u)).toBeVisible();
   await expectGoodInEveryLook(page);
   await page.getByRole("button", { name: t("issues.use-mine"), exact: true }).click();
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel(t("issue-field.priority"), { exact: true })).toHaveValue("low");
 });

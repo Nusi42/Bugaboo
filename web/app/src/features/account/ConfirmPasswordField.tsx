@@ -14,7 +14,7 @@ export function ConfirmPasswordField({ value, onChange }: ConfirmPasswordFieldPr
       description={t("field.confirm-password-help")}
       kind={fieldKind.password}
       autoComplete={autoComplete.currentPassword}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       value={value}
       onChange={onChange}
     />

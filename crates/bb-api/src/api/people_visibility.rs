@@ -10,6 +10,7 @@ use axum::response::Response;
 use bb_app::access::PeopleVisibilityQuery;
 use bb_app::roles::SetPeopleLevel;
 use bb_core::access::PeopleLevel;
+use bb_core::id::RoleId;
 use bb_core::people_kinds::PeopleKind;
 use serde::Deserialize;
 use utoipa::ToSchema;
@@ -20,7 +21,8 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
 };
-use super::field_permissions::{LevelTableBody, PlaceParams, role_id};
+use super::field_permissions::{LevelTableBody, PlaceParams};
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
 /// The level to set, or `null` to take away what the project set for the role, so the level
@@ -101,7 +103,7 @@ async fn change_people_visibility(
     ApiJson(body): ApiJson<NewPeopleLevelBody>,
 ) -> Result<Response, ApiError> {
     let project = place.project()?;
-    let role = role_id(&path.role)?;
+    let role = path_id::<RoleId>(&path.role)?;
     auth.api()?
         .set_people_level(
             info,

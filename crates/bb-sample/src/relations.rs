@@ -3,13 +3,30 @@
 
 use std::collections::BTreeSet;
 
+use bb_core::message::{self, MessageKey};
+use bb_core::relation::STARTING_RELATION_KINDS;
+
 use crate::issues_plan::PlannedIssue;
 use crate::random::SeededRandom;
 
+/// The place of the starting kind whose forward name is `forward`, read from the one list of the
+/// starting kinds (`bb_core::relation`) and not typed again here.
+fn place_of(forward: MessageKey) -> usize {
+    STARTING_RELATION_KINDS
+        .iter()
+        .position(|kind| kind.forward == forward)
+        .unwrap_or_default()
+}
+
 /// The place of the kind *blocks* among the starting kinds of relation.
-pub(crate) const BLOCKS: usize = 0;
+fn blocks() -> usize {
+    place_of(message::RELATION_KIND_BLOCKS)
+}
+
 /// The place of *duplicate of*.
-const DUPLICATE: usize = 1;
+fn duplicate() -> usize {
+    place_of(message::RELATION_KIND_DUPLICATE_OF)
+}
 /// How the kinds share the random relations (in the order of the starting kinds: blocks,
 /// duplicate of, causes, related to), in percent.
 const SHARES: [usize; 4] = [30, 12, 18, 40];
@@ -64,16 +81,16 @@ pub(crate) fn plan_relations(
             let members = &families[random.below(families.len())];
             let start = random.below(members.len() - CHAIN + 1);
             for step in start..start + CHAIN - 1 {
-                made.add(members[step], members[step + 1], BLOCKS);
+                made.add(members[step], members[step + 1], blocks());
             }
         }
         // The circle: three issues that block each other round and round.
         let members = &families[random.below(families.len())];
         let first = random.below(members.len() - 2);
         let (x, y, z) = (members[first], members[first + 1], members[first + 2]);
-        made.add(x, y, BLOCKS);
-        made.add(y, z, BLOCKS);
-        made.add(z, x, BLOCKS);
+        made.add(x, y, blocks());
+        made.add(y, z, blocks());
+        made.add(z, x, blocks());
     }
 
     // The rest: a pair in the same top-level project, now and then one from another. An earlier
@@ -93,7 +110,7 @@ pub(crate) fn plan_relations(
         };
         let (low, high) = (one.min(other), one.max(other));
         let kind = kind_by_share(random);
-        if kind == DUPLICATE {
+        if kind == duplicate() {
             made.add(high, low, kind);
         } else {
             made.add(low, high, kind);
@@ -121,6 +138,14 @@ mod tests {
     use bb_core::issue::Priority;
 
     use super::*;
+
+    #[test]
+    fn the_places_of_the_kinds_are_found_in_the_starting_list_and_are_two_places() {
+        assert_ne!(blocks(), duplicate());
+        for place in [blocks(), duplicate()] {
+            assert!(place < STARTING_RELATION_KINDS.len());
+        }
+    }
 
     fn issues(count: usize) -> Vec<PlannedIssue> {
         (0..count)
@@ -155,7 +180,7 @@ mod tests {
             assert!(relations.iter().any(|r| r.kind == kind), "{kind}");
         }
         // A chain deeper than four steps: follow *blocks* from some issue, towards later issues.
-        let blocks: Vec<_> = relations.iter().filter(|r| r.kind == BLOCKS).collect();
+        let blocks: Vec<_> = relations.iter().filter(|r| r.kind == blocks()).collect();
         let depth = |from: usize| {
             let (mut depth, mut at) = (0, from);
             while let Some(next) = blocks.iter().find(|r| r.from == at && r.to > r.from) {

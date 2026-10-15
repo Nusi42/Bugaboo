@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { buttonLook, ConfirmDialog, partOf, part } from "@bugaboo/ui";
 
 import { formatDate, formatDateTime } from "../../../shared/format.ts";
+import { listText } from "../../../shared/list-text.ts";
 import type { AccessKey } from "./access-keys.ts";
 import { choiceName } from "./choice.ts";
 
@@ -36,7 +37,7 @@ function whereText(item: AccessKey): string {
         })
       : t("access-keys.row.hidden-project"),
   );
-  return t("access-keys.row.projects-some", { names: names.join(", ") });
+  return t("access-keys.row.projects-some", { names: listText(names) });
 }
 
 /** When the key runs out, or ran out. */

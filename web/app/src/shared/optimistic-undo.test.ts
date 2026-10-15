@@ -103,3 +103,15 @@ describe("ux_06 Undo waits while it is looked at", () => {
     expect(store.latest()?.id).toBe(first);
   });
 });
+
+describe("a notice in the place of the offers", () => {
+  it("shows a notice that has nothing to undo, and the shortcut skips it", () => {
+    const store = createUndoStore(manualClock().schedule, () => 0);
+    const first = store.offer({ message: "One", undo: doNothing });
+    const notice = store.offer({ message: "It was not brought back" });
+    expect(store.list().map((each) => each.id)).toEqual([first, notice]);
+    expect(store.latest()?.id).toBe(first);
+    expect(store.take(notice)).toBe(true);
+    expect(store.list().map((each) => each.id)).toEqual([first]);
+  });
+});

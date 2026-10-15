@@ -8,6 +8,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
+use bb_core::comment::TEXT_PART;
 use bb_core::edit::{EditWhat, LAYOUT_PART};
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::fields::{Field, FieldKey};
@@ -59,6 +60,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let listed = if *kind == EntityKind::from(RecordKind::Layout) {
             part == LAYOUT_PART
+        } else if *kind == EntityKind::from(RecordKind::Comment) {
+            part == TEXT_PART
         } else if *kind == EntityKind::from(RecordKind::Project) {
             // The one long text a project can have so far (M3-F49); no screen edits it yet.
             part == member::DESCRIPTION

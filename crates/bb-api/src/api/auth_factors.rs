@@ -7,7 +7,6 @@ use bb_app::auth::{
     AddPasskey, ConfirmCodeApp, PasskeyRegistrationQuery, RemoveCodeApp, RemovePasskey,
     RenewBackupCodes, StartCodeApp, TwoStepQuery,
 };
-use bb_core::ErrorCode;
 use bb_core::id::PasskeyId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -20,6 +19,7 @@ use super::auth::{
     answer, done,
 };
 use super::auth_sign_in::ChallengeBody;
+use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// A password typed again before a sensitive change.
@@ -356,9 +356,7 @@ async fn remove_passkey(
     ApiPath(passkey_id): ApiPath<String>,
     ApiJson(body): ApiJson<PasswordOnlyBody>,
 ) -> Result<Response, ApiError> {
-    let passkey_id: PasskeyId = passkey_id
-        .parse()
-        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let passkey_id: PasskeyId = path_id(&passkey_id)?;
     auth.api()?
         .remove_passkey(
             info,

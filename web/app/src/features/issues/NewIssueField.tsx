@@ -15,11 +15,17 @@ export interface NewIssueFieldProps {
   readonly values: NewIssueValues;
   /** The project it is made in: its short name. */
   readonly project: string;
+  /** What the server said was wrong with this field. */
+  readonly problem?: string | undefined;
   readonly onChange: (values: NewIssueValues) => void;
 }
 
 /** *Assigned to* on the form: the people chosen so far, and the button that opens the picker. */
-function AssignedField({ values, project, onChange }: Omit<NewIssueFieldProps, "field">) {
+function AssignedField({
+  values,
+  project,
+  onChange,
+}: Omit<NewIssueFieldProps, "field" | "problem">) {
   const [picking, setPicking] = useState(false);
   const name = t("issue-field.assigned-to");
   return (
@@ -63,7 +69,7 @@ function AssignedField({ values, project, onChange }: Omit<NewIssueFieldProps, "
 
 /** One field of the form: a built-in field by its word, an own field by its ID. */
 export function NewIssueField(props: NewIssueFieldProps) {
-  const { field, values, project, onChange } = props;
+  const { field, values, project, problem, onChange } = props;
   const hosts = useImageHosts();
   switch (field) {
     case "description":
@@ -98,6 +104,7 @@ export function NewIssueField(props: NewIssueFieldProps) {
           project={project}
           issueType={values.issueType === "" ? undefined : values.issueType}
           value={values.fields[field]}
+          problem={problem}
           onChange={(value) => {
             onChange({
               ...values,

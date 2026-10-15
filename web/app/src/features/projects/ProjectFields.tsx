@@ -14,7 +14,7 @@ export function ProjectNameField({ value, onChange }: ProjectFieldProps) {
     <TextField
       label={t("projects.field-name")}
       description={t("projects.field-name-help")}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       value={value}
       onChange={onChange}
     />
@@ -34,7 +34,7 @@ export function ShortNameField({ value, onChange, changing = false }: ShortNameF
     <TextField
       label={t("projects.field-short-name")}
       description={description}
-      requiredMessage={t("validation.required")}
+      requiredMessage={t("error.field.required")}
       value={value}
       onChange={(typed) => {
         onChange(asShortName(typed));

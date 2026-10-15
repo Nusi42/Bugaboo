@@ -13,12 +13,11 @@ use bb_app::fields::{
     FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, MakeField, NewChoice,
     ReorderChoices, SaveFieldText, ScopeView,
 };
-use bb_core::ErrorCode;
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LockToken, ProjectId};
 use bb_core::issue::IssueIcon;
 use bb_core::own_fields::{ChoiceColor, Edit, FieldFor, FieldType, KindTrait, Look, Rules, Scope};
 use bb_policy::Masked;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -30,6 +29,7 @@ use super::auth::{
 };
 use super::issues::{IssueItem, IssueTypeRef};
 use super::projects::ProjectRef;
+use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 
 /// A choice of a field.
@@ -198,12 +198,12 @@ impl ScopeInput {
             projects: self
                 .projects
                 .iter()
-                .map(|text| id_in_body::<ProjectId>(text))
+                .map(|text| body_id::<ProjectId>(text))
                 .collect::<Result<_, _>>()?,
             issue_types: self
                 .issue_types
                 .iter()
-                .map(|text| id_in_body::<IssueTypeId>(text))
+                .map(|text| body_id::<IssueTypeId>(text))
                 .collect::<Result<_, _>>()?,
         })
     }
@@ -247,15 +247,6 @@ pub(crate) struct NewFieldBody {
     choices: Option<Vec<NewFieldChoiceBody>>,
 }
 
-/// A field that is `Clear` when the request says `null` and `Keep` when it says nothing.
-fn null_or_value<'de, D, T>(deserializer: D) -> Result<Edit<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    Option::<T>::deserialize(deserializer).map(Edit::said)
-}
-
 /// What to change about an own field: what is left out stays as it is.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ChangeFieldBody {
@@ -268,7 +259,7 @@ pub(crate) struct ChangeFieldBody {
     /// New rules.
     rules: Option<Rules>,
     /// A new default value; `null` takes it away.
-    #[serde(default, deserialize_with = "null_or_value")]
+    #[serde(default, deserialize_with = "crate::api::null_or_value")]
     #[schema(value_type = Option<Object>)]
     default_value: Edit<Value>,
     /// A new look.
@@ -304,7 +295,7 @@ pub(crate) struct ChangeChoiceBody {
     /// A new color.
     color: Option<ChoiceColor>,
     /// A new icon; `null` takes it away.
-    #[serde(default, deserialize_with = "null_or_value")]
+    #[serde(default, deserialize_with = "crate::api::null_or_value")]
     #[schema(value_type = Option<IssueIcon>)]
     icon: Edit<IssueIcon>,
     /// `true` retires the choice, `false` offers it again.
@@ -339,17 +330,6 @@ pub(crate) struct FieldsParams {
     project: Option<String>,
     /// Also the retired fields.
     retired: Option<bool>,
-}
-
-/// The ID in a request body; a text that is no ID is not a valid request.
-fn id_in_body<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
-    text.parse()
-        .map_err(|_| ApiError::new(ErrorCode::InvalidRequest))
-}
-
-/// The ID in an address; a text that is no ID names a thing that is not there.
-fn id_in_path<Id: std::str::FromStr>(text: &str) -> Result<Id, ApiError> {
-    text.parse().map_err(|_| ApiError::new(ErrorCode::NotFound))
 }
 
 /// One kind of information a field can hold, with what the screens need to know about it.
@@ -462,7 +442,7 @@ async fn get_field(
             info,
             FieldQuery {
                 session_token,
-                field: id_in_path::<FieldId>(&field)?,
+                field: path_id::<FieldId>(&field)?,
             },
         )
         .await?;
@@ -490,7 +470,7 @@ async fn get_field_used_by(
             info,
             FieldQuery {
                 session_token,
-                field: id_in_path::<FieldId>(&field)?,
+                field: path_id::<FieldId>(&field)?,
             },
         )
         .await?;
@@ -576,7 +556,7 @@ async fn change_field(
     ApiPath(field): ApiPath<String>,
     ApiJson(body): ApiJson<ChangeFieldBody>,
 ) -> Result<Response, ApiError> {
-    let field = id_in_path::<FieldId>(&field)?;
+    let field = path_id::<FieldId>(&field)?;
     let scope = body.scope.map(ScopeInput::into_scope).transpose()?;
     let changed = auth
         .api()?
@@ -630,7 +610,7 @@ async fn add_choice(
             info,
             AddChoice {
                 session_token,
-                field: id_in_path::<FieldId>(&field)?,
+                field: path_id::<FieldId>(&field)?,
                 version: body.version,
                 name: body.name,
                 color: body.color,
@@ -675,8 +655,8 @@ async fn change_choice(
             info,
             ChangeChoice {
                 session_token,
-                field: id_in_path::<FieldId>(&field)?,
-                choice: id_in_path::<ChoiceId>(&choice)?,
+                field: path_id::<FieldId>(&field)?,
+                choice: path_id::<ChoiceId>(&choice)?,
                 version: body.version,
                 name: body.name,
                 color: body.color,
@@ -715,7 +695,7 @@ async fn reorder_choices(
     let order = body
         .order
         .iter()
-        .map(|text| id_in_body::<ChoiceId>(text))
+        .map(|text| body_id::<ChoiceId>(text))
         .collect::<Result<Vec<_>, _>>()?;
     let changed = auth
         .api()?
@@ -723,7 +703,7 @@ async fn reorder_choices(
             info,
             ReorderChoices {
                 session_token,
-                field: id_in_path::<FieldId>(&field)?,
+                field: path_id::<FieldId>(&field)?,
                 version: body.version,
                 order,
             },
@@ -767,9 +747,9 @@ async fn combine_choices(
             info,
             CombineChoices {
                 session_token,
-                field: id_in_path::<FieldId>(&field)?,
-                choice: id_in_path::<ChoiceId>(&choice)?,
-                into: id_in_body::<ChoiceId>(&body.into)?,
+                field: path_id::<FieldId>(&field)?,
+                choice: path_id::<ChoiceId>(&choice)?,
+                into: body_id::<ChoiceId>(&body.into)?,
                 version: body.version,
             },
         )
@@ -824,8 +804,8 @@ async fn save_issue_field_text(
             SaveFieldText {
                 session_token,
                 issue,
-                field: id_in_path::<FieldId>(&field)?,
-                token: id_in_body::<LockToken>(&body.lock_token)?,
+                field: path_id::<FieldId>(&field)?,
+                token: body_id::<LockToken>(&body.lock_token)?,
                 version: body.version,
                 text: body.text,
             },

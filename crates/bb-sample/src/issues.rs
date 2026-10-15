@@ -28,6 +28,7 @@ use bb_core::event::{EntityRef, RecordKind};
 use bb_core::id::{CommentId, EditorId, IssueId, LockToken, UserId};
 use bb_core::relation::Direction;
 use bb_core::technical::TechnicalName;
+use bb_core::time::SECONDS_PER_DAY;
 use bb_dev_words::sample::{IssuePlan, Layout};
 use serde_json::{Value, json};
 
@@ -44,7 +45,7 @@ use crate::organization::Organization;
 const MONTH_DAYS: i64 = 30;
 /// How long before the sample ends the last working day ends, in seconds: room for the states the
 /// sample leaves behind (a lock held, a draft waiting).
-const END_ROOM: i64 = 86_400;
+const END_ROOM: i64 = SECONDS_PER_DAY;
 
 /// Everything the sample holds: the organization of M2 and the issues of M3.
 #[derive(Clone, Debug)]
@@ -94,7 +95,7 @@ impl Everything {
 
 impl Later for Everything {
     fn history_seconds(&self) -> i64 {
-        i64::from(self.names.months) * MONTH_DAYS * 86_400 + END_ROOM
+        i64::from(self.names.months) * MONTH_DAYS * SECONDS_PER_DAY + END_ROOM
     }
 
     fn left_behind(&self) -> LeftBehind {
@@ -175,7 +176,7 @@ impl Maker<'_, '_> {
         }
     }
 
-    /// The people, as the people of the roster, whom picks stand for.
+    /// The people, as the people of the plan of the people, whom picks stand for.
     fn assignees(&self, picks: &[u32]) -> Vec<UserId> {
         let mut people: Vec<UserId> = Vec::new();
         for pick in picks {

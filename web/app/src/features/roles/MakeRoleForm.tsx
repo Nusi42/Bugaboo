@@ -59,7 +59,7 @@ export function MakeRoleForm() {
     >
       <TextField
         label={t("roles.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

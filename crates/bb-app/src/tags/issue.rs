@@ -31,7 +31,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::input::clean_tag_name;
-use crate::issues::{IssueTypeRef, member};
+use crate::issues::{InTrash, IssueTypeRef, member};
 use crate::projects::Why;
 
 /// What a change of the tags or the labels says in the event of the issue.
@@ -216,7 +216,8 @@ async fn count_up_and_record<S: AuthStore>(
     now: Timestamp,
     stopped: &Why,
 ) -> Result<i64, S::Error> {
-    let Some(version) = S::count_up_issue_version(transaction, issue, now).await? else {
+    let Some(version) = S::count_issue_up(transaction, issue, None, InTrash::NotFound, now).await?
+    else {
         return Err(stopped.stop::<S>(ErrorCode::NotFound));
     };
     let event = maker

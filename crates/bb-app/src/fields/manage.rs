@@ -267,7 +267,7 @@ pub async fn make_field<S: AuthStore>(
         return Err(ErrorCode::NameTaken.into());
     }
     if definitions.len() >= FIELDS_MAX {
-        return Err(ErrorCode::InvalidRequest.into());
+        return Err(ErrorCode::LimitReached.into());
     }
     let definition = Definition {
         field: OwnField {

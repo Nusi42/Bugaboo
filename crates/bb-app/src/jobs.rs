@@ -8,7 +8,7 @@
 use std::future::Future;
 
 use bb_core::id::JobId;
-use bb_core::job::Job;
+use bb_core::job::{FailureKind, FailureOutcome, Job};
 use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
@@ -30,7 +30,7 @@ pub mod kind {
     pub const RENEW_IDS: &str = "issues.renew-ids";
     /// Clearing what outlived its keep period (drafts, notes for people who were editing, lock
     /// rows that ran out): the use case `purge_drafts`. It comes back every day.
-    pub const PURGE_DRAFTS: &str = bb_core::edit::PURGE_DRAFTS_JOB;
+    pub const PURGE_DRAFTS: &str = "editing.purge-drafts";
     /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`. It comes back
     /// every day.
     pub const CATCH_UP_HISTORY: &str = "history.catch-up";
@@ -67,14 +67,16 @@ pub trait JobStore: ChangeStore + 'static {
         /// Reports a job as done; it leaves the queue. `false` when `worker` does not hold the
         /// lease any more.
         fn complete_job(id: JobId, worker: &TechnicalName) -> bool;
-        /// Reports a job as failed, with a technical code. `false` when `worker` does not hold the
-        /// lease any more.
+        /// Reports a job as failed, with a technical code, and says what happened to it: it runs
+        /// again later or it is on the dead-letter list (after its last start, or at once for a
+        /// failure that is permanent). `None` when `worker` does not hold the lease any more.
         fn fail_job(
             id: JobId,
             worker: &TechnicalName,
             failure: &TechnicalName,
+            kind: FailureKind,
             now: Timestamp
-        ) -> bool;
+        ) -> Option<FailureOutcome>;
         /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
         fn later_job_waits(kind: &TechnicalName, after: Timestamp) -> bool;
         /// Puts a job in the queue on its own: for the rest of a piece of work that a job did a
@@ -109,24 +111,51 @@ pub(crate) fn kind_name(name: &str) -> Result<TechnicalName, AppError> {
     TechnicalName::new(name).map_err(|error| AppError::Internal(error.to_string()))
 }
 
+/// How a job failed: the technical code the queue keeps, and whether another start can help.
+struct JobFailure {
+    code: TechnicalName,
+    kind: FailureKind,
+}
+
+impl JobFailure {
+    /// The failure of `error`: a refusal (the payload names nothing, the request is not allowed)
+    /// can never succeed as it was asked for, so it is not tried again; every other error (the
+    /// store broke) may pass.
+    fn of(error: &AppError, code: &str, job: &Job) -> Self {
+        Self {
+            code: TechnicalName::new(code).unwrap_or_else(|_| job.kind.clone()),
+            kind: match error {
+                AppError::Refused(_) => FailureKind::Permanent,
+                _ => FailureKind::Temporary,
+            },
+        }
+    }
+
+    fn unknown_kind(job: &Job) -> Self {
+        Self {
+            code: TechnicalName::new(UNKNOWN_KIND).unwrap_or_else(|_| job.kind.clone()),
+            kind: FailureKind::Permanent,
+        }
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
-    /// What a worker does with a job it holds: `Err` carries a technical code of the failure, and
-    /// the queue tries the job again later or, after its last start, puts it on the dead-letter
-    /// list.
-    async fn do_job(&self, job: &Job) -> Result<(), TechnicalName> {
-        let failed = |code: &str| TechnicalName::new(code).unwrap_or_else(|_| job.kind.clone());
+    /// What a worker does with a job it holds: `Err` says how it failed, and the queue tries the
+    /// job again later or, after its last start (or at once, for a failure that is permanent),
+    /// puts it on the dead-letter list.
+    async fn do_job(&self, job: &Job) -> Result<(), JobFailure> {
         match job.kind.as_str() {
             kind::BULK_STEP => Box::pin(self.run_bulk_step(&job.payload))
                 .await
                 .map_err(|error| {
                     tracing::warn!(cause = %error, "a step of a change to many issues failed");
-                    failed(FAILED)
+                    JobFailure::of(&error, FAILED, job)
                 }),
             kind::RENEW_IDS => Box::pin(self.renew_ids_step(&job.payload))
                 .await
                 .map_err(|error| {
                     tracing::warn!(cause = %error, "a step of renewing issue IDs failed");
-                    failed(FAILED)
+                    JobFailure::of(&error, FAILED, job)
                 }),
             kind::PURGE_DRAFTS => Box::pin(self.run_daily(kind::PURGE_DRAFTS, async {
                 purge_drafts(self, PurgeDraftsQuery).await.map(|drafts| {
@@ -136,7 +165,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| {
                 tracing::warn!(cause = %error, "old drafts could not be cleared");
-                failed(FAILED)
+                JobFailure::of(&error, FAILED, job)
             }),
             kind::CATCH_UP_HISTORY => Box::pin(self.run_daily(kind::CATCH_UP_HISTORY, async {
                 self.catch_up_history().await.map(|events| {
@@ -146,12 +175,29 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| {
                 tracing::warn!(cause = %error, "the history could not catch up");
-                failed(FAILED)
+                JobFailure::of(&error, FAILED, job)
             }),
             other => {
                 tracing::error!(kind = other, "a job of a kind nobody knows");
-                Err(failed(UNKNOWN_KIND))
+                Err(JobFailure::unknown_kind(job))
             }
+        }
+    }
+
+    /// What happens when a job is on the dead-letter list: the work that people can see ends in
+    /// a state they can see. A change to many issues ends as failed with what it did so far; the
+    /// renewal of issue IDs has no record of its own, so its death is only logged (M3-F150).
+    async fn job_gave_up(&self, job: &Job) {
+        let ended = match job.kind.as_str() {
+            kind::BULK_STEP => self.fail_bulk_run(&job.payload).await,
+            kind::RENEW_IDS => {
+                tracing::error!("renewing issue IDs gave up; the job is on the dead-letter list");
+                Ok(())
+            }
+            _ => Ok(()),
+        };
+        if let Err(error) = ended {
+            tracing::error!(cause = %error, "the work of a dead job could not be ended");
         }
     }
 
@@ -216,16 +262,27 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let taken = jobs.len();
         for job in jobs {
+            // `true` when the worker still held the lease and the report counted.
             let reported = match self.do_job(&job).await {
                 Ok(()) => self.store().complete_job(job.id, &worker).await,
                 Err(failure) => {
-                    self.store()
-                        .fail_job(job.id, &worker, &failure, self.now())
-                        .await
+                    let outcome = self
+                        .store()
+                        .fail_job(job.id, &worker, &failure.code, failure.kind, self.now())
+                        .await;
+                    if matches!(outcome, Ok(Some(FailureOutcome::Dead))) {
+                        self.job_gave_up(&job).await;
+                    }
+                    outcome.map(|found| found.is_some())
                 }
             };
-            if let Err(error) = reported {
-                tracing::error!(cause = %S::describe(&error), "a job could not be reported");
+            match reported {
+                Ok(true) => {}
+                // The lease ran out and another worker has the job: it reports, not this one.
+                Ok(false) => tracing::warn!("a job was reported after its lease ran out"),
+                Err(error) => {
+                    tracing::error!(cause = %S::describe(&error), "a job could not be reported");
+                }
             }
         }
         Ok(taken)

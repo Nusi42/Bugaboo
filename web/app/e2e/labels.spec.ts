@@ -6,7 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb } from "./support/issues.ts";
+import { prepareWeb, savedNote } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
@@ -86,7 +86,7 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
   await page.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
     label: t("status.in-progress"),
   });
-  await expect(page.getByText(/^Saved/u).first()).toBeVisible();
+  await expect(savedNote(page)).toBeVisible();
   await page.reload();
   await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveValue(
     "in-progress",
@@ -111,11 +111,11 @@ test("tag_03 renaming a label shows which issues change before it is saved", asy
   const panel = page.getByRole("complementary", { name: "frontend" });
   await panel.getByLabel(t("labels.field-name"), { exact: true }).fill("front end");
   await panel.getByRole("button", { name: t("labels.show-changes"), exact: true }).click();
-  await expect(panel.getByText(t("labels.preview-summary", { changed: 1 }))).toBeVisible();
+  await expect(panel.getByText(t("preview.summary", { changed: 1, skipped: 0 }))).toBeVisible();
   await expect(panel.getByText("WEB-1", { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
-  await panel.getByRole("button", { name: t("labels.save"), exact: true }).click();
-  await expect(page.getByText(t("labels.saved"))).toBeVisible();
+  await panel.getByRole("button", { name: t("common.save"), exact: true }).click();
+  await expect(page.getByText(t("save.saved"))).toBeVisible();
   await page.goto(paths.labels);
   await expect(
     listNamed(page, t("labels.labels-search")).getByRole("button", { name: "front end" }),

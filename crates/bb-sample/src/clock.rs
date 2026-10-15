@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn the_clock_shows_what_was_set_and_does_not_move_by_itself() {
-        let start = Timestamp::from_second(1_800_000_000).unwrap();
+        let start = Timestamp::from_second(bb_dev_words::accounts::CLOCK_START).unwrap();
         let clock = SampleClock::at(start);
         assert_eq!(clock.now(), start);
         assert_eq!(clock.now(), start);

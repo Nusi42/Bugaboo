@@ -6,6 +6,7 @@ import { RolePermissions } from "./RolePermissions.tsx";
 import { useCatalogue } from "./roles.ts";
 import { RoleSwitch } from "./RoleSwitch.tsx";
 import { useRoleEdits } from "./use-role-edits.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 
 /**
  * What the role allows (UX §5.2): the switch for two-step sign-in and the permissions as checkboxes,
@@ -17,14 +18,7 @@ export function PermissionsCard({ role }: { readonly role: Schema<"RoleBody"> })
   return (
     <Card heading={t("roles.permissions-title")}>
       <p {...partOf(part.text)}>{t("roles.permissions-intro")}</p>
-      <SaveStatus
-        state={edits.saveState}
-        labels={{
-          saving: t("save.saving"),
-          saved: t("save.saved"),
-          "not-saved": t("save.not-saved"),
-        }}
-      />
+      <SaveStatus state={edits.saveState} labels={saveLabels()} />
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       <RoleSwitch
         id={role.id}

@@ -43,7 +43,7 @@ function Scan({ setup, password, onSwitchedOn }: ScanProps) {
         label={t("code-app.confirm-code")}
         description={t("code-app.confirm-help")}
         autoComplete={autoComplete.oneTimeCode}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={code}
         onChange={setCode}
       />

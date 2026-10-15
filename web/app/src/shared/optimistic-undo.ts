@@ -6,8 +6,8 @@ export interface UndoOffer {
   readonly id: number;
   /** What happened, in a sentence: "The invitation was taken back." */
   readonly message: string;
-  /** Puts things back as they were. */
-  readonly undo: () => void;
+  /** Puts things back as they were. A notice that only tells something has none. */
+  readonly undo?: () => void;
   /** Where the focus goes after `undo`: the thing that is back. Without it, the content heading. */
   readonly restoredFocus?: () => HTMLElement | null;
 }
@@ -15,7 +15,7 @@ export interface UndoOffer {
 /** What a caller gives: the sentence and the way back. */
 export interface UndoRequest {
   readonly message: string;
-  readonly undo: () => void;
+  readonly undo?: () => void;
   readonly restoredFocus?: () => HTMLElement | null;
 }
 
@@ -114,14 +114,14 @@ export function createUndoStore(
     },
     pause: countdowns.pause,
     resume: countdowns.resume,
-    latest: () => offers.snapshot().at(-1),
+    latest: () => offers.snapshot().findLast((offer) => offer.undo !== undefined),
     take: (id) => {
       const found = offers.snapshot().find((offer) => offer.id === id);
       if (found === undefined) {
         return false;
       }
       drop(id);
-      found.undo();
+      found.undo?.();
       return true;
     },
     list: offers.snapshot,

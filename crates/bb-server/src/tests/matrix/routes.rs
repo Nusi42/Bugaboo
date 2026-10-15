@@ -421,7 +421,15 @@ async fn hold(
 /// What a route that is let through must hold for each actor, besides not being refused: only the
 /// list of projects says anything about its content (M2-F27: *a key for A lists only A and below;
 /// the trail stops at A*).
-fn check_content(actor: Actor, route: &Operation, reply: &Reply) -> Result<(), String> {
+fn check_content(
+    actor: Actor,
+    route: &Operation,
+    example: &Example,
+    reply: &Reply,
+) -> Result<(), String> {
+    if example.has(Quirk::SkipsWhatItMayNotChange) {
+        return check_what_is_skipped(actor, reply);
+    }
     match route.id.as_str() {
         "listProjects" => {
             let names: std::collections::BTreeSet<&str> = reply.body["items"]
@@ -458,6 +466,32 @@ fn check_content(actor: Actor, route: &Operation, reply: &Reply) -> Result<(), S
             }
         }
         _ => Ok(()),
+    }
+}
+
+/// What a route that changes many issues says about the one issue of the example, for the actor: it
+/// is left alone when they do not see it or may not change it, and changed when they may.
+fn check_what_is_skipped(actor: Actor, reply: &Reply) -> Result<(), String> {
+    let held = standing(actor, Where::Target);
+    let expected = if !(held.sees() && held.permissions.contains(&Permission::SeeIssues)) {
+        Some("not-found")
+    } else if !held.permissions.contains(&Permission::ChangeIssues) {
+        Some("not-allowed")
+    } else {
+        None
+    };
+    // The preview lists `rows`, the change `outcomes`; each holds one entry for the one issue.
+    let entry = ["rows", "outcomes"]
+        .iter()
+        .find_map(|member| reply.body[*member].get(0))
+        .ok_or("the answer holds no entry for the issue")?;
+    let skipped = entry["skipped"].as_str();
+    if skipped == expected {
+        Ok(())
+    } else {
+        Err(format!(
+            "the issue is left alone as {skipped:?}, expected {expected:?}"
+        ))
     }
 }
 
@@ -550,7 +584,8 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
                     && example.has(Quirk::NamesAMissingThing)
                     && got == Expect::NotFound);
             assert!(fine, "{}: expected {expected:?}, got {got:?}", place());
-            if let (Expect::Allowed, Err(wrong)) = (expected, check_content(*actor, route, &reply))
+            if let (Expect::Allowed, Err(wrong)) =
+                (expected, check_content(*actor, route, example, &reply))
             {
                 panic!("{}: {wrong}", place());
             }

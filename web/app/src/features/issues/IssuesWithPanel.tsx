@@ -1,21 +1,10 @@
 import { t } from "@bugaboo/messages";
-import {
-  Button,
-  buttonLook,
-  Card,
-  Overlay,
-  overlayEdge,
-  useLayout,
-  useUpright,
-  partOf,
-  part,
-} from "@bugaboo/ui";
-import { type ReactNode, useEffect } from "react";
+import { Button, buttonLook, Card, useLayout, partOf, part } from "@bugaboo/ui";
+import { useEffect } from "react";
 
-import { issueShow } from "./issue-show.ts";
 import { IssueList } from "./IssueList.tsx";
-import { IssuePage } from "./IssuePage.tsx";
 import { openNewIssue, rememberProject } from "./new-issue-state.ts";
+import { OpenIssue } from "./OpenIssue.tsx";
 import { useOpenIssuesIn } from "./open-in.ts";
 import { Selected } from "./Selected.tsx";
 import { useSelection } from "./use-selection.ts";
@@ -31,34 +20,6 @@ export interface IssuesWithPanelProps {
   readonly onClose: () => void;
 }
 
-/** The issue in a sheet over the list when `sheet` says so (Esc and a press outside close it); as it is otherwise. */
-function Sheeted({
-  sheet,
-  onClose,
-  children,
-}: {
-  readonly sheet: boolean;
-  readonly onClose: () => void;
-  readonly children: ReactNode;
-}) {
-  return sheet ? (
-    <Overlay
-      isOpen
-      onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          onClose();
-        }
-      }}
-      label={t("issues.sheet")}
-      from={overlayEdge.full}
-    >
-      {children}
-    </Overlay>
-  ) : (
-    children
-  );
-}
-
 /** The list of a project and, beside it, the issue that is open in the side panel. */
 export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: IssuesWithPanelProps) {
   const openIn = useOpenIssuesIn();
@@ -66,10 +27,6 @@ export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: Iss
   // A phone shows one thing at a time: the open issue takes the screen and Back closes it.
   const layout = useLayout();
   const alone = layout === "phone" && open !== undefined;
-  // A tablet held upright has no room for a panel next to the list: the issue opens over the list
-  // as a full-height sheet (UX §3.2); turned sideways it has the panel like a computer.
-  const upright = useUpright();
-  const sheet = layout === "tablet" && upright && open !== undefined;
   useEffect(() => {
     rememberProject(shortName);
   }, [shortName]);
@@ -90,18 +47,7 @@ export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: Iss
           </div>
           <IssueList project={shortName} openIn={openIn} open={open} selection={selection} />
         </div>
-        {open === undefined ? null : (
-          <Sheeted sheet={sheet} onClose={onClose}>
-            <IssuePage
-              address={open}
-              show={issueShow.panel}
-              onClose={onClose}
-              onSwitch={() => {
-                onFocus(open);
-              }}
-            />
-          </Sheeted>
-        )}
+        {open === undefined ? null : <OpenIssue open={open} onFocus={onFocus} onClose={onClose} />}
       </div>
     </Card>
   );

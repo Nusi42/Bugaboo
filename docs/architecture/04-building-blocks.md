@@ -18,7 +18,7 @@ bugaboo/
 │   ├── bb-ai/              AI provider adapters, context builder, tool registry
 │   ├── bb-mcp/             MCP server (uses the tool registry)
 │   ├── bb-notify/          in-app, e-mail and webhook delivery
-│   ├── bb-jobs/            background job runner and schedules
+│   ├── bb-jobs/            the loop that runs the due background jobs (the work of each kind is in bb-app)
 │   ├── bb-api/             HTTP: routes, OpenAPI, security headers, rate limits, static app
 │   ├── bb-api-words/       the words of the API description that code, tests and checks share (no dependencies)
 │   ├── bb-dev-words/       the words the developer tools, the tests and xtask share: databases, test variables, the sample layout
@@ -103,7 +103,7 @@ flowchart TB
 3. Only `bb-policy` can create `Authorized<T>`. Its constructor is private to the crate.
 4. Only `bb-api` and `bb-mcp` speak HTTP. Only `bb-server` wires adapters to ports, and from M2 WP-06 on also the developer program `bb-sample`; the developer program `bb-load-check` (M3 WP-10) depends on `bb-store` to read the database of a load run, and wires no use case (`cargo xtask check only ARCH-HTTP-EDGE`).
 5. The browser app talks to the server only through `@bugaboo/api-client` (`cargo xtask check only ARCH-WEB-API`), and has no hand-written types for what the server sends (`LINT-API-TYPES`).
-6. A crate may name itself as a dev-dependency to switch on its own `testing` feature for its integration tests (`bb-api` does, for `Options::for_tests`); that is no edge between two crates (`cargo xtask check only ARCH-DEPS`).
+6. A crate may name itself as a dev-dependency to switch on its own `testing` feature for its integration tests (`bb-api` does, for `Options::for_tests`); that is no edge between two crates (`cargo xtask check only ARCH-DEPS`). The same feature is on for every crate in a build of the whole workspace (`cargo build --workspace`), because cargo unifies the features that any member asks for; the shipped program is built with `cargo build -p bb-server` (`cargo xtask build`), which leaves the test hooks out.
 
 ## The core modules
 
@@ -126,7 +126,7 @@ Lexer, parser, syntax tree, canonical printer, checker and suggestions. Knows no
 
 ### bb-app — use cases by feature
 
-`projects`, `issues`, `relations`, `fields`, `workflows`, `tags`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `notifications`, `assistant`, `privacy`, `settings`, `themes`, `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*), `admin`.
+Built so far (M0 to M3): `auth` (signing in), `people` (people and groups), `roles` (roles and who has which role), `access` (field permissions, *Who sees people*, *Check access*, the starting roles), `projects`, `settings`, `issues` (issues, types, IDs, the trash), `fields` (own fields and their choices), `relations` (relations, sub-issues, kinds of relation), `tags` (tags, labels, groups of labels), `comments` (comments, mentions), `follow`, `history` (the history read from the events), `editing` (edit locks, drafts, the check of versions, the structured conflict), `layouts` (the issue page and the new-issue form), `bulk` (changing many issues, with the run that goes on in the background), `jobs` (the queue as the use cases see it, and what each kind of job does), `first_start` (what a new server makes before anyone signs in), `preview`, `status`. Planned: `workflows`, `releases`, `search`, `boards`, `timeline`, `calendar`, `relation_map`, `time` (timers, time entries, working hours, rules), `documents`, `attachments`, `notifications`, `assistant`, `privacy`, `themes`, `admin`.
 
 Every use case has the same shape:
 
@@ -152,6 +152,13 @@ sqlx connection pools, migrations (defined once with the query builder, run on b
 
 Test-support crate, used only as a **dev dependency** (`[dev-dependencies]`) and never shipped (ARCH-DEPS fails on any other kind of dependency on it). `each_database` runs one async test body against every database named in `BB_TEST_DATABASES` (`sqlite`, `postgres`; default `sqlite`), each with a brand-new empty database that is removed afterwards (also when the test panics), hands the body a typed pool (`Pool::Sqlite` or `Pool::Postgres`), and records what ran for ARCH-DB-PARITY. It depends on `bb-dev-words` only, which names the databases and the variables. How it is wired to `cargo xtask db` and `cargo xtask ci` is in [testing](11-testing.md#database-tests).
 
+### bb-jobs
+
+The loop that runs the background jobs (ADR-0017): a worker that, every two seconds, takes the jobs that are due and does them as long as there are some. It owns nothing else. The queue, the lease and the retries are the store's behind the port `JobStore`; which use case does the work of which kind of job, what is a permanent failure that goes to the dead-letter list at once, and what a job that died does to the work people can see (a change to many issues ends as failed) are `bb-app`'s (`Ctx::run_due_jobs`, `jobs.rs`). The server starts the loop and stops it.
+
+- **May depend on:** `bb-app`. Nothing depends on it except `bb-server`.
+- **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
+
 ### bb-api
 
 axum router; extractors that turn a session cookie, access key or OAuth token into an **actor**; CSRF and origin checks; security headers and CSP; rate limits (`limits`); the one cookie module (`cookies`); `?fields=` projections; cursor pagination; ETags; problem+json errors (`errors`: `ApiError`, `ApiJson`); the one route table (`permissions::ROUTES`: what each route needs, whether its answer may be kept, is never stored or is a secret; it writes the marks `x-permission`, `x-never-stored` and `x-secret`, and it decides which changes are open without a CSRF token); OpenAPI generation from the handlers' `#[utoipa::path]` descriptions (`openapi`, served at `/api/v1/openapi.json`, printed by `bugaboo openapi`, written to `web/packages/api-client/openapi.json` by `cargo xtask gen api`); the embedded static app.
@@ -162,7 +169,7 @@ The words of the API description that more than one program needs, written once:
 
 ### bb-dev-words
 
-The words that the developer tools, the tests and `xtask` share, written once: the databases Bugaboo runs on (`DatabaseKind`: `sqlite`, `postgres`) and the variables that tell the test harness what to do (`BB_TEST_DATABASES`, `BB_TEST_POSTGRES_URL`, `BB_DB_PARITY_FILE`), the passwords and the address of the sign-in tests (`accounts`), and the schema of `tools/dev/sample.json` (`sample::Layout`), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on `serde` and `serde_json` only, so `bb-testing`, `bb-sample`, `xtask` and the tests of `bb-app` and `bb-server` can import it without pulling in the store or the use cases.
+The words that the developer tools, the tests and `xtask` share, written once: the databases Bugaboo runs on (`DatabaseKind`: `sqlite`, `postgres`) and the variables that tell the test harness what to do (`BB_TEST_DATABASES`, `BB_TEST_POSTGRES_URL`, `BB_DB_PARITY_FILE`), the passwords and the address of the sign-in tests (`accounts`), and the schema of `tools/dev/sample.json` (`sample::Layout`), which says where the sample organization is made and what its files, groups, projects and roles are called. It does no work and no input or output, and depends on `bb-core` (for the message catalogue), `serde` and `serde_json` only, so `bb-testing`, `bb-sample`, `xtask` and the tests of `bb-app` and `bb-server` can import it without pulling in the store or the use cases.
 
 ### bb-ai and bb-mcp
 
@@ -170,10 +177,10 @@ One **tool registry** (search issues, get issue, create, change status, comment,
 
 ### bb-sample
 
-The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` does not link the store or the use cases (it imports only `bb-api-words`, `bb-dev-words` and `bb-policy`, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
+The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` does not link the store or the use cases (it imports only `bb-api-words`, `bb-core`, `bb-dev-words` and `bb-policy`, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
 
 - **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth`, `bb-dev-words` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
-- **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`) is in `xtask/src/checks/arch_http_edge.rs`.
+- **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`, `bb-load-check`) is in `xtask/src/checks/arch_http_edge.rs`.
 - **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
 
 ### bb-load-check

@@ -4087,6 +4087,11 @@ export interface components {
      * @enum {string}
      */
     HistoryEntryKind: "comment" | "change" | "relation";
+    /**
+     * @description Which rows of the history of an issue to list: everything, only the comments, or only the changes.
+     * @enum {string}
+     */
+    HistoryTab: "everything" | "comments" | "changes";
     /** @description The hosts that images in text may come from, already split into one host for each item. */
     ImageHostsBody: {
       /** @description The hosts, such as `images.example.com`. Empty means no image from outside. */
@@ -5860,6 +5865,12 @@ export interface components {
     Problem: {
       /** @description What went wrong. */
       code: components["schemas"]["ErrorCode"];
+      /**
+       * @description The field a `field.*` refusal is about: the word of a built-in field or the ID of an own
+       *     field, as the client sent it. Only a field the person may fill in is named, so it reveals
+       *     nothing.
+       */
+      field?: string | null;
       /** @description The key of the message to show, in the message catalog. */
       message_key: string;
       /** @description Values for the placeholders of the message. Empty today: error messages have none. */
@@ -6599,6 +6610,7 @@ export interface components {
       | "relation-exists"
       | "same-issue"
       | "limit-reached"
+      | "field-rule"
       | "not-valid";
     /** @description Where the value that counts comes from. */
     SourceBody: {

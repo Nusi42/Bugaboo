@@ -26,7 +26,7 @@ function ChangeFields({ draft, onDraft }: ActionFieldsProps) {
   return (
     <>
       <SelectField
-        label={t("bulk.field-status")}
+        label={t("issue-field.status")}
         choices={statusOrKeep}
         value={draft.status}
         onChange={(status) => {
@@ -34,7 +34,7 @@ function ChangeFields({ draft, onDraft }: ActionFieldsProps) {
         }}
       />
       <SelectField
-        label={t("bulk.field-priority")}
+        label={t("issue-field.priority")}
         choices={priorityOrKeep}
         value={draft.priority}
         onChange={(priority) => {
@@ -93,7 +93,7 @@ function RelationFields({ draft, onDraft, relations }: ActionFieldsProps) {
   return (
     <>
       <SelectField
-        label={t("bulk.field-kind")}
+        label={t("related-issues.kind-field")}
         choices={[
           { value: NONE, label: t("labels.pick-label") },
           ...relations.map((each) => ({ value: each.key, label: each.name })),
@@ -104,7 +104,7 @@ function RelationFields({ draft, onDraft, relations }: ActionFieldsProps) {
         }}
       />
       <TextField
-        label={t("bulk.field-other")}
+        label={t("common.issue-id")}
         value={draft.other}
         onChange={(other) => {
           onDraft({ ...draft, other });

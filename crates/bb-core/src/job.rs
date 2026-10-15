@@ -16,6 +16,27 @@ words! {
     }
 }
 
+words! {
+    /// Whether another start of a job that failed can help.
+    pub enum FailureKind {
+        /// The work may succeed later (the store broke, a lease ran out): it waits and runs again,
+        /// until it has had all its starts.
+        Temporary => "temporary",
+        /// The work can never succeed as it was asked for (the payload names nothing, the request
+        /// was refused): it goes to the dead-letter list at once.
+        Permanent => "permanent",
+    }
+}
+
+/// What happened to a job that a worker reported as failed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FailureOutcome {
+    /// It will run again at this moment.
+    Retry(Timestamp),
+    /// It failed too often, or for good, and is on the dead-letter list.
+    Dead,
+}
+
 /// One job in the queue.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct Job {

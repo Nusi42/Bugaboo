@@ -46,6 +46,7 @@ pub mod sign_in;
 pub mod tags;
 pub mod technical;
 pub mod text;
+pub mod time;
 pub mod version;
 
 pub use error_code::{ErrorCode, Problem};

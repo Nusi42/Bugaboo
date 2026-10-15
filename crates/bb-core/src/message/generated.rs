@@ -2,9 +2,6 @@
 
 use super::{Message, MessageKey, Value};
 
-/// The message `access-keys.cancel`.
-pub const ACCESS_KEYS_CANCEL: MessageKey = MessageKey::new("access-keys.cancel");
-
 /// The message `access-keys.choice.everything`.
 pub const ACCESS_KEYS_CHOICE_EVERYTHING: MessageKey =
     MessageKey::new("access-keys.choice.everything");
@@ -318,6 +315,9 @@ pub const BULK_SKIP_CHANGED_SINCE: MessageKey = MessageKey::new("bulk-skip.chang
 /// The message `bulk-skip.field-missing`.
 pub const BULK_SKIP_FIELD_MISSING: MessageKey = MessageKey::new("bulk-skip.field-missing");
 
+/// The message `bulk-skip.field-rule`.
+pub const BULK_SKIP_FIELD_RULE: MessageKey = MessageKey::new("bulk-skip.field-rule");
+
 /// The message `bulk-skip.limit-reached`.
 pub const BULK_SKIP_LIMIT_REACHED: MessageKey = MessageKey::new("bulk-skip.limit-reached");
 
@@ -375,9 +375,6 @@ pub const BULK_ACTION_MOVE: MessageKey = MessageKey::new("bulk.action-move");
 /// The message `bulk.action-relation`.
 pub const BULK_ACTION_RELATION: MessageKey = MessageKey::new("bulk.action-relation");
 
-/// The message `bulk.apply`.
-pub const BULK_APPLY: MessageKey = MessageKey::new("bulk.apply");
-
 /// The message `bulk.background-note`.
 pub const BULK_BACKGROUND_NOTE: MessageKey = MessageKey::new("bulk.background-note");
 
@@ -387,20 +384,11 @@ pub const BULK_BAR: MessageKey = MessageKey::new("bulk.bar");
 /// The message `bulk.delete-text`.
 pub const BULK_DELETE_TEXT: MessageKey = MessageKey::new("bulk.delete-text");
 
-/// The message `bulk.field-kind`.
-pub const BULK_FIELD_KIND: MessageKey = MessageKey::new("bulk.field-kind");
+/// The message `bulk.dialog-text`.
+pub const BULK_DIALOG_TEXT: MessageKey = MessageKey::new("bulk.dialog-text");
 
 /// The message `bulk.field-label`.
 pub const BULK_FIELD_LABEL: MessageKey = MessageKey::new("bulk.field-label");
-
-/// The message `bulk.field-other`.
-pub const BULK_FIELD_OTHER: MessageKey = MessageKey::new("bulk.field-other");
-
-/// The message `bulk.field-priority`.
-pub const BULK_FIELD_PRIORITY: MessageKey = MessageKey::new("bulk.field-priority");
-
-/// The message `bulk.field-status`.
-pub const BULK_FIELD_STATUS: MessageKey = MessageKey::new("bulk.field-status");
 
 /// The message `bulk.issue-unknown`.
 pub const BULK_ISSUE_UNKNOWN: MessageKey = MessageKey::new("bulk.issue-unknown");
@@ -410,12 +398,6 @@ pub const BULK_KEEP: MessageKey = MessageKey::new("bulk.keep");
 
 /// The message `bulk.line-delete`.
 pub const BULK_LINE_DELETE: MessageKey = MessageKey::new("bulk.line-delete");
-
-/// The message `bulk.nothing`.
-pub const BULK_NOTHING: MessageKey = MessageKey::new("bulk.nothing");
-
-/// The message `bulk.preview-label`.
-pub const BULK_PREVIEW_LABEL: MessageKey = MessageKey::new("bulk.preview-label");
 
 /// The message `bulk.progress-label`.
 pub const BULK_PROGRESS_LABEL: MessageKey = MessageKey::new("bulk.progress-label");
@@ -443,9 +425,6 @@ pub const BULK_SKIPPED_LIST: MessageKey = MessageKey::new("bulk.skipped-list");
 
 /// The message `bulk.stopped`.
 pub const BULK_STOPPED: MessageKey = MessageKey::new("bulk.stopped");
-
-/// The message `bulk.value-none`.
-pub const BULK_VALUE_NONE: MessageKey = MessageKey::new("bulk.value-none");
 
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
@@ -725,11 +704,11 @@ pub const CODE_APP_TURNED_OFF: MessageKey = MessageKey::new("code-app.turned-off
 /// The message `comments.add`.
 pub const COMMENTS_ADD: MessageKey = MessageKey::new("comments.add");
 
-/// The message `comments.cancel`.
-pub const COMMENTS_CANCEL: MessageKey = MessageKey::new("comments.cancel");
-
 /// The message `comments.delete`.
 pub const COMMENTS_DELETE: MessageKey = MessageKey::new("comments.delete");
+
+/// The message `comments.delete-other`.
+pub const COMMENTS_DELETE_OTHER: MessageKey = MessageKey::new("comments.delete-other");
 
 /// The message `comments.deleted`.
 pub const COMMENTS_DELETED: MessageKey = MessageKey::new("comments.deleted");
@@ -743,17 +722,8 @@ pub const COMMENTS_EDITED: MessageKey = MessageKey::new("comments.edited");
 /// The message `comments.editing`.
 pub const COMMENTS_EDITING: MessageKey = MessageKey::new("comments.editing");
 
-/// The message `comments.lock-held`.
-pub const COMMENTS_LOCK_HELD: MessageKey = MessageKey::new("comments.lock-held");
-
 /// The message `comments.mention-choices`.
 pub const COMMENTS_MENTION_CHOICES: MessageKey = MessageKey::new("comments.mention-choices");
-
-/// The message `comments.save`.
-pub const COMMENTS_SAVE: MessageKey = MessageKey::new("comments.save");
-
-/// The message `comments.undo`.
-pub const COMMENTS_UNDO: MessageKey = MessageKey::new("comments.undo");
 
 /// The message `comments.versions`.
 pub const COMMENTS_VERSIONS: MessageKey = MessageKey::new("comments.versions");
@@ -779,8 +749,14 @@ pub const COMMON_CONTINUE: MessageKey = MessageKey::new("common.continue");
 /// The message `common.done`.
 pub const COMMON_DONE: MessageKey = MessageKey::new("common.done");
 
+/// The message `common.issue-id`.
+pub const COMMON_ISSUE_ID: MessageKey = MessageKey::new("common.issue-id");
+
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
+
+/// The message `common.nothing`.
+pub const COMMON_NOTHING: MessageKey = MessageKey::new("common.nothing");
 
 /// The message `common.off`.
 pub const COMMON_OFF: MessageKey = MessageKey::new("common.off");
@@ -842,6 +818,30 @@ pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.par
 /// The message `data-folder.part.setup-code-file`.
 pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
     MessageKey::new("data-folder.part.setup-code-file");
+
+/// The message `editing.draft-drop`.
+pub const EDITING_DRAFT_DROP: MessageKey = MessageKey::new("editing.draft-drop");
+
+/// The message `editing.edit-anyway`.
+pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway");
+
+/// The message `editing.lost-ran-out`.
+pub const EDITING_LOST_RAN_OUT: MessageKey = MessageKey::new("editing.lost-ran-out");
+
+/// The message `editing.text-kept`.
+pub const EDITING_TEXT_KEPT: MessageKey = MessageKey::new("editing.text-kept");
+
+/// The message `editing.text-kept-on-close`.
+pub const EDITING_TEXT_KEPT_ON_CLOSE: MessageKey = MessageKey::new("editing.text-kept-on-close");
+
+/// The message `editing.the-description`.
+pub const EDITING_THE_DESCRIPTION: MessageKey = MessageKey::new("editing.the-description");
+
+/// The message `editing.this-comment`.
+pub const EDITING_THIS_COMMENT: MessageKey = MessageKey::new("editing.this-comment");
+
+/// The message `editing.this-layout`.
+pub const EDITING_THIS_LAYOUT: MessageKey = MessageKey::new("editing.this-layout");
 
 /// The message `error.access.cannot-lift`.
 pub const ERROR_ACCESS_CANNOT_LIFT: MessageKey = MessageKey::new("error.access.cannot-lift");
@@ -1327,9 +1327,6 @@ pub const FIELDS_PICK_GROUPS_LIST: MessageKey = MessageKey::new("fields.pick-gro
 /// The message `fields.pick-issue-find`.
 pub const FIELDS_PICK_ISSUE_FIND: MessageKey = MessageKey::new("fields.pick-issue-find");
 
-/// The message `fields.pick-issue-key`.
-pub const FIELDS_PICK_ISSUE_KEY: MessageKey = MessageKey::new("fields.pick-issue-key");
-
 /// The message `fields.pick-more`.
 pub const FIELDS_PICK_MORE: MessageKey = MessageKey::new("fields.pick-more");
 
@@ -1607,9 +1604,6 @@ pub const GROUPS_NOTHING: MessageKey = MessageKey::new("groups.nothing");
 /// The message `groups.remove`.
 pub const GROUPS_REMOVE: MessageKey = MessageKey::new("groups.remove");
 
-/// The message `groups.saved`.
-pub const GROUPS_SAVED: MessageKey = MessageKey::new("groups.saved");
-
 /// The message `groups.search`.
 pub const GROUPS_SEARCH: MessageKey = MessageKey::new("groups.search");
 
@@ -1822,17 +1816,6 @@ pub const ISSUE_ID_MODE_COUNTING: MessageKey = MessageKey::new("issue-id-mode.co
 /// The message `issue-id-mode.random`.
 pub const ISSUE_ID_MODE_RANDOM: MessageKey = MessageKey::new("issue-id-mode.random");
 
-/// The message `issue-ref.status-done`.
-pub const ISSUE_REF_STATUS_DONE: MessageKey = MessageKey::new("issue-ref.status-done");
-
-/// The message `issue-ref.status-in-progress`.
-pub const ISSUE_REF_STATUS_IN_PROGRESS: MessageKey =
-    MessageKey::new("issue-ref.status-in-progress");
-
-/// The message `issue-ref.status-not-started`.
-pub const ISSUE_REF_STATUS_NOT_STARTED: MessageKey =
-    MessageKey::new("issue-ref.status-not-started");
-
 /// The message `issue-type.bug`.
 pub const ISSUE_TYPE_BUG: MessageKey = MessageKey::new("issue-type.bug");
 
@@ -1881,9 +1864,6 @@ pub const ISSUE_TYPES_RETIRE_HELP: MessageKey = MessageKey::new("issue-types.ret
 /// The message `issue-types.retired`.
 pub const ISSUE_TYPES_RETIRED: MessageKey = MessageKey::new("issue-types.retired");
 
-/// The message `issue-types.saved`.
-pub const ISSUE_TYPES_SAVED: MessageKey = MessageKey::new("issue-types.saved");
-
 /// The message `issue-types.search`.
 pub const ISSUE_TYPES_SEARCH: MessageKey = MessageKey::new("issue-types.search");
 
@@ -1920,9 +1900,6 @@ pub const ISSUES_BAR: MessageKey = MessageKey::new("issues.bar");
 /// The message `issues.change`.
 pub const ISSUES_CHANGE: MessageKey = MessageKey::new("issues.change");
 
-/// The message `issues.change-title`.
-pub const ISSUES_CHANGE_TITLE: MessageKey = MessageKey::new("issues.change-title");
-
 /// The message `issues.changed-after-you`.
 pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed-after-you");
 
@@ -1938,12 +1915,6 @@ pub const ISSUES_COMPARE_AND_SAVE: MessageKey = MessageKey::new("issues.compare-
 /// The message `issues.compare-intro`.
 pub const ISSUES_COMPARE_INTRO: MessageKey = MessageKey::new("issues.compare-intro");
 
-/// The message `issues.compare-keep-mine`.
-pub const ISSUES_COMPARE_KEEP_MINE: MessageKey = MessageKey::new("issues.compare-keep-mine");
-
-/// The message `issues.compare-keep-theirs`.
-pub const ISSUES_COMPARE_KEEP_THEIRS: MessageKey = MessageKey::new("issues.compare-keep-theirs");
-
 /// The message `issues.compare-mine`.
 pub const ISSUES_COMPARE_MINE: MessageKey = MessageKey::new("issues.compare-mine");
 
@@ -1955,9 +1926,6 @@ pub const ISSUES_COMPARE_SAVE_MINE: MessageKey = MessageKey::new("issues.compare
 
 /// The message `issues.compare-theirs`.
 pub const ISSUES_COMPARE_THEIRS: MessageKey = MessageKey::new("issues.compare-theirs");
-
-/// The message `issues.compare-title`.
-pub const ISSUES_COMPARE_TITLE: MessageKey = MessageKey::new("issues.compare-title");
 
 /// The message `issues.copy-link`.
 pub const ISSUES_COPY_LINK: MessageKey = MessageKey::new("issues.copy-link");
@@ -1986,23 +1954,14 @@ pub const ISSUES_DESCRIPTION_EMPTY: MessageKey = MessageKey::new("issues.descrip
 /// The message `issues.details`.
 pub const ISSUES_DETAILS: MessageKey = MessageKey::new("issues.details");
 
-/// The message `issues.draft-drop`.
-pub const ISSUES_DRAFT_DROP: MessageKey = MessageKey::new("issues.draft-drop");
-
 /// The message `issues.draft-kept`.
 pub const ISSUES_DRAFT_KEPT: MessageKey = MessageKey::new("issues.draft-kept");
-
-/// The message `issues.edit-anyway`.
-pub const ISSUES_EDIT_ANYWAY: MessageKey = MessageKey::new("issues.edit-anyway");
-
-/// The message `issues.editing-elsewhere`.
-pub const ISSUES_EDITING_ELSEWHERE: MessageKey = MessageKey::new("issues.editing-elsewhere");
 
 /// The message `issues.hide-details`.
 pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details");
 
-/// The message `issues.history`.
-pub const ISSUES_HISTORY: MessageKey = MessageKey::new("issues.history");
+/// The message `issues.keep-theirs-unnamed`.
+pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-theirs-unnamed");
 
 /// The message `issues.link-copied`.
 pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied");
@@ -2010,8 +1969,14 @@ pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied")
 /// The message `issues.list`.
 pub const ISSUES_LIST: MessageKey = MessageKey::new("issues.list");
 
-/// The message `issues.lost-ran-out`.
-pub const ISSUES_LOST_RAN_OUT: MessageKey = MessageKey::new("issues.lost-ran-out");
+/// The message `issues.missing-project`.
+pub const ISSUES_MISSING_PROJECT: MessageKey = MessageKey::new("issues.missing-project");
+
+/// The message `issues.missing-title`.
+pub const ISSUES_MISSING_TITLE: MessageKey = MessageKey::new("issues.missing-title");
+
+/// The message `issues.missing-type`.
+pub const ISSUES_MISSING_TYPE: MessageKey = MessageKey::new("issues.missing-type");
 
 /// The message `issues.more`.
 pub const ISSUES_MORE: MessageKey = MessageKey::new("issues.more");
@@ -2037,6 +2002,9 @@ pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
 
+/// The message `issues.ready-to-create`.
+pub const ISSUES_READY_TO_CREATE: MessageKey = MessageKey::new("issues.ready-to-create");
+
 /// The message `issues.sheet`.
 pub const ISSUES_SHEET: MessageKey = MessageKey::new("issues.sheet");
 
@@ -2046,14 +2014,8 @@ pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes
 /// The message `issues.side-panel-view`.
 pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-panel-view");
 
-/// The message `issues.someone`.
-pub const ISSUES_SOMEONE: MessageKey = MessageKey::new("issues.someone");
-
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
-
-/// The message `issues.title-required`.
-pub const ISSUES_TITLE_REQUIRED: MessageKey = MessageKey::new("issues.title-required");
 
 /// The message `issues.type`.
 pub const ISSUES_TYPE: MessageKey = MessageKey::new("issues.type");
@@ -2181,15 +2143,6 @@ pub const LABELS_OFFER_AGAIN: MessageKey = MessageKey::new("labels.offer-again")
 /// The message `labels.pick-label`.
 pub const LABELS_PICK_LABEL: MessageKey = MessageKey::new("labels.pick-label");
 
-/// The message `labels.preview-label`.
-pub const LABELS_PREVIEW_LABEL: MessageKey = MessageKey::new("labels.preview-label");
-
-/// The message `labels.preview-no-names`.
-pub const LABELS_PREVIEW_NO_NAMES: MessageKey = MessageKey::new("labels.preview-no-names");
-
-/// The message `labels.preview-nothing`.
-pub const LABELS_PREVIEW_NOTHING: MessageKey = MessageKey::new("labels.preview-nothing");
-
 /// The message `labels.preview-truncated`.
 pub const LABELS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("labels.preview-truncated");
 
@@ -2201,12 +2154,6 @@ pub const LABELS_RETIRE_HELP: MessageKey = MessageKey::new("labels.retire-help")
 
 /// The message `labels.retired`.
 pub const LABELS_RETIRED: MessageKey = MessageKey::new("labels.retired");
-
-/// The message `labels.save`.
-pub const LABELS_SAVE: MessageKey = MessageKey::new("labels.save");
-
-/// The message `labels.saved`.
-pub const LABELS_SAVED: MessageKey = MessageKey::new("labels.saved");
 
 /// The message `labels.show-changes`.
 pub const LABELS_SHOW_CHANGES: MessageKey = MessageKey::new("labels.show-changes");
@@ -2279,17 +2226,11 @@ pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customiz
 pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("layouts.customize-organization");
 
-/// The message `layouts.discard`.
-pub const LAYOUTS_DISCARD: MessageKey = MessageKey::new("layouts.discard");
-
 /// The message `layouts.draft-drop`.
 pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop");
 
 /// The message `layouts.draft-restore`.
 pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
-
-/// The message `layouts.edit-anyway`.
-pub const LAYOUTS_EDIT_ANYWAY: MessageKey = MessageKey::new("layouts.edit-anyway");
 
 /// The message `layouts.field-required`.
 pub const LAYOUTS_FIELD_REQUIRED: MessageKey = MessageKey::new("layouts.field-required");
@@ -2310,6 +2251,9 @@ pub const LAYOUTS_INHERITED_ORGANIZATION: MessageKey =
 /// The message `layouts.intro`.
 pub const LAYOUTS_INTRO: MessageKey = MessageKey::new("layouts.intro");
 
+/// The message `layouts.limited-link`.
+pub const LAYOUTS_LIMITED_LINK: MessageKey = MessageKey::new("layouts.limited-link");
+
 /// The message `layouts.lost`.
 pub const LAYOUTS_LOST: MessageKey = MessageKey::new("layouts.lost");
 
@@ -2327,12 +2271,6 @@ pub const LAYOUTS_ROLES_HIDDEN: MessageKey = MessageKey::new("layouts.roles-hidd
 
 /// The message `layouts.save`.
 pub const LAYOUTS_SAVE: MessageKey = MessageKey::new("layouts.save");
-
-/// The message `layouts.saved`.
-pub const LAYOUTS_SAVED: MessageKey = MessageKey::new("layouts.saved");
-
-/// The message `layouts.saving`.
-pub const LAYOUTS_SAVING: MessageKey = MessageKey::new("layouts.saving");
 
 /// The message `layouts.section-empty`.
 pub const LAYOUTS_SECTION_EMPTY: MessageKey = MessageKey::new("layouts.section-empty");
@@ -2355,9 +2293,6 @@ pub const LAYOUTS_TABS: MessageKey = MessageKey::new("layouts.tabs");
 /// The message `layouts.taking`.
 pub const LAYOUTS_TAKING: MessageKey = MessageKey::new("layouts.taking");
 
-/// The message `layouts.try-again`.
-pub const LAYOUTS_TRY_AGAIN: MessageKey = MessageKey::new("layouts.try-again");
-
 /// The message `layouts.type`.
 pub const LAYOUTS_TYPE: MessageKey = MessageKey::new("layouts.type");
 
@@ -2366,9 +2301,6 @@ pub const LAYOUTS_TYPE_ALL: MessageKey = MessageKey::new("layouts.type-all");
 
 /// The message `layouts.unreadable`.
 pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
-
-/// The message `layouts.unsaved`.
-pub const LAYOUTS_UNSAVED: MessageKey = MessageKey::new("layouts.unsaved");
 
 /// The message `layouts.use-inherited`.
 pub const LAYOUTS_USE_INHERITED: MessageKey = MessageKey::new("layouts.use-inherited");
@@ -2785,6 +2717,12 @@ pub const PERSON_ROLES_WHERE: MessageKey = MessageKey::new("person.roles-where")
 /// The message `person.since`.
 pub const PERSON_SINCE: MessageKey = MessageKey::new("person.since");
 
+/// The message `preview.label`.
+pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
+
+/// The message `preview.nothing`.
+pub const PREVIEW_NOTHING: MessageKey = MessageKey::new("preview.nothing");
+
 /// The message `priority.critical`.
 pub const PRIORITY_CRITICAL: MessageKey = MessageKey::new("priority.critical");
 
@@ -2921,9 +2859,6 @@ pub const PROJECTS_PREVIEW_NOTHING: MessageKey = MessageKey::new("projects.previ
 /// The message `projects.preview-truncated`.
 pub const PROJECTS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("projects.preview-truncated");
 
-/// The message `projects.saved`.
-pub const PROJECTS_SAVED: MessageKey = MessageKey::new("projects.saved");
-
 /// The message `projects.search`.
 pub const PROJECTS_SEARCH: MessageKey = MessageKey::new("projects.search");
 
@@ -2976,12 +2911,6 @@ pub const RELATED_ISSUES_ADD_IT: MessageKey = MessageKey::new("related-issues.ad
 /// The message `related-issues.back`.
 pub const RELATED_ISSUES_BACK: MessageKey = MessageKey::new("related-issues.back");
 
-/// The message `related-issues.cancel`.
-pub const RELATED_ISSUES_CANCEL: MessageKey = MessageKey::new("related-issues.cancel");
-
-/// The message `related-issues.issue-field`.
-pub const RELATED_ISSUES_ISSUE_FIELD: MessageKey = MessageKey::new("related-issues.issue-field");
-
 /// The message `related-issues.kind-field`.
 pub const RELATED_ISSUES_KIND_FIELD: MessageKey = MessageKey::new("related-issues.kind-field");
 
@@ -2997,9 +2926,6 @@ pub const RELATED_ISSUES_NOTHING_TO_PICK: MessageKey =
 
 /// The message `related-issues.title`.
 pub const RELATED_ISSUES_TITLE: MessageKey = MessageKey::new("related-issues.title");
-
-/// The message `related-issues.undo`.
-pub const RELATED_ISSUES_UNDO: MessageKey = MessageKey::new("related-issues.undo");
 
 /// The message `relation-kind.blocks`.
 pub const RELATION_KIND_BLOCKS: MessageKey = MessageKey::new("relation-kind.blocks");
@@ -3059,9 +2985,6 @@ pub const RELATION_KINDS_RETIRE_HELP: MessageKey = MessageKey::new("relation-kin
 
 /// The message `relation-kinds.retired`.
 pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.retired");
-
-/// The message `relation-kinds.saved`.
-pub const RELATION_KINDS_SAVED: MessageKey = MessageKey::new("relation-kinds.saved");
 
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
@@ -3166,9 +3089,6 @@ pub const ROLES_RESET: MessageKey = MessageKey::new("roles.reset");
 /// The message `roles.reset-help`.
 pub const ROLES_RESET_HELP: MessageKey = MessageKey::new("roles.reset-help");
 
-/// The message `roles.saved`.
-pub const ROLES_SAVED: MessageKey = MessageKey::new("roles.saved");
-
 /// The message `roles.start-empty`.
 pub const ROLES_START_EMPTY: MessageKey = MessageKey::new("roles.start-empty");
 
@@ -3254,6 +3174,9 @@ pub const SAMPLE_STEP_FIELDS: MessageKey = MessageKey::new("sample.step.fields")
 pub const SAMPLE_STEP_FIRST_ADMINISTRATOR: MessageKey =
     MessageKey::new("sample.step.first-administrator");
 
+/// The message `sample.step.first-start`.
+pub const SAMPLE_STEP_FIRST_START: MessageKey = MessageKey::new("sample.step.first-start");
+
 /// The message `sample.step.group`.
 pub const SAMPLE_STEP_GROUP: MessageKey = MessageKey::new("sample.step.group");
 
@@ -3296,17 +3219,11 @@ pub const SAMPLE_STEP_ROLE: MessageKey = MessageKey::new("sample.step.role");
 /// The message `sample.step.settings`.
 pub const SAMPLE_STEP_SETTINGS: MessageKey = MessageKey::new("sample.step.settings");
 
-/// The message `sample.step.setup-code`.
-pub const SAMPLE_STEP_SETUP_CODE: MessageKey = MessageKey::new("sample.step.setup-code");
-
 /// The message `sample.step.signing-in`.
 pub const SAMPLE_STEP_SIGNING_IN: MessageKey = MessageKey::new("sample.step.signing-in");
 
 /// The message `sample.step.signing-out`.
 pub const SAMPLE_STEP_SIGNING_OUT: MessageKey = MessageKey::new("sample.step.signing-out");
-
-/// The message `sample.step.starting-roles`.
-pub const SAMPLE_STEP_STARTING_ROLES: MessageKey = MessageKey::new("sample.step.starting-roles");
 
 /// The message `sample.step.tags`.
 pub const SAMPLE_STEP_TAGS: MessageKey = MessageKey::new("sample.step.tags");
@@ -4046,9 +3963,6 @@ pub const SIGN_UP_POLICY_DOMAINS_HELP: MessageKey = MessageKey::new("sign-up-pol
 /// The message `sign-up-policy.intro`.
 pub const SIGN_UP_POLICY_INTRO: MessageKey = MessageKey::new("sign-up-policy.intro");
 
-/// The message `sign-up-policy.saved`.
-pub const SIGN_UP_POLICY_SAVED: MessageKey = MessageKey::new("sign-up-policy.saved");
-
 /// The message `sign-up-policy.switch`.
 pub const SIGN_UP_POLICY_SWITCH: MessageKey = MessageKey::new("sign-up-policy.switch");
 
@@ -4109,26 +4023,17 @@ pub const STATUS_OPEN: MessageKey = MessageKey::new("status.open");
 /// The message `sub-issues.add-it`.
 pub const SUB_ISSUES_ADD_IT: MessageKey = MessageKey::new("sub-issues.add-it");
 
-/// The message `sub-issues.field`.
-pub const SUB_ISSUES_FIELD: MessageKey = MessageKey::new("sub-issues.field");
-
 /// The message `sub-issues.more`.
 pub const SUB_ISSUES_MORE: MessageKey = MessageKey::new("sub-issues.more");
 
 /// The message `sub-issues.none`.
 pub const SUB_ISSUES_NONE: MessageKey = MessageKey::new("sub-issues.none");
 
-/// The message `sub-issues.part-of`.
-pub const SUB_ISSUES_PART_OF: MessageKey = MessageKey::new("sub-issues.part-of");
-
 /// The message `sub-issues.progress-label`.
 pub const SUB_ISSUES_PROGRESS_LABEL: MessageKey = MessageKey::new("sub-issues.progress-label");
 
 /// The message `sub-issues.title`.
 pub const SUB_ISSUES_TITLE: MessageKey = MessageKey::new("sub-issues.title");
-
-/// The message `sub-issues.undo`.
-pub const SUB_ISSUES_UNDO: MessageKey = MessageKey::new("sub-issues.undo");
 
 /// The message `theme.daylight`.
 pub const THEME_DAYLIGHT: MessageKey = MessageKey::new("theme.daylight");
@@ -4150,9 +4055,6 @@ pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
 
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
-
-/// The message `validation.required`.
-pub const VALIDATION_REQUIRED: MessageKey = MessageKey::new("validation.required");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -4370,15 +4272,21 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
-/// The message `bulk.finished`.
+/// The message `bulk.apply`.
 #[must_use]
-pub fn bulk_finished(changed: i64, skipped: i64) -> Message {
+pub fn bulk_apply(count: i64) -> Message {
     Message::with_arguments(
-        MessageKey::new("bulk.finished"),
-        vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
-        ],
+        MessageKey::new("bulk.apply"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `bulk.apply-delete`.
+#[must_use]
+pub fn bulk_apply_delete(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.apply-delete"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -4447,18 +4355,6 @@ pub fn bulk_skipped_line(issue: impl std::fmt::Display, reason: impl std::fmt::D
         vec![
             ("issue", Value::Text(issue.to_string())),
             ("reason", Value::Text(reason.to_string())),
-        ],
-    )
-}
-
-/// The message `bulk.summary`.
-#[must_use]
-pub fn bulk_summary(changed: i64, skipped: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.summary"),
-        vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
         ],
     )
 }
@@ -4914,6 +4810,7 @@ pub fn conflict_field_only(field: impl std::fmt::Display) -> Message {
 pub fn conflict_sentence(
     ago: impl std::fmt::Display,
     changes: impl std::fmt::Display,
+    timed: &str,
     who: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
@@ -4921,6 +4818,7 @@ pub fn conflict_sentence(
         vec![
             ("ago", Value::Text(ago.to_string())),
             ("changes", Value::Text(changes.to_string())),
+            ("timed", Value::Text(timed.to_owned())),
             ("who", Value::Text(who.to_string())),
         ],
     )
@@ -4930,12 +4828,14 @@ pub fn conflict_sentence(
 #[must_use]
 pub fn conflict_sentence_plain(
     ago: impl std::fmt::Display,
+    timed: &str,
     who: impl std::fmt::Display,
 ) -> Message {
     Message::with_arguments(
         MessageKey::new("conflict.sentence-plain"),
         vec![
             ("ago", Value::Text(ago.to_string())),
+            ("timed", Value::Text(timed.to_owned())),
             ("who", Value::Text(who.to_string())),
         ],
     )
@@ -5016,6 +4916,86 @@ pub fn data_folder_unknown(part: impl std::fmt::Display, path: impl std::fmt::Di
             ("part", Value::Text(part.to_string())),
             ("path", Value::Text(path.to_string())),
         ],
+    )
+}
+
+/// The message `editing.ask-to-finish`.
+#[must_use]
+pub fn editing_ask_to_finish(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.ask-to-finish"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `editing.draft-continue`.
+#[must_use]
+pub fn editing_draft_continue(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.draft-continue"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
+/// The message `editing.draft-found`.
+#[must_use]
+pub fn editing_draft_found(thing: impl std::fmt::Display, when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.draft-found"),
+        vec![
+            ("thing", Value::Text(thing.to_string())),
+            ("when", Value::Text(when.to_string())),
+        ],
+    )
+}
+
+/// The message `editing.elsewhere`.
+#[must_use]
+pub fn editing_elsewhere(thing: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.elsewhere"),
+        vec![("thing", Value::Text(thing.to_string()))],
+    )
+}
+
+/// The message `editing.is-editing`.
+#[must_use]
+pub fn editing_is_editing(
+    name: impl std::fmt::Display,
+    since: impl std::fmt::Display,
+    thing: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.is-editing"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("since", Value::Text(since.to_string())),
+            ("thing", Value::Text(thing.to_string())),
+        ],
+    )
+}
+
+/// The message `editing.lost-changed`.
+#[must_use]
+pub fn editing_lost_changed(
+    name: impl std::fmt::Display,
+    thing: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.lost-changed"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("thing", Value::Text(thing.to_string())),
+        ],
+    )
+}
+
+/// The message `editing.lost-taken-over`.
+#[must_use]
+pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.lost-taken-over"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -5136,6 +5116,15 @@ pub fn fields_combine_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("fields.combine-title"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `fields.label-required`.
+#[must_use]
+pub fn fields_label_required(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.label-required"),
+        vec![("field", Value::Text(field.to_string()))],
     )
 }
 
@@ -5523,15 +5512,6 @@ pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.ask-to-finish`.
-#[must_use]
-pub fn issues_ask_to_finish(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.ask-to-finish"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
 /// The message `issues.asked-to-finish`.
 #[must_use]
 pub fn issues_asked_to_finish(name: impl std::fmt::Display) -> Message {
@@ -5556,6 +5536,15 @@ pub fn issues_change_field(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.change-field"),
         vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `issues.change-title-of`.
+#[must_use]
+pub fn issues_change_title_of(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.change-title-of"),
+        vec![("title", Value::Text(title.to_string()))],
     )
 }
 
@@ -5624,6 +5613,15 @@ pub fn issues_compare_paragraph(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.copy-link-of`.
+#[must_use]
+pub fn issues_copy_link_of(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.copy-link-of"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `issues.created`.
 #[must_use]
 pub fn issues_created(key: impl std::fmt::Display) -> Message {
@@ -5642,24 +5640,6 @@ pub fn issues_deleted(key: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.draft-continue`.
-#[must_use]
-pub fn issues_draft_continue(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.draft-continue"),
-        vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
-/// The message `issues.draft-found`.
-#[must_use]
-pub fn issues_draft_found(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.draft-found"),
-        vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
 /// The message `issues.draft-found-form`.
 #[must_use]
 pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
@@ -5669,41 +5649,11 @@ pub fn issues_draft_found_form(when: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.is-editing`.
-#[must_use]
-pub fn issues_is_editing(name: impl std::fmt::Display, since: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.is-editing"),
-        vec![
-            ("name", Value::Text(name.to_string())),
-            ("since", Value::Text(since.to_string())),
-        ],
-    )
-}
-
 /// The message `issues.keep-theirs`.
 #[must_use]
 pub fn issues_keep_theirs(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.keep-theirs"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `issues.lost-changed`.
-#[must_use]
-pub fn issues_lost_changed(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.lost-changed"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `issues.lost-taken-over`.
-#[must_use]
-pub fn issues_lost_taken_over(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.lost-taken-over"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -5726,12 +5676,18 @@ pub fn issues_read_only(field: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.saved-at`.
+/// The message `issues.refused-at-field`.
 #[must_use]
-pub fn issues_saved_at(time: impl std::fmt::Display) -> Message {
+pub fn issues_refused_at_field(
+    field: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
     Message::with_arguments(
-        MessageKey::new("issues.saved-at"),
-        vec![("time", Value::Text(time.to_string()))],
+        MessageKey::new("issues.refused-at-field"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
     )
 }
 
@@ -5935,15 +5891,6 @@ pub fn labels_preview_line(
     )
 }
 
-/// The message `labels.preview-summary`.
-#[must_use]
-pub fn labels_preview_summary(changed: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("labels.preview-summary"),
-        vec![("changed", Value::Number(changed))],
-    )
-}
-
 /// The message `labels.tag-in-projects`.
 #[must_use]
 pub fn labels_tag_in_projects(count: i64) -> Message {
@@ -5967,15 +5914,6 @@ pub fn labels_take_off(name: impl std::fmt::Display) -> Message {
 pub fn labels_take_project_off(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.take-project-off"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `layouts.ask-finish`.
-#[must_use]
-pub fn layouts_ask_finish(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.ask-finish"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -6085,18 +6023,6 @@ pub fn layouts_inherited_type(type_: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.inherited-type"),
         vec![("type", Value::Text(type_.to_string()))],
-    )
-}
-
-/// The message `layouts.is-editing`.
-#[must_use]
-pub fn layouts_is_editing(name: impl std::fmt::Display, since: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.is-editing"),
-        vec![
-            ("name", Value::Text(name.to_string())),
-            ("since", Value::Text(since.to_string())),
-        ],
     )
 }
 
@@ -6361,6 +6287,18 @@ pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.roles-none"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `preview.summary`.
+#[must_use]
+pub fn preview_summary(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("preview.summary"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
     )
 }
 
@@ -6957,6 +6895,15 @@ pub fn sample_error_too_few_names(people: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("sample.error.too-few-names"),
         vec![("people", Value::Text(people.to_string()))],
+    )
+}
+
+/// The message `save.saved-at`.
+#[must_use]
+pub fn save_saved_at(time: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("save.saved-at"),
+        vec![("time", Value::Text(time.to_string()))],
     )
 }
 
@@ -7572,7 +7519,6 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
 
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
-    ("access-keys.cancel", "Cancel"),
     ("access-keys.choice.everything", "Everything I can do"),
     ("access-keys.choice.see-and-change", "See and change"),
     ("access-keys.choice.see-only", "See only"),
@@ -7644,7 +7590,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("access-keys.row.expired", "Ran out on {when}"),
     ("access-keys.row.expires", "Runs out on {when}"),
-    ("access-keys.row.hidden-project", "a project you can't see"),
+    ("access-keys.row.hidden-project", "a project you cannot see"),
     ("access-keys.row.last-used", "Last used {when}"),
     ("access-keys.row.never-used", "Never used"),
     (
@@ -7668,7 +7614,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("access.cell-label", "{subject} for {role}"),
     ("access.field", "Field"),
-    ("access.hidden-project", "a project you can't see"),
+    ("access.hidden-project", "a project you cannot see"),
     ("access.kind", "Kind of people information"),
     ("access.no-roles", "There is no role yet."),
     ("access.origin-from", "From {project}"),
@@ -7780,15 +7726,25 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk-skip.changed-since", "It changed after the preview"),
     (
         "bulk-skip.field-missing",
-        "The other project does not use a field it has a value in",
+        "It has a value in a field the other project does not use",
     ),
-    ("bulk-skip.limit-reached", "It has as many as it may"),
+    (
+        "bulk-skip.field-rule",
+        "A value of the issue breaks the rule of its field",
+    ),
+    (
+        "bulk-skip.limit-reached",
+        "It already has as many of these as it can hold",
+    ),
     (
         "bulk-skip.not-allowed",
         "You may not make this change to it",
     ),
-    ("bulk-skip.not-found", "It is not there for you"),
-    ("bulk-skip.not-valid", "The change does not fit this issue"),
+    (
+        "bulk-skip.not-found",
+        "It was deleted, or you can no longer see it",
+    ),
+    ("bulk-skip.not-valid", "This change cannot be made to it"),
     ("bulk-skip.nothing-to-change", "It is like that already"),
     ("bulk-skip.relation-exists", "The relation is there already"),
     (
@@ -7813,7 +7769,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk.action-label", "Add a label"),
     ("bulk.action-move", "Move to a project"),
     ("bulk.action-relation", "Add a relation"),
-    ("bulk.apply", "Apply"),
+    (
+        "bulk.apply",
+        "{count, plural, one {Change # issue} other {Change # issues}}",
+    ),
+    (
+        "bulk.apply-delete",
+        "{count, plural, one {Delete # issue} other {Delete # issues}}",
+    ),
     (
         "bulk.background-note",
         "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
@@ -7821,27 +7784,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk.bar", "Change the issues you ticked"),
     (
         "bulk.delete-text",
-        "The issues are deleted. You can undo this right after.",
+        "The issues go to the trash. You can undo this for a short while.",
     ),
-    ("bulk.field-kind", "Relation"),
+    (
+        "bulk.dialog-text",
+        "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
+    ),
     ("bulk.field-label", "Label"),
-    (
-        "bulk.field-other",
-        "The other issue, by its ID such as WEB-12",
-    ),
-    ("bulk.field-priority", "Priority"),
-    ("bulk.field-status", "Status"),
-    (
-        "bulk.finished",
-        "Done. {changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
-    ),
     ("bulk.issue-unknown", "an issue you cannot see"),
     ("bulk.keep", "Leave as it is"),
     ("bulk.line-changes", "{field}: {after}"),
     ("bulk.line-delete", "Is deleted"),
-    ("bulk.line-relation", "This issue {name} {issue}"),
-    ("bulk.nothing", "None of the issues would change."),
-    ("bulk.preview-label", "Issues in this change"),
+    ("bulk.line-relation", "This issue · {name} · {issue}"),
     ("bulk.progress", "{done} of {total} issues done"),
     ("bulk.progress-label", "How far the change is"),
     ("bulk.project-legend", "Move to"),
@@ -7862,14 +7816,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The change stopped. Some issues are changed and the rest are not.",
     ),
     (
-        "bulk.summary",
-        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
-    ),
-    (
         "bulk.title",
         "{action}: {count, plural, one {# issue} other {# issues}}",
     ),
-    ("bulk.value-none", "nothing"),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),
@@ -8148,19 +8097,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("code-app.turn-off-title", "Switch off the code app?"),
     ("code-app.turned-off", "The code app is switched off."),
     ("comments.add", "Comment"),
-    ("comments.cancel", "Cancel"),
-    ("comments.delete", "Delete"),
+    ("comments.delete", "Delete your comment"),
+    ("comments.delete-other", "Delete the comment"),
     ("comments.deleted", "The comment is deleted."),
-    ("comments.edit", "Edit"),
+    ("comments.edit", "Edit your comment"),
     ("comments.edited", "edited"),
     ("comments.editing", "Edit the comment"),
-    (
-        "comments.lock-held",
-        "Someone else is editing this comment.",
-    ),
     ("comments.mention-choices", "Who you can mention"),
-    ("comments.save", "Save"),
-    ("comments.undo", "Undo"),
     ("comments.version-saved", "Version {version} · {when}"),
     ("comments.versions", "Earlier versions"),
     ("comments.versions-hide", "Hide earlier versions"),
@@ -8173,7 +8116,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.close", "Close"),
     ("common.continue", "Continue"),
     ("common.done", "Done"),
+    ("common.issue-id", "Issue ID, for example WEB-142"),
     ("common.loading", "Loading…"),
+    ("common.nothing", "nothing"),
     ("common.off", "Off"),
     ("common.on", "On"),
     ("common.save", "Save"),
@@ -8259,8 +8204,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("conflict.change", "{field} to {value}"),
     ("conflict.field-only", "{field}"),
-    ("conflict.sentence", "{who} changed {changes} {ago}."),
-    ("conflict.sentence-plain", "{who} changed this issue {ago}."),
+    (
+        "conflict.sentence",
+        "Not saved: {who} changed {changes}{timed, select, true { {ago}} other {}}.",
+    ),
+    (
+        "conflict.sentence-plain",
+        "Not saved: {who} changed this issue{timed, select, true { {ago}} other {}}.",
+    ),
     (
         "cookie.csrf.purpose",
         "Protects you from other websites that try to make Bugaboo do something in your name.",
@@ -8302,9 +8253,45 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "data-folder.unknown",
         "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
     ),
+    ("editing.ask-to-finish", "Ask {name} to finish"),
+    ("editing.draft-continue", "Continue your draft from {when}"),
+    ("editing.draft-drop", "Throw the draft away"),
+    (
+        "editing.draft-found",
+        "You have a draft of {thing} from {when}.",
+    ),
+    ("editing.edit-anyway", "Edit anyway"),
+    (
+        "editing.elsewhere",
+        "You are editing {thing} in another window. Save or close it there. If that window is gone, wait a minute and try again.",
+    ),
+    (
+        "editing.is-editing",
+        "{name} is editing {thing} · since {since}",
+    ),
+    (
+        "editing.lost-changed",
+        "Not saved yet: {name} changed {thing} after you. Your text is kept.",
+    ),
+    (
+        "editing.lost-ran-out",
+        "Not saved yet: you were away for a while, so your editing time ran out. Your text is kept.",
+    ),
+    (
+        "editing.lost-taken-over",
+        "Not saved yet: {name} took over the editing. Your text is kept.",
+    ),
+    ("editing.text-kept", "What you typed is kept as a draft:"),
+    (
+        "editing.text-kept-on-close",
+        "What you typed is kept as a draft if you close this. Open it again to continue.",
+    ),
+    ("editing.the-description", "the description"),
+    ("editing.this-comment", "this comment"),
+    ("editing.this-layout", "this layout"),
     (
         "error.access.cannot-lift",
-        "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
+        "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
     ),
     ("error.access.forbidden", "You are not allowed to do that."),
     (
@@ -8366,22 +8353,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.edit.lock-lost",
-        "Your editing time ran out. Your text is kept as a draft. Use Compare and save to keep your changes.",
+        "Not saved yet: your editing time ran out. Your text is kept as a draft.",
     ),
     (
         "error.edit.taken-over",
-        "Someone took over the editing. Your text is kept as a draft. Use Compare and save to keep your changes.",
+        "Not saved yet: someone took over the editing. Your text is kept as a draft.",
     ),
     (
         "error.edit.version-changed",
-        "Someone changed this while you were working. Use Compare and save to keep your changes.",
+        "Not saved yet: someone changed this after you started. Your text is still here.",
     ),
     (
         "error.field.no-match",
         "That does not have the form this field asks for.",
     ),
     ("error.field.not-here", "This field is not used here."),
-    ("error.field.required", "This field has to be filled in."),
+    ("error.field.required", "Must be filled in"),
     (
         "error.field.too-big",
         "That is higher than this field allows.",
@@ -8424,7 +8411,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.limit.reached",
-        "That is as many as one issue can hold. Take some away first.",
+        "There is no room for more of these. Take some away first.",
     ),
     (
         "error.name.taken",
@@ -8436,7 +8423,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.project.move-lifts-no-access",
-        "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+        "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
     ),
     (
         "error.project.preview-changed",
@@ -8486,7 +8473,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("error.resource.not-found", "We could not find that."),
     (
         "error.role.in-use",
-        "Somebody has this role. Choose the role that takes its place before you delete it.",
+        "Someone has this role. Choose the role that takes its place before you delete it.",
     ),
     (
         "error.server.internal",
@@ -8502,7 +8489,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.setting.locked",
-        "An administrator locked this setting, so it can't be changed here.",
+        "An administrator locked this setting, so it cannot be changed here.",
     ),
     (
         "error.tag.not-here",
@@ -8635,7 +8622,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.field-help", "Help text"),
     ("fields.field-name", "Name"),
-    ("fields.field-required", "It has to be filled in"),
+    ("fields.field-required", "Must be filled in"),
     ("fields.for-question", "What is it for?"),
     ("fields.hidden-reference", "Not shown"),
     (
@@ -8643,6 +8630,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Fields are the pieces of information on an issue or a project. Add the fields your organization needs, and decide who sees and fills in each one under Field permissions.",
     ),
     ("fields.kind-question", "What kind of information?"),
+    ("fields.label-required", "{field} (required)"),
     ("fields.list", "Fields"),
     ("fields.long-empty", "Nothing is written here yet."),
     ("fields.look", "Look"),
@@ -8681,7 +8669,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.pick-chosen", "Chosen"),
     ("fields.pick-groups-list", "Groups you can choose"),
     ("fields.pick-issue-find", "Find the issue"),
-    ("fields.pick-issue-key", "ID of the issue, like WEB-12"),
     ("fields.pick-more", "Show more"),
     (
         "fields.pick-no-groups",
@@ -8755,7 +8742,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "fields.used-in-projects",
-        "{count, plural, =0 {Limited to no project you can see.} one {Used in 1 project.} other {Used in # projects.}}",
+        "{count, plural, =0 {No project you can see uses it.} one {Used in 1 project.} other {Used in # projects.}}",
     ),
     ("fields.used-list", "Projects that use the field"),
     (
@@ -8857,7 +8844,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("groups.remove", "Take out"),
     ("groups.remove-name", "Take out {name} from the group"),
     ("groups.removed", "{name} is out of the group {group}."),
-    ("groups.saved", "Saved."),
     ("groups.search", "Search groups"),
     ("groups.used", "Used {places}."),
     (
@@ -8881,11 +8867,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.people-none", "nobody"),
     (
         "history.relation-added",
-        "{who} added a relation: this issue {name} {issue}",
+        "{who} added a relation: this issue · {name} · {issue}",
     ),
     (
         "history.relation-removed",
-        "{who} took away a relation: this issue {name} {issue}",
+        "{who} took away a relation: this issue · {name} · {issue}",
     ),
     ("history.set", "{who} set {field} to {after}"),
     ("history.system", "Bugaboo"),
@@ -8983,9 +8969,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-icon.zap", "Lightning"),
     ("issue-id-mode.counting", "Counting IDs"),
     ("issue-id-mode.random", "Random IDs"),
-    ("issue-ref.status-done", "Done"),
-    ("issue-ref.status-in-progress", "In progress"),
-    ("issue-ref.status-not-started", "Not started"),
     ("issue-type.bug", "Bug"),
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
@@ -9012,11 +8995,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
     ),
     ("issue-types.retired", "Retired"),
-    ("issue-types.saved", "Saved."),
     ("issue-types.search", "Search issue types"),
     ("issues.add-field", "Add {field}"),
     ("issues.all-details", "All details"),
-    ("issues.ask-to-finish", "Ask {name} to finish"),
     (
         "issues.asked-to-finish",
         "{name} asked you to finish editing.",
@@ -9039,7 +9020,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.bar", "Actions for this issue"),
     ("issues.change", "Change"),
     ("issues.change-field", "Change {field}"),
-    ("issues.change-title", "Change the title"),
+    ("issues.change-title-of", "Change the title: {title}"),
     ("issues.changed", "{field} changed to {value}."),
     (
         "issues.changed-after-you",
@@ -9064,65 +9045,51 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.compare-intro",
         "Your text is next to the newer version. For each paragraph that differs, choose which one to keep.",
     ),
-    ("issues.compare-keep", "Keep, paragraph {number}"),
-    ("issues.compare-keep-mine", "Your text"),
-    ("issues.compare-keep-theirs", "The newer version"),
+    (
+        "issues.compare-keep",
+        "Which text to keep for paragraph {number}",
+    ),
     ("issues.compare-mine", "Your text"),
     ("issues.compare-paragraph", "Paragraph {number}"),
     ("issues.compare-save", "Save the chosen text"),
     ("issues.compare-save-mine", "Keep all of mine"),
     ("issues.compare-theirs", "The newer version"),
-    ("issues.compare-title", "Compare and save"),
     ("issues.copy-link", "Copy the address"),
+    ("issues.copy-link-of", "{key}, copy the address"),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
     ("issues.create-first", "Create an issue"),
     ("issues.created", "{key} was created."),
     ("issues.created-on", "Created"),
-    ("issues.delete", "Delete"),
+    ("issues.delete", "Delete the issue"),
     ("issues.deleted", "{key} was moved to the trash."),
-    ("issues.description.edit", "Edit"),
+    ("issues.description.edit", "Edit the description"),
     ("issues.description.empty", "There is no description yet."),
     ("issues.details", "Details"),
-    ("issues.draft-continue", "Continue your draft from {when}"),
-    ("issues.draft-drop", "Start again"),
-    (
-        "issues.draft-found",
-        "You have a draft of this description from {when}.",
-    ),
     (
         "issues.draft-found-form",
         "You have a draft of a new issue from {when}.",
     ),
     (
         "issues.draft-kept",
-        "Your draft is kept if you close this window.",
-    ),
-    ("issues.edit-anyway", "Edit anyway"),
-    (
-        "issues.editing-elsewhere",
-        "You are editing this description in another window.",
+        "Your draft is kept if you close this form.",
     ),
     ("issues.hide-details", "Hide details"),
-    ("issues.history", "History"),
-    (
-        "issues.is-editing",
-        "{name} is editing the description · since {since}",
-    ),
-    ("issues.keep-theirs", "Keep {name}'s"),
+    ("issues.keep-theirs", "Keep {name}'s change"),
+    ("issues.keep-theirs-unnamed", "Keep their change"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
     (
-        "issues.lost-changed",
-        "Not saved yet: {name} changed the description after you. Your text is kept.",
+        "issues.missing-project",
+        "Choose a project first, then you can create and start another.",
     ),
     (
-        "issues.lost-ran-out",
-        "Not saved yet: your editing time ran out. Your text is kept.",
+        "issues.missing-title",
+        "Write a title first, then you can create and start another.",
     ),
     (
-        "issues.lost-taken-over",
-        "Not saved yet: {name} took over the editing. Your text is kept.",
+        "issues.missing-type",
+        "Choose an issue type first, then you can create and start another.",
     ),
     ("issues.more", "More"),
     ("issues.more-issues", "Show more issues"),
@@ -9137,18 +9104,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.read-only",
         "Only people whose role allows it can change {field}.",
     ),
-    ("issues.saved-at", "Saved · {time}"),
+    (
+        "issues.ready-to-create",
+        "Nothing is missing: you can create the issue.",
+    ),
+    ("issues.refused-at-field", "{field}: {reason}"),
     (
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
     ),
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
-    ("issues.side-panel-view", "Side panel view"),
-    ("issues.someone", "Someone"),
+    ("issues.side-panel-view", "Open in the side panel"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
-    ("issues.title-required", "Title (required)"),
     ("issues.type", "Type"),
     ("issues.unassign", "Take away"),
     ("issues.unassign-name", "Take {name} away"),
@@ -9206,15 +9175,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "labels.combine-dialog-title",
-        "Combine {name} into {other}?",
+        "Combine {name} with {other}?",
     ),
     (
         "labels.combine-help",
         "Every issue that has this one gets the other one instead, and this one is gone. This cannot be taken back.",
     ),
-    ("labels.combine-into", "Combine into"),
+    ("labels.combine-into", "Combine with"),
     ("labels.combine-pick", "Choose one"),
-    ("labels.combine-title", "Combine into another"),
+    ("labels.combine-title", "Combine with another one"),
     ("labels.combined", "Combined."),
     ("labels.field-color", "Color of {name}"),
     ("labels.field-group-name", "Name of the group"),
@@ -9260,14 +9229,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("labels.offer-again", "Offer again"),
     ("labels.pick-label", "Choose a label"),
-    ("labels.preview-label", "Issues that change"),
     ("labels.preview-line", "From {before} to {after}"),
-    ("labels.preview-no-names", "nothing"),
-    ("labels.preview-nothing", "No issue changes."),
-    (
-        "labels.preview-summary",
-        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change.",
-    ),
     (
         "labels.preview-truncated",
         "More issues change than this list shows.",
@@ -9278,8 +9240,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A retired one can no longer be put on issues. The issues that have it keep it.",
     ),
     ("labels.retired", "Retired"),
-    ("labels.save", "Save"),
-    ("labels.saved", "Saved."),
     ("labels.show-changes", "Show what the new name changes"),
     ("labels.show-combine", "Show what combining changes"),
     ("labels.sorting-title", "Labels and tags"),
@@ -9308,7 +9268,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layout.section-details", "Details"),
     ("layout.section-main", "Main"),
     ("layouts.add-section", "Add a section"),
-    ("layouts.ask-finish", "Ask {name} to finish"),
     ("layouts.available", "Fields that are not on this form"),
     ("layouts.available-none", "Every field is on this form."),
     ("layouts.customize-form", "Customize this form"),
@@ -9319,16 +9278,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.customize-project", "Customize for {project}"),
     (
         "layouts.delete-held",
-        "{name} is editing this layout. It can be taken away when they have finished.",
+        "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
     ),
-    ("layouts.discard", "Discard changes"),
     (
         "layouts.draft-changed",
         "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
     ),
     ("layouts.draft-drop", "Throw my changes away"),
     ("layouts.draft-restore", "Put my changes back"),
-    ("layouts.edit-anyway", "Edit anyway"),
     ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
     ("layouts.field-drag", "Drag {name}"),
@@ -9336,7 +9293,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.field-remove", "Take {name} off this form"),
     (
         "layouts.field-required",
-        "Required: it stays on the form for everybody who can fill it in.",
+        "Must be filled in: it stays on the form for everybody who can fill it in.",
     ),
     ("layouts.field-up", "Move {name} up"),
     ("layouts.fields-of", "Fields of section {number}"),
@@ -9363,20 +9320,17 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
     ),
     (
-        "layouts.is-editing",
-        "{name} is editing this layout · since {since}",
-    ),
-    (
         "layouts.limited-form",
-        "{role} can't fill in {field}: Field permissions",
+        "{role} cannot fill in {field}: the field permissions do not allow it.",
     ),
+    ("layouts.limited-link", "Open field permissions"),
     (
         "layouts.limited-page",
-        "{role} can't see {field}: Field permissions",
+        "{role} cannot see {field}: the field permissions hide it.",
     ),
     (
         "layouts.lost",
-        "You are no longer editing this layout. Your changes are kept here. Ask for the lock again to save them.",
+        "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
     ),
     ("layouts.nav", "Layouts"),
     (
@@ -9395,8 +9349,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("layouts.roles-page", "Who sees {name}"),
     ("layouts.save", "Save layout"),
-    ("layouts.saved", "The layout is saved."),
-    ("layouts.saving", "Saving …"),
     ("layouts.section", "Section {number}"),
     ("layouts.section-down", "Move section {number} down"),
     (
@@ -9414,24 +9366,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.section-up", "Move section {number} up"),
     ("layouts.tab-other", "Other"),
     ("layouts.tabs", "Sections of the form"),
-    ("layouts.taking", "Getting ready to edit …"),
-    ("layouts.try-again", "Try again"),
+    ("layouts.taking", "Getting ready to edit…"),
     ("layouts.type", "Issue type"),
     ("layouts.type-all", "All issue types"),
     (
         "layouts.unreadable",
         "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
     ),
-    ("layouts.unsaved", "You have changes that are not saved."),
-    ("layouts.use-inherited", "Use the inherited layout again"),
+    ("layouts.use-inherited", "Reset to default"),
     (
         "layouts.use-inherited-text",
         "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
     ),
-    (
-        "layouts.use-inherited-title",
-        "Use the inherited layout again?",
-    ),
+    ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     ("markdown.bold", "Bold"),
@@ -9492,7 +9439,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
-        "{lost} The organization always keeps somebody who can manage roles, but it may no longer be you.",
+        "{lost} The organization always keeps someone who can manage roles, but it may no longer be you.",
     ),
     (
         "own.ask-title",
@@ -9640,7 +9587,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("permission.delete-issues", "Delete issues into the trash"),
     (
         "permission.edit-anyway",
-        "Take over text somebody else is editing; their text is kept",
+        "Take over text someone else is editing; their text is kept",
     ),
     ("permission.make-issues", "Make issues"),
     ("permission.make-projects", "Make projects at the top level"),
@@ -9701,6 +9648,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
     ),
     ("person.since", "Account made"),
+    ("preview.label", "Issues in this change"),
+    ("preview.nothing", "None of the issues would change."),
+    (
+        "preview.summary",
+        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
+    ),
     ("priority.critical", "Critical"),
     ("priority.high", "High"),
     ("priority.low", "Low"),
@@ -9805,7 +9758,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.preview-blocked", "This move is not allowed."),
     (
         "projects.preview-blocked-out-of-sight",
-        "Something in a project you cannot see also stands in the way. Ask somebody who sees more to look at this move.",
+        "Something in a project you cannot see also stands in the way. Ask someone who sees more to look at this move.",
     ),
     ("projects.preview-heading", "What changes"),
     (
@@ -9826,7 +9779,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "projects.preview-truncated",
         "There are more changes than this list shows.",
     ),
-    ("projects.saved", "Saved."),
     ("projects.search", "Search projects"),
     ("projects.settings-back", "Back to the project"),
     ("projects.settings-link", "Project settings"),
@@ -9857,13 +9809,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.tree-more", "Show more projects"),
     ("related-issues.add", "Add relation"),
     ("related-issues.add-it", "Add the relation"),
-    ("related-issues.added", "{key} now {name} {other}."),
-    ("related-issues.back", "Back"),
-    ("related-issues.cancel", "Cancel"),
     (
-        "related-issues.issue-field",
-        "The other issue (for example WEB-142)",
+        "related-issues.added",
+        "Relation added: {key} · {name} · {other}",
     ),
+    ("related-issues.back", "Back"),
     ("related-issues.kind-field", "What the relation means"),
     ("related-issues.more", "Show more related issues"),
     ("related-issues.none", "No related issues yet."),
@@ -9876,7 +9826,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Take away the relation: {name} {other}",
     ),
     ("related-issues.title", "Related issues"),
-    ("related-issues.undo", "Undo"),
     ("relation-kind.blocks", "blocks"),
     ("relation-kind.causes", "causes"),
     ("relation-kind.duplicate-of", "duplicate of"),
@@ -9919,7 +9868,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
     ),
     ("relation-kinds.retired", "Retired"),
-    ("relation-kinds.saved", "Saved."),
     ("relation-kinds.search", "Search kinds of relation"),
     ("roles.actions-title", "More about this role"),
     ("roles.applies.organization", "Whole organization"),
@@ -9953,7 +9901,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Choose the role that takes its place: everybody who has this role gets the other one, in the same place and with the same reach. This cannot be taken back.",
     ),
     ("roles.field-name", "Name of the role"),
-    ("roles.from-hidden", "from a project you can't see"),
+    ("roles.from-hidden", "from a project you cannot see"),
     ("roles.from-organization", "from the whole organization"),
     ("roles.from-project", "from {name}"),
     ("roles.held", "{role} in {place}"),
@@ -9976,7 +9924,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Tick what people with this role may do. A change is saved at once.",
     ),
     ("roles.permissions-title", "What this role allows"),
-    ("roles.place.hidden", "a project you can't see"),
+    ("roles.place.hidden", "a project you cannot see"),
     ("roles.place.organization", "the whole organization"),
     ("roles.project-link", "Who has which role"),
     ("roles.replace-choose", "Choose a role"),
@@ -9999,7 +9947,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The permissions and the two-step switch of {name} go back to what they were at the start. The name stays. What was changed since is lost.",
     ),
     ("roles.reset-title", "Reset {name}?"),
-    ("roles.saved", "Saved."),
     (
         "roles.second-step-gap",
         "{count, plural, one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
@@ -10138,6 +10085,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.first-administrator",
         "making the first administrator",
     ),
+    ("sample.step.first-start", "getting the organization ready"),
     ("sample.step.group", "making a group"),
     ("sample.step.group-member", "putting a person into a group"),
     (
@@ -10164,13 +10112,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.settings",
         "choosing how a project gives out issue IDs",
     ),
-    ("sample.step.setup-code", "using the setup code"),
     ("sample.step.signing-in", "signing in to do the work"),
     ("sample.step.signing-out", "signing out"),
-    ("sample.step.starting-roles", "making the starting roles"),
     ("sample.step.tags", "putting a tag or a label on an issue"),
     ("save.not-saved", "Not saved yet"),
     ("save.saved", "Saved"),
+    ("save.saved-at", "Saved · {time}"),
     ("save.saving", "Saving…"),
     ("search.clear", "Clear the search"),
     ("search.label", "Search"),
@@ -10212,7 +10159,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "security-log.reason.behind",
-        "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
+        "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, someone removed entries.",
     ),
     (
         "security-log.reason.broken-link",
@@ -10462,7 +10409,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("set-up-second-step.title", "Set up your second step"),
     (
         "set-up-second-step.why",
-        "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",
+        "Your administrator asks you to sign in with a second step. It keeps your account safe even if someone learns your password.",
     ),
     (
         "setting.appearance.dark-theme.help",
@@ -10603,7 +10550,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.time-zone.name", "Time zone"),
     (
         "setting.security.session-absolute-hours.help",
-        "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+        "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
     ),
     (
         "setting.security.session-absolute-hours.name",
@@ -10656,7 +10603,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.locked", "Set by your organization"),
     (
         "setting.ui.locked-why",
-        "An administrator chose this for everyone, so you can't change it here.",
+        "An administrator chose this for everyone, so you cannot change it here.",
     ),
     ("setting.ui.nothing", "No setting matches your search."),
     ("setting.ui.reset", "Reset to default"),
@@ -10665,7 +10612,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.source-default", "Bugaboo's standard value"),
     (
         "setting.ui.source-hidden-project",
-        "From a project you can't see",
+        "From a project you cannot see",
     ),
     (
         "setting.ui.source-organization",
@@ -10830,7 +10777,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sign-up-policy.intro",
         "When this is on, anyone who can open Bugaboo can make an account without being invited.",
     ),
-    ("sign-up-policy.saved", "Saved."),
     ("sign-up-policy.switch", "Let people make their own account"),
     ("sign-up-policy.title", "Signing up without an invitation"),
     (
@@ -10858,16 +10804,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.open", "Open"),
     ("sub-issues.add-it", "Add"),
     ("sub-issues.added", "{key} is now a sub-issue."),
-    ("sub-issues.field", "Issue to add (for example WEB-142)"),
     ("sub-issues.more", "Show more sub-issues"),
     ("sub-issues.none", "No sub-issues yet."),
     ("sub-issues.not-part-of", "Take this issue out of {key}"),
-    ("sub-issues.part-of", "Part of"),
     ("sub-issues.progress", "{done} of {total} done"),
     ("sub-issues.progress-label", "How far the sub-issues are"),
     ("sub-issues.take-out", "Take {key} out of the sub-issues"),
     ("sub-issues.title", "Sub-issues"),
-    ("sub-issues.undo", "Undo"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
     ("theme.device-resolved", "{device} ({theme})"),
@@ -10904,5 +10847,4 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "validation.email",
         "Type an e-mail address like name@example.com.",
     ),
-    ("validation.required", "Please fill this in."),
 ];

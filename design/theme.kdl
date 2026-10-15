@@ -436,6 +436,13 @@ mixin "touch-row" {
     cursor pointer
 }
 
+// A link that is a target a finger can hit, and still reads as a link in a line of text.
+mixin "touch-link" {
+    display inline-flex
+    align-items center
+    min-height "$size-target"
+}
+
 // The name of a tab of a row of tabs: the editor of text, the sections of a form.
 mixin "tab-label" {
     padding "$space-2 $space-3"
@@ -2917,6 +2924,16 @@ part "issue-row.title" {
 
 part "issue-row.title:focus-visible" {
     use "ring"
+}
+
+// The way to the field permissions next to the note is a target a finger can hit.
+part "layout-field.limited link" {
+    use "touch-link"
+}
+
+// On a phone the title is a target a finger can hit.
+part "app-layout[variant=phone] issue-row.title link" {
+    use "touch-link"
 }
 
 part "issue-row.meta" {

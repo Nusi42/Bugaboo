@@ -39,6 +39,8 @@ export function useNewIssue(): NewIssue {
     lastKey,
     change: (next) => {
       setLastKey(null);
+      // What was refused is about the values before this change.
+      make.reset();
       state.change(next);
     },
     create: (another, onMade) => {

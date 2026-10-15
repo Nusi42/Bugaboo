@@ -7,9 +7,9 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{id_of, make_field, reader_of, severity};
+use super::fields_http::{make_field, reader_of, severity};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_in, ok};
 
 /// The items of the changes of an answer of the history.
 fn changes(history: &Value) -> Vec<Value> {
@@ -23,16 +23,16 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let level = severity(&mut ada).await?;
         let (severity_id, minor, critical) = (
-            id_of(&level)?,
-            id_of(&level["choices"][0])?,
-            id_of(&level["choices"][2])?,
+            id_in(&level)?,
+            id_in(&level["choices"][0])?,
+            id_in(&level["choices"][2])?,
         );
         let salary = make_field(
             &mut ada,
             json!({"name": "Salary band", "kind": "text", "applies_to": "issues"}),
         )
         .await?;
-        let salary_id = id_of(&salary)?;
+        let salary_id = id_in(&salary)?;
         let made = ada
             .send(
                 "POST",
@@ -147,24 +147,19 @@ fn is_change_of(item: &Value, field: &str) -> bool {
     item["field"] == json!(field)
 }
 
-/// The key of an issue in an answer.
-fn key_in(made: &Value) -> Result<String, Failure> {
-    Ok(made["key"].as_str().ok_or("no key")?.to_owned())
-}
-
 #[tokio::test]
 async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_only() -> TestResult {
     each_database("iss_06_own_fields_type", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let centre = id_of(
+        let centre = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Cost centre", "kind": "text", "applies_to": "issues"}),
             )
             .await?,
         )?;
-        let approved = id_of(
+        let approved = id_in(
             &make_field(
                 &mut ada,
                 json!({"name": "Approved", "kind": "yes-no", "applies_to": "issues"}),
@@ -296,7 +291,7 @@ async fn make_value_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
             json!({"name": name, "kind": kind, "applies_to": "issues"}),
         )
         .await?;
-        fields.push(id_of(&made)?);
+        fields.push(id_in(&made)?);
     }
     Ok(fields)
 }
@@ -325,7 +320,7 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
         let (mut vic, vic_id) = site
             .person_called(StartingRole::Viewer, "vic", "Vic Viewer")
             .await?;
-        let group = id_of(ok(&ada
+        let group = id_in(ok(&ada
             .send("POST", "/api/v1/groups", Some(json!({"name": "Core"})))
             .await?)?)?;
         // Somebody who sees only the issues they reported, and so not the issue Twin names.

@@ -21,7 +21,7 @@ A "No." says why not: no role gives it, a *No access* wins over the role (and wh
 ## Names and hidden projects
 
 - If you manage people or roles, you see names and can choose everybody. Otherwise you can choose only people who have a role that reaches the place (the people *Project members* would show you), and the person is shown as *Project members* are shown to you: by name, by role, or as "Someone". Without names you cannot choose anybody, so the list stays empty. Anybody else is as good as not there.
-- A reason never names a project you may not see. It says *a project you can't see*.
+- A reason never names a project you may not see. It says *a project you cannot see*.
 - The page never shows a number that counts people, fields or projects.
 
 ## Who may check

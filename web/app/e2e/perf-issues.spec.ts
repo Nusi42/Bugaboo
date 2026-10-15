@@ -9,12 +9,12 @@ import {
   sampleProjects,
   sampleSubProject,
 } from "./support/sample.ts";
+import { fieldOf } from "./support/fields.ts";
 import { inOrder } from "./support/sequence.ts";
 import {
   choiceNamed,
   comment,
   expectInBudget,
-  fieldNamed,
   firstOf,
   idOfProject,
   LISTS,
@@ -87,7 +87,7 @@ test("perf_f60_combining_a_choice_with_another_on_the_sample_holds_the_change_un
   server,
 }) => {
   const session = await signInThroughApi(server, sampleAdministrator());
-  const severity = await fieldNamed(session, sampleCombine.field);
+  const severity = await fieldOf(session, sampleCombine.field);
   const combined = await timed(() =>
     session.client.POST("/api/v1/fields/{field}/choices/{choice}/combine", {
       params: {

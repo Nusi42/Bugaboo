@@ -8,7 +8,7 @@ In the list of issues of a project, tick the box in front of each issue. A line 
 - **Add a relation** (the kind of relation, and the other issue by its ID)
 - **Delete**
 
-Each opens a window. Fill in what you want and press **Show what changes**. Bugaboo does nothing yet: it lists each ticked issue and what would happen to it, with a sentence on top (*118 issues will change, 2 will be skipped*), ten issues at a time with **Show all**. Press **Apply** only when that is what you want.
+Each opens a window. Fill in what you want and press **Show what changes**. Bugaboo does nothing yet: it lists each ticked issue and what would happen to it, with a sentence on top (*118 issues will change, 2 will be skipped*), ten issues at a time with **Show all**. Press **Change 118 issues** (the button says how many) only when that is what you want.
 
 ## Issues that are left alone
 
@@ -20,7 +20,7 @@ Bugaboo judges every issue again, with your own rights, in the preview and when 
 - the other project does not offer its issue type, or does not use a field it has a value in (when moving);
 - the relation is there already, or would relate an issue to itself.
 
-A skipped issue never stops the others. After **Apply** a line says how many issues were changed and how many were skipped, and lists the skipped ones with the reason.
+A skipped issue never stops the others. After that a line says how many issues were changed and how many were skipped, and lists the skipped ones with the reason.
 
 ## A long change goes on in the background
 

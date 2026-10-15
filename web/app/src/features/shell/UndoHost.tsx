@@ -31,14 +31,16 @@ function Offer({ offer }: { readonly offer: UndoOffer }) {
   return (
     <div ref={box} {...partOf(part.undoHostOffer)}>
       <span {...partOf(part.wrap)}>{offer.message}</span>
-      <Button
-        onPress={() => {
-          takeBack(offer);
-        }}
-      >
-        <Icon name={iconName.undo} size={iconSize.small} />
-        {t("common.undo")}
-      </Button>
+      {offer.undo === undefined ? null : (
+        <Button
+          onPress={() => {
+            takeBack(offer);
+          }}
+        >
+          <Icon name={iconName.undo} size={iconSize.small} />
+          {t("common.undo")}
+        </Button>
+      )}
     </div>
   );
 }

@@ -2,8 +2,6 @@
 //! the call, and how many events the call added. `events.rs` names each use case once and runs
 //! them.
 
-use std::sync::Arc;
-
 use bb_core::comment::TEXT_PART;
 use bb_core::edit::EditWhat;
 use bb_core::event::RecordKind;
@@ -17,9 +15,8 @@ use super::scenarios_issues::an_issue;
 use super::world::World;
 use crate::auth::entity;
 use crate::comments::{
-    AddComment, CommentRecords, DeleteComment, MentionsQuery, ReadMentions, RestoreComment,
-    SaveComment, add_comment, delete_comment, mentions, read_mentions, restore_comment,
-    save_comment,
+    AddComment, DeleteComment, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
+    add_comment, delete_comment, mentions, read_mentions, restore_comment, save_comment,
 };
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::follow::{FollowIssue, UnfollowIssue, follow_issue, unfollow_issue};
@@ -200,12 +197,7 @@ pub(crate) async fn add_comment_scenario(world: &World) -> Added {
 }
 
 pub(crate) async fn save_comment_scenario(_world: &World) -> Added {
-    // The comments are known to the editing use cases as records only when the server says so.
     let world = World::new().await?;
-    let world = {
-        let records = Arc::new(CommentRecords::new(world.store.clone()));
-        world.with_records(records)
-    };
     let project = a_project(&world, "ACME").await?;
     let issue = an_issue(&world, project).await?;
     let comment = a_comment(&world, issue).await?;

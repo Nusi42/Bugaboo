@@ -13,7 +13,7 @@ use bb_core::own_fields_value::Cell;
 use jiff::Timestamp;
 
 use super::types::Definition;
-use crate::issues::IssueStore;
+use crate::issues::{InTrash, IssueStore};
 use crate::store_macros::{queries, reads, writes};
 
 /// The values an item holds for one field, as stored: one cell for each value, in order.
@@ -110,14 +110,10 @@ pub trait FieldStore: IssueStore + 'static {
                 let Ok(issue) = IssueId::from_bytes(id.to_bytes()) else {
                     return Ok(None);
                 };
-                let Some(mut found) = Self::issue_in(transaction, issue).await? else {
-                    return Ok(None);
-                };
-                let version = found.version;
-                found.updated_at = at;
-                Self::update_issue(transaction, &found, version)
+                // One in the trash is counted up too: taking it out must show the right version.
+                Self::count_issue_up(transaction, issue, None, InTrash::Counted, at)
                     .await
-                    .map(|done| done.then_some(version))
+                    .map(|now| now.map(|version| version - 1))
             } else if *kind == EntityKind::from(RecordKind::Project) {
                 let Ok(project) = ProjectId::from_bytes(id.to_bytes()) else {
                     return Ok(None);

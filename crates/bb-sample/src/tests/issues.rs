@@ -11,8 +11,8 @@ use serde_json::Value;
 
 use crate::{DEFAULT_SEED, Everything, Options, Sample, Target, make};
 
-/// 2027-01-15 08:00:00 UTC, like the other tests.
-const START: i64 = 1_800_000_000;
+/// The start of the clock of the tests, like the other tests.
+const START: i64 = bb_dev_words::accounts::CLOCK_START;
 /// Few enough to be quick, enough for every project, type and kind of relation to be there.
 const ISSUES: u32 = 150;
 
@@ -88,7 +88,10 @@ async fn the_sample_has_its_issues_made_by_people_over_many_months_and_nothing_m
     let first: Timestamp = times.first().ok_or("no issue events")?.parse()?;
     let last: Timestamp = times.last().ok_or("no issue events")?.parse()?;
     let months = last.as_second() - first.as_second();
-    assert!(months > 15 * 30 * 86_400, "{first} to {last}");
+    assert!(
+        months > 15 * 30 * bb_core::time::SECONDS_PER_DAY,
+        "{first} to {last}"
+    );
     assert!(last.as_second() < START);
     // Made by people through the use cases: each issue event has a person as its actor, and none
     // is made by the system.

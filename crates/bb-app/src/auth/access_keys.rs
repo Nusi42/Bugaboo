@@ -25,6 +25,7 @@ use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{AccessKeyId, ProjectId, UserId};
 use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
 use bb_core::sign_in::{SecurityAction, SessionStage};
+use bb_core::time::SECONDS_PER_DAY;
 use bb_policy::{Authorized, Choice, Narrowing, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -43,8 +44,6 @@ use crate::input::{clean_name, cursor_or_invalid};
 
 /// The purpose under which guessing keys is counted per network (`Ctx::reserve_network`).
 const GUESSING: &str = "access-key";
-
-const SECONDS_PER_DAY: i64 = 24 * 3600;
 
 /// What a key narrows its owner to: its choice and its projects.
 pub(crate) fn narrowing_of(record: &AccessKeyRecord) -> Narrowing {

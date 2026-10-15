@@ -66,7 +66,7 @@ pub async fn delete_issue<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::set_issue_deleted(transaction, id, Some(now)).await? {
+                if S::set_issue_deleted(transaction, id, Some(now), now).await? {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::NotFound))
@@ -107,12 +107,12 @@ pub async fn restore_issue<S: AuthStore>(
             counted_up(issue.version),
         ],
     )?;
-    let why = Why::default();
+    let (why, now) = (Why::default(), ctx.now());
     let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::set_issue_deleted(transaction, id, None).await? {
+                if S::set_issue_deleted(transaction, id, None, now).await? {
                     Ok(())
                 } else {
                     Err(stopped.stop::<S>(ErrorCode::NotFound))

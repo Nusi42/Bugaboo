@@ -3,8 +3,9 @@ import { Alert, alertTone, FieldValue, partOf, part } from "@bugaboo/ui";
 import { useEffect } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { isRunning, refreshIssues, skipText, useBulkRun, type BulkRun } from "./bulk.ts";
+import { isRunning, skipText, useBulkRun, type BulkRun } from "./bulk.ts";
 import { progressLook } from "./progress-look.ts";
+import { refreshIssues } from "../../shared/query-keys.ts";
 
 /** The issues that were left alone and why, one line each. */
 export function SkippedList({ skipped }: { readonly skipped: BulkRun["skipped"] }) {
@@ -52,7 +53,7 @@ export function RunProgress({ run }: { readonly run: string }) {
     return (
       <div {...partOf(part.bulkProgress)}>
         <Alert tone={alertTone.success}>
-          {t("bulk.finished", { changed: data.changed, skipped: data.skipped_count })}
+          {t("bulk.result-done", { changed: data.changed, skipped: data.skipped_count })}
         </Alert>
         <SkippedList skipped={data.skipped} />
       </div>

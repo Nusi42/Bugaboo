@@ -8,7 +8,7 @@ use bb_core::issue_key::IssueCode;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::issues::{IssueFound, IssueStore};
+use crate::issues::{InTrash, IssueFound, IssueStore};
 
 fn types_of(state: &State) -> Vec<IssueType> {
     let mut types = state.issue_types.clone();
@@ -235,6 +235,7 @@ impl IssueStore for FakeStore {
         tx: &mut Tx,
         id: IssueId,
         deleted_at: Option<Timestamp>,
+        now: Timestamp,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
@@ -245,6 +246,7 @@ impl IssueStore for FakeStore {
             return Ok(false);
         };
         found.deleted_at = deleted_at;
+        found.updated_at = now;
         found.version += 1;
         Ok(true)
     }
@@ -269,6 +271,25 @@ impl IssueStore for FakeStore {
             found.version += 1;
         }
         Ok(())
+    }
+
+    async fn count_issue_up(
+        tx: &mut Tx,
+        issue: IssueId,
+        only_at: Option<i64>,
+        in_trash: InTrash,
+        now: Timestamp,
+    ) -> Result<Option<i64>, FakeError> {
+        let Some(found) = tx.state.issues.iter_mut().find(|found| {
+            found.id == issue
+                && (in_trash == InTrash::Counted || found.deleted_at.is_none())
+                && only_at.is_none_or(|version| found.version == version)
+        }) else {
+            return Ok(None);
+        };
+        found.updated_at = now;
+        found.version += 1;
+        Ok(Some(found.version))
     }
 
     async fn lock_issue_codes(_tx: &mut Tx, _project: ProjectId) -> Result<(), FakeError> {

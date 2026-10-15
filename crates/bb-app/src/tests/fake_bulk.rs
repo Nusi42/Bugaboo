@@ -1,8 +1,8 @@
 //! The jobs and the runs of changes to many issues of the in-memory store.
 
-use bb_core::bulk::{BulkRun, BulkStatus};
-use bb_core::id::{BulkRunId, JobId, UserId};
-use bb_core::job::{Job, JobState};
+use bb_core::bulk::{BulkRun, BulkStatus, RunsToEnd};
+use bb_core::id::{BulkRunId, JobId};
+use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
 use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
@@ -76,8 +76,9 @@ impl JobStore for FakeStore {
         id: JobId,
         worker: &TechnicalName,
         failure: &TechnicalName,
-        _now: Timestamp,
-    ) -> Result<bool, FakeError> {
+        kind: FailureKind,
+        now: Timestamp,
+    ) -> Result<Option<FailureOutcome>, FakeError> {
         let mut shared = self.lock();
         let Some(found) = shared
             .state
@@ -85,15 +86,17 @@ impl JobStore for FakeStore {
             .iter_mut()
             .find(|job| job.id == id && job.lease_owner.as_ref() == Some(worker))
         else {
-            return Ok(false);
+            return Ok(None);
         };
         found.lease_owner = None;
         found.lease_until = None;
         found.last_failure = Some(failure.clone());
-        if found.attempts >= found.max_attempts {
+        if kind == FailureKind::Permanent || found.attempts >= found.max_attempts {
             found.state = JobState::Dead;
+            Ok(Some(FailureOutcome::Dead))
+        } else {
+            Ok(Some(FailureOutcome::Retry(now)))
         }
-        Ok(true)
     }
 
     async fn later_job_waits(
@@ -156,6 +159,10 @@ impl BulkStore for FakeStore {
         expected_done: i64,
     ) -> Result<bool, FakeError> {
         let mut shared = self.lock();
+        if shared.progress_failures > 0 {
+            shared.progress_failures -= 1;
+            return Err(FakeError::Failed);
+        }
         let Some(found) = shared.state.bulk_runs.iter_mut().find(|found| {
             found.id == run.id
                 && found.done == expected_done
@@ -182,30 +189,24 @@ impl BulkStore for FakeStore {
         }))
     }
 
-    async fn end_bulk_runs_of(
+    async fn end_bulk_runs(
         tx: &mut Tx,
-        person: UserId,
+        which: &RunsToEnd,
+        status: BulkStatus,
         at: Timestamp,
     ) -> Result<u64, FakeError> {
         let mut ended = 0;
         for run in tx.state.bulk_runs.iter_mut().filter(|run| {
-            run.person == person && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+            matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+                && match which {
+                    RunsToEnd::One(id) => run.id == *id,
+                    RunsToEnd::OfPerson(person) => run.person == *person,
+                }
         }) {
-            run.status = BulkStatus::Stopped;
+            run.status = status;
             run.finished_at = Some(at);
             ended += 1;
         }
         Ok(ended)
-    }
-
-    async fn end_bulk_run(tx: &mut Tx, id: BulkRunId, at: Timestamp) -> Result<bool, FakeError> {
-        let Some(run) = tx.state.bulk_runs.iter_mut().find(|run| {
-            run.id == id && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
-        }) else {
-            return Ok(false);
-        };
-        run.status = BulkStatus::Stopped;
-        run.finished_at = Some(at);
-        Ok(true)
     }
 }

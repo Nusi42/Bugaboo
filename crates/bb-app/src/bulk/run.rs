@@ -12,8 +12,8 @@
 //! each issue and changes nothing more. When issues are left, the step queues the next one.
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus};
-use bb_core::event::RecordKind;
+use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus, RunsToEnd};
+use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::BulkRunId;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
@@ -32,6 +32,15 @@ const RUN_KEY: &str = "run";
 /// What a step of a run is queued with: the run it is a step of.
 pub(crate) fn step_payload(run: BulkRunId) -> Value {
     serde_json::json!({ RUN_KEY: run.to_string() })
+}
+
+/// The run that the payload of a step names.
+fn run_named(payload: &Value) -> Result<BulkRunId, AppError> {
+    payload
+        .get(RUN_KEY)
+        .and_then(Value::as_str)
+        .and_then(|text| text.parse().ok())
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -73,11 +82,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// `request.invalid` for a payload that names no run, and the error of the store.
     pub(crate) async fn run_bulk_step(&self, payload: &Value) -> Result<(), AppError> {
-        let id: BulkRunId = payload
-            .get(RUN_KEY)
-            .and_then(Value::as_str)
-            .and_then(|text| text.parse().ok())
-            .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+        let id = run_named(payload)?;
         let Some(mut run) = self
             .store()
             .bulk_run(id)
@@ -99,7 +104,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
         else {
             // The person who asked is gone: nobody to change things as.
-            return self.end_run(&mut run, BulkStatus::Failed).await;
+            return self
+                .end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+                .await;
         };
         let actor = Actor { person, key: None };
         let acting = self.services.ctx_acting_as(actor.clone());
@@ -110,7 +117,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             Ok(selection) => selection,
             Err(AppError::Refused(_)) => {
                 // What the action names is gone since it was asked for (the project, the label).
-                return self.end_run(&mut run, BulkStatus::Failed).await;
+                return self
+                    .end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+                    .await;
             }
             Err(other) => return Err(other),
         };
@@ -146,7 +155,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Err(error) => {
                         // The store broke: the run stops where it is, and says so.
                         tracing::error!(cause = %error, "a change to many issues stopped");
-                        return self.end_run(&mut run, BulkStatus::Failed).await;
+                        return self
+                            .end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+                            .await;
                     }
                 }
             };
@@ -194,16 +205,45 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))
     }
 
-    /// Ends a run that cannot go on, with what it did so far.
-    async fn end_run(&self, run: &mut BulkRun, status: BulkStatus) -> Result<(), AppError> {
-        let at = run.done;
-        run.status = status;
-        run.finished_at = Some(self.now());
-        self.store()
-            .save_bulk_progress(run, at)
+    /// Ends the run of a step that gave up (its job is on the dead-letter list) as failed, with
+    /// what it did so far (saved after each issue), so the person who asked reads an end and not a run that never ends.
+    ///
+    /// # Errors
+    /// The error of the store.
+    pub(crate) async fn fail_bulk_run(&self, payload: &Value) -> Result<(), AppError> {
+        let id = run_named(payload)?;
+        if self.run_is_over(id).await? {
+            return Ok(());
+        }
+        self.end_bulk_run(id, BulkStatus::Failed, EventActor::System)
             .await
-            .map_err(|error| internal::<S>(&error))?;
-        Ok(())
+    }
+
+    /// Ends a run that is not over, as failed or stopped, with an event of the run. The one place
+    /// that ends one run: the steps that cannot go on, the dead-letter list and the person who
+    /// stops it all come here, `who` being the actor of the event.
+    pub(crate) async fn end_bulk_run(
+        &self,
+        id: BulkRunId,
+        status: BulkStatus,
+        who: EventActor,
+    ) -> Result<(), AppError> {
+        let now = self.now();
+        let event = self.event(
+            who,
+            entity(RecordKind::BulkRun, id),
+            vec![set_to("status", serde_json::json!(status.code()))],
+        )?;
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    S::end_bulk_runs(transaction, &RunsToEnd::One(id), status, now)
+                        .await
+                        .map(|_| ())
+                })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))
     }
 
     /// Queues the next step of a run.
@@ -269,22 +309,8 @@ pub async fn cancel_bulk_run<S: AuthStore>(
         .filter(|run| run.person == actor.person.id || held.allows(Permission::ManagePeople))
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     if matches!(run.status, BulkStatus::Queued | BulkStatus::Running) {
-        let now = ctx.now();
-        let event = ctx.event(
-            by(actor.person.id),
-            entity(RecordKind::BulkRun, run.id),
-            vec![set_to(
-                "status",
-                serde_json::json!(BulkStatus::Stopped.code()),
-            )],
-        )?;
-        let id = run.id;
-        ctx.store()
-            .record_change(&event, move |transaction| {
-                Box::pin(async move { S::end_bulk_run(transaction, id, now).await.map(|_| ()) })
-            })
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        ctx.end_bulk_run(run.id, BulkStatus::Stopped, by(actor.person.id))
+            .await?;
     }
     let status = ctx
         .store()
