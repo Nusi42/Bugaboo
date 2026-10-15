@@ -772,7 +772,7 @@
   "sample.error.start": "The start moment {start} is not a moment in time.",
   "sample.error.database-url": "The environment variable {variable} must hold the address of an empty PostgreSQL database.",
   "sample.step.password-hasher": "making the password hasher",
-  "sample.step.starting-roles": "making the starting roles",
+  "sample.step.first-start": "getting the organization ready",
   "sample.step.first-administrator": "making the first administrator",
   "sample.step.invitation": "inviting a person",
   "sample.step.accepting-invitation": "accepting an invitation",

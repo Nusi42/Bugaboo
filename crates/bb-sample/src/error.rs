@@ -15,7 +15,7 @@ pub enum Step {
     /// Making the password hasher.
     PasswordHasher,
     /// The first start: the starting roles, issue types and kinds of relation, and the setup code.
-    StartingRoles,
+    FirstStart,
     /// Making the first administrator.
     FirstAdministrator,
     /// Inviting a person.
@@ -74,7 +74,7 @@ impl Step {
     fn message(self) -> Message {
         Message::from(match self {
             Self::PasswordHasher => message::SAMPLE_STEP_PASSWORD_HASHER,
-            Self::StartingRoles => message::SAMPLE_STEP_STARTING_ROLES,
+            Self::FirstStart => message::SAMPLE_STEP_FIRST_START,
             Self::FirstAdministrator => message::SAMPLE_STEP_FIRST_ADMINISTRATOR,
             Self::Invitation => message::SAMPLE_STEP_INVITATION,
             Self::AcceptingInvitation => message::SAMPLE_STEP_ACCEPTING_INVITATION,

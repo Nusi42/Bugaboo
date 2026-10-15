@@ -374,7 +374,7 @@ async fn first_administrator(
     // organization up gets the Administrator role.
     let code = first_start(services)
         .await
-        .map_err(|error| SampleError::step(Step::StartingRoles, &error))?
+        .map_err(|error| SampleError::step(Step::FirstStart, &error))?
         .ok_or(SampleError::SetupClosed)?;
     let api: &dyn AuthApi = services;
     api.complete_setup(

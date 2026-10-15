@@ -69,7 +69,7 @@ flowchart LR
 
 One enum, `Permission` in `bb-policy`. The four tables of this section and the next one that carry a `GENERATED` comment (the catalogue and, for the starting roles, their permissions, field levels and *Who sees people* levels) are written from that code by `cargo xtask gen roles`; DOC-GENERATED fails when one differs, so they are never edited by hand. The key is also the value of `x-permission` in the API description; the sentence is the message `permission.<key>`; the topic is the message `permission-topic.<topic>`. *Counts* says where a permission counts (ADR-0025, decision 1); *Kind* is what an access key's choice keeps (decision 8). Routes that need no single catalogue permission declare `public`, `signed-in`, `own-account` or `by-record`; the last is for the routes of edit locks and drafts, which work on any record by its kind and ID: what a person needs to change a record depends on its kind (for a project *Change the project's name, short name and settings*, for an issue *Change issues*), so the route lets in whoever is signed in, or comes with an access key, and the use case judges the record. A permission that no route asks for yet, because a use case judges it and its screen and routes come later, is named in `tools/checks/permission-exemptions.toml` with a reason that names the follow-up; the entry must go when a route asks for the permission. Enforced by: ARCH-PERMS (every operation of the API description has `x-permission` with a key of the catalogue or one of the four words; every permission is asked by a route or named in the file; every permission and topic has its message).
 
-<!-- BEGIN GENERATED permission-catalogue by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED permission-catalogue by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 | Key | Topic | Counts | Kind | Sentence on the role page |
 |-----|-------|--------|------|---------------------------|
@@ -138,7 +138,7 @@ The evaluation is cached for the request and never longer (review: the cache liv
 
 Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, decision 4) and then changed like any role. In the order below, which is also the order for role labels. These are M2's permissions; issue, document and time permissions join with their milestones.
 
-<!-- BEGIN GENERATED starting-permissions by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED starting-permissions by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 | Permission | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -175,7 +175,7 @@ A Project lead holds these where the role is given, normally on their projects a
 
 **Starting field levels:**
 
-<!-- BEGIN GENERATED starting-field-levels by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED starting-field-levels by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 C = *Can change*, S = *Can see*, H = *Hidden*.
 
@@ -204,7 +204,7 @@ A Contributor sees *Cost center* at the start, so the M2 exit demo can hide it. 
 
 **Starting *Who sees people*:**
 
-<!-- BEGIN GENERATED starting-people-levels by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED starting-people-levels by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 N = *Names*, R = *Role only*, H = *Hidden*.
 
@@ -227,7 +227,7 @@ N = *Names*, R = *Role only*, H = *Hidden*.
 
 Declared once in `bb-core` (`fields`): key, name (message `issue-field.<key>`), the thing it belongs to, and the kind of people information when it holds a person. Own fields join in M3 (CF-06) through one key type, `FieldKey`: either a built-in field of this catalogue or an own field (`FieldKey::Own(FieldId)`), so levels, masks, the field-permission page, history and `fields=` name both the same way and no list of own fields is written twice. A new own field starts *Can see* for every role that sees the project and *Can change* for Team member and above; whoever makes it can change that at once. Levels per issue type use the lookup of [ADR-0027](../adr/0027-layouts-and-rules-per-issue-type.md).
 
-<!-- BEGIN GENERATED field-catalogue by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->
+<!-- BEGIN GENERATED field-catalogue by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->
 
 | Key | Name | Belongs to | Holds a person |
 |-----|------|-----------|----------------|

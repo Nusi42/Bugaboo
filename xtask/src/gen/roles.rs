@@ -25,7 +25,8 @@ const BEGIN: &str = "<!-- BEGIN GENERATED ";
 /// What stands before the name of a table in its last comment.
 const END: &str = "<!-- END GENERATED ";
 /// What the first comment says besides the name.
-const NOTE: &str = "by `cargo xtask gen roles` from bb-policy; edit the code, not this table -->";
+const NOTE: &str =
+    "by `cargo xtask gen roles` from bb-core and bb-policy; edit the code, not this table -->";
 
 /// The text of a message.
 fn text(key: MessageKey) -> String {
