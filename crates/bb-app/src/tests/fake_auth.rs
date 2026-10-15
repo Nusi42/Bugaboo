@@ -709,6 +709,10 @@ impl AuthStore for FakeStore {
         *error == FakeError::Aborted
     }
 
+    fn is_contended(error: &FakeError) -> bool {
+        *error == FakeError::Contended
+    }
+
     fn refused(refusal: Refusal) -> FakeError {
         FakeError::Refused(refusal)
     }

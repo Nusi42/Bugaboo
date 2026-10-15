@@ -50,6 +50,8 @@ pub(crate) enum FakeError {
     Duplicate,
     /// A rule of the policy engine stopped a change.
     Refused(Refusal),
+    /// Other writers kept changing the same row (the test made it, see `contended_replaces`).
+    Contended,
     /// The store itself failed (the test made it).
     Failed,
 }
@@ -84,6 +86,9 @@ pub(crate) struct State {
     pub(crate) aliases: Vec<ProjectAlias>,
     pub(crate) sign_up_version: i64,
     pub(crate) locks: Vec<EditLock>,
+    /// How many times replacing a lock still fails as contended (a test sets it). It is shared
+    /// between the copies of the state, so a change that fails does not give the count back.
+    pub(crate) contended_replaces: Arc<std::sync::atomic::AtomicUsize>,
     pub(crate) drafts: Vec<Draft>,
     pub(crate) notices: Vec<EditNotice>,
     pub(crate) issue_types: Vec<IssueType>,

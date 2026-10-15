@@ -5,6 +5,7 @@ use bb_core::edit::{Draft, DraftTarget, EditLock, EditNotice, EditWhat, Hold, Ta
 use bb_core::event::{DomainEvent, EntityRef};
 use bb_core::id::UserId;
 use jiff::Timestamp;
+use std::sync::atomic::Ordering;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
 use crate::editing::EditStore;
@@ -158,6 +159,11 @@ impl EditStore for FakeStore {
         tx: &mut Tx,
         wanted: &EditLock,
     ) -> Result<Option<EditLock>, FakeError> {
+        let left = &tx.state.contended_replaces;
+        if left.load(Ordering::SeqCst) > 0 {
+            left.fetch_sub(1, Ordering::SeqCst);
+            return Err(FakeError::Contended);
+        }
         let former = remove_lock(&mut tx.state, &wanted.what());
         tx.state.locks.push(wanted.clone());
         Ok(former)
