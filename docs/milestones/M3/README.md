@@ -17,6 +17,9 @@ M3 builds issues from nothing: no issue table, no issue permission, and empty `b
 | 3 | [WP-09](WP-09-layout-editor.md) | Layout editor and role-based forms | Builder | `bugaboo.win3` / `WIN3` |
 | 3 | [WP-10](WP-10-ten-people-at-once.md) | Ten people at once: TEST-CONCURRENT, TEST-EDIT-LOCKS, WebKit | Builder | `bugaboo.win4` / `WIN4` |
 | 4 | [WP-11](WP-11-sample-organization-and-exit-demo.md) | Sample organization, part 2, speed, and the exit demo | Builder | `bugaboo.win2` / `WIN2` |
+| 5 | [WP-12](WP-12-exit-security-fixes.md) | Exit review: security and privacy fixes | Builder | `bugaboo.win2` / `WIN2` |
+| 5 | [WP-13](WP-13-exit-words-and-screens-fixes.md) | Exit review: words, screens and accessibility fixes | Builder | `bugaboo.win3` / `WIN3` |
+| 5 | [WP-14](WP-14-exit-structure-fixes.md) | Exit review: structure fixes (one source for each fact) | Builder | `bugaboo.win4` / `WIN4` |
 
 Progress (which package is building, merged, reviewed) is kept only in [`docs/STATUS.md`](../../STATUS.md).
 
