@@ -123,12 +123,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let first = run.done;
         while usize::try_from(run.done).unwrap_or(usize::MAX) < end {
             // A run that was stopped meanwhile changes nothing more, not even the issue at hand.
-            if self
-                .store()
-                .bulk_run_is_over(id)
-                .await
-                .map_err(|error| internal::<S>(&error))?
-            {
+            if self.run_is_over(id).await? {
                 return Ok(());
             }
             let at = run.done;
@@ -139,12 +134,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             };
             // Only the issue the step begins at can have been changed by a worker that stopped
             // before it counted the change: its event says so, and it counts as changed.
-            let written = at == first
-                && self
-                    .store()
-                    .event_with_reason(&run.item_reason(at), run.created_at)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?;
+            let written = at == first && self.item_was_written(&run, at).await?;
             let left_alone = if written {
                 None
             } else {
@@ -186,6 +176,22 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.queue_next_step(id).await?;
         }
         Ok(())
+    }
+
+    /// Whether the run is over (done, failed or stopped) now, as the store has it.
+    async fn run_is_over(&self, id: BulkRunId) -> Result<bool, AppError> {
+        self.store()
+            .bulk_run_is_over(id)
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
+    /// Whether a worker that stopped wrote the change of the issue at `at` before it counted it.
+    async fn item_was_written(&self, run: &BulkRun, at: i64) -> Result<bool, AppError> {
+        self.store()
+            .event_with_reason(&run.item_reason(at), run.created_at)
+            .await
+            .map_err(|error| internal::<S>(&error))
     }
 
     /// Ends a run that cannot go on, with what it did so far.
