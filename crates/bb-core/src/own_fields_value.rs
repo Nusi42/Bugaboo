@@ -17,8 +17,7 @@ use crate::id::{ChoiceId, GroupId, IssueId, UserId};
 use crate::own_fields::{DECIMAL_PARTS, FieldType, Rules, SHORT_TEXT_MAX, VALUES_MAX};
 use crate::personal::Entity;
 use crate::text::{LONG_TEXT_MAX, clean, clean_long};
-
-const SECONDS_PER_DAY: i64 = 86_400;
+use crate::time::SECONDS_PER_DAY;
 
 words! {
     /// Why a value is refused (CF-03). Each is an error code with a sentence; the numbers the

@@ -5,12 +5,11 @@
 use bb_core::edit::{DRAFT_KEEP_DAYS, Draft, DraftTarget};
 use bb_core::event::EntityKind;
 use bb_core::job::JobState;
+use bb_core::time::SECONDS_PER_DAY as DAY;
 
 use super::scenarios::a_project;
 use super::world::{Outcome, World};
 use crate::jobs::{DAILY, kind};
-
-const DAY: i64 = 86_400;
 
 async fn run_all(world: &World) -> Result<usize, crate::auth::AppError> {
     let mut total = 0;

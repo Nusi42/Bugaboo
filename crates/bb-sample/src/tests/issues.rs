@@ -11,8 +11,8 @@ use serde_json::Value;
 
 use crate::{DEFAULT_SEED, Everything, Options, Sample, Target, make};
 
-/// 2027-01-15 08:00:00 UTC, like the other tests.
-const START: i64 = 1_800_000_000;
+/// The start of the clock of the tests, like the other tests.
+const START: i64 = bb_dev_words::accounts::CLOCK_START;
 /// Few enough to be quick, enough for every project, type and kind of relation to be there.
 const ISSUES: u32 = 150;
 

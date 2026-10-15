@@ -19,6 +19,7 @@ use crate::event::{EntityKind, EntityRef};
 use crate::id::{EditorId, LockToken, ProjectId, UserId};
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
+use crate::time::SECONDS_PER_DAY;
 
 /// How long a lock lasts after the last heartbeat, in seconds.
 pub const LEASE_SECONDS: i64 = 60;
@@ -46,8 +47,6 @@ pub const DRAFT_KEPT_BY: [ErrorCode; 3] = [
 pub const DESCRIPTION_PART: &str = "description";
 /// The part of a layout that its edit lock is about: a layout is edited as a whole (ADR-0027).
 pub const LAYOUT_PART: &str = "layout";
-
-const SECONDS_PER_DAY: i64 = 86_400;
 
 /// How long a lock lasts after the last heartbeat.
 #[must_use]
