@@ -239,15 +239,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Value::Array(_) => serde_json::from_value(shown),
                     one => serde_json::from_value(one).map(|one| vec![one]),
                 };
-                match people {
-                    Ok(people) => Some(ChangeValue::People { people }),
-                    Err(_) => {
-                        // A stored value that cannot be read is no value for the reader. The error of
-                        // the reader can hold the value itself, which names a person, so it is not
-                        // logged (DATA-LOGS).
-                        tracing::warn!("a value of a person field in the history cannot be read");
-                        None
-                    }
+                if let Ok(people) = people {
+                    Some(ChangeValue::People { people })
+                } else {
+                    // A stored value that cannot be read is no value for the reader. The error of
+                    // the reader can hold the value itself, which names a person, so it is not
+                    // logged (DATA-LOGS).
+                    tracing::warn!("a value of a person field in the history cannot be read");
+                    None
                 }
             }
             (FieldType::Group, Value::Object(found)) => {

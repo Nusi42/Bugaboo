@@ -265,7 +265,7 @@ fn change_to<'a>(items: &'a [Value], field: &str) -> Result<&'a Value, Failure> 
 
 /// The change of the field `twin` is not in the items (both sides point at an issue the reader may
 /// not see, as for the parent, M3-F79); none of the `secrets` is anywhere in them.
-fn assert_twin_is_not_there(items: &[Value], twin: &str, secrets: &[&str]) -> TestResult {
+fn assert_twin_is_not_there(items: &[Value], twin: &str, secrets: &[&str]) {
     let text = json!(items).to_string();
     for secret in secrets {
         assert!(!text.contains(secret), "{text}");
@@ -274,7 +274,6 @@ fn assert_twin_is_not_there(items: &[Value], twin: &str, secrets: &[&str]) -> Te
         !items.iter().any(|item| is_change_of(item, twin)),
         "a change of Twin: {text}"
     );
-    Ok(())
 }
 
 /// Makes one field of each kind the history words by itself; their IDs, in this order: yes-no,
@@ -388,7 +387,7 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
         assert_eq!(change_to(&seen, twin)?["after_text"], hidden_key.as_str());
         // Max cannot see the issue Twin names: no row, no key, no value, and the ID is nowhere.
         let theirs_seen = history_of(&mut max, &theirs).await?;
-        assert_twin_is_not_there(&theirs_seen, twin, &[&hidden_key, &hidden_id])?;
+        assert_twin_is_not_there(&theirs_seen, twin, &[&hidden_key, &hidden_id]);
         // A viewer who may not see group names does not get the name of the group; with names, does.
         site.show_people(&mut ada, StartingRole::Viewer, "mentions", "hidden")
             .await?;

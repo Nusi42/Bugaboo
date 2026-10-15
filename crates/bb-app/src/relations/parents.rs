@@ -41,6 +41,29 @@ async fn chain_above<S: AuthStore>(
     Ok(chain)
 }
 
+/// The parent an issue has, and the parent as the person knows it. A parent the person may not see is
+/// none to them: taking it out changes nothing they could know of, so it neither counts the version
+/// up nor tells them it is there (SEC-06).
+impl<S: AuthStore> Ctx<'_, S> {
+    async fn parents_of(
+        &self,
+        actor: &crate::access::Actor,
+        child: IssueId,
+    ) -> Result<(Option<IssueId>, Option<IssueId>), AppError> {
+        let stored = self
+            .store()
+            .parent_of(child)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .map(|row| row.parent);
+        let known = match stored {
+            Some(id) => self.seen_issue_by_id(actor, id).await?.map(|_| id),
+            None => None,
+        };
+        Ok((stored, known))
+    }
+}
+
 /// Puts the issue under `parent`, or takes it out from under its parent (`None`). Putting it where
 /// it is already, or taking out one that sits under none, changes nothing and answers with the
 /// issue as it is.
@@ -75,19 +98,8 @@ pub async fn set_parent<S: AuthStore>(
         return Err(AppError::stale(record, place, actor.person.id));
     }
     let now = ctx.now();
-    let current = ctx
-        .store()
-        .parent_of(child.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .map(|row| row.parent);
+    let (current, known) = ctx.parents_of(&actor, child.id).await?;
     let wanted = above.as_ref().map(|parent| parent.id);
-    // A parent the person may not see is none to them: taking it out changes nothing they could
-    // know of, so it neither counts the version up nor tells them it is there (SEC-06).
-    let known = match current {
-        Some(id) => ctx.seen_issue_by_id(&actor, id).await?.map(|_| id),
-        None => None,
-    };
     if known == wanted {
         let view = ctx.standing(&actor, &held, &child).await?.header;
         return Ok(held.authorize(view));

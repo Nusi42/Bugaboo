@@ -49,7 +49,7 @@ pub const MAX_TOKENS: usize = 2_000;
 
 /// The most mentions of one text that the server tries to name; the rest stay plain text. Each
 /// distinct name costs a search of the people, so a text of two thousand different names must not
-/// make every page load that shows it expensive for every reader (SEC-06, DoS).
+/// make every page load that shows it expensive for every reader (SEC-06).
 pub const MAX_RESOLVED_MENTIONS: usize = 50;
 
 /// The most issue IDs of one text that the server looks up; the rest stay plain text.
