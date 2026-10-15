@@ -4161,7 +4161,7 @@
     "/api/v1/bulk/runs/{run}/cancel": {
       "post": {
         "tags": ["bulk"],
-        "summary": "Stops a change to many issues that goes on in the background: what was changed so far stays and\nthe rest is left alone. The person who asked for it may stop it, and so may an administrator.",
+        "summary": "Stops a change to many issues that goes on in the background: what was changed so far stays and\nthe rest is left alone. The person who asked for it may stop it, and so may whoever holds\n*Manage people*. The answer holds the status only.",
         "operationId": "cancelBulkRun",
         "parameters": [
           {
@@ -4176,11 +4176,11 @@
         ],
         "responses": {
           "200": {
-            "description": "How far the run was when it stopped.",
+            "description": "Where the run is after the stop.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkRunBody"
+                  "$ref": "#/components/schemas/BulkRunStatusBody"
                 }
               }
             }
@@ -20460,6 +20460,21 @@
           }
         }
       },
+      "BulkRunStatusBody": {
+        "type": "object",
+        "description": "Where a change that goes on in the background is, and nothing more.",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the run."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulkStatus",
+            "description": "Where it is."
+          }
+        }
+      },
       "BulkSkippedBody": {
         "type": "object",
         "description": "An issue a run left alone.",
@@ -20485,7 +20500,7 @@
       "BulkStatus": {
         "type": "string",
         "description": "Where a run of a change to many issues is.",
-        "enum": ["queued", "running", "done", "failed"]
+        "enum": ["queued", "running", "done", "failed", "stopped"]
       },
       "BulkTargetBody": {
         "type": "object",

@@ -3,11 +3,12 @@
 //! or changing the password stops the runs of the person. Every flow runs on SQLite and PostgreSQL.
 
 use axum::http::StatusCode;
-use bb_app::access::StartingRole;
+use bb_app::access::{Permission, StartingRole};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::bulk_http::targets_for_a_job;
+use super::exit_masks::person_with_levels;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::Site;
 use super::issues_site::ok;
@@ -57,7 +58,7 @@ async fn read(person: &mut Browser, run: &str) -> Result<Value, Failure> {
 
 /// Nothing was changed and the run says it stopped.
 fn assert_stopped(run: &Value) {
-    assert_eq!(run["status"], "failed", "{run}");
+    assert_eq!(run["status"], "stopped", "{run}");
     assert_eq!(run["changed"], 0, "{run}");
     assert_eq!(run["done"], 0, "{run}");
 }
@@ -77,16 +78,44 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         let hidden = cat.send("POST", &cancel(&first), None).await?;
         assert_eq!(hidden.code(), "resource.not_found", "{}", hidden.body);
         assert_eq!(read(&mut bob, &first).await?["status"], "queued");
-        // An administrator stops it.
+        // An administrator, who manages people, stops it.
         let stopped = ada.send("POST", &cancel(&first), None).await?;
         assert_eq!(stopped.status, StatusCode::OK, "{}", stopped.body);
-        assert_stopped(&stopped.body);
+        assert_eq!(
+            stopped.body,
+            json!({"id": first, "status": "stopped"}),
+            "only the status"
+        );
         // Stopped is stopped: the worker does not go on, and the person reads it.
         work(&rig).await?;
         assert_stopped(&read(&mut bob, &first).await?);
         // Stopping again changes nothing.
         let again = bob.send("POST", &cancel(&first), None).await?;
         assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+        // Whoever manages people stops the run of another person, whoever only manages roles does
+        // not find it.
+        let (mut ted, _) = person_with_levels(
+            &site,
+            &rig,
+            "ted",
+            &[Permission::SeeProjects, Permission::ManagePeople],
+            &[],
+        )
+        .await?;
+        let (mut ron, _) = person_with_levels(
+            &site,
+            &rig,
+            "ron",
+            &[Permission::SeeProjects, Permission::ManageRoles],
+            &[],
+        )
+        .await?;
+        let third = start(&mut bob, &targets).await?;
+        let no = ron.send("POST", &cancel(&third), None).await?;
+        assert_eq!(no.code(), "resource.not_found", "{}", no.body);
+        let yes = ted.send("POST", &cancel(&third), None).await?;
+        assert_eq!(yes.status, StatusCode::OK, "{}", yes.body);
+        assert_eq!(yes.body["status"], "stopped");
         // The person who asked stops their own.
         let second = start(&mut bob, &targets).await?;
         let own = bob.send("POST", &cancel(&second), None).await?;

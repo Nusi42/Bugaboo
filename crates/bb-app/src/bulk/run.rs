@@ -7,8 +7,9 @@
 //! is not counted. The change and the saving of the progress are two writes, so the event of every
 //! change carries the item it was made for (`BulkRun::item_reason`): a worker that stopped between
 //! the two finds that event when it goes on and counts the issue as changed, instead of judging it
-//! again and reporting that it changed since the preview. When issues are left, the step queues
-//! the next one.
+//! again and reporting that it changed since the preview. A run that was stopped (by the person, by
+//! somebody who manages people, or by a sign-out everywhere or a new password) is looked at before
+//! each issue and changes nothing more. When issues are left, the step queues the next one.
 
 use bb_core::ErrorCode;
 use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus};
@@ -19,7 +20,7 @@ use jiff::Timestamp;
 use serde_json::Value;
 
 use super::types::{
-    BulkAction, BulkRunQuery, BulkRunView, BulkSkipped, BulkTarget, RUN_SKIPPED_MAX,
+    BulkAction, BulkRunQuery, BulkRunStatus, BulkRunView, BulkSkipped, BulkTarget, RUN_SKIPPED_MAX,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
@@ -85,7 +86,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        if matches!(run.status, BulkStatus::Done | BulkStatus::Failed) {
+        if matches!(
+            run.status,
+            BulkStatus::Done | BulkStatus::Failed | BulkStatus::Stopped
+        ) {
             return Ok(());
         }
         let Some(person) = self
@@ -118,6 +122,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         run.status = BulkStatus::Running;
         let first = run.done;
         while usize::try_from(run.done).unwrap_or(usize::MAX) < end {
+            // A run that was stopped meanwhile changes nothing more, not even the issue at hand.
+            if self
+                .store()
+                .bulk_run_is_over(id)
+                .await
+                .map_err(|error| internal::<S>(&error))?
+            {
+                return Ok(());
+            }
             let at = run.done;
             let item = run.items[usize::try_from(at).unwrap_or(usize::MAX)];
             let target = BulkTarget {
@@ -228,16 +241,17 @@ pub async fn bulk_run<S: AuthStore>(
 
 /// Stops a change to many issues that goes on in the background: what was changed so far stays,
 /// the rest is not touched. The person who asked for the run may stop it, and so may whoever holds
-/// *Manage roles* for the organization (an administrator). Stopping a run that is over changes
-/// nothing and answers with the run as it is.
+/// *Manage people* for the organization (acting on the things of another person). The answer is the
+/// status and nothing more: the counts are of the issues the person who asked named (PRIV-13).
+/// Stopping a run that is over changes nothing.
 ///
 /// # Errors
 /// `resource.not_found` for a run that is not there or that somebody else asked for and the person
-/// is no administrator.
+/// does not manage people.
 pub async fn cancel_bulk_run<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: BulkRunQuery,
-) -> Result<Authorized<BulkRunView>, AppError> {
+) -> Result<Authorized<BulkRunStatus>, AppError> {
     // A key cannot start a run that goes on in the background (M3-F121), so it has none to stop.
     let actor = ctx.session_actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
@@ -246,32 +260,31 @@ pub async fn cancel_bulk_run<S: AuthStore>(
         .bulk_run(input.run)
         .await
         .map_err(|error| internal::<S>(&error))?
-        .filter(|run| run.person == actor.person.id || held.allows(Permission::ManageRoles))
+        .filter(|run| run.person == actor.person.id || held.allows(Permission::ManagePeople))
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    if !matches!(run.status, BulkStatus::Queued | BulkStatus::Running) {
-        return Ok(held.authorize(ctx.run_view(&actor, &run).await?));
+    if matches!(run.status, BulkStatus::Queued | BulkStatus::Running) {
+        let now = ctx.now();
+        let event = ctx.event(
+            by(actor.person.id),
+            entity(RecordKind::BulkRun, run.id),
+            vec![set_to(
+                "status",
+                serde_json::json!(BulkStatus::Stopped.code()),
+            )],
+        )?;
+        let id = run.id;
+        ctx.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move { S::end_bulk_run(transaction, id, now).await.map(|_| ()) })
+            })
+            .await
+            .map_err(|error| internal::<S>(&error))?;
     }
-    let now = ctx.now();
-    let event = ctx.event(
-        by(actor.person.id),
-        entity(RecordKind::BulkRun, run.id),
-        vec![set_to(
-            "status",
-            serde_json::json!(BulkStatus::Failed.code()),
-        )],
-    )?;
-    let id = run.id;
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(async move { S::end_bulk_run(transaction, id, now).await.map(|_| ()) })
-        })
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let stopped = ctx
+    let status = ctx
         .store()
-        .bulk_run(id)
+        .bulk_run(run.id)
         .await
         .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    Ok(held.authorize(ctx.run_view(&actor, &stopped).await?))
+        .map_or(run.status, |run| run.status);
+    Ok(held.authorize(BulkRunStatus { id: run.id, status }))
 }

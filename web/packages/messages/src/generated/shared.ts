@@ -274,7 +274,8 @@ export const messages = {
   "permission.decide-what-roles-see":
     "Decide which fields and which people information each role sees",
   "permission.check-access": "Check what other people can do, and why",
-  "permission.manage-people": "See everybody's e-mail address and correct their names",
+  "permission.manage-people":
+    "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
   "permission.manage-invitations": "Invite people and take invitations back",
   "permission.manage-groups": "Make, rename and delete groups and change who is in them",
   "permission.manage-roles": "Make, change and delete roles",
@@ -509,6 +510,7 @@ export const messages = {
   "bulk-status.running": "Working",
   "bulk-status.done": "Done",
   "bulk-status.failed": "Stopped",
+  "bulk-status.stopped": "Stopped on request",
   "error.tag.not-here":
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
   "error.label.pick-one-conflict":

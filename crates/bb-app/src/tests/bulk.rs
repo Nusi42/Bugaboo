@@ -574,3 +574,36 @@ async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_09_a_stopped_run_changes_nothing_more() -> Outcome {
+    use bb_core::bulk::{BulkItem, BulkRun};
+    use bb_core::id::BulkRunId;
+
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    let run = BulkRun {
+        id: BulkRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+        person: world.admin.person.id,
+        action: serde_json::to_value(done())?,
+        items: vec![BulkItem { issue, version: 1 }],
+        status: BulkStatus::Stopped,
+        done: 0,
+        changed: 0,
+        skipped: Vec::new(),
+        created_at: world.ctx().now(),
+        finished_at: Some(world.ctx().now()),
+    };
+    world.store.lock().state.bulk_runs.push(run.clone());
+    world
+        .ctx()
+        .run_bulk_step(&crate::bulk::step_payload(run.id))
+        .await?;
+    let after = world.store.lock().state.bulk_runs[0].clone();
+    assert_eq!(
+        (after.status, after.done, after.changed),
+        (BulkStatus::Stopped, 0, 0)
+    );
+    Ok(())
+}

@@ -45,7 +45,7 @@ export function RunProgress({ run }: { readonly run: string }) {
   if (data === undefined) {
     return null;
   }
-  if (data.status === "failed") {
+  if (data.status === "failed" || data.status === "stopped") {
     return <Alert tone={alertTone.danger}>{t("bulk.stopped")}</Alert>;
   }
   if (over) {

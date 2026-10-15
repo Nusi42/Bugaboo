@@ -28,6 +28,9 @@ pub trait BulkStore: JobStore + 'static {
         /// was. A run that is over (done or stopped) is never changed again, so a stop
         /// is not undone by a step that was already going. Two workers that took the same step cannot both count it.
         fn save_bulk_progress(run: &BulkRun, expected_done: i64) -> bool;
+        /// Whether the run is over (done, failed or stopped): a step looks before each issue, so a run
+        /// that was stopped changes nothing more.
+        fn bulk_run_is_over(id: BulkRunId) -> bool;
         /// Whether an event with this reason was written at or after `since`: how a run that went
         /// on after a worker stopped finds out that the worker changed an issue before it stopped.
         fn event_with_reason(reason: &str, since: Timestamp) -> bool;

@@ -176,6 +176,12 @@ impl BulkStore for FakeStore {
         Ok(())
     }
 
+    async fn bulk_run_is_over(&self, id: BulkRunId) -> Result<bool, FakeError> {
+        Ok(!self.lock().state.bulk_runs.iter().any(|run| {
+            run.id == id && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+        }))
+    }
+
     async fn end_bulk_runs_of(
         tx: &mut Tx,
         person: UserId,
@@ -185,7 +191,7 @@ impl BulkStore for FakeStore {
         for run in tx.state.bulk_runs.iter_mut().filter(|run| {
             run.person == person && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
         }) {
-            run.status = BulkStatus::Failed;
+            run.status = BulkStatus::Stopped;
             run.finished_at = Some(at);
             ended += 1;
         }
@@ -198,7 +204,7 @@ impl BulkStore for FakeStore {
         }) else {
             return Ok(false);
         };
-        run.status = BulkStatus::Failed;
+        run.status = BulkStatus::Stopped;
         run.finished_at = Some(at);
         Ok(true)
     }

@@ -30,7 +30,7 @@ fn ending(at: Timestamp) -> UpdateStatement {
     let mut update = Query::update();
     update
         .table(BulkRunRow::Table)
-        .value(BulkRunRow::Status, BulkStatus::Failed.code())
+        .value(BulkRunRow::Status, BulkStatus::Stopped.code())
         .value(BulkRunRow::FinishedAt, to_micros(at))
         .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
     update
@@ -180,6 +180,17 @@ impl BulkStore for AuthStorage {
             .and_where(Expr::col(BulkRunRow::Done).eq(expected_done))
             .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
         Ok(self.database().execute(&update).await? > 0)
+    }
+
+    async fn bulk_run_is_over(&self, id: BulkRunId) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(BulkRunRow::Id)
+            .from(BulkRunRow::Table)
+            .and_where(Expr::col(BulkRunRow::Id).eq(id.stored()))
+            .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
+        // A run that is not there is as good as over.
+        Ok(self.database().fetch_optional(&select).await?.is_none())
     }
 
     async fn end_bulk_runs_of(

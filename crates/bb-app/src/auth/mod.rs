@@ -29,8 +29,8 @@ use crate::access::{
     people_to_check, people_visibility,
 };
 use crate::bulk::{
-    ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunView, apply_bulk,
-    bulk_run, cancel_bulk_run, preview_bulk,
+    ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunStatus, BulkRunView,
+    apply_bulk, bulk_run, cancel_bulk_run, preview_bulk,
 };
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
@@ -489,7 +489,7 @@ use_cases! {
     /// Shows how far a change to many issues that goes on in the background is.
     bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
     /// Stops a change to many issues that goes on in the background.
-    cancel_bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
+    cancel_bulk_run(BulkRunQuery) -> Authorized<BulkRunStatus>;
     /// Shows the tags and labels of an issue.
     issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
     /// Puts a tag on an issue by its name.

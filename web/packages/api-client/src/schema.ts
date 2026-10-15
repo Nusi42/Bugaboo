@@ -710,7 +710,8 @@ export interface paths {
     put?: never;
     /**
      * Stops a change to many issues that goes on in the background: what was changed so far stays and
-     *     the rest is left alone. The person who asked for it may stop it, and so may an administrator.
+     *     the rest is left alone. The person who asked for it may stop it, and so may whoever holds
+     *     *Manage people*. The answer holds the status only.
      */
     post: operations["cancelBulkRun"];
     delete?: never;
@@ -3076,6 +3077,13 @@ export interface components {
        */
       total: number;
     };
+    /** @description Where a change that goes on in the background is, and nothing more. */
+    BulkRunStatusBody: {
+      /** @description The ID of the run. */
+      id: string;
+      /** @description Where it is. */
+      status: components["schemas"]["BulkStatus"];
+    };
     /** @description An issue a run left alone. */
     BulkSkippedBody: {
       issue?: components["schemas"]["IssueRef"] | null;
@@ -3086,7 +3094,7 @@ export interface components {
      * @description Where a run of a change to many issues is.
      * @enum {string}
      */
-    BulkStatus: "queued" | "running" | "done" | "failed";
+    BulkStatus: "queued" | "running" | "done" | "failed" | "stopped";
     /** @description One issue of the change with the version the preview read. */
     BulkTargetBody: {
       /** @description The issue. A change to more than 1,000 issues names them by their internal IDs. */
@@ -10033,13 +10041,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description How far the run was when it stopped. */
+      /** @description Where the run is after the stop. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["BulkRunBody"];
+          "application/json": components["schemas"]["BulkRunStatusBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */

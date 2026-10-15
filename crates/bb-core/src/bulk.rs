@@ -65,6 +65,10 @@ words! {
         Done => "done",
         /// The run stopped before it was done.
         Failed => "failed",
+        /// Somebody ended the run before it was done (the person who asked, or somebody who manages
+        /// people), or the person signed out everywhere or changed their password. What was
+        /// changed stays.
+        Stopped => "stopped",
     }
     messages name = "bulk-status."
 }
