@@ -12,6 +12,7 @@ import {
   changeSentence,
   isDetail,
   valuesBefore,
+  versionOf,
   type IssueEdit,
   type IssueValues,
 } from "./issue-values.ts";
@@ -92,7 +93,7 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     apply: after,
     send: sendAndNote(id, { held: setHeld, savedAt: setSavedAt }),
   });
-  const fallback = detail.issue.version ?? 1;
+  const fallback = versionOf(detail.issue);
   const run = (values: IssueValues, version: number): void => {
     setHeld(null);
     mutation.change({ values, version });

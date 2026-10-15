@@ -36,3 +36,6 @@ export const descriptionEditPart = "description";
 
 /** The name of the part of a comment that holds its text. */
 export const commentEditPart = "text";
+
+/** The version a new record starts with. */
+export const firstVersion = 1;

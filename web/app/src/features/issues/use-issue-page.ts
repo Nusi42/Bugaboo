@@ -6,7 +6,7 @@ import { useVersionWatch } from "../../shared/editing/index.ts";
 import { useFormLayout } from "../layouts/index.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { readAgain } from "./issue-requests.ts";
-import { valuesOf } from "./issue-values.ts";
+import { valuesOf, versionOf } from "./issue-values.ts";
 import { maskOf, type IssueBlockProps, type IssueDetail } from "./slots.ts";
 import { useIssueChanges, type IssueChanges } from "./use-issue-changes.ts";
 
@@ -31,7 +31,7 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
     kind: "issue-page",
   });
   const key = issue.key ?? address;
-  const version = issue.version ?? 1;
+  const version = versionOf(issue);
   const watched = useMemo(
     () => [{ record: { kind: "issue", id: issue.id ?? address }, version }],
     [issue.id, address, version],

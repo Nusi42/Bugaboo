@@ -37,6 +37,10 @@ export const queryKeys = {
       search,
     ],
   },
+  fields: {
+    /** The projects offered while choosing where a field is used. */
+    projectChoices: (search: string) => ["fields", "projects", search],
+  },
   projects: {
     all: ["projects"],
     list: (filter: object, size: number) => ["projects", "list", filter, size],
@@ -142,18 +146,34 @@ const FIELD_READS = [
   "/api/v1/projects/{project}",
 ] as const;
 
-/** An own field or one of its choices changed: every answer that holds fields is read again. */
-export function refreshFields(): void {
-  for (const path of FIELD_READS) {
+/** Reads again every answer of these routes of the API (their keys are made by the client). */
+function refreshReads(paths: readonly string[]): void {
+  for (const path of paths) {
     void queryClient.invalidateQueries({ queryKey: ["get", path] });
   }
 }
 
+/** An own field or one of its choices changed: every answer that holds fields is read again. */
+export function refreshFields(): void {
+  refreshReads(FIELD_READS);
+}
+
+/** The answers that show the tags and labels of an issue or the lists of them. */
+const LABEL_READS = [
+  "/api/v1/labels",
+  "/api/v1/issues/{issue}/sorting",
+  "/api/v1/projects/{project}/tag-suggestions",
+  "/api/v1/issues/{issue}/history",
+] as const;
+
+/** A label or tag changed: the answers that show them are read again. */
+export function refreshLabelReads(): void {
+  refreshReads(LABEL_READS);
+}
+
 /** A layout was made, saved or taken away: the forms and the editor read it again. */
 export function refreshLayouts(): void {
-  for (const path of ["/api/v1/layouts/form", "/api/v1/layouts/editor"] as const) {
-    void queryClient.invalidateQueries({ queryKey: ["get", path] });
-  }
+  refreshReads(["/api/v1/layouts/form", "/api/v1/layouts/editor"]);
 }
 
 /** A save of a layout was refused: the draft it kept is read again. */

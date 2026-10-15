@@ -23,6 +23,7 @@ const EDIT_SOURCE: &str = "crates/bb-core/src/edit.rs";
 const COMMENT_SOURCE: &str = "crates/bb-core/src/comment.rs";
 const ISSUE_SOURCE: &str = "crates/bb-core/src/issue.rs";
 const ERROR_CODE_SOURCE: &str = "crates/bb-core/src/error_code.rs";
+const VERSION_SOURCE: &str = "crates/bb-core/src/version.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
@@ -413,6 +414,12 @@ pub(super) fn editing(sources: &[Source]) -> anyhow::Result<String> {
             .with_context(|| format!("{EDIT_SOURCE} has no `const {name}` that is text"))
     };
     let (layout_part, description_part) = (part("LAYOUT_PART")?, part("DESCRIPTION_PART")?);
+    let Some((_, versions)) = sources.iter().find(|(path, _)| path == VERSION_SOURCE) else {
+        bail!("{VERSION_SOURCE} is missing");
+    };
+    let versions =
+        syn::parse_file(versions).with_context(|| format!("{VERSION_SOURCE} is not Rust"))?;
+    let first_version = number_const(&versions, VERSION_SOURCE, "FIRST_VERSION")?;
     let Some((_, comments)) = sources.iter().find(|(path, _)| path == COMMENT_SOURCE) else {
         bail!("{COMMENT_SOURCE} is missing");
     };
@@ -451,6 +458,9 @@ export const descriptionEditPart = {description_part:?};
 
 /** The name of the part of a comment that holds its text. */
 export const commentEditPart = {comment_part:?};
+
+/** The version a new record starts with. */
+export const firstVersion = {first_version};
 ",
         number("LEASE_SECONDS")?,
         number("HEARTBEAT_SECONDS")?,
@@ -813,7 +823,11 @@ pub const DESCRIPTION_PART: &str = \"description\";
             COMMENT_SOURCE.to_owned(),
             "pub const TEXT_PART: &str = \"text\";".to_owned(),
         );
-        let text = editing(&[source, comment, error_codes_source()]).unwrap();
+        let version = (
+            VERSION_SOURCE.to_owned(),
+            "pub const FIRST_VERSION: i64 = 1;".to_owned(),
+        );
+        let text = editing(&[source, comment, version, error_codes_source()]).unwrap();
         assert!(text.contains("leaseSeconds = 60;"), "{text}");
         assert!(text.contains("heartbeatSeconds = 15;"), "{text}");
         assert!(text.contains("watchSeconds = 30;"), "{text}");
@@ -832,6 +846,7 @@ pub const DESCRIPTION_PART: &str = \"description\";
             "{text}"
         );
         assert!(text.contains("commentEditPart = \"text\";"), "{text}");
+        assert!(text.contains("firstVersion = 1;"), "{text}");
         assert!(editing(&[]).is_err());
     }
 

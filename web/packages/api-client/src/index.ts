@@ -9,6 +9,7 @@ export {
   draftKeepDays,
   commentEditPart,
   descriptionEditPart,
+  firstVersion,
   draftKeptCodes,
   draftTextMax,
   heartbeatSeconds,

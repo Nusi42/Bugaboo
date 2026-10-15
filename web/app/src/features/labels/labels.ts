@@ -5,7 +5,7 @@ import type { FieldLook } from "@bugaboo/ui";
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
-import { queryKeys } from "../../shared/query-keys.ts";
+import { queryKeys, refreshLabelReads } from "../../shared/query-keys.ts";
 import { versionCounted } from "../issues/index.ts";
 
 /** A group of labels, as the list of the organization shows it. */
@@ -101,14 +101,7 @@ export function useTagSuggestions(project: string, text: string) {
 export function refreshLabels(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.tags.all });
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
-  for (const route of [
-    "/api/v1/labels",
-    "/api/v1/issues/{issue}/sorting",
-    "/api/v1/projects/{project}/tag-suggestions",
-    "/api/v1/issues/{issue}/history",
-  ]) {
-    void queryClient.invalidateQueries({ queryKey: ["get", route] });
-  }
+  refreshLabelReads();
   void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
 }
 

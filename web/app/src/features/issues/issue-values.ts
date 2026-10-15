@@ -1,9 +1,14 @@
-import { priorityWords, statusWords, type Schema } from "@bugaboo/api-client";
+import { firstVersion, priorityWords, statusWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
+
+/** The version of an issue as the server counts it: the first one while the answer has none yet. */
+export function versionOf(issue: { readonly version?: number | null | undefined }): number {
+  return issue.version ?? firstVersion;
+}
 
 /** The short values of an issue a person changes in place. The description is long text: it has a lock. */
 export interface IssueValues {

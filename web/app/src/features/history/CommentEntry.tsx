@@ -1,4 +1,4 @@
-import type { Schema } from "@bugaboo/api-client";
+import { firstVersion, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { MarkdownView, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
@@ -24,7 +24,7 @@ export function CommentEntry({ entry }: { readonly entry: Schema<"HistoryEntryIt
       {editing && id !== undefined && id !== null ? (
         <CommentEditor
           comment={id}
-          version={entry.version ?? 1}
+          version={entry.version ?? firstVersion}
           text={entry.text ?? ""}
           onClose={() => {
             setEditing(false);
