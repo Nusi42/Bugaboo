@@ -18,8 +18,8 @@ export const messages = {
   "layouts.inherited-type": "It is made for {type} only.",
   "layouts.customize-project": "Customize for {project}",
   "layouts.customize-organization": "Customize for the whole organization",
-  "layouts.use-inherited": "Use the inherited layout again",
-  "layouts.use-inherited-title": "Use the inherited layout again?",
+  "layouts.use-inherited": "Reset to default",
+  "layouts.use-inherited-title": "Reset to default?",
   "layouts.use-inherited-text":
     "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
   "layouts.fixed": "The title and the issue type are always asked for.",
@@ -47,12 +47,13 @@ export const messages = {
     "Must be filled in: it stays on the form for everybody who can fill it in.",
   "layouts.roles-page": "Who sees {name}",
   "layouts.roles-form": "Who is asked for {name}",
-  "layouts.limited-page": "{role} can't see {field}: Field permissions",
-  "layouts.limited-form": "{role} can't fill in {field}: Field permissions",
+  "layouts.limited-page": "{role} cannot see {field} because of its field permissions.",
+  "layouts.limited-form": "{role} cannot fill in {field} because of its field permissions.",
+  "layouts.limited-link": "Open field permissions",
   "layouts.save": "Save layout",
   "layouts.lost":
     "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
-  "layouts.taking": "Getting ready to edit …",
+  "layouts.taking": "Getting ready to edit…",
   "layouts.tabs": "Sections of the form",
   "layouts.tab-other": "Other",
   "layouts.section-named": "Section {number}: {title}",
@@ -64,7 +65,7 @@ export const messages = {
   "layouts.draft-restore": "Put my changes back",
   "layouts.draft-drop": "Throw my changes away",
   "layouts.delete-held":
-    "{name} is editing this layout. It can be taken away when they have finished.",
+    "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
   "layouts.roles-hidden": "Which roles see a field is set by people who may decide what roles see.",
 } as const;
 

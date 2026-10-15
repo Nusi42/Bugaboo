@@ -14,3 +14,8 @@ const names: Readonly<Record<BulkKind, () => string>> = {
 export function actionName(kind: BulkKind): string {
   return names[kind]();
 }
+
+/** What the button that applies the change says, with how many issues it is for: *Change 12 issues*. */
+export function applyName(kind: BulkKind, count: number): string {
+  return kind === bulkKind.delete ? t("bulk.apply-delete", { count }) : t("bulk.apply", { count });
+}

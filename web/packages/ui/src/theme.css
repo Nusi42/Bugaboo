@@ -3248,6 +3248,12 @@ body {
   outline-offset: var(--ring-offset);
 }
 
+[data-part="app-layout"][data-variant~="phone"] [data-part="issue-row.title"] [data-part="link"] {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-target);
+}
+
 [data-part="issue-row.meta"] {
   display: flex;
   flex-wrap: wrap;

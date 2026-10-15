@@ -2919,6 +2919,13 @@ part "issue-row.title:focus-visible" {
     use "ring"
 }
 
+// On a phone the title is a target a finger can hit.
+part "app-layout[variant=phone] issue-row.title link" {
+    display inline-flex
+    align-items center
+    min-height "$size-target"
+}
+
 part "issue-row.meta" {
     display flex
     flex-wrap wrap

@@ -60,7 +60,7 @@ export const messages = {
   "fields.used-everywhere":
     "{count, plural, =0 {No project has a value yet.} one {1 project has a value.} other {# projects have a value.}}",
   "fields.used-in-projects":
-    "{count, plural, =0 {Limited to no project you can see.} one {Used in 1 project.} other {Used in # projects.}}",
+    "{count, plural, =0 {No project you can see uses it.} one {Used in 1 project.} other {Used in # projects.}}",
   "fields.used-list": "Projects that use the field",
   "fields.used-types": "Issue types: {names}",
   "fields.scope-everywhere-switch": "Use it in every project",

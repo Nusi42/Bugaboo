@@ -99,7 +99,7 @@ describe("iss_06 relations and the items of one event", () => {
           },
         }),
       ),
-    ).toBe("Ben added a relation: this issue blocks WEB-147");
+    ).toBe("Ben added a relation: this issue · blocks · WEB-147");
   });
 
   it("puts the fields of one event together and keeps a comment on its own", () => {

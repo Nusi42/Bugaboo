@@ -372,9 +372,6 @@ pub const BULK_ACTION_MOVE: MessageKey = MessageKey::new("bulk.action-move");
 /// The message `bulk.action-relation`.
 pub const BULK_ACTION_RELATION: MessageKey = MessageKey::new("bulk.action-relation");
 
-/// The message `bulk.apply`.
-pub const BULK_APPLY: MessageKey = MessageKey::new("bulk.apply");
-
 /// The message `bulk.background-note`.
 pub const BULK_BACKGROUND_NOTE: MessageKey = MessageKey::new("bulk.background-note");
 
@@ -383,6 +380,9 @@ pub const BULK_BAR: MessageKey = MessageKey::new("bulk.bar");
 
 /// The message `bulk.delete-text`.
 pub const BULK_DELETE_TEXT: MessageKey = MessageKey::new("bulk.delete-text");
+
+/// The message `bulk.dialog-text`.
+pub const BULK_DIALOG_TEXT: MessageKey = MessageKey::new("bulk.dialog-text");
 
 /// The message `bulk.field-label`.
 pub const BULK_FIELD_LABEL: MessageKey = MessageKey::new("bulk.field-label");
@@ -1921,6 +1921,9 @@ pub const ISSUES_CREATE: MessageKey = MessageKey::new("issues.create");
 /// The message `issues.create-another`.
 pub const ISSUES_CREATE_ANOTHER: MessageKey = MessageKey::new("issues.create-another");
 
+/// The message `issues.create-another-why`.
+pub const ISSUES_CREATE_ANOTHER_WHY: MessageKey = MessageKey::new("issues.create-another-why");
+
 /// The message `issues.create-first`.
 pub const ISSUES_CREATE_FIRST: MessageKey = MessageKey::new("issues.create-first");
 
@@ -2238,6 +2241,9 @@ pub const LAYOUTS_INHERITED_ORGANIZATION: MessageKey =
 
 /// The message `layouts.intro`.
 pub const LAYOUTS_INTRO: MessageKey = MessageKey::new("layouts.intro");
+
+/// The message `layouts.limited-link`.
+pub const LAYOUTS_LIMITED_LINK: MessageKey = MessageKey::new("layouts.limited-link");
 
 /// The message `layouts.lost`.
 pub const LAYOUTS_LOST: MessageKey = MessageKey::new("layouts.lost");
@@ -4259,6 +4265,24 @@ pub fn assignments_who_group(name: impl std::fmt::Display) -> Message {
 pub fn backup_left(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("backup.left"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `bulk.apply`.
+#[must_use]
+pub fn bulk_apply(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.apply"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `bulk.apply-delete`.
+#[must_use]
+pub fn bulk_apply_delete(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("bulk.apply-delete"),
         vec![("count", Value::Number(count))],
     )
 }
@@ -7540,7 +7564,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("access-keys.row.expired", "Ran out on {when}"),
     ("access-keys.row.expires", "Runs out on {when}"),
-    ("access-keys.row.hidden-project", "a project you can't see"),
+    ("access-keys.row.hidden-project", "a project you cannot see"),
     ("access-keys.row.last-used", "Last used {when}"),
     ("access-keys.row.never-used", "Never used"),
     (
@@ -7564,7 +7588,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("access.cell-label", "{subject} for {role}"),
     ("access.field", "Field"),
-    ("access.hidden-project", "a project you can't see"),
+    ("access.hidden-project", "a project you cannot see"),
     ("access.kind", "Kind of people information"),
     ("access.no-roles", "There is no role yet."),
     ("access.origin-from", "From {project}"),
@@ -7676,15 +7700,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk-skip.changed-since", "It changed after the preview"),
     (
         "bulk-skip.field-missing",
-        "The other project does not use a field it has a value in",
+        "It has a value in a field the other project does not use",
     ),
-    ("bulk-skip.limit-reached", "It has as many as it may"),
+    (
+        "bulk-skip.limit-reached",
+        "It has as many relations as an issue can hold",
+    ),
     (
         "bulk-skip.not-allowed",
         "You may not make this change to it",
     ),
-    ("bulk-skip.not-found", "It is not there for you"),
-    ("bulk-skip.not-valid", "The change does not fit this issue"),
+    (
+        "bulk-skip.not-found",
+        "It was deleted, or you can no longer see it",
+    ),
+    (
+        "bulk-skip.not-valid",
+        "A value of the issue breaks the rule of its field",
+    ),
     ("bulk-skip.nothing-to-change", "It is like that already"),
     ("bulk-skip.relation-exists", "The relation is there already"),
     (
@@ -7708,7 +7741,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk.action-label", "Add a label"),
     ("bulk.action-move", "Move to a project"),
     ("bulk.action-relation", "Add a relation"),
-    ("bulk.apply", "Apply"),
+    (
+        "bulk.apply",
+        "{count, plural, one {Change # issue} other {Change # issues}}",
+    ),
+    (
+        "bulk.apply-delete",
+        "{count, plural, one {Delete # issue} other {Delete # issues}}",
+    ),
     (
         "bulk.background-note",
         "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
@@ -7716,14 +7756,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk.bar", "Change the issues you ticked"),
     (
         "bulk.delete-text",
-        "The issues are deleted. You can undo this right after.",
+        "The issues go to the trash. You can undo this for a short while.",
+    ),
+    (
+        "bulk.dialog-text",
+        "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
     ),
     ("bulk.field-label", "Label"),
     ("bulk.issue-unknown", "an issue you cannot see"),
     ("bulk.keep", "Leave as it is"),
     ("bulk.line-changes", "{field}: {after}"),
     ("bulk.line-delete", "Is deleted"),
-    ("bulk.line-relation", "This issue {name} {issue}"),
+    ("bulk.line-relation", "This issue · {name} · {issue}"),
     ("bulk.progress", "{done} of {total} issues done"),
     ("bulk.progress-label", "How far the change is"),
     ("bulk.project-legend", "Move to"),
@@ -8393,7 +8437,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.setting.locked",
-        "An administrator locked this setting, so it can't be changed here.",
+        "An administrator locked this setting, so it cannot be changed here.",
     ),
     (
         "error.tag.not-here",
@@ -8646,7 +8690,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "fields.used-in-projects",
-        "{count, plural, =0 {Limited to no project you can see.} one {Used in 1 project.} other {Used in # projects.}}",
+        "{count, plural, =0 {No project you can see uses it.} one {Used in 1 project.} other {Used in # projects.}}",
     ),
     ("fields.used-list", "Projects that use the field"),
     (
@@ -8772,11 +8816,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.people-none", "nobody"),
     (
         "history.relation-added",
-        "{who} added a relation: this issue {name} {issue}",
+        "{who} added a relation: this issue · {name} · {issue}",
     ),
     (
         "history.relation-removed",
-        "{who} took away a relation: this issue {name} {issue}",
+        "{who} took away a relation: this issue · {name} · {issue}",
     ),
     ("history.set", "{who} set {field} to {after}"),
     ("history.system", "Bugaboo"),
@@ -8963,6 +9007,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.copy-link-of", "{key}, copy the address"),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
+    (
+        "issues.create-another-why",
+        "Write a title first, then you can create and start another.",
+    ),
     ("issues.create-first", "Create an issue"),
     ("issues.created", "{key} was created."),
     ("issues.created-on", "Created"),
@@ -8972,7 +9020,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.description.empty", "There is no description yet."),
     ("issues.details", "Details"),
     ("issues.draft-continue", "Continue your draft from {when}"),
-    ("issues.draft-drop", "Start again"),
+    ("issues.draft-drop", "Throw the draft away"),
     (
         "issues.draft-found",
         "You have a draft of this description from {when}.",
@@ -8983,7 +9031,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "issues.draft-kept",
-        "Your draft is kept if you close this window.",
+        "Your draft is kept if you close this form.",
     ),
     ("issues.hide-details", "Hide details"),
     ("issues.keep-theirs", "Keep {name}'s change"),
@@ -8996,7 +9044,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "issues.lost-ran-out",
-        "Not saved yet: your editing time ran out. Your text is kept.",
+        "Not saved yet: you were away for a while, so your editing time ran out. Your text is kept.",
     ),
     (
         "issues.lost-taken-over",
@@ -9087,15 +9135,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "labels.combine-dialog-title",
-        "Combine {name} into {other}?",
+        "Combine {name} with {other}?",
     ),
     (
         "labels.combine-help",
         "Every issue that has this one gets the other one instead, and this one is gone. This cannot be taken back.",
     ),
-    ("labels.combine-into", "Combine into"),
+    ("labels.combine-into", "Combine with"),
     ("labels.combine-pick", "Choose one"),
-    ("labels.combine-title", "Combine into another"),
+    ("labels.combine-title", "Combine with another one"),
     ("labels.combined", "Combined."),
     ("labels.field-color", "Color of {name}"),
     ("labels.field-group-name", "Name of the group"),
@@ -9191,7 +9239,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.customize-project", "Customize for {project}"),
     (
         "layouts.delete-held",
-        "{name} is editing this layout. It can be taken away when they have finished.",
+        "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
     ),
     (
         "layouts.draft-changed",
@@ -9234,11 +9282,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "layouts.limited-form",
-        "{role} can't fill in {field}: Field permissions",
+        "{role} cannot fill in {field} because of its field permissions.",
     ),
+    ("layouts.limited-link", "Open field permissions"),
     (
         "layouts.limited-page",
-        "{role} can't see {field}: Field permissions",
+        "{role} cannot see {field} because of its field permissions.",
     ),
     (
         "layouts.lost",
@@ -9278,22 +9327,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.section-up", "Move section {number} up"),
     ("layouts.tab-other", "Other"),
     ("layouts.tabs", "Sections of the form"),
-    ("layouts.taking", "Getting ready to edit …"),
+    ("layouts.taking", "Getting ready to edit…"),
     ("layouts.type", "Issue type"),
     ("layouts.type-all", "All issue types"),
     (
         "layouts.unreadable",
         "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
     ),
-    ("layouts.use-inherited", "Use the inherited layout again"),
+    ("layouts.use-inherited", "Reset to default"),
     (
         "layouts.use-inherited-text",
         "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
     ),
-    (
-        "layouts.use-inherited-title",
-        "Use the inherited layout again?",
-    ),
+    ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     ("markdown.bold", "Bold"),
@@ -9719,7 +9765,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.tree-more", "Show more projects"),
     ("related-issues.add", "Add relation"),
     ("related-issues.add-it", "Add the relation"),
-    ("related-issues.added", "{key} now {name} {other}."),
+    (
+        "related-issues.added",
+        "Relation added: {key} · {name} · {other}",
+    ),
     ("related-issues.back", "Back"),
     ("related-issues.kind-field", "What the relation means"),
     ("related-issues.more", "Show more related issues"),
@@ -9808,7 +9857,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Choose the role that takes its place: everybody who has this role gets the other one, in the same place and with the same reach. This cannot be taken back.",
     ),
     ("roles.field-name", "Name of the role"),
-    ("roles.from-hidden", "from a project you can't see"),
+    ("roles.from-hidden", "from a project you cannot see"),
     ("roles.from-organization", "from the whole organization"),
     ("roles.from-project", "from {name}"),
     ("roles.held", "{role} in {place}"),
@@ -9831,7 +9880,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Tick what people with this role may do. A change is saved at once.",
     ),
     ("roles.permissions-title", "What this role allows"),
-    ("roles.place.hidden", "a project you can't see"),
+    ("roles.place.hidden", "a project you cannot see"),
     ("roles.place.organization", "the whole organization"),
     ("roles.project-link", "Who has which role"),
     ("roles.replace-choose", "Choose a role"),
@@ -10512,7 +10561,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.locked", "Set by your organization"),
     (
         "setting.ui.locked-why",
-        "An administrator chose this for everyone, so you can't change it here.",
+        "An administrator chose this for everyone, so you cannot change it here.",
     ),
     ("setting.ui.nothing", "No setting matches your search."),
     ("setting.ui.reset", "Reset to default"),
@@ -10521,7 +10570,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.source-default", "Bugaboo's standard value"),
     (
         "setting.ui.source-hidden-project",
-        "From a project you can't see",
+        "From a project you cannot see",
     ),
     (
         "setting.ui.source-organization",

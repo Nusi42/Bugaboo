@@ -31,7 +31,9 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
   await signIn(page, ada);
   await tickTwo(page);
   const dialog = await openAction(page, t("bulk.action-label"));
-  await expect(dialog.getByRole("button", { name: t("bulk.apply"), exact: true })).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }),
+  ).toBeDisabled();
   await dialog
     .getByLabel(t("bulk.field-label"), { exact: true })
     .selectOption({ label: "release" });
@@ -42,7 +44,7 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
   await expect(
     dialog.getByText(t("bulk.line-changes", { field: t("issue-field.labels"), after: "release" })),
   ).toHaveCount(2);
-  await dialog.getByRole("button", { name: t("bulk.apply"), exact: true }).click();
+  await dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }).click();
   await expect(
     page.getByText(t("bulk.result-done", { changed: 2, skipped: 0 })).first(),
   ).toBeVisible();
@@ -67,7 +69,7 @@ test("iss_09 the status of two ticked issues is changed and the preview names ea
   await expect(list.getByText("WEB-1", { exact: true })).toBeVisible();
   await expect(list.getByText("WEB-2", { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
-  await dialog.getByRole("button", { name: t("bulk.apply"), exact: true }).click();
+  await dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }).click();
   await expect(
     page.getByText(t("bulk.result-done", { changed: 2, skipped: 0 })).first(),
   ).toBeVisible();
@@ -93,7 +95,9 @@ test("iss_09 an issue the person may not change is skipped with the reason and n
     dialog.getByText(t("issues.preview-summary", { changed: 0, skipped: 2 })),
   ).toBeVisible();
   await expect(dialog.getByText(t("bulk-skip.not-allowed"))).toHaveCount(2);
-  await expect(dialog.getByRole("button", { name: t("bulk.apply"), exact: true })).toBeDisabled();
+  await expect(
+    dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }),
+  ).toBeDisabled();
 });
 
 test("iss_09 the bar and its dialog are good in every theme", async ({ page }) => {

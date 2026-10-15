@@ -40,14 +40,16 @@ function CustomizeThisForm({ form }: { readonly form: NewIssue }) {
 
 /** The buttons under the form: cancel, *Create and start another*, *Create*, and *Customize this form*. */
 export function NewIssueActions({ form, onMade, onClose }: NewIssueActionsProps) {
+  const blocked = !canCreate(form.values) || form.project === undefined;
   return (
     <div {...partOf(part.issueSectionActions)}>
+      {blocked ? <p {...partOf(part.muted)}>{t("issues.create-another-why")}</p> : null}
       <CustomizeThisForm form={form} />
       <Button look={buttonLook.quiet} onPress={onClose}>
         {t("common.cancel")}
       </Button>
       <Button
-        isDisabled={!canCreate(form.values) || form.project === undefined}
+        isDisabled={blocked}
         isPending={form.pending}
         onPress={() => {
           form.create(true, onMade);

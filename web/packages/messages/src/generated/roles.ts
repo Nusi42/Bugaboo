@@ -59,7 +59,7 @@ export const messages = {
   "roles.used-nothing": "Nobody has this role in a place you can see.",
   "roles.from-project": "from {name}",
   "roles.from-organization": "from the whole organization",
-  "roles.from-hidden": "from a project you can't see",
+  "roles.from-hidden": "from a project you cannot see",
   "assignments.title-organization": "Who has which role in the whole organization",
   "assignments.intro-organization":
     "The people and groups with a role in the whole organization. A role given here counts in every project.",

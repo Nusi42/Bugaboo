@@ -31,4 +31,4 @@ Colors are the twelve colors of the theme, so a label is readable in every theme
 
 Renaming a tag or label changes it on every issue that has it. Before you save, **Show what the new name changes** lists the issues that change, a sentence on top (*118 issues will change*) and then each issue, ten at a time with **Show all**. You only see the issues you may see.
 
-**Combine into another** moves every issue from the tag or label to the one you choose, and the first one is gone. **Show what combining changes** lists the issues first, and the combination asks once more. Combining cannot be taken back. A label can be combined only with a label, and a tag with a tag.
+**Combine with another one** moves every issue from the tag or label to the one you choose, and the first one is gone. **Show what combining changes** lists the issues first, and the combination asks once more. Combining cannot be taken back. A label can be combined only with a label, and a tag with a tag.

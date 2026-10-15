@@ -18,7 +18,7 @@ export const messages = {
   "related-issues.add": "Add relation",
   "related-issues.back": "Back",
   "related-issues.add-it": "Add the relation",
-  "related-issues.added": "{key} now {name} {other}.",
+  "related-issues.added": "Relation added: {key} · {name} · {other}",
   "related-issues.take-away": "Take away the relation: {name} {other}",
   "related-issues.nothing-to-pick":
     "There is no kind of relation to pick. Someone who manages kinds of relation can make one.",

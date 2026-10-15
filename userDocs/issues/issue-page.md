@@ -6,7 +6,7 @@ Open a project and press "Issues of this project". The list shows the newest iss
 
 ## Opening an issue
 
-An issue opens in the **focus view** (it takes most of the page, the menu shrinks to icons and a slim list of the project stays on the left; `j` and `k` move through that list, "Back to list" or Esc returns) or in the **side panel** (it opens next to the list, so the list stays in view). Choose which one you like in *My settings › Appearance*, under "Open issues in". "Side panel view" and "Open full page" in the header switch from one to the other. The address of the focus view, for example `/issues/WEB-142`, is the one to share: the issue ID in the header copies it.
+An issue opens in the **focus view** (it takes most of the page, the menu shrinks to icons and a slim list of the project stays on the left; `j` and `k` move through that list, "Back to list" or Esc returns) or in the **side panel** (it opens next to the list, so the list stays in view). Choose which one you like in *My settings › Appearance*, under "Open issues in". "Open in the side panel" and "Open full page" in the header switch from one to the other. The address of the focus view, for example `/issues/WEB-142`, is the one to share: the issue ID in the header copies it (the button is called *WEB-142, copy the address* and says *Address copied*).
 
 On a phone an issue always takes the whole page, and a bar at the bottom offers "Status", "Comment" and "More".
 
@@ -20,7 +20,7 @@ If somebody changed the same value a moment before you, nothing of theirs is ove
 
 ## Writing the description
 
-Press "Edit" (or `e`) to open the description for writing. Nothing is locked until you type the first letter, so just looking never stops anybody. While you write:
+Press "Edit the description" (or `e`) to open the description for writing. Nothing is locked until you type the first letter, so just looking never stops anybody. While you write:
 
 - Your text is kept as a **draft**, in your browser and, privately, on the server, until you save or throw it away (at most 30 days). If you close the window and come back, "Continue your draft from yesterday" is offered.
 - If somebody else is editing the same description, you see "Ana is editing the description · since 2 min" and the buttons "Ask Ana to finish" and, if your role allows it, "Edit anyway". Ana is told within 15 seconds; with "Edit anyway" her unsaved text stays her draft.

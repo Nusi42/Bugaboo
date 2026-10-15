@@ -18,12 +18,15 @@ export const messages = {
   "bulk.project-more": "Show more projects",
   "bulk.project-picked": "Move to {name}",
   "bulk.field-label": "Label",
-  "bulk.delete-text": "The issues are deleted. You can undo this right after.",
+  "bulk.delete-text": "The issues go to the trash. You can undo this for a short while.",
   "bulk.show-changes": "Show what changes",
-  "bulk.apply": "Apply",
+  "bulk.apply": "{count, plural, one {Change # issue} other {Change # issues}}",
+  "bulk.apply-delete": "{count, plural, one {Delete # issue} other {Delete # issues}}",
+  "bulk.dialog-text":
+    "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
   "bulk.value-none": "nothing",
   "bulk.line-changes": "{field}: {after}",
-  "bulk.line-relation": "This issue {name} {issue}",
+  "bulk.line-relation": "This issue · {name} · {issue}",
   "bulk.line-delete": "Is deleted",
   "bulk.background-note":
     "These are many issues, so Bugaboo makes the change in the background. You can go on working.",

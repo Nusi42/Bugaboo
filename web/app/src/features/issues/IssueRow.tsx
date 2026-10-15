@@ -24,7 +24,7 @@ export function IssueRow({ line, href, selected, current, onSelect }: IssueRowPr
   return (
     <li {...partOf(part.issueRow, { variants: [current && "current"] })}>
       <Checkbox label={line.key} isSelected={selected} onChange={onSelect} />
-      <IssueTypeIcon name={line.issueType.icon} />
+      <IssueTypeIcon name={line.issueType.icon} label={line.issueType.name} />
       <span {...partOf(part.issueRowTitle)}>
         <Link href={href}>{line.title}</Link>
       </span>

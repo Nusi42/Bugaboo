@@ -77,6 +77,8 @@ export interface MessageArguments {
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
+  "bulk.apply": { count: number };
+  "bulk.apply-delete": { count: number };
   "bulk.line-changes": { after: string | number; field: string | number };
   "bulk.line-relation": { issue: string | number; name: string | number };
   "bulk.progress": { done: string | number; total: string | number };
