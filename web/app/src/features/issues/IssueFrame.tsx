@@ -1,8 +1,8 @@
-import { useLayout } from "@bugaboo/ui";
+import { Alert, alertTone, useLayout } from "@bugaboo/ui";
 
 import { SidePanel } from "../shell/index.ts";
 import { historyId } from "./history-id.ts";
-import { moreActions } from "./issue-actions.ts";
+import { useMoreActions } from "./issue-actions.ts";
 import { IssueBar } from "./IssueBar.tsx";
 import { IssueContent } from "./IssueContent.tsx";
 import { IssueHeader } from "./IssueHeader.tsx";
@@ -36,19 +36,21 @@ export function IssueFrame(props: IssueFrameProps) {
   const { detail, address, show, onClose, onSwitch, changes, blocks } = props;
   const layout = useLayout();
   const { issue } = detail;
+  const { actions, refusal } = useMoreActions(issue, detail.may_delete, onClose);
   const inside = (
     <>
       <IssueHeader
         issue={issue}
         show={show}
         canChangeTitle={blocks.mask.changes("title")}
-        mayDelete={detail.may_delete}
+        actions={actions}
         onTitle={(title) => {
           changes.change({ title });
         }}
         onClose={onClose}
         onSwitch={onSwitch}
       />
+      {refusal === null ? null : <Alert tone={alertTone.danger}>{refusal}</Alert>}
       <IssueContent
         detail={detail}
         address={address}
@@ -73,7 +75,7 @@ export function IssueFrame(props: IssueFrameProps) {
           onComment={() => {
             goTo(historyId);
           }}
-          actions={moreActions(issue, detail.may_delete, onClose)}
+          actions={actions}
         />
       ) : null}
     </article>
