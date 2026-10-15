@@ -13,7 +13,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{ProjectId, TagId};
 use bb_core::paging::window;
-use bb_core::tags::{TAG_NAME_MAX, TAG_PROJECTS_MAX, Tag, TagProject, name_key};
+use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject, name_key};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -23,7 +23,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::input::clean_text;
+use crate::input::clean_tag_name;
 use crate::member::tag as member;
 use crate::projects::{ProjectRef, Why};
 use std::sync::Arc;
@@ -196,7 +196,7 @@ pub async fn tag_change_preview<S: AuthStore>(
     let tag = ctx.known_tag(&actor, &catalogue, &shown, input.tag).await?;
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
-            let name = clean_text(name, TAG_NAME_MAX)?;
+            let name = clean_tag_name(name)?;
             if catalogue.name_taken(&name, tag.id) {
                 return Err(ErrorCode::NameTaken.into());
             }
@@ -291,7 +291,7 @@ pub async fn change_tag<S: AuthStore>(
         return Err(ErrorCode::VersionChanged.into());
     }
     let name = match &input.name {
-        Some(name) => clean_text(name, TAG_NAME_MAX)?,
+        Some(name) => clean_tag_name(name)?,
         None => tag.name.clone(),
     };
     if catalogue.name_taken(&name, tag.id) {

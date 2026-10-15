@@ -13,6 +13,7 @@ use bb_policy::{Authorized, Place};
 
 use super::types::{TagRef, TagSuggestions, TagSuggestionsQuery};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::input::clean_tag_search;
 
 /// How many candidates are read before the ones that do not fit the project are left out: a few
 /// more than the list holds, so leaving some out rarely leaves it short.
@@ -42,11 +43,12 @@ pub async fn tag_suggestions<S: AuthStore>(
         return Ok(held.authorize(TagSuggestions { tags: Vec::new() }));
     }
     let chain = ctx.chain_of(found.project.id).await?;
+    let text = clean_tag_search(&input.text)?;
     let candidates = ctx
         .store()
         .used_tags(
             &ctx.issue_sight(&actor, &shown, Some(Field::Tags)).await?,
-            &input.text,
+            &text,
             CANDIDATES,
         )
         .await

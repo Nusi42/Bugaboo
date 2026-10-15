@@ -217,3 +217,44 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_a_name_with_an_invisible_character_and_a_long_search_are_refused() -> TestResult {
+    each_database("sec_06_tag_names", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = site.make(&mut ada, "Login fails").await?;
+        let issue = ok(&issue)?["key"].as_str().ok_or("no key")?.to_owned();
+        // A zero-width space and an override of the direction make a name that looks like another.
+        for name in ["login\u{200B}", "\u{202E}login", "lo\u{FEFF}gin"] {
+            let put = ada
+                .send(
+                    "POST",
+                    &format!("{ISSUES}/{issue}/tags"),
+                    Some(json!({"name": name})),
+                )
+                .await?;
+            assert_eq!(put.code(), "request.invalid", "{name:?}: {}", put.body);
+            let label = ada
+                .send(
+                    "POST",
+                    "/api/v1/labels",
+                    Some(json!({"name": name, "group": null})),
+                )
+                .await?;
+            assert_eq!(label.code(), "request.invalid", "{name:?}: {}", label.body);
+        }
+        // A name with a joiner, which several scripts need, is kept.
+        tag(&mut ada, &issue, "می\u{200C}خواهم").await?;
+        // What is typed to find a tag is as long as a name at most; nothing at all is fine.
+        let path = format!("{PROJECTS}/ACME/tag-suggestions?text=");
+        let long = ada
+            .send("GET", &format!("{path}{}", "a".repeat(41)), None)
+            .await?;
+        assert_eq!(long.code(), "request.invalid", "{}", long.body);
+        let nothing = ada.send("GET", &path, None).await?;
+        assert_eq!(names(ok(&nothing)?, "tags").len(), 1);
+        Ok(())
+    })
+    .await
+}
