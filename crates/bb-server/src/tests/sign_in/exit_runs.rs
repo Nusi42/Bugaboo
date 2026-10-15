@@ -1,6 +1,7 @@
 //! The exit review of M3 (WP-12), changes to many issues that go on in the background (ISS-09,
-//! SEC-12): the person who asked, and an administrator, can stop a run.
-//! Every flow runs on SQLite and PostgreSQL.
+//! SEC-12): the person who asked, and an administrator, can stop a run, and signing out everywhere
+//! or changing the password stops the runs of the person. and signing out everywhere
+//! or changing the password stops the runs of the person. Every flow runs on SQLite and PostgreSQL.
 
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
@@ -11,7 +12,7 @@ use super::bulk_http::targets_for_a_job;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::Site;
 use super::issues_site::ok;
-use super::rig::Rig;
+use super::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
 const CHANGES: &str = "/api/v1/bulk/changes";
 const RUNS: &str = "/api/v1/bulk/runs";
@@ -93,6 +94,47 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         assert_eq!(own.status, StatusCode::OK, "{}", own.body);
         work(&rig).await?;
         assert_stopped(&read(&mut bob, &second).await?);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_signing_out_everywhere_stops_the_runs_of_the_person() -> TestResult {
+    each_database("sec_12_sign_out_stops_runs", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let targets = targets_for_a_job(&rig, &site).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        let run = start(&mut bob, &targets).await?;
+        let out = bob.send("DELETE", "/api/v1/auth/sessions", None).await?;
+        assert_eq!(out.status, StatusCode::NO_CONTENT, "{}", out.body);
+        work(&rig).await?;
+        let mut again = Browser::signed_in_as(&app, "bob@example.test").await?;
+        assert_stopped(&read(&mut again, &run).await?);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_changing_the_password_stops_the_runs_of_the_person() -> TestResult {
+    each_database("sec_12_password_stops_runs", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        let targets = targets_for_a_job(&rig, &site).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        let run = start(&mut bob, &targets).await?;
+        let changed = bob
+            .send(
+                "POST",
+                "/api/v1/auth/password",
+                Some(json!({"current_password": PASSWORD, "new_password": OTHER_PASSWORD})),
+            )
+            .await?;
+        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+        work(&rig).await?;
+        assert_stopped(&read(&mut bob, &run).await?);
         Ok(())
     })
     .await

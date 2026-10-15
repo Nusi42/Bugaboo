@@ -420,6 +420,8 @@ pub async fn change_password<S: AuthStore>(
             Box::pin(async move {
                 S::set_password(transaction, person_id, &hash, now).await?;
                 S::delete_sessions_of(transaction, person_id, None).await?;
+                // What the person started in the background does not go on after a new password.
+                S::end_bulk_runs_of(transaction, person_id, now).await?;
                 S::insert_session(transaction, &session).await
             })
         })
