@@ -160,7 +160,10 @@ Rules:
 | **Hidden / Can see / Can change** | The three levels of field permissions                     | none / read / write (in UI)        |
 | **Check access**         | See what someone can do in a project, and why, in sentences (*"Ana is in the group Backend, which has the role Team member in ACME"*) | effective permissions |
 | **See as …**             | Look at Bugaboo as another person or role sees it                  | impersonate, preview as            |
-| **Bot account**          | An account for automation, not a person                            | service account                    |
+| **Agent**                | An account that works on its own and is not a person: an AI app or a script. It has one responsible person and can do at most what that person can. Shown as *"Fixer, agent of Ada Brandt"* | bot, bot account, service account, AI worker (in UI) |
+| **Agent key**            | The access key an agent signs in with; it belongs to the agent and always runs out | bot token, service token (in UI) |
+| **Make agents that work for you** | The permission to make agents of your own                 | — |
+| **Agents of the organization** (later) | Agents whose responsible party is the organization, with a role; webhooks and imports run as one | system bot (in UI) |
 | **Access key**           | A secret for scripts and apps to sign in as you. It can do at most what you can, and it always runs out | personal access token, PAT |
 | **See only / See and change / Everything I can do** | The three choices of what an access key may do; single permissions sit under *More options* | read-only, read-write, full access (in UI) |
 | **Connected apps**       | Apps you allowed to use your account, including AI apps            | OAuth clients                      |
@@ -207,9 +210,24 @@ Rules:
 | **Sign-in rules**        | The organization settings for how long people stay signed in and who must use two-step sign-in | authentication policy, session policy (in UI) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
-| **Assistant**            | The built-in AI helper                                             | copilot, agent (in UI)             |
+| **Assistant**            | The built-in AI helper. Not an agent: it only proposes, and only to the person using it | copilot (in UI) |
 | **Suggestions**          | Values the assistant proposes, shown for you to accept or reject   | triage                             |
 | **AI apps (MCP)**        | Outside AI tools connected through MCP                             | —                                  |
+| **Hand over** (to an agent) | Give one or several issues, by their IDs, to one of your agents to work on. The issue keeps its person | delegate, dispatch, assign to agent (in UI) |
+| **Worked on by …**       | Shown on an issue while an agent works on it: *worked on by Fixer* | — |
+| **Brief**                | What an agent is given with a hand-over: the issue's text, its steps, *Done when*, a note, and the answers to its questions | prompt, spec, ticket context (in UI) |
+| **Done when**            | The part of a brief that says how to check the work is done        | acceptance criteria, definition of done (in UI) |
+| **Standing rule**        | Lets one of your agents work on everything a saved search finds, by proposals or by changing a few named fields; it runs out | trigger, subscription, watch rule (in UI) |
+| **Agent work**           | The record on an issue of what an agent did: the brief, its attempts, questions and the review. Kept apart from the comments | agent log, transcript (in UI) |
+| **Attempt**              | One go of an agent at a handed-over issue: plan, steps, results    | iteration, job (in UI) |
+| **Waiting for the agent / Agent working / Waiting for you / Ready for review / Agent gave up / Stopped** | The states of agent work. *Waiting for you* means a question or a plan waits for a person | needs input, idle (in UI) |
+| **Approve plan**         | Let an agent start an attempt after reading its plan               | — |
+| **Accept / Send back / Throw away** | The three answers of a review: keep the result; try again with a note; undo everything the attempts changed in Bugaboo | merge, reject, revert (in UI) |
+| **Accept by itself when its checks pass** | A project setting for handed-over issues; off at the start | auto-merge, auto-accept (in UI) |
+| **My agents**            | Your agents and all their work in one place, *Waiting for you* first | agent dashboard, fleet (in UI) |
+| **Stop all my agents**   | Stop every one of your agents at once                              | kill switch (in UI) |
+| **Run** (of an app or agent) | Everything one session of an AI app or one attempt of an agent changed; shown as a list and undone in one step | batch, transaction (in UI) |
+| **Written by an AI app / Written by an agent** | Labels on text written through MCP, stored with the text like *Written with the assistant* | AI-generated content (as label) |
 | **Written with the assistant** | Label on text the assistant wrote or proposed; also stored with the text | AI-generated content (as label) |
 | **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |

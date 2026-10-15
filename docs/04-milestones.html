@@ -119,7 +119,7 @@
 <tr><td><strong>M5</strong></td><td>Search and lists</td><td>MVP</td><td>12</td></tr>
 <tr><td><strong>M6</strong></td><td>Time and working hours</td><td>MVP</td><td>10</td></tr>
 <tr><td><strong>M7</strong></td><td>Timeline and theme editor</td><td>MVP</td><td>8</td></tr>
-<tr><td><strong>M8</strong></td><td>Assistant and AI apps</td><td>MVP</td><td>15</td></tr>
+<tr><td><strong>M8</strong></td><td>Assistant, AI apps and agents</td><td>MVP</td><td>24</td></tr>
 <tr><td><strong>M9</strong></td><td>Privacy, operations and the first release</td><td>MVP</td><td>14</td></tr>
 <tr><td><strong>M10</strong></td><td>Board, calendar, relation map and dashboards</td><td>1.0</td><td>10</td></tr>
 <tr><td><strong>M11</strong></td><td>Documents</td><td>1.0</td><td>11</td></tr>
@@ -378,8 +378,8 @@
 </ul>
 <p><strong>Demo (exit):</strong> Plan the sample Mobile app goal on the timeline by dragging; create a custom theme that fails readability and fix it.</p>
 <p><strong>Tests and checks added:</strong> STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.</p>
-<h2 id="s11"><button class="sec" data-sec>§11</button>M8 — Assistant and AI apps</h2>
-<p><strong>Phase:</strong> MVP · <strong>Goal:</strong> AI that helps as the person, never more, and outside AI apps through MCP.</p>
+<h2 id="s11"><button class="sec" data-sec>§11</button>M8 — Assistant, AI apps and agents</h2>
+<p><strong>Phase:</strong> MVP · <strong>Goal:</strong> AI that helps as the person, never more; outside AI apps through MCP; and agents that work on their own on the issues a person hands over (ADR-0029).</p>
 <p><strong>Features:</strong></p>
 <ul>
 <li><code>AI-01</code> Provider abstraction</li>
@@ -392,6 +392,15 @@
 <li><code>AI-21</code> MCP tools</li>
 <li><code>AI-22</code> MCP authentication via OAuth 2</li>
 <li><code>AI-23</code> Every MCP call goes through the same policy engine</li>
+<li><code>AI-30</code> Agents</li>
+<li><code>AI-31</code> Hand over one or several issues by ID to an agent</li>
+<li><code>AI-32</code> Standing rules</li>
+<li><code>AI-33</code> Agent work on the issue page</li>
+<li><code>AI-34</code> Questions and plans</li>
+<li><code>AI-35</code> Review</li>
+<li><code>AI-36</code> MCP tools for agents</li>
+<li><code>AI-37</code> My agents</li>
+<li><code>AI-38</code> Runs</li>
 <li><code>COMP-08</code> People know when AI is involved</li>
 <li><code>COMP-09</code> Machine-readable marking</li>
 <li><code>COMP-10</code> No AI decisions about people</li>
@@ -404,10 +413,14 @@
 <li>One tool registry; context builder with AI exclusions and untrusted-content fencing</li>
 <li>Assistant panel with proposals and Apply; marking of AI-written text</li>
 <li>MCP server with OAuth 2.1 and access keys; consent</li>
+<li>Agents: the agent actor in <code>bb-policy</code> (at most its person's rights), agent keys, the new permission, administrators' list</li>
+<li>Hand over and standing rules; agent work with attempts, questions, plan approval and review; runs with undo in one step</li>
+<li>MCP tools for agents (take, report, ask, attach, give up, changes since, preview on every write); limits; untrusted-text marks</li>
+<li><em>My agents</em> on the computer and the phone; agent states on list rows and in search</li>
 <li>AI literacy guide in the user docs</li>
 </ul>
-<p><strong>Demo (exit):</strong> Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply.</p>
-<p><strong>Tests and checks added:</strong> ARCH-AI-TOOLS active; prompt-injection test set; assistant and MCP entry points in SEC-MATRIX.</p>
+<p><strong>Demo (exit):</strong> Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply. Hand two issues to two agents of one person: one asks a question that is answered from the phone, the other is sent back once and then accepted; a third attempt is thrown away and everything it changed in Bugaboo is undone in one step; a standing rule sorts new bugs by proposals only.</p>
+<p><strong>Tests and checks added:</strong> ARCH-AI-TOOLS active (every tool declares read or change and has a preview test); prompt-injection test set, also for agents and standing rules; assistant, MCP and agent entry points in SEC-MATRIX (an agent never does more than its person).</p>
 <h2 id="s12"><button class="sec" data-sec>§12</button>M9 — Privacy, operations and the first release</h2>
 <p><strong>Phase:</strong> MVP · <strong>Goal:</strong> Everything needed to run the MVP for real: GDPR features, installers, backups, releases.</p>
 <p><strong>Features:</strong></p>
@@ -492,7 +505,7 @@
 <p><strong>Features:</strong></p>
 <ul>
 <li><code>AUTH-04</code> SSO via OIDC, with mapping from identity-provider groups …</li>
-<li><code>AUTH-08</code> Bot accounts</li>
+<li><code>AUTH-08</code> Agents of the organization</li>
 <li><code>NTF-03</code> Outgoing webhooks, HMAC-signed, filtered by event and search</li>
 <li><code>NTF-04</code> REST API with an OpenAPI 3</li>
 <li><code>NTF-05</code> CSV import/export, and full JSON export of a project</li>
@@ -510,7 +523,7 @@
 </ul>
 <p><strong>Work packages (outline):</strong></p>
 <ul>
-<li>Company sign-in (OIDC) with group mapping; bot accounts</li>
+<li>Company sign-in (OIDC) with group mapping; agents of the organization</li>
 <li>Webhooks; public REST API with OpenAPI; CSV and JSON export</li>
 <li>Restricted issues; See as …; safety check page; encrypted backups</li>
 <li>Assistant: ask in your own words, summaries, write it up for me, suggestions; budgets; connected-apps page</li>

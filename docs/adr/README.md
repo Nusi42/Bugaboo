@@ -32,6 +32,7 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0026](0026-one-theme-file.md) | One theme file for everything about how the app looks |
 | [0027](0027-layouts-and-rules-per-issue-type.md) | Layouts, rules per issue type and the starting workflow |
 | [0028](0028-message-parts.md) | The message catalog is split into parts; the first page loads one |
+| [0029](0029-ai-agents.md) | AI agents: apps that act for a person, and agents that work on their own |
 
 ## Template
 

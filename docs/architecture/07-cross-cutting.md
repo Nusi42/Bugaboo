@@ -49,7 +49,7 @@ The decisions are [ADR-0004](../adr/0004-authorization.md) (one policy engine, `
 
 ```mermaid
 flowchart LR
-  actor["Actor<br/>person · access key · later bot and AI app token"]
+  actor["Actor<br/>person · access key · AI app for a person ·<br/>agent (ADR-0029)"]
   groups["Groups"]
   assign["Who has which role<br/>person or group · role or No access ·<br/>whole organization, only this project,<br/>or this project and its sub-projects"]
   roles["Roles<br/>(permissions, field levels,<br/>Who sees people, two-step switch)"]
@@ -350,7 +350,7 @@ Every change appends a **domain event** in the same transaction: who (actor), ho
 |----------|------------------|
 | History | show the change log (filtered by the reader's field mask) |
 | Notifications | notify followers and mentioned people (filtered per recipient) |
-| Webhooks | send signed payloads (filtered by the bot account's permissions) |
+| Webhooks | send signed payloads (filtered by the permissions of the agent it runs as) |
 | Security log | append hash-chained entries for security-relevant events |
 | Full-text index | update search text (inside the same database) |
 | Live updates | tell open screens that something changed (built last) |

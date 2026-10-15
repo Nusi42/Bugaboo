@@ -45,7 +45,7 @@ Enforced by: TEST-SAMPLE-DATA (`cargo xtask ci` runs it), ARCH-HTTP-EDGE (`bb-sa
 
 ### People (50) and groups
 
-- 2 Administrators, 4 Project leads, 30 Team members, 8 Contributors, 4 Viewers, 2 Guests, plus 1 bot account (bot accounts come with AUTH-08, M12).
+- 2 Administrators, 4 Project leads, 30 Team members, 8 Contributors, 4 Viewers, 2 Guests, plus 2 agents of one person (agents come with AI-30, M8).
 - Groups: Backend, Frontend, Mobile, QA, Support, Docs, Management, External. Every Team member is in one of the first six, every Viewer in Management and four Contributors (Ana is the first) in External.
 - **Who has which role** (made in M2, shown by *Check access*): the second Administrator and 18 of the 30 Team members for the whole organization; the other 12 Team members only through the groups Backend, Frontend, Mobile, QA and Docs (a group gives its role on its projects); the Viewers through Management for the whole organization; the Contributors in External on *Website*, the other four on *Mobile app* and *Operations*; the Guests one each on *Website* and *Mobile app*; one Project lead for each of the four projects; and one *No access* (Ben Hale on *Android*).
 - Two custom roles: *Support agent* (a Team member without *Cost center*, given to the group Support on *Operations*) and *Security reviewer* (needs two-step sign-in; the five people who have a code app hold it on *Operations*).

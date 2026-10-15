@@ -89,7 +89,7 @@ What each means in practice:
 - **AUTH-05 (L)** — LDAP / Active Directory sync, and SAML.
 - **AUTH-06 (M)** — Invitations (time-limited, single-use links). Self-registration is off by default; when enabled it can be restricted to approved e-mail domains.
 - **AUTH-07 (M)** — **Access keys** (for scripts and apps) with scopes, expiry and per-project restriction. A key can only *narrow* its owner's permissions, never widen them.
-- **AUTH-08 (V1)** — **Bot accounts** for automation, each with its own roles.
+- **AUTH-08 (V1)** — **Agents of the organization** for automation (webhooks, imports): agents (AI-30) whose responsible party is the organization, with a role (ADR-0029, decision 10).
 - **AUTH-09 (M)** — First-run setup is protected by a one-time **setup code** printed to the server console, so nobody else on the network can claim a fresh instance.
 
 ## 3. Projects & hierarchy (PRJ)
@@ -305,11 +305,23 @@ What each means in practice:
 - **AI-23 (M)** — Every MCP call goes through the same policy engine. Results are filtered per field, and changes are attributed in the audit log as *"user via MCP client X"*.
 - **AI-24 (V1)** — Per-client consent screen and a **Connected apps** page where users can revoke access.
 
+### Agents (ADR-0029)
+
+- **AI-30 (M)** — **Agents**: accounts that work on their own and are not people. Each has one responsible person and can do at most what that person can, narrowed by its work and limits; it stops when the person loses access. Agents have no role, are in no group and are never *Assigned to* an issue. One person may have several agents working at the same time. Signing in with an agent key or OAuth; the permission *Make agents that work for you*; administrators see and stop every agent.
+- **AI-31 (M)** — **Hand over** one or several issues by ID to an agent, with a brief (taken from the issue, plus a note; the window says what is missing), what the agent may do in Bugaboo, a budget and an optional plan approval. The issue keeps its person and shows *worked on by* the agent; the hand-over ends at the review or when it runs out.
+- **AI-32 (M)** — **Standing rules**: an agent may work on everything a saved search finds, by proposals (default), by changing only named fields (labels, tags, type, duplicate of, found in release), or by making issues in one named project. Never fields that hold people, never the status; runs out after 30 days (at most 90); every new match is written down.
+- **AI-33 (M)** — **Agent work** on the issue page, apart from the comments: the brief, attempts with plan, steps, results (links, test reports) and the time and cost the agent reports; the states *Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped*, shown on list rows and searchable.
+- **AI-34 (M)** — **Questions and plans**: an agent asks instead of guessing; its work waits and its person gets a notification; the answer joins the brief. An optional plan approval before each attempt.
+- **AI-35 (M)** — **Review**: *Accept* (the reviewer picks the next status), *Send back* with a note (a new attempt), *Throw away* (everything the attempts changed in Bugaboo is undone in one step). Per project, *Accept by itself when its checks pass* (off at the start).
+- **AI-36 (M)** — **MCP tools for agents**: take a handed-over issue (all or nothing), report a step, ask, attach a result, give up, and *changes since*; `preview` on every write tool; each tool says whether it changes something; no edit-lock takeover; texts marked with who wrote them (person in the project, Guest, outside, agent).
+- **AI-37 (M)** — **My agents**: all of a person's agents and their work in one place, *Waiting for you* first (questions, plans, reviews, rules about to run out); pause or stop one, or *Stop all my agents*; limits per agent (changes per minute, issues at once, attempts). On a phone, *Waiting for you* first.
+- **AI-38 (M)** — **Runs**: every session of an AI app acting for a person and every attempt of an agent is one run, shown as its list of changes and undone in one step; text written through MCP is marked *Written by an AI app* or *Written by an agent*.
+
 ## 15. Notifications & integrations (NTF)
 
 - **NTF-01 (M)** — In-app **notifications** (mentions, assignments, changes to things you follow).
 - **NTF-02 (M)** — E-mail notifications (SMTP), configurable per user and per event. Content is filtered by **the recipient's** permissions.
-- **NTF-03 (V1)** — Outgoing **webhooks**, HMAC-signed, filtered by event and search. Each webhook runs as a chosen bot account.
+- **NTF-03 (V1)** — Outgoing **webhooks**, HMAC-signed, filtered by event and search. Each webhook runs as a chosen agent of the organization (AUTH-08).
 - **NTF-04 (V1)** — REST API with an **OpenAPI 3.1** spec and a generated TypeScript client (the UI uses it too).
 - **NTF-05 (V1)** — CSV import/export, and full JSON export of a project.
 - **NTF-06 (L)** — Importers for Jira, GitHub Issues, GitLab and YouTrack.

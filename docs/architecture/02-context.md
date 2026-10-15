@@ -37,7 +37,7 @@ flowchart LR
 | AI provider | out | Untrusted output | Receives only fields the person may read and that are not excluded from AI. Off by default. |
 | Mail server | out | Trusted transport | Notification content is filtered by the **recipient's** permissions. |
 | Company sign-in (OIDC) | out/in | Trusted identity source | Group claims can map to Bugaboo groups. |
-| Webhook receivers | out | Untrusted | Payloads signed (HMAC); each webhook runs as a bot account with its own permissions. |
+| Webhook receivers | out | Untrusted | Payloads signed (HMAC); each webhook runs as an agent of the organization with its own role (ADR-0029). |
 | Control plane | in | Trusted operator, **no customer data** | Served model only. Emergency data access needs the customer's approval (DIST-03). |
 
 ## Trust boundaries

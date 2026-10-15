@@ -113,7 +113,7 @@ A session can end at any time, and a new one starts in the master and continues 
 | **M5** | Search and lists | MVP | 12 |
 | **M6** | Time and working hours | MVP | 10 |
 | **M7** | Timeline and theme editor | MVP | 8 |
-| **M8** | Assistant and AI apps | MVP | 15 |
+| **M8** | Assistant, AI apps and agents | MVP | 24 |
 | **M9** | Privacy, operations and the first release | MVP | 14 |
 | **M10** | Board, calendar, relation map and dashboards | 1.0 | 10 |
 | **M11** | Documents | 1.0 | 11 |
@@ -403,9 +403,9 @@ A session can end at any time, and a new one starts in the master and continues 
 
 **Tests and checks added:** STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.
 
-## M8 — Assistant and AI apps
+## M8 — Assistant, AI apps and agents
 
-**Phase:** MVP · **Goal:** AI that helps as the person, never more, and outside AI apps through MCP.
+**Phase:** MVP · **Goal:** AI that helps as the person, never more; outside AI apps through MCP; and agents that work on their own on the issues a person hands over (ADR-0029).
 
 **Features:**
 
@@ -419,6 +419,15 @@ A session can end at any time, and a new one starts in the master and continues 
 - `AI-21` MCP tools
 - `AI-22` MCP authentication via OAuth 2
 - `AI-23` Every MCP call goes through the same policy engine
+- `AI-30` Agents
+- `AI-31` Hand over one or several issues by ID to an agent
+- `AI-32` Standing rules
+- `AI-33` Agent work on the issue page
+- `AI-34` Questions and plans
+- `AI-35` Review
+- `AI-36` MCP tools for agents
+- `AI-37` My agents
+- `AI-38` Runs
 - `COMP-08` People know when AI is involved
 - `COMP-09` Machine-readable marking
 - `COMP-10` No AI decisions about people
@@ -431,11 +440,15 @@ A session can end at any time, and a new one starts in the master and continues 
 - One tool registry; context builder with AI exclusions and untrusted-content fencing
 - Assistant panel with proposals and Apply; marking of AI-written text
 - MCP server with OAuth 2.1 and access keys; consent
+- Agents: the agent actor in `bb-policy` (at most its person's rights), agent keys, the new permission, administrators' list
+- Hand over and standing rules; agent work with attempts, questions, plan approval and review; runs with undo in one step
+- MCP tools for agents (take, report, ask, attach, give up, changes since, preview on every write); limits; untrusted-text marks
+- *My agents* on the computer and the phone; agent states on list rows and in search
 - AI literacy guide in the user docs
 
-**Demo (exit):** Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply.
+**Demo (exit):** Connect Claude Code to the sample organization through MCP as a Contributor and see that hidden fields stay hidden; the assistant summarizes an issue and proposes a change that is only saved after Apply. Hand two issues to two agents of one person: one asks a question that is answered from the phone, the other is sent back once and then accepted; a third attempt is thrown away and everything it changed in Bugaboo is undone in one step; a standing rule sorts new bugs by proposals only.
 
-**Tests and checks added:** ARCH-AI-TOOLS active; prompt-injection test set; assistant and MCP entry points in SEC-MATRIX.
+**Tests and checks added:** ARCH-AI-TOOLS active (every tool declares read or change and has a preview test); prompt-injection test set, also for agents and standing rules; assistant, MCP and agent entry points in SEC-MATRIX (an agent never does more than its person).
 
 ## M9 — Privacy, operations and the first release
 
@@ -535,7 +548,7 @@ A session can end at any time, and a new one starts in the master and continues 
 **Features:**
 
 - `AUTH-04` SSO via OIDC, with mapping from identity-provider groups …
-- `AUTH-08` Bot accounts
+- `AUTH-08` Agents of the organization
 - `NTF-03` Outgoing webhooks, HMAC-signed, filtered by event and search
 - `NTF-04` REST API with an OpenAPI 3
 - `NTF-05` CSV import/export, and full JSON export of a project
@@ -553,7 +566,7 @@ A session can end at any time, and a new one starts in the master and continues 
 
 **Work packages (outline):**
 
-- Company sign-in (OIDC) with group mapping; bot accounts
+- Company sign-in (OIDC) with group mapping; agents of the organization
 - Webhooks; public REST API with OpenAPI; CSV and JSON export
 - Restricted issues; See as …; safety check page; encrypted backups
 - Assistant: ask in your own words, summaries, write it up for me, suggestions; budgets; connected-apps page
