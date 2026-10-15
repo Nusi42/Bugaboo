@@ -146,6 +146,11 @@ const FIELD_READS = [
   "/api/v1/projects/{project}",
 ] as const;
 
+/** Reads the lists of issues and what an issue shows about itself again: issues changed. */
+export function refreshIssues(): void {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
+}
+
 /** Reads again every answer of these routes of the API (their keys are made by the client). */
 function refreshReads(paths: readonly string[]): void {
   for (const path of paths) {

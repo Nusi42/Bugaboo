@@ -2,15 +2,9 @@ import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
-import { queryClient } from "../../shared/query-client.ts";
 import { known } from "../../shared/present.ts";
-import { queryKeys } from "../../shared/query-keys.ts";
+import { refreshIssues } from "../../shared/query-keys.ts";
 import type { IssueView } from "./slots.ts";
-
-/** Reads everything about issues again: one went to the trash or came back. */
-function refreshIssues(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
-}
 
 /**
  * Puts an issue into the trash at once, with *Undo* for 10 seconds (UX §6: a reversible action asks

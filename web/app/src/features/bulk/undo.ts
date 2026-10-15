@@ -1,7 +1,8 @@
 import { api } from "../../shared/api.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { refreshLabels } from "../labels/index.ts";
-import { bulkKind, refreshIssues, type BulkAction, type BulkResult } from "./bulk.ts";
+import { bulkKind, type BulkAction, type BulkResult } from "./bulk.ts";
+import { refreshIssues } from "../../shared/query-keys.ts";
 
 /** The IDs of the issues a change really changed: the ones that were not skipped. */
 export function changedIssues(result: BulkResult): string[] {
