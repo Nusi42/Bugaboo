@@ -116,9 +116,10 @@ impl FieldMask {
 }
 
 impl Evaluation {
-    /// The mask of this evaluation.
-    #[must_use]
-    pub fn field_mask(&self) -> FieldMask {
+    /// The mask of this evaluation with the levels of every issue type. Only the policy holds it:
+    /// a use case asks for the mask of the type of the issue it works on ([`Self::field_mask_for`]),
+    /// so no path can judge an issue by the levels of the general role (SEC-04, ADR-0027).
+    pub(crate) fn field_mask(&self) -> FieldMask {
         let levels = self.fields.all().clone();
         let types: std::collections::BTreeSet<IssueTypeId> = self
             .type_rules
@@ -137,6 +138,12 @@ impl Evaluation {
             })
             .collect();
         FieldMask { levels, types }
+    }
+
+    /// Whether the viewer may see the field on an issue of some type (a name, not a value).
+    #[must_use]
+    pub fn can_see_somewhere(&self, field: impl Into<FieldKey>) -> bool {
+        self.field_mask().can_see_somewhere(field)
     }
 
     /// The mask on an item of one issue type (ADR-0027): the levels set for the type count.

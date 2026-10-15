@@ -32,7 +32,7 @@ fn sec_04_the_highest_field_level_of_the_roles_wins() {
     assert_eq!(two_roles.field_level(Field::CostCenter), FieldLevel::CanSee);
     // A field nobody set is hidden: default deny.
     assert_eq!(two_roles.field_level(Field::Priority), FieldLevel::Hidden);
-    let mask = two_roles.field_mask();
+    let mask = two_roles.field_mask_for(None);
     assert!(mask.can_change(Field::Title));
     assert!(mask.can_see(Field::CostCenter) && !mask.can_change(Field::CostCenter));
     assert!(!mask.can_see(Field::Priority));
@@ -477,9 +477,8 @@ fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
         FieldLevel::CanChange
     );
     // A view that does not say its type gets the lowest level across types: it fails closed.
-    let mask = at_web.field_mask();
-    assert!(!mask.for_type(None).can_see(severity));
-    assert!(!mask.for_type(Some(bug)).can_see(severity));
-    assert!(mask.for_type(Some(task)).can_see(severity));
-    assert!(mask.can_see_somewhere(severity));
+    assert!(!at_web.field_mask_for(None).can_see(severity));
+    assert!(!at_web.field_mask_for(Some(bug)).can_see(severity));
+    assert!(at_web.field_mask_for(Some(task)).can_see(severity));
+    assert!(at_web.can_see_somewhere(severity));
 }

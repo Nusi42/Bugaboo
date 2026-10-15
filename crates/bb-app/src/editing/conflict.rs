@@ -140,21 +140,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(field) = key.own() else {
             return Ok(None);
         };
-        let issue_type = if record.kind == EntityKind::from(RecordKind::Issue) {
-            match IssueId::from_bytes(record.id.to_bytes()) {
-                Ok(id) => self
-                    .store()
-                    .issue(id)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?
-                    .map(|found| found.issue_type),
-                Err(_) => None,
-            }
-        } else if record.kind == EntityKind::from(RecordKind::Project) {
-            None
-        } else {
+        if record.kind != EntityKind::from(RecordKind::Issue)
+            && record.kind != EntityKind::from(RecordKind::Project)
+        {
             return Ok(None);
-        };
+        }
+        let issue_type = self.issue_type_of(record).await?;
         if viewer.field_level_for(issue_type, key) < FieldLevel::CanSee {
             return Ok(None);
         }
@@ -164,6 +155,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .find(|definition| definition.field.id == field)
             .map(|definition| definition.field.kind))
+    }
+
+    /// The issue type of the record when it is an issue that is still there: the mask of a reader
+    /// is the mask of this type (ADR-0027).
+    async fn issue_type_of(&self, record: &EntityRef) -> Result<Option<IssueTypeId>, AppError> {
+        if record.kind != EntityKind::from(RecordKind::Issue) {
+            return Ok(None);
+        }
+        let Ok(id) = IssueId::from_bytes(record.id.to_bytes()) else {
+            return Ok(None);
+        };
+        Ok(self
+            .store()
+            .issue(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .map(|found| found.issue_type))
     }
 
     /// The version the record has now, if it is still there and the person may know about it.
@@ -284,6 +292,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         record: &EntityRef,
         event: &DomainEvent,
     ) -> Result<(Vec<String>, BTreeMap<String, Value>), AppError> {
+        let mask = viewer.field_mask_for(self.issue_type_of(record).await?);
         let mut fields = Vec::new();
         let mut current = BTreeMap::new();
         for change in event
@@ -316,8 +325,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Shown::Hidden => self.services.records.shows(record, &change.field),
                 known => known,
             };
-            let mask_hides = Field::from_code(&change.field)
-                .is_some_and(|field| !viewer.field_mask().can_see(field));
+            let mask_hides =
+                Field::from_code(&change.field).is_some_and(|field| !mask.can_see(field));
             if shown == Shown::Hidden || mask_hides {
                 continue;
             }
