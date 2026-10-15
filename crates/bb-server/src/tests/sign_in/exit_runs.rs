@@ -1,0 +1,99 @@
+//! The exit review of M3 (WP-12), changes to many issues that go on in the background (ISS-09,
+//! SEC-12): the person who asked, and an administrator, can stop a run.
+//! Every flow runs on SQLite and PostgreSQL.
+
+use axum::http::StatusCode;
+use bb_app::access::StartingRole;
+use bb_testing::{Failure, TestResult, each_database};
+use serde_json::{Value, json};
+
+use super::bulk_http::targets_for_a_job;
+use super::http::{Browser, rig_and_app};
+use super::issues_site::Site;
+use super::issues_site::ok;
+use super::rig::Rig;
+
+const CHANGES: &str = "/api/v1/bulk/changes";
+const RUNS: &str = "/api/v1/bulk/runs";
+
+/// Starts a run in the background as `person`: the ID of the run.
+async fn start(person: &mut Browser, targets: &[Value]) -> Result<String, Failure> {
+    let started = person
+        .send(
+            "POST",
+            CHANGES,
+            Some(json!({
+                "issues": targets,
+                "action": {"kind": "change", "change": {"status": "done"}},
+            })),
+        )
+        .await?;
+    let run = &ok(&started)?["run"];
+    assert_eq!(run["status"], "queued", "{run}");
+    Ok(run["id"].as_str().ok_or("no run ID")?.to_owned())
+}
+
+/// A worker takes the steps that are due.
+async fn work(rig: &Rig) -> Result<(), Failure> {
+    for _ in 0..40 {
+        let taken = rig
+            .services
+            .ctx(Rig::info())
+            .run_due_jobs()
+            .await
+            .map_err(|error| error.to_string())?;
+        if taken == 0 {
+            break;
+        }
+    }
+    Ok(())
+}
+
+/// The run as `person` reads it.
+async fn read(person: &mut Browser, run: &str) -> Result<Value, Failure> {
+    let read = person.send("GET", &format!("{RUNS}/{run}"), None).await?;
+    Ok(ok(&read)?.clone())
+}
+
+/// Nothing was changed and the run says it stopped.
+fn assert_stopped(run: &Value) {
+    assert_eq!(run["status"], "failed", "{run}");
+    assert_eq!(run["changed"], 0, "{run}");
+    assert_eq!(run["done"], 0, "{run}");
+}
+
+#[tokio::test]
+async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nobody_else()
+-> TestResult {
+    each_database("iss_09_cancel_run", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let targets = targets_for_a_job(&rig, &site).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        let (mut cat, _) = site.person(StartingRole::Contributor, "cat").await?;
+        let cancel = |run: &str| format!("{RUNS}/{run}/cancel");
+        let first = start(&mut bob, &targets).await?;
+        // Somebody else, who is no administrator, does not find the run.
+        let hidden = cat.send("POST", &cancel(&first), None).await?;
+        assert_eq!(hidden.code(), "resource.not_found", "{}", hidden.body);
+        assert_eq!(read(&mut bob, &first).await?["status"], "queued");
+        // An administrator stops it.
+        let stopped = ada.send("POST", &cancel(&first), None).await?;
+        assert_eq!(stopped.status, StatusCode::OK, "{}", stopped.body);
+        assert_stopped(&stopped.body);
+        // Stopped is stopped: the worker does not go on, and the person reads it.
+        work(&rig).await?;
+        assert_stopped(&read(&mut bob, &first).await?);
+        // Stopping again changes nothing.
+        let again = bob.send("POST", &cancel(&first), None).await?;
+        assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+        // The person who asked stops their own.
+        let second = start(&mut bob, &targets).await?;
+        let own = bob.send("POST", &cancel(&second), None).await?;
+        assert_eq!(own.status, StatusCode::OK, "{}", own.body);
+        work(&rig).await?;
+        assert_stopped(&read(&mut bob, &second).await?);
+        Ok(())
+    })
+    .await
+}

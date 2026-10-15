@@ -126,6 +126,26 @@ property = "total"
 reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
 
 [[exempt]]
+route = "POST /api/v1/bulk/runs/{run}/cancel"
+property = "changed"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; the answer goes to them or to an administrator who stops the run, and names no issue they may not see (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/runs/{run}/cancel"
+property = "done"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; the answer goes to them or to an administrator who stops the run, and names no issue they may not see (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/runs/{run}/cancel"
+property = "skipped_count"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; the answer goes to them or to an administrator who stops the run, and names no issue they may not see (PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/bulk/runs/{run}/cancel"
+property = "total"
+reason = "Counts the issues the person named in the request that started the run, which only they may see; the answer goes to them or to an administrator who stops the run, and names no issue they may not see (PRIV-13)."
+
+[[exempt]]
 route = "POST /api/v1/tags/{tag}/preview"
 property = "will_change"
 reason = "Counts only the issues the person sees: an issue they may not see is not counted (PRIV-13, M3-Q8)."

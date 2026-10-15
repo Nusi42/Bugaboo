@@ -1,7 +1,7 @@
 //! The jobs and the runs of changes to many issues of the in-memory store.
 
-use bb_core::bulk::BulkRun;
-use bb_core::id::{BulkRunId, JobId};
+use bb_core::bulk::{BulkRun, BulkStatus};
+use bb_core::id::{BulkRunId, JobId, UserId};
 use bb_core::job::{Job, JobState};
 use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
@@ -156,12 +156,11 @@ impl BulkStore for FakeStore {
         expected_done: i64,
     ) -> Result<bool, FakeError> {
         let mut shared = self.lock();
-        let Some(found) = shared
-            .state
-            .bulk_runs
-            .iter_mut()
-            .find(|found| found.id == run.id && found.done == expected_done)
-        else {
+        let Some(found) = shared.state.bulk_runs.iter_mut().find(|found| {
+            found.id == run.id
+                && found.done == expected_done
+                && matches!(found.status, BulkStatus::Queued | BulkStatus::Running)
+        }) else {
             return Ok(false);
         };
         found.status = run.status;
@@ -175,5 +174,32 @@ impl BulkStore for FakeStore {
     async fn insert_bulk_run(tx: &mut Tx, run: &BulkRun) -> Result<(), FakeError> {
         tx.state.bulk_runs.push(run.clone());
         Ok(())
+    }
+
+    async fn end_bulk_runs_of(
+        tx: &mut Tx,
+        person: UserId,
+        at: Timestamp,
+    ) -> Result<u64, FakeError> {
+        let mut ended = 0;
+        for run in tx.state.bulk_runs.iter_mut().filter(|run| {
+            run.person == person && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+        }) {
+            run.status = BulkStatus::Failed;
+            run.finished_at = Some(at);
+            ended += 1;
+        }
+        Ok(ended)
+    }
+
+    async fn end_bulk_run(tx: &mut Tx, id: BulkRunId, at: Timestamp) -> Result<bool, FakeError> {
+        let Some(run) = tx.state.bulk_runs.iter_mut().find(|run| {
+            run.id == id && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+        }) else {
+            return Ok(false);
+        };
+        run.status = BulkStatus::Failed;
+        run.finished_at = Some(at);
+        Ok(true)
     }
 }

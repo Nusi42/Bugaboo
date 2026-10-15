@@ -265,35 +265,41 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult 
     .await
 }
 
+/// Issues in ACME, one more than a change takes at once, each as the body of a change names it
+/// (the issue and the version the preview read): what it takes to start a run in the background.
+pub(super) async fn targets_for_a_job(rig: &Rig, site: &Site<'_>) -> Result<Vec<Value>, Failure> {
+    let mut targets = Vec::new();
+    for number in 0..=BULK_JOB_ABOVE {
+        let made = rig
+            .api()
+            .make_issue(
+                Rig::info(),
+                MakeIssue {
+                    session_token: site.org.admin.session.clone(),
+                    project: site.acme.clone(),
+                    issue_type: site.bug.parse().map_err(|_| "no type ID")?,
+                    title: format!("Issue {number}"),
+                    description: None,
+                    status: None,
+                    priority: None,
+                    assigned_to: None,
+                    fields: BTreeMap::new(),
+                },
+            )
+            .await
+            .map_err(|error| error.to_string())?
+            .into_value();
+        targets.push(json!({"issue": made.id.to_string(), "version": made.version}));
+    }
+    Ok(targets)
+}
+
 #[tokio::test]
 async fn iss_09_more_than_a_thousand_run_as_a_job() -> TestResult {
     each_database("iss_09_job", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let admin = site.org.admin.session.clone();
-        let mut targets = Vec::new();
-        for number in 0..=BULK_JOB_ABOVE {
-            let made = rig
-                .api()
-                .make_issue(
-                    Rig::info(),
-                    MakeIssue {
-                        session_token: admin.clone(),
-                        project: site.acme.clone(),
-                        issue_type: site.bug.parse().map_err(|_| "no type ID")?,
-                        title: format!("Issue {number}"),
-                        description: None,
-                        status: None,
-                        priority: None,
-                        assigned_to: None,
-                        fields: BTreeMap::new(),
-                    },
-                )
-                .await
-                .map_err(|error| error.to_string())?
-                .into_value();
-            targets.push(json!({"issue": made.id.to_string(), "version": made.version}));
-        }
+        let targets = targets_for_a_job(&rig, &site).await?;
         let started = ada
             .send(
                 "POST",

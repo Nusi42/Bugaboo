@@ -4158,6 +4158,95 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/bulk/runs/{run}/cancel": {
+      "post": {
+        "tags": ["bulk"],
+        "summary": "Stops a change to many issues that goes on in the background: what was changed so far stays and\nthe rest is left alone. The person who asked for it may stop it, and so may an administrator.",
+        "operationId": "cancelBulkRun",
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "description": "The ID of the run.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How far the run was when it stopped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkRunBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/check-access/people": {
       "get": {
         "tags": ["access"],

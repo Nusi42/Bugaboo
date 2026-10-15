@@ -12,8 +12,9 @@
 
 use bb_core::ErrorCode;
 use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus};
+use bb_core::event::RecordKind;
 use bb_core::id::BulkRunId;
-use bb_policy::{Authorized, Place};
+use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::Value;
 
@@ -21,7 +22,7 @@ use super::types::{
     BulkAction, BulkRunQuery, BulkRunView, BulkSkipped, BulkTarget, RUN_SKIPPED_MAX,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::jobs::{kind, kind_name};
 
 /// The member of the payload of a step that names the run.
@@ -223,4 +224,54 @@ pub async fn bulk_run<S: AuthStore>(
         .filter(|run| run.person == actor.person.id)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     Ok(held.authorize(ctx.run_view(&actor, &run).await?))
+}
+
+/// Stops a change to many issues that goes on in the background: what was changed so far stays,
+/// the rest is not touched. The person who asked for the run may stop it, and so may whoever holds
+/// *Manage roles* for the organization (an administrator). Stopping a run that is over changes
+/// nothing and answers with the run as it is.
+///
+/// # Errors
+/// `resource.not_found` for a run that is not there or that somebody else asked for and the person
+/// is no administrator.
+pub async fn cancel_bulk_run<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: BulkRunQuery,
+) -> Result<Authorized<BulkRunView>, AppError> {
+    // A key cannot start a run that goes on in the background (M3-F121), so it has none to stop.
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let held = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let run = ctx
+        .store()
+        .bulk_run(input.run)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .filter(|run| run.person == actor.person.id || held.allows(Permission::ManageRoles))
+        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    if !matches!(run.status, BulkStatus::Queued | BulkStatus::Running) {
+        return Ok(held.authorize(ctx.run_view(&actor, &run).await?));
+    }
+    let now = ctx.now();
+    let event = ctx.event(
+        by(actor.person.id),
+        entity(RecordKind::BulkRun, run.id),
+        vec![set_to(
+            "status",
+            serde_json::json!(BulkStatus::Failed.code()),
+        )],
+    )?;
+    let id = run.id;
+    ctx.store()
+        .record_change(&event, move |transaction| {
+            Box::pin(async move { S::end_bulk_run(transaction, id, now).await.map(|_| ()) })
+        })
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let stopped = ctx
+        .store()
+        .bulk_run(id)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    Ok(held.authorize(ctx.run_view(&actor, &stopped).await?))
 }

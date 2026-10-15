@@ -540,6 +540,32 @@ async fn get_bulk_run(
     answer_authorized(&found.map(|run| BulkRunBody::from(&run)))
 }
 
+/// Stops a change to many issues that goes on in the background: what was changed so far stays and
+/// the rest is left alone. The person who asked for it may stop it, and so may an administrator.
+#[utoipa::path(
+    post,
+    path = "/api/v1/bulk/runs/{run}/cancel",
+    operation_id = "cancelBulkRun",
+    tag = "bulk",
+    params(("run" = String, Path, description = "The ID of the run.")),
+    responses((status = 200, description = "How far the run was when it stopped.", body = BulkRunBody), NotSignedInAnswer, NotFoundAnswer)
+)]
+async fn cancel_bulk_run(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(run): ApiPath<String>,
+) -> Result<Response, ApiError> {
+    let run: BulkRunId = run
+        .parse()
+        .map_err(|_| ApiError::new(ErrorCode::NotFound))?;
+    let found = auth
+        .api()?
+        .cancel_bulk_run(info, BulkRunQuery { session_token, run })
+        .await?;
+    answer_authorized(&found.map(|run| BulkRunBody::from(&run)))
+}
+
 /// The routes of changing many issues at once.
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
@@ -550,4 +576,5 @@ where
         .routes(routes!(preview_bulk_change))
         .routes(routes!(apply_bulk_change))
         .routes(routes!(get_bulk_run))
+        .routes(routes!(cancel_bulk_run))
 }

@@ -30,7 +30,7 @@ use crate::access::{
 };
 use crate::bulk::{
     ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunView, apply_bulk,
-    bulk_run, preview_bulk,
+    bulk_run, cancel_bulk_run, preview_bulk,
 };
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
@@ -488,6 +488,8 @@ use_cases! {
     apply_bulk(ApplyBulk) -> Authorized<BulkResult>;
     /// Shows how far a change to many issues that goes on in the background is.
     bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
+    /// Stops a change to many issues that goes on in the background.
+    cancel_bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
     /// Shows the tags and labels of an issue.
     issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
     /// Puts a tag on an issue by its name.

@@ -444,6 +444,7 @@ pub const ROUTES: &[Route] = &[
     route("previewBulkChange", Declared::ByRecord, Answer::Ordinary),
     route("applyBulkChange", Declared::ByRecord, Answer::Ordinary),
     route("getBulkRun", Declared::SignedIn, Answer::NeverStored),
+    route("cancelBulkRun", Declared::SignedIn, Answer::Ordinary),
     route(
         "addComment",
         Declared::Permission(Permission::Comment),

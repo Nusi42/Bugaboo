@@ -392,6 +392,10 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
     ),
     Example::with(
+        "cancelBulkRun",
+        &[Quirk::SessionOnly, Quirk::NamesAMissingThing],
+    ),
+    Example::with(
         "saveIssueFieldText",
         &[
             Quirk::AnIssueOfTheTarget,
