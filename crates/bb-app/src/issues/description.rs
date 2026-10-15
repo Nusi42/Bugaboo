@@ -37,7 +37,10 @@ pub async fn save_description<S: AuthStore>(
     if !held.may_change_issue(current.reported_by) {
         return Err(ErrorCode::Forbidden.into());
     }
-    ensure_may_change(&held.field_mask(), &[Field::Description])?;
+    ensure_may_change(
+        &held.field_mask_for(Some(current.issue_type)),
+        &[Field::Description],
+    )?;
     let text = clean_long_text(&input.text)?;
     let assigned: Vec<UserId> = ctx
         .store()

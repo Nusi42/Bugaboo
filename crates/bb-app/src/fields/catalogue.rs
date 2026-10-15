@@ -198,8 +198,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// page anyway; it gives no right to read a value. The rule is written in ADR-0027, amendment WP-05
 /// (*Names of own fields*).
 pub(crate) fn may_know(held: &Evaluation, field: FieldId) -> bool {
-    held.allows(Permission::ManageFields)
-        || held.field_mask().can_see_somewhere(FieldKey::Own(field))
+    held.allows(Permission::ManageFields) || held.can_see_somewhere(FieldKey::Own(field))
 }
 
 /// Lists the own fields the person sees, in the order they are offered in, for the organization or

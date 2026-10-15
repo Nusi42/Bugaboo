@@ -75,9 +75,24 @@ impl EditStore for FakeStore {
         Ok(shared.state.locks.len() != before)
     }
 
-    async fn save_draft(&self, draft: &Draft) -> Result<(), FakeError> {
+    async fn save_draft(&self, draft: &Draft, keep: u64) -> Result<(), FakeError> {
         let mut shared = self.lock();
         remove_draft(&mut shared.state, draft.author, &draft.target);
+        let mut mine: Vec<usize> = shared
+            .state
+            .drafts
+            .iter()
+            .enumerate()
+            .filter(|(_, other)| other.author == draft.author)
+            .map(|(at, _)| at)
+            .collect();
+        mine.sort_by_key(|at| shared.state.drafts[*at].saved_at);
+        let others = usize::try_from(keep.saturating_sub(1)).unwrap_or(usize::MAX);
+        let mut gone = mine[..mine.len().saturating_sub(others)].to_vec();
+        gone.sort_unstable_by(|a, b| b.cmp(a));
+        for at in gone {
+            shared.state.drafts.remove(at);
+        }
         shared.state.drafts.push(draft.clone());
         Ok(())
     }

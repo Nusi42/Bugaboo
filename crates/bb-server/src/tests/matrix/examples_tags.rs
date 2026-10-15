@@ -233,6 +233,11 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
             )
         }
         "getBulkRun" => ("GET", format!("/api/v1/bulk/runs/{NOBODYS_ID}"), None),
+        "cancelBulkRun" => (
+            "POST",
+            format!("/api/v1/bulk/runs/{NOBODYS_ID}/cancel"),
+            None,
+        ),
         _ => return Ok(None),
     }))
 }

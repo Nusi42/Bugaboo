@@ -7,21 +7,23 @@
 //! is not counted. The change and the saving of the progress are two writes, so the event of every
 //! change carries the item it was made for (`BulkRun::item_reason`): a worker that stopped between
 //! the two finds that event when it goes on and counts the issue as changed, instead of judging it
-//! again and reporting that it changed since the preview. When issues are left, the step queues
-//! the next one.
+//! again and reporting that it changed since the preview. A run that was stopped (by the person, by
+//! somebody who manages people, or by a sign-out everywhere or a new password) is looked at before
+//! each issue and changes nothing more. When issues are left, the step queues the next one.
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus};
+use bb_core::bulk::{BULK_STEP, BulkRun, BulkSkip, BulkStatus, RunsToEnd};
+use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::BulkRunId;
-use bb_policy::{Authorized, Place};
+use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 use serde_json::Value;
 
 use super::types::{
-    BulkAction, BulkRunQuery, BulkRunView, BulkSkipped, BulkTarget, RUN_SKIPPED_MAX,
+    BulkAction, BulkRunQuery, BulkRunStatus, BulkRunView, BulkSkipped, BulkTarget, RUN_SKIPPED_MAX,
 };
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::jobs::{kind, kind_name};
 
 /// The member of the payload of a step that names the run.
@@ -89,7 +91,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        if matches!(run.status, BulkStatus::Done | BulkStatus::Failed) {
+        if matches!(
+            run.status,
+            BulkStatus::Done | BulkStatus::Failed | BulkStatus::Stopped
+        ) {
             return Ok(());
         }
         let Some(person) = self
@@ -99,7 +104,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
         else {
             // The person who asked is gone: nobody to change things as.
-            return self.end_run(&mut run, BulkStatus::Failed).await;
+            return self
+                .end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+                .await;
         };
         let actor = Actor { person, key: None };
         let acting = self.services.ctx_acting_as(actor.clone());
@@ -110,7 +117,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             Ok(selection) => selection,
             Err(AppError::Refused(_)) => {
                 // What the action names is gone since it was asked for (the project, the label).
-                return self.end_run(&mut run, BulkStatus::Failed).await;
+                return self
+                    .end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+                    .await;
             }
             Err(other) => return Err(other),
         };
@@ -122,6 +131,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         run.status = BulkStatus::Running;
         let first = run.done;
         while usize::try_from(run.done).unwrap_or(usize::MAX) < end {
+            // A run that was stopped meanwhile changes nothing more, not even the issue at hand.
+            if self.run_is_over(id).await? {
+                return Ok(());
+            }
             let at = run.done;
             let item = run.items[usize::try_from(at).unwrap_or(usize::MAX)];
             let target = BulkTarget {
@@ -130,12 +143,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             };
             // Only the issue the step begins at can have been changed by a worker that stopped
             // before it counted the change: its event says so, and it counts as changed.
-            let written = at == first
-                && self
-                    .store()
-                    .event_with_reason(&run.item_reason(at), run.created_at)
-                    .await
-                    .map_err(|error| internal::<S>(&error))?;
+            let written = at == first && self.item_was_written(&run, at).await?;
             let left_alone = if written {
                 None
             } else {
@@ -147,7 +155,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Err(error) => {
                         // The store broke: the run stops where it is, and says so.
                         tracing::error!(cause = %error, "a change to many issues stopped");
-                        return self.end_run(&mut run, BulkStatus::Failed).await;
+                        return self
+                            .end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+                            .await;
                     }
                 }
             };
@@ -179,41 +189,61 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(())
     }
 
+    /// Whether the run is over (done, failed or stopped) now, as the store has it.
+    async fn run_is_over(&self, id: BulkRunId) -> Result<bool, AppError> {
+        self.store()
+            .bulk_run_is_over(id)
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
+    /// Whether a worker that stopped wrote the change of the issue at `at` before it counted it.
+    async fn item_was_written(&self, run: &BulkRun, at: i64) -> Result<bool, AppError> {
+        self.store()
+            .event_with_reason(&run.item_reason(at), run.created_at)
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
     /// Ends the run of a step that gave up (its job is on the dead-letter list) as failed, with
-    /// what it did so far, so the person who asked reads an end and not a run that never ends.
+    /// what it did so far (saved after each issue), so the person who asked reads an end and not a run that never ends.
     ///
     /// # Errors
     /// The error of the store.
     pub(crate) async fn fail_bulk_run(&self, payload: &Value) -> Result<(), AppError> {
-        let Some(mut run) = self
-            .store()
-            .bulk_run(run_named(payload)?)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-        else {
-            return Ok(());
-        };
-        if matches!(run.status, BulkStatus::Done | BulkStatus::Failed) {
+        let id = run_named(payload)?;
+        if self.run_is_over(id).await? {
             return Ok(());
         }
-        self.end_run(&mut run, BulkStatus::Failed).await
+        self.end_bulk_run(id, BulkStatus::Failed, EventActor::System)
+            .await
     }
 
-    /// Ends a run that cannot go on, with what it did so far.
-    async fn end_run(&self, run: &mut BulkRun, status: BulkStatus) -> Result<(), AppError> {
-        let at = run.done;
-        run.status = status;
-        run.finished_at = Some(self.now());
-        let counted = self
-            .store()
-            .save_bulk_progress(run, at)
+    /// Ends a run that is not over, as failed or stopped, with an event of the run. The one place
+    /// that ends one run: the steps that cannot go on, the dead-letter list and the person who
+    /// stops it all come here, `who` being the actor of the event.
+    pub(crate) async fn end_bulk_run(
+        &self,
+        id: BulkRunId,
+        status: BulkStatus,
+        who: EventActor,
+    ) -> Result<(), AppError> {
+        let now = self.now();
+        let event = self.event(
+            who,
+            entity(RecordKind::BulkRun, id),
+            vec![set_to("status", serde_json::json!(status.code()))],
+        )?;
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    S::end_bulk_runs(transaction, &RunsToEnd::One(id), status, now)
+                        .await
+                        .map(|_| ())
+                })
+            })
             .await
-            .map_err(|error| internal::<S>(&error))?;
-        if !counted {
-            // Another worker counted an issue first and goes on with the run: not this one's end.
-            tracing::warn!("the end of a run was not saved: another worker moved it on");
-        }
-        Ok(())
+            .map_err(|error| internal::<S>(&error))
     }
 
     /// Queues the next step of a run.
@@ -253,4 +283,40 @@ pub async fn bulk_run<S: AuthStore>(
         .filter(|run| run.person == actor.person.id)
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     Ok(held.authorize(ctx.run_view(&actor, &run).await?))
+}
+
+/// Stops a change to many issues that goes on in the background: what was changed so far stays,
+/// the rest is not touched. The person who asked for the run may stop it, and so may whoever holds
+/// *Manage people* for the organization (acting on the things of another person). The answer is the
+/// status and nothing more: the counts are of the issues the person who asked named (PRIV-13).
+/// Stopping a run that is over changes nothing.
+///
+/// # Errors
+/// `resource.not_found` for a run that is not there or that somebody else asked for and the person
+/// does not manage people.
+pub async fn cancel_bulk_run<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: BulkRunQuery,
+) -> Result<Authorized<BulkRunStatus>, AppError> {
+    // A key cannot start a run that goes on in the background (M3-F121), so it has none to stop.
+    let actor = ctx.session_actor(&input.session_token).await?;
+    let held = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let run = ctx
+        .store()
+        .bulk_run(input.run)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .filter(|run| run.person == actor.person.id || held.allows(Permission::ManagePeople))
+        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    if matches!(run.status, BulkStatus::Queued | BulkStatus::Running) {
+        ctx.end_bulk_run(run.id, BulkStatus::Stopped, by(actor.person.id))
+            .await?;
+    }
+    let status = ctx
+        .store()
+        .bulk_run(run.id)
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .map_or(run.status, |run| run.status);
+    Ok(held.authorize(BulkRunStatus { id: run.id, status }))
 }

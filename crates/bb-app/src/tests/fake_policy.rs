@@ -78,6 +78,10 @@ impl PolicyStore for FakeStore {
         }))
     }
 
+    async fn level_rules_of_roles(&self, roles: Vec<RoleId>) -> Result<LevelRules, FakeError> {
+        Ok(self.read(|state| state.rules.of_roles(&roles.into_iter().collect())))
+    }
+
     async fn groups(&self) -> Result<Vec<Group>, FakeError> {
         Ok(self.read(|state| {
             let mut groups = state.groups.clone();

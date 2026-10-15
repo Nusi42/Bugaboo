@@ -2,7 +2,9 @@
 
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{IssueLabel, IssueTag, Label, LabelGroup, Tag, TagProject, name_key};
+use bb_core::tags::{
+    IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject, name_key,
+};
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
@@ -120,7 +122,7 @@ impl TagStore for FakeStore {
 
     async fn used_tags(
         &self,
-        projects: &[ProjectId],
+        sight: &IssueSight,
         part: &str,
         limit: u64,
     ) -> Result<Vec<Tag>, FakeError> {
@@ -135,8 +137,11 @@ impl TagStore for FakeStore {
                         link.tag == tag.id
                             && state.issues.iter().any(|issue| {
                                 issue.id == link.issue
-                                    && issue.deleted_at.is_none()
-                                    && projects.contains(&issue.project)
+                                    && (sight.with_trashed || issue.deleted_at.is_none())
+                                    && !sight.hidden.contains(&(issue.project, issue.issue_type))
+                                    && (sight.all.contains(&issue.project)
+                                        || (sight.own.contains(&issue.project)
+                                            && issue.reported_by == sight.person))
                             })
                     })
                 })

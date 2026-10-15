@@ -68,11 +68,24 @@ words! {
         Done => "done",
         /// The run stopped before it was done.
         Failed => "failed",
+        /// Somebody ended the run before it was done (the person who asked, or somebody who manages
+        /// people), or the person signed out everywhere or changed their password. What was
+        /// changed stays.
+        Stopped => "stopped",
     }
     messages name = "bulk-status."
 }
 
 words_in_api!(BulkStatus, "Where a run of a change to many issues is.");
+
+/// Which runs to end: the one run, or every run of a person.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RunsToEnd {
+    /// This run.
+    One(BulkRunId),
+    /// Every run of this person.
+    OfPerson(UserId),
+}
 
 /// One issue of a selection with the version the person looked at.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

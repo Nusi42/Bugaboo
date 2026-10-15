@@ -22,6 +22,7 @@ use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Evaluation, PeopleContext, Permission};
 use serde_json::json;
 
+use super::parts::Need;
 use super::types::{
     AskToFinish, EditAnyway, HeartbeatAnswer, HeartbeatQuery, HeldLock, LockHolder, LockOutcome,
     LockStatus, NoticeView, ReadLockQuery, ReleaseLockQuery, ReleaseStuckLock, TakeLockQuery,
@@ -138,7 +139,7 @@ pub async fn read_lock<S: AuthStore>(
     input: ReadLockQuery,
 ) -> Result<Authorized<LockHolder>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let facts = ctx.facts_for_part(&actor, &input.what, Need::See).await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let held = match ctx.live_lock(&input.what).await? {
         Some(lock) => Some(ctx.held_lock(&access, &actor, &lock).await?),
@@ -157,7 +158,9 @@ pub async fn take_lock<S: AuthStore>(
     input: TakeLockQuery,
 ) -> Result<Authorized<LockOutcome>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let facts = ctx
+        .facts_for_part(&actor, &input.what, Need::Change)
+        .await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let wanted = ctx.lock_for(&actor, &input.what, input.editor)?;
     let taking = ctx
@@ -184,7 +187,9 @@ pub async fn heartbeat<S: AuthStore>(
     input: HeartbeatQuery,
 ) -> Result<Authorized<HeartbeatAnswer>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let facts = ctx
+        .facts_for_part(&actor, &input.what, Need::Change)
+        .await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let now = ctx.now();
     let draft_saved = match input.draft {
@@ -293,7 +298,7 @@ pub async fn ask_to_finish<S: AuthStore>(
     input: AskToFinish,
 ) -> Result<Authorized<Done>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let facts = ctx.facts_for_part(&actor, &input.what, Need::See).await?;
     let access = ctx.require(&actor, facts.edit, facts.place).await?;
     let holder = ctx
         .live_lock(&input.what)
@@ -343,7 +348,9 @@ pub async fn edit_anyway<S: AuthStore>(
     input: EditAnyway,
 ) -> Result<Authorized<LockOutcome>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let facts = ctx
+        .facts_for_part(&actor, &input.what, Need::Change)
+        .await?;
     // *Edit anyway* is the right to take over, and only for a person who may change the record: a
     // lock they could not keep would run out in a minute (M3-F35).
     ctx.require(&actor, facts.edit, facts.place).await?;
@@ -414,7 +421,11 @@ pub async fn release_stuck_lock<S: AuthStore>(
     input: ReleaseStuckLock,
 ) -> Result<Authorized<Done>, AppError> {
     let actor = ctx.session_actor(&input.session_token).await?;
-    let facts = ctx.facts_of(&actor, &input.what.record).await?;
+    let facts = ctx
+        .facts_for_part(&actor, &input.what, Need::Change)
+        .await?;
+    // Like *Edit anyway*: ending somebody's editing is for a person who may change the record.
+    ctx.require(&actor, facts.edit, facts.place).await?;
     let access = ctx
         .require(&actor, Permission::EditAnyway, facts.place)
         .await?;

@@ -14,7 +14,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IssueId, LabelGroupId, LabelId};
 use bb_core::own_fields::{ChoiceColor, Edit};
-use bb_core::tags::{LABEL_GROUPS_MAX, LABELS_MAX, Label, LabelGroup, TAG_NAME_MAX, name_key};
+use bb_core::tags::{LABEL_GROUPS_MAX, LABELS_MAX, Label, LabelGroup, name_key};
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Place};
 use jiff::Timestamp;
@@ -26,7 +26,7 @@ use super::types::{
     LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, TagChangePreview,
 };
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
-use crate::input::clean_text;
+use crate::input::clean_tag_name;
 use crate::member::{label as member, label_group as group_member};
 use crate::projects::Why;
 
@@ -182,7 +182,7 @@ pub async fn make_label_group<S: AuthStore>(
 ) -> Result<Authorized<LabelGroupView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.tag_manager(&actor).await?;
-    let name = clean_text(&input.name, TAG_NAME_MAX)?;
+    let name = clean_tag_name(&input.name)?;
     let catalogue = ctx.label_catalogue().await?;
     if catalogue.groups.len() >= LABEL_GROUPS_MAX {
         return Err(ErrorCode::LimitReached.into());
@@ -258,7 +258,7 @@ pub async fn change_label_group<S: AuthStore>(
         ));
     }
     let name = match &input.name {
-        Some(name) => clean_text(name, TAG_NAME_MAX)?,
+        Some(name) => clean_tag_name(name)?,
         None => group.name.clone(),
     };
     if catalogue.group_name_taken(&name, Some(group.id)) {
@@ -337,7 +337,7 @@ pub async fn make_label<S: AuthStore>(
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.tag_manager(&actor).await?;
-    let name = clean_text(&input.name, TAG_NAME_MAX)?;
+    let name = clean_tag_name(&input.name)?;
     let catalogue = ctx.label_catalogue().await?;
     if catalogue.labels.len() >= LABELS_MAX {
         return Err(ErrorCode::LimitReached.into());
@@ -413,7 +413,7 @@ pub async fn label_change_preview<S: AuthStore>(
     let label = catalogue.label(input.label)?;
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
-            let name = clean_text(name, TAG_NAME_MAX)?;
+            let name = clean_tag_name(name)?;
             if catalogue.label_name_taken(&name, label.group, Some(label.id)) {
                 return Err(ErrorCode::NameTaken.into());
             }
@@ -477,7 +477,7 @@ pub async fn change_label<S: AuthStore>(
         ));
     }
     let name = match &input.name {
-        Some(name) => clean_text(name, TAG_NAME_MAX)?,
+        Some(name) => clean_tag_name(name)?,
         None => label.name.clone(),
     };
     let color = input.color.unwrap_or(label.color);

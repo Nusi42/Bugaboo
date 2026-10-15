@@ -4158,6 +4158,95 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/bulk/runs/{run}/cancel": {
+      "post": {
+        "tags": ["bulk"],
+        "summary": "Stops a change to many issues that goes on in the background: what was changed so far stays and\nthe rest is left alone. The person who asked for it may stop it, and so may whoever holds\n*Manage people*. The answer holds the status only.",
+        "operationId": "cancelBulkRun",
+        "parameters": [
+          {
+            "name": "run",
+            "in": "path",
+            "description": "The ID of the run.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Where the run is after the stop.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkRunStatusBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/check-access/people": {
       "get": {
         "tags": ["access"],
@@ -16857,6 +16946,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of the issue type of the issue the tag goes on, when it is known.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -20362,6 +20460,21 @@
           }
         }
       },
+      "BulkRunStatusBody": {
+        "type": "object",
+        "description": "Where a change that goes on in the background is, and nothing more.",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the run."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulkStatus",
+            "description": "Where it is."
+          }
+        }
+      },
       "BulkSkippedBody": {
         "type": "object",
         "description": "An issue a run left alone.",
@@ -20387,7 +20500,7 @@
       "BulkStatus": {
         "type": "string",
         "description": "Where a run of a change to many issues is.",
-        "enum": ["queued", "running", "done", "failed"]
+        "enum": ["queued", "running", "done", "failed", "stopped"]
       },
       "BulkTargetBody": {
         "type": "object",

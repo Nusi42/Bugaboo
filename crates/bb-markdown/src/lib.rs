@@ -28,7 +28,11 @@ pub use tokens::{Token, TokenKind};
 /// The most bytes of text that are rendered. A longer text is cut (at a character) and
 /// [`Rendered::truncated`] says so. The routes that store text refuse a longer text before it
 /// gets here; this is the second line of defence for a renderer that must never be slow.
-pub const MAX_TEXT_BYTES: usize = 200_000;
+///
+/// The routes count characters (`LONG_TEXT_MAX`, 100,000) and a character takes up to four bytes,
+/// so this is four times that: a text the routes keep is never shown cut off (a test in `bb-app`
+/// pins the two together).
+pub const MAX_TEXT_BYTES: usize = 400_000;
 
 /// The deepest nesting of blocks and emphasis that keeps its structure. What is nested deeper is
 /// flattened into the text of the level above, so a hostile text cannot make the browser or the
@@ -42,6 +46,14 @@ pub const MAX_MENTION_CHARS: usize = 64;
 /// token costs a `span` in the HTML, and a hostile text of nothing but mentions would otherwise
 /// make an answer many times the size of the text.
 pub const MAX_TOKENS: usize = 2_000;
+
+/// The most mentions of one text that the server tries to name; the rest stay plain text. Each
+/// distinct name costs a search of the people, so a text of two thousand different names must not
+/// make every page load that shows it expensive for every reader (SEC-06).
+pub const MAX_RESOLVED_MENTIONS: usize = 50;
+
+/// The most issue IDs of one text that the server looks up; the rest stay plain text.
+pub const MAX_RESOLVED_ISSUE_IDS: usize = 100;
 
 /// What the renderer needs to know about the organization.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

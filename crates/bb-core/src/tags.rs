@@ -8,7 +8,7 @@
 
 use jiff::Timestamp;
 
-use crate::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
+use crate::id::{IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
 use crate::own_fields::ChoiceColor;
 use crate::personal::Entity;
 
@@ -41,6 +41,24 @@ pub fn name_key(name: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
         .to_lowercase()
+}
+
+/// Which issues a viewer reads when tags are looked up for them (SEC-06): every issue of the
+/// projects in `all`, and only the issues `person` reported in the projects in `own`. A project the
+/// viewer does not see, or where the field is hidden from them, is in neither list.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IssueSight {
+    /// The projects where the viewer sees every issue.
+    pub all: Vec<ProjectId>,
+    /// The projects where the viewer sees only the issues they reported.
+    pub own: Vec<ProjectId>,
+    /// The viewer.
+    pub person: UserId,
+    /// The issues of these types in these projects are not read: the role hides the field the
+    /// lookup is about (*Tags*) for the type there.
+    pub hidden: Vec<(ProjectId, IssueTypeId)>,
+    /// Also count the issues in the trash (to ask whether a tag is used at all, never to show).
+    pub with_trashed: bool,
 }
 
 /// A free word anyone who may change an issue puts on it (TAG-01).

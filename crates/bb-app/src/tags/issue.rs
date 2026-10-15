@@ -18,7 +18,7 @@ use bb_core::fields::Field;
 use bb_core::id::{IssueId, LabelId, TagId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{IssueLabel, IssueTag, Label, TAG_NAME_MAX, Tag, tag_allowed_in};
+use bb_core::tags::{IssueLabel, IssueTag, Label, Tag, tag_allowed_in};
 use bb_core::version::counted_up;
 use bb_policy::{Authorized, Evaluation};
 use jiff::Timestamp;
@@ -30,7 +30,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
-use crate::input::clean_text;
+use crate::input::clean_tag_name;
 use crate::issues::{InTrash, IssueTypeRef, member};
 use crate::projects::Why;
 
@@ -278,7 +278,7 @@ pub async fn add_tag<S: AuthStore>(
 ) -> Result<Authorized<IssueSorting>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
-    let name = clean_text(&input.name, TAG_NAME_MAX)?;
+    let name = clean_tag_name(&input.name)?;
     let chain = ctx.chain_of(issue.project).await?;
     let state = ctx.tag_state(issue.id).await?;
     let TagAddition { tag, already } =

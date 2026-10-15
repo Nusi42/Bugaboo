@@ -15,6 +15,7 @@
 mod conflict;
 mod drafts;
 mod lock;
+mod parts;
 mod records;
 mod save;
 mod store;

@@ -357,6 +357,9 @@ pub const BULK_STATUS_QUEUED: MessageKey = MessageKey::new("bulk-status.queued")
 /// The message `bulk-status.running`.
 pub const BULK_STATUS_RUNNING: MessageKey = MessageKey::new("bulk-status.running");
 
+/// The message `bulk-status.stopped`.
+pub const BULK_STATUS_STOPPED: MessageKey = MessageKey::new("bulk-status.stopped");
+
 /// The message `bulk.action-change`.
 pub const BULK_ACTION_CHANGE: MessageKey = MessageKey::new("bulk.action-change");
 
@@ -7760,6 +7763,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("bulk-status.failed", "Stopped"),
     ("bulk-status.queued", "Waiting"),
     ("bulk-status.running", "Working"),
+    ("bulk-status.stopped", "Stopped on request"),
     ("bulk.action-change", "Change status or priority"),
     ("bulk.action-delete", "Delete"),
     ("bulk.action-label", "Add a label"),
@@ -9610,7 +9614,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "permission.manage-people",
-        "See everybody's e-mail address and correct their names",
+        "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
     ),
     ("permission.manage-roles", "Make, change and delete roles"),
     (

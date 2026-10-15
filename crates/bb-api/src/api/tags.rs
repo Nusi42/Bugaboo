@@ -600,6 +600,8 @@ struct SuggestionParams {
     /// What has been typed so far; empty offers the first tags by name.
     #[serde(default)]
     text: String,
+    /// The ID of the issue type of the issue the tag goes on, when it is known.
+    issue_type: Option<String>,
 }
 
 /// The tags to offer while a person types a tag in a project. Only tags used in projects the
@@ -627,6 +629,7 @@ async fn list_tag_suggestions(
                 session_token,
                 project,
                 text: params.text,
+                issue_type: params.issue_type.as_deref().map(body_id).transpose()?,
             },
         )
         .await?;

@@ -29,7 +29,7 @@ mod store;
 mod types;
 mod views;
 mod visible;
-pub(crate) use visible::Where;
+pub(crate) use visible::{Where, seen_by};
 
 pub use assignees::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
 pub use change::change_issue;

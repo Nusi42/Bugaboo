@@ -117,7 +117,8 @@ pub async fn project<S: AuthStore>(
         .load_values(RecordKind::Project, &[project.id.into()])
         .await?;
     let changeable_fields = if held.allows(Permission::ChangeProjectSettings) {
-        ctx.changeable_own_fields(&held.field_mask(), &item).await?
+        ctx.changeable_own_fields(&held.field_mask_for(None), &item)
+            .await?
     } else {
         Vec::new()
     };

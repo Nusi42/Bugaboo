@@ -671,3 +671,20 @@ async fn adr_0017_a_step_that_is_refused_is_not_started_again() -> Outcome {
     assert_eq!(shared.state.jobs[0].attempts, 1, "no second start");
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_09_a_stopped_run_changes_nothing_more() -> Outcome {
+    let world = World::new().await?;
+    let run = run_with_a_step_waiting(&world).await?;
+    world.store.lock().state.bulk_runs[0].status = BulkStatus::Stopped;
+    world
+        .ctx()
+        .run_bulk_step(&crate::bulk::step_payload(run.id))
+        .await?;
+    let after = world.store.lock().state.bulk_runs[0].clone();
+    assert_eq!(
+        (after.status, after.done, after.changed),
+        (BulkStatus::Stopped, 0, 0)
+    );
+    Ok(())
+}

@@ -132,7 +132,13 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                 .flatten()
                 .all(|needed| held.permissions.contains(&needed))
             {
-                if at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees() {
+                let unknown_tag =
+                    example.has(Quirk::NamesATagOfTheTarget) && !reads_issues_of_the_target(actor);
+                if (at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees())
+                    || unknown_tag
+                {
+                    // A tag that exists only on an issue of the target project is not known to
+                    // whoever does not read the issues there (SEC-06, WP-12).
                     Expect::NotFound
                 } else {
                     Expect::Allowed
@@ -142,11 +148,20 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
                     || ((example.has(Quirk::HidesUnseen) || on_the_target) && !held.sees()))
             {
                 Expect::NotFound
+            } else if example.has(Quirk::InTheTrash) {
+                // Whoever may not take it out is not told that it is in the trash.
+                Expect::NotFound
             } else {
                 Expect::Forbidden
             }
         }
     }
+}
+
+/// Whether the actor reads the issues of the target project: they see it and hold *See issues*.
+fn reads_issues_of_the_target(actor: Actor) -> bool {
+    let held = standing(actor, Where::Target);
+    held.sees() && held.permissions.contains(&Permission::SeeIssues)
 }
 
 /// The refusals the matrix knows how to expect.
@@ -483,18 +498,20 @@ fn check_what_is_skipped(actor: Actor, reply: &Reply) -> Result<(), String> {
 /// The people who hold exactly the two permissions a route needs (the `AlsoNeeds` quirk).
 fn both_actors() -> Vec<Actor> {
     let routes = operations();
-    EXAMPLES
-        .iter()
-        .filter_map(|example| {
-            let route = routes.iter().find(|route| route.id == example.operation)?;
-            match (route.needs, example.also_needs()) {
-                (Declared::Permission(first), Some(second)) => {
-                    Some(Actor::ExactlyBoth(first, second))
-                }
-                _ => None,
+    let mut both = Vec::new();
+    for example in EXAMPLES {
+        let Some(route) = routes.iter().find(|route| route.id == example.operation) else {
+            continue;
+        };
+        if let (Declared::Permission(first), Some(second)) = (route.needs, example.also_needs()) {
+            // Two routes may need the same two permissions: one person holds them.
+            let actor = Actor::ExactlyBoth(first, second);
+            if !both.contains(&actor) {
+                both.push(actor);
             }
-        })
-        .collect()
+        }
+    }
+    both
 }
 
 /// Runs every route as every actor; the record of what ran.

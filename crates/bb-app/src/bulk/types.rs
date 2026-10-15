@@ -184,6 +184,18 @@ pub struct BulkSkipped {
     pub reason: SkipReason,
 }
 
+/// Where a run in the background is, and nothing more: what somebody who stopped the run of another
+/// person is told (the counts are of the issues that person named).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct BulkRunStatus {
+    /// The run.
+    pub id: BulkRunId,
+    /// Where it is.
+    pub status: BulkStatus,
+}
+
+impl Masked for BulkRunStatus {}
+
 /// How far a run in the background is.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct BulkRunView {

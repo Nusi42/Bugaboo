@@ -15,7 +15,8 @@ use crate::auth::AppError;
 use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
 use crate::tags::{ChangeTag, TagView, TagsQuery, change_tag, tags};
 
-/// Bob looks after tags and sees every project but `secret`, which has *No access* for him.
+/// Bob looks after tags and sees every project and its issues but `secret`, which has *No access*
+/// for him.
 async fn blind_manager(world: &World, secret: ProjectId) -> Result<String, String> {
     let admin = token(world);
     let role = make_role(
@@ -23,7 +24,11 @@ async fn blind_manager(world: &World, secret: ProjectId) -> Result<String, Strin
         MakeRole {
             session_token: admin.clone(),
             name: "Tag keeper".to_owned(),
-            permissions: vec![Permission::SeeProjects, Permission::ManageLabels],
+            permissions: vec![
+                Permission::SeeProjects,
+                Permission::SeeIssues,
+                Permission::ManageLabels,
+            ],
             two_step: false,
         },
     )

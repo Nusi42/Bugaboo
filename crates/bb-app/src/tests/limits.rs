@@ -182,6 +182,15 @@ async fn iss_05_a_comment_reaches_no_more_people_than_the_limit_and_is_kept() ->
     Ok(())
 }
 
+#[test]
+fn iss_05_a_longest_text_of_four_byte_characters_is_shown_whole() {
+    // The routes count characters and the renderer bytes: a text the routes keep must not be cut.
+    let longest = "😀".repeat(bb_core::text::LONG_TEXT_MAX);
+    assert!(crate::input::clean_long_text(&longest).is_ok());
+    let rendered = bb_markdown::render(&longest, &bb_markdown::Options::default());
+    assert!(!rendered.truncated, "a text the routes keep was cut");
+}
+
 #[tokio::test]
 async fn cf_01_a_full_store_of_fields_and_choices_answers_limit_reached() -> Outcome {
     use bb_core::own_fields::{CHOICES_MAX, FIELDS_MAX, FieldType};

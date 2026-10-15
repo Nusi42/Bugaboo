@@ -83,14 +83,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         ),
         AppError,
     > {
-        let not_found = || AppError::Refused(ErrorCode::NotFound);
         let comment = self
             .store()
             .comment(id)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .filter(|comment| comment.deleted_at.is_some() == trashed)
-            .ok_or_else(not_found)?;
+            .filter(|comment| comment.deleted_at.is_some() == trashed);
+        let Some(comment) = comment else {
+            // The same work as for a comment whose issue the actor may not see (an issue read and an
+            // evaluation), so the answers cannot be told apart.
+            return Err(self.not_found_like_a_hidden_issue(actor).await);
+        };
         let (issue, held) = self
             .visible_issue(actor, &comment.issue.to_string())
             .await?;
@@ -280,7 +283,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         let (comment, issue, held) = self.visible_comment(&actor, id, !into_trash).await?;
         let mine = comment.author == actor.person.id && held.allows(Permission::Comment);
         if !mine && !held.allows(Permission::ChangeIssues) {
-            return Err(ErrorCode::Forbidden.into());
+            // Whoever may not take a comment out of the trash is not told that it is in it.
+            return Err(if into_trash {
+                ErrorCode::Forbidden
+            } else {
+                ErrorCode::NotFound
+            }
+            .into());
         }
         let (before, after) = if into_trash {
             (None, Some(json!(self.now().to_string())))

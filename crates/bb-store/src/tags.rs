@@ -8,9 +8,11 @@
 use bb_app::tags::TagStore;
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId, TagId, UserId};
 use bb_core::own_fields::ChoiceColor;
-use bb_core::tags::{IssueLabel, IssueTag, Label, LabelGroup, Tag, TagProject, name_key};
+use bb_core::tags::{
+    IssueLabel, IssueSight, IssueTag, Label, LabelGroup, Tag, TagProject, name_key,
+};
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
+use sea_query::{Cond, Expr, ExprTrait as _, LikeExpr, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, STATEMENT_ITEMS, StoredId, Transaction, to_micros};
@@ -361,11 +363,11 @@ impl TagStore for AuthStorage {
 
     async fn used_tags(
         &self,
-        projects: &[ProjectId],
+        sight: &IssueSight,
         part: &str,
         limit: u64,
     ) -> Result<Vec<Tag>, StoreError> {
-        if projects.is_empty() {
+        if sight.all.is_empty() && sight.own.is_empty() {
             return Ok(Vec::new());
         }
         let mut select = Query::select();
@@ -383,10 +385,38 @@ impl TagStore for AuthStorage {
                 Expr::col((IssueRow::Table, IssueRow::Id))
                     .equals((IssueTagRow::Table, IssueTagRow::Issue)),
             )
-            .and_where(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
-            .and_where(
-                Expr::col((IssueRow::Table, IssueRow::Project))
-                    .is_in(projects.iter().map(|project| project.stored())),
+            .cond_where(if sight.with_trashed {
+                Cond::all()
+            } else {
+                Cond::all().add(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
+            })
+            .cond_where(
+                Cond::any()
+                    .add(
+                        Expr::col((IssueRow::Table, IssueRow::Project))
+                            .is_in(sight.all.iter().map(|project| project.stored())),
+                    )
+                    .add(
+                        Expr::col((IssueRow::Table, IssueRow::Project))
+                            .is_in(sight.own.iter().map(|project| project.stored()))
+                            .and(
+                                Expr::col((IssueRow::Table, IssueRow::ReportedBy))
+                                    .eq(sight.person.stored()),
+                            ),
+                    ),
+            )
+            .cond_where(
+                sight
+                    .hidden
+                    .iter()
+                    .fold(Cond::all(), |cond, (project, issue_type)| {
+                        cond.add(
+                            Expr::col((IssueRow::Table, IssueRow::Project))
+                                .ne(project.stored())
+                                .or(Expr::col((IssueRow::Table, IssueRow::IssueType))
+                                    .ne(issue_type.stored())),
+                        )
+                    }),
             )
             .and_where(
                 Expr::col((TagRow::Table, TagRow::NameKey))

@@ -140,6 +140,10 @@ routes = ["POST /api/v1/bulk/changes"]
 reason = "Every issue of the change has its own version in the body (`issues[].version`), which a list of many changes needs and a single `version` cannot say (ADR-0019, M3 WP-08)."
 
 [[exempt]]
+routes = ["POST /api/v1/bulk/runs/{run}/cancel"]
+reason = "Stops a run that goes on in the background and changes no record of its own: the run has no version, and stopping a run that is over changes nothing (M3 WP-12)."
+
+[[exempt]]
 routes = ["POST /api/v1/layouts"]
 reason = "Makes the layout of a place as a copy of the one in force (a new record); a place that has one is shown as it is, and two people who make it at the same moment get one (the second is told version_changed)."
 

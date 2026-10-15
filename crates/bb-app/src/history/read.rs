@@ -239,13 +239,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                     Value::Array(_) => serde_json::from_value(shown),
                     one => serde_json::from_value(one).map(|one| vec![one]),
                 };
-                match people {
-                    Ok(people) => Some(ChangeValue::People { people }),
-                    Err(error) => {
-                        // A stored value that cannot be read is no value for the reader.
-                        tracing::warn!(%error, "a value of a person field in the history cannot be read");
-                        None
-                    }
+                if let Ok(people) = people {
+                    Some(ChangeValue::People { people })
+                } else {
+                    // A stored value that cannot be read is no value for the reader. The error of
+                    // the reader can hold the value itself, which names a person, so it is not
+                    // logged (DATA-LOGS).
+                    tracing::warn!("a value of a person field in the history cannot be read");
+                    None
                 }
             }
             (FieldType::Group, Value::Object(found)) => {
@@ -365,11 +366,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             let after = self
                 .change_value(reading, batch, member, change.after.as_ref())
                 .await?;
-            // A change of an issue that the reader may not see leaves nothing to show.
-            if matches!(member, Member::Issue | Member::Project)
-                && before.is_none()
-                && after.is_none()
-            {
+            // A change of an issue or project that the reader may not see leaves nothing to show,
+            // also in an own field of the kind *Issue* (M3-F79: as for the parent).
+            let points_at_a_record = match member {
+                Member::Issue | Member::Project => true,
+                Member::Own(id) => batch
+                    .field(id)
+                    .is_some_and(|found| found.field.kind == FieldType::Issue),
+                _ => false,
+            };
+            if points_at_a_record && before.is_none() && after.is_none() {
                 continue;
             }
             let name = match member {

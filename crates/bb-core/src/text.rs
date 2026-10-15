@@ -90,6 +90,30 @@ pub fn clean(text: &str, longest: usize) -> Option<&str> {
     fine.then_some(text)
 }
 
+/// Whether the text holds a character that takes no room on the screen or turns the text round: a
+/// zero-width space, a word joiner, a soft hyphen, a byte order mark, a mark of direction or an
+/// override of it (Unicode format characters). Two names that look alike but differ in one of these
+/// are a trap (a tag that cannot be told from another), and an override can turn a name round. The
+/// zero-width joiner and non-joiner stay allowed: emoji sequences and several scripts need them.
+#[must_use]
+pub fn has_invisible_format(text: &str) -> bool {
+    text.chars().any(|c| {
+        matches!(
+            c,
+            '\u{00AD}'
+                | '\u{061C}'
+                | '\u{180E}'
+                | '\u{200B}'
+                | '\u{200E}'
+                | '\u{200F}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2060}'..='\u{2064}'
+                | '\u{2066}'..='\u{206F}'
+                | '\u{FEFF}'
+        )
+    })
+}
+
 /// A long text as it is kept: at most `longest` characters, line breaks and tabs allowed, no other
 /// control characters. It may be empty and is not trimmed (a person's indentation is theirs).
 /// `None` for a text that breaks one of these.
@@ -123,6 +147,22 @@ mod tests {
         assert_eq!(clean("two\nlines", NAME_MAX), None);
         assert_eq!(clean("tab\tinside", LABEL_MAX), None);
         assert_eq!(clean(&"a".repeat(LABEL_MAX + 1), LABEL_MAX), None);
+    }
+
+    #[test]
+    fn invisible_and_turning_characters_are_found_but_joiners_are_allowed() {
+        for found in [
+            "a\u{200B}b",
+            "\u{202E}evil",
+            "a\u{FEFF}",
+            "x\u{2066}y",
+            "s\u{00AD}hy",
+        ] {
+            assert!(has_invisible_format(found), "{found:?}");
+        }
+        for plain in ["tag", "Größe", "👨\u{200D}👩", "می\u{200C}خواهم", "日本語"] {
+            assert!(!has_invisible_format(plain), "{plain:?}");
+        }
     }
 
     #[test]

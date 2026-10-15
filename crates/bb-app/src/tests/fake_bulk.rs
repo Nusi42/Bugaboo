@@ -1,6 +1,6 @@
 //! The jobs and the runs of changes to many issues of the in-memory store.
 
-use bb_core::bulk::BulkRun;
+use bb_core::bulk::{BulkRun, BulkStatus, RunsToEnd};
 use bb_core::id::{BulkRunId, JobId};
 use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
 use bb_core::technical::TechnicalName;
@@ -163,12 +163,11 @@ impl BulkStore for FakeStore {
             shared.progress_failures -= 1;
             return Err(FakeError::Failed);
         }
-        let Some(found) = shared
-            .state
-            .bulk_runs
-            .iter_mut()
-            .find(|found| found.id == run.id && found.done == expected_done)
-        else {
+        let Some(found) = shared.state.bulk_runs.iter_mut().find(|found| {
+            found.id == run.id
+                && found.done == expected_done
+                && matches!(found.status, BulkStatus::Queued | BulkStatus::Running)
+        }) else {
             return Ok(false);
         };
         found.status = run.status;
@@ -182,5 +181,32 @@ impl BulkStore for FakeStore {
     async fn insert_bulk_run(tx: &mut Tx, run: &BulkRun) -> Result<(), FakeError> {
         tx.state.bulk_runs.push(run.clone());
         Ok(())
+    }
+
+    async fn bulk_run_is_over(&self, id: BulkRunId) -> Result<bool, FakeError> {
+        Ok(!self.lock().state.bulk_runs.iter().any(|run| {
+            run.id == id && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+        }))
+    }
+
+    async fn end_bulk_runs(
+        tx: &mut Tx,
+        which: &RunsToEnd,
+        status: BulkStatus,
+        at: Timestamp,
+    ) -> Result<u64, FakeError> {
+        let mut ended = 0;
+        for run in tx.state.bulk_runs.iter_mut().filter(|run| {
+            matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+                && match which {
+                    RunsToEnd::One(id) => run.id == *id,
+                    RunsToEnd::OfPerson(person) => run.person == *person,
+                }
+        }) {
+            run.status = status;
+            run.finished_at = Some(at);
+            ended += 1;
+        }
+        Ok(ended)
     }
 }

@@ -13,7 +13,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{ProjectId, TagId};
 use bb_core::paging::window;
-use bb_core::tags::{TAG_NAME_MAX, TAG_PROJECTS_MAX, Tag, TagProject, name_key};
+use bb_core::tags::{TAG_PROJECTS_MAX, Tag, TagProject, name_key};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use serde_json::json;
 
@@ -23,7 +23,7 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
-use crate::input::clean_text;
+use crate::input::clean_tag_name;
 use crate::member::tag as member;
 use crate::projects::{ProjectRef, Why};
 use std::sync::Arc;
@@ -100,21 +100,23 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The tags the person may know of: a tag without a limit, or one limited to or used in a
-    /// project they see. A tag only projects they do not see know is not there for them.
+    /// The tags the person may know of: one limited to a project they see, one used on an issue they
+    /// read, and an unlimited one no issue has any more, also none in the trash (so it can still be cleaned up). A tag that only issues
+    /// or projects they do not see know is not there for them (SEC-06).
     async fn known_tags(
         &self,
         catalogue: &Catalogue,
         shown: &crate::projects::Shown,
     ) -> Result<BTreeSet<TagId>, AppError> {
-        let seen: Vec<ProjectId> = shown
-            .everything()
-            .iter()
-            .map(|project| project.id)
-            .collect();
+        let wanted = catalogue.tags.len() as u64;
         let used = self
             .store()
-            .used_tags(&seen, "", catalogue.tags.len() as u64)
+            .used_tags(&shown.issue_sight(), "", wanted)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let used_anywhere = self
+            .store()
+            .used_tags(&shown.whole_sight(), "", wanted)
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(catalogue
@@ -122,9 +124,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .filter(|tag| {
                 let limited = catalogue.projects_of(tag.id);
-                limited.is_empty()
-                    || limited.iter().any(|project| shown.get(*project).is_some())
+                limited.iter().any(|project| shown.get(*project).is_some())
                     || used.iter().any(|found| found.id == tag.id)
+                    || (limited.is_empty() && !used_anywhere.iter().any(|found| found.id == tag.id))
             })
             .map(|tag| tag.id)
             .collect())
@@ -192,7 +194,7 @@ pub async fn tag_change_preview<S: AuthStore>(
     let tag = ctx.known_tag(&catalogue, &shown, input.tag).await?;
     let rewrite = match (&input.name, input.into) {
         (Some(name), None) => {
-            let name = clean_text(name, TAG_NAME_MAX)?;
+            let name = clean_tag_name(name)?;
             if catalogue.name_taken(&name, tag.id) {
                 return Err(ErrorCode::NameTaken.into());
             }
@@ -288,7 +290,7 @@ pub async fn change_tag<S: AuthStore>(
         ));
     }
     let name = match &input.name {
-        Some(name) => clean_text(name, TAG_NAME_MAX)?,
+        Some(name) => clean_tag_name(name)?,
         None => tag.name.clone(),
     };
     if catalogue.name_taken(&name, tag.id) {

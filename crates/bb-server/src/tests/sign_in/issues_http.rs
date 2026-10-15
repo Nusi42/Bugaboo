@@ -360,7 +360,8 @@ async fn iss_01_an_issue_goes_to_the_trash_and_comes_back_with_undo() -> TestRes
             cora.send("POST", &format!("{path}/restore"), None)
                 .await?
                 .code(),
-            "access.forbidden"
+            "resource.not_found",
+            "whoever may not restore is not told that it is in the trash"
         );
         let back = ada.send("POST", &format!("{path}/restore"), None).await?;
         assert_eq!(ok(&back)?["key"], key);

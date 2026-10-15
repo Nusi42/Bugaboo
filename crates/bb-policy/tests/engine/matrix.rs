@@ -145,7 +145,7 @@ fn sec_06_every_field_level_of_every_role_shows_or_hides_the_field_in_answers() 
                         "{field:?} as {level:?} for {role_key:?}"
                     );
                     assert_eq!(
-                        held.field_mask().can_change(field),
+                        held.field_mask_for(None).can_change(field),
                         level == FieldLevel::CanChange
                     );
                     rows += 1;

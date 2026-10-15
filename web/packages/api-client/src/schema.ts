@@ -699,6 +699,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/bulk/runs/{run}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Stops a change to many issues that goes on in the background: what was changed so far stays and
+     *     the rest is left alone. The person who asked for it may stop it, and so may whoever holds
+     *     *Manage people*. The answer holds the status only.
+     */
+    post: operations["cancelBulkRun"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/check-access/people": {
     parameters: {
       query?: never;
@@ -3056,6 +3077,13 @@ export interface components {
        */
       total: number;
     };
+    /** @description Where a change that goes on in the background is, and nothing more. */
+    BulkRunStatusBody: {
+      /** @description The ID of the run. */
+      id: string;
+      /** @description Where it is. */
+      status: components["schemas"]["BulkStatus"];
+    };
     /** @description An issue a run left alone. */
     BulkSkippedBody: {
       issue?: components["schemas"]["IssueRef"] | null;
@@ -3066,7 +3094,7 @@ export interface components {
      * @description Where a run of a change to many issues is.
      * @enum {string}
      */
-    BulkStatus: "queued" | "running" | "done" | "failed";
+    BulkStatus: "queued" | "running" | "done" | "failed" | "stopped";
     /** @description One issue of the change with the version the preview read. */
     BulkTargetBody: {
       /** @description The issue. A change to more than 1,000 issues names them by their internal IDs. */
@@ -9963,6 +9991,76 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  cancelBulkRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Where the run is after the stop. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BulkRunStatusBody"];
+        };
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
@@ -19549,6 +19647,8 @@ export interface operations {
       query?: {
         /** @description What has been typed so far; empty offers the first tags by name. */
         text?: string;
+        /** @description The ID of the issue type of the issue the tag goes on, when it is known. */
+        issue_type?: string;
       };
       header?: never;
       path: {

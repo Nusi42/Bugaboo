@@ -10,6 +10,7 @@ use super::store::CommentStore;
 use crate::access::evaluation_in;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::editing::RecordFacts;
+use crate::issues::{Where, seen_by};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The facts of a comment for `person`; `None` when there is no such comment or the person may
@@ -42,13 +43,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(held) = evaluation_in(store, person, place).await? else {
             return Ok(None);
         };
-        Ok((issue.deleted_at.is_none()
-            && held.sees_issue(issue.reported_by)
-            && held.allows(Permission::Comment))
-        .then_some(RecordFacts {
-            place,
-            version: comment.version,
-            edit: Permission::Comment,
-        }))
+        Ok(
+            (seen_by(&held, &issue, Where::Live) && held.allows(Permission::Comment)).then_some(
+                RecordFacts {
+                    place,
+                    version: comment.version,
+                    edit: Permission::Comment,
+                },
+            ),
+        )
     }
 }

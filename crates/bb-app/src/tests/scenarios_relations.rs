@@ -27,7 +27,7 @@ use crate::relations::{
 };
 
 /// The first kind of relation of the first start (*blocks*).
-async fn a_kind(world: &World) -> Result<RelationKindId, String> {
+pub(crate) async fn a_kind(world: &World) -> Result<RelationKindId, String> {
     let page = relation_kinds(
         &world.ctx(),
         RelationKindsQuery {
@@ -164,7 +164,7 @@ pub(crate) async fn set_parent_scenario(world: &World) -> Added {
     .await
 }
 
-async fn a_comment(world: &World, issue: IssueId) -> Result<CommentId, String> {
+pub(crate) async fn a_comment(world: &World, issue: IssueId) -> Result<CommentId, String> {
     Ok(add_comment(
         &world.ctx(),
         AddComment {

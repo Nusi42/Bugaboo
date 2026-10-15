@@ -91,7 +91,7 @@ pub async fn assignable_people<S: AuthStore>(
         .or(input.issue_type);
     let (may_ask, reported_by) = match input.field {
         None => (
-            may_set_assigned_to(&held),
+            may_set_assigned_to(&held, issue_type),
             Some(issue.as_ref().map_or(you, |issue| issue.reported_by)),
         ),
         Some(field) => {
@@ -149,7 +149,11 @@ fn may_set_issues(held: &Evaluation) -> bool {
             || held.allows(Permission::MakeIssues))
 }
 
-/// Whether the person may set *Assigned to*: they set issues, and the field mask lets them change it.
-fn may_set_assigned_to(held: &Evaluation) -> bool {
-    may_set_issues(held) && held.field_mask().can_change(Field::AssignedTo)
+/// Whether the person may set *Assigned to* on an issue of this type: they set issues, and the mask
+/// of the type lets them change it.
+fn may_set_assigned_to(held: &Evaluation, issue_type: Option<IssueTypeId>) -> bool {
+    may_set_issues(held)
+        && held
+            .field_mask_for(issue_type)
+            .can_change(Field::AssignedTo)
 }

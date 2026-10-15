@@ -3,11 +3,23 @@
 //! pattern has a length cap (`bb_core::own_fields::PATTERN_MAX`) and the compiled program a size
 //! cap, so a pattern cannot cost more than a small, fixed amount (SEC-PATTERNS).
 
+use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex, PoisonError};
+
 use bb_core::own_fields_value::PatternEngine;
 use regex::RegexBuilder;
 
 /// The most memory one compiled pattern may take, in bytes.
 const PROGRAM_BYTES_MAX: usize = 100_000;
+
+/// How many compiled patterns are kept. The patterns are those of the field definitions, so a few
+/// hundred is more than an organization has; a full cache is emptied rather than grown.
+const CACHE_MAX: usize = 256;
+
+/// The patterns compiled so far, by their text (`None` for one that does not compile), so a value
+/// of a field is not checked by compiling its pattern again.
+static COMPILED: LazyLock<Mutex<HashMap<String, Option<regex::Regex>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// A pattern as a regular expression that must match the whole text.
 fn compile(pattern: &str) -> Option<regex::Regex> {
@@ -18,9 +30,23 @@ fn compile(pattern: &str) -> Option<regex::Regex> {
         .ok()
 }
 
+/// The pattern compiled, from the cache when it was compiled before.
+fn compiled(pattern: &str) -> Option<regex::Regex> {
+    let mut cache = COMPILED.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(found) = cache.get(pattern) {
+        return found.clone();
+    }
+    let built = compile(pattern);
+    if cache.len() >= CACHE_MAX {
+        cache.clear();
+    }
+    cache.insert(pattern.to_owned(), built.clone());
+    built
+}
+
 /// Whether the pattern can be used: it compiles within the size cap.
 pub(crate) fn is_usable(pattern: &str) -> bool {
-    compile(pattern).is_some()
+    compiled(pattern).is_some()
 }
 
 /// The linear-time engine of the server.
@@ -31,7 +57,7 @@ impl PatternEngine for Linear {
     fn matches(&self, pattern: &str, text: &str) -> bool {
         // A pattern that does not compile was refused when the rule was made; a stored one that
         // no longer does lets nothing through.
-        compile(pattern).is_some_and(|program| program.is_match(text))
+        compiled(pattern).is_some_and(|program| program.is_match(text))
     }
 }
 
@@ -48,6 +74,19 @@ mod tests {
         // Look-around and back-references are not part of a linear-time engine.
         assert!(!is_usable("(?=a)a"));
         assert!(!is_usable(r"(a)\1"));
+    }
+
+    #[test]
+    fn cf_03_the_cache_of_compiled_patterns_does_not_grow_without_end() {
+        for number in 0..CACHE_MAX * 2 {
+            assert!(Linear.matches(&format!("a{number}"), &format!("a{number}")));
+            assert!(Linear.matches(&format!("a{number}"), &format!("a{number}")));
+        }
+        let kept = COMPILED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .len();
+        assert!(kept <= CACHE_MAX, "{kept} patterns kept");
     }
 
     #[test]

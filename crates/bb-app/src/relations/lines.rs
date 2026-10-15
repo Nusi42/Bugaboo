@@ -79,7 +79,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 "an issue has an issue type that is gone".into(),
             ));
         };
-        let mask = held.field_mask();
+        let mask = held.field_mask_for(Some(issue.issue_type));
         let status_seen = mask.can_see(Field::Status);
         Ok(Some(IssueLine {
             id: issue.id,

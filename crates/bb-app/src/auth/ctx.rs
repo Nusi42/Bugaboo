@@ -138,6 +138,9 @@ impl<S> AuthServices<S> {
 /// The evaluations a request has made, by person and place.
 pub(crate) type Evaluations = Mutex<HashMap<(UserId, Place), Arc<Evaluation>>>;
 
+/// The names of the things of one kind (groups, roles), read once for a request.
+pub(crate) type NamesRead<Id> = Mutex<Option<Arc<Vec<(Id, String)>>>>;
+
 /// What a request looks up once. A page of comments names the same few people, handles and issues
 /// again and again; the context remembers the answers for the length of the request (and no
 /// longer), so a page runs as many statements for forty comments as for four.
@@ -154,6 +157,9 @@ pub(crate) struct Known {
     >,
     /// Whether a reader sees the issue an ID in a text names.
     pub(crate) issue_ids: Mutex<HashMap<(UserId, String), bool>>,
+    /// The names of the groups and of the roles, read once for all the handles of a request.
+    pub(crate) group_names: NamesRead<bb_core::id::GroupId>,
+    pub(crate) role_names: NamesRead<bb_core::id::RoleId>,
 }
 
 /// The services plus the request, which is what a use case takes.

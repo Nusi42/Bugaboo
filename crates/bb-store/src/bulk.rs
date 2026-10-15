@@ -7,7 +7,7 @@
 //! the check that two workers never count the same issue twice.
 
 use bb_app::bulk::BulkStore;
-use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus};
+use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus, RunsToEnd};
 use bb_core::id::{BulkRunId, UserId};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Query, SelectStatement};
@@ -16,6 +16,9 @@ use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::BulkRunRow;
+
+/// The statuses of a run that is not over.
+const NOT_OVER: [BulkStatus; 2] = [BulkStatus::Queued, BulkStatus::Running];
 
 fn run_select() -> SelectStatement {
     let mut select = Query::select();
@@ -87,8 +90,41 @@ impl BulkStore for AuthStorage {
             .value(BulkRunRow::Skipped, serde_json::to_string(&run.skipped)?)
             .value(BulkRunRow::FinishedAt, run.finished_at.map(to_micros))
             .and_where(Expr::col(BulkRunRow::Id).eq(run.id.stored()))
-            .and_where(Expr::col(BulkRunRow::Done).eq(expected_done));
+            .and_where(Expr::col(BulkRunRow::Done).eq(expected_done))
+            .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
         Ok(self.database().execute(&update).await? > 0)
+    }
+
+    async fn bulk_run_is_over(&self, id: BulkRunId) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(BulkRunRow::Id)
+            .from(BulkRunRow::Table)
+            .and_where(Expr::col(BulkRunRow::Id).eq(id.stored()))
+            .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
+        // A run that is not there is as good as over.
+        Ok(self.database().fetch_optional(&select).await?.is_none())
+    }
+
+    async fn end_bulk_runs(
+        transaction: &mut Transaction,
+        which: &RunsToEnd,
+        status: BulkStatus,
+        at: Timestamp,
+    ) -> Result<u64, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(BulkRunRow::Table)
+            .value(BulkRunRow::Status, status.code())
+            .value(BulkRunRow::FinishedAt, to_micros(at))
+            .and_where(Expr::col(BulkRunRow::Status).is_in(NOT_OVER.map(BulkStatus::code)));
+        match which {
+            RunsToEnd::One(id) => update.and_where(Expr::col(BulkRunRow::Id).eq(id.stored())),
+            RunsToEnd::OfPerson(person) => {
+                update.and_where(Expr::col(BulkRunRow::Person).eq(person.stored()))
+            }
+        };
+        transaction.execute(&update).await
     }
 
     async fn insert_bulk_run(

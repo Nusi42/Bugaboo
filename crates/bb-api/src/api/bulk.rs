@@ -13,7 +13,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::bulk::{
     ApplyBulk, BulkAction, BulkChange, BulkDetail, BulkOutcome, BulkPreview, BulkPreviewQuery,
-    BulkResult, BulkRow, BulkRunQuery, BulkRunView, BulkSkipped, BulkTarget,
+    BulkResult, BulkRow, BulkRunQuery, BulkRunStatus, BulkRunView, BulkSkipped, BulkTarget,
 };
 use bb_app::history::{ChangeValue, FieldChangeView};
 use bb_core::bulk::{BulkStatus, SkipReason};
@@ -367,6 +367,26 @@ impl From<&BulkSkipped> for BulkSkippedBody {
     }
 }
 
+/// Where a change that goes on in the background is, and nothing more.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct BulkRunStatusBody {
+    /// The ID of the run.
+    id: String,
+    /// Where it is.
+    status: BulkStatus,
+}
+
+impl Masked for BulkRunStatusBody {}
+
+impl From<&BulkRunStatus> for BulkRunStatusBody {
+    fn from(run: &BulkRunStatus) -> Self {
+        Self {
+            id: run.id.to_string(),
+            status: run.status,
+        }
+    }
+}
+
 /// How far a change that goes on in the background is.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct BulkRunBody {
@@ -535,6 +555,31 @@ async fn get_bulk_run(
     answer_authorized(&found.map(|run| BulkRunBody::from(&run)))
 }
 
+/// Stops a change to many issues that goes on in the background: what was changed so far stays and
+/// the rest is left alone. The person who asked for it may stop it, and so may whoever holds
+/// *Manage people*. The answer holds the status only.
+#[utoipa::path(
+    post,
+    path = "/api/v1/bulk/runs/{run}/cancel",
+    operation_id = "cancelBulkRun",
+    tag = "bulk",
+    params(("run" = String, Path, description = "The ID of the run.")),
+    responses((status = 200, description = "Where the run is after the stop.", body = BulkRunStatusBody), NotSignedInAnswer, NotFoundAnswer)
+)]
+async fn cancel_bulk_run(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(run): ApiPath<String>,
+) -> Result<Response, ApiError> {
+    let run: BulkRunId = path_id(&run)?;
+    let found = auth
+        .api()?
+        .cancel_bulk_run(info, BulkRunQuery { session_token, run })
+        .await?;
+    answer_authorized(&found.map(|run| BulkRunStatusBody::from(&run)))
+}
+
 /// The routes of changing many issues at once.
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
@@ -545,4 +590,5 @@ where
         .routes(routes!(preview_bulk_change))
         .routes(routes!(apply_bulk_change))
         .routes(routes!(get_bulk_run))
+        .routes(routes!(cancel_bulk_run))
 }

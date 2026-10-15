@@ -9,11 +9,12 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::edit::{DRAFT_TEXT_MAX, Draft, DraftTarget, draft_cutoff};
+use bb_core::edit::{DRAFT_TEXT_MAX, DRAFTS_PER_AUTHOR_MAX, Draft, DraftTarget, draft_cutoff};
 use bb_core::id::UserId;
 use bb_policy::{Authorized, Evaluation, Place};
 use jiff::Timestamp;
 
+use super::parts::Need;
 use super::types::{
     DraftSlot, DraftText, DraftView, PurgeDraftsQuery, ReadDraftQuery, SaveDraftQuery,
     ThrowAwayDraftQuery,
@@ -37,7 +38,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Arc<Evaluation>, AppError> {
         match target {
             DraftTarget::Editing(what) => {
-                let facts = self.facts_of(actor, &what.record).await?;
+                let facts = self.facts_for_part(actor, what, Need::Change).await?;
                 self.require(actor, facts.edit, facts.place).await
             }
             DraftTarget::NewRecord { project, kind } => {
@@ -53,7 +54,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Keeps the text as the draft of `author` for the target, in place of an older one.
     ///
     /// # Errors
-    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters.
+    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters. A person keeps
+    /// [`DRAFTS_PER_AUTHOR_MAX`] drafts at most: past that their oldest draft goes, and a save is
+    /// never refused for it (ADR-0019).
     pub(crate) async fn keep_draft(
         &self,
         author: UserId,
@@ -72,7 +75,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             saved_at,
         };
         self.store()
-            .save_draft(&draft)
+            .save_draft(&draft, DRAFTS_PER_AUTHOR_MAX)
             .await
             .map_err(|error| internal::<S>(&error))?;
         Ok(saved_at)

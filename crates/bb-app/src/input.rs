@@ -2,7 +2,8 @@
 //! the error a person can read.
 
 use bb_core::ErrorCode;
-use bb_core::text::{LONG_TEXT_MAX, NAME_MAX, clean, clean_long};
+use bb_core::tags::TAG_NAME_MAX;
+use bb_core::text::{LONG_TEXT_MAX, NAME_MAX, clean, clean_long, has_invisible_format};
 
 use crate::auth::AppError;
 
@@ -36,4 +37,23 @@ pub(crate) fn cursor_or_invalid<T>(
 /// The name of a person, group, role, project or access key as it is kept.
 pub(crate) fn clean_name(name: &str) -> Result<String, AppError> {
     clean_text(name, NAME_MAX)
+}
+
+/// The name of a tag or a label as it is kept: a name of at most `TAG_NAME_MAX` characters that
+/// holds no invisible or turning character (`request.invalid`), so two names cannot look alike.
+pub(crate) fn clean_tag_name(name: &str) -> Result<String, AppError> {
+    if has_invisible_format(name) {
+        return Err(ErrorCode::InvalidRequest.into());
+    }
+    clean_text(name, TAG_NAME_MAX)
+}
+
+/// What a person typed to find a tag: nothing at all (the first tags are offered) or text that
+/// could be the name of a tag, so a search text is as long as a name at most.
+pub(crate) fn clean_tag_search(text: &str) -> Result<String, AppError> {
+    if text.trim().is_empty() {
+        Ok(String::new())
+    } else {
+        clean_tag_name(text)
+    }
 }
