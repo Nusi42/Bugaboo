@@ -7,6 +7,7 @@ import { LevelsMatrix, type LevelsViewProps } from "./LevelsMatrix.tsx";
 import { rank, type LevelTable } from "./levels.ts";
 import { RoleLevels } from "./RoleLevels.tsx";
 import type { LevelsOf } from "./use-levels.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface LevelTableViewProps<Subject extends string, Level extends string> extends Omit<
   LevelsViewProps<Subject, Level>,
@@ -64,14 +65,7 @@ function TableBody<Subject extends string, Level extends string>({
       {table.truncated ? <Alert tone={alertTone.warning}>{t("access.roles-cut")}</Alert> : null}
       {table.roles.length === 0 ? <p {...partOf(part.muted)}>{t("access.no-roles")}</p> : null}
       {hasCeiling(table) ? <p {...partOf(part.muted)}>{t("access.ceiling")}</p> : null}
-      <SaveStatus
-        state={edits.saveState}
-        labels={{
-          saving: t("save.saving"),
-          saved: t("save.saved"),
-          "not-saved": t("save.not-saved"),
-        }}
-      />
+      <SaveStatus state={edits.saveState} labels={saveLabels()} />
       {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
       {showChooser ? (
         <SelectField

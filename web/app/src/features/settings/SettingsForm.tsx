@@ -13,6 +13,7 @@ import { useState } from "react";
 import { type Setting } from "../../shared/my-settings.ts";
 import { SettingRow, type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
 import { wordsOf } from "./texts.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
   /** The settings of the topic, as the server answered. */
@@ -70,14 +71,7 @@ export function SettingsForm({
           onChange={setQuery}
         />
       ) : null}
-      <SaveStatus
-        state={saveState}
-        labels={{
-          saving: t("save.saving"),
-          saved: t("save.saved"),
-          "not-saved": t("save.not-saved"),
-        }}
-      />
+      <SaveStatus state={saveState} labels={saveLabels()} />
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       {shown.length === 0 ? (
         <p {...partOf(part.muted)}>{t("setting.ui.nothing")}</p>

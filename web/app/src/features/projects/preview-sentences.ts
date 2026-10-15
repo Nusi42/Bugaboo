@@ -2,6 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { isMessageKey, t } from "@bugaboo/messages";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 
 import type { Preview } from "./use-projects.ts";
@@ -21,7 +22,7 @@ function wordOf(word: Word): string {
 
 /** The names of roles in a sentence; *no role* when there are none. */
 function rolesOf(roles: readonly string[]): string {
-  return roles.length === 0 ? t("projects.no-role") : roles.join(", ");
+  return roles.length === 0 ? t("projects.no-role") : listText(roles);
 }
 
 /** The sentences of what one permission list says: what a person can now do or no more. */

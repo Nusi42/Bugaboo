@@ -21,7 +21,7 @@ use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
 use bb_core::id::{ChoiceId, EntityId, FieldId, GroupId, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::own_fields::{FieldFor, FieldType};
-use bb_core::own_fields_value::{Cell, FieldValue, OwnValues, Violation};
+use bb_core::own_fields_value::{Cell, FieldValue, OwnValues};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
@@ -184,6 +184,14 @@ fn may_change<'a>(
         .filter(|_| viewer.field_level_for(issue_type, FieldKey::Own(id)) >= FieldLevel::CanChange)
 }
 
+/// A refusal about one own field, so the client shows it at that field.
+fn refused_at(code: ErrorCode, field: FieldId) -> AppError {
+    AppError::RefusedAtField {
+        code,
+        field: FieldKey::Own(field).code().into_owned(),
+    }
+}
+
 /// `field.not_here` unless the field is used for this kind of item, is not retired, and reaches an
 /// item in a project of this chain and of this issue type.
 fn ensure_here(
@@ -196,7 +204,7 @@ fn ensure_here(
         || definition.field.retired_at.is_some()
         || !definition.scope.reaches(chain, issue_type)
     {
-        return Err(ErrorCode::FieldNotHere.into());
+        return Err(refused_at(ErrorCode::FieldNotHere, definition.field.id));
     }
     Ok(())
 }
@@ -618,7 +626,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 return Err(ErrorCode::InvalidRequest.into());
             }
             let old = item.id.and_then(|id| current.value(id, field.id)).cloned();
-            let new = FieldValue::from_json(field.kind, json).map_err(Violation::error)?;
+            let new = FieldValue::from_json(field.kind, json)
+                .map_err(|violation| refused_at(violation.error(), field.id))?;
             self.check_value(actor, viewer, item, definition, new.as_ref(), old.as_ref())
                 .await?;
             sets.push(Set {
@@ -648,7 +657,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         field
             .rules
             .check(field.kind, new, &Linear)
-            .map_err(|violation| AppError::from(violation.error()))?;
+            .map_err(|violation| refused_at(violation.error(), field.id))?;
         let Some(value) = new else {
             return Ok(());
         };
@@ -689,7 +698,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .still_there(actor, viewer, item, definition, *bytes)
                     .await?)
             {
-                return Err(refusal.into());
+                return Err(refused_at(refusal, field.id));
             }
         }
         Ok(())
@@ -767,7 +776,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let may_fill = viewer.field_level_for(item.issue_type, FieldKey::Own(field.id))
                     >= FieldLevel::CanChange;
                 if may_fill {
-                    return Err(ErrorCode::FieldRequired.into());
+                    return Err(refused_at(ErrorCode::FieldRequired, field.id));
                 }
                 continue;
             }

@@ -26370,6 +26370,10 @@
             "$ref": "#/components/schemas/ErrorCode",
             "description": "What went wrong."
           },
+          "field": {
+            "type": ["string", "null"],
+            "description": "The field a `field.*` refusal is about: the word of a built-in field or the ID of an own\nfield, as the client sent it. Only a field the person may fill in is named, so it reveals\nnothing."
+          },
           "message_key": {
             "type": "string",
             "description": "The key of the message to show, in the message catalog."
@@ -27841,6 +27845,7 @@
           "relation-exists",
           "same-issue",
           "limit-reached",
+          "field-rule",
           "not-valid"
         ]
       },

@@ -13,9 +13,7 @@ export function ConflictNote({ conflict }: { readonly conflict: IssueConflict })
     <Alert tone={alertTone.warning}>
       <div {...partOf(part.issueNote)}>
         <span>{conflict.sentence}</span>
-        <Button onPress={conflict.keepTheirs}>
-          {t("issues.keep-theirs", { name: conflict.who })}
-        </Button>
+        <Button onPress={conflict.keepTheirs}>{conflict.theirs}</Button>
         <Button onPress={conflict.useMine}>{t("issues.use-mine")}</Button>
       </div>
     </Alert>

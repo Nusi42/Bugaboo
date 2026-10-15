@@ -82,6 +82,7 @@ impl From<AppError> for ApiError {
     fn from(error: AppError) -> Self {
         match error {
             AppError::Refused(code) => Self::new(code),
+            AppError::RefusedAtField { code, field } => Self::new(code).with_field(field),
             AppError::SessionEnded => Self::new(ErrorCode::NotSignedIn).with_session_ended(),
             AppError::Conflict(conflict) => {
                 Self::new(ErrorCode::VersionChanged).with_conflict(ConflictBody::from(&*conflict))

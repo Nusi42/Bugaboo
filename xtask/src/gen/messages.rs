@@ -102,7 +102,7 @@ const PARTS: [Part; 26] = [
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 86] = [
+const BROWSER_AREAS: [&str; 87] = [
     "access",
     "access-keys",
     "app",
@@ -162,6 +162,7 @@ const BROWSER_AREAS: [&str; 86] = [
     "permission",
     "permission-topic",
     "person",
+    "preview",
     "priority",
     "projects",
     "related-issues",

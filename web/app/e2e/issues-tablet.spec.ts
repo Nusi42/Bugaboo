@@ -19,8 +19,13 @@ test("ux_03 held upright, a tablet opens the issue as a full-height sheet over t
   await signIn(page, ada);
   await page.setViewportSize(viewports.tablet);
   await page.goto(issuePanelAddress("WEB", "WEB-2"));
-  const sheet = page.getByRole("dialog", { name: t("issues.sheet"), exact: true });
+  // The sheet is named after the issue, and it closes with the words it has on a phone.
+  const sheet = page.getByRole("dialog", {
+    name: t("issues.title-of", { key: "WEB-2", title: webIssues.passkey }),
+    exact: true,
+  });
   await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole("button", { name: t("focus.back"), exact: true })).toBeVisible();
   await expect(
     sheet.getByRole("heading", { name: new RegExp(webIssues.passkey, "u") }),
   ).toBeVisible();

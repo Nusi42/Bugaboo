@@ -16,7 +16,7 @@ A row for the whole organization counts everywhere. Giving a role to a group giv
 
 ## Rows that come from above
 
-A project's list shows the rows of the project first, and then the rows that reach it from above: from a parent project (*from Acme*), from the whole organization, or from a project you cannot see (*from a project you can't see*; it is not named).
+A project's list shows the rows of the project first, and then the rows that reach it from above: from a parent project (*from Acme*), from the whole organization, or from a project you cannot see (*from a project you cannot see*; it is not named).
 
 A row that comes from above is not taken away here. "Change for this project" starts a new row in this project for the same person or group, for example a different role, or No access.
 

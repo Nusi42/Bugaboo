@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { usePermissions } from "../../shared/use-me.ts";
+import { labelOf } from "./box-words.ts";
 import { IssueChoice } from "./IssueChoice.tsx";
 import { GroupChoice } from "./OtherChoices.tsx";
 import { PeopleChoice } from "./PeopleChoice.tsx";
@@ -30,6 +31,7 @@ export function ReferenceEditor({
   issue,
   issueType,
   onCommit,
+  problem,
   isPending = false,
   live = false,
 }: ValueEditorProps) {
@@ -40,7 +42,7 @@ export function ReferenceEditor({
   };
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.fieldLabel)}>{field.name}</p>
+      <p {...partOf(part.fieldLabel)}>{labelOf(field)}</p>
       {live ? <Chosen field={field} value={value} /> : <ValueView field={field} value={value} />}
       <div {...partOf(part.row)}>
         {project === undefined ? null : (
@@ -65,6 +67,7 @@ export function ReferenceEditor({
           </Button>
         ) : null}
       </div>
+      {problem === undefined ? null : <p {...partOf(part.fieldError)}>{problem}</p>}
     </div>
   );
 }

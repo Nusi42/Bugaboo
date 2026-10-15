@@ -1,11 +1,9 @@
-import type { LockOutcome } from "@bugaboo/api-client";
-
 import {
   EditLockSession,
   type Answer,
   type SessionDeps,
 } from "../../shared/editing/edit-lock-session.ts";
-import type { LostReason } from "../../shared/editing/long-text-model.ts";
+import type { HeldBySomebody, LostReason } from "../../shared/editing/long-text-model.ts";
 import { Store } from "../../shared/store.ts";
 
 /** Where the person stands with the edit lock on a layout (ADR-0019, ADR-0027 decision 6). */
@@ -14,18 +12,10 @@ export type LockState =
   | { readonly phase: "mine"; readonly token: string }
   | {
       readonly phase: "held";
-      /** Who is editing, as the person may see them. */
-      readonly name: string;
-      readonly since: string;
-      readonly canEditAnyway: boolean;
+      /** Who is editing, since when, and whether the person may take over. */
+      readonly held: HeldBySomebody;
     }
   | { readonly phase: "lost" };
-
-/** The calls the lock makes, with the real client behind them or a double in a test. */
-export interface LockDeps extends SessionDeps {
-  /** How a person who holds the lock is named. */
-  readonly nameOf: (holder: Extract<LockOutcome, { status: "held" }>["holder"]) => string;
-}
 
 const taking: LockState = { phase: "taking" };
 const lost: LockState = { phase: "lost" };
@@ -37,12 +27,10 @@ const lost: LockState = { phase: "lost" };
  * a browser.
  */
 export class LayoutLockController extends Store<LockState> {
-  private readonly deps: LockDeps;
   private readonly session: EditLockSession;
 
-  constructor(deps: LockDeps) {
+  constructor(deps: SessionDeps) {
     super(taking);
-    this.deps = deps;
     this.session = new EditLockSession(deps, {
       onRanOut: "lost",
       onLost: () => {
@@ -81,8 +69,7 @@ export class LayoutLockController extends Store<LockState> {
     try {
       const answer = await ask();
       if (answer.kind === "held") {
-        const { holder, since, can_edit_anyway: canEditAnyway } = answer.lock;
-        this.replace({ phase: "held", name: this.deps.nameOf(holder), since, canEditAnyway });
+        this.replace({ phase: "held", held: answer.lock });
       } else if (answer.kind === "mine") {
         this.replace({ phase: "mine", token: answer.token });
       }

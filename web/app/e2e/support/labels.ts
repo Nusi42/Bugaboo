@@ -42,5 +42,7 @@ export async function tickTwo(page: Page): Promise<void> {
   await page.goto(projectIssuesAddress("WEB"));
   await page.getByRole("checkbox", { name: "WEB-1", exact: true }).check({ force: true });
   await page.getByRole("checkbox", { name: "WEB-2", exact: true }).check({ force: true });
-  await expect(page.getByText(t("issues.selected", { count: 2 }))).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: t("issues.selected", { count: 2 }) }),
+  ).toBeVisible();
 }

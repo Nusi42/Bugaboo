@@ -4,10 +4,12 @@ import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui"
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
+import { useMe } from "../../shared/use-me.ts";
+import { namedPerson } from "../../shared/person.ts";
 import { refreshHistory } from "../../shared/query-keys.ts";
 
 /** *Delete*, and *Undo* once it is deleted: a comment goes to the trash and comes back whole. */
-function DeleteComment({ comment }: { readonly comment: string }) {
+function DeleteComment({ comment, mine }: { readonly comment: string; readonly mine: boolean }) {
   const remove = api.query.useMutation("delete", "/api/v1/comments/{comment}", {
     onSuccess: refreshHistory,
   });
@@ -24,7 +26,7 @@ function DeleteComment({ comment }: { readonly comment: string }) {
           remove.mutate(params);
         }}
       >
-        {t("comments.delete")}
+        {mine ? t("comments.delete") : t("comments.delete-other")}
       </Button>
       {remove.isSuccess ? (
         <Alert tone={alertTone.info}>
@@ -36,7 +38,7 @@ function DeleteComment({ comment }: { readonly comment: string }) {
               restore.mutate(params);
             }}
           >
-            {t("comments.undo")}
+            {t("common.undo")}
           </Button>
         </Alert>
       ) : null}
@@ -45,28 +47,37 @@ function DeleteComment({ comment }: { readonly comment: string }) {
   );
 }
 
+/** Whether the person who is signed in wrote the comment (a person shown only by role or as *Someone* is nobody's own). */
+function isMine(comment: Schema<"HistoryEntryItem">, me: string | undefined): boolean {
+  return me !== undefined && namedPerson(comment.by ?? undefined)?.id === me;
+}
+
 /** The buttons under a comment: what the reader may do with it. */
 export function CommentActions({
   comment,
+  editing,
   onEdit,
   onVersions,
   versionsShown,
 }: {
   readonly comment: Schema<"HistoryEntryItem">;
+  /** The editor is open: *Edit* would do nothing, so it is not offered. */
+  readonly editing: boolean;
   readonly onEdit: () => void;
   readonly onVersions: () => void;
   readonly versionsShown: boolean;
 }) {
   const id = comment.comment;
+  const me = useMe();
   return (
     <div {...partOf(part.row)}>
-      {comment.may_edit === true ? (
+      {comment.may_edit === true && !editing ? (
         <Button look={buttonLook.quiet} onPress={onEdit}>
           {t("comments.edit")}
         </Button>
       ) : null}
       {comment.may_delete === true && id !== undefined && id !== null ? (
-        <DeleteComment comment={id} />
+        <DeleteComment comment={id} mine={isMine(comment, me?.id)} />
       ) : null}
       {comment.edited_at === undefined || comment.edited_at === null ? null : (
         <Button look={buttonLook.quiet} onPress={onVersions}>

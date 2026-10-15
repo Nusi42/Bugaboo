@@ -45,7 +45,7 @@ test("iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_tol
   expect(read.issue.status).toBe(winnerStatus);
   expect(read.issue.version).toBe(2);
   // The other keeps the winner's value, and the page shows it after it is read again.
-  await lost.getByRole("button", { name: /^Keep .+'s$/u }).click();
+  await lost.getByRole("button", { name: /^Keep .+ change$/u }).click();
   await expect(status(lost)).toHaveValue(winnerStatus);
   await admin.dispose();
 });

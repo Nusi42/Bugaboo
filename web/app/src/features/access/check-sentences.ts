@@ -103,7 +103,7 @@ function partsOf(
 /**
  * The reason a permission is given or not, in sentences (SEC-03): who has which role where, why
  * it counts here, and what stands in its way. A project the person who asks may not know about
- * is *a project you can't see*, as the server says it.
+ * is *a project you cannot see*, as the server says it.
  */
 export function reasonSentences(
   person: Person,

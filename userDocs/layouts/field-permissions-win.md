@@ -5,4 +5,4 @@ A layout only says where a field shows and for which roles. It never gives anybo
 - the layout lists it for one of their roles, and
 - their role's level for the field lets them see it (on the new-issue form: change it).
 
-In the editor a row is marked when a role cannot see or fill in a field, for example *Guest can't see Cost center: Field permissions*. Change that on the *Field permissions* page, not in the layout.
+In the editor a row is marked when a role cannot see or fill in a field, for example *Guest cannot see Cost center: the field permissions hide it.*, and next to it *Open field permissions*. Change that on the *Field permissions* page, not in the layout.

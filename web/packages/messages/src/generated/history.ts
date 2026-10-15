@@ -3,7 +3,6 @@
 import { register } from "../registry.ts";
 
 export const messages = {
-  "history.title": "History",
   "history.tab-everything": "Everything",
   "history.tab-comments": "Comments",
   "history.tab-changes": "Changes",
@@ -15,24 +14,24 @@ export const messages = {
   "history.set": "{who} set {field} to {after}",
   "history.cleared": "{who} cleared {field}",
   "history.changed-long-text": "{who} changed {field}",
-  "history.relation-added": "{who} added a relation: this issue {name} {issue}",
-  "history.relation-removed": "{who} took away a relation: this issue {name} {issue}",
+  "history.relation-added": "{who} added a relation: this issue · {name} · {issue}",
+  "history.relation-removed": "{who} took away a relation: this issue · {name} · {issue}",
   "comments.write": "Write a comment",
   "comments.write-help": "Type @ and a name to mention someone.",
   "comments.add": "Comment",
   "comments.edited": "edited",
-  "comments.edit": "Edit",
-  "comments.save": "Save",
-  "comments.cancel": "Cancel",
-  "comments.delete": "Delete",
+  "comments.edit": "Edit your comment",
+  "comments.delete": "Delete your comment",
+  "comments.delete-other": "Delete the comment",
   "comments.deleted": "The comment is deleted.",
-  "comments.undo": "Undo",
   "comments.versions": "Earlier versions",
   "comments.versions-hide": "Hide earlier versions",
   "comments.version-saved": "Version {version} · {when}",
   "comments.editing": "Edit the comment",
-  "comments.lock-held": "Someone else is editing this comment.",
   "comments.mention-choices": "Who you can mention",
+  "editing.text-kept": "What you typed is kept as a draft:",
+  "editing.text-kept-on-close":
+    "What you typed is kept as a draft if you close this. Open it again to continue.",
 } as const;
 
 register(messages);

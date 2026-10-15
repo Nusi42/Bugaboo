@@ -43,7 +43,6 @@ export const messages = {
   "access-keys.expires-help":
     "Without another day, the key runs out in {days, plural, one {# day} other {# days}}. The latest day is {latest}.",
   "access-keys.submit": "Make the key",
-  "access-keys.cancel": "Cancel",
   "access-keys.shown-title": "Your new access key",
   "access-keys.shown-once":
     "Copy the key now and keep it safe. Bugaboo shows it only this once and cannot show it again.",
@@ -56,7 +55,7 @@ export const messages = {
     "{count, plural, one {# single permission} other {# single permissions}}",
   "access-keys.row.projects-all": "For every project",
   "access-keys.row.projects-some": "Only for {names}",
-  "access-keys.row.hidden-project": "a project you can't see",
+  "access-keys.row.hidden-project": "a project you cannot see",
   "access-keys.row.expires": "Runs out on {when}",
   "access-keys.row.expired": "Ran out on {when}",
   "access-keys.row.last-used": "Last used {when}",

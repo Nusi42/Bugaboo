@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { known } from "../../shared/present.ts";
+import { statusId } from "./bar-targets.ts";
 import { AssignedFact } from "./AssignedFact.tsx";
 import { ChoiceFact } from "./Fact.tsx";
 import { priorityChoices, statusChoices } from "./issue-choices.ts";
@@ -32,6 +33,7 @@ export function FactsBar(props: FactsBarProps) {
       {status === undefined || !form.shows("status") ? null : (
         <ChoiceFact
           shortcut={statusShortcut}
+          id={statusId}
           name={t("issue-field.status")}
           choices={statusChoices}
           value={status}

@@ -56,8 +56,8 @@ export function CompareRow({ row, number, side, onPick }: CompareRowProps) {
             <ChoiceGroup
               legend={t("issues.compare-keep", { number })}
               choices={[
-                { value: "mine", label: t("issues.compare-keep-mine") },
-                { value: "theirs", label: t("issues.compare-keep-theirs") },
+                { value: "theirs", label: t("issues.compare-theirs") },
+                { value: "mine", label: t("issues.compare-mine") },
               ]}
               value={side}
               onChange={onPick}

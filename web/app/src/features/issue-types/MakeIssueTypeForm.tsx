@@ -37,7 +37,7 @@ export function MakeIssueTypeForm() {
     >
       <TextField
         label={t("issue-types.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={name}
         onChange={setName}
       />

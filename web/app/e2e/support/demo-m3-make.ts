@@ -13,7 +13,7 @@ import {
   theTwo,
 } from "./demo-m3-state.ts";
 import { signIn } from "./flows.ts";
-import { newIssueDialog, openNewIssueDialog } from "./issues.ts";
+import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 import { sampleGuestIn, type SamplePerson } from "./sample.ts";
 
 // The first steps of the exit demo of M3 (`m3-exit-demo.spec.ts`): the two bugs.
@@ -27,7 +27,7 @@ function keyOf(page: Page): string {
 async function startAnIssue(page: Page, title: string): Promise<void> {
   await page.goto(projectIssuesAddress("WEB"));
   await openNewIssueDialog(page);
-  await newIssueDialog(page).getByLabel(t("issues.title-required"), { exact: true }).fill(title);
+  await newIssueDialog(page).getByLabel(titleLabel(), { exact: true }).fill(title);
 }
 
 /** Presses Create and waits for the page of the new issue. */

@@ -1,6 +1,7 @@
 import { priorityWords, statusWords, type Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
+import { listText } from "../../shared/list-text.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
 import { known, wordOf } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
@@ -123,7 +124,7 @@ export function changeSentence(values: IssueValues): string {
       : t("issues.changed-people", {
           field: t("issue-field.assigned-to"),
           count: values.assignedTo.length,
-          names: values.assignedTo.map((person) => person.name).join(", "),
+          names: listText(values.assignedTo.map((person) => person.name)),
         }),
     values.own === undefined
       ? undefined

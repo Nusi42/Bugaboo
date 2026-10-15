@@ -7,6 +7,7 @@ import { signIn } from "./support/flows.ts";
 import {
   newIssueDialog as dialog,
   openNewIssueDialog as openDialog,
+  titleLabel,
   prepareWeb,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
@@ -24,9 +25,13 @@ test("iss_11 the dialog asks for a title in words, and the issue is made with Cr
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await openDialog(page);
-  await expect(dialog(page).getByLabel(t("issues.title-required"), { exact: true })).toBeVisible();
+  await expect(dialog(page).getByLabel(titleLabel(), { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
-  await dialog(page).getByLabel(t("issues.title-required"), { exact: true }).fill("A new problem");
+  // Without a title the second button waits, and says why to whoever reads it.
+  await expect(
+    dialog(page).getByRole("button", { name: t("issues.create-another"), exact: true }),
+  ).toHaveAccessibleDescription(t("issues.missing-title"));
+  await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("A new problem");
   await dialog(page)
     .getByRole("button", { name: t("issues.create"), exact: true })
     .click();
@@ -39,7 +44,7 @@ test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after C
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await openDialog(page);
-  await dialog(page).getByLabel(t("issues.title-required"), { exact: true }).fill("Half written");
+  await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("Half written");
   await expect(dialog(page).getByText(t("issues.draft-kept"))).toBeVisible();
   await dialog(page)
     .getByRole("button", { name: t("common.cancel"), exact: true })
@@ -51,9 +56,7 @@ test("iss_11 a half-filled dialog keeps its draft, and the draft is gone after C
   await dialog(page)
     .getByRole("button", { name: /^Continue your draft from/u })
     .click();
-  await expect(dialog(page).getByLabel(t("issues.title-required"), { exact: true })).toHaveValue(
-    "Half written",
-  );
+  await expect(dialog(page).getByLabel(titleLabel(), { exact: true })).toHaveValue("Half written");
   await dialog(page)
     .getByRole("button", { name: t("issues.create"), exact: true })
     .click();
@@ -71,14 +74,12 @@ test("iss_11 Create and start another keeps the project and the type and says wh
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   await openDialog(page);
-  await dialog(page).getByLabel(t("issues.title-required"), { exact: true }).fill("First of two");
+  await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("First of two");
   await dialog(page)
     .getByRole("button", { name: t("issues.create-another"), exact: true })
     .click();
   await expect(dialog(page).getByText(/was created\./u)).toBeVisible();
-  await expect(dialog(page).getByLabel(t("issues.title-required"), { exact: true })).toHaveValue(
-    "",
-  );
+  await expect(dialog(page).getByLabel(titleLabel(), { exact: true })).toHaveValue("");
 });
 
 test("ux_05 the key c opens the dialog, and a phone has the button in its bar", async ({

@@ -15,6 +15,8 @@ export function CommentEntry({ entry }: { readonly entry: Schema<"HistoryEntryIt
   const [versions, setVersions] = useState(false);
   const id = entry.comment;
   const edited = entry.edited_at !== undefined && entry.edited_at !== null;
+  const reading =
+    entry.html !== undefined && entry.html !== null ? <MarkdownView html={entry.html} /> : null;
   return (
     <article {...partOf(part.historyEntry, { variants: ["comment"] })}>
       <span {...partOf(part.historyWhen)}>
@@ -26,15 +28,17 @@ export function CommentEntry({ entry }: { readonly entry: Schema<"HistoryEntryIt
           comment={id}
           version={entry.version ?? 1}
           text={entry.text ?? ""}
+          reading={reading}
           onClose={() => {
             setEditing(false);
           }}
         />
       ) : (
-        entry.html !== undefined && entry.html !== null && <MarkdownView html={entry.html} />
+        reading
       )}
       <CommentActions
         comment={entry}
+        editing={editing}
         onEdit={() => {
           setEditing(true);
         }}

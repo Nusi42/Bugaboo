@@ -36,11 +36,13 @@ pub struct ApiError {
     ends_session: bool,
     /// What changed the record, for `edit.version_changed` (ADR-0019 amendment M3).
     conflict: Option<Arc<ConflictBody>>,
+    /// The field a `field.*` refusal is about.
+    field: Option<String>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
 #[derive(Clone, Debug)]
-struct ProblemOf(ErrorCode, Option<Arc<ConflictBody>>);
+struct ProblemOf(ErrorCode, Option<Arc<ConflictBody>>, Option<String>);
 
 impl ApiError {
     /// The answer for `code`.
@@ -51,7 +53,15 @@ impl ApiError {
             retry_after: None,
             ends_session: false,
             conflict: None,
+            field: None,
         }
+    }
+
+    /// Names the field a `field.*` refusal is about.
+    #[must_use]
+    pub(crate) fn with_field(mut self, field: String) -> Self {
+        self.field = Some(field);
+        self
     }
 
     /// Adds what changed the record to an `edit.version_changed` answer.
@@ -103,6 +113,15 @@ fn status_of(code: ErrorCode) -> StatusCode {
     StatusCode::from_u16(code.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
 }
 
+/// The problem of a code, naming the field when the refusal is about one.
+fn problem_of(code: ErrorCode, field: Option<String>) -> Problem {
+    let problem = Problem::new(code);
+    match field {
+        Some(field) => problem.with_field(field),
+        None => problem,
+    }
+}
+
 fn problem_response(problem: &Problem, conflict: Option<&ConflictBody>) -> Response {
     // A `Problem` holds text and numbers only, so it always serializes; the empty body is what
     // a (impossible) failure would leave.
@@ -122,7 +141,10 @@ fn problem_response(problem: &Problem, conflict: Option<&ConflictBody>) -> Respo
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let mut response = problem_response(&Problem::new(self.code), self.conflict.as_deref());
+        let mut response = problem_response(
+            &problem_of(self.code, self.field.clone()),
+            self.conflict.as_deref(),
+        );
         if let Some(seconds) = self.retry_after {
             response
                 .headers_mut()
@@ -134,7 +156,7 @@ impl IntoResponse for ApiError {
         }
         response
             .extensions_mut()
-            .insert(ProblemOf(self.code, self.conflict));
+            .insert(ProblemOf(self.code, self.conflict, self.field));
         response
     }
 }
@@ -149,11 +171,15 @@ pub(crate) async fn add_request_id(request: Request, next: Next) -> Response {
     // Anything below /api that fails without a problem body (a rejection of an extractor, a
     // layer) is turned into one by its status; the text it came with is dropped.
     let unmarked = (api && marked.is_none() && is_failure(response.status()))
-        .then(|| ProblemOf(code_for_status(response.status()), None));
-    let (Some(RequestId(id)), Some(ProblemOf(code, conflict))) = (id, marked.or(unmarked)) else {
+        .then(|| ProblemOf(code_for_status(response.status()), None, None));
+    let (Some(RequestId(id)), Some(ProblemOf(code, conflict, field))) = (id, marked.or(unmarked))
+    else {
         return response;
     };
-    let rewritten = problem_response(&Problem::new(code).with_request_id(id), conflict.as_deref());
+    let rewritten = problem_response(
+        &problem_of(code, field).with_request_id(id),
+        conflict.as_deref(),
+    );
     let (parts, body) = rewritten.into_parts();
     *response.status_mut() = parts.status;
     // Keep what the answer already says (`Retry-After`, `Allow`); the new body replaces the old.

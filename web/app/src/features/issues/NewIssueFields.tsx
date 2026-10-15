@@ -13,6 +13,8 @@ export interface NewIssueFieldsProps {
   readonly project: string;
   /** Which fields the layout of the form asks this person for. */
   readonly layout: FormView;
+  /** The refusal of the server about one field, shown at that field. */
+  readonly refusal?: { readonly field: string; readonly message: string } | undefined;
   readonly onChange: (values: NewIssueValues) => void;
 }
 
@@ -22,7 +24,14 @@ export interface NewIssueFieldsProps {
  * only when the layout lists it for one of the person's roles and its level lets them fill it in
  * (the server decides, so the form never asks for what would be refused).
  */
-export function NewIssueFields({ values, types, project, layout, onChange }: NewIssueFieldsProps) {
+export function NewIssueFields({
+  values,
+  types,
+  project,
+  layout,
+  refusal,
+  onChange,
+}: NewIssueFieldsProps) {
   return (
     <>
       <SelectField
@@ -34,8 +43,8 @@ export function NewIssueFields({ values, types, project, layout, onChange }: New
         }}
       />
       <TextField
-        label={t("issues.title-required")}
-        requiredMessage={t("validation.required")}
+        label={t("fields.label-required", { field: t("issue-field.title") })}
+        requiredMessage={t("error.field.required")}
         value={values.title}
         onChange={(title) => {
           onChange({ ...values, title });
@@ -46,7 +55,13 @@ export function NewIssueFields({ values, types, project, layout, onChange }: New
         sections={layout.sections}
         titles
         render={(field) => (
-          <NewIssueField field={field} values={values} project={project} onChange={onChange} />
+          <NewIssueField
+            field={field}
+            values={values}
+            project={project}
+            problem={refusal?.field === field ? refusal.message : undefined}
+            onChange={onChange}
+          />
         )}
       />
     </>

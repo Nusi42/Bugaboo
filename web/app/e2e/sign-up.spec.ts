@@ -71,7 +71,7 @@ test("m1_f46 an administrator switches it on and is warned before it is open to 
   await policy.getByLabel(t("sign-up-policy.domains")).fill("example.test");
   await expect(policy.getByText(t("sign-up-policy.warning"))).toHaveCount(0);
   await policy.getByRole("button", { name: t("common.save") }).click();
-  await expect(policy.getByText(t("sign-up-policy.saved"))).toBeVisible();
+  await expect(policy.getByText(t("save.saved"))).toBeVisible();
   await signOut(page);
 });
 
@@ -93,7 +93,7 @@ test("auth_06 an administrator can switch it off again", async ({ page }) => {
   const policy = await openPolicy(page);
   await setSwitch(policy, false);
   await policy.getByRole("button", { name: t("common.save") }).click();
-  await expect(policy.getByText(t("sign-up-policy.saved"))).toBeVisible();
+  await expect(policy.getByText(t("save.saved"))).toBeVisible();
   await signOut(page);
   await expect(page.getByRole("link", { name: t("sign-in.make-account") })).toHaveCount(0);
 });

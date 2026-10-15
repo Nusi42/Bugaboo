@@ -22,7 +22,7 @@ describe("iss_06 the history lists choices", () => {
           after_names: ["Firefox", "Safari"],
         }),
       ),
-    ).toBe("Ben changed Browsers from Firefox to Firefox, Safari");
+    ).toBe("Ben changed Browsers from Firefox to Firefox and Safari");
   });
 });
 
@@ -45,7 +45,7 @@ describe("iss_06 the history in plain sentences", () => {
           after_people: [ana, { shown: "someone" }],
         }),
       ),
-    ).toBe("Ben changed Assigned to from nobody to Ana, someone");
+    ).toBe("Ben changed Assigned to from nobody to Ana and someone");
     expect(changeSentence(change({ field: "labels", before_text: "login" }))).toBe(
       "Ben cleared Labels",
     );
@@ -99,7 +99,7 @@ describe("iss_06 relations and the items of one event", () => {
           },
         }),
       ),
-    ).toBe("Ben added a relation: this issue blocks WEB-147");
+    ).toBe("Ben added a relation: this issue · blocks · WEB-147");
   });
 
   it("puts the fields of one event together and keeps a comment on its own", () => {

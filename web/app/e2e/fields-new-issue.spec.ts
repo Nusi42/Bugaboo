@@ -6,7 +6,7 @@ import { ada, bob } from "./support/accounts.ts";
 import { preparePickers } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { newIssueDialog, openNewIssueDialog } from "./support/issues.ts";
+import { newIssueDialog, openNewIssueDialog, titleLabel } from "./support/issues.ts";
 import { addToTheFormOfWeb } from "./support/layouts.ts";
 
 // An own field of people on the form of a new issue (CF-01, M3-F104): the form shows who was
@@ -25,7 +25,7 @@ test("cf_01 on the form of a new issue a person who was picked is shown by name"
   await page.goto(projectIssuesAddress("WEB"));
   await openNewIssueDialog(page);
   const form = newIssueDialog(page);
-  await form.getByLabel(t("issues.title-required"), { exact: true }).fill("Needs a tester");
+  await form.getByLabel(titleLabel(), { exact: true }).fill("Needs a tester");
   await form
     .getByRole("button", { name: t("fields.choose-title", { name: "Tester" }), exact: true })
     .click();

@@ -113,7 +113,7 @@ function MakeFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
       />
       <TextField
         label={t("fields.field-name")}
-        requiredMessage={t("validation.required")}
+        requiredMessage={t("error.field.required")}
         value={draft.name}
         onChange={set("name")}
       />

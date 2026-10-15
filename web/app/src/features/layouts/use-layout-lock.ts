@@ -10,14 +10,14 @@ import {
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { api } from "../../shared/api.ts";
+import type { SessionDeps } from "../../shared/editing/edit-lock-session.ts";
 import { lostReasonOf } from "../../shared/editing/index.ts";
 import { codeOf } from "../../shared/errors.ts";
-import { personName } from "../../shared/person.ts";
 import { whatOf } from "./layouts.ts";
-import { LayoutLockController, type LockDeps, type LockState } from "./layout-lock.ts";
+import { LayoutLockController, type LockState } from "./layout-lock.ts";
 
 /** The calls of the lock on one layout, with the real client behind them. */
-function depsOf(layout: string): LockDeps {
+function depsOf(layout: string): SessionDeps {
   const what = whatOf(layout);
   const client = api.client;
   return {
@@ -28,7 +28,6 @@ function depsOf(layout: string): LockDeps {
     release: (token) => releaseEditLock(client, what, token),
     startHeartbeats,
     newEditorId,
-    nameOf: personName,
   };
 }
 

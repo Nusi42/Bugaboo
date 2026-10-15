@@ -19,7 +19,7 @@ export const messages = {
   "security-log.reason.truncated": "entries at the end of the log were cut off or rewritten.",
   "security-log.reason.anchor": "the anchor file that vouches for the end of the log was changed.",
   "security-log.reason.behind":
-    "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
+    "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, someone removed entries.",
   "server-status.title": "Server status",
   "server-status.intro": "How this Bugaboo server is doing.",
   "server-status.refresh": "Check again",
