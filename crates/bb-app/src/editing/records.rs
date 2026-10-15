@@ -175,7 +175,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let facts = if record.kind == EntityKind::from(RecordKind::Issue) {
             self.issue_facts(actor, record).await?
         } else if record.kind == EntityKind::from(RecordKind::Layout) {
-            self.layout_facts(record).await?
+            self.layout_facts(actor, record).await?
         } else {
             self.services
                 .records

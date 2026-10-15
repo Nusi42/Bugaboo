@@ -4,7 +4,7 @@
 //! Every flow runs on SQLite and PostgreSQL.
 
 use axum::http::StatusCode;
-use bb_app::access::Permission;
+use bb_app::access::{Permission, StartingRole};
 use bb_core::access::FieldLevel;
 use bb_core::edit::DRAFTS_PER_AUTHOR_MAX;
 use bb_core::fields::Field;
@@ -248,6 +248,39 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
             .send("POST", &format!("{LOCKS}/release-stuck"), Some(release))
             .await?;
         assert_eq!(freed.status, StatusCode::NO_CONTENT, "{}", freed.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_06_a_layout_is_not_known_to_who_may_not_edit_layouts() -> TestResult {
+    each_database("sec_06_layout_lock", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
+        let editor = super::layouts_http::customize(&mut ada, "ACME").await?;
+        let layout = editor["layout"]["id"].as_str().ok_or("no layout")?;
+        let ask = |record: &str| {
+            json!({
+                "what": {"record": {"kind": "layout", "id": record}, "part": "layout"},
+                "editor_id": AN_EDITOR,
+            })
+        };
+        // A layout that exists and one that does not answer alike to a Team member.
+        let there = tim.send("POST", LOCKS, Some(ask(layout))).await?;
+        let nowhere = tim
+            .send(
+                "POST",
+                LOCKS,
+                Some(ask("01890a5d-ac96-774b-bcce-b302099a8057")),
+            )
+            .await?;
+        assert_eq!(there.code(), "resource.not_found", "{}", there.body);
+        assert_eq!(nowhere.code(), "resource.not_found", "{}", nowhere.body);
+        // Whoever edits layouts takes the lock.
+        let taken = ada.send("POST", LOCKS, Some(ask(layout))).await?;
+        assert_eq!(ok(&taken)?["status"], "taken");
         Ok(())
     })
     .await
