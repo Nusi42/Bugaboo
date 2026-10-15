@@ -92,7 +92,8 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
         AppError::Stale(_) | AppError::Refused(ErrorCode::VersionChanged) => {
             Ok(SkipReason::ChangedSince)
         }
-        AppError::Refused(code) => Ok(match code {
+        // A refusal about one field is the same reason as without the field.
+        AppError::Refused(code) | AppError::RefusedAtField { code, .. } => Ok(match code {
             ErrorCode::NotFound => SkipReason::NotFound,
             ErrorCode::Forbidden => SkipReason::NotAllowed,
             ErrorCode::IssueTypeRetired => SkipReason::TypeMissing,
@@ -270,5 +271,28 @@ impl<S: AuthStore> Ctx<'_, S> {
             name: name.to_owned(),
             other: Box::new(second.clone()),
         }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn iss_09_a_refusal_about_a_field_skips_the_issue_like_one_without_the_field() {
+        let at_field = AppError::RefusedAtField {
+            code: ErrorCode::FieldNotHere,
+            field: "0190f4c2-7a3e-7c1d-9b52-3d6e8f1a2b4c".to_owned(),
+        };
+        assert_eq!(skip_of(at_field), Ok(SkipReason::FieldMissing));
+        assert_eq!(
+            skip_of(AppError::Refused(ErrorCode::FieldNotHere)),
+            Ok(SkipReason::FieldMissing)
+        );
+        let too_long = AppError::RefusedAtField {
+            code: ErrorCode::FieldTooLong,
+            field: "x".to_owned(),
+        };
+        assert_eq!(skip_of(too_long), Ok(SkipReason::NotValid));
     }
 }
