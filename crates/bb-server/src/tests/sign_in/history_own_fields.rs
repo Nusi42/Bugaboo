@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use super::fields_http::{make_field, reader_of, severity};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, id_in, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_in, ok};
 
 /// The items of the changes of an answer of the history.
 fn changes(history: &Value) -> Vec<Value> {
@@ -145,11 +145,6 @@ async fn history_of(browser: &mut Browser, issue: &str) -> Result<Vec<Value>, Fa
 /// Whether an item is a change of this field.
 fn is_change_of(item: &Value, field: &str) -> bool {
     item["field"] == json!(field)
-}
-
-/// The key of an issue in an answer.
-fn key_in(made: &Value) -> Result<String, Failure> {
-    Ok(made["key"].as_str().ok_or("no key")?.to_owned())
 }
 
 #[tokio::test]

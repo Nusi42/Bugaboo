@@ -175,7 +175,7 @@ pub(super) fn ok(reply: &Reply) -> Result<&Value, Failure> {
 }
 
 /// The text of a member of an answer.
-fn text_in(answer: &Value, member: &str) -> Result<String, Failure> {
+pub(super) fn text_in(answer: &Value, member: &str) -> Result<String, Failure> {
     answer[member]
         .as_str()
         .map(str::to_owned)

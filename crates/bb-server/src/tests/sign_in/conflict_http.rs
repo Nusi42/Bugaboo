@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use super::fields_http::FIELDS;
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, PROJECTS, Site, ok};
+use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 
 /// How far past the current version a stale save is.
@@ -88,12 +88,6 @@ impl Save {
     }
 }
 
-fn text<'a>(value: &'a Value, member: &str) -> Result<&'a str, Failure> {
-    value[member]
-        .as_str()
-        .ok_or_else(|| format!("no {member} in {value}").into())
-}
-
 async fn made(browser: &mut Browser, path: &str, body: Value) -> Result<Value, Failure> {
     Ok(ok(&browser.send("POST", path, Some(body)).await?)?.clone())
 }
@@ -140,7 +134,7 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
             let group = made(ada, "/api/v1/groups", json!({"name": "Backend"})).await?;
             Save::new(
                 "PATCH",
-                format!("/api/v1/groups/{}", text(&group, "id")?),
+                format!("/api/v1/groups/{}", text_in(&group, "id")?),
                 json!({"name": "Frontend"}),
                 &group["version"],
             )
@@ -150,7 +144,7 @@ async fn prepare_settings(id: &str, ada: &mut Browser) -> Result<Save, Failure> 
             let one = &types["items"][0];
             Save::new(
                 "PATCH",
-                format!("/api/v1/issue-types/{}", text(one, "id")?),
+                format!("/api/v1/issue-types/{}", text_in(one, "id")?),
                 json!({"name": "Defect"}),
                 &one["version"],
             )
@@ -170,7 +164,7 @@ async fn prepare_records(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
             .await?;
             Save::new(
                 "PATCH",
-                format!("{PROJECTS}/{}", text(&project, "id")?),
+                format!("{PROJECTS}/{}", text_in(&project, "id")?),
                 json!({"name": "Gamma Corp"}),
                 &project["version"],
             )
@@ -180,7 +174,7 @@ async fn prepare_records(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
             let one = &kinds["items"][0];
             Save::new(
                 "PATCH",
-                format!("/api/v1/relation-kinds/{}", text(one, "id")?),
+                format!("/api/v1/relation-kinds/{}", text_in(one, "id")?),
                 json!({"forward": "holds up"}),
                 &one["version"],
             )
@@ -191,7 +185,7 @@ async fn prepare_records(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
                 .as_array()
                 .and_then(|items| items.iter().find(|role| role["starting"] == "viewer"))
                 .ok_or("no Viewer role")?;
-            let path = format!("/api/v1/roles/{}", text(role, "id")?);
+            let path = format!("/api/v1/roles/{}", text_in(role, "id")?);
             if id == "changeRole" {
                 Save::new("PATCH", path, json!({"name": "Looker"}), &role["version"])
             } else {
@@ -216,9 +210,9 @@ async fn prepare_fields(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
                 }),
             )
             .await?;
-            let key = text(&field, "id")?;
-            let minor = text(&field["choices"][0], "id")?;
-            let major = text(&field["choices"][1], "id")?;
+            let key = text_in(&field, "id")?;
+            let minor = text_in(&field["choices"][0], "id")?;
+            let major = text_in(&field["choices"][1], "id")?;
             let base = format!("{FIELDS}/{key}");
             let version = &field["version"];
             let (method, path, body) = match id {
@@ -265,14 +259,14 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             let issue = ok(&site.make(ada, "Commented").await?)?.clone();
             let comment = made(
                 ada,
-                &format!("{ISSUES}/{}/comments", text(&issue, "key")?),
+                &format!("{ISSUES}/{}/comments", text_in(&issue, "key")?),
                 json!({"text": "First"}),
             )
             .await?;
-            let record = json!({"kind": "comment", "id": text(&comment, "id")?});
+            let record = json!({"kind": "comment", "id": text_in(&comment, "id")?});
             Ok(Save::new(
                 "PATCH",
-                format!("/api/v1/comments/{}", text(&comment, "id")?),
+                format!("/api/v1/comments/{}", text_in(&comment, "id")?),
                 json!({"text": "Second"}),
                 &comment["version"],
             )?
@@ -284,8 +278,8 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
         | "setIssueParent"
         | "saveIssueFieldText" => {
             let issue = ok(&site.make(ada, "An issue").await?)?.clone();
-            let key = text(&issue, "key")?;
-            let record = json!({"kind": "issue", "id": text(&issue, "id")?});
+            let key = text_in(&issue, "key")?;
+            let record = json!({"kind": "issue", "id": text_in(&issue, "id")?});
             let version = &issue["version"];
             match id {
                 "changeIssue" => Save::new(
@@ -307,7 +301,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                     Save::new(
                         "POST",
                         format!("{ISSUES}/{key}/move"),
-                        json!({"project": text(&other, "id")?}),
+                        json!({"project": text_in(&other, "id")?}),
                         version,
                     )
                 }
@@ -316,7 +310,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                     Save::new(
                         "PUT",
                         format!("{ISSUES}/{key}/parent"),
-                        json!({"parent": text(&parent, "key")?}),
+                        json!({"parent": text_in(&parent, "key")?}),
                         version,
                     )
                 }
@@ -327,7 +321,7 @@ async fn prepare_issues(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                         json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
                     )
                     .await?;
-                    let field = text(&notes, "id")?;
+                    let field = text_in(&notes, "id")?;
                     Ok(Save::new(
                         "PUT",
                         format!("{ISSUES}/{key}/fields/{field}/text"),
@@ -353,7 +347,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             .await?;
             Save::new(
                 "PATCH",
-                format!("/api/v1/label-groups/{}", text(&group, "id")?),
+                format!("/api/v1/label-groups/{}", text_in(&group, "id")?),
                 json!({"name": "Part"}),
                 &group["version"],
             )
@@ -365,7 +359,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                 json!({"name": format!("ui for {id}"), "group": null}),
             )
             .await?;
-            let path = format!("/api/v1/labels/{}", text(&label, "id")?);
+            let path = format!("/api/v1/labels/{}", text_in(&label, "id")?);
             if id == "changeLabel" {
                 return Save::new("PATCH", path, json!({"name": "screen"}), &label["version"]);
             }
@@ -378,7 +372,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             Save::new(
                 "POST",
                 format!("{path}/combine"),
-                json!({"into": text(&other, "id")?, "into_version": other["version"]}),
+                json!({"into": text_in(&other, "id")?, "into_version": other["version"]}),
                 &label["version"],
             )
         }
@@ -387,7 +381,7 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
             for name in ["slow", "fast"] {
                 made(
                     ada,
-                    &format!("{ISSUES}/{}/tags", text(&issue, "key")?),
+                    &format!("{ISSUES}/{}/tags", text_in(&issue, "key")?),
                     json!({"name": name}),
                 )
                 .await?;
@@ -401,14 +395,14 @@ async fn prepare_labels(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<
                     .ok_or_else(|| Failure::from(format!("no tag {name} in {list}")))
             };
             let (slow, fast) = (find("slow")?, find("fast")?);
-            let path = format!("/api/v1/tags/{}", text(&slow, "id")?);
+            let path = format!("/api/v1/tags/{}", text_in(&slow, "id")?);
             if id == "changeTag" {
                 Save::new("PATCH", path, json!({"name": "sluggish"}), &slow["version"])
             } else {
                 Save::new(
                     "POST",
                     format!("{path}/combine"),
-                    json!({"into": text(&fast, "id")?, "into_version": fast["version"]}),
+                    json!({"into": text_in(&fast, "id")?, "into_version": fast["version"]}),
                     &slow["version"],
                 )
             }
@@ -426,10 +420,10 @@ async fn prepare_layout(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
                 json!({"short_name": "DELTA", "name": "Delta"}),
             )
             .await?;
-            let editor = customize(ada, text(&project, "id")?).await?;
+            let editor = customize(ada, &text_in(&project, "id")?).await?;
             Ok(Save::new(
                 "DELETE",
-                format!("{LAYOUTS}/{}", text(&editor["layout"], "id")?),
+                format!("{LAYOUTS}/{}", text_in(&editor["layout"], "id")?),
                 Value::Null,
                 &editor["layout"]["version"],
             )?
@@ -437,7 +431,7 @@ async fn prepare_layout(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
         }
         "saveLayout" => {
             let editor = customize(ada, "ACME").await?;
-            let layout = text(&editor["layout"], "id")?;
+            let layout = text_in(&editor["layout"], "id")?;
             Ok(Save::new(
                 "PUT",
                 format!("{LAYOUTS}/{layout}"),
@@ -510,7 +504,7 @@ async fn iss_17_a_combine_with_only_a_stale_into_version_names_the_record_combin
             let renamed = ada
                 .send(
                     "PATCH",
-                    &format!("/api/v1/{kind}/{}", text(&save.body, "into")?),
+                    &format!("/api/v1/{kind}/{}", text_in(&save.body, "into")?),
                     Some(json!({"version": save.body["into_version"], "name": name})),
                 )
                 .await?;
