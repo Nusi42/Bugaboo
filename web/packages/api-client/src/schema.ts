@@ -5832,6 +5832,12 @@ export interface components {
     Problem: {
       /** @description What went wrong. */
       code: components["schemas"]["ErrorCode"];
+      /**
+       * @description The field a `field.*` refusal is about: the word of a built-in field or the ID of an own
+       *     field, as the client sent it. Only a field the person may fill in is named, so it reveals
+       *     nothing.
+       */
+      field?: string | null;
       /** @description The key of the message to show, in the message catalog. */
       message_key: string;
       /** @description Values for the placeholders of the message. Empty today: error messages have none. */

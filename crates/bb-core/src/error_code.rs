@@ -199,6 +199,11 @@ pub struct Problem {
     /// The ID of the request, also in the `x-request-id` header, to quote when asking for help.
     #[serde(skip_serializing_if = "Option::is_none")]
     request_id: Option<String>,
+    /// The field a `field.*` refusal is about: the word of a built-in field or the ID of an own
+    /// field, as the client sent it. Only a field the person may fill in is named, so it reveals
+    /// nothing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    field: Option<String>,
 }
 
 impl Problem {
@@ -213,7 +218,15 @@ impl Problem {
             message_key: code.message(),
             params: BTreeMap::new(),
             request_id: None,
+            field: None,
         }
+    }
+
+    /// Names the field a `field.*` refusal is about, so the client shows it at that field.
+    #[must_use]
+    pub fn with_field(mut self, field: impl Into<String>) -> Self {
+        self.field = Some(field.into());
+        self
     }
 
     /// Adds the ID of the request, so a person can quote it to support. Set by `bb-api`.
@@ -245,6 +258,12 @@ impl Problem {
     #[must_use]
     pub fn title(&self) -> &str {
         &self.title
+    }
+
+    /// The field the refusal is about, if it names one.
+    #[must_use]
+    pub fn field(&self) -> Option<&str> {
+        self.field.as_deref()
     }
 
     /// The ID of the request, if `bb-api` set one.
