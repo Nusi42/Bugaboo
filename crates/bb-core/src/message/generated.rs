@@ -707,6 +707,9 @@ pub const COMMENTS_ADD: MessageKey = MessageKey::new("comments.add");
 /// The message `comments.delete`.
 pub const COMMENTS_DELETE: MessageKey = MessageKey::new("comments.delete");
 
+/// The message `comments.delete-other`.
+pub const COMMENTS_DELETE_OTHER: MessageKey = MessageKey::new("comments.delete-other");
+
 /// The message `comments.deleted`.
 pub const COMMENTS_DELETED: MessageKey = MessageKey::new("comments.deleted");
 
@@ -8071,6 +8074,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("code-app.turned-off", "The code app is switched off."),
     ("comments.add", "Comment"),
     ("comments.delete", "Delete your comment"),
+    ("comments.delete-other", "Delete the comment"),
     ("comments.deleted", "The comment is deleted."),
     ("comments.edit", "Edit your comment"),
     ("comments.edited", "edited"),

@@ -22,6 +22,7 @@ export const messages = {
   "comments.edited": "edited",
   "comments.edit": "Edit your comment",
   "comments.delete": "Delete your comment",
+  "comments.delete-other": "Delete the comment",
   "comments.deleted": "The comment is deleted.",
   "comments.versions": "Earlier versions",
   "comments.versions-hide": "Hide earlier versions",
