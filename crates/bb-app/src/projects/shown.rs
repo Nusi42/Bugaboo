@@ -74,6 +74,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             all: Vec::new(),
             own: Vec::new(),
             person: actor.person.id,
+            with_trashed: false,
         };
         for project in shown.everything() {
             let held = self
@@ -100,6 +101,7 @@ impl Shown {
             all: self.projects.keys().copied().collect(),
             own: Vec::new(),
             person: self.person,
+            with_trashed: true,
         }
     }
 

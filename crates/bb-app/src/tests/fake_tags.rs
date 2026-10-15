@@ -137,7 +137,7 @@ impl TagStore for FakeStore {
                         link.tag == tag.id
                             && state.issues.iter().any(|issue| {
                                 issue.id == link.issue
-                                    && issue.deleted_at.is_none()
+                                    && (sight.with_trashed || issue.deleted_at.is_none())
                                     && (sight.all.contains(&issue.project)
                                         || (sight.own.contains(&issue.project)
                                             && issue.reported_by == sight.person))

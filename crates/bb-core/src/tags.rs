@@ -54,6 +54,8 @@ pub struct IssueSight {
     pub own: Vec<ProjectId>,
     /// The viewer.
     pub person: UserId,
+    /// Also count the issues in the trash (to ask whether a tag is used at all, never to show).
+    pub with_trashed: bool,
 }
 
 /// A free word anyone who may change an issue puts on it (TAG-01).

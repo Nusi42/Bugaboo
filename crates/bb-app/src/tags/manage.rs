@@ -101,7 +101,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The tags the person may know of: one limited to a project they see, one used on an issue they
-    /// read, and one no issue has any more (so it can still be cleaned up). A tag that only issues
+    /// read, and an unlimited one no issue has any more, also none in the trash (so it can still be cleaned up). A tag that only issues
     /// or projects they do not see know is not there for them (SEC-06).
     async fn known_tags(
         &self,
@@ -127,7 +127,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let limited = catalogue.projects_of(tag.id);
                 limited.iter().any(|project| shown.get(*project).is_some())
                     || used.iter().any(|found| found.id == tag.id)
-                    || !used_anywhere.iter().any(|found| found.id == tag.id)
+                    || (limited.is_empty() && !used_anywhere.iter().any(|found| found.id == tag.id))
             })
             .map(|tag| tag.id)
             .collect())

@@ -194,6 +194,46 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
             .send("DELETE", &format!("{ISSUES}/{open}/tags/{unused}"), None)
             .await?)?;
         assert_eq!(names(&made, "tags"), ["open-tag"]);
+        // An unused tag limited to the hidden project only, and a tag that only an issue in the
+        // trash of the hidden project has, are not there for the manager either.
+        let limited = tag(&mut ada, &open, "limited-secret").await?;
+        let limited = limited["tags"]
+            .as_array()
+            .and_then(|tags| tags.iter().find(|tag| tag["name"] == "limited-secret"))
+            .and_then(|tag| tag["id"].as_str())
+            .ok_or("no tag")?
+            .to_owned();
+        let all = ada.send("GET", TAGS, None).await?;
+        let version = ok(&all)?["items"]
+            .as_array()
+            .and_then(|tags| tags.iter().find(|tag| tag["id"] == limited.as_str()))
+            .map(|tag| tag["version"].clone())
+            .ok_or("no version")?;
+        ok(&ada
+            .send(
+                "PATCH",
+                &format!("{TAGS}/{limited}"),
+                Some(json!({"version": version, "projects": [secret]})),
+            )
+            .await?)?;
+        ok(&ada
+            .send("DELETE", &format!("{ISSUES}/{open}/tags/{limited}"), None)
+            .await?)?;
+        let other = ok(&ada
+            .send(
+                "POST",
+                &format!("{PROJECTS}/{secret}/issues"),
+                Some(site.new_issue("Another secret")),
+            )
+            .await?)?["key"]
+            .as_str()
+            .ok_or("no key")?
+            .to_owned();
+        tag(&mut ada, &other, "trashed-secret").await?;
+        let gone = ada
+            .send("DELETE", &format!("{ISSUES}/{other}"), None)
+            .await?;
+        assert!(gone.status.is_success(), "{}", gone.body);
         let (mut mia, member) = person_with_levels(
             &site,
             &rig,

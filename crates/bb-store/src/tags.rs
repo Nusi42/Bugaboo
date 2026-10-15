@@ -383,7 +383,11 @@ impl TagStore for AuthStorage {
                 Expr::col((IssueRow::Table, IssueRow::Id))
                     .equals((IssueTagRow::Table, IssueTagRow::Issue)),
             )
-            .and_where(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
+            .cond_where(if sight.with_trashed {
+                Cond::all()
+            } else {
+                Cond::all().add(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
+            })
             .cond_where(
                 Cond::any()
                     .add(
