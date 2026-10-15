@@ -329,6 +329,9 @@ pub async fn ask_to_finish<S: AuthStore>(
     Ok(access.authorize(Done))
 }
 
+/// How often a take-over is tried again when other writers keep getting in the way.
+const TAKE_OVER_ATTEMPTS: usize = 5;
+
 /// Takes the editing over (*Edit anyway*). The person who was editing keeps their text as their
 /// draft and reads at their next heartbeat that the editing was taken over.
 ///
@@ -360,33 +363,43 @@ pub async fn edit_anyway<S: AuthStore>(
         }],
     )?;
     let lock = Arc::new(wanted.clone());
-    ctx.store()
-        .record_change(&event, {
-            let lock = Arc::clone(&lock);
-            move |transaction| {
-                Box::pin(async move {
-                    let former = S::replace_edit_lock(transaction, &lock).await?;
-                    // Somebody else's lease that was still running is told; an expired one, or
-                    // one of the person's own, is not.
-                    if let Some(former) =
-                        former.filter(|former| !former.has_expired(now) && former.holder != me)
-                    {
-                        let notice = EditNotice {
-                            recipient: former.holder,
-                            record: former.record,
-                            part: former.part,
-                            kind: NoticeKind::TakenOver,
-                            from: me,
-                            at: now,
-                        };
-                        S::put_edit_notice(transaction, &notice).await?;
-                    }
-                    Ok(())
-                })
-            }
-        })
-        .await
-        .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+    // Ten people may take over one lock at once; on a database that lets writers run side by
+    // side one of them finds the row changed under it. The change was undone, so it is tried
+    // again from the start, as taking a lock is.
+    let mut tries_left = TAKE_OVER_ATTEMPTS;
+    loop {
+        let done = ctx
+            .store()
+            .record_change(&event, {
+                let lock = Arc::clone(&lock);
+                move |transaction| {
+                    Box::pin(async move {
+                        let former = S::replace_edit_lock(transaction, &lock).await?;
+                        // Somebody else's lease that was still running is told; an expired one,
+                        // or one of the person's own, is not.
+                        if let Some(former) =
+                            former.filter(|former| !former.has_expired(now) && former.holder != me)
+                        {
+                            let notice = EditNotice {
+                                recipient: former.holder,
+                                record: former.record,
+                                part: former.part,
+                                kind: NoticeKind::TakenOver,
+                                from: me,
+                                at: now,
+                            };
+                            S::put_edit_notice(transaction, &notice).await?;
+                        }
+                        Ok(())
+                    })
+                }
+            })
+            .await;
+        match done {
+            Err(error) if S::is_contended(&error) && tries_left > 1 => tries_left -= 1,
+            other => break other.map_err(|error| change_failed::<S>(&error, Stops::NONE))?,
+        }
+    }
     Ok(access.authorize(LockOutcome::Taken(Ctx::<S>::taken(&wanted))))
 }
 

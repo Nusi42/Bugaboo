@@ -105,6 +105,10 @@ impl AuthStore for AuthStorage {
         matches!(error, StoreError::Aborted)
     }
 
+    fn is_contended(error: &StoreError) -> bool {
+        matches!(error, StoreError::Contended)
+    }
+
     fn refused(refusal: bb_policy::guards::Refusal) -> StoreError {
         StoreError::Refused(refusal)
     }

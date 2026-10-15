@@ -343,6 +343,10 @@ pub trait AuthStore:
     /// Whether the error is the one from [`Self::aborted`].
     fn is_aborted(error: &Self::Error) -> bool;
 
+    /// Whether the error says that other writers kept changing the same row, so the change may be
+    /// tried again from the start (it was undone).
+    fn is_contended(error: &Self::Error) -> bool;
+
     /// The error a change returns when a rule of the policy engine stops it (the last
     /// administrator, no escalation): nothing it wrote stays, and no event is appended.
     fn refused(refusal: bb_policy::guards::Refusal) -> Self::Error;
