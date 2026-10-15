@@ -52,7 +52,7 @@ export function ChangeProjectForm({ project, onSaved }: ChangeProjectFormProps) 
         <p {...partOf(part.muted)}>{t("projects.short-name-fixed")}</p>
       )}
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
-      {saved ? <Alert tone={alertTone.success}>{t("projects.saved")}</Alert> : null}
+      {saved ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={change.isPending}>{t("common.save")}</SubmitButton>
       </div>

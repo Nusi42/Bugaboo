@@ -38,9 +38,7 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
     .getByLabel(t("bulk.field-label"), { exact: true })
     .selectOption({ label: "release" });
   await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
-  await expect(
-    dialog.getByText(t("issues.preview-summary", { changed: 2, skipped: 0 })),
-  ).toBeVisible();
+  await expect(dialog.getByText(t("preview.summary", { changed: 2, skipped: 0 }))).toBeVisible();
   await expect(
     dialog.getByText(t("bulk.line-changes", { field: t("issue-field.labels"), after: "release" })),
   ).toHaveCount(2);
@@ -65,7 +63,7 @@ test("iss_09 the status of two ticked issues is changed and the preview names ea
     label: t("status.done"),
   });
   await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
-  const list = dialog.getByRole("list", { name: t("issues.preview-label"), exact: true });
+  const list = dialog.getByRole("list", { name: t("preview.label"), exact: true });
   await expect(list.getByText("WEB-1", { exact: true })).toBeVisible();
   await expect(list.getByText("WEB-2", { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
@@ -91,9 +89,7 @@ test("iss_09 an issue the person may not change is skipped with the reason and n
     label: t("priority.high"),
   });
   await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
-  await expect(
-    dialog.getByText(t("issues.preview-summary", { changed: 0, skipped: 2 })),
-  ).toBeVisible();
+  await expect(dialog.getByText(t("preview.summary", { changed: 0, skipped: 2 }))).toBeVisible();
   await expect(dialog.getByText(t("bulk-skip.not-allowed"))).toHaveCount(2);
   await expect(
     dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }),

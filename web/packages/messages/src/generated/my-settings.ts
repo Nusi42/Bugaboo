@@ -43,7 +43,6 @@ export const messages = {
   "access-keys.expires-help":
     "Without another day, the key runs out in {days, plural, one {# day} other {# days}}. The latest day is {latest}.",
   "access-keys.submit": "Make the key",
-  "access-keys.cancel": "Cancel",
   "access-keys.shown-title": "Your new access key",
   "access-keys.shown-once":
     "Copy the key now and keep it safe. Bugaboo shows it only this once and cannot show it again.",

@@ -24,7 +24,6 @@ export const messages = {
   "bulk.apply-delete": "{count, plural, one {Delete # issue} other {Delete # issues}}",
   "bulk.dialog-text":
     "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
-  "bulk.value-none": "nothing",
   "bulk.line-changes": "{field}: {after}",
   "bulk.line-relation": "This issue · {name} · {issue}",
   "bulk.line-delete": "Is deleted",

@@ -116,7 +116,7 @@ export function Send({ draft, needOne, problem, isPending, onCancel }: SendProps
       {problem === null ? null : <Alert tone={alertTone.danger}>{problem}</Alert>}
       <div {...partOf(part.row, { variants: ["stretch"] })}>
         <SubmitButton isPending={isPending}>{t("access-keys.submit")}</SubmitButton>
-        <Button onPress={onCancel}>{t("access-keys.cancel")}</Button>
+        <Button onPress={onCancel}>{t("common.cancel")}</Button>
       </div>
     </>
   );

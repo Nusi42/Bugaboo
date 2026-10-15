@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Form, partOf, part } from "@bugaboo/ui";
 
 import { fieldOf, messageOf } from "../../shared/errors.ts";
+import { useFieldName } from "../fields/index.ts";
 import { DraftOffer } from "./DraftOffer.tsx";
 import { NewIssueActions } from "./NewIssueActions.tsx";
 import { NewIssueFields } from "./NewIssueFields.tsx";
@@ -12,6 +13,21 @@ export interface NewIssueFormProps {
   /** Called with the readable ID and the project when an issue was made and the dialog is done. */
   readonly onMade: (key: string, project: string) => void;
   readonly onClose: () => void;
+}
+
+/** What was refused; when it is about a field the form does not show, the field is named. */
+function Refused({
+  error,
+  project,
+}: {
+  readonly error: unknown;
+  readonly project: string | undefined;
+}) {
+  const field = fieldOf(error);
+  const name = useFieldName(project, field ?? "");
+  return field === undefined
+    ? messageOf(error)
+    : t("issues.refused-at-field", { field: name, reason: messageOf(error) });
 }
 
 /**
@@ -57,7 +73,9 @@ export function NewIssueForm({ onMade, onClose }: NewIssueFormProps) {
         />
       )}
       {form.error === null || atField ? null : (
-        <Alert tone={alertTone.danger}>{messageOf(form.error)}</Alert>
+        <Alert tone={alertTone.danger}>
+          <Refused error={form.error} project={project?.shortName} />
+        </Alert>
       )}
       <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
       <NewIssueActions form={form} onMade={onMade} onClose={onClose} />

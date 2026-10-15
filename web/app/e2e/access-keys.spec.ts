@@ -212,7 +212,7 @@ test("auth_07 the form asks for a name, a permission when single ones are chosen
   await expect(page.getByText(t("error.auth.wrong-credentials"))).toBeVisible();
   await expect(page.getByRole("region", { name: t("access-keys.shown-title") })).toHaveCount(0);
   await expectGoodInEveryTheme(page);
-  await form.getByRole("button", { name: t("access-keys.cancel") }).click();
+  await form.getByRole("button", { name: t("common.cancel") }).click();
   await expect(form).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: t("access-keys.make"), exact: true }),

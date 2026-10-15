@@ -35,7 +35,7 @@ export async function previewDoneOnScreen(page: Page, count: number) {
     .selectOption({ label: t("status.done") });
   await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
   await expect(
-    dialog.getByText(t("issues.preview-summary", { changed: count, skipped: 0 })),
+    dialog.getByText(t("preview.summary", { changed: count, skipped: 0 })),
   ).toBeVisible();
   return dialog;
 }

@@ -2,9 +2,6 @@
 
 use super::{Message, MessageKey, Value};
 
-/// The message `access-keys.cancel`.
-pub const ACCESS_KEYS_CANCEL: MessageKey = MessageKey::new("access-keys.cancel");
-
 /// The message `access-keys.choice.everything`.
 pub const ACCESS_KEYS_CHOICE_EVERYTHING: MessageKey =
     MessageKey::new("access-keys.choice.everything");
@@ -426,9 +423,6 @@ pub const BULK_SKIPPED_LIST: MessageKey = MessageKey::new("bulk.skipped-list");
 /// The message `bulk.stopped`.
 pub const BULK_STOPPED: MessageKey = MessageKey::new("bulk.stopped");
 
-/// The message `bulk.value-none`.
-pub const BULK_VALUE_NONE: MessageKey = MessageKey::new("bulk.value-none");
-
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
 
@@ -757,6 +751,9 @@ pub const COMMON_ISSUE_ID: MessageKey = MessageKey::new("common.issue-id");
 
 /// The message `common.loading`.
 pub const COMMON_LOADING: MessageKey = MessageKey::new("common.loading");
+
+/// The message `common.nothing`.
+pub const COMMON_NOTHING: MessageKey = MessageKey::new("common.nothing");
 
 /// The message `common.off`.
 pub const COMMON_OFF: MessageKey = MessageKey::new("common.off");
@@ -1592,9 +1589,6 @@ pub const GROUPS_NOTHING: MessageKey = MessageKey::new("groups.nothing");
 /// The message `groups.remove`.
 pub const GROUPS_REMOVE: MessageKey = MessageKey::new("groups.remove");
 
-/// The message `groups.saved`.
-pub const GROUPS_SAVED: MessageKey = MessageKey::new("groups.saved");
-
 /// The message `groups.search`.
 pub const GROUPS_SEARCH: MessageKey = MessageKey::new("groups.search");
 
@@ -1927,9 +1921,6 @@ pub const ISSUES_CREATE: MessageKey = MessageKey::new("issues.create");
 /// The message `issues.create-another`.
 pub const ISSUES_CREATE_ANOTHER: MessageKey = MessageKey::new("issues.create-another");
 
-/// The message `issues.create-another-why`.
-pub const ISSUES_CREATE_ANOTHER_WHY: MessageKey = MessageKey::new("issues.create-another-why");
-
 /// The message `issues.create-first`.
 pub const ISSUES_CREATE_FIRST: MessageKey = MessageKey::new("issues.create-first");
 
@@ -1969,6 +1960,15 @@ pub const ISSUES_LIST: MessageKey = MessageKey::new("issues.list");
 /// The message `issues.lost-ran-out`.
 pub const ISSUES_LOST_RAN_OUT: MessageKey = MessageKey::new("issues.lost-ran-out");
 
+/// The message `issues.missing-project`.
+pub const ISSUES_MISSING_PROJECT: MessageKey = MessageKey::new("issues.missing-project");
+
+/// The message `issues.missing-title`.
+pub const ISSUES_MISSING_TITLE: MessageKey = MessageKey::new("issues.missing-title");
+
+/// The message `issues.missing-type`.
+pub const ISSUES_MISSING_TYPE: MessageKey = MessageKey::new("issues.missing-type");
+
 /// The message `issues.more`.
 pub const ISSUES_MORE: MessageKey = MessageKey::new("issues.more");
 
@@ -1989,12 +1989,6 @@ pub const ISSUES_OF_PROJECT: MessageKey = MessageKey::new("issues.of-project");
 
 /// The message `issues.open-full-page`.
 pub const ISSUES_OPEN_FULL_PAGE: MessageKey = MessageKey::new("issues.open-full-page");
-
-/// The message `issues.preview-label`.
-pub const ISSUES_PREVIEW_LABEL: MessageKey = MessageKey::new("issues.preview-label");
-
-/// The message `issues.preview-nothing`.
-pub const ISSUES_PREVIEW_NOTHING: MessageKey = MessageKey::new("issues.preview-nothing");
 
 /// The message `issues.project`.
 pub const ISSUES_PROJECT: MessageKey = MessageKey::new("issues.project");
@@ -2136,9 +2130,6 @@ pub const LABELS_OFFER_AGAIN: MessageKey = MessageKey::new("labels.offer-again")
 
 /// The message `labels.pick-label`.
 pub const LABELS_PICK_LABEL: MessageKey = MessageKey::new("labels.pick-label");
-
-/// The message `labels.preview-no-names`.
-pub const LABELS_PREVIEW_NO_NAMES: MessageKey = MessageKey::new("labels.preview-no-names");
 
 /// The message `labels.preview-truncated`.
 pub const LABELS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("labels.preview-truncated");
@@ -2714,6 +2705,12 @@ pub const PERSON_ROLES_WHERE: MessageKey = MessageKey::new("person.roles-where")
 /// The message `person.since`.
 pub const PERSON_SINCE: MessageKey = MessageKey::new("person.since");
 
+/// The message `preview.label`.
+pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
+
+/// The message `preview.nothing`.
+pub const PREVIEW_NOTHING: MessageKey = MessageKey::new("preview.nothing");
+
 /// The message `priority.critical`.
 pub const PRIORITY_CRITICAL: MessageKey = MessageKey::new("priority.critical");
 
@@ -2849,9 +2846,6 @@ pub const PROJECTS_PREVIEW_NOTHING: MessageKey = MessageKey::new("projects.previ
 
 /// The message `projects.preview-truncated`.
 pub const PROJECTS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("projects.preview-truncated");
-
-/// The message `projects.saved`.
-pub const PROJECTS_SAVED: MessageKey = MessageKey::new("projects.saved");
 
 /// The message `projects.search`.
 pub const PROJECTS_SEARCH: MessageKey = MessageKey::new("projects.search");
@@ -3082,9 +3076,6 @@ pub const ROLES_RESET: MessageKey = MessageKey::new("roles.reset");
 
 /// The message `roles.reset-help`.
 pub const ROLES_RESET_HELP: MessageKey = MessageKey::new("roles.reset-help");
-
-/// The message `roles.saved`.
-pub const ROLES_SAVED: MessageKey = MessageKey::new("roles.saved");
 
 /// The message `roles.start-empty`.
 pub const ROLES_START_EMPTY: MessageKey = MessageKey::new("roles.start-empty");
@@ -3962,9 +3953,6 @@ pub const SIGN_UP_POLICY_DOMAINS_HELP: MessageKey = MessageKey::new("sign-up-pol
 
 /// The message `sign-up-policy.intro`.
 pub const SIGN_UP_POLICY_INTRO: MessageKey = MessageKey::new("sign-up-policy.intro");
-
-/// The message `sign-up-policy.saved`.
-pub const SIGN_UP_POLICY_SAVED: MessageKey = MessageKey::new("sign-up-policy.saved");
 
 /// The message `sign-up-policy.switch`.
 pub const SIGN_UP_POLICY_SWITCH: MessageKey = MessageKey::new("sign-up-policy.switch");
@@ -5661,24 +5649,27 @@ pub fn issues_page_title(project: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.preview-summary`.
-#[must_use]
-pub fn issues_preview_summary(changed: i64, skipped: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.preview-summary"),
-        vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
-        ],
-    )
-}
-
 /// The message `issues.read-only`.
 #[must_use]
 pub fn issues_read_only(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.read-only"),
         vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `issues.refused-at-field`.
+#[must_use]
+pub fn issues_refused_at_field(
+    field: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.refused-at-field"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
     )
 }
 
@@ -6278,6 +6269,18 @@ pub fn person_roles_none(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.roles-none"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `preview.summary`.
+#[must_use]
+pub fn preview_summary(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("preview.summary"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
     )
 }
 
@@ -7498,7 +7501,6 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
 
 /// Every message, sorted by key.
 pub(super) const CATALOG: &[(&str, &str)] = &[
-    ("access-keys.cancel", "Cancel"),
     ("access-keys.choice.everything", "Everything I can do"),
     ("access-keys.choice.see-and-change", "See and change"),
     ("access-keys.choice.see-only", "See only"),
@@ -7798,7 +7800,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "bulk.title",
         "{action}: {count, plural, one {# issue} other {# issues}}",
     ),
-    ("bulk.value-none", "nothing"),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),
@@ -8098,6 +8099,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("common.done", "Done"),
     ("common.issue-id", "Issue ID, for example WEB-142"),
     ("common.loading", "Loading…"),
+    ("common.nothing", "nothing"),
     ("common.off", "Off"),
     ("common.on", "On"),
     ("common.save", "Save"),
@@ -8247,7 +8249,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("editing.this-layout", "this layout"),
     (
         "error.access.cannot-lift",
-        "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
+        "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
     ),
     ("error.access.forbidden", "You are not allowed to do that."),
     (
@@ -8317,7 +8319,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.edit.version-changed",
-        "Not saved yet: somebody changed this after you started. Your text is still here.",
+        "Not saved yet: someone changed this after you started. Your text is still here.",
     ),
     (
         "error.field.no-match",
@@ -8379,7 +8381,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.project.move-lifts-no-access",
-        "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+        "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
     ),
     (
         "error.project.preview-changed",
@@ -8429,7 +8431,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("error.resource.not-found", "We could not find that."),
     (
         "error.role.in-use",
-        "Somebody has this role. Choose the role that takes its place before you delete it.",
+        "Someone has this role. Choose the role that takes its place before you delete it.",
     ),
     (
         "error.server.internal",
@@ -8800,7 +8802,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("groups.remove", "Take out"),
     ("groups.remove-name", "Take out {name} from the group"),
     ("groups.removed", "{name} is out of the group {group}."),
-    ("groups.saved", "Saved."),
     ("groups.search", "Search groups"),
     ("groups.used", "Used {places}."),
     (
@@ -9015,10 +9016,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.copy-link-of", "{key}, copy the address"),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
-    (
-        "issues.create-another-why",
-        "Write a title first, then you can create and start another.",
-    ),
     ("issues.create-first", "Create an issue"),
     ("issues.created", "{key} was created."),
     ("issues.created-on", "Created"),
@@ -9058,6 +9055,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "issues.lost-taken-over",
         "Not saved yet: {name} took over the editing. Your text is kept.",
     ),
+    (
+        "issues.missing-project",
+        "Choose a project first, then you can create and start another.",
+    ),
+    (
+        "issues.missing-title",
+        "Write a title first, then you can create and start another.",
+    ),
+    (
+        "issues.missing-type",
+        "Choose an issue type first, then you can create and start another.",
+    ),
     ("issues.more", "More"),
     ("issues.more-issues", "Show more issues"),
     ("issues.new", "New issue"),
@@ -9066,17 +9075,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.of-project", "Issues of this project"),
     ("issues.open-full-page", "Open full page"),
     ("issues.page-title", "Issues in {project}"),
-    ("issues.preview-label", "Issues in this change"),
-    ("issues.preview-nothing", "None of the issues would change."),
-    (
-        "issues.preview-summary",
-        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
-    ),
     ("issues.project", "Project"),
     (
         "issues.read-only",
         "Only people whose role allows it can change {field}.",
     ),
+    ("issues.refused-at-field", "{field}: {reason}"),
     (
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
@@ -9198,7 +9202,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.offer-again", "Offer again"),
     ("labels.pick-label", "Choose a label"),
     ("labels.preview-line", "From {before} to {after}"),
-    ("labels.preview-no-names", "nothing"),
     (
         "labels.preview-truncated",
         "More issues change than this list shows.",
@@ -9290,12 +9293,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "layouts.limited-form",
-        "{role} cannot fill in {field} because of its field permissions.",
+        "{role} cannot fill in {field}: the field permissions do not allow it.",
     ),
     ("layouts.limited-link", "Open field permissions"),
     (
         "layouts.limited-page",
-        "{role} cannot see {field} because of its field permissions.",
+        "{role} cannot see {field}: the field permissions hide it.",
     ),
     (
         "layouts.lost",
@@ -9408,7 +9411,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
-        "{lost} The organization always keeps somebody who can manage roles, but it may no longer be you.",
+        "{lost} The organization always keeps someone who can manage roles, but it may no longer be you.",
     ),
     (
         "own.ask-title",
@@ -9556,7 +9559,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("permission.delete-issues", "Delete issues into the trash"),
     (
         "permission.edit-anyway",
-        "Take over text somebody else is editing; their text is kept",
+        "Take over text someone else is editing; their text is kept",
     ),
     ("permission.make-issues", "Make issues"),
     ("permission.make-projects", "Make projects at the top level"),
@@ -9617,6 +9620,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
     ),
     ("person.since", "Account made"),
+    ("preview.label", "Issues in this change"),
+    ("preview.nothing", "None of the issues would change."),
+    (
+        "preview.summary",
+        "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
+    ),
     ("priority.critical", "Critical"),
     ("priority.high", "High"),
     ("priority.low", "Low"),
@@ -9721,7 +9730,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.preview-blocked", "This move is not allowed."),
     (
         "projects.preview-blocked-out-of-sight",
-        "Something in a project you cannot see also stands in the way. Ask somebody who sees more to look at this move.",
+        "Something in a project you cannot see also stands in the way. Ask someone who sees more to look at this move.",
     ),
     ("projects.preview-heading", "What changes"),
     (
@@ -9742,7 +9751,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "projects.preview-truncated",
         "There are more changes than this list shows.",
     ),
-    ("projects.saved", "Saved."),
     ("projects.search", "Search projects"),
     ("projects.settings-back", "Back to the project"),
     ("projects.settings-link", "Project settings"),
@@ -9911,7 +9919,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The permissions and the two-step switch of {name} go back to what they were at the start. The name stays. What was changed since is lost.",
     ),
     ("roles.reset-title", "Reset {name}?"),
-    ("roles.saved", "Saved."),
     (
         "roles.second-step-gap",
         "{count, plural, one {# person with this role has not set up a second step yet.} other {# people with this role have not set up a second step yet.}}",
@@ -10125,7 +10132,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "security-log.reason.behind",
-        "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, somebody removed entries.",
+        "the database lacks the newest entries that the anchor file knows of. Check whether the database was restored from an older backup or lost its last writes. If neither happened, someone removed entries.",
     ),
     (
         "security-log.reason.broken-link",
@@ -10375,7 +10382,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("set-up-second-step.title", "Set up your second step"),
     (
         "set-up-second-step.why",
-        "Your administrator asks you to sign in with a second step. It keeps your account safe even if somebody learns your password.",
+        "Your administrator asks you to sign in with a second step. It keeps your account safe even if someone learns your password.",
     ),
     (
         "setting.appearance.dark-theme.help",
@@ -10516,7 +10523,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.time-zone.name", "Time zone"),
     (
         "setting.security.session-absolute-hours.help",
-        "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+        "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
     ),
     (
         "setting.security.session-absolute-hours.name",
@@ -10743,7 +10750,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sign-up-policy.intro",
         "When this is on, anyone who can open Bugaboo can make an account without being invited.",
     ),
-    ("sign-up-policy.saved", "Saved."),
     ("sign-up-policy.switch", "Let people make their own account"),
     ("sign-up-policy.title", "Signing up without an invitation"),
     (

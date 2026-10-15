@@ -1,6 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Button, buttonLook, SubmitButton, partOf, part } from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { useId } from "react";
 
 import { layoutsAddress } from "../../shared/paths.ts";
 import { closeOverlay } from "../shell/index.ts";
@@ -38,18 +39,35 @@ function CustomizeThisForm({ form }: { readonly form: NewIssue }) {
   );
 }
 
+/** What the form still lacks before it can be sent, in words; nothing when it can be sent. */
+function missingForCreate(form: NewIssue) {
+  if (form.project === undefined) {
+    return "issues.missing-project";
+  }
+  if (form.values.title.trim() === "") {
+    return "issues.missing-title";
+  }
+  return canCreate(form.values) ? undefined : "issues.missing-type";
+}
+
 /** The buttons under the form: cancel, *Create and start another*, *Create*, and *Customize this form*. */
 export function NewIssueActions({ form, onMade, onClose }: NewIssueActionsProps) {
-  const blocked = !canCreate(form.values) || form.project === undefined;
+  const why = useId();
+  const missing = missingForCreate(form);
   return (
     <div {...partOf(part.issueSectionActions)}>
-      {blocked ? <p {...partOf(part.muted)}>{t("issues.create-another-why")}</p> : null}
+      {missing === undefined ? null : (
+        <p id={why} {...partOf(part.muted)}>
+          {t(missing)}
+        </p>
+      )}
       <CustomizeThisForm form={form} />
       <Button look={buttonLook.quiet} onPress={onClose}>
         {t("common.cancel")}
       </Button>
       <Button
-        isDisabled={blocked}
+        isDisabled={missing !== undefined}
+        {...(missing === undefined ? {} : { "aria-describedby": why })}
         isPending={form.pending}
         onPress={() => {
           form.create(true, onMade);

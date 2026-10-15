@@ -27,6 +27,10 @@ test("iss_11 the dialog asks for a title in words, and the issue is made with Cr
   await openDialog(page);
   await expect(dialog(page).getByLabel(titleLabel(), { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
+  // Without a title the second button waits, and says why to whoever reads it.
+  await expect(
+    dialog(page).getByRole("button", { name: t("issues.create-another"), exact: true }),
+  ).toHaveAccessibleDescription(t("issues.missing-title"));
   await dialog(page).getByLabel(titleLabel(), { exact: true }).fill("A new problem");
   await dialog(page)
     .getByRole("button", { name: t("issues.create"), exact: true })

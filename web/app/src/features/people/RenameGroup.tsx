@@ -29,7 +29,7 @@ export function RenameGroup({ group }: { readonly group: GroupLine }) {
         onChange={setName}
       />
       {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
-      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("groups.saved")}</Alert> : null}
+      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>

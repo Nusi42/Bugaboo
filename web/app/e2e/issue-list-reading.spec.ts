@@ -16,7 +16,8 @@ test("ux_08 a row names the type of its issue, and a tick is told", async ({ pag
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const row = page.getByRole("listitem").filter({ hasText: webIssues.passkey });
-  await expect(row.getByRole("img")).toHaveAccessibleName(/\S/u);
+  // The type is named, not only drawn (the first type of a project is a Bug).
+  await expect(row.getByRole("img", { name: "Bug", exact: true })).toBeVisible();
   // A person presses the box they see, not the input behind it.
   await row.locator("label").click();
   await expect(

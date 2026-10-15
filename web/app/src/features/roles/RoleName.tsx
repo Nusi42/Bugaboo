@@ -32,7 +32,7 @@ export function RoleName({ id, name, version }: RoleNameProps) {
         onChange={setTyped}
       />
       {rename.isError ? <Alert tone={alertTone.danger}>{messageOf(rename.error)}</Alert> : null}
-      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("roles.saved")}</Alert> : null}
+      {rename.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={rename.isPending}>{t("common.save")}</SubmitButton>
       </div>

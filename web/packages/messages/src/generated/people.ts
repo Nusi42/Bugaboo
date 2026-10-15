@@ -32,7 +32,6 @@ export const messages = {
     "One domain per line, like example.com. Only addresses of these domains can sign up.",
   "sign-up-policy.warning":
     "No domain is listed, so everyone who can reach Bugaboo can make an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
-  "sign-up-policy.saved": "Saved.",
   "sign-up-policy.confirm-title": "Let everybody sign up?",
   "sign-up-policy.confirm-text":
     "No domain is listed. Everybody who can reach Bugaboo will be able to make an account.",
@@ -68,7 +67,6 @@ export const messages = {
   "groups.field-name": "Name of the group",
   "groups.make": "Make the group",
   "groups.made": "The group {name} is made. Open it in the list to put people into it.",
-  "groups.saved": "Saved.",
   "groups.gone": "This group does not exist any more.",
   "groups.members": "People in the group",
   "groups.members-none": "Nobody is in this group yet.",

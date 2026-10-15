@@ -85,7 +85,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `comment` | Issues | project | Change | Write comments on the issues they see |
 | `delete-issues` | Issues | project | Change | Delete issues into the trash |
 | `move-issues` | Issues | project | Change | Move issues into or out of the project |
-| `edit-anyway` | Issues | project | Manage | Take over text somebody else is editing; their text is kept |
+| `edit-anyway` | Issues | project | Manage | Take over text someone else is editing; their text is kept |
 | `manage-issue-types` | Work settings | project | Manage | Manage issue types, kinds of relation and layouts |
 | `manage-fields` | Work settings | organization | Manage | Make, change and retire fields |
 | `manage-labels` | Work settings | project | Manage | Manage labels and tags, also rename and combine them |
@@ -154,7 +154,7 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Write comments on the issues they see | ✓ | ✓ | ✓ | ✓ | – | ✓ |
 | Delete issues into the trash | ✓ | ✓ | ✓ | – | – | – |
 | Move issues into or out of the project | ✓ | ✓ | ✓ | – | – | – |
-| Take over text somebody else is editing; their text is kept | ✓ | ✓ | – | – | – | – |
+| Take over text someone else is editing; their text is kept | ✓ | ✓ | – | – | – | – |
 | Manage issue types, kinds of relation and layouts | ✓ | ✓ | – | – | – | – |
 | Make, change and retire fields | ✓ | – | – | – | – | – |
 | Manage labels and tags, also rename and combine them | ✓ | ✓ | – | – | – | – |

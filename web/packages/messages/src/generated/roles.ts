@@ -18,7 +18,6 @@ export const messages = {
   "roles.start-empty": "An empty role",
   "roles.start-copy": "A copy of {name}",
   "roles.make": "Make the role",
-  "roles.saved": "Saved.",
   "roles.back": "All roles",
   "roles.permissions-title": "What this role allows",
   "roles.permissions-intro": "Tick what people with this role may do. A change is saved at once.",

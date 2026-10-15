@@ -49,7 +49,6 @@ export const messages = {
   "labels.show-combine": "Show what combining changes",
   "labels.preview-truncated": "More issues change than this list shows.",
   "labels.preview-line": "From {before} to {after}",
-  "labels.preview-no-names": "nothing",
   "labels.combine-title": "Combine with another one",
   "labels.combine-help":
     "Every issue that has this one gets the other one instead, and this one is gone. This cannot be taken back.",

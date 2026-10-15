@@ -47,8 +47,8 @@ export const messages = {
     "Must be filled in: it stays on the form for everybody who can fill it in.",
   "layouts.roles-page": "Who sees {name}",
   "layouts.roles-form": "Who is asked for {name}",
-  "layouts.limited-page": "{role} cannot see {field} because of its field permissions.",
-  "layouts.limited-form": "{role} cannot fill in {field} because of its field permissions.",
+  "layouts.limited-page": "{role} cannot see {field}: the field permissions hide it.",
+  "layouts.limited-form": "{role} cannot fill in {field}: the field permissions do not allow it.",
   "layouts.limited-link": "Open field permissions",
   "layouts.save": "Save layout",
   "layouts.lost":

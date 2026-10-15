@@ -35,7 +35,7 @@ function stateOf({ dirty, saved }: Pick<SaveBarProps, "dirty" | "saved">): SaveS
   return saved ? "saved" : "idle";
 }
 
-/** *Save layout* and *Discard changes*, with what happened to the last save. */
+/** *Save layout* and *Throw my changes away*, with what happened to the last save. */
 export function SaveBar(props: SaveBarProps) {
   const { dirty, canSave, pending, error, onSave, onDiscard } = props;
   return (

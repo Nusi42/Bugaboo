@@ -44,7 +44,7 @@ export const messages = {
   "error.request.timed-out": "Your request took too long to arrive. Please try again.",
   "error.request.too-large": "That is too big to send.",
   "error.edit.version-changed":
-    "Not saved yet: somebody changed this after you started. Your text is still here.",
+    "Not saved yet: someone changed this after you started. Your text is still here.",
   "error.edit.lock-lost": "Not saved yet: your editing time ran out. Your text is kept as a draft.",
   "error.edit.in-progress": "Someone is editing this right now. Try again when they have finished.",
   "error.edit.taken-over":
@@ -57,7 +57,7 @@ export const messages = {
   "setting.security.two-step-required.help":
     "Ask everyone to use two-step sign-in. People who have not set it up are asked to do so the next time they sign in.",
   "setting.security.session-absolute-hours.help":
-    "How many hours a sign-in can last at most, even when somebody keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
+    "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
   "setting.auth.access-key-default-days.help":
     "How many days a new access key lives when the person picks no other date. Between 1 and 365 days.",
   "setting.auth.access-key-longest-days.help":
@@ -173,6 +173,7 @@ export const messages = {
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
   "common.undo": "Undo",
+  "common.nothing": "nothing",
   "common.issue-id": "Issue ID, for example WEB-142",
   "shell.search": "Search",
   "shell.narrow": "Narrow the menu",
@@ -233,7 +234,7 @@ export const messages = {
   "error.access.would-lock-out":
     "That would leave nobody who can manage roles and decide who has which role for the whole organization. Keep at least one person who can do both.",
   "error.access.cannot-lift":
-    "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask somebody who decides there.",
+    "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
   "error.access.too-much": "You can only add or give what you can do yourself in this place.",
   "error.setting.hosts-not-bare":
     "Write only the host names, like images.example.com, without https:// and without a path.",
@@ -242,7 +243,7 @@ export const messages = {
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
   "error.name.taken": "That name is already used. Choose another one.",
   "error.project.move-lifts-no-access":
-    "This move would let somebody take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
+    "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
   "error.project.too-deep":
     "Projects cannot be nested any deeper than this. Make or move it somewhere higher up.",
   "error.project.move-into-itself":
@@ -264,7 +265,7 @@ export const messages = {
   "permission.comment": "Write comments on the issues they see",
   "permission.delete-issues": "Delete issues into the trash",
   "permission.move-issues": "Move issues into or out of the project",
-  "permission.edit-anyway": "Take over text somebody else is editing; their text is kept",
+  "permission.edit-anyway": "Take over text someone else is editing; their text is kept",
   "permission.manage-issue-types": "Manage issue types, kinds of relation and layouts",
   "permission.manage-fields": "Make, change and retire fields",
   "permission.manage-labels": "Manage labels and tags, also rename and combine them",
@@ -335,7 +336,7 @@ export const messages = {
   "projects.person-someone": "Someone",
   "projects.person-former": "Former user {label}",
   "error.role.in-use":
-    "Somebody has this role. Choose the role that takes its place before you delete it.",
+    "Someone has this role. Choose the role that takes its place before you delete it.",
   "nav.people": "People",
   "nav.groups": "Groups",
   "nav.roles": "Roles & permissions",
@@ -350,7 +351,7 @@ export const messages = {
   "assignments.title-project": "Who has which role in {name}",
   "own.ask-title": "This takes away your own way to manage roles",
   "own.ask-text":
-    "{lost} The organization always keeps somebody who can manage roles, but it may no longer be you.",
+    "{lost} The organization always keeps someone who can manage roles, but it may no longer be you.",
   "own.lost-manage-roles": "You could no longer make, change or delete roles.",
   "own.lost-decide-roles": "You could no longer decide who has which role.",
   "own.ask-yes": "Do it anyway",
@@ -494,7 +495,6 @@ export const messages = {
   "conflict.field-only": "{field}",
   "common.done": "Done",
   "issues.new": "New issue",
-  "issues.create-another-why": "Write a title first, then you can create and start another.",
   "issues.description.edit": "Edit the description",
   "editing.is-editing": "{name} is editing {thing} · since {since}",
   "editing.elsewhere":
@@ -533,10 +533,10 @@ export const messages = {
   "common.show-fewer": "Show fewer",
   "nav.labels": "Labels and tags",
   "labels.pick-label": "Choose a label",
-  "issues.preview-summary":
+  "preview.summary":
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
-  "issues.preview-label": "Issues in this change",
-  "issues.preview-nothing": "None of the issues would change.",
+  "preview.label": "Issues in this change",
+  "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
 } as const;

@@ -224,8 +224,8 @@ export interface MessageArguments {
   "issues.lost-changed": { name: string | number };
   "issues.lost-taken-over": { name: string | number };
   "issues.page-title": { project: string | number };
-  "issues.preview-summary": { changed: number; skipped: number };
   "issues.read-only": { field: string | number };
+  "issues.refused-at-field": { field: string | number; reason: string | number };
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
@@ -277,6 +277,7 @@ export interface MessageArguments {
   "people.in-groups": { groups: string | number };
   "person.groups-none": { name: string | number };
   "person.roles-none": { name: string | number };
+  "preview.summary": { changed: number; skipped: number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": {
     person: string | number;

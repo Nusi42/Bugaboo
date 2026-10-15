@@ -31,7 +31,6 @@ export const messages = {
   "projects.short-name-fixed":
     "You can change the name here. Changing the short name takes the right to make projects where this project sits.",
   "projects.edit-title": "Name and short name",
-  "projects.saved": "Saved.",
   "projects.open": "Open the project",
   "projects.settings-back": "Back to the project",
   "projects.overview-short-name": "Short name",
@@ -61,7 +60,7 @@ export const messages = {
   "projects.preview-truncated": "There are more changes than this list shows.",
   "projects.preview-blocked": "This move is not allowed.",
   "projects.preview-blocked-out-of-sight":
-    "Something in a project you cannot see also stands in the way. Ask somebody who sees more to look at this move.",
+    "Something in a project you cannot see also stands in the way. Ask someone who sees more to look at this move.",
   "projects.preview-list": "Changes for people",
   "projects.no-role": "no role",
   "projects.line-gains": "{person} gets access to {project}, as {roles}.",

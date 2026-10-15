@@ -2,10 +2,10 @@ import { t } from "@bugaboo/messages";
 import { Button, SaveStatus, partOf, part, type SaveState } from "@bugaboo/ui";
 
 import { doNothing } from "../../shared/do-nothing.ts";
+import { saveLabels } from "../../shared/save-labels.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import type { LongTextWords } from "./long-text-words.ts";
 import type { Description } from "./use-description.ts";
-import { saveLabels } from "../../shared/save-labels.ts";
 
 /** Where the save stands, in the three words (UX §6). */
 function saveStateOf(description: Description): SaveState {
