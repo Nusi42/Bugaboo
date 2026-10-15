@@ -292,7 +292,7 @@ mod tests {
     #[test]
     fn every_field_code_but_not_here_is_a_field_rule() {
         let field_codes: Vec<ErrorCode> = ErrorCode::ALL
-            .into_iter()
+            .iter()
             .copied()
             .filter(|code| code.code().starts_with("field."))
             .collect();
