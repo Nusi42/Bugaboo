@@ -1885,9 +1885,6 @@ pub const ISSUES_BAR: MessageKey = MessageKey::new("issues.bar");
 /// The message `issues.change`.
 pub const ISSUES_CHANGE: MessageKey = MessageKey::new("issues.change");
 
-/// The message `issues.change-title`.
-pub const ISSUES_CHANGE_TITLE: MessageKey = MessageKey::new("issues.change-title");
-
 /// The message `issues.changed-after-you`.
 pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed-after-you");
 
@@ -5470,6 +5467,15 @@ pub fn issues_change_field(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.change-title-of`.
+#[must_use]
+pub fn issues_change_title_of(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.change-title-of"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
 /// The message `issues.changed`.
 #[must_use]
 pub fn issues_changed(field: impl std::fmt::Display, value: impl std::fmt::Display) -> Message {
@@ -5532,6 +5538,15 @@ pub fn issues_compare_paragraph(number: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.compare-paragraph"),
         vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `issues.copy-link-of`.
+#[must_use]
+pub fn issues_copy_link_of(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.copy-link-of"),
+        vec![("key", Value::Text(key.to_string()))],
     )
 }
 
@@ -8011,9 +8026,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("code-app.turn-off-title", "Switch off the code app?"),
     ("code-app.turned-off", "The code app is switched off."),
     ("comments.add", "Comment"),
-    ("comments.delete", "Delete"),
+    ("comments.delete", "Delete your comment"),
     ("comments.deleted", "The comment is deleted."),
-    ("comments.edit", "Edit"),
+    ("comments.edit", "Edit your comment"),
     ("comments.edited", "edited"),
     ("comments.editing", "Edit the comment"),
     ("comments.mention-choices", "Who you can mention"),
@@ -8910,7 +8925,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.bar", "Actions for this issue"),
     ("issues.change", "Change"),
     ("issues.change-field", "Change {field}"),
-    ("issues.change-title", "Change the title"),
+    ("issues.change-title-of", "Change the title: {title}"),
     ("issues.changed", "{field} changed to {value}."),
     (
         "issues.changed-after-you",
@@ -8945,14 +8960,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.compare-save-mine", "Keep all of mine"),
     ("issues.compare-theirs", "The newer version"),
     ("issues.copy-link", "Copy the address"),
+    ("issues.copy-link-of", "{key}, copy the address"),
     ("issues.create", "Create"),
     ("issues.create-another", "Create and start another"),
     ("issues.create-first", "Create an issue"),
     ("issues.created", "{key} was created."),
     ("issues.created-on", "Created"),
-    ("issues.delete", "Delete"),
+    ("issues.delete", "Delete the issue"),
     ("issues.deleted", "{key} was moved to the trash."),
-    ("issues.description.edit", "Edit"),
+    ("issues.description.edit", "Edit the description"),
     ("issues.description.empty", "There is no description yet."),
     ("issues.details", "Details"),
     ("issues.draft-continue", "Continue your draft from {when}"),
@@ -9011,7 +9027,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
-    ("issues.side-panel-view", "Side panel view"),
+    ("issues.side-panel-view", "Open in the side panel"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.type", "Type"),

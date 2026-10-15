@@ -1,10 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { ActionMenu, Button, partOf, part, type MenuAction } from "@bugaboo/ui";
+import { Toolbar } from "react-aria-components";
 
 export interface IssueBarProps {
-  /** Goes to the status of the issue to change it. */
+  /** Takes the person to the status of the issue to change it. */
   readonly onStatus: () => void;
-  /** Goes to the comments. */
+  /** Takes the person to the box for a new comment. */
   readonly onComment: () => void;
   readonly actions: readonly MenuAction[];
 }
@@ -12,7 +13,7 @@ export interface IssueBarProps {
 /** On a phone (UX §3.3): the bar with the most used actions of an issue, *Status · Comment · More*. */
 export function IssueBar({ onStatus, onComment, actions }: IssueBarProps) {
   return (
-    <nav {...partOf(part.issueBar)} aria-label={t("issues.bar")}>
+    <Toolbar {...partOf(part.issueBar)} aria-label={t("issues.bar")}>
       <div {...partOf(part.issueBarItem)}>
         <Button wide onPress={onStatus}>
           {t("issue-field.status")}
@@ -26,6 +27,6 @@ export function IssueBar({ onStatus, onComment, actions }: IssueBarProps) {
       <div {...partOf(part.issueBarItem)}>
         <ActionMenu label={t("issues.more")} actions={actions} />
       </div>
-    </nav>
+    </Toolbar>
   );
 }

@@ -494,8 +494,7 @@ export const messages = {
   "conflict.field-only": "{field}",
   "common.done": "Done",
   "issues.new": "New issue",
-  "issues.description.edit": "Edit",
-  "issues.change-title": "Change the title",
+  "issues.description.edit": "Edit the description",
   "editing.is-editing": "{name} is editing {thing} · since {since}",
   "editing.elsewhere":
     "You are editing {thing} in another window. Save or close it there. If that window is gone, wait a minute and try again.",

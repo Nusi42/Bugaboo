@@ -205,12 +205,14 @@ export interface MessageArguments {
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
   "issues.change-field": { field: string | number };
+  "issues.change-title-of": { title: string | number };
   "issues.changed": { field: string | number; value: string | number };
   "issues.changed-after-you-by": { name: string | number };
   "issues.changed-own": { count: number };
   "issues.changed-people": { count: number; field: string | number; names: string | number };
   "issues.compare-keep": { number: string | number };
   "issues.compare-paragraph": { number: string | number };
+  "issues.copy-link-of": { key: string | number };
   "issues.created": { key: string | number };
   "issues.deleted": { key: string | number };
   "issues.draft-continue": { when: string | number };

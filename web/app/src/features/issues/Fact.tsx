@@ -11,15 +11,17 @@ export interface FactProps {
   readonly children: ReactNode;
   /** Why the person cannot change it, when they cannot: shown with a lock. */
   readonly reason?: string | undefined;
+  /** The ID of the box, so the bar of a phone can take the person to it. */
+  readonly id?: string | undefined;
 }
 
 /**
  * One field of the facts bar or the details: its name, its value or the way to change it, and,
  * when it cannot be changed by this person, a lock and the reason (UX §4.4).
  */
-export function Fact({ name, children, reason }: FactProps) {
+export function Fact({ name, children, reason, id }: FactProps) {
   return (
-    <div {...partOf(part.issueFact)}>
+    <div id={id} {...partOf(part.issueFact)}>
       <span {...partOf(part.issueFactName)}>{name}</span>
       <div {...partOf(part.issueFactValue)}>{children}</div>
       {reason === undefined ? null : (
@@ -36,6 +38,8 @@ export interface ChoiceFactProps<Value extends string> {
   /** The key that moves the focus to the list of words, if the field has one (`s` for the status). */
   readonly shortcut?: "change-status";
   readonly name: string;
+  /** The ID of the box, so the bar of a phone can take the person to it. */
+  readonly id?: string | undefined;
   readonly choices: readonly SelectChoice<Value>[];
   readonly value: Value;
   /** Whether the person may change it in this issue. */
@@ -47,6 +51,7 @@ export interface ChoiceFactProps<Value extends string> {
 export function ChoiceFact<Value extends string>({
   shortcut,
   name,
+  id,
   choices,
   value,
   canChange,
@@ -65,13 +70,13 @@ export function ChoiceFact<Value extends string>({
   if (!canChange) {
     const current = choices.find((choice) => choice.value === value);
     return (
-      <Fact name={name} reason={readOnlyReason(name)}>
+      <Fact id={id} name={name} reason={readOnlyReason(name)}>
         {current?.label ?? value}
       </Fact>
     );
   }
   return (
-    <div ref={box} {...partOf(part.issueFact)}>
+    <div ref={box} id={id} {...partOf(part.issueFact)}>
       <SelectField label={name} choices={choices} value={value} onChange={onPick} />
     </div>
   );
