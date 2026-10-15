@@ -31,6 +31,8 @@ pub const WATCH_SECONDS: i64 = 30;
 pub const DRAFT_KEEP_DAYS: i64 = 30;
 /// The most records one check of versions asks about: what is on the screen.
 pub const VERSIONS_MAX: u32 = 50;
+/// The most drafts one person keeps at once, so unsaved text cannot fill the disk.
+pub const DRAFTS_PER_AUTHOR_MAX: u64 = 200;
 /// The most characters of the text of a draft.
 pub const DRAFT_TEXT_MAX: usize = 100_000;
 /// The refusals of a save that keep the text as the person's draft (ADR-0019). The one list: the use

@@ -58,6 +58,13 @@ pub trait EditableRecords: Send + Sync {
         record: &'a EntityRef,
     ) -> BoxFuture<'a, Result<Option<RecordFacts>, AppError>>;
 
+    /// Whether `part` is a part of `record` that can be edited under a lock or kept as a draft. A
+    /// kind lists its parts; one that says nothing has none, so nothing can be locked or drafted on
+    /// it (SEC-06).
+    fn has_part(&self, _record: &EntityRef, _part: &str) -> bool {
+        false
+    }
+
     /// How the change of the field `field` of `record` is shown in a conflict. A kind that says
     /// nothing hides every field.
     fn shows(&self, _record: &EntityRef, _field: &str) -> Shown {
@@ -97,6 +104,10 @@ impl EditableRecords for ChainedRecords {
             }
             Ok(None)
         })
+    }
+
+    fn has_part(&self, record: &EntityRef, part: &str) -> bool {
+        self.0.iter().any(|kind| kind.has_part(record, part))
     }
 
     fn shows(&self, record: &EntityRef, field: &str) -> Shown {

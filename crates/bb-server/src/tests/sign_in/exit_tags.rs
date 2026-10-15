@@ -55,8 +55,8 @@ async fn sec_06_a_person_who_sees_only_their_own_issues_is_offered_only_their_ow
                 Permission::ChangeOwnIssues,
             ],
             &[
-                (Field::Title, None, FieldLevel::CanChange),
-                (Field::Tags, None, FieldLevel::CanChange),
+                (Field::Title.into(), None, FieldLevel::CanChange),
+                (Field::Tags.into(), None, FieldLevel::CanChange),
             ],
         )
         .await?;
@@ -91,9 +91,9 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
             "hal",
             &[Permission::SeeProjects, Permission::SeeIssues],
             &[
-                (Field::Title, None, FieldLevel::CanSee),
-                (Field::Tags, Some(&site.bug), FieldLevel::CanSee),
-                (Field::Labels, Some(&site.bug), FieldLevel::CanSee),
+                (Field::Title.into(), None, FieldLevel::CanSee),
+                (Field::Tags.into(), Some(&site.bug), FieldLevel::CanSee),
+                (Field::Labels.into(), Some(&site.bug), FieldLevel::CanSee),
             ],
         )
         .await?;
@@ -137,7 +137,7 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
             &rig,
             "ivy",
             &[Permission::SeeProjects, Permission::SeeIssues],
-            &[(Field::Title, None, FieldLevel::CanSee)],
+            &[(Field::Title.into(), None, FieldLevel::CanSee)],
         )
         .await?;
         let offered = ivy
@@ -203,7 +203,7 @@ async fn sec_06_a_tag_manager_with_no_access_to_a_project_does_not_list_its_tags
                 Permission::SeeIssues,
                 Permission::ManageLabels,
             ],
-            &[(Field::Title, None, FieldLevel::CanSee)],
+            &[(Field::Title.into(), None, FieldLevel::CanSee)],
         )
         .await?;
         site.org

@@ -52,6 +52,9 @@ pub trait EditStore: ChangeStore + 'static {
         fn release_edit_lock(what: &EditWhat, hold: Hold) -> bool;
         /// Stores a draft, replacing the person's older one for the same target.
         fn save_draft(draft: &Draft) -> ();
+        /// How many drafts of the person are kept (not older than `not_before`), counted up to
+        /// `limit`.
+        fn count_drafts(author: UserId, not_before: Timestamp, limit: u64) -> u64;
         /// Deletes the draft of a person for a target; `false` when there was none.
         fn delete_draft(author: UserId, target: &DraftTarget) -> bool;
         /// Deletes the drafts last changed before `before`, the notes of the same age, and the

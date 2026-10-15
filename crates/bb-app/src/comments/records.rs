@@ -1,6 +1,7 @@
 //! Comments as records that can be locked, drafted and watched (ADR-0019): the facts the editing
 //! use cases need, and how the change of a comment is shown in a conflict.
 
+use bb_core::comment::TEXT_PART;
 use bb_core::event::{EntityKind, EntityRef, RecordKind};
 use bb_core::id::{CommentId, UserId};
 use bb_policy::{Permission, Place};
@@ -62,6 +63,10 @@ impl<S: AuthStore + Send + Sync> EditableRecords for CommentRecords<S> {
                 edit: Permission::Comment,
             }))
         })
+    }
+
+    fn has_part(&self, record: &EntityRef, part: &str) -> bool {
+        record.kind == EntityKind::from(RecordKind::Comment) && part == TEXT_PART
     }
 
     fn shows(&self, record: &EntityRef, field: &str) -> Shown {

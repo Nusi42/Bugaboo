@@ -81,6 +81,22 @@ impl EditStore for FakeStore {
         Ok(())
     }
 
+    async fn count_drafts(
+        &self,
+        author: UserId,
+        not_before: Timestamp,
+        limit: u64,
+    ) -> Result<u64, FakeError> {
+        let kept = self
+            .lock()
+            .state
+            .drafts
+            .iter()
+            .filter(|draft| draft.author == author && draft.saved_at >= not_before)
+            .count();
+        Ok((kept as u64).min(limit))
+    }
+
     async fn delete_draft(&self, author: UserId, target: &DraftTarget) -> Result<bool, FakeError> {
         Ok(remove_draft(&mut self.lock().state, author, target))
     }

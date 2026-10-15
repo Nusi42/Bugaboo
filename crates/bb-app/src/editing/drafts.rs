@@ -9,11 +9,12 @@
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::edit::{DRAFT_TEXT_MAX, Draft, DraftTarget, draft_cutoff};
+use bb_core::edit::{DRAFT_TEXT_MAX, DRAFTS_PER_AUTHOR_MAX, Draft, DraftTarget, draft_cutoff};
 use bb_core::id::UserId;
 use bb_policy::{Authorized, Evaluation, Place};
 use jiff::Timestamp;
 
+use super::parts::Need;
 use super::types::{
     DraftSlot, DraftText, DraftView, PurgeDraftsQuery, ReadDraftQuery, SaveDraftQuery,
     ThrowAwayDraftQuery,
@@ -37,7 +38,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Arc<Evaluation>, AppError> {
         match target {
             DraftTarget::Editing(what) => {
-                let facts = self.facts_of(actor, &what.record).await?;
+                let facts = self.facts_for_part(actor, what, Need::Change).await?;
                 self.require(actor, facts.edit, facts.place).await
             }
             DraftTarget::NewRecord { project, kind } => {
@@ -53,7 +54,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// Keeps the text as the draft of `author` for the target, in place of an older one.
     ///
     /// # Errors
-    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters.
+    /// `request.too_large` for a text over [`DRAFT_TEXT_MAX`] characters, `limit.reached` for a new
+    /// draft when the person keeps [`DRAFTS_PER_AUTHOR_MAX`] already.
     pub(crate) async fn keep_draft(
         &self,
         author: UserId,
@@ -62,6 +64,25 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Timestamp, AppError> {
         if text.text.chars().count() > DRAFT_TEXT_MAX {
             return Err(ErrorCode::TooLarge.into());
+        }
+        // A new draft counts against the cap; one that replaces an older one does not.
+        let not_before = self.draft_not_before()?;
+        let failed = |error| internal::<S>(&error);
+        let replaces = self
+            .store()
+            .draft(author, target.clone(), not_before)
+            .await
+            .map_err(failed)?
+            .is_some();
+        if !replaces
+            && self
+                .store()
+                .count_drafts(author, not_before, DRAFTS_PER_AUTHOR_MAX)
+                .await
+                .map_err(failed)?
+                >= DRAFTS_PER_AUTHOR_MAX
+        {
+            return Err(ErrorCode::LimitReached.into());
         }
         let saved_at = self.now();
         let draft = Draft {

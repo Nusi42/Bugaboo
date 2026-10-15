@@ -327,6 +327,22 @@ impl EditStore for AuthStorage {
         self.database().execute(&insert).await.map(|_| ())
     }
 
+    async fn count_drafts(
+        &self,
+        author: UserId,
+        not_before: Timestamp,
+        limit: u64,
+    ) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(Drafts::SavedAt)
+            .from(Drafts::Table)
+            .and_where(Expr::col(Drafts::Author).eq(author.stored()))
+            .and_where(Expr::col(Drafts::SavedAt).gte(to_micros(not_before)))
+            .limit(limit);
+        Ok(self.database().fetch_all(&select).await?.len() as u64)
+    }
+
     async fn delete_draft(&self, author: UserId, target: &DraftTarget) -> Result<bool, StoreError> {
         let mut transaction = self.database().begin().await?;
         let deleted = delete_draft(&mut transaction, author, target).await?;

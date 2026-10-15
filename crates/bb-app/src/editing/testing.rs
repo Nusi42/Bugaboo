@@ -91,6 +91,10 @@ impl EditableRecords for TestNotes {
         Box::pin(async move { Ok(found) })
     }
 
+    fn has_part(&self, record: &EntityRef, part: &str) -> bool {
+        record.kind == self.kind && part == "description"
+    }
+
     fn shows(&self, _record: &EntityRef, field: &str) -> Shown {
         match field {
             "description" | "title" | "status" | "cost-center" => Shown::Plain,

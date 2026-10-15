@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use bb_app::access::Permission;
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -19,7 +19,7 @@ const LOCKS: &str = "/api/v1/edit-locks";
 const AN_EDITOR: &str = "7c1d2e3f-4a5b-4c6d-8e7f-a0b1c2d3e4f5";
 
 /// One level of a role: the field, the issue type it is for (none: all types), the level.
-pub(super) type Row<'a> = (Field, Option<&'a str>, FieldLevel);
+pub(super) type Row<'a> = (FieldKey, Option<&'a str>, FieldLevel);
 
 /// A person with a role of their own that holds `permissions` and the levels in `rows`; every field
 /// that has no row is hidden from them.
@@ -42,7 +42,7 @@ pub(super) async fn person_with_levels(
                     issue_type: issue_type
                         .map(|id| id.parse().map_err(|_| "no issue type ID"))
                         .transpose()?,
-                    field: (*field).into(),
+                    field: *field,
                     level: Some(*level),
                 },
             )
@@ -131,9 +131,13 @@ async fn sec_04_the_description_is_judged_by_the_levels_of_the_type_of_the_issue
             "tim",
             &SEE_AND_CHANGE,
             &[
-                (Field::Title, None, FieldLevel::CanChange),
-                (Field::Description, None, FieldLevel::CanSee),
-                (Field::Description, Some(&site.bug), FieldLevel::CanChange),
+                (Field::Title.into(), None, FieldLevel::CanChange),
+                (Field::Description.into(), None, FieldLevel::CanSee),
+                (
+                    Field::Description.into(),
+                    Some(&site.bug),
+                    FieldLevel::CanChange,
+                ),
             ],
         )
         .await?;
@@ -180,10 +184,10 @@ async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> Test
             "rea",
             &[Permission::SeeProjects, Permission::SeeIssues],
             &[
-                (Field::Title, None, FieldLevel::CanSee),
-                (Field::Status, None, FieldLevel::CanSee),
-                (Field::Title, Some(&task), FieldLevel::Hidden),
-                (Field::Status, Some(&task), FieldLevel::Hidden),
+                (Field::Title.into(), None, FieldLevel::CanSee),
+                (Field::Status.into(), None, FieldLevel::CanSee),
+                (Field::Title.into(), Some(&task), FieldLevel::Hidden),
+                (Field::Status.into(), Some(&task), FieldLevel::Hidden),
             ],
         )
         .await?;
@@ -273,9 +277,9 @@ async fn sec_06_a_conflict_names_no_field_the_type_of_the_issue_hides() -> TestR
             "kim",
             &SEE_AND_CHANGE,
             &[
-                (Field::Title, None, FieldLevel::CanChange),
-                (Field::Priority, None, FieldLevel::CanChange),
-                (Field::Priority, Some(&site.bug), FieldLevel::Hidden),
+                (Field::Title.into(), None, FieldLevel::CanChange),
+                (Field::Priority.into(), None, FieldLevel::CanChange),
+                (Field::Priority.into(), Some(&site.bug), FieldLevel::Hidden),
             ],
         )
         .await?;
@@ -321,8 +325,12 @@ async fn sec_04_who_may_be_assigned_follows_the_levels_of_the_type_of_the_issue(
             "lou",
             &SEE_AND_CHANGE,
             &[
-                (Field::AssignedTo, None, FieldLevel::CanSee),
-                (Field::AssignedTo, Some(&site.bug), FieldLevel::CanChange),
+                (Field::AssignedTo.into(), None, FieldLevel::CanSee),
+                (
+                    Field::AssignedTo.into(),
+                    Some(&site.bug),
+                    FieldLevel::CanChange,
+                ),
             ],
         )
         .await?;
