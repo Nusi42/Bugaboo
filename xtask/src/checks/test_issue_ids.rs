@@ -19,7 +19,7 @@ struct Required {
 }
 
 /// The tests of the rules about issue IDs (docs/milestones/M3/WP-03-issues-core.md).
-const REQUIRED: [Required; 4] = [
+const REQUIRED: [Required; 5] = [
     Required {
         name: "iss_01a_random_ids_use_the_readable_alphabet_and_never_repeat",
         both_databases: false,
@@ -34,6 +34,10 @@ const REQUIRED: [Required; 4] = [
     },
     Required {
         name: "iss_01a_an_old_id_redirects_after_the_mode_changes",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_01a_an_old_id_keeps_working_after_the_issue_moves",
         both_databases: true,
     },
 ];
