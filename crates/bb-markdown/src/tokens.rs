@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn mentions_are_found_but_not_in_addresses() {
         assert_eq!(
-            words("hi @ana.lopez, @Bo_2 and a@b.com @ @"),
+            words("hi @ana.lopez, @Bo_2 and a@b.example @ @"),
             [("mention", "@ana.lopez"), ("mention", "@Bo_2")]
         );
     }
