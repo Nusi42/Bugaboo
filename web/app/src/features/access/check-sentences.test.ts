@@ -56,7 +56,7 @@ describe("sec_03 the reasons of Check access in plain sentences", () => {
       row: row({ project: hidden, inherited: true }),
     };
     const text = reasonSentences(ana, website, reason).join(" ");
-    expect(text).toContain("a project you can't see");
+    expect(text).toContain("a project you cannot see");
     expect(text).not.toContain("ACME");
   });
 });
