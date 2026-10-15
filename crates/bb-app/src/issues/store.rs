@@ -86,15 +86,23 @@ pub trait IssueStore: ProjectStore + 'static {
         ) -> bool;
         /// Replaces the people an issue is assigned to.
         fn replace_assignees(issue: IssueId, assignees: &[IssueAssignee]) -> ();
-        /// Puts an issue into the trash (a date) or takes it out (`None`), counts its version up,
-        /// and says whether the issue was there.
-        fn set_issue_deleted(id: IssueId, deleted_at: Option<Timestamp>) -> bool;
+        /// Puts an issue into the trash (a date) or takes it out (`None`), counts its version up
+        /// (see [`Self::count_issue_up`]), and says whether the issue was there.
+        fn set_issue_deleted(id: IssueId, deleted_at: Option<Timestamp>, now: Timestamp) -> bool;
         /// Gives out the next counting number of a project: the number after the last one given
         /// out, which is stored. Two writers wait for each other, so no number is skipped or
         /// given twice.
         fn next_counting_number(project: ProjectId) -> i64;
-        /// Gives an issue a new code (the old one is kept with `insert_issue_alias`).
-        fn set_issue_code(id: IssueId, code: &IssueCode) -> ();
+        /// Gives an issue a new code (the old one is kept with `insert_issue_alias`) and counts its
+        /// version up.
+        fn set_issue_code(id: IssueId, code: &IssueCode, now: Timestamp) -> ();
+        /// Counts the version of an issue up without changing anything else of it: the version
+        /// goes up by one and the date it changed is `now`, as in every other change of an issue.
+        /// With `only_at` the issue must still have that version (a change that took the version
+        /// the person looked at); without, whatever the version is (a tag or a label, which take
+        /// none). Gives the version the issue has now; `None` when the issue is not there, is in
+        /// the trash, or has another version than `only_at`.
+        fn count_issue_up(issue: IssueId, only_at: Option<i64>, now: Timestamp) -> Option<i64>;
         /// Keeps an old code with its issue.
         fn insert_issue_alias(alias: &IssueAlias) -> ();
         /// Waits for every other change that gives out or renews the codes of this project, until

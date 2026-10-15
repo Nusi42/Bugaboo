@@ -216,7 +216,7 @@ async fn count_up_and_record<S: AuthStore>(
     now: Timestamp,
     stopped: &Why,
 ) -> Result<i64, S::Error> {
-    let Some(version) = S::count_up_issue_version(transaction, issue, now).await? else {
+    let Some(version) = S::count_issue_up(transaction, issue, None, now).await? else {
         return Err(stopped.stop::<S>(ErrorCode::NotFound));
     };
     let event = maker

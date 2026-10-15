@@ -253,7 +253,7 @@ pub(crate) async fn renew_step_in<S: AuthStore>(
             continue;
         }
         let code = new_code_in::<S>(transaction, renewal.project, renewal.plan, source).await?;
-        S::set_issue_code(transaction, issue, &code).await?;
+        S::set_issue_code(transaction, issue, &code, at).await?;
         S::insert_issue_alias(
             transaction,
             &IssueAlias {

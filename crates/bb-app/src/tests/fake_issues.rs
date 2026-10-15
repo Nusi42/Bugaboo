@@ -235,6 +235,7 @@ impl IssueStore for FakeStore {
         tx: &mut Tx,
         id: IssueId,
         deleted_at: Option<Timestamp>,
+        now: Timestamp,
     ) -> Result<bool, FakeError> {
         let Some(found) = tx
             .state
@@ -245,6 +246,7 @@ impl IssueStore for FakeStore {
             return Ok(false);
         };
         found.deleted_at = deleted_at;
+        found.updated_at = now;
         found.version += 1;
         Ok(true)
     }
@@ -263,12 +265,36 @@ impl IssueStore for FakeStore {
         Ok(1)
     }
 
-    async fn set_issue_code(tx: &mut Tx, id: IssueId, code: &IssueCode) -> Result<(), FakeError> {
+    async fn set_issue_code(
+        tx: &mut Tx,
+        id: IssueId,
+        code: &IssueCode,
+        now: Timestamp,
+    ) -> Result<(), FakeError> {
         if let Some(found) = tx.state.issues.iter_mut().find(|found| found.id == id) {
             found.code = code.clone();
+            found.updated_at = now;
             found.version += 1;
         }
         Ok(())
+    }
+
+    async fn count_issue_up(
+        tx: &mut Tx,
+        issue: IssueId,
+        only_at: Option<i64>,
+        now: Timestamp,
+    ) -> Result<Option<i64>, FakeError> {
+        let Some(found) = tx.state.issues.iter_mut().find(|found| {
+            found.id == issue
+                && found.deleted_at.is_none()
+                && only_at.is_none_or(|version| found.version == version)
+        }) else {
+            return Ok(None);
+        };
+        found.updated_at = now;
+        found.version += 1;
+        Ok(Some(found.version))
     }
 
     async fn lock_issue_codes(_tx: &mut Tx, _project: ProjectId) -> Result<(), FakeError> {

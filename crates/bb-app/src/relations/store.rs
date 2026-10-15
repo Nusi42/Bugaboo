@@ -59,14 +59,6 @@ pub trait RelationStore: IssueStore + 'static {
         fn set_issue_parent(parent: &IssueParent) -> ();
         /// Takes an issue out from under its parent; `false` when it sat under none.
         fn clear_issue_parent(child: IssueId) -> bool;
-        /// Counts the version of an issue up because something about it besides its fields
-        /// changed (its parent), sets the date it changed, and says whether the issue was still
-        /// at `version`.
-        fn count_issue_version_up(issue: IssueId, version: i64, now: Timestamp) -> bool;
-        /// Counts the version of an issue up for a change that takes no version (a tag or a
-        /// label), whatever the version is, sets the date it changed, and gives the version the
-        /// issue has now; `None` when the issue is not there or is in the trash.
-        fn count_up_issue_version(issue: IssueId, now: Timestamp) -> Option<i64>;
         /// Waits for every other change of which issue sits under which, until the end of this
         /// change: the chain above a new parent is judged and written by one change at a time.
         fn lock_issue_parents() -> ();
