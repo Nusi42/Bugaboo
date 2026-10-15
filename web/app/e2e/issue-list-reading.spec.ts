@@ -17,7 +17,8 @@ test("ux_08 a row names the type of its issue, and a tick is told", async ({ pag
   await page.goto(projectIssuesAddress("WEB"));
   const row = page.getByRole("listitem").filter({ hasText: webIssues.passkey });
   await expect(row.getByRole("img")).toHaveAccessibleName(/\S/u);
-  await row.getByRole("checkbox").check();
+  // A person presses the box they see, not the input behind it.
+  await row.locator("label").click();
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: 1 }) }),
   ).toHaveCount(1);

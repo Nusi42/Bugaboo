@@ -2919,6 +2919,13 @@ part "issue-row.title:focus-visible" {
     use "ring"
 }
 
+// The way to the field permissions next to the note is a target a finger can hit.
+part "layout-field.limited link" {
+    display inline-flex
+    align-items center
+    min-height "$size-target"
+}
+
 // On a phone the title is a target a finger can hit.
 part "app-layout[variant=phone] issue-row.title link" {
     display inline-flex
