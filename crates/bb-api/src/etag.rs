@@ -143,14 +143,23 @@ fn is_read(method: &Method) -> bool {
     matches!(*method, Method::GET | Method::HEAD)
 }
 
+/// What a rule of no cache does with the rule and the tag the answer has already.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum NoCache {
+    /// Replace the rule of the route and take the tag away.
+    Override,
+    /// Only when the route did not choose a rule.
+    IfNoneChosen,
+}
+
 /// Makes the answer something no cache keeps: `no-store` (always, or only when the route did not
 /// choose a rule) and no tag.
-fn never_store(response: &mut Response, overriding: bool) {
+fn never_store(response: &mut Response, how: NoCache) {
     let headers = response.headers_mut();
-    if overriding || !headers.contains_key(header::CACHE_CONTROL) {
+    if how == NoCache::Override || !headers.contains_key(header::CACHE_CONTROL) {
         headers.insert(header::CACHE_CONTROL, HeaderValue::from_static(NEVER_STORE));
     }
-    if overriding {
+    if how == NoCache::Override {
         headers.remove(header::ETAG);
     }
 }
@@ -175,12 +184,12 @@ pub(crate) async fn cache_rules(request: Request, next: Next) -> Response {
             .insert(CLEAR_CACHE, HeaderValue::from_static("\"cache\""));
     }
     if kind == Kind::Secret || sets_a_cookie(response.headers()) {
-        never_store(&mut response, true);
+        never_store(&mut response, NoCache::Override);
         response.extensions_mut().insert(SecretAnswer);
         return response;
     }
     if kind == Kind::PersonalData {
-        never_store(&mut response, true);
+        never_store(&mut response, NoCache::Override);
         return response;
     }
     let stored_by_choice = response
@@ -189,7 +198,7 @@ pub(crate) async fn cache_rules(request: Request, next: Next) -> Response {
         .and_then(|value| value.to_str().ok())
         .is_some_and(|rule| rule.contains(NEVER_STORE));
     if !is_read(&method) || response.status() != StatusCode::OK || stored_by_choice {
-        never_store(&mut response, false);
+        never_store(&mut response, NoCache::IfNoneChosen);
         return response;
     }
     revalidate(response, &conditions).await
@@ -207,21 +216,21 @@ async fn revalidate(response: Response, conditions: &HeaderMap) -> Response {
         .is_some_and(|bytes| bytes <= ETAG_BODY_LIMIT);
     if !small {
         let mut passed = Response::from_parts(parts, body);
-        never_store(&mut passed, true);
+        never_store(&mut passed, NoCache::Override);
         return passed;
     }
     let Ok(bytes) = axum::body::to_bytes(body, ETAG_BODY_LIMIT).await else {
         // The body failed while it was read: nothing is left to send but an empty answer.
         let mut failed = Response::from_parts(parts, Body::empty());
         *failed.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-        never_store(&mut failed, true);
+        never_store(&mut failed, NoCache::Override);
         return failed;
     };
     let tag = etag_of(&bytes)
         .and_then(|etag| HeaderValue::from_str(&etag).ok().map(|value| (etag, value)));
     let Some((etag, value)) = tag else {
         let mut untagged = Response::from_parts(parts, Body::from(bytes));
-        never_store(&mut untagged, true);
+        never_store(&mut untagged, NoCache::Override);
         return untagged;
     };
     parts.headers.insert(header::ETAG, value);
