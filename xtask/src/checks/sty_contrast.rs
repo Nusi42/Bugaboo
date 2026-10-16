@@ -6,6 +6,7 @@
 //! and the one for a device that asks for more contrast (THM-06).
 
 use super::{Check, Context, Finding};
+use crate::generate::contrast_spec::DistinctSpec;
 use crate::generate::theme_file::{THEME_PATH, ThemeFile};
 
 pub(crate) struct StyContrast;
@@ -97,9 +98,16 @@ fn more_contrast_findings(file: &ThemeFile) -> Vec<Finding> {
     findings
 }
 
-/// Hovered and selected backgrounds must stay visible against the surfaces and each other.
+/// Hovered and selected backgrounds must stay visible against the surfaces and each other, on the
+/// plain surfaces and on the tinted rows.
 fn distinct_findings(file: &ThemeFile) -> Vec<Finding> {
-    let spec = &file.distinct;
+    file.distinct
+        .iter()
+        .flat_map(|spec| distinct_findings_of(file, spec))
+        .collect()
+}
+
+fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
     let mut findings = Vec::new();
     for theme in &file.themes {
         let mut check = |first: &str, second: &str, min: f64| {

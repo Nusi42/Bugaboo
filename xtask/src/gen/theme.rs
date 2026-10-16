@@ -62,7 +62,7 @@ pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
 pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
     let mut generated = vec![
         Generated::new(STYLE_SHEET, css(file)?),
-        Generated::new(DOCS_SHEET, docs_theme_css(file)),
+        Generated::new(DOCS_SHEET, docs_theme_css(file)?),
         Generated::new(FRAME_SCRIPT, frame_script(file)),
         Generated::new(TS_OUTPUT, typescript(file)?),
         Generated::new(RUST_OUTPUT, rust(file)),
@@ -77,7 +77,7 @@ pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
 
 /// The whole style sheet.
 pub(crate) fn css(file: &ThemeFile) -> anyhow::Result<String> {
-    let mut out = tokens_only_css(file);
+    let mut out = tokens_only_css(file)?;
     let parts = parts_css(file)?;
     if !parts.is_empty() {
         out.push('\n');
@@ -89,15 +89,15 @@ pub(crate) fn css(file: &ThemeFile) -> anyhow::Result<String> {
 // ───────────── Tokens ─────────────
 
 /// The variables of every theme and mode, without the rules of the components.
-fn tokens_only_css(file: &ThemeFile) -> String {
+fn tokens_only_css(file: &ThemeFile) -> anyhow::Result<String> {
     let mut out = css_header(file);
-    out.push_str(&token_css(file));
-    out
+    out.push_str(&token_css(file)?);
+    Ok(out)
 }
 
 /// The design pages' copy of the tokens: the themes, and the tokens of the pages themselves.
-fn docs_theme_css(file: &ThemeFile) -> String {
-    let mut out = tokens_only_css(file);
+fn docs_theme_css(file: &ThemeFile) -> anyhow::Result<String> {
+    let mut out = tokens_only_css(file)?;
     let doc_tokens: Vec<&Token> = file.docs.iter().flat_map(|sheet| &sheet.tokens).collect();
     if !doc_tokens.is_empty() {
         out.push_str("\n/* The tokens of the design pages (the `docs` blocks). */\n:root {\n");
@@ -108,7 +108,7 @@ fn docs_theme_css(file: &ThemeFile) -> String {
         }
         out.push_str("}\n");
     }
-    out
+    Ok(out)
 }
 
 /// One sheet of the design pages: the notice, then the keyframes and the rules.
@@ -120,7 +120,7 @@ fn doc_sheet_css(file: &ThemeFile, sheet: &DocSheet) -> anyhow::Result<String> {
     ))
 }
 
-fn token_css(file: &ThemeFile) -> String {
+fn token_css(file: &ThemeFile) -> anyhow::Result<String> {
     let light = file.default_light.as_str();
     let dark = file.default_dark.as_str();
     let mut out = String::from(":root {\n");
@@ -151,11 +151,11 @@ fn token_css(file: &ThemeFile) -> String {
         out.push_str("}\n");
     }
     for variant in &file.variants {
-        variant_blocks(&mut out, file, variant);
+        variant_blocks(&mut out, file, variant)?;
     }
     more_contrast_blocks(&mut out, file);
     forced_block(&mut out, file);
-    out
+    Ok(out)
 }
 
 /// The tokens that differ by theme, as one theme has them; with `only_more`, only the ones that
@@ -191,7 +191,7 @@ fn theme_declarations(
 
 /// What a choice (spacing, text size, motion) changes, switched on by its attribute on `<html>`
 /// and, where it has one, by the device setting too.
-fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) {
+fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) -> anyhow::Result<()> {
     let changed: Vec<(&Token, &str)> = file
         .tokens
         .iter()
@@ -209,6 +209,7 @@ fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) {
         }
     };
     if let Some(media) = &variant.media {
+        let media = resolve_query(file, media)?;
         let _ = write!(out, "\n@media {media} {{\n  :root {{\n");
         declarations(out, "    ");
         out.push_str("  }\n}\n");
@@ -218,6 +219,7 @@ fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) {
         declarations(out, "  ");
         out.push_str("}\n");
     }
+    Ok(())
 }
 
 /// The colors that change for people whose device asks for more contrast, for every way a theme
@@ -581,7 +583,7 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
     out.push_str("\n/** Where the layout changes, in pixels (the `bp-*` tokens). */\nexport const breakpoints = {\n");
     for token in &file.tokens {
         if let (Some(name), Some(value)) = (token.name.strip_prefix("bp-"), &token.same) {
-            let _ = writeln!(out, "  {name}: {},", value.trim_end_matches("px"));
+            let _ = writeln!(out, "  {}: {},", camel(name), value.trim_end_matches("px"));
         }
     }
     out.push_str("} as const;\n");
@@ -760,6 +762,7 @@ mod tests {
             "previewLook: \"data-preview-look\",",
             "tablet: 768,",
             "computer: 1280,",
+            "windowSide: 880,",
             "lightThemeIds = [\"daylight\", \"paper\"]",
             "darkThemeIds = [\"dusk\", \"midnight\"]",
             "\"larger-text\": { attribute: \"data-text\", value: \"larger\" }",
@@ -839,6 +842,17 @@ mod tests {
         assert!(!css.contains("zz-touch\"]"), "{css}");
         let ts = typescript(&file).unwrap();
         assert!(!ts.contains("zz-touch"), "{ts}");
+    }
+
+    #[test]
+    fn the_media_query_of_a_choice_may_name_a_breakpoint_token() {
+        let css = css(&file()).unwrap();
+        assert!(
+            css.contains(
+                "@media (width < 768px) {\n  :root {\n    --fs-ui: calc(16px * var(--text-scale));"
+            ),
+            "{css}"
+        );
     }
 
     #[test]

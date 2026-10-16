@@ -232,7 +232,8 @@ pub(crate) struct ThemeFile {
     pub(crate) rules: Vec<Rule>,
     pub(crate) docs: Vec<DocSheet>,
     pub(crate) contrast: ContrastSpec,
-    pub(crate) distinct: DistinctSpec,
+    /// One rule for the plain surfaces, and one for each kind of tinted row.
+    pub(crate) distinct: Vec<DistinctSpec>,
 }
 
 /// The names that are not CSS properties inside a rule.
@@ -362,7 +363,7 @@ struct Builder {
     rules: Vec<Rule>,
     docs: Vec<DocSheet>,
     contrast: Option<ContrastSpec>,
-    distinct: Option<DistinctSpec>,
+    distinct: Vec<DistinctSpec>,
 }
 
 impl Builder {
@@ -401,7 +402,7 @@ impl Builder {
                 }
             }
             "contrast" => self.contrast = Some(ContrastSpec::parse(node)?),
-            "distinct" => self.distinct = Some(DistinctSpec::parse(node)?),
+            "distinct" => self.distinct.push(DistinctSpec::parse(node)?),
             "mixin" => {
                 let name = node.only_arg()?;
                 if self.mixins.iter().any(|mixin| mixin.name == name) {
@@ -641,7 +642,11 @@ impl Builder {
             rules: self.rules,
             docs: self.docs,
             contrast: self.contrast.context("`contrast` is missing")?,
-            distinct: self.distinct.context("`distinct` is missing")?,
+            distinct: if self.distinct.is_empty() {
+                bail!("`distinct` is missing")
+            } else {
+                self.distinct
+            },
         };
         file.validate()?;
         Ok(file)
@@ -676,8 +681,8 @@ impl ThemeFile {
         let spec = &self.contrast;
         if let Some(unknown) = spec
             .named_colors()
-            .chain(&self.distinct.states)
-            .chain(&self.distinct.surfaces)
+            .chain(self.distinct.iter().flat_map(|spec| &spec.states))
+            .chain(self.distinct.iter().flat_map(|spec| &spec.surfaces))
             .find(|name| {
                 self.token(name)
                     .is_none_or(|token| token.kind != TokenKind::Color)
@@ -985,6 +990,50 @@ mod tests {
         ThemeFile::parse(&format!("{text}\n{extra}\n"))
             .err()
             .map(|error| format!("{error:#}"))
+    }
+
+    /// The pixels of a size token such as `36px`.
+    fn pixels(value: &str) -> f64 {
+        value.trim_end_matches("px").parse().unwrap()
+    }
+
+    #[test]
+    fn ux_04_no_control_is_below_24_and_no_touch_control_is_below_44() {
+        let file = ThemeFile::load(&Repo::discover().unwrap()).unwrap();
+        let least = pixels(
+            file.token("size-target-least")
+                .unwrap()
+                .same
+                .as_ref()
+                .unwrap(),
+        );
+        assert!(
+            (least - 24.0).abs() < f64::EPSILON,
+            "WCAG 2.2 AA asks for 24"
+        );
+        let controls: Vec<&Token> = file
+            .tokens
+            .iter()
+            .filter(|token| token.name.starts_with("size-control") || token.name == "size-row")
+            .collect();
+        assert!(controls.len() >= 3, "the control and row sizes are tokens");
+        for control in controls {
+            let usual = pixels(control.same.as_deref().unwrap());
+            assert!(usual >= least, "{} is {usual}, below {least}", control.name);
+            let touch = control.variants.iter().find(|(name, _)| name == "touch");
+            let touch = pixels(
+                &touch
+                    .unwrap_or_else(|| panic!("{} has no touch value", control.name))
+                    .1,
+            );
+            assert!(
+                touch >= 44.0,
+                "{} is {touch} for a finger, below 44",
+                control.name
+            );
+        }
+        // The old single size of 44 for every target is gone, not kept beside the new ones.
+        assert!(file.token("size-target").is_none());
     }
 
     #[test]

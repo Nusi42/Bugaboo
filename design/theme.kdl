@@ -38,6 +38,9 @@ variants {
     variant "compact" attribute="data-spacing" value="compact"
     variant "larger-text" attribute="data-text" value="larger"
     variant "less-motion" attribute="data-motion" value="less" media="(prefers-reduced-motion: reduce)"
+    // Choices the device makes: a touch screen (fingers need 44 px, UX §7.4) and a phone (text 16).
+    variant "touch" media="(pointer: coarse), (width < $bp-tablet)"
+    variant "phone" media="(width < $bp-tablet)"
 }
 
 // Tokens. The first value (unnamed) is the same in every theme. A color has one value per
@@ -60,6 +63,8 @@ tokens {
     size "fs-md" "calc(16px * $text-scale)"
     size "fs-lg" "calc(20px * $text-scale)"
     size "fs-xl" "calc(24px * $text-scale)"
+    // The text of rows, fields and buttons: 14 on a computer, 16 on a phone (UX §7.3).
+    size "fs-ui" "calc(14px * $text-scale)" phone="calc(16px * $text-scale)"
 
     // Spacing (times the spacing choice)
     size "space-1" "calc(4px * $density)"
@@ -68,15 +73,50 @@ tokens {
     size "space-4" "calc(16px * $density)"
     size "space-5" "calc(24px * $density)"
     size "space-6" "calc(32px * $density)"
+    size "space-7" "calc(48px * $density)"
+
+    // Padding per container (UX §7.4, R2, R3): inside a control 12, a box, a row or a panel 16, a
+    // dialog or a page 24; between fields 20, between sections 28.
+    size "pad-control" "$space-3"
+    size "pad-box" "$space-4"
+    size "pad-dialog" "$space-5"
+    size "gap-fields" "calc(20px * $density)"
+    size "gap-sections" "calc(28px * $density)"
 
     // Sizes
     size "size-content" "640px"
     size "size-page" "960px"
     size "size-menu" "240px"
-    size "size-form" "440px"
+    size "size-form" "$size-dialog"
     size "size-qr" "200px"
     size "size-code" "220px"
-    size "size-target" "44px"
+    // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
+    // least, so no control is smaller (a test holds the tokens to it).
+    size "size-target-least" "24px"
+    size "size-control" "36px" touch="44px"
+    size "size-control-small" "28px" touch="44px"
+    // A row of a list: 44 with a mouse and 64 for a finger.
+    size "size-row" "44px" touch="64px"
+    // The coloured edge of a row for its priority.
+    size "size-edge" "4px"
+    // The name of a value in the details: 112 on a computer, 120 on a phone.
+    size "size-name" "112px" phone="120px"
+    // The columns of a list row (UX §4.2): the icon columns, the ID, the priority, the person.
+    size "size-col-icon" "24px"
+    size "size-col-key" "96px"
+    size "size-col-priority" "96px"
+    size "size-col-person" "144px"
+    size "size-col-labels" "160px"
+    size "size-col-changed" "96px"
+    // A window (UX §6.3): it starts 760 wide, the smallest is 480 x 360, and the form follows its own width.
+    size "size-window" "760px"
+    size "size-window-width-min" "480px"
+    size "size-window-height-min" "360px"
+    size "size-window-button" "46px"
+    size "bp-window-side" "880px"
+    size "bp-window-wide" "1200px"
+    // The width of one day on the timeline at the week zoom.
+    size "size-day-week" "16px"
 
     // Focus ring
     size "ring-width" "2px"
@@ -90,14 +130,16 @@ tokens {
     size "size-panel" "420px"
     size "size-bar" "56px"
     size "size-viewport" "100dvh"
-    size "size-dialog" "560px"
+    // A question is a small fixed dialog, 440 wide (R10); the palette of quick search is wider.
+    size "size-dialog" "440px"
+    size "size-palette" "560px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
     size "size-list" "300px"
     size "size-details" "300px"
     size "size-reading" "75ch"
     size "size-sheet-share" "85%"
-    size "size-matrix-cell" "calc($size-target * 3)"
+    size "size-matrix-cell" "calc($size-control * 3)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
     size "size-line-medium" "80%"
@@ -185,10 +227,19 @@ tokens {
     color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
     color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
     color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#1a1c21"
-    color "st-ip" daylight="#1d5fd1" paper="#2f5d8a" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#264a6e" dusk-more="#b3d0ff" midnight-more="#82b1ff"
-    color "st-ip-soft" daylight="#e7effc" paper="#e4ecf4" dusk="#24365a" midnight="#10244a"
+    color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
+    color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
     color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "st-done-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
+    // The tint of a row by its status group: the group's soft color mixed into the raised surface.
+    // The hovered and the selected row keep the hue and move away from the tint by the same step as
+    // the plain rows do, so the state stays visible on every tint (the `distinct` rules below).
+    color "tint-ip" daylight="#f5f9fe" paper="#f2f7f6" dusk="#293448" midnight="#131e34"
+    color "tint-ip-hover" daylight="#eef2f9" paper="#edf0ed" dusk="#2c384d" midnight="#18233a"
+    color "tint-ip-selected" daylight="#eaebfc" paper="#e2ebf0" dusk="#34385f" midnight="#1c234f" midnight-more="#1b224b"
+    color "tint-done" daylight="#f5fbf7" paper="#f5f7ef" dusk="#283638" midnight="#12231e"
+    color "tint-done-hover" daylight="#eef4f2" paper="#f0f0e6" dusk="#2c3a3d" midnight="#162824"
+    color "tint-done-selected" daylight="#eaedf5" paper="#e5ebe9" dusk="#333a50" midnight="#1c293a" midnight-more="#192734"
     color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
     color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
     color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
@@ -222,7 +273,7 @@ tokens {
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
     text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ip" "tint-ip-hover" "tint-ip-selected" "tint-done" "tint-done-hover" "tint-done-selected" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
     restricted "on-accent" on="accent" reason="On-accent text is only ever drawn on the accent fill."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
@@ -243,7 +294,7 @@ contrast min=4.5 {
     }
     exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
         text "fg-subtle"
-        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-*-soft" "cat*-bg"
+        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-*-soft" "tint-*" "cat*-bg"
     }
     exclude reason="Accent text sits on plain surfaces or the accent tint, not on status or category tints." {
         text "accent-fg"
@@ -288,6 +339,16 @@ contrast min=4.5 {
 distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and selected rows must stay visible: they differ from every surface by at least 1.08:1, and from each other by at least 1.04:1, in every theme." {
     states "bg-hover" "bg-selected"
     surfaces "bg-canvas" "bg-surface" "bg-raised"
+}
+
+distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
+    states "tint-ip-hover" "tint-ip-selected"
+    surfaces "tint-ip"
+}
+
+distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
+    states "tint-done-hover" "tint-done-selected"
+    surfaces "tint-done"
 }
 
 
@@ -347,7 +408,7 @@ mixin "marked" {
 // The edge of anything that is pressed or typed in: a touch target with a line and a raised fill.
 mixin "control-box" {
     box-sizing border-box
-    min-height "$size-target"
+    min-height "$size-control"
     border "$border-width solid $border"
     border-radius "$r-ctl"
     background "$bg-raised"
@@ -357,10 +418,10 @@ mixin "control-box" {
 mixin "input-box" {
     use "control-box"
     width "100%"
-    padding "$space-2 $space-3"
+    padding "$space-2 $pad-control"
     color "$fg"
     font-family "$font"
-    font-size "$fs-md"
+    font-size "$fs-ui"
 }
 
 // A row of a list that is picked from: the people, the results of quick search.
@@ -369,7 +430,7 @@ mixin "pick-row" {
     flex-direction column
     gap "$space-1"
     box-sizing border-box
-    min-height "$size-target"
+    min-height "$size-control"
     padding "$space-2 $space-3"
     color "$fg"
     text-decoration none
@@ -379,7 +440,7 @@ mixin "pick-row" {
 // The words of a button, a menu item or a branch of the tree.
 mixin "menu-text" {
     color "$fg"
-    font-size "$fs-md"
+    font-size "$fs-ui"
     font-weight "$weight-bold"
     text-decoration none
 }
@@ -432,7 +493,7 @@ mixin "touch-row" {
     display flex
     align-items center
     gap "$space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     cursor pointer
 }
 
@@ -440,13 +501,13 @@ mixin "touch-row" {
 mixin "touch-link" {
     display inline-flex
     align-items center
-    min-height "$size-target"
+    min-height "$size-control"
 }
 
 // The name of a tab of a row of tabs: the editor of text, the sections of a form.
 mixin "tab-label" {
     padding "$space-2 $space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
@@ -562,7 +623,7 @@ part "button" {
     justify-content center
     gap "$space-2"
     use "control-box"
-    padding 0 "$space-4"
+    padding 0 "$pad-control"
     use "menu-text"
     font-family "$font"
     line-height "$lh-tight"
@@ -576,7 +637,7 @@ part "button[variant=wide]" {
 
 // A button with only an icon: as wide as it is high.
 part "button[variant=square]" {
-    width "$size-target"
+    width "$size-control"
     padding 0
 }
 
@@ -760,7 +821,7 @@ part "switch" {
 part "switch.track" {
     flex none
     box-sizing border-box
-    width "$size-target"
+    width "$size-control"
     height "$space-5"
     padding "$space-1"
     border "$border-width solid $border"
@@ -883,7 +944,7 @@ part "choice-group.input" {
 part "choice-group.label" {
     display inline-flex
     align-items center
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0 "$space-4"
     border "$border-width solid $border"
     border-radius "$r-ctl"
@@ -987,14 +1048,14 @@ part "overlay.modal" {
 
 part "overlay.modal[variant=center]" {
     width "100%"
-    max-width "$size-dialog"
+    max-width "$size-palette"
     max-height "100%"
     border-radius "$r-card"
 }
 
 part "overlay.modal[variant=question]" {
     width "100%"
-    max-width "$size-form"
+    max-width "$size-dialog"
     border-radius "$r-card"
 }
 
@@ -1132,7 +1193,7 @@ part "picker.row" {
     align-items center
     justify-content space-between
     gap "$space-2 $space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0 "$space-2"
     border-radius "$r-ctl"
 }
@@ -1866,8 +1927,8 @@ part "project-tree.toggle" "project-tree.spacer" {
     align-items center
     justify-content center
     box-sizing border-box
-    width "$size-target"
-    min-height "$size-target"
+    width "$size-control"
+    min-height "$size-control"
 }
 
 part "project-tree.toggle" {
@@ -1900,7 +1961,7 @@ part "project-tree.link" {
     gap "$space-2"
     box-sizing border-box
     min-width 0
-    min-height "$size-target"
+    min-height "$size-control"
     padding "0 $space-3"
     border-radius "$r-ctl"
     use "menu-text"
@@ -2009,7 +2070,7 @@ part "access-keys.more" {
 }
 
 part "access-keys.more-title" {
-    min-height "$size-target"
+    min-height "$size-control"
     display flex
     align-items center
     font-weight "$weight-bold"
@@ -2647,7 +2708,7 @@ part "in-place.button" {
     use "bare-button"
     box-sizing border-box
     max-width "100%"
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0 "$space-2"
     border-radius "$r-ctl"
     color inherit
@@ -2748,7 +2809,7 @@ part "issue-fact.value" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    min-height "$size-target"
+    min-height "$size-control"
     font-size "$fs-md"
 }
 
@@ -3022,7 +3083,7 @@ part "list-editor.list" {
 }
 
 part "list-editor.open" {
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0
     use "bare-button"
     color "$accent-fg"
@@ -3069,7 +3130,7 @@ part "shortcut-editor.row" {
 }
 
 part "shortcut-editor.label" {
-    min-width "$size-target"
+    min-width "$size-control"
     margin-inline-end "$space-2"
     font-weight "$weight-bold"
 }
@@ -3276,7 +3337,7 @@ part "markdown.panel" {
 
 part "markdown.preview" {
     use "surface-box"
-    min-height "$size-target"
+    min-height "$size-control"
     padding "$space-3"
 }
 
@@ -3331,7 +3392,7 @@ part "history.tabs" {
 
 part "history.tab" {
     padding "$space-2 $space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
@@ -3446,8 +3507,8 @@ part "field-swatch" {
     display inline-flex
     align-items center
     justify-content center
-    min-width "$size-target"
-    min-height "$size-target"
+    min-width "$size-control"
+    min-height "$size-control"
     padding 0 "$space-2"
     border "$border-width solid $border"
     border-radius "$r-ctl"
@@ -10059,8 +10120,8 @@ part "draggable.handle" {
     display inline-flex
     align-items center
     justify-content center
-    min-width "$size-target"
-    min-height "$size-target"
+    min-width "$size-control"
+    min-height "$size-control"
     border-radius "$r-ctl"
     color "$fg-muted"
     cursor grab
@@ -10102,7 +10163,7 @@ part "drop-slot" {
 }
 
 part "drop-slot[state=over]" {
-    min-height "$size-target"
+    min-height "$size-control"
     border "$border-width dashed $accent"
     background "$accent-soft"
 }
