@@ -317,6 +317,15 @@ files = ["crates/bb-api/**", "tools/checks/version-exemptions.toml"]
 status = "active"
 
 [[check]]
+id = "ARCH-API-FREEZE"
+title = "Nothing in /api/v1 is renamed or removed after the API freeze"
+rule = "ADR-0008"
+tool = "xtask (compares the generated OpenAPI document with the frozen copy stored at m4-done: a path, operation, schema, property, parameter, enum value or error code that is gone fails; additions pass)"
+when = ["push", "ci"]
+files = ["crates/bb-api/**", "web/packages/api-client/openapi.json"]
+status = "planned"
+
+[[check]]
 id = "ARCH-LEAN"
 title = "Every list endpoint supports fields=, cursor paging and a page-size cap; every GET documents ETag and 304"
 rule = "PERF-02"

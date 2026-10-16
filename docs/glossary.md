@@ -56,9 +56,10 @@ Rules:
 | **Labels**               | A fixed list of words managed by admins                            | components                         |
 | **Fields**               | The pieces of information on an issue. *Own fields* are those an organization adds | custom field (UI), attribute |
 | **Choice**               | One of the values a *Pick one* or *Pick several* field offers (*Critical*, *Major*), with its color and icon | enum value, list item (in UI) |
-| **Combine with another choice** | Move every issue from one choice, tag or label to another, then remove the first one | merge (in UI) |
+| **Combine with another choice** | Move every issue from one choice, tag or label to another, then retire the first one | merge (in UI) |
 | **Retire**               | Stop offering a choice, label, issue type or field for new issues while old issues keep it | archive, deprecate (in UI) |
 | **Look** (of a field)    | How a field's value is shown: *Badge, Pill, Plain text, Progress bar, Avatar* | display style, renderer |
+| **Label group**          | A named group of labels (*area*, *platform*); a bare *Group* always means people | category (for labels) |
 | **Pick one group**       | A group of labels of which an issue can have only one (*area: login* or *area: billing*) | exclusive group, mutually exclusive |
 | **Comment**              | What people write under an issue; it can be changed later, and its earlier versions are kept | note (for this), reply |
 | **Mention**              | Naming a person, group or role in a text with `@`, so they find it under *Mentions* | ping, tag (for people) |
@@ -210,7 +211,7 @@ Rules:
 | **Organization settings**| Settings for the whole Bugaboo server                              | admin console, instance settings   |
 | **Reset to default**     | Take away the value set at this level, so the value from above counts again | clear override (in UI) |
 | **Set by your organization** | Shown on a setting an administrator locked: it can't be changed here, and the line says why | enforced (in UI) |
-| **Layout**               | Which fields appear where: *issue layout*, *new-issue form*, *card layout* | screen, screen scheme      |
+| **Layout**               | Which fields appear where: on the *issue page*, in the *new-issue form*, on a *card* | screen, screen scheme      |
 | **Section**              | A titled group of fields in a layout; sections with the same *tab* are shown together under it | panel, block (in a layout) |
 | **Spacing**              | How close together things are on screen: *Comfortable* or *Compact* | density (in UI) |
 | **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
@@ -247,7 +248,7 @@ Rules:
 | **Accept by itself when its checks pass** | A project setting for handed-over issues; off at the start | auto-merge, auto-accept (in UI) |
 | **My agents**            | Your agents and all their work in one place, *Waiting for you* first | agent dashboard, fleet (in UI) |
 | **Stop all my agents**   | Stop every one of your agents at once                              | kill switch (in UI) |
-| **Run** (of an app or agent) | Everything one session of an AI app or one attempt of an agent changed; shown as a list and undone in one step | batch, transaction (in UI) |
+| **Run** (of an app, an agent or a change to many issues) | Everything one session of an AI app, one attempt of an agent or one *Change many issues* changed; shown with its progress and as a list, and undone in one step | batch, transaction (in UI) |
 | **Written by an AI app / Written by an agent** | Labels on text written through MCP, stored with the text like *Written with the assistant* | AI-generated content (as label) |
 | **Written with the assistant** | Label on text the assistant wrote or proposed; also stored with the text | AI-generated content (as label) |
 | **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
@@ -263,6 +264,8 @@ Rules:
 | Permission catalogue | The one list of permissions in `bb-policy`, each with its sentence, topic, where it counts and kind |
 | Field catalogue     | The one list of built-in fields in `bb-core` that field permissions apply to |
 | `PersonRef`         | How every person in an answer is shown, worked out for the viewer: name, role label, *Someone* or *Former user* |
+| Readable ID         | The code name (`ReadableId`) of the *Issue ID* people see (`WEB-142`); `IssueId` is the stored key that never changes |
+| Edit notice         | The code name (`EditNotice`, `EditNotices`) of the note a person gets about their text: *Ask … to finish*, *Edit anyway*, given back |
 | Instance            | One installed Bugaboo server                                          |
 | AST                 | The parsed form of a search, shared by Simple and Advanced search     |
 | Design tokens       | Named theme values (`bg.surface`), the only way code uses colors and sizes |

@@ -9,7 +9,7 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | Wave | WP | Name | Who | Folder / branch |
 |------|----|------|-----|-----------------|
 | 1 | WP-01 | Words, permissions, decision records, the name map and the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
-| 1 | WP-02 | Names before the API freeze: *Create*, the code names, big files split | Builder | `bugaboo.win2` / `WIN2` |
+| 1 | [WP-02](WP-02-names-before-the-api-freeze.md) | Names before the API freeze: *Create*, the code names, big files split | Builder | `bugaboo.win2` / `WIN2` |
 | 1 | [WP-03](WP-03-browser-tests-without-running-out-of-connections.md) | Browser tests that never run out of connections | Builder | `bugaboo.win3` / `WIN3` |
 | 2 | WP-04 | Workflows on the server: statuses as data, status changes and their rules, starter workflows | Builder | `bugaboo.win2` / `WIN2` |
 | 2 | WP-05 | Files on issues and comments: upload, safe storage, type checks, previews | Builder | `bugaboo.win3` / `WIN3` |
@@ -108,7 +108,7 @@ As in M3: a package changes only what it owns; shared files get added lines only
 | `tools/checks/catalog.toml` | Each package changes only the entries of the checks it switches on |
 | `docs/third-party/README.md` | One row per new dependency, in the same commit (`lettre`, `infer`, `image`, `hayro`: its license is checked first) |
 | `crates/bb-policy/src/catalogue.rs` | WP-01 adds every M4 permission with its starting values |
-| `crates/bb-store/src/migrations/` | WP-04 `m0014`, WP-05 `m0015`, WP-06 `m0016`; later packages ask the lead |
+| `crates/bb-store/src/migrations/` | WP-02 `m0014` (stored names), WP-04 `m0015`, WP-05 `m0016`, WP-06 `m0017`; later packages ask the lead |
 | `crates/bb-core/src/event.rs` (`RecordKind`) | Added kinds only |
 | `crates/bb-app/src/jobs.rs` (job kinds) | Added kinds only |
 | `web/packages/api-client/openapi.json` | Generated; a conflict is solved by generating again |
