@@ -198,6 +198,20 @@ test("ux_6_3 the form follows the width of its window: one column below 880, the
     .toBeGreaterThan(100);
 });
 
+test("ux_6_3 a minimized window stands after the menu: Sign out stays clickable", async ({
+  page,
+}) => {
+  await openIt(page);
+  await windowButton(page, t("window.minimize")).click();
+  await expect(windowDock(page)).toBeVisible();
+  const dock = await boxOf(windowDock(page));
+  const signOut = await boxOf(page.getByRole("button", { name: t("nav.sign-out"), exact: true }));
+  // The bar starts to the right of the menu and does not touch the button.
+  expect(dock.x).toBeGreaterThanOrEqual(signOut.x + signOut.width);
+  await page.getByRole("button", { name: t("nav.sign-out"), exact: true }).click();
+  await expect(page.getByRole("button", { name: t("sign-in.submit"), exact: true })).toBeVisible();
+});
+
 test("ux_6_3 Esc closes the window and keeps the draft", async ({ page }) => {
   await openIt(page);
   await titleBox(page).fill("Kept by Esc");

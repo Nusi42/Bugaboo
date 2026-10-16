@@ -2015,6 +2015,17 @@ part "window-dock" {
     cursor pointer
 }
 
+// On a computer the dock stands in the main area, after the menu, so it never covers it.
+part "app-layout[variant=side] window-dock" {
+    inset-inline-start "calc($size-sidebar + $space-4)"
+    max-width "calc(100% - $size-sidebar - $space-4 * 2)"
+}
+
+part "app-layout[variant=side-narrow] window-dock" {
+    inset-inline-start "calc($size-sidebar-narrow + $space-4)"
+    max-width "calc(100% - $size-sidebar-narrow - $space-4 * 2)"
+}
+
 part "window-dock[hovered]" {
     background "$bg-hover"
 }

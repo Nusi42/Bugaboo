@@ -1495,6 +1495,16 @@ body {
   cursor: pointer;
 }
 
+[data-part="app-layout"][data-variant~="side"] [data-part="window-dock"] {
+  inset-inline-start: calc(var(--size-sidebar) + var(--space-4));
+  max-width: calc(100% - var(--size-sidebar) - var(--space-4) * 2);
+}
+
+[data-part="app-layout"][data-variant~="side-narrow"] [data-part="window-dock"] {
+  inset-inline-start: calc(var(--size-sidebar-narrow) + var(--space-4));
+  max-width: calc(100% - var(--size-sidebar-narrow) - var(--space-4) * 2);
+}
+
 [data-part="window-dock"][data-hovered] {
   background: var(--bg-hover);
 }
