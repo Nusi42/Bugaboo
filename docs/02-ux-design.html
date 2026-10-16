@@ -335,6 +335,7 @@ sort by priority, highest first</div>
       <li><b>Header:</b> type and issue ID (click to copy a link), the title (click to change it), a <i>More</i> menu, <i>Open full page</i> and <i>Close</i>.</li>
       <li><b>Status button:</b> the big button shows the current status with its group's icon and color, and an arrow that says you can change it. Clicking it lists only the status changes you can make right now, in words: <i>"Start working"</i>, <i>"Send to testing"</i>. If the workflow needs information first, a small form asks only for that (<i>Ask for</i>, WF-04).</li>
       <li><b>Main column:</b> description, then sections from the layout (CFG-01), then sub-issues, related issues, files and documents, then activity.</li>
+      <li><b>Files</b> (ATT-01, ADR-0032): a block with a row per file: its preview (images and the first page of a PDF) or its type's icon, the name, the size, who added it and when, and <i>Download</i>. To add files, drag them onto the issue, paste a screenshot, or use <i>Upload</i>. Each upload shows its progress where the file will be and goes on by itself after a lost connection. A file that is too big or of a type the organization does not accept is refused at once with the limit in words: <i>"Too big: at most 25 MB per file."</i>. Files you added, or any file if you may change the issue, have <i>Delete</i>, which goes to the trash with <i>Undo</i>. Clicking a preview shows it larger. Other files are only downloaded, never opened inside the page. Comments show their files in the same rows under the text.</li>
       <li><b>Fields panel:</b> the fields from the layout. Empty fields you may change show as a quiet <i>"Add due date"</i>. Empty fields you can't change are left out. Read-only fields show a lock and say why.</li>
       <li><b>History:</b> comments, changes and (from M6) time entries in time order. Changes to fields you can't see are not listed.</li>
       <li><b>Timer:</b> the play button next to <i>Spent</i>.</li>
@@ -536,7 +537,10 @@ sort by priority, highest first</div>
     <ul>
       <li>Grouped by issue or document, newest first: <i>"WEB-142 · Ana mentioned you · Ben changed the status"</i>.</li>
       <li>Each one has <i>Open</i> (jumps to the exact comment or change) and <i>Mark as read</i>.</li>
-      <li><i>Customize</i> (top right) opens the notification settings directly.</li>
+      <li><i>Customize</i> (top right) opens the notification settings directly: one row for each kind of event, each with <i>In the app</i> and <i>By e-mail</i> (ADR-0033). At the start you hear of mentions and of being assigned in the app and by e-mail, and of status changes, comments and files on issues you follow in the app only. You never hear of your own changes.</li>
+      <li>Filters on top: <i>All</i>, <i>Unread</i>, <i>Mentions</i>. The start page shows the newest unread notifications instead of the old <i>Mentions</i> block.</li>
+      <li>E-mails say the issue ID and title, who changed what and the comment, only with what you may see, and a link. Changes to one issue within 5 minutes come in one e-mail. With <i>Short e-mails</i>, an organization leaves out all issue text.</li>
+      <li>The notification of a run of many changes says how it ended and links to its result.</li>
     </ul>
 
     <h3 id="s4-12"><button type="button" class="sec" data-sec>§4.12</button>Assistant <span class="ids">AI</span></h3>
