@@ -1906,6 +1906,12 @@ pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed
 /// The message `issues.clear-selection`.
 pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
 
+/// The message `issues.column-key`.
+pub const ISSUES_COLUMN_KEY: MessageKey = MessageKey::new("issues.column-key");
+
+/// The message `issues.column-select`.
+pub const ISSUES_COLUMN_SELECT: MessageKey = MessageKey::new("issues.column-select");
+
 /// The message `issues.comment`.
 pub const ISSUES_COMMENT: MessageKey = MessageKey::new("issues.comment");
 
@@ -1962,6 +1968,9 @@ pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details
 
 /// The message `issues.keep-theirs-unnamed`.
 pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-theirs-unnamed");
+
+/// The message `issues.legend`.
+pub const ISSUES_LEGEND: MessageKey = MessageKey::new("issues.legend");
 
 /// The message `issues.link-copied`.
 pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied");
@@ -9075,6 +9084,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
     ),
     ("issues.clear-selection", "Clear the ticks"),
+    ("issues.column-key", "Issue ID"),
+    ("issues.column-select", "Select"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),
     (
@@ -9113,6 +9124,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.hide-details", "Hide details"),
     ("issues.keep-theirs", "Keep {name}'s change"),
     ("issues.keep-theirs-unnamed", "Keep their change"),
+    ("issues.legend", "What the colors mean"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
     (

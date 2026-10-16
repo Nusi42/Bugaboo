@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, Card, useLayout, partOf, part } from "@bugaboo/ui";
 import { useEffect } from "react";
 
+import { IssueLegend } from "./IssueLegend.tsx";
 import { IssueList } from "./IssueList.tsx";
 import { openNewIssue, rememberProject } from "./new-issue-state.ts";
 import { OpenIssue } from "./OpenIssue.tsx";
@@ -34,7 +35,7 @@ export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: Iss
     <Card heading={t("issues.page-title", { project: name })} level={1}>
       <div {...partOf(part.listEditor)}>
         <div {...partOf(part.listEditorList, { states: [alone && "hidden"] })} hidden={alone}>
-          <div {...partOf(part.row)}>
+          <div {...partOf(part.listToolbar)}>
             <Button
               look={buttonLook.primary}
               onPress={() => {
@@ -43,8 +44,9 @@ export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: Iss
             >
               {t("issues.new")}
             </Button>
-            <Selected selection={selection} />
+            <IssueLegend />
           </div>
+          <Selected selection={selection} />
           <IssueList project={shortName} openIn={openIn} open={open} selection={selection} />
         </div>
         {open === undefined ? null : <OpenIssue open={open} onFocus={onFocus} onClose={onClose} />}

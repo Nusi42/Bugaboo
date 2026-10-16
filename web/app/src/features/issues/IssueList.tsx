@@ -3,8 +3,8 @@ import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { linesFrom } from "../../shared/paged.ts";
-import { hrefOf, type IssueShow } from "./issue-show.ts";
-import { IssueRow } from "./IssueRow.tsx";
+import type { IssueShow } from "./issue-show.ts";
+import { IssueGrid } from "./IssueGrid.tsx";
 import { lineOf, useProjectIssues } from "./issues.ts";
 import { NoIssues } from "./NoIssues.tsx";
 import { useRowKeys } from "./use-row-keys.ts";
@@ -20,8 +20,8 @@ export interface IssueListProps {
 }
 
 /**
- * The lean list of the issues of a project (UX §4.2, ISS-01): the newest first, a page at a time
- * with *Show more*, and a box to tick for each (WP-08 acts on the ticked ones).
+ * The lean list of the issues of a project (UX §4.2, ISS-01): a grid in groups by status group, a
+ * page at a time with *Show more*, and a box to tick for each (WP-08 acts on the ticked ones).
  */
 export function IssueList({ project, openIn, open, selection }: IssueListProps) {
   const found = useProjectIssues(project);
@@ -34,21 +34,14 @@ export function IssueList({ project, openIn, open, selection }: IssueListProps) 
     return <NoIssues project={project} />;
   }
   return (
-    <div {...partOf(part.stack)}>
-      <ul ref={rows} {...partOf(part.issueList)} aria-label={t("issues.list")}>
-        {lines.map((line) => (
-          <IssueRow
-            key={line.id}
-            line={line}
-            href={hrefOf(openIn, project, line.key)}
-            selected={selection.has(line.id)}
-            current={line.key === open}
-            onSelect={(selected) => {
-              selection.set(line.id, selected);
-            }}
-          />
-        ))}
-      </ul>
+    <div ref={rows} {...partOf(part.stack)}>
+      <IssueGrid
+        lines={lines}
+        project={project}
+        openIn={openIn}
+        open={open}
+        selection={selection}
+      />
       {found.hasNextPage ? (
         <Button
           isPending={found.isFetchingNextPage}
