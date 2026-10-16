@@ -2499,6 +2499,14 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <p><strong>The names of the page frame are written once.</strong> The attributes of <code>&lt;html&gt;</code> that the sheets and the code use (<code>data-look</code>, <code>data-theme</code>, <code>data-preview-look</code>) are the <code>frame</code> line of the file. <code>gen theme</code> writes them to the sheets, to <code>tokens.ts</code> (<code>pageAttributes</code>), which <code>theme.ts</code>, the theme sample and the end-to-end specs read, and to <code>docs/design/frame.js</code> (<code>bugabooFrame</code>), which the scripts of the design pages read (M2C-F91). The choices (<code>data-spacing</code>, <code>data-text</code>, <code>data-motion</code>) are read from <code>variants</code> the same way.</p>
 </li>
 </ol>
+<h4>Update 2026-10-16 (M3 WP-16, the new look)</h4>
+<ul>
+<li><strong>Choices of the device.</strong> A <code>variant</code> may have only <code>media=</code> (no attribute on the page): <code>touch</code> (<code>(pointer: coarse), (width &lt; $bp-tablet)</code>) gives a token its finger value (<code>size-control</code> 36 becomes 44, <code>size-row</code> 44 becomes 64), <code>phone</code> gives text 16. A media query may name a <code>$token</code> with a plain value.</li>
+<li><strong>Container queries.</strong> A rule may hold <code>container "(min-width: $bp-window-side)" { … }</code>, written as <code>@container</code>: a window follows its own width, not the screen's (UX §6.3).</li>
+<li><strong>One run-time style.</strong> The size a person drags a window to is two variables of the theme file (<code>window-width</code>, <code>window-height</code>). THEME-ONLY allows exactly <code>element.style.setProperty(variableOf("…"), value)</code>: <code>variableOf</code> only takes the name of a token, and nothing else may set a style from code.</li>
+<li><strong>The pictures use the parts.</strong> <code>cargo xtask gen theme</code> also writes <code>docs/design/parts.css</code>, the rules of the parts without the tokens, so the pictures of the UX design are drawn with the same <code>data-part</code> markup as the app and cannot differ from it.</li>
+<li><strong>Several <code>distinct</code> rules.</strong> The hovered and the selected row must differ from the tint of a status group as well as from the plain surfaces, so the file has one <code>distinct</code> rule for the plain surfaces and one for each tint.</li>
+</ul>
 <h4>Consequences</h4>
 <ul>
 <li>A change of look is a change in one file, and the generated sheet shows it in the diff. A rule exists once: the focus ring, the muted text, the field label.</li>
