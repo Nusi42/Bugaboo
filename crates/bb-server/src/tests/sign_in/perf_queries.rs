@@ -49,7 +49,7 @@ fn page_reads(issue: &str) -> Vec<(&'static str, String)> {
         "/sub-issues",
         "/related-issues",
         "/history",
-        "/sorting",
+        "/labels-and-tags",
         "/follow",
         "/followers",
     ]

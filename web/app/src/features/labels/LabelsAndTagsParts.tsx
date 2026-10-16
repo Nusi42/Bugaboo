@@ -7,11 +7,11 @@ import { messageOf } from "../../shared/errors.ts";
 import { AddLabel } from "./AddLabel.tsx";
 import { AddTag } from "./AddTag.tsx";
 import { Chips } from "./Chips.tsx";
-import { afterSorting, type Counted } from "./labels.ts";
+import { afterLabelsAndTags, type Counted } from "./labels.ts";
 
 /** What the two parts get: the answer for the issue, and the issue it is about. */
-export interface SortingPartProps {
-  readonly body: Readonly<Schema<"IssueSortingBody">>;
+export interface LabelsAndTagsPartProps {
+  readonly body: Readonly<Schema<"IssueLabelsAndTagsBody">>;
   readonly issueKey: string;
 }
 
@@ -20,10 +20,10 @@ export function TagsPart({
   body,
   issueKey,
   project,
-}: SortingPartProps & { readonly project: string | undefined }) {
+}: LabelsAndTagsPartProps & { readonly project: string | undefined }) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/tags/{tag}", {
-    onSuccess: (sorting: Counted) => {
-      afterSorting(issueKey, sorting);
+    onSuccess: (labelsAndTags: Counted) => {
+      afterLabelsAndTags(issueKey, labelsAndTags);
     },
   });
   return (
@@ -50,10 +50,10 @@ export function TagsPart({
 }
 
 /** The labels of the issue, with the ways to take one off and to add one. */
-export function LabelsPart({ body, issueKey }: SortingPartProps) {
+export function LabelsPart({ body, issueKey }: LabelsAndTagsPartProps) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/labels/{label}", {
-    onSuccess: (sorting: Counted) => {
-      afterSorting(issueKey, sorting);
+    onSuccess: (labelsAndTags: Counted) => {
+      afterLabelsAndTags(issueKey, labelsAndTags);
     },
   });
   return (

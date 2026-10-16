@@ -17,8 +17,8 @@ use crate::auth::AppError;
 use crate::issues::IssueStore;
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeTag, CombineLabels, CombineTags, CreateLabel,
-    IssueSortingQuery, LabelChangePreviewQuery, TagChangePreviewQuery, add_label, add_tag,
-    change_label, change_tag, combine_labels, combine_tags, create_label, issue_sorting,
+    IssueLabelsAndTagsQuery, LabelChangePreviewQuery, TagChangePreviewQuery, add_label, add_tag,
+    change_label, change_tag, combine_labels, combine_tags, create_label, issue_labels_and_tags,
     label_change_preview, tag_change_preview,
 };
 use crate::tags::{RemoveLabel, RemoveTag, remove_label, remove_tag};
@@ -38,9 +38,9 @@ fn about_issues(world: &World, member: &str) -> Vec<DomainEvent> {
 }
 
 async fn names(world: &World, issue: IssueId) -> Result<(Vec<String>, Vec<String>), AppError> {
-    let sorting = issue_sorting(
+    let labels_and_tags = issue_labels_and_tags(
         &world.ctx(),
-        IssueSortingQuery {
+        IssueLabelsAndTagsQuery {
             session_token: token(world),
             issue: issue.to_string(),
         },
@@ -48,8 +48,12 @@ async fn names(world: &World, issue: IssueId) -> Result<(Vec<String>, Vec<String
     .await?
     .into_value();
     Ok((
-        sorting.tags.iter().map(|tag| tag.name.clone()).collect(),
-        sorting
+        labels_and_tags
+            .tags
+            .iter()
+            .map(|tag| tag.name.clone())
+            .collect(),
+        labels_and_tags
             .labels
             .iter()
             .map(|label| label.name.clone())

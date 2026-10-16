@@ -1523,6 +1523,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/labels-and-tags": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The tags and labels of an issue and what the person may do with them. */
+    get: operations["getIssueLabelsAndTags"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/labels/{label}": {
     parameters: {
       query?: never;
@@ -1661,23 +1678,6 @@ export interface paths {
      *     trash*.
      */
     post: operations["restoreIssue"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/issues/{issue}/sorting": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The tags and labels of an issue and what the person may do with them. */
-    get: operations["getIssueSorting"];
-    put?: never;
-    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -4245,6 +4245,29 @@ export interface components {
       version?: number | null;
     };
     /**
+     * @description The tags and labels of one issue, and what the person may do with them. A member that holds a
+     *     field of the catalogue is left out when the person's level for the field is *Hidden*.
+     */
+    IssueLabelsAndTagsBody: {
+      /** @description The internal ID of the issue. */
+      issue: string;
+      /** @description Its issue type. The levels set for it count for the fields of this issue. */
+      issue_type: components["schemas"]["IssueTypeRef"];
+      /** @description The labels on it, in the order they were put there. */
+      labels?: components["schemas"]["LabelRefBody"][] | null;
+      /** @description Whether the person may put labels on the issue and take them off. */
+      may_change_labels: boolean;
+      /** @description Whether the person may put tags on the issue and take them off. */
+      may_change_tags: boolean;
+      /** @description The tags on it, in the order they were put there. */
+      tags?: components["schemas"]["TagRefBody"][] | null;
+      /**
+       * Format: int64
+       * @description The version of the issue now. A change of a tag or a label counts it up.
+       */
+      version: number;
+    };
+    /**
      * @description An issue as a small reference: its readable ID and what the viewer may see of it in its own
      *     project. A title or a status that the viewer's role hides there is left out.
      */
@@ -4273,29 +4296,6 @@ export interface components {
       /**
        * Format: int64
        * @description The version of the issue: what *Part of* is changed from.
-       */
-      version: number;
-    };
-    /**
-     * @description The tags and labels of one issue, and what the person may do with them. A member that holds a
-     *     field of the catalogue is left out when the person's level for the field is *Hidden*.
-     */
-    IssueSortingBody: {
-      /** @description The internal ID of the issue. */
-      issue: string;
-      /** @description Its issue type. The levels set for it count for the fields of this issue. */
-      issue_type: components["schemas"]["IssueTypeRef"];
-      /** @description The labels on it, in the order they were put there. */
-      labels?: components["schemas"]["LabelRefBody"][] | null;
-      /** @description Whether the person may put labels on the issue and take them off. */
-      may_change_labels: boolean;
-      /** @description Whether the person may put tags on the issue and take them off. */
-      may_change_tags: boolean;
-      /** @description The tags on it, in the order they were put there. */
-      tags?: components["schemas"]["TagRefBody"][] | null;
-      /**
-       * Format: int64
-       * @description The version of the issue now. A change of a tag or a label counts it up.
        */
       version: number;
     };
@@ -14781,7 +14781,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -14860,6 +14860,87 @@ export interface operations {
       };
     };
   };
+  getIssueLabelsAndTags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The tags and labels of the issue. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   removeLabel: {
     parameters: {
       query?: never;
@@ -14880,7 +14961,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */
@@ -15591,87 +15672,6 @@ export interface operations {
       };
     };
   };
-  getIssueSorting: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
-        issue: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The tags and labels of the issue. */
-      200: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
-        };
-      };
-      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
-      304: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description There is no such thing (resource.not_found). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
   listSubIssues: {
     parameters: {
       query?: {
@@ -15782,7 +15782,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -15881,7 +15881,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */

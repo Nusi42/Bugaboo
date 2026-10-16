@@ -20,7 +20,7 @@ const NOBODYS_ID: &str = "01890a5d-ac96-774b-bcce-b302099a8057";
 /// A tag put on a new issue of the target project by the administrator: the ID of the tag.
 async fn a_tag(fixture: &Fixture<'_>) -> Result<String, Failure> {
     let issue = an_issue(fixture).await?;
-    let sorting = fixture
+    let labels_and_tags = fixture
         .rig()
         .api()
         .add_tag(
@@ -34,7 +34,7 @@ async fn a_tag(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .await
         .map_err(|error| error.to_string())?
         .into_value();
-    sorting
+    labels_and_tags
         .tags
         .first()
         .map(|tag| tag.id.to_string())
@@ -68,9 +68,12 @@ pub(super) async fn tag_request(
     operation: &str,
 ) -> Result<Option<Request>, Failure> {
     Ok(Some(match operation {
-        "getIssueSorting" => (
+        "getIssueLabelsAndTags" => (
             "GET",
-            format!("/api/v1/issues/{}/sorting", an_issue(fixture).await?),
+            format!(
+                "/api/v1/issues/{}/labels-and-tags",
+                an_issue(fixture).await?
+            ),
             None,
         ),
         "addTag" => (
@@ -80,7 +83,7 @@ pub(super) async fn tag_request(
         ),
         "removeTag" => {
             let issue = an_issue(fixture).await?;
-            let sorting = fixture
+            let labels_and_tags = fixture
                 .rig()
                 .api()
                 .add_tag(
@@ -94,7 +97,7 @@ pub(super) async fn tag_request(
                 .await
                 .map_err(|error| error.to_string())?
                 .into_value();
-            let tag = sorting
+            let tag = labels_and_tags
                 .tags
                 .first()
                 .ok_or("the tag is not on the issue")?

@@ -58,7 +58,7 @@ pub(crate) async fn a_label(
 
 /// Puts a tag on an issue, as the administrator, and says which tag it is.
 pub(crate) async fn tagged(world: &World, issue: IssueId, name: &str) -> Result<TagId, String> {
-    let sorting = add_tag(
+    let labels_and_tags = add_tag(
         &world.ctx(),
         AddTag {
             session_token: token(world),
@@ -71,7 +71,7 @@ pub(crate) async fn tagged(world: &World, issue: IssueId, name: &str) -> Result<
     .into_value();
     // The next one comes a moment later, so the order they came in is the order they are read in.
     world.clock.advance(1);
-    sorting
+    labels_and_tags
         .tags
         .iter()
         .find(|tag| name_key(&tag.name) == name_key(name))

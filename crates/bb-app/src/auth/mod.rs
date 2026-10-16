@@ -101,12 +101,13 @@ use crate::settings::{
 };
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
-    CreateLabel, CreateLabelGroup, IssueSorting, IssueSortingQuery, LabelChangePreviewQuery,
-    LabelGroupView, LabelView, Labels, LabelsQuery, RemoveLabel, RemoveTag, TagChangePreview,
-    TagChangePreviewQuery, TagPage, TagSuggestions, TagSuggestionsQuery, TagView, TagsQuery,
-    add_label, add_tag, change_label, change_label_group, change_tag, combine_labels, combine_tags,
-    create_label, create_label_group, issue_sorting, label_change_preview, labels, remove_label,
-    remove_tag, tag_change_preview, tag_suggestions, tags,
+    CreateLabel, CreateLabelGroup, IssueLabelsAndTags, IssueLabelsAndTagsQuery,
+    LabelChangePreviewQuery, LabelGroupView, LabelView, Labels, LabelsQuery, RemoveLabel,
+    RemoveTag, TagChangePreview, TagChangePreviewQuery, TagPage, TagSuggestions,
+    TagSuggestionsQuery, TagView, TagsQuery, add_label, add_tag, change_label, change_label_group,
+    change_tag, combine_labels, combine_tags, create_label, create_label_group,
+    issue_labels_and_tags, label_change_preview, labels, remove_label, remove_tag,
+    tag_change_preview, tag_suggestions, tags,
 };
 
 #[cfg(test)]
@@ -491,15 +492,15 @@ use_cases! {
     /// Stops a change to many issues that goes on in the background.
     cancel_bulk_run(BulkRunQuery) -> Authorized<BulkRunStatus>;
     /// Shows the tags and labels of an issue.
-    issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
+    issue_labels_and_tags(IssueLabelsAndTagsQuery) -> Authorized<IssueLabelsAndTags>;
     /// Puts a tag on an issue by its name.
-    add_tag(AddTag) -> Authorized<IssueSorting>;
+    add_tag(AddTag) -> Authorized<IssueLabelsAndTags>;
     /// Takes a tag off an issue.
-    remove_tag(RemoveTag) -> Authorized<IssueSorting>;
+    remove_tag(RemoveTag) -> Authorized<IssueLabelsAndTags>;
     /// Puts a label on an issue.
-    add_label(AddLabel) -> Authorized<IssueSorting>;
+    add_label(AddLabel) -> Authorized<IssueLabelsAndTags>;
     /// Takes a label off an issue.
-    remove_label(RemoveLabel) -> Authorized<IssueSorting>;
+    remove_label(RemoveLabel) -> Authorized<IssueLabelsAndTags>;
     /// Lists the tags to offer while a person types.
     tag_suggestions(TagSuggestionsQuery) -> Authorized<TagSuggestions>;
     /// Lists the tags of the organization for the people who look after them.

@@ -356,7 +356,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
-        "getIssueSorting",
+        "getIssueLabelsAndTags",
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),

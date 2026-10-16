@@ -3,7 +3,7 @@ import { Alert, alertTone, Switch, partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { sortingKind } from "./change-preview.ts";
+import { labelsAndTagsKind } from "./change-preview.ts";
 import { CombineInto } from "./CombineInto.tsx";
 import { LabelForm } from "./LabelForm.tsx";
 import { refreshLabels, type Label, type LabelGroup } from "./labels.ts";
@@ -48,7 +48,7 @@ export function EditLabel({ label, groups, others }: EditLabelProps) {
       <LabelForm label={label} groups={groups} />
       <RetireLabel label={label} />
       <CombineInto
-        kind={sortingKind.label}
+        kind={labelsAndTagsKind.label}
         id={label.id}
         name={label.name}
         version={label.version}

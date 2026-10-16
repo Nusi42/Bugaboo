@@ -4,8 +4,8 @@ import { useId } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import type { IssueBlockProps } from "../issues/index.ts";
-import { useIssueSorting } from "./labels.ts";
-import { LabelsPart, TagsPart } from "./SortingParts.tsx";
+import { useIssueLabelsAndTags } from "./labels.ts";
+import { LabelsPart, TagsPart } from "./LabelsAndTagsParts.tsx";
 
 /**
  * *Labels and tags* in the Details of the issue page (TAG-01, TAG-02): the tags and labels the
@@ -14,21 +14,21 @@ import { LabelsPart, TagsPart } from "./SortingParts.tsx";
  * of them show (`form.shows`, like *Reported by*), and a person who may not see a field gets
  * nothing of it (SEC-06).
  */
-export function IssueSortingBlock({ issue, issueKey, form }: IssueBlockProps) {
+export function IssueLabelsAndTagsBlock({ issue, issueKey, form }: IssueBlockProps) {
   const heading = useId();
-  const sorting = useIssueSorting(issueKey);
+  const labelsAndTags = useIssueLabelsAndTags(issueKey);
   const [showTags, showLabels] = [form.shows("tags"), form.shows("labels")];
-  if (sorting.isError) {
-    return <Alert tone={alertTone.danger}>{messageOf(sorting.error)}</Alert>;
+  if (labelsAndTags.isError) {
+    return <Alert tone={alertTone.danger}>{messageOf(labelsAndTags.error)}</Alert>;
   }
-  const body = sorting.data;
+  const body = labelsAndTags.data;
   if (body === undefined || (!showTags && !showLabels)) {
     return null;
   }
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
       <h3 id={heading} {...partOf(part.issueSectionTitle)}>
-        {t("labels.sorting-title")}
+        {t("labels.labels-and-tags-title")}
       </h3>
       {showTags ? (
         <TagsPart body={body} issueKey={issueKey} project={issue.project?.short_name} />

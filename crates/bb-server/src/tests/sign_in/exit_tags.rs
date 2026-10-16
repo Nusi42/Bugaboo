@@ -121,13 +121,13 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
         }
         // Where the role sees the field, the tag and the label are on the answer.
         let seen = hal
-            .send("GET", &format!("{ISSUES}/{bug}/sorting"), None)
+            .send("GET", &format!("{ISSUES}/{bug}/labels-and-tags"), None)
             .await?;
         assert_eq!(names(ok(&seen)?, "tags"), ["secret-plan"]);
         assert_eq!(names(&seen.body, "labels"), ["urgent"]);
         // On a task the answer holds neither, like the history of the task.
         let hidden = hal
-            .send("GET", &format!("{ISSUES}/{job}/sorting"), None)
+            .send("GET", &format!("{ISSUES}/{job}/labels-and-tags"), None)
             .await?;
         assert!(names(ok(&hidden)?, "tags").is_empty(), "{}", hidden.body);
         assert!(names(&hidden.body, "labels").is_empty(), "{}", hidden.body);

@@ -32,10 +32,12 @@ export async function showDetails(page: Page): Promise<void> {
 
 /** The names of the labels an issue has, as the API says it. */
 export async function labelNamesOf(admin: ApiSession, issue: string): Promise<string[]> {
-  const sorting = dataOf(
-    await admin.client.GET("/api/v1/issues/{issue}/sorting", { params: { path: { issue } } }),
+  const labelsAndTags = dataOf(
+    await admin.client.GET("/api/v1/issues/{issue}/labels-and-tags", {
+      params: { path: { issue } },
+    }),
   );
-  return (sorting.labels ?? []).map((label) => label.name);
+  return (labelsAndTags.labels ?? []).map((label) => label.name);
 }
 
 /** Opens the list of the project WEB and ticks its first two issues. */

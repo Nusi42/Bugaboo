@@ -380,7 +380,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("changeChoice"),
     Example::route("reorderChoices"),
     Example::route("combineChoices"),
-    Example::with("getIssueSorting", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getIssueLabelsAndTags", &[Quirk::AnIssueOfTheTarget]),
     Example::with("addTag", &[Quirk::AnIssueOfTheTarget]),
     Example::with("removeTag", &[Quirk::AnIssueOfTheTarget]),
     Example::with("addLabel", &[Quirk::AnIssueOfTheTarget]),

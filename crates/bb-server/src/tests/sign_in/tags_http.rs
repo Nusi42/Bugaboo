@@ -17,8 +17,8 @@ const GROUPS: &str = "/api/v1/label-groups";
 const TAGS: &str = "/api/v1/tags";
 
 /// The names in a list of tags or labels of an issue.
-fn names(sorting: &Value, member: &str) -> Vec<String> {
-    sorting[member]
+fn names(labels_and_tags: &Value, member: &str) -> Vec<String> {
+    labels_and_tags[member]
         .as_array()
         .map(|items| {
             items
@@ -139,11 +139,11 @@ async fn tag_02_a_pick_one_group_keeps_one_label_per_issue() -> TestResult {
                 .await?;
             ok(&put)?;
         }
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
         // The clock of the rig stands still, so the order they came in is not told by the time.
-        let mut held = names(ok(&sorting)?, "labels");
+        let mut held = names(ok(&labels_and_tags)?, "labels");
         held.sort();
         assert_eq!(held, vec!["billing".to_owned(), "urgent".to_owned()]);
         // A group cannot become a Pick one group while an issue has two of its labels.
@@ -248,10 +248,13 @@ async fn tag_03_combining_two_labels_changes_every_issue_once_and_records_it() -
             .await?;
         assert_eq!(ok(&combined)?["name"], "sign-in");
         for issue in [&only_old, &both] {
-            let sorting = ada
-                .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+            let labels_and_tags = ada
+                .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
                 .await?;
-            assert_eq!(names(ok(&sorting)?, "labels"), vec!["sign-in".to_owned()]);
+            assert_eq!(
+                names(ok(&labels_and_tags)?, "labels"),
+                vec!["sign-in".to_owned()]
+            );
             // The history of the issue says so, once.
             let history = ada
                 .send(
@@ -321,10 +324,13 @@ async fn tag_03_renaming_a_tag_asks_for_the_version_and_changes_every_issue() ->
             )
             .await?;
         assert_eq!(ok(&renamed)?["name"], "sluggish");
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
-        assert_eq!(names(ok(&sorting)?, "tags"), vec!["sluggish".to_owned()]);
+        assert_eq!(
+            names(ok(&labels_and_tags)?, "tags"),
+            vec!["sluggish".to_owned()]
+        );
         // A person without the right to look after tags is refused.
         let (mut gus, _) = site.person(StartingRole::TeamMember, "gus").await?;
         let refused = gus
@@ -415,10 +421,10 @@ async fn adr_0017_two_people_taking_tags_off_at_the_same_moment_both_succeed() -
             (2..=before + 4).collect::<Vec<_>>(),
             "one event for each version, in a row"
         );
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
-        assert!(names(ok(&sorting)?, "tags").is_empty());
+        assert!(names(ok(&labels_and_tags)?, "tags").is_empty());
         Ok(())
     })
     .await
@@ -467,10 +473,13 @@ async fn adr_0017_a_tag_added_while_the_title_is_saved_lands_and_the_version_agr
         assert_eq!(version_of(&mut ada, &issue).await?, before + 2);
         let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
         assert_eq!(ok(&read)?["issue"]["title"], "New title");
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
-        assert_eq!(names(ok(&sorting)?, "tags"), vec!["urgent".to_owned()]);
+        assert_eq!(
+            names(ok(&labels_and_tags)?, "tags"),
+            vec!["urgent".to_owned()]
+        );
         assert_eq!(
             counted_versions(&rig, &entity).await?,
             (2..=before + 2).collect::<Vec<_>>(),

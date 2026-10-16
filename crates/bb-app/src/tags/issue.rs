@@ -26,7 +26,8 @@ use serde_json::json;
 
 use super::judge::{LabelAddition, TagAddition, judge_label, judge_tag, label_names, tag_names};
 use super::types::{
-    AddLabel, AddTag, IssueSorting, IssueSortingQuery, LabelRef, RemoveLabel, RemoveTag, TagRef,
+    AddLabel, AddTag, IssueLabelsAndTags, IssueLabelsAndTagsQuery, LabelRef, RemoveLabel,
+    RemoveTag, TagRef,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
@@ -64,7 +65,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The tags and labels of an issue and what the viewer may do with them.
-    async fn sorting_of(&self, held: &Evaluation, issue: &Issue) -> Result<IssueSorting, AppError> {
+    async fn labels_and_tags_of(
+        &self,
+        held: &Evaluation,
+        issue: &Issue,
+    ) -> Result<IssueLabelsAndTags, AppError> {
         let store = self.store();
         let internal = |error| internal::<S>(&error);
         let tags = store.tags().await.map_err(internal)?;
@@ -78,7 +83,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .ok_or_else(|| AppError::Internal("an issue has an issue type that is gone".into()))?;
         let mask = held.field_mask_for(Some(issue.issue_type));
         let may_change = held.may_change_issue(issue.reported_by);
-        Ok(IssueSorting {
+        Ok(IssueLabelsAndTags {
             issue: issue.id,
             version: issue.version,
             issue_type: IssueTypeRef::from(&issue_type),
@@ -254,13 +259,13 @@ async fn counted_after_take_off<S: AuthStore>(
 /// # Errors
 /// `resource.not_found` for an issue that does not exist, is in the trash or that the person may
 /// not see.
-pub async fn issue_sorting<S: AuthStore>(
+pub async fn issue_labels_and_tags<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: IssueSortingQuery,
-) -> Result<Authorized<IssueSorting>, AppError> {
+    input: IssueLabelsAndTagsQuery,
+) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (issue, held) = ctx.visible_issue(&actor, &input.issue).await?;
-    let view = ctx.sorting_of(&held, &issue).await?;
+    let view = ctx.labels_and_tags_of(&held, &issue).await?;
     Ok(held.authorize(view))
 }
 
@@ -275,7 +280,7 @@ pub async fn issue_sorting<S: AuthStore>(
 pub async fn add_tag<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AddTag,
-) -> Result<Authorized<IssueSorting>, AppError> {
+) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
     let name = clean_tag_name(&input.name)?;
@@ -349,7 +354,7 @@ pub async fn add_tag<S: AuthStore>(
             issue.version = version;
         }
     }
-    let view = ctx.sorting_of(&held, &issue).await?;
+    let view = ctx.labels_and_tags_of(&held, &issue).await?;
     Ok(held.authorize(view))
 }
 
@@ -362,7 +367,7 @@ pub async fn add_tag<S: AuthStore>(
 pub async fn remove_tag<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RemoveTag,
-) -> Result<Authorized<IssueSorting>, AppError> {
+) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx.issue_to_sort(&actor, &input.issue, Field::Tags).await?;
     let state = ctx.tag_state(issue.id).await?;
@@ -400,7 +405,7 @@ pub async fn remove_tag<S: AuthStore>(
         })
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
-    let view = ctx.sorting_of(&held, &issue).await?;
+    let view = ctx.labels_and_tags_of(&held, &issue).await?;
     Ok(held.authorize(view))
 }
 
@@ -415,7 +420,7 @@ pub async fn remove_tag<S: AuthStore>(
 pub async fn add_label<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: AddLabel,
-) -> Result<Authorized<IssueSorting>, AppError> {
+) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let mut plan = ctx.plan_label(&actor, &input.issue, input.label).await?;
     let (_, held) = ctx.visible_issue(&actor, &input.issue).await?;
@@ -466,7 +471,7 @@ pub async fn add_label<S: AuthStore>(
             plan.issue.version = version;
         }
     }
-    let view = ctx.sorting_of(&held, &plan.issue).await?;
+    let view = ctx.labels_and_tags_of(&held, &plan.issue).await?;
     Ok(held.authorize(view))
 }
 
@@ -479,7 +484,7 @@ pub async fn add_label<S: AuthStore>(
 pub async fn remove_label<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RemoveLabel,
-) -> Result<Authorized<IssueSorting>, AppError> {
+) -> Result<Authorized<IssueLabelsAndTags>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let Kept { mut issue, held } = ctx
         .issue_to_sort(&actor, &input.issue, Field::Labels)
@@ -519,6 +524,6 @@ pub async fn remove_label<S: AuthStore>(
         })
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
-    let view = ctx.sorting_of(&held, &issue).await?;
+    let view = ctx.labels_and_tags_of(&held, &issue).await?;
     Ok(held.authorize(view))
 }

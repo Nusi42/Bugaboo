@@ -12,7 +12,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, ChangedIssue, CombineLabels,
-    CombineTags, CreateLabel, CreateLabelGroup, IssueSorting, IssueSortingQuery,
+    CombineTags, CreateLabel, CreateLabelGroup, IssueLabelsAndTags, IssueLabelsAndTagsQuery,
     LabelChangePreviewQuery, LabelGroupView, LabelRef, LabelView, Labels, LabelsQuery, RemoveLabel,
     RemoveTag, TagChangePreview, TagChangePreviewQuery, TagRef, TagSuggestionsQuery, TagView,
     TagsQuery,
@@ -99,7 +99,7 @@ impl From<&LabelRef> for LabelRefBody {
 /// The tags and labels of one issue, and what the person may do with them. A member that holds a
 /// field of the catalogue is left out when the person's level for the field is *Hidden*.
 #[derive(Serialize, ToSchema, Masked)]
-pub(crate) struct IssueSortingBody {
+pub(crate) struct IssueLabelsAndTagsBody {
     /// The internal ID of the issue.
     #[masked(open)]
     issue: String,
@@ -125,16 +125,22 @@ pub(crate) struct IssueSortingBody {
     may_change_labels: bool,
 }
 
-impl From<IssueSorting> for IssueSortingBody {
-    fn from(sorting: IssueSorting) -> Self {
+impl From<IssueLabelsAndTags> for IssueLabelsAndTagsBody {
+    fn from(labels_and_tags: IssueLabelsAndTags) -> Self {
         Self {
-            issue: sorting.issue.to_string(),
-            version: sorting.version,
-            issue_type: IssueTypeRef::from(&sorting.issue_type),
-            tags: Some(sorting.tags.iter().map(TagRefBody::from).collect()),
-            labels: Some(sorting.labels.iter().map(LabelRefBody::from).collect()),
-            may_change_tags: sorting.may_change_tags,
-            may_change_labels: sorting.may_change_labels,
+            issue: labels_and_tags.issue.to_string(),
+            version: labels_and_tags.version,
+            issue_type: IssueTypeRef::from(&labels_and_tags.issue_type),
+            tags: Some(labels_and_tags.tags.iter().map(TagRefBody::from).collect()),
+            labels: Some(
+                labels_and_tags
+                    .labels
+                    .iter()
+                    .map(LabelRefBody::from)
+                    .collect(),
+            ),
+            may_change_tags: labels_and_tags.may_change_tags,
+            may_change_labels: labels_and_tags.may_change_labels,
         }
     }
 }
@@ -416,13 +422,13 @@ pub(crate) struct ChangeLabelBody {
 /// The tags and labels of an issue and what the person may do with them.
 #[utoipa::path(
     get,
-    path = "/api/v1/issues/{issue}/sorting",
-    operation_id = "getIssueSorting",
+    path = "/api/v1/issues/{issue}/labels-and-tags",
+    operation_id = "getIssueLabelsAndTags",
     tag = "tags",
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
-    responses((status = 200, description = "The tags and labels of the issue.", body = IssueSortingBody), NotSignedInAnswer, NotFoundAnswer)
+    responses((status = 200, description = "The tags and labels of the issue.", body = IssueLabelsAndTagsBody), NotSignedInAnswer, NotFoundAnswer)
 )]
-async fn get_issue_sorting(
+async fn get_issue_labels_and_tags(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -430,15 +436,15 @@ async fn get_issue_sorting(
 ) -> Result<Response, ApiError> {
     let found = auth
         .api()?
-        .issue_sorting(
+        .issue_labels_and_tags(
             info,
-            IssueSortingQuery {
+            IssueLabelsAndTagsQuery {
                 session_token,
                 issue,
             },
         )
         .await?;
-    answer_authorized(&found.map(IssueSortingBody::from))
+    answer_authorized(&found.map(IssueLabelsAndTagsBody::from))
 }
 
 /// Puts a tag on an issue by its name. A name nobody used makes the tag. Needs the right to change
@@ -451,7 +457,7 @@ async fn get_issue_sorting(
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
     request_body = NewTagBody,
     responses(
-        (status = 200, description = "The tags and labels of the issue now.", body = IssueSortingBody),
+        (status = 200, description = "The tags and labels of the issue now.", body = IssueLabelsAndTagsBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -477,7 +483,7 @@ async fn add_tag(
             },
         )
         .await?;
-    answer_authorized(&changed.map(IssueSortingBody::from))
+    answer_authorized(&changed.map(IssueLabelsAndTagsBody::from))
 }
 
 /// Takes a tag off an issue.
@@ -491,7 +497,7 @@ async fn add_tag(
         ("tag" = String, Path, description = "The ID of the tag.")
     ),
     responses(
-        (status = 200, description = "The tags and labels of the issue now.", body = IssueSortingBody),
+        (status = 200, description = "The tags and labels of the issue now.", body = IssueLabelsAndTagsBody),
         NotSignedInAnswer,
         ForbiddenAnswer,
         NotFoundAnswer
@@ -514,7 +520,7 @@ async fn remove_tag(
             },
         )
         .await?;
-    answer_authorized(&changed.map(IssueSortingBody::from))
+    answer_authorized(&changed.map(IssueLabelsAndTagsBody::from))
 }
 
 /// Puts a label on an issue. In a *Pick one* group the label takes the place of the one the issue
@@ -527,7 +533,7 @@ async fn remove_tag(
     params(("issue" = String, Path, description = "The readable ID (WEB-142) or the internal ID of the issue.")),
     request_body = NewIssueLabelBody,
     responses(
-        (status = 200, description = "The tags and labels of the issue now.", body = IssueSortingBody),
+        (status = 200, description = "The tags and labels of the issue now.", body = IssueLabelsAndTagsBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -553,7 +559,7 @@ async fn add_label(
             },
         )
         .await?;
-    answer_authorized(&changed.map(IssueSortingBody::from))
+    answer_authorized(&changed.map(IssueLabelsAndTagsBody::from))
 }
 
 /// Takes a label off an issue.
@@ -567,7 +573,7 @@ async fn add_label(
         ("label" = String, Path, description = "The ID of the label.")
     ),
     responses(
-        (status = 200, description = "The tags and labels of the issue now.", body = IssueSortingBody),
+        (status = 200, description = "The tags and labels of the issue now.", body = IssueLabelsAndTagsBody),
         NotSignedInAnswer,
         ForbiddenAnswer,
         NotFoundAnswer
@@ -590,7 +596,7 @@ async fn remove_label(
             },
         )
         .await?;
-    answer_authorized(&changed.map(IssueSortingBody::from))
+    answer_authorized(&changed.map(IssueLabelsAndTagsBody::from))
 }
 
 /// What a person who types in a project is offered: the tags used in projects they see whose name
@@ -1083,7 +1089,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(get_issue_sorting))
+        .routes(routes!(get_issue_labels_and_tags))
         .routes(routes!(add_tag))
         .routes(routes!(remove_tag))
         .routes(routes!(add_label))

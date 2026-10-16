@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { sortingKind, type SortingKind } from "./change-preview.ts";
+import { labelsAndTagsKind, type LabelsAndTagsKind } from "./change-preview.ts";
 import { ShowChanges } from "./ChangePreview.tsx";
 import { refreshLabels } from "./labels.ts";
 
@@ -16,7 +16,7 @@ export interface CombineTarget {
 }
 
 export interface CombineIntoProps {
-  readonly kind: SortingKind;
+  readonly kind: LabelsAndTagsKind;
   readonly id: string;
   readonly name: string;
   readonly version: number;
@@ -28,20 +28,20 @@ export interface CombineIntoProps {
 const NONE = "";
 
 /** Sends the combination of the one into the other, on the versions that were looked at. */
-function useCombine(kind: SortingKind) {
+function useCombine(kind: LabelsAndTagsKind) {
   const tag = api.query.useMutation("post", "/api/v1/tags/{tag}/combine", {
     onSuccess: refreshLabels,
   });
   const label = api.query.useMutation("post", "/api/v1/labels/{label}/combine", {
     onSuccess: refreshLabels,
   });
-  const used = kind === sortingKind.tag ? tag : label;
+  const used = kind === labelsAndTagsKind.tag ? tag : label;
   return {
     isSuccess: used.isSuccess,
     error: used.isError ? messageOf(used.error) : null,
     send: (props: CombineIntoProps, into: CombineTarget) => {
       const body = { into: into.id, into_version: into.version, version: props.version };
-      if (kind === sortingKind.tag) {
+      if (kind === labelsAndTagsKind.tag) {
         tag.mutate({ params: { path: { tag: props.id } }, body });
       } else {
         label.mutate({ params: { path: { label: props.id } }, body });

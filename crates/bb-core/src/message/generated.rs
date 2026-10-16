@@ -2125,6 +2125,10 @@ pub const LABELS_GROUPS_TITLE: MessageKey = MessageKey::new("labels.groups-title
 /// The message `labels.intro`.
 pub const LABELS_INTRO: MessageKey = MessageKey::new("labels.intro");
 
+/// The message `labels.labels-and-tags-title`.
+pub const LABELS_LABELS_AND_TAGS_TITLE: MessageKey =
+    MessageKey::new("labels.labels-and-tags-title");
+
 /// The message `labels.labels-heading`.
 pub const LABELS_LABELS_HEADING: MessageKey = MessageKey::new("labels.labels-heading");
 
@@ -2181,9 +2185,6 @@ pub const LABELS_SHOW_CHANGES: MessageKey = MessageKey::new("labels.show-changes
 
 /// The message `labels.show-combine`.
 pub const LABELS_SHOW_COMBINE: MessageKey = MessageKey::new("labels.show-combine");
-
-/// The message `labels.sorting-title`.
-pub const LABELS_SORTING_TITLE: MessageKey = MessageKey::new("labels.sorting-title");
 
 /// The message `labels.tag-everywhere`.
 pub const LABELS_TAG_EVERYWHERE: MessageKey = MessageKey::new("labels.tag-everywhere");
@@ -9312,6 +9313,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Labels sort issues by groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
     ),
     ("labels.label-made", "Made the label {name}."),
+    ("labels.labels-and-tags-title", "Labels and tags"),
     ("labels.labels-heading", "Labels"),
     ("labels.labels-nothing", "No label has that name."),
     ("labels.labels-search", "Search labels"),
@@ -9344,7 +9346,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.retired", "Retired"),
     ("labels.show-changes", "Show what the new name changes"),
     ("labels.show-combine", "Show what combining changes"),
-    ("labels.sorting-title", "Labels and tags"),
     ("labels.tag-everywhere", "All projects"),
     ("labels.tag-everywhere-switch", "Use in all projects"),
     (

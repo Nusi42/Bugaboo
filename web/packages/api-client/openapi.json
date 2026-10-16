@@ -10397,7 +10397,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IssueSortingBody"
+                  "$ref": "#/components/schemas/IssueLabelsAndTagsBody"
                 }
               }
             }
@@ -10494,6 +10494,115 @@
         "x-permission": "change-issues"
       }
     },
+    "/api/v1/issues/{issue}/labels-and-tags": {
+      "get": {
+        "tags": ["tags"],
+        "summary": "The tags and labels of an issue and what the person may do with them.",
+        "operationId": "getIssueLabelsAndTags",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The tags and labels of the issue.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueLabelsAndTagsBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/issues/{issue}/labels/{label}": {
       "delete": {
         "tags": ["tags"],
@@ -10525,7 +10634,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IssueSortingBody"
+                  "$ref": "#/components/schemas/IssueLabelsAndTagsBody"
                 }
               }
             }
@@ -11490,115 +11599,6 @@
         "x-permission": "delete-issues"
       }
     },
-    "/api/v1/issues/{issue}/sorting": {
-      "get": {
-        "tags": ["tags"],
-        "summary": "The tags and labels of an issue and what the person may do with them.",
-        "operationId": "getIssueSorting",
-        "parameters": [
-          {
-            "name": "issue",
-            "in": "path",
-            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The tags and labels of the issue.",
-            "headers": {
-              "etag": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IssueSortingBody"
-                }
-              }
-            }
-          },
-          "304": {
-            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
-            "headers": {
-              "etag": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
-              }
-            }
-          },
-          "401": {
-            "description": "Not signed in (auth.not_signed_in).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "There is no such thing (resource.not_found).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "error.server.internal (server.internal)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "error.server.unavailable (server.unavailable)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-never-stored": true,
-        "x-permission": "see-issues"
-      }
-    },
     "/api/v1/issues/{issue}/sub-issues": {
       "get": {
         "tags": ["relations"],
@@ -11769,7 +11769,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IssueSortingBody"
+                  "$ref": "#/components/schemas/IssueLabelsAndTagsBody"
                 }
               }
             }
@@ -11897,7 +11897,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IssueSortingBody"
+                  "$ref": "#/components/schemas/IssueLabelsAndTagsBody"
                 }
               }
             }
@@ -22925,6 +22925,48 @@
           }
         }
       },
+      "IssueLabelsAndTagsBody": {
+        "type": "object",
+        "description": "The tags and labels of one issue, and what the person may do with them. A member that holds a\nfield of the catalogue is left out when the person's level for the field is *Hidden*.",
+        "required": ["issue", "version", "issue_type", "may_change_tags", "may_change_labels"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The internal ID of the issue."
+          },
+          "issue_type": {
+            "$ref": "#/components/schemas/IssueTypeRef",
+            "description": "Its issue type. The levels set for it count for the fields of this issue."
+          },
+          "labels": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/LabelRefBody"
+            },
+            "description": "The labels on it, in the order they were put there."
+          },
+          "may_change_labels": {
+            "type": "boolean",
+            "description": "Whether the person may put labels on the issue and take them off."
+          },
+          "may_change_tags": {
+            "type": "boolean",
+            "description": "Whether the person may put tags on the issue and take them off."
+          },
+          "tags": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/TagRefBody"
+            },
+            "description": "The tags on it, in the order they were put there."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue now. A change of a tag or a label counts it up."
+          }
+        }
+      },
       "IssueRef": {
         "type": "object",
         "description": "An issue as a small reference: its readable ID and what the viewer may see of it in its own\nproject. A title or a status that the viewer's role hides there is left out.",
@@ -23013,48 +23055,6 @@
             "type": "integer",
             "format": "int64",
             "description": "The version of the issue: what *Part of* is changed from."
-          }
-        }
-      },
-      "IssueSortingBody": {
-        "type": "object",
-        "description": "The tags and labels of one issue, and what the person may do with them. A member that holds a\nfield of the catalogue is left out when the person's level for the field is *Hidden*.",
-        "required": ["issue", "version", "issue_type", "may_change_tags", "may_change_labels"],
-        "properties": {
-          "issue": {
-            "type": "string",
-            "description": "The internal ID of the issue."
-          },
-          "issue_type": {
-            "$ref": "#/components/schemas/IssueTypeRef",
-            "description": "Its issue type. The levels set for it count for the fields of this issue."
-          },
-          "labels": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/LabelRefBody"
-            },
-            "description": "The labels on it, in the order they were put there."
-          },
-          "may_change_labels": {
-            "type": "boolean",
-            "description": "Whether the person may put labels on the issue and take them off."
-          },
-          "may_change_tags": {
-            "type": "boolean",
-            "description": "Whether the person may put tags on the issue and take them off."
-          },
-          "tags": {
-            "type": ["array", "null"],
-            "items": {
-              "$ref": "#/components/schemas/TagRefBody"
-            },
-            "description": "The tags on it, in the order they were put there."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the issue now. A change of a tag or a label counts it up."
           }
         }
       },
