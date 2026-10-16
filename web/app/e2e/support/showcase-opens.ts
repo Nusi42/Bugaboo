@@ -63,11 +63,14 @@ export async function openMovePreview({ page }: Needs): Promise<void> {
   await openMove(page, addressInProject(paths.projectSettings, SUB_PROJECT));
 }
 
+/** The address the invitation of the picture is for: always the same, so the picture is. */
+const NEW_COLLEAGUE = "new.colleague@bugaboo.example";
+
 /** Makes an invitation for somebody new, so that the link that shows once is in the picture. */
 export async function openInvitation({ page }: Needs): Promise<void> {
   await page.goto(paths.people);
   await expectPage(page);
-  const email = `new.colleague.${String(Date.now())}@bugaboo.example`;
+  const email = NEW_COLLEAGUE;
   await page.getByRole("textbox", { name: t("field.email"), exact: true }).fill(email);
   await page.getByRole("button", { name: t("invitations.create"), exact: true }).click();
   await expect(page.getByText(t("invitations.created", { email }))).toBeVisible();

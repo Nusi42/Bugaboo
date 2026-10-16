@@ -15,6 +15,8 @@ export interface SamplePerson extends Person {
   readonly accessKey: string | undefined;
 }
 
+const MS_PER_SECOND = 1000;
+
 function sampleFolder(): string {
   return resolve(repoRoot, layout.out);
 }
@@ -96,6 +98,22 @@ export function sampleWithCodeApp(): { readonly person: SamplePerson; readonly s
 export function copySampleInto(folder: string): void {
   requireSample();
   cpSync(join(sampleFolder(), layout.dataFolder), folder, { recursive: true });
+}
+
+/**
+ * The moment the sample was made (the start its clock ran from), in milliseconds since 1970, from
+ * the marker file of the sample. The pictures of the showcase fix the clock of the browser to it, so
+ * the words about how long ago something was are the same on every run (M2C-F104).
+ */
+export function sampleStartMs(): number {
+  requireSample();
+  const marker: unknown = JSON.parse(readFileSync(join(sampleFolder(), layout.markerFile), "utf8"));
+  const start =
+    typeof marker === "object" && marker !== null && "start" in marker ? marker.start : undefined;
+  if (typeof start !== "number") {
+    throw new TypeError(`${layout.markerFile} of the sample has no start moment.`);
+  }
+  return start * MS_PER_SECOND;
 }
 
 /** The first administrator of the sample, who runs the demos (Ada Brandt). */
