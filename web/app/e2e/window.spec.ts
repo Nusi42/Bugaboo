@@ -6,13 +6,13 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { newIssueDialog as dialog, openNewIssueDialog, prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { partIn } from "./support/parts.ts";
 import {
   boxOf,
   columns,
   keyboardStep,
   menuStep,
   openWindowReady,
-  partIn,
   pageSize,
   pickSizeStep,
   pressSizeKey,

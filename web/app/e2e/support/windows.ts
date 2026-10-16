@@ -3,15 +3,10 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { part } from "../../../packages/ui/src/tokens.ts";
 import { keyboardStep, menuStep, windowEdges } from "../../../packages/ui/src/window-size.ts";
+import { partIn } from "./parts.ts";
 import { newIssueDialog, openNewIssueDialog, titleLabel } from "./issues.ts";
 
 export { keyboardStep, menuStep, windowEdges };
-
-/** An element of the app by the part it draws, as the theme file names it. */
-export function partIn(scope: Locator | Page, name: string, variant?: string): Locator {
-  const variantSelector = variant === undefined ? "" : `[data-variant="${variant}"]`;
-  return scope.locator(`[data-part="${name}"]${variantSelector}`);
-}
 
 /** The box of the window: the part that the size variables are set on. */
 export function windowBox(page: Page): Locator {

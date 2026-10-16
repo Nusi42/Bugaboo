@@ -6,6 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
+import { rowOf } from "./support/list-look.ts";
 
 // The list of issues for a screen reader and a finger (UX §4.2, §8, M3 WP-13): the type of an
 // issue is named, the title is a target a finger can hit, and ticking an issue is told.
@@ -15,7 +16,7 @@ test.use({ preparation: { run: prepareWeb } });
 test("ux_08 a row names the type of its issue, and a tick is told", async ({ page }) => {
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
-  const row = page.getByRole("listitem").filter({ hasText: webIssues.passkey });
+  const row = rowOf(page, webIssues.passkey);
   // The type is named, not only drawn (the first type of a project is a Bug).
   await expect(row.getByRole("img", { name: "Bug", exact: true })).toBeVisible();
   // A person presses the box they see, not the input behind it.

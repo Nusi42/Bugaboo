@@ -6,6 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, webIssues } from "./support/issues.ts";
+import { grid } from "./support/list-look.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
 
 // Putting an issue into the trash from the issue page (ISS-01, M3-F151): the page goes back to the
@@ -31,7 +32,7 @@ test("iss_01 deleting an issue goes back to the list and Undo brings it back", a
   await expect(page).toHaveURL(new RegExp(`${projectIssuesAddress("WEB")}$`, "u"));
   await expect(page.getByText(t("issues.deleted", { key: "WEB-2" }))).toBeVisible();
   await page.getByRole("button", { name: t("common.undo"), exact: true }).click();
-  const list = page.getByRole("list", { name: t("issues.list"), exact: true });
+  const list = grid(page);
   await expect(list.getByRole("link", { name: webIssues.passkey })).toBeVisible();
 });
 
