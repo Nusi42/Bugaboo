@@ -12,7 +12,6 @@ export const messages = {
   "shell.more": "More",
   "shell.widen": "Widen the menu",
   "shell.menu-button": "Menu",
-  "shell.back": "Back",
   "shell.trail": "You are here",
   "search.title": "Quick search",
   "search.label": "Search",

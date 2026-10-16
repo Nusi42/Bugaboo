@@ -139,6 +139,7 @@ async fn cfg_06_a_value_the_setting_does_not_accept_is_refused_and_nothing_is_wr
         ),
         (SettingsScope::Person, "region.time-zone", text("Nowhere")),
         (SettingsScope::Person, "shortcuts.keys", text("[]")),
+        (SettingsScope::Person, "window.sizes", text("[800, 600]")),
     ];
     for (scope, key, value) in bad {
         let code = refused(change(&world, scope, key, value).await);

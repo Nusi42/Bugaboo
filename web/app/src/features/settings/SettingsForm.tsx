@@ -12,7 +12,7 @@ import { useState } from "react";
 
 import { type Setting } from "../../shared/my-settings.ts";
 import { SettingRow, type ControlRenderer, type SettingActions } from "./SettingRow.tsx";
-import { wordsOf } from "./texts.ts";
+import { hasNoGenericControl, wordsOf } from "./texts.ts";
 import { saveLabels } from "../../shared/save-labels.ts";
 
 export interface SettingsFormProps {
@@ -29,10 +29,10 @@ export interface SettingsFormProps {
   readonly controls?: Readonly<Record<string, ControlRenderer>>;
 }
 
-/** Whether a setting is drawn: by the generic controls, or by one the page brings. The keys of shortcuts and the start page have pages of their own. */
+/** Whether a setting is drawn: by the generic controls, or by one the page brings. */
 function isDrawn(setting: Setting, controls: SettingsFormProps["controls"]): boolean {
   const ownControl = controls !== undefined && Object.hasOwn(controls, setting.key);
-  return ownControl || (setting.format !== "shortcut_keys" && setting.format !== "page_address");
+  return ownControl || !hasNoGenericControl(setting);
 }
 
 /** Whether every word the person typed is in the name or the explanation of the setting. */

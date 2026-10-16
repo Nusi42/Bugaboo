@@ -43,9 +43,12 @@ const PAGE_ADDRESS_LONGEST: usize = 200;
 /// The most shortcuts whose keys can be changed, and the most keys one shortcut can have.
 const SHORTCUTS_MOST: usize = 64;
 const SHORTCUT_KEYS_MOST: usize = 4;
-/// The longest ID of a shortcut and the longest text of one key sequence, in characters.
-const SHORTCUT_ID_LONGEST: usize = 40;
+/// The longest ID of a shortcut or of a form and the longest text of one key sequence, in characters.
+const PLAIN_ID_LONGEST: usize = 40;
 const SHORTCUT_SEQUENCE_LONGEST: usize = 40;
+/// The most forms whose window size is remembered, and the largest side of a window in pixels.
+const WINDOWS_MOST: usize = 64;
+const WINDOW_SIDE_LARGEST: u64 = 10_000;
 /// The longest time zone name and the longest part of one, in characters.
 const ZONE_LONGEST: usize = 64;
 const ZONE_PART_LONGEST: usize = 32;
@@ -69,6 +72,10 @@ pub enum Format {
     /// sequences that do it. The browser knows which IDs exist; the server only keeps the shape
     /// and the size within limits.
     ShortcutKeys,
+    /// The sizes a person gave the windows of the forms: a JSON object from the ID of a form to its
+    /// width and height in whole pixels. The browser knows which forms exist; the server only keeps
+    /// the shape and the size within limits.
+    WindowSizes,
     /// A list of host names separated by commas, such as `images.example.com`: bare names, with an
     /// optional port, never an address with `https://` or a path.
     Hosts,
@@ -84,6 +91,7 @@ impl Format {
             Self::TimeZone => is_time_zone(text),
             Self::PageAddress => is_page_address(text),
             Self::ShortcutKeys => are_shortcut_keys(text),
+            Self::WindowSizes => are_window_sizes(text),
             Self::Hosts => are_hosts(text),
         }
     }
@@ -93,9 +101,12 @@ impl Format {
     pub const fn choices(self) -> &'static [Choice] {
         match self {
             Self::Choices(choices) => choices,
-            Self::Free | Self::TimeZone | Self::PageAddress | Self::ShortcutKeys | Self::Hosts => {
-                &[]
-            }
+            Self::Free
+            | Self::TimeZone
+            | Self::PageAddress
+            | Self::ShortcutKeys
+            | Self::WindowSizes
+            | Self::Hosts => &[],
         }
     }
 }
@@ -136,9 +147,9 @@ fn is_page_address(text: &str) -> bool {
         })
 }
 
-fn is_shortcut_id(text: &str) -> bool {
+fn is_plain_id(text: &str) -> bool {
     text.starts_with(|c: char| c.is_ascii_lowercase())
-        && text.len() <= SHORTCUT_ID_LONGEST
+        && text.len() <= PLAIN_ID_LONGEST
         && text
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
@@ -187,7 +198,7 @@ fn are_shortcut_keys(text: &str) -> bool {
     };
     shortcuts.len() <= SHORTCUTS_MOST
         && shortcuts.iter().all(|(id, keys)| {
-            is_shortcut_id(id)
+            is_plain_id(id)
                 && keys.as_array().is_some_and(|keys| {
                     keys.len() <= SHORTCUT_KEYS_MOST
                         && keys
@@ -195,6 +206,29 @@ fn are_shortcut_keys(text: &str) -> bool {
                             .all(|key| key.as_str().is_some_and(is_key_sequence))
                 })
         })
+}
+
+fn is_window_size(size: &Value) -> bool {
+    let Some(sides) = size.as_object() else {
+        return false;
+    };
+    sides.len() == 2
+        && ["width", "height"].iter().all(|side| {
+            sides
+                .get(*side)
+                .and_then(Value::as_u64)
+                .is_some_and(|pixels| (1..=WINDOW_SIDE_LARGEST).contains(&pixels))
+        })
+}
+
+fn are_window_sizes(text: &str) -> bool {
+    let Ok(Value::Object(forms)) = serde_json::from_str::<Value>(text) else {
+        return false;
+    };
+    forms.len() <= WINDOWS_MOST
+        && forms
+            .iter()
+            .all(|(id, size)| is_plain_id(id) && is_window_size(size))
 }
 
 #[cfg(test)]
@@ -306,6 +340,32 @@ mod tests {
         ] {
             assert!(!Format::Hosts.accepts(bad), "{bad}");
         }
+    }
+
+    #[test]
+    fn ux_6_3_window_sizes_are_one_object_from_a_form_to_a_size_within_limits() {
+        let accepts = |text: &str| Format::WindowSizes.accepts(text);
+        assert!(accepts("{}"));
+        assert!(accepts(r#"{"new-issue":{"width":800,"height":600}}"#));
+        for bad in [
+            "",
+            "[]",
+            "null",
+            r#"{"New Issue":{"width":800,"height":600}}"#,
+            r#"{"new-issue":{"width":800}}"#,
+            r#"{"new-issue":{"width":"wide","height":600}}"#,
+            r#"{"new-issue":{"width":0,"height":600}}"#,
+            r#"{"new-issue":{"width":800.5,"height":600}}"#,
+            r#"{"new-issue":{"width":99999,"height":600}}"#,
+            r#"{"new-issue":{"width":800,"height":600,"depth":1}}"#,
+            r#"{"new-issue":800}"#,
+        ] {
+            assert!(!accepts(bad), "{bad}");
+        }
+        let many: Vec<String> = (0..=WINDOWS_MOST)
+            .map(|n| format!("\"form-{n}\":{{\"width\":800,\"height\":600}}"))
+            .collect();
+        assert!(!accepts(&format!("{{{}}}", many.join(","))));
     }
 
     #[test]

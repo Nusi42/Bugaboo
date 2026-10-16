@@ -227,6 +227,19 @@ settings! {
         format: Format::ShortcutKeys,
     }
 
+    /// The size a person gave the window of each form, as one JSON object from the ID of a form to
+    /// its width and height in pixels (UX §6.3). A form that is not in it opens at its usual size.
+    WINDOW_SIZES: Text = {
+        key: "window.sizes",
+        name: message::SETTING_WINDOW_SIZES_NAME,
+        default: "{}",
+        levels: [Person],
+        changed_by: EachPerson,
+        help: message::SETTING_WINDOW_SIZES_HELP,
+        lockable: false,
+        format: Format::WindowSizes,
+    }
+
     /// How many minutes without activity pass before people are signed out.
     SECURITY_SESSION_IDLE_MINUTES: Integer = {
         key: "security.session-idle-minutes",
