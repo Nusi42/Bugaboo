@@ -112,7 +112,7 @@ A session can end at any time, and a new one starts in the master and continues 
 | **M4** | Workflows, files and notifications | MVP | 12 |
 | **M5** | Search and lists | MVP | 12 |
 | **M6** | Time and working hours | MVP | 10 |
-| **M7** | Timeline and theme editor | MVP | 13 |
+| **M7** | Timeline and theme editor | MVP | 14 |
 | **M8** | Assistant, AI apps and agents | MVP | 24 |
 | **M9** | Privacy, operations and the first release | MVP | 14 |
 | **M10** | Board, calendar, relation map and dashboards | 1.0 | 10 |
@@ -394,6 +394,7 @@ A session can end at any time, and a new one starts in the master and continues 
 - `PLAN-12` Plan by effort
 - `PLAN-13` Plan warnings
 - `PLAN-14` Time factor
+- `PLAN-15` Work hours and share in the project
 - `THM-03` theme editor
 - `THM-04` Custom themes at instance level or personal level
 - `UX-02` Touch-friendly targets and gestures
@@ -401,11 +402,11 @@ A session can end at any time, and a new one starts in the master and continues 
 **Work packages (outline):**
 
 - Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list
-- People on the timeline (ADR-0030): the person on each bar and rows per person; away times, usual work days and public holidays; plan by effort with the time factor; plan warnings
+- People on the timeline (ADR-0030): the person on each bar and rows per person; work times (usual work days, work hours, shares in projects, away times, public holidays); plan by effort with the time factor as the person's own estimate; plan warnings
 - Theme editor with readability ratings; personal and organization themes; import and export
 - Touch gestures and phone polish across all screens
 
-**Demo (exit):** Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release, then give one issue to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.
+**Demo (exit):** Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.
 
 **Tests and checks added:** STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.
 

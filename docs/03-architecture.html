@@ -2719,31 +2719,34 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <!-- COMP-10 checked: no tool or rule ranks, evaluates or assigns people; agents are never assigned; standing rules never change fields that hold people. -->
 
 <!-- 0030-planning-with-people.md -->
-<h3 id="adr-0030"><button class="sec" data-sec>§13.30</button>ADR-0030: Planning with people: who works on a bar, away times, time factors and plan warnings</h3>
-<p>Status: <strong>Accepted</strong> · 2026-10-16 · refines PLAN-01…05 and <a href="#adr-0022">ADR-0022</a>; bounded by PRIV-09 and COMP-10</p>
+<h3 id="adr-0030"><button class="sec" data-sec>§13.30</button>ADR-0030: Planning with people: who works on a bar, work times, time factors and plan warnings</h3>
+<p>Status: <strong>Accepted</strong> · amended the same day (work hours and shares; the person's own estimate) · refines PLAN-01…05 and <a href="#adr-0022">ADR-0022</a>; bounded by PRIV-09 and COMP-10</p>
 <h4>Context</h4>
 <p>Requirement: the timeline shows three more things: the person who works on each issue; a factor per issue and person, because people need more or less time for some tasks; and away times (holidays, other absences) per person, with Bugaboo saying where they clash with the plan or delay it.</p>
+<p>Asked how other planning tools handle different paces, the lead found five ways: time per person (hours per day, a share per project, a calendar; nearly every tool), the person doing the work estimates it (LiquidPlanner, Scrum), the pace of the whole team (Jira Plans and other sprint tools), skill levels to find people but not to set dates (Primavera P6, Planview, Kantata), and paces learned from past work. The first two were taken.</p>
 <p>All three are about employees, so they meet the rules we already have: working time and performance are sensitive employee data (PRIV-09), there are no performance scores and no ranking of people (COMP-10), and people are shown only as <em>Who sees people</em> allows (PRIV-12). In Germany, a tool that records how fast employees work is also a matter for the works council (Works Constitution Act, §87 (1) no. 6), and the reason for an absence can be health data (GDPR Art. 9).</p>
 <h4>Decision</h4>
 <h5>1. The person on the bar</h5>
 <ul>
 <li>Each bar shows the picture and first name of the person it is <em>Assigned to</em>, at its end (PLAN-10); <em>Group by person</em> gives one row per person, so overlapping work is visible. Both follow <em>Who sees people</em> for the viewer: <em>Role only</em> shows <em>"a Team member"</em> and offers no grouping by person, <em>Hidden</em> shows nobody. Enforced by: the test <code>plan_10_the_timeline_shows_people_only_as_who_sees_people_allows</code> (M7).</li>
 </ul>
-<h5>2. Away times</h5>
+<h5>2. Work times: when and how much a person works</h5>
 <ul>
-<li><strong>Away</strong> is a stretch of whole or half days on which a person does not work (PLAN-11). A person enters their own; people with the new permission <em>Enter away times for others</em> (organization, kind <em>Manage</em>; at the start only Administrator) enter them for others, and the person gets a notification.</li>
+<li><strong>Away</strong> is a stretch of whole or half days on which a person does not work (PLAN-11). A person enters their own; people with the new permission <em>Enter work times for others</em> (organization, kind <em>Manage</em>; at the start only Administrator) enter them for others, and the person gets a notification.</li>
 <li><strong>No reason is stored</strong>: Bugaboo does not know whether it is a holiday, a course or an illness. Others only ever see <em>Away</em>. A note is possible and only the person sees it. Enforced by: review (the record has no reason field, which a reviewer sees in the migration), backed by the test <code>plan_11_others_see_only_away</code>.</li>
 <li><strong>Usual work days</strong> per person (for example Monday to Thursday) and <strong>public holidays</strong> per region (presets per country and, for Germany, per federal state; the person picks their region) say when a person normally works.</li>
-<li>Away times are a new kind of people information in <em>Who sees people</em> (<em>Away times</em>: Names / Role only / Hidden; at the start Names for Team member and above, Hidden for Guests). They are deleted one year after they end (keep and delete rules, PRIV-05).</li>
+<li><strong>Work hours</strong> per usual work day (PLAN-15; for example 6 hours on Monday to Thursday; at the start 8) say how much. They come from the work contract, so the person or someone with <em>Enter work times for others</em> enters them, never Bugaboo.</li>
+<li><strong>Share in the project</strong> (PLAN-15): how much of a person's work hours belong to one project, for example 60 % for <em>Mobile app</em>. A Project lead sets it on <em>Project members</em>; at the start 100 %. When the shares of one person add up to more than 100 %, the person and the leads of those projects see that, without seeing the other projects' names unless they may.</li>
+<li>Usual work days, work hours, shares and away times are a new kind of people information in <em>Who sees people</em> (<em>Work times</em>: Names / Role only / Hidden; at the start Names for Team member and above, Hidden for Guests). Away times are deleted one year after they end; work hours and shares when the person leaves the organization (keep and delete rules, PRIV-05).</li>
 </ul>
 <h5>3. Plan by effort</h5>
 <ul>
-<li>A timeline can <strong>plan by effort</strong> (PLAN-12): an issue with <em>Estimated time</em> (TIME-03) and a person gets as many of that person's work days as the estimate, times its time factor, needs, skipping away days, days off and public holidays. Away days inside a bar are shown as a hatched gap, so the bar gets longer instead of hiding the gap. An issue with a fixed due date keeps it and gets a warning when the days don't fit.</li>
+<li>A timeline can <strong>plan by effort</strong> (PLAN-12): an issue with <em>Estimated time</em> (TIME-03) and a person gets as many of that person's work days as the estimate, times its time factor, needs: each day counts with the person's work hours times their share in the project, skipping away days, days off and public holidays. A person with 6 hours and a 50 % share gives an issue of 9 hours three days. Away days inside a bar are shown as a hatched gap, so the bar gets longer instead of hiding the gap. An issue with a fixed due date keeps it and gets a warning when the days don't fit.</li>
 <li>Without an estimate, or with planning by effort off, bars keep the dates people set (PLAN-01).</li>
 </ul>
-<h5>4. The time factor: about this issue, not about the person</h5>
+<h5>4. The time factor: the person's own estimate for this issue</h5>
 <ul>
-<li><strong>Time factor</strong> (PLAN-14) is a value on the issue, for the person it is assigned to: <em>×1.5</em> means "this issue will take this person half again as long as the estimate". Whoever plans sets it by hand (it is a field with field permissions; at the start <em>Can change</em> for Project lead and Team member, <em>Hidden</em> for Guests); the assigned person always sees it on their own issues.</li>
+<li><strong>Time factor</strong> (PLAN-14) is a value on the issue, for the person it is assigned to: <em>×1.5</em> means "this issue will take this person half again as long as the estimate". It is a field with field permissions (at the start <em>Can change</em> for Project lead and Team member, <em>Hidden</em> for Guests), but <strong>the assigned person may always change it on their own issues</strong>, also where the field permissions would not allow it: they know best how long it will take them. They can enter it as a time (<em>"Takes me 10 days"</em>), and Bugaboo works out the factor. The issue shows who set it: <em>"Lea's own estimate"</em> or <em>"set by Ada Brandt"</em>; the assigned person always sees it and is notified when someone else changes it.</li>
 <li><strong>It belongs to the issue and goes back to ×1 when the issue is given to another person.</strong> Bugaboo keeps no factor per person, no default per person or per kind of task, no totals, averages or reports of factors, and never sets or proposes a factor itself, with AI or otherwise. Without these limits it would be a stored judgement of how fast an employee works: a performance score (PRIV-09) that also needs the works council. Enforced by: review against COMP-10 and PRIV-09, backed by the tests <code>plan_14_the_time_factor_resets_when_the_person_changes</code> and <code>plan_14_no_report_or_search_sorts_by_time_factor</code>.</li>
 </ul>
 <h5>5. Plan warnings</h5>
@@ -2753,7 +2756,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><em>Away</em>: "Lea is away 26–30 Oct, while WEB-280 is planned for her";</li>
 <li><em>Not enough days</em>: "WEB-280 needs 6 work days, there are 3 before its due date";</li>
 <li><em>Delay</em>: "WEB-280 now ends 2 days later, and WEB-284 after it moves too" (along dependencies; the full chain to the end date with <em>Deadline drivers</em>, PLAN-05); Enforced by: the test <code>plan_13_a_delay_moves_along_dependencies</code> (M7);</li>
-<li><em>Too much at once</em>: "Lea has 3 issues on 27 Oct, more than her day has hours for".</li>
+<li><em>Too much at once</em>: "Lea has 9 hours planned on 27 Oct in Mobile app; her share there is 3.6 hours" (work hours times share, PLAN-15).</li>
 </ul>
 </li>
 <li>The way out is always a person's choice: <em>Move it after</em>, <em>Make it longer</em>, <em>Give it to someone else…</em> (opens the usual person picker, with no suggestion of whom, COMP-10), or <em>Keep and accept</em>. Accepted warnings stay visible in a faded form.</li>
@@ -2761,13 +2764,15 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 </ul>
 <h4>Consequences</h4>
 <ul>
-<li>New records: away times, usual work days, a region per person, public-holiday calendars; a field <em>Time factor</em> in the field catalogue; a kind <em>Away times</em> in <em>Who sees people</em>; the permission <em>Enter away times for others</em>.</li>
+<li>New records: away times, usual work days, work hours per day, a share per person and project, a region per person, public-holiday calendars; a field <em>Time factor</em> in the field catalogue, with who set it; a kind <em>Work times</em> in <em>Who sees people</em>; the permission <em>Enter work times for others</em>.</li>
 <li>The timeline gains a picture per bar, rows per person, hatched away days, planning by effort and a warnings list. PLAN-07 (L) keeps baselines and export; the workload rows of PLAN-07 are now the rows per person here.</li>
 <li>The UX concept's timeline shows all of it.</li>
 </ul>
 <h4>Alternatives considered</h4>
 <ul>
-<li><strong>A factor per person and kind of task</strong> ("Lea is slower at testing"): a performance profile of an employee. Rejected (PRIV-09, COMP-10, works council). A person may still say for themselves, on an issue, that they need longer; that is an estimate, not a profile.</li>
+<li><strong>A factor per person and kind of task</strong> ("Lea is slower at testing"), also as an option an organization switches on: a performance profile of an employee. Not taken (PRIV-09, COMP-10, and the works council where there is one). The person's own estimate on an issue gives the same plans without a profile.</li>
+<li><strong>Paces learned from past work</strong> (estimate compared with time spent, per person): a hidden speed rating. Rejected (PRIV-09, COMP-10).</li>
+<li><strong>Only the pace of the whole team</strong> (sprint velocity): fits sprint teams, but says nothing about away times or who is busy when. Not taken.</li>
 <li><strong>Storing the kind of absence</strong> (holiday, illness, training): health data and not needed for planning. Rejected.</li>
 <li><strong>Moving bars by themselves around away times:</strong> surprises people and breaks dates someone promised. Rejected; dates move only when planning by effort is on, and fixed due dates never move by themselves.</li>
 </ul>

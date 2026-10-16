@@ -99,7 +99,7 @@ Rules:
 | **Map**                  | *Show as* option that draws search results and their relations     | graph view                         |
 | **Must finish first**    | Dependency: this issue can't start until another finishes. Other kinds: *start together*, *finish together*, *finish when it starts* | finish-to-start, FS, SS, FF, SF (in UI) |
 | **Plan by effort**       | Let the timeline work out a bar's length from its estimate, its time factor and the person's work days, away times and public holidays | auto-schedule, resource levelling (in UI) |
-| **Time factor**          | A value on an issue, for its assigned person: how much longer or shorter than the estimate it will take (*×1.5*). It goes back to ×1 when the issue goes to another person | velocity, performance factor, speed factor (in UI) |
+| **Time factor**          | A value on an issue, for its assigned person: how much longer or shorter than the estimate it will take them (*×1.5*). The assigned person may always set it; it goes back to ×1 when the issue goes to another person | velocity, performance factor, speed factor (in UI) |
 | **Plan warnings**        | What the timeline points out: *Away*, *Not enough days*, *Delay*, *Too much at once*, each with what can be done | clashes, overallocation (in UI) |
 | **Keep and accept**      | The answer to a plan warning that leaves the plan as it is; the warning stays, faded | ignore, dismiss (in UI) |
 | **Deadline drivers**     | The chain of issues that sets the end date; any delay moves the end | critical path (in UI)             |
@@ -188,11 +188,14 @@ Rules:
 | **Download my data**     | Get a copy of everything Bugaboo stores about you                  | data subject access request, DSAR  |
 | **Remove a person**      | Delete someone's account and replace their name with *Former user* plus a random code (*Former user K7Q2*) | anonymize, pseudonymize (in UI) |
 | **Who sees people**      | Per role and per kind of people information: show people's *Names*, only their *Role* ("a Team member"), or nothing (*Hidden*: "Someone") | identity masking, pseudonymization (in UI) |
-| **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Away times* | identity field, people field (in UI) |
+| **Kind of people information** | One of the places a person can be shown: *Assigned to, Reported by, Last changed by*, comment and history authors, *"… is editing"*, followers, time entries, mentions, pictures of people, *Project members*, *Work times* | identity field, people field (in UI) |
 | **Away**                 | A stretch of whole or half days on which a person does not work. Bugaboo stores no reason; others see only *Away* | absent, absence, out of office, sick, on leave (in UI) |
-| **Away times**           | A person's away stretches; also the kind of people information that says who may see them | absences, leave calendar (in UI) |
-| **Enter away times for others** | The permission to enter away times for other people   | — |
+| **Away times**           | A person's away stretches                                | absences, leave calendar (in UI) |
+| **Work times**           | A person's usual work days, work hours, shares in projects and away times; also the kind of people information that says who may see them | availability, capacity (in UI) |
+| **Enter work times for others** | The permission to enter usual work days, work hours and away times for other people | — |
 | **Usual work days**      | The days of the week a person normally works, for example Monday to Thursday | work pattern, schedule (in UI) |
+| **Work hours**           | How many hours a person works on a usual work day, from their work contract | capacity, FTE (in UI) |
+| **Share in the project** | How much of a person's work hours belong to one project, for example 60 % | allocation, utilization (in UI) |
 | **Public holidays**      | Days nobody in a region works, from a preset per country and, for Germany, per federal state | bank holidays (in UI) |
 | **Project members**      | The kind of people information for lists of who works in a project. People who manage people or roles always see the names there | roster, participants (in UI) |
 | **Someone**              | Shown instead of a name when the viewer may not see who it was    | anonymous, redacted                |

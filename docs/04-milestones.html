@@ -118,7 +118,7 @@
 <tr><td><strong>M4</strong></td><td>Workflows, files and notifications</td><td>MVP</td><td>12</td></tr>
 <tr><td><strong>M5</strong></td><td>Search and lists</td><td>MVP</td><td>12</td></tr>
 <tr><td><strong>M6</strong></td><td>Time and working hours</td><td>MVP</td><td>10</td></tr>
-<tr><td><strong>M7</strong></td><td>Timeline and theme editor</td><td>MVP</td><td>13</td></tr>
+<tr><td><strong>M7</strong></td><td>Timeline and theme editor</td><td>MVP</td><td>14</td></tr>
 <tr><td><strong>M8</strong></td><td>Assistant, AI apps and agents</td><td>MVP</td><td>24</td></tr>
 <tr><td><strong>M9</strong></td><td>Privacy, operations and the first release</td><td>MVP</td><td>14</td></tr>
 <tr><td><strong>M10</strong></td><td>Board, calendar, relation map and dashboards</td><td>1.0</td><td>10</td></tr>
@@ -371,6 +371,7 @@
 <li><code>PLAN-12</code> Plan by effort</li>
 <li><code>PLAN-13</code> Plan warnings</li>
 <li><code>PLAN-14</code> Time factor</li>
+<li><code>PLAN-15</code> Work hours and share in the project</li>
 <li><code>THM-03</code> theme editor</li>
 <li><code>THM-04</code> Custom themes at instance level or personal level</li>
 <li><code>UX-02</code> Touch-friendly targets and gestures</li>
@@ -378,11 +379,11 @@
 <p><strong>Work packages (outline):</strong></p>
 <ul>
 <li>Timeline (Gantt chart) as drawn in UX design §4.7: rows, zoom, drag, dependencies as relations, unscheduled tray, phone list</li>
-<li>People on the timeline (ADR-0030): the person on each bar and rows per person; away times, usual work days and public holidays; plan by effort with the time factor; plan warnings</li>
+<li>People on the timeline (ADR-0030): the person on each bar and rows per person; work times (usual work days, work hours, shares in projects, away times, public holidays); plan by effort with the time factor as the person's own estimate; plan warnings</li>
 <li>Theme editor with readability ratings; personal and organization themes; import and export</li>
 <li>Touch gestures and phone polish across all screens</li>
 </ul>
-<p><strong>Demo (exit):</strong> Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release, then give one issue to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.</p>
+<p><strong>Demo (exit):</strong> Plan the sample Mobile app goal on the timeline by dragging; enter a week away for Lea and see her bars grow around it and a warning for the release; set Lea's share in the project to 50 % and see her bars double; as Lea, say an issue takes her 10 days and see it marked as her own estimate; then give it to someone else and see its time factor go back to ×1; create a custom theme that fails readability and fix it.</p>
 <p><strong>Tests and checks added:</strong> STY-CONTRAST active; timeline keyboard alternatives in TEST-A11Y; phone screenshots for every screen.</p>
 <h2 id="s11"><button class="sec" data-sec>§11</button>M8 — Assistant, AI apps and agents</h2>
 <p><strong>Phase:</strong> MVP · <strong>Goal:</strong> AI that helps as the person, never more; outside AI apps through MCP; and agents that work on their own on the issues a person hands over (ADR-0029).</p>
