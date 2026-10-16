@@ -40,7 +40,6 @@ Before code names anything new, the words, the decisions and the maintainer's an
 - **M3-F100:** the issue page gets no *Add a field* menu in M4. Empty fields already show as a quiet *"Add due date"*.
 - **M1-F10, M2-F03:** done in M3 WP-02 (the WebAssembly budget is in `tools/checks/perf-bundle.toml`). Marked done in their tables.
 
-## Still to do by the lead before wave 2
+## Follow-up tables
 
-- Mark M1-F10 and M2-F03 done.
-- Note in M1-F30 that M4 WP-05 takes it.
+M1-F10 and M2-F03 are marked done; M1-F30 names M4 WP-05.
