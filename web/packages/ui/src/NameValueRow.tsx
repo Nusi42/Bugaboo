@@ -19,8 +19,8 @@ export interface ChangeStatus {
   readonly state: SaveState;
   /** The words for *Saving…*, *Saved* and *Not saved yet*. */
   readonly labels: SaveStatusProps["labels"];
-  readonly undoLabel: string;
-  readonly onUndo: () => void;
+  /** Where *Undo* is still on offer: its words and what it does. Without it the row only says *Saved*. */
+  readonly undo?: { readonly label: string; readonly onUndo: () => void };
 }
 
 export interface NameValueRowProps {
@@ -45,9 +45,9 @@ export function NameValueRow({ name, status, children }: NameValueRowProps) {
         {status === undefined ? null : (
           <span {...partOf(part.nameValueSaved)}>
             <SaveStatus state={status.state} labels={status.labels} />
-            {status.state === "saved" ? (
-              <Button look={buttonLook.quiet} onPress={status.onUndo}>
-                {status.undoLabel}
+            {status.state === "saved" && status.undo !== undefined ? (
+              <Button look={buttonLook.quiet} onPress={status.undo.onUndo}>
+                {status.undo.label}
               </Button>
             ) : null}
           </span>

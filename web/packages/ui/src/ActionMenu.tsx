@@ -22,6 +22,48 @@ export interface ActionMenuTriggerProps {
   readonly onOpen: () => void;
 }
 
+export interface ActionOverlayProps {
+  readonly isOpen: boolean;
+  readonly onOpenChange: (isOpen: boolean) => void;
+  /** The name of the list, for screen readers. */
+  readonly label: string;
+  readonly actions: readonly MenuAction[];
+}
+
+/**
+ * The list of actions of a menu, in the one overlay of the app (a sheet from the bottom on a
+ * phone): it takes the focus, closes with Esc and gives the focus back; pressing an action does it
+ * and closes the list. `ActionMenu` and the status menu both open it.
+ */
+export function ActionOverlay({ isOpen, onOpenChange, label, actions }: ActionOverlayProps) {
+  const phone = useLayout() === "phone";
+  return (
+    <Overlay
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      label={label}
+      from={phone ? overlayEdge.bottom : overlayEdge.center}
+    >
+      <ul {...partOf(part.actionMenu)}>
+        {actions.map((action) => (
+          <li key={action.id}>
+            <Button
+              look={buttonLook.quiet}
+              wide
+              onPress={() => {
+                onOpenChange(false);
+                action.onAction();
+              }}
+            >
+              {action.label}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </Overlay>
+  );
+}
+
 export interface ActionMenuProps {
   /** The button that opens the menu: *More*. */
   readonly label: string;
@@ -31,11 +73,7 @@ export interface ActionMenuProps {
   readonly trigger?: (props: ActionMenuTriggerProps) => ReactNode;
 }
 
-/**
- * A button that opens a short list of actions (UX §4.4: *More*). The list opens in the one overlay
- * of the app (a sheet from the bottom on a phone), takes the focus, closes with Esc and gives the
- * focus back to the button; pressing an action does it and closes the list.
- */
+/** A button that opens a short list of actions (UX §4.4: *More*), and gives the focus back to the button. */
 export function ActionMenu({
   label,
   actions,
@@ -43,7 +81,6 @@ export function ActionMenu({
   trigger: Trigger,
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
-  const phone = useLayout() === "phone";
   const openMenu = (): void => {
     setOpen(true);
   };
@@ -56,29 +93,7 @@ export function ActionMenu({
       ) : (
         <Trigger label={label} onOpen={openMenu} />
       )}
-      <Overlay
-        isOpen={open}
-        onOpenChange={setOpen}
-        label={label}
-        from={phone ? overlayEdge.bottom : overlayEdge.center}
-      >
-        <ul {...partOf(part.actionMenu)}>
-          {actions.map((action) => (
-            <li key={action.id}>
-              <Button
-                look={buttonLook.quiet}
-                wide
-                onPress={() => {
-                  setOpen(false);
-                  action.onAction();
-                }}
-              >
-                {action.label}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </Overlay>
+      <ActionOverlay isOpen={open} onOpenChange={setOpen} label={label} actions={actions} />
     </>
   );
 }

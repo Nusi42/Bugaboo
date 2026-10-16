@@ -134,6 +134,7 @@ export {
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
 export { listShowsWord, type PriorityWord, type StatusGroup } from "./status.ts";
 export { StatusButton, type StatusButtonProps } from "./StatusButton.tsx";
+export { StatusMenu, type StatusMenuProps } from "./StatusMenu.tsx";
 export { StatusIcon, type StatusIconProps } from "./StatusIcon.tsx";
 export { StatusPill, type StatusPillProps } from "./StatusPill.tsx";
 export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";

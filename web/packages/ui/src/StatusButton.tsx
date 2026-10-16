@@ -14,16 +14,19 @@ export interface StatusButtonProps {
   readonly label: string;
   readonly onPress: () => void;
   readonly isDisabled?: boolean;
+  /** The ID of the button, so a key or the bar of a phone can take the person to it. */
+  readonly id?: string;
 }
 
 /**
  * The big button of the issue page: the current status with its group's icon and color, and an
  * arrow that says it can be changed (UX §4.4). What it offers is for the screen to decide.
  */
-export function StatusButton({ group, label, onPress, isDisabled = false }: StatusButtonProps) {
+export function StatusButton({ group, label, onPress, isDisabled = false, id }: StatusButtonProps) {
   return (
     <Button
       {...partOf(part.statusButton, { variants: [group] })}
+      {...(id === undefined ? {} : { id })}
       onPress={onPress}
       isDisabled={isDisabled}
     >
