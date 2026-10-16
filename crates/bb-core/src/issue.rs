@@ -13,7 +13,7 @@ use crate::personal::Entity;
 use crate::readable_id::IssueCode;
 
 /// The most people an issue is assigned to.
-pub const ASSIGNEES_MAX: usize = 20;
+pub const ASSIGNED_PEOPLE_MAX: usize = 20;
 
 words! {
     /// The group a status belongs to. Searches, boards and progress ask for the group, so a
@@ -255,7 +255,7 @@ pub struct Issue {
 
 /// One person an issue is assigned to; an issue can be assigned to several people.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
-pub struct IssueAssignee {
+pub struct AssignedPerson {
     /// The issue.
     #[not_personal]
     pub issue: IssueId,

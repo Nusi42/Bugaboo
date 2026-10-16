@@ -71,6 +71,18 @@ Defined in `crates/bb-core/src/access_key.rs`.
 | `key`     | No            | –        | –           | The key.                                         |
 | `project` | No            | –        | –           | The project, by ID so moving it changes nothing. |
 
+### AssignedPerson
+
+One person an issue is assigned to; an issue can be assigned to several people.
+
+Defined in `crates/bb-core/src/issue.rs`.
+
+| Field      | Personal data | Category   | Legal basis | What it holds                 |
+| ---------- | ------------- | ---------- | ----------- | ----------------------------- |
+| `issue`    | No            | –          | –           | The issue.                    |
+| `person`   | Yes           | `activity` | `contract`  | Who works on it.              |
+| `added_at` | No            | –          | –           | When the person was assigned. |
+
 ### Assignment
 
 One row of *Who has which role*: a person or a group, a role or *No access*, and where it counts (ADR-0025, decision 2).
@@ -334,18 +346,6 @@ Defined in `crates/bb-core/src/issue.rs`.
 | `code`       | No            | –        | –           | The old code.                                                                                       |
 | `issue`      | No            | –        | –           | The issue it opens.                                                                                 |
 | `retired_at` | No            | –        | –           | When the issue stopped using it.                                                                    |
-
-### IssueAssignee
-
-One person an issue is assigned to; an issue can be assigned to several people.
-
-Defined in `crates/bb-core/src/issue.rs`.
-
-| Field      | Personal data | Category   | Legal basis | What it holds                 |
-| ---------- | ------------- | ---------- | ----------- | ----------------------------- |
-| `issue`    | No            | –          | –           | The issue.                    |
-| `person`   | Yes           | `activity` | `contract`  | Who works on it.              |
-| `added_at` | No            | –          | –           | When the person was assigned. |
 
 ### IssueCounter
 

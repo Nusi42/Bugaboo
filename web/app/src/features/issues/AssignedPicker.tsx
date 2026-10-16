@@ -14,7 +14,7 @@ import type { NamedPerson } from "../../shared/person.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
 import { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
 
-export interface AssigneePickerProps {
+export interface AssignedPickerProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   /** The project of the issue: its short name. */
@@ -113,7 +113,7 @@ function Inside({ project, issue, issueType, assigned, onChange, onClose }: Insi
  * Choosing who an issue is assigned to (UX §4.4): the people of the project, found by name, each
  * with a button to assign or take away; every press saves at once. It is a dialog (a short task).
  */
-export function AssigneePicker({
+export function AssignedPicker({
   isOpen,
   onClose,
   project,
@@ -121,7 +121,7 @@ export function AssigneePicker({
   issueType,
   assigned,
   onChange,
-}: AssigneePickerProps) {
+}: AssignedPickerProps) {
   return (
     <Overlay
       isOpen={isOpen}

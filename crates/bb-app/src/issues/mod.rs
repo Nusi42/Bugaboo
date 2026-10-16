@@ -14,7 +14,7 @@
 //! - **Every change is made on the version that was looked at**, and the readable ID of an issue
 //!   is given out inside the change that makes it (`ids.rs`).
 
-mod assignees;
+mod assigned_people;
 mod change;
 mod create;
 mod delete;
@@ -31,7 +31,7 @@ mod views;
 mod visible;
 pub(crate) use visible::{Where, seen_by};
 
-pub use assignees::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
+pub use assigned_people::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
 pub use change::change_issue;
 pub use create::create_issue;
 pub use delete::{delete_issue, restore_issue};

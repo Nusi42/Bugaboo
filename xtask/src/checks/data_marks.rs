@@ -133,23 +133,71 @@ fn table_enums(schema: &str) -> Vec<(String, Vec<String>)> {
     enums
 }
 
+/// A table that a migration creates.
+#[derive(Debug, PartialEq, Eq)]
+enum Created {
+    /// By the enum of the schema (`.table(Event::Table)`).
+    Schema(String),
+    /// By its name (`.table(Alias::new("issue_assignee"))`), the way an old migration keeps the name
+    /// of a table that a later migration renamed.
+    Named(String),
+}
+
+/// The name that `Alias::new` is given: a string, or a constant of the file that holds one.
+/// `argument` starts at the `(` after `Alias::new`.
+fn alias_name(text: &str, argument: &str) -> Option<String> {
+    let rest = argument.strip_prefix('(')?.trim_start();
+    if let Some(literal) = rest.strip_prefix('"') {
+        return literal.split('"').next().map(str::to_owned);
+    }
+    let constant: String = rest
+        .chars()
+        .take_while(|c| c.is_alphanumeric() || *c == '_')
+        .collect();
+    let declared = text.find(&format!("const {constant}: &str = \""))?;
+    text[declared..].split('"').nth(1).map(str::to_owned)
+}
+
 /// The tables that migrations create: the name inside `.table(Name::Table)` after
-/// `Table::create()`.
-fn created_tables(text: &str) -> Vec<String> {
+/// `Table::create()`, or the name that `Alias::new` is given.
+fn created_tables(text: &str) -> Vec<Created> {
     let mut tables = Vec::new();
     for (at, _) in text.match_indices("Table::create()") {
         let rest = &text[at..];
         if let Some(open) = rest.find(".table(") {
-            let path: String = rest[open + ".table(".len()..]
+            let after = &rest[open + ".table(".len()..];
+            if let Some(name) = after
+                .strip_prefix("Alias::new")
+                .and_then(|argument| alias_name(text, argument))
+            {
+                tables.push(Created::Named(name));
+                continue;
+            }
+            let path: String = after
                 .chars()
                 .take_while(|c| c.is_alphanumeric() || matches!(c, '_' | ':'))
                 .collect();
             // `Event::Table` or `schema::Event::Table`: the table is the part before `::Table`.
             let name = path.strip_suffix("::Table").unwrap_or(&path);
-            tables.extend(name.rsplit("::").next().map(str::to_owned));
+            tables.extend(
+                name.rsplit("::")
+                    .next()
+                    .map(|name| Created::Schema(name.to_owned())),
+            );
         }
     }
     tables
+}
+
+/// The names of the tables that migrations rename (`Table::rename().table(Alias::new("old"), …)`).
+fn renamed_tables(text: &str) -> Vec<String> {
+    text.match_indices("Table::rename()")
+        .filter_map(|(at, _)| {
+            let rest = &text[at..];
+            let open = rest.find(".table(Alias::new")?;
+            alias_name(text, &rest[open + ".table(Alias::new".len()..])
+        })
+        .collect()
 }
 
 fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Finding> {
@@ -231,19 +279,37 @@ fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Find
             ));
         }
     }
+    let renamed: Vec<String> = sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
+        .flat_map(|(_, text)| renamed_tables(text))
+        .collect();
     for (path, text) in sources
         .iter()
         .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
     {
-        for table in created_tables(text) {
-            if !listed.iter().any(|entry| entry.table == table) {
-                findings.push(Finding::at(
-                    path,
-                    format!(
-                        "A migration creates the table `{table}`, which is not in \
-                         `stored_tables!` in {SCHEMA_PATH}, so its rows have no personal-data marks."
-                    ),
-                ));
+        for created in created_tables(text) {
+            match created {
+                Created::Schema(table) if !listed.iter().any(|entry| entry.table == table) => {
+                    findings.push(Finding::at(
+                        path,
+                        format!(
+                            "A migration creates the table `{table}`, which is not in \
+                             `stored_tables!` in {SCHEMA_PATH}, so its rows have no personal-data marks."
+                        ),
+                    ));
+                }
+                Created::Named(name) if !renamed.contains(&name) => {
+                    findings.push(Finding::at(
+                        path,
+                        format!(
+                            "A migration creates the table `{name}` by its name, so its rows have \
+                             no personal-data marks. Create it from the schema, or rename it in a \
+                             later migration to a table of `stored_tables!` in {SCHEMA_PATH}."
+                        ),
+                    ));
+                }
+                _ => {}
             }
         }
     }
@@ -419,6 +485,25 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
         let all = table_findings(&schema, &migration, LIST_GOOD);
         assert!(all.contains("The table `Orphan` has no entity"), "{all}");
         assert!(all.contains("creates the table `Orphan`"), "{all}");
+    }
+
+    #[test]
+    fn good_example_a_table_made_by_its_old_name_is_renamed_to_one_with_marks() {
+        let migration = format!(
+            "{MIGRATION_GOOD}Table::create().table(Alias::new(OLD)).col(x)\nconst OLD: &str = \"old_event\";\nTable::rename().table(Alias::new(\"old_event\"), Event::Table)\n"
+        );
+        assert_eq!(table_findings(SCHEMA_GOOD, &migration, LIST_GOOD), "");
+    }
+
+    #[test]
+    fn bad_example_a_table_made_by_its_name_and_never_renamed() {
+        let migration =
+            format!("{MIGRATION_GOOD}Table::create().table(Alias::new(\"hidden_rows\")).col(x)\n");
+        let all = table_findings(SCHEMA_GOOD, &migration, LIST_GOOD);
+        assert!(
+            all.contains("creates the table `hidden_rows` by its name"),
+            "{all}"
+        );
     }
 
     #[test]

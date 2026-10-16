@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 import { OwnFieldInput } from "../fields/index.ts";
-import { AssigneePicker } from "./AssigneePicker.tsx";
+import { AssignedPicker } from "./AssignedPicker.tsx";
 import { ChangeAssigned } from "./AssignedRow.tsx";
 import { priorityChoices } from "./issue-choices.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
@@ -44,7 +44,7 @@ function AssignedField({
           setPicking(true);
         }}
       />
-      <AssigneePicker
+      <AssignedPicker
         isOpen={picking}
         onClose={() => {
           setPicking(false);

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::id::{IssueId, UserId};
-use bb_core::issue::{Issue, IssueAssignee, Priority, Status};
+use bb_core::issue::{AssignedPerson, Issue, Priority, Status};
 use bb_core::project::Project;
 use bb_core::readable_id::IssueCode;
 use bb_core::version::FIRST_VERSION;
@@ -32,17 +32,17 @@ const ATTEMPTS: usize = 3;
 struct NewIssue {
     project: Project,
     issue: Issue,
-    assignees: Vec<UserId>,
+    assigned_people: Vec<UserId>,
     /// The values of own fields it starts with: asked for, or the defaults.
     own: PlannedValues,
 }
 
 impl NewIssue {
     /// The rows of the people the issue is assigned to.
-    fn people(&self) -> Vec<IssueAssignee> {
-        self.assignees
+    fn people(&self) -> Vec<AssignedPerson> {
+        self.assigned_people
             .iter()
-            .map(|person| IssueAssignee {
+            .map(|person| AssignedPerson {
                 issue: self.issue.id,
                 person: *person,
                 added_at: self.issue.created_at,
@@ -84,9 +84,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .as_deref()
             .map(clean_long_text)
             .transpose()?;
-        let assignees = match &input.assigned_to {
+        let assigned_people = match &input.assigned_to {
             Some(people) => {
-                self.clean_assignees(
+                self.clean_assigned_people(
                     actor.person.id,
                     &access,
                     project.id,
@@ -144,7 +144,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             NewIssue {
                 project,
                 issue,
-                assignees,
+                assigned_people,
                 own,
             },
         ))
@@ -179,7 +179,7 @@ pub async fn create_issue<S: AuthStore>(
         set_to(
             member::ASSIGNED_TO,
             json!(
-                new.assignees
+                new.assigned_people
                     .iter()
                     .map(ToString::to_string)
                     .collect::<Vec<_>>()
@@ -227,8 +227,10 @@ pub async fn create_issue<S: AuthStore>(
                         .await?;
                     }
                     // Whoever reports an issue, or is assigned to it, follows it (ISS-07).
-                    let assigned: Vec<UserId> =
-                        people.iter().map(|assignee| assignee.person).collect();
+                    let assigned: Vec<UserId> = people
+                        .iter()
+                        .map(|assigned_person| assigned_person.person)
+                        .collect();
                     let followers = started_following(
                         issue.id,
                         Some(issue.reported_by),
@@ -253,6 +255,8 @@ pub async fn create_issue<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .ok_or_else(|| AppError::Internal("a new issue is not there".into()))?;
     let mut views = ctx.issue_views(&actor, access.clone(), new.project).await?;
-    let view = ctx.issue_view(&mut views, &stored, &new.assignees).await?;
+    let view = ctx
+        .issue_view(&mut views, &stored, &new.assigned_people)
+        .await?;
     Ok(access.authorize(view))
 }

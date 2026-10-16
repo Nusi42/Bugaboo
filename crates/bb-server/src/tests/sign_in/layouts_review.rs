@@ -212,7 +212,7 @@ async fn cfg_01_a_lead_who_may_not_decide_what_roles_see_gets_no_roles_and_keeps
         }
         assert!(!seen.to_string().contains("Guest"), "{seen}");
 
-        // The lead moves the priority out and adds the assignee. The roles of the description and
+        // The lead moves the priority out and adds the assigned person. The roles of the description and
         // the priority stay as they were; the field that is new is shown to every role.
         let (_, current) = slot(&seen)?;
         let lena_lock = token_of(&take_lock(&mut lena, &layout, ANOTHER_EDITOR).await?)?;

@@ -7,15 +7,17 @@
 //!   roles and of access keys;
 //! - the kind of record of a run of a change to many issues in the events (`bulk_run` is
 //!   `change_run`), which the outbox points to, so it needs no rewrite of its own;
-//! - the kind of job that goes on with such a run (`bulk.step` is `many-changes.step`).
+//! - the kind of job that goes on with such a run (`bulk.step` is `many-changes.step`);
+//! - the table of the people an issue is assigned to (`issue_assignee` is `assigned_person`), which
+//!   keeps its rows.
 //!
-//! Every step is an update of a value that names something, so running the steps again changes
-//! nothing.
+//! Migrations run once (the recorded number says so). Every update of a value changes only the rows
+//! that still have the old word, so running the updates again changes nothing.
 
-use sea_query::{Expr, ExprTrait as _, Query};
+use sea_query::{Alias, Expr, ExprTrait as _, Query, Table};
 
 use super::Step;
-use crate::schema::{AccessKeyPermissionRow, Event, Job, RolePermissionRow};
+use crate::schema::{AccessKeyPermissionRow, AssignedPersonRow, Event, Job, RolePermissionRow};
 
 /// The permissions whose word changed, old and new.
 const PERMISSIONS: [(&str, &str); 3] = [
@@ -37,6 +39,11 @@ pub(super) fn steps() -> Vec<Step> {
         Job::Kind,
         "bulk.step",
         "many-changes.step",
+    ));
+    steps.push(Step::Rename(
+        Table::rename()
+            .table(Alias::new("issue_assignee"), AssignedPersonRow::Table)
+            .to_owned(),
     ));
     steps
 }
@@ -83,13 +90,13 @@ mod tests {
     use bb_core::id::JobId;
     use bb_core::technical::TechnicalName;
     use bb_testing::{Failure, TestDatabase, TestResult, each_database};
-    use sea_query::{Expr, Order, Query};
+    use sea_query::{Alias, Expr, Order, Query};
     use serde_json::Value;
 
     use super::*;
     use crate::db::Database;
     use crate::jobs::NewJob;
-    use crate::schema::{AccessKeyRow, PersonRow, RoleRow};
+    use crate::schema::{AccessKeyRow, IssueRow, IssueTypeRow, PersonRow, ProjectRow, RoleRow};
     use crate::test_support::{at, event, ids};
 
     /// The database as M3 left it: migrations 1 to 13 applied, nothing newer.
@@ -123,6 +130,138 @@ mod tests {
         rows.iter()
             .map(|row| row.get::<String>(column).map_err(Into::into))
             .collect()
+    }
+
+    /// An issue of a project, as M3 stored it (the people it is assigned to come after).
+    async fn an_issue(database: &Database) -> Result<(), Failure> {
+        let mut project = Query::insert();
+        project
+            .into_table(ProjectRow::Table)
+            .columns([
+                ProjectRow::Id,
+                ProjectRow::ShortName,
+                ProjectRow::Name,
+                ProjectRow::Version,
+            ])
+            .values([
+                Expr::val(vec![1_u8; 16]),
+                Expr::val("WEB"),
+                Expr::val("Web"),
+                Expr::val(1_i64),
+            ])?;
+        database.execute(&project).await?;
+        let mut issue_type = Query::insert();
+        issue_type
+            .into_table(IssueTypeRow::Table)
+            .columns([
+                IssueTypeRow::Id,
+                IssueTypeRow::Name,
+                IssueTypeRow::Icon,
+                IssueTypeRow::Position,
+                IssueTypeRow::Version,
+            ])
+            .values([
+                Expr::val(vec![2_u8; 16]),
+                Expr::val("Bug"),
+                Expr::val("bug"),
+                Expr::val(0_i64),
+                Expr::val(1_i64),
+            ])?;
+        database.execute(&issue_type).await?;
+        let mut issue = Query::insert();
+        issue
+            .into_table(IssueRow::Table)
+            .columns([
+                IssueRow::Id,
+                IssueRow::Project,
+                IssueRow::IssueType,
+                IssueRow::Code,
+                IssueRow::Title,
+                IssueRow::Description,
+                IssueRow::Status,
+                IssueRow::Priority,
+                IssueRow::ReportedBy,
+                IssueRow::CreatedAt,
+                IssueRow::UpdatedAt,
+                IssueRow::Version,
+            ])
+            .values([
+                Expr::val(vec![3_u8; 16]),
+                Expr::val(vec![1_u8; 16]),
+                Expr::val(vec![2_u8; 16]),
+                Expr::val("1"),
+                Expr::val("Printer jams"),
+                Expr::val(""),
+                Expr::val("open"),
+                Expr::val("medium"),
+                Expr::val(vec![4_u8; 16]),
+                Expr::val(0_i64),
+                Expr::val(0_i64),
+                Expr::val(1_i64),
+            ])?;
+        database.execute(&issue).await?;
+        Ok(())
+    }
+
+    /// A role and an access key with a person to own it.
+    async fn a_role_and_a_key(database: &Database) -> Result<(), Failure> {
+        let mut role = Query::insert();
+        role.into_table(RoleRow::Table)
+            .columns([
+                RoleRow::Id,
+                RoleRow::Name,
+                RoleRow::Position,
+                RoleRow::TwoStep,
+                RoleRow::Version,
+            ])
+            .values([
+                Expr::val(vec![1_u8; 16]),
+                Expr::val("Old role"),
+                Expr::val(0_i64),
+                Expr::val(false),
+                Expr::val(1_i64),
+            ])?;
+        database.execute(&role).await?;
+        let mut person = Query::insert();
+        person
+            .into_table(PersonRow::Table)
+            .columns([
+                PersonRow::Id,
+                PersonRow::DisplayName,
+                PersonRow::Email,
+                PersonRow::CreatedAt,
+            ])
+            .values([
+                Expr::val(vec![2_u8; 16]),
+                Expr::val("Ada"),
+                Expr::val("ada@example.test"),
+                Expr::val(0_i64),
+            ])?;
+        database.execute(&person).await?;
+        let mut key = Query::insert();
+        key.into_table(AccessKeyRow::Table)
+            .columns([
+                AccessKeyRow::Id,
+                AccessKeyRow::Owner,
+                AccessKeyRow::Name,
+                AccessKeyRow::Prefix,
+                AccessKeyRow::SecretHash,
+                AccessKeyRow::Choice,
+                AccessKeyRow::CreatedAt,
+                AccessKeyRow::ExpiresAt,
+            ])
+            .values([
+                Expr::val(vec![3_u8; 16]),
+                Expr::val(vec![2_u8; 16]),
+                Expr::val("Key"),
+                Expr::val("00000001"),
+                Expr::val(vec![4_u8; 32]),
+                Expr::val("permissions"),
+                Expr::val(0_i64),
+                Expr::val(1000_i64),
+            ])?;
+        database.execute(&key).await?;
+        Ok(())
     }
 
     #[tokio::test]
@@ -189,66 +328,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn adr_0021_the_people_an_issue_is_assigned_to_keep_their_rows_under_the_new_table()
+    -> TestResult {
+        each_database("m0014_assigned_person_table", async |db| {
+            let database = m3_database(db).await?;
+            an_issue(&database).await?;
+            // The row as M3 wrote it: in the table with the old name.
+            let mut assigned = Query::insert();
+            assigned
+                .into_table(Alias::new("issue_assignee"))
+                .columns([
+                    Alias::new("issue"),
+                    Alias::new("person"),
+                    Alias::new("added_at"),
+                ])
+                .values([
+                    Expr::val(vec![3_u8; 16]),
+                    Expr::val(vec![4_u8; 16]),
+                    Expr::val(7_i64),
+                ])?;
+            database.execute(&assigned).await?;
+            assert_eq!(database.migrate(at(1)).await?, [14]);
+            let mut select = Query::select();
+            select
+                .columns([AssignedPersonRow::Person, AssignedPersonRow::AddedAt])
+                .from(AssignedPersonRow::Table);
+            let rows = database.fetch_all(&select).await?;
+            assert_eq!(rows.len(), 1);
+            assert_eq!(
+                rows[0].get::<Vec<u8>>(AssignedPersonRow::Person)?,
+                vec![4_u8; 16]
+            );
+            assert_eq!(rows[0].get::<i64>(AssignedPersonRow::AddedAt)?, 7);
+            // Nothing is left under the old name, and migrating again changes nothing.
+            let mut old = Query::select();
+            old.column(Alias::new("person"))
+                .from(Alias::new("issue_assignee"));
+            assert!(database.fetch_all(&old).await.is_err());
+            assert!(database.migrate(at(2)).await?.is_empty());
+            assert_eq!(database.fetch_all(&select).await?.len(), 1);
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
     async fn adr_0008_the_permissions_to_create_are_written_with_the_new_words() -> TestResult {
         each_database("m0014_permission_words", async |db| {
             let database = m3_database(db).await?;
             // A role and an access key with the words M3 wrote.
-            let mut role = Query::insert();
-            role.into_table(RoleRow::Table)
-                .columns([
-                    RoleRow::Id,
-                    RoleRow::Name,
-                    RoleRow::Position,
-                    RoleRow::TwoStep,
-                    RoleRow::Version,
-                ])
-                .values([
-                    Expr::val(vec![1_u8; 16]),
-                    Expr::val("Old role"),
-                    Expr::val(0_i64),
-                    Expr::val(false),
-                    Expr::val(1_i64),
-                ])?;
-            database.execute(&role).await?;
-            let mut person = Query::insert();
-            person
-                .into_table(PersonRow::Table)
-                .columns([
-                    PersonRow::Id,
-                    PersonRow::DisplayName,
-                    PersonRow::Email,
-                    PersonRow::CreatedAt,
-                ])
-                .values([
-                    Expr::val(vec![2_u8; 16]),
-                    Expr::val("Ada"),
-                    Expr::val("ada@example.test"),
-                    Expr::val(0_i64),
-                ])?;
-            database.execute(&person).await?;
-            let mut key = Query::insert();
-            key.into_table(AccessKeyRow::Table)
-                .columns([
-                    AccessKeyRow::Id,
-                    AccessKeyRow::Owner,
-                    AccessKeyRow::Name,
-                    AccessKeyRow::Prefix,
-                    AccessKeyRow::SecretHash,
-                    AccessKeyRow::Choice,
-                    AccessKeyRow::CreatedAt,
-                    AccessKeyRow::ExpiresAt,
-                ])
-                .values([
-                    Expr::val(vec![3_u8; 16]),
-                    Expr::val(vec![2_u8; 16]),
-                    Expr::val("Key"),
-                    Expr::val("00000001"),
-                    Expr::val(vec![4_u8; 32]),
-                    Expr::val("permissions"),
-                    Expr::val(0_i64),
-                    Expr::val(1000_i64),
-                ])?;
-            database.execute(&key).await?;
+            a_role_and_a_key(&database).await?;
             for old in [
                 "make-issues",
                 "make-projects",

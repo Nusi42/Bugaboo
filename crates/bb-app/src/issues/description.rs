@@ -44,11 +44,11 @@ pub async fn save_description<S: AuthStore>(
     let text = clean_long_text(&input.text)?;
     let assigned: Vec<UserId> = ctx
         .store()
-        .assignees(current.id)
+        .assigned_people(current.id)
         .await
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
-        .map(|assignee| assignee.person)
+        .map(|assigned_person| assigned_person.person)
         .collect();
     let project = ctx
         .store()

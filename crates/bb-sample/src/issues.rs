@@ -177,7 +177,7 @@ impl Maker<'_, '_> {
     }
 
     /// The people, as the people of the plan of the people, whom picks stand for.
-    fn assignees(&self, picks: &[u32]) -> Vec<UserId> {
+    fn assigned_people(&self, picks: &[u32]) -> Vec<UserId> {
         let mut people: Vec<UserId> = Vec::new();
         for pick in picks {
             let person = self.world.people.get(self.hands.anyone(*pick));
@@ -247,7 +247,7 @@ impl Maker<'_, '_> {
     async fn create(&mut self, at: usize, person: usize) -> Result<(), SampleError> {
         let planned = &self.plan.issues[at];
         let token = self.hands.token(person).await?;
-        let assigned = self.assignees(&planned.assignees);
+        let assigned = self.assigned_people(&planned.assigned_people);
         let fields = planned
             .fields
             .iter()

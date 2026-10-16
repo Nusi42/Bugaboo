@@ -406,8 +406,8 @@ pub(crate) enum ProjectTypeFieldLevelRow {
 
 /// The people an issue is assigned to.
 #[derive(Clone, Copy, Iden)]
-pub(crate) enum IssueAssigneeRow {
-    #[iden = "issue_assignee"]
+pub(crate) enum AssignedPersonRow {
+    #[iden = "assigned_person"]
     Table,
     Issue,
     Person,
@@ -1026,7 +1026,7 @@ stored_tables! {
         DeletedAt => deleted_at,
         Version => version,
     },
-    IssueAssigneeRow => bb_core::issue::IssueAssignee {
+    AssignedPersonRow => bb_core::issue::AssignedPerson {
         Issue => issue,
         Person => person,
         AddedAt => added_at,

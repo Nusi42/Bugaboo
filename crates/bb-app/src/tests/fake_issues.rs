@@ -3,7 +3,7 @@
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType};
+use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
 use jiff::Timestamp;
 
@@ -41,14 +41,14 @@ fn at(state: &State, project: ProjectId, code: &IssueCode) -> Option<IssueFound>
     })
 }
 
-fn assignees_of(state: &State, issues: &[IssueId]) -> Vec<IssueAssignee> {
-    let mut found: Vec<IssueAssignee> = state
-        .assignees
+fn assigned_people_of(state: &State, issues: &[IssueId]) -> Vec<AssignedPerson> {
+    let mut found: Vec<AssignedPerson> = state
+        .assigned_people
         .iter()
-        .filter(|assignee| issues.contains(&assignee.issue))
+        .filter(|assigned_person| issues.contains(&assigned_person.issue))
         .cloned()
         .collect();
-    found.sort_by_key(|assignee| (assignee.added_at, assignee.person));
+    found.sort_by_key(|assigned_person| (assigned_person.added_at, assigned_person.person));
     found
 }
 
@@ -77,8 +77,11 @@ impl IssueStore for FakeStore {
         Ok(at(&tx.state, project, &code).is_some())
     }
 
-    async fn assignees_in(tx: &mut Tx, issue: IssueId) -> Result<Vec<IssueAssignee>, FakeError> {
-        Ok(assignees_of(&tx.state, &[issue]))
+    async fn assigned_people_in(
+        tx: &mut Tx,
+        issue: IssueId,
+    ) -> Result<Vec<AssignedPerson>, FakeError> {
+        Ok(assigned_people_of(&tx.state, &[issue]))
     }
 
     async fn issue_codes_in(
@@ -131,8 +134,11 @@ impl IssueStore for FakeStore {
         }))
     }
 
-    async fn assignees_of(&self, issues: &[IssueId]) -> Result<Vec<IssueAssignee>, FakeError> {
-        Ok(self.read(|state| assignees_of(state, issues)))
+    async fn assigned_people_of(
+        &self,
+        issues: &[IssueId],
+    ) -> Result<Vec<AssignedPerson>, FakeError> {
+        Ok(self.read(|state| assigned_people_of(state, issues)))
     }
 
     async fn insert_issue_type(tx: &mut Tx, issue_type: &IssueType) -> Result<(), FakeError> {
@@ -166,14 +172,16 @@ impl IssueStore for FakeStore {
     async fn insert_issue(
         tx: &mut Tx,
         issue: &Issue,
-        assignees: &[IssueAssignee],
+        assigned_people: &[AssignedPerson],
     ) -> Result<(), FakeError> {
         // The unique key of the codes of a project.
         if at(&tx.state, issue.project, &issue.code).is_some() {
             return Err(FakeError::Duplicate);
         }
         tx.state.issues.push(issue.clone());
-        tx.state.assignees.extend(assignees.iter().cloned());
+        tx.state
+            .assigned_people
+            .extend(assigned_people.iter().cloned());
         Ok(())
     }
 
@@ -219,15 +227,17 @@ impl IssueStore for FakeStore {
         Ok(true)
     }
 
-    async fn replace_assignees(
+    async fn replace_assigned_people(
         tx: &mut Tx,
         issue: IssueId,
-        assignees: &[IssueAssignee],
+        assigned_people: &[AssignedPerson],
     ) -> Result<(), FakeError> {
         tx.state
-            .assignees
-            .retain(|assignee| assignee.issue != issue);
-        tx.state.assignees.extend(assignees.iter().cloned());
+            .assigned_people
+            .retain(|assigned_person| assigned_person.issue != issue);
+        tx.state
+            .assigned_people
+            .extend(assigned_people.iter().cloned());
         Ok(())
     }
 

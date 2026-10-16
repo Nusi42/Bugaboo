@@ -157,7 +157,7 @@ mod tests {
                 title: String::new(),
                 description: String::new(),
                 priority: Priority::Normal,
-                assignees: Vec::new(),
+                assigned_people: Vec::new(),
                 fields: Vec::new(),
                 parent: None,
                 tags: Vec::new(),

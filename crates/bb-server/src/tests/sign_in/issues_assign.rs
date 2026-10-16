@@ -182,8 +182,8 @@ async fn m3_f28_who_may_create_issues_and_set_assigned_to_gets_the_list_for_the_
 }
 
 #[tokio::test]
-async fn m3_f28_an_assignee_who_lost_access_does_not_stop_a_change() -> TestResult {
-    each_database("m3_f28_assignee_lost_access", async |db| {
+async fn m3_f28_an_assigned_person_who_lost_access_does_not_stop_a_change() -> TestResult {
+    each_database("m3_f28_assigned_person_lost_access", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (_, cora) = site.person(StartingRole::Contributor, "cora").await?;

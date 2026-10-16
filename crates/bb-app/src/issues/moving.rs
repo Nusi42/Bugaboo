@@ -216,11 +216,11 @@ pub async fn move_issue<S: AuthStore>(
     };
     let assigned: Vec<UserId> = ctx
         .store()
-        .assignees(moved.id)
+        .assigned_people(moved.id)
         .await
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
-        .map(|assignee| assignee.person)
+        .map(|assigned_person| assigned_person.person)
         .collect();
     let mut views = ctx.issue_views(&actor, held.clone(), target).await?;
     let view = ctx.issue_view(&mut views, &moved, &assigned).await?;

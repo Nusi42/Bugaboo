@@ -16,7 +16,7 @@ use jiff::Timestamp;
 use sea_query::{
     ColumnDef, DeleteStatement, Expr, IndexCreateStatement, InsertStatement, Order,
     PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
-    TableCreateStatement, UpdateStatement,
+    TableCreateStatement, TableRenameStatement, UpdateStatement,
 };
 use sha2::{Digest as _, Sha256};
 
@@ -60,6 +60,8 @@ pub(crate) enum Step {
     Delete(DeleteStatement),
     /// Rewrite values the program names differently now.
     Update(UpdateStatement),
+    /// Give a table the name the program calls it now.
+    Rename(TableRenameStatement),
 }
 
 /// One migration.
@@ -105,6 +107,10 @@ impl Definition {
                 Step::Update(statement) => [
                     statement.to_string(SqliteQueryBuilder),
                     statement.to_string(PostgresQueryBuilder),
+                ],
+                Step::Rename(statement) => [
+                    statement.build(SqliteQueryBuilder),
+                    statement.build(PostgresQueryBuilder),
                 ],
             };
             for text in texts {
@@ -303,6 +309,7 @@ impl Database {
                     Step::Update(statement) => {
                         transaction.execute(&statement).await?;
                     }
+                    Step::Rename(statement) => transaction.execute_schema(&statement).await?,
                 }
             }
             record(&mut transaction, next, now).await?;

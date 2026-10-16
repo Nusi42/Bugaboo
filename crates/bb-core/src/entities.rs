@@ -32,7 +32,7 @@ crate::entities! {
     crate::history::HistoryEntry,
     crate::issue::Issue,
     crate::issue::IssueAlias,
-    crate::issue::IssueAssignee,
+    crate::issue::AssignedPerson,
     crate::issue::IssueCounter,
     crate::issue::IssueType,
     crate::job::Job,
