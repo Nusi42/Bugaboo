@@ -28,11 +28,23 @@ test("ux_4_4 a sub-issue is a row like those of the list, tinted by its status g
   // The same state as the list: WEB-2 is done.
   await expect(row).toHaveAttribute("data-state", /group-done/u);
   await expect(row.getByRole("img", { name: t("status.done"), exact: true })).toBeVisible();
-  // The whole row opens the issue, and the button to take it out is there.
+  // The whole row opens the issue, and the button to take it out is in a cell of its own.
   await expect(row.getByRole("link")).toHaveAttribute("href", issueAddress("WEB-2"));
   await expect(
-    row.getByRole("button", { name: t("sub-issues.take-out", { key: "WEB-2" }), exact: true }),
+    partIn(row, "list-row.cell", "action").getByRole("button", {
+      name: t("sub-issues.take-out", { key: "WEB-2" }),
+      exact: true,
+    }),
   ).toBeVisible();
+  // The headings of the blocks are the section titles, one level under the title of the page.
+  await Promise.all(
+    [t("sub-issues.title"), t("related-issues.title"), t("history.title")].map((name) =>
+      expect(page.getByRole("heading", { level: 2, name, exact: true })).toHaveAttribute(
+        "data-part",
+        "issue-section.title",
+      ),
+    ),
+  );
 });
 
 test("ux_4_4 the issue under another says Part of with the status as the pill of its group", async ({

@@ -12,6 +12,7 @@ import {
   prepareWeb,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
+import { boxOf } from "./support/windows.ts";
 import { projectIssuesAddress } from "../src/shared/paths.ts";
 
 // The new-issue dialog (ISS-11, UX §4.5, M3 WP-06): project, type and fields, required fields that
@@ -37,6 +38,20 @@ test("iss_11 the dialog asks for a title in words, and the issue is made with Cr
     .getByRole("button", { name: t("issues.create"), exact: true })
     .click();
   await expect(page.getByRole("heading", { name: /A new problem/u })).toBeVisible();
+});
+
+test("ux_4_5 R1 the name of Project stands above it, on the same edge as the name of Type", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(projectIssuesAddress("WEB"));
+  await openDialog(page);
+  const project = await boxOf(dialog(page).getByText(t("issues.project"), { exact: true }));
+  const type = await boxOf(dialog(page).getByText(t("issues.type"), { exact: true }));
+  const name = await boxOf(dialog(page).getByText("Website", { exact: true }));
+  expect(Math.abs(project.x - type.x)).toBeLessThanOrEqual(2);
+  expect(name.y).toBeGreaterThan(project.y);
+  expect(Math.abs(name.x - project.x)).toBeLessThanOrEqual(2);
 });
 
 test("iss_11 typing the title does not move the buttons under the form", async ({ page }) => {

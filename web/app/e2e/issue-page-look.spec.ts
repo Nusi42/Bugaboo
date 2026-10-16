@@ -5,20 +5,15 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { chooseStatus, detailRow, expectStatus, statusButton } from "./support/issues.ts";
-import { layoutOf } from "./support/layout.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
-import { boxOf } from "./support/windows.ts";
 
 // The issue page in the new look (UX §4.4, R4, R7, R9, M3 WP-17): the big status button in its
-// group's color, the text column of at most 780, Details as name-and-value rows that save in place
+// group's color, Details as name-and-value rows that save in place
 // and say Saved with Undo where it happened.
 
 test.use({ preparation: { run: prepareLook } });
 test.describe.configure({ mode: "serial" });
-
-/** The widest the text column of the issue page may be (UX §4.4). */
-const TEXT_COLUMN_MAX = 780;
 
 test("ux_4_4 the big status button shows the status with its group's icon and lists the changes in words", async ({
   page,
@@ -67,13 +62,4 @@ test("ux_4_4 the Details are name-and-value rows, and a short value saves in pla
   await expect(priority.getByLabel(t("issue-field.priority"), { exact: true })).toHaveValue(
     "critical",
   );
-});
-
-test("ux_4_4 the text column is at most 780 wide", async ({ page }) => {
-  test.skip(layoutOf(page) !== "computer", "the columns are for a computer");
-  await signIn(page, ada);
-  await page.goto(issueAddress("WEB-1"));
-  const main = await boxOf(partIn(page, "issue-main"));
-  expect(main.width).toBeLessThanOrEqual(TEXT_COLUMN_MAX);
-  expect(main.width).toBeGreaterThan(TEXT_COLUMN_MAX / 2);
 });

@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import { tokenValue } from "./support/tokens.ts";
 import { type Page } from "@playwright/test";
 
 import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
@@ -43,14 +44,6 @@ async function setSwitch(page: Page, name: string, on: boolean): Promise<void> {
     await page.getByText(name, { exact: true }).click();
   }
   await (on ? expect(field).toBeChecked() : expect(field).not.toBeChecked());
-}
-
-/** The value of a token on the page, as the browser works it out. */
-function tokenValue(page: Page, name: string): Promise<string> {
-  return page.evaluate(
-    (token) => getComputedStyle(document.documentElement).getPropertyValue(token).trim(),
-    name,
-  );
 }
 
 /** The font size of the heading of the page, in pixels. */

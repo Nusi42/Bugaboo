@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { giveRole, roleId, roleName, setFieldLevel, signedInAdmin } from "./support/access.ts";
+import { countRequests } from "./support/requests.ts";
 import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
@@ -68,6 +69,8 @@ async function fillIn(page: Page, critical: string): Promise<void> {
   kept = keptAfter(page);
   await labelled("Customer").press("Enter");
   await kept;
+  // The box is the same box after it was kept: the person goes on typing in it.
+  await expect(labelled("Customer")).toBeFocused();
   await expect(labelled("Customer")).toHaveValue("Acme");
   await expect(customer.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();
   await labelled("Customer").fill("Acme Ltd");
@@ -75,6 +78,12 @@ async function fillIn(page: Page, critical: string): Promise<void> {
   await page.getByRole("heading", { level: 2, name: t("issues.details") }).click();
   await kept;
   await expect(labelled("Customer")).toHaveValue("Acme Ltd");
+  // Leaving a box that did not change sends nothing.
+  const changes = countRequests(page, "PATCH");
+  await labelled("Customer").focus();
+  await page.getByRole("heading", { level: 2, name: t("issues.details") }).click();
+  await page.waitForTimeout(500);
+  expect(changes()).toBe(0);
 }
 
 test("cf_06 fields are filled on the issue page and Severity is hidden from a Guest", async ({

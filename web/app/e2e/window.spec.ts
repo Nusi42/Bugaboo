@@ -7,6 +7,7 @@ import { signIn } from "./support/flows.ts";
 import { newIssueDialog as dialog, openNewIssueDialog, prepareWeb } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
+import { pixelsOf } from "./support/tokens.ts";
 import {
   boxOf,
   columns,
@@ -213,7 +214,8 @@ test("ux_6_3 the footer has two rows: the hint, then the buttons in one row with
   expect(usual.another.x).toBeGreaterThan(usual.cancel.x);
   // As small as it goes: Create is still not alone on a row, and the row ends at the right.
   await dragEastEdge(page, -400);
-  await expect.poll(async () => (await windowSize(page)).width).toBeLessThanOrEqual(480);
+  const smallest = await pixelsOf(page, "--size-window-width-min");
+  await expect.poll(async () => (await windowSize(page)).width).toBeLessThanOrEqual(smallest);
   const small = await footerButtons(page);
   expect(Math.abs(small.create.y - small.cancel.y)).toBeLessThanOrEqual(2);
   const window = await boxOf(windowBox(page));

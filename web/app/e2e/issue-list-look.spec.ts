@@ -171,3 +171,18 @@ test("ux_3_4 the slim list beside an issue is left-aligned, with the open issue 
   );
   expect(Math.abs(other.x - title.x)).toBeLessThanOrEqual(2);
 });
+
+test("ux_4_2 pressing any cell opens the issue, and the tick box ticks without opening it (R8)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) === "phone", "the phone rows have other cells");
+  await openList(page);
+  const row = rowOf(page, webIssues.login);
+  await row.locator("label").click();
+  await expect(
+    page.getByRole("status").filter({ hasText: t("issues.selected", { count: 1 }) }),
+  ).toHaveCount(1);
+  await expect(page).not.toHaveURL(/WEB-1/u);
+  await pressMiddleOf(page, partIn(row, "list-row.cell", "priority"));
+  await expect(page).toHaveURL(new RegExp(`${issueAddress("WEB-1")}$|open=WEB-1$`, "u"));
+});
