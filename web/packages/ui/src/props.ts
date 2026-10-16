@@ -82,5 +82,6 @@ export const legendLook = {
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;
 
-/** How a row of the issue list is drawn besides the usual: the two lines of a phone. */
-export const listRowLook = { phone: "phone" } as const;
+/** How a row of the issue list is drawn besides the usual: the two lines of a phone, or of the slim list beside an open issue. */
+export const listRowLook = { phone: "phone", slim: "slim" } as const;
+export type ListRowLook = (typeof listRowLook)[keyof typeof listRowLook];

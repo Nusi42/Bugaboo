@@ -1559,7 +1559,7 @@ part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.c
 
 // On a phone the row has two lines: status, ID and priority, then the title, then the person and
 // the day (R9: the same order). The other columns are left out.
-part "list-row[variant=phone]" {
+part "list-row[variant=phone]" "list-row[variant=slim]" {
     display grid
     grid-template-columns "$size-control $size-col-icon $size-col-key minmax(0, 1fr)"
     grid-template-areas "\"select status key priority\" \"select title title title\" \"select person person changed\""
@@ -1569,44 +1569,50 @@ part "list-row[variant=phone]" {
     min-height "$size-row"
 }
 
-part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
+part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=slim] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" "list-row[variant=slim] list-row.cell[variant=labels]" "list-row[variant=slim] list-row.cell[variant=select]" "list-row[variant=slim] list-row.cell[variant=person]" "list-row[variant=slim] list-row.cell[variant=changed]" {
     display none
 }
 
-part "list-row[variant=phone] list-row.cell" {
+part "list-row[variant=phone] list-row.cell" "list-row[variant=slim] list-row.cell" {
     width auto
 }
 
-part "list-row[variant=phone] list-row.cell[variant=select]" {
+part "list-row[variant=phone] list-row.cell[variant=select]" "list-row[variant=slim] list-row.cell[variant=select]" {
     grid-area select
 }
 
-part "list-row[variant=phone] list-row.cell[variant=status]" {
+part "list-row[variant=phone] list-row.cell[variant=status]" "list-row[variant=slim] list-row.cell[variant=status]" {
     grid-area status
 }
 
-part "list-row[variant=phone] list-row.cell[variant=key]" {
+part "list-row[variant=phone] list-row.cell[variant=key]" "list-row[variant=slim] list-row.cell[variant=key]" {
     grid-area key
 }
 
-part "list-row[variant=phone] list-row.cell[variant=priority]" {
+part "list-row[variant=phone] list-row.cell[variant=priority]" "list-row[variant=slim] list-row.cell[variant=priority]" {
     grid-area priority
     justify-self end
 }
 
-part "list-row[variant=phone] list-row.cell[variant=title]" {
+part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=slim] list-row.cell[variant=title]" {
     grid-area title
     white-space normal
     overflow-wrap anywhere
 }
 
-part "list-row[variant=phone] list-row.cell[variant=person]" {
+part "list-row[variant=phone] list-row.cell[variant=person]" "list-row[variant=slim] list-row.cell[variant=person]" {
     grid-area person
 }
 
-part "list-row[variant=phone] list-row.cell[variant=changed]" {
+part "list-row[variant=phone] list-row.cell[variant=changed]" "list-row[variant=slim] list-row.cell[variant=changed]" {
     grid-area changed
     justify-self end
+}
+
+// The slim list beside the open issue (UX §3.4): the two lines of a phone, without the tick box.
+part "list-row[variant=slim]" {
+    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-areas "\"status key priority\" \"title title title\""
 }
 
 // The header of a group of rows: the group's icon and color, its name and how many issues it holds.

@@ -647,7 +647,7 @@ export const partWords = {
     state: ["selected", "group-in-progress", "group-done", "priority-critical", "priority-high"],
   },
   "list-row": {
-    variant: ["head", "phone"],
+    variant: ["head", "phone", "slim"],
     state: [
       "group-in-progress",
       "selected",

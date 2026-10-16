@@ -1778,7 +1778,8 @@ body {
   z-index: var(--z-raised);
 }
 
-[data-part="list-row"][data-variant~="phone"] {
+[data-part="list-row"][data-variant~="phone"],
+[data-part="list-row"][data-variant~="slim"] {
   display: grid;
   grid-template-columns: var(--size-control) var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
   grid-template-areas: "select status key priority" "select title title title" "select person person changed";
@@ -1789,45 +1790,62 @@ body {
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="type"],
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"] {
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="type"],
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="labels"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="select"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="person"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="changed"] {
   display: none;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"] {
   width: auto;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="select"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="select"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="select"] {
   grid-area: select;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="status"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="status"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="status"] {
   grid-area: status;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="key"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="key"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="key"] {
   grid-area: key;
 }
 
-[data-part="list-row"][data-variant~="phone"]
-  [data-part="list-row.cell"][data-variant~="priority"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="priority"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="priority"] {
   grid-area: priority;
   justify-self: end;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="title"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="title"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="title"] {
   grid-area: title;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="person"] {
   grid-area: person;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="changed"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="changed"],
+[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="changed"] {
   grid-area: changed;
   justify-self: end;
+}
+
+[data-part="list-row"][data-variant~="slim"] {
+  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-areas: "status key priority" "title title title";
 }
 
 [data-part="list-group"] {

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { iconColumns, listColumns, type ListColumn } from "./list-columns.ts";
 import { partOf } from "./parts.ts";
-import { iconSize, type listRowLook } from "./props.ts";
+import { iconSize, type ListRowLook } from "./props.ts";
 import { rowStates, type RowStateInput } from "./row-state.ts";
 import type { StatusGroup } from "./status.ts";
 import { StatusIcon } from "./StatusIcon.tsx";
@@ -69,8 +69,8 @@ export interface ListRowProps extends RowStateInput {
   readonly selected?: boolean;
   /** The issue of this row is open next to the list. */
   readonly current?: boolean;
-  /** The row of a phone has two lines, in the same order (R9). */
-  readonly variant?: typeof listRowLook.phone;
+  /** The row of a phone or of the slim list has two lines, in the same order (R9). */
+  readonly variant?: ListRowLook;
 }
 
 /** One issue: its cells in the fixed columns, tinted by its status group and edged by its priority (R4). */

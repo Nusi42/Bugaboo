@@ -147,3 +147,27 @@ test("ux_03 on a phone a row has two lines in the same order, and the page does 
   expect((await boxOf(row)).height).toBeGreaterThan(64);
   await expectNoSidewaysScroll(page);
 });
+
+test("ux_3_4 the slim list beside an issue is left-aligned, with the open issue marked and the row state", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "computer", "the slim list is for the focus view of a computer");
+  await openList(page);
+  await page.goto(issueAddress("WEB-1"));
+  const slim = page.getByRole("table", { name: t("issues.list"), exact: true });
+  const row = partIn(slim, "list-row").filter({ hasText: webIssues.login });
+  await expect(row).toHaveAttribute("aria-current", "true");
+  await expect(row).toHaveAttribute("data-state", /group-in-progress/u);
+  const box = await boxOf(row);
+  const title = await boxOf(row.getByRole("link", { name: webIssues.login }));
+  const key = await boxOf(partIn(row, "list-row.cell", "key"));
+  // The title starts at the start edge of the row (not centered), under the status and the ID.
+  expect(title.x - box.x).toBeLessThanOrEqual(24);
+  expect(key.x).toBeGreaterThan(title.x);
+  const other = await boxOf(
+    partIn(slim, "list-row")
+      .filter({ hasText: webIssues.passkey })
+      .getByRole("link", { name: webIssues.passkey }),
+  );
+  expect(Math.abs(other.x - title.x)).toBeLessThanOrEqual(2);
+});

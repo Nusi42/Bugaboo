@@ -9,6 +9,12 @@ export const issueColumns: readonly ListColumn[] = listColumns.filter(
   (column) => column !== "labels",
 );
 
+/** The columns of the slim list beside an open issue: the status, the ID, the priority and the title (UX §3.4). */
+const slimKept = new Set<ListColumn>(["status", "key", "priority", "title"]);
+export const slimColumns: readonly ListColumn[] = listColumns.filter((column) =>
+  slimKept.has(column),
+);
+
 /** The name of every column of the issue list (UX §4.2): the header says it, or screen readers do for the icon columns. */
 export function listColumnLabels(): Readonly<Record<ListColumn, string>> {
   return {
