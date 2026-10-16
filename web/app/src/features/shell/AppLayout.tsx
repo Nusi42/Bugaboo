@@ -1,5 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { useAppearance, useLayout, partOf, part, type LayoutMode } from "@bugaboo/ui";
+import {
+  appLayoutLook,
+  useAppearance,
+  useLayout,
+  partOf,
+  part,
+  type LayoutMode,
+} from "@bugaboo/ui";
 
 import { CONTENT_HREF } from "./content-id.ts";
 import { ShellColumn } from "./ShellColumn.tsx";
@@ -11,10 +18,10 @@ import { useShell } from "./use-shell.ts";
 /** What the frame says about itself: a phone, or a computer with its sidebar wide or narrow (a minimized window stands after it). */
 function variantOf(layout: LayoutMode, narrow: boolean) {
   if (layout === "phone") {
-    return "phone";
+    return appLayoutLook.phone;
   }
   if (layout === "computer") {
-    return narrow ? "side-narrow" : "side";
+    return narrow ? appLayoutLook.sideNarrow : appLayoutLook.side;
   }
   return false;
 }

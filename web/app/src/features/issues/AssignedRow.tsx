@@ -23,7 +23,7 @@ function useAssignShortcut(canChange: boolean, open: () => void): void {
 }
 
 /** The button that opens the picker: *Add Assigned to* while nobody is, *Change* after that. */
-function ChangeAssigned({
+export function ChangeAssigned({
   name,
   empty,
   onPress,

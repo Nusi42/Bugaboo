@@ -5,7 +5,6 @@ import {
   menuStep,
   parseWindowSizes,
   resizedBy,
-  sizeAfterKey,
   sizeAfterStep,
   stepOfArrow,
   windowEdges,
@@ -45,15 +44,25 @@ describe("ux_6_3 a window is resized at every edge and corner", () => {
 });
 
 describe("ux_04 a window is resized with the keyboard too", () => {
-  it("the arrow keys make it wider, narrower, taller and shorter by a step", () => {
-    expect(sizeAfterKey(start, key.right)).toEqual({ width: 760 + keyboardStep, height: 500 });
-    expect(sizeAfterKey(start, key.left)).toEqual({ width: 760 - keyboardStep, height: 500 });
-    expect(sizeAfterKey(start, key.down)).toEqual({ width: 760, height: 500 + keyboardStep });
-    expect(sizeAfterKey(start, key.up)).toEqual({ width: 760, height: 500 - keyboardStep });
+  it("the arrow keys are the four steps, and a step of a key is keyboardStep long", () => {
+    expect([key.right, key.left, key.down, key.up].map((arrow) => stepOfArrow(arrow))).toEqual([
+      "wider",
+      "narrower",
+      "taller",
+      "shorter",
+    ]);
+    expect(sizeAfterStep(start, "wider", keyboardStep)).toEqual({
+      width: 760 + keyboardStep,
+      height: 500,
+    });
+    expect(sizeAfterStep(start, "shorter", keyboardStep)).toEqual({
+      width: 760,
+      height: 500 - keyboardStep,
+    });
   });
 
-  it("any other key changes nothing", () => {
-    expect(sizeAfterKey(start, "Enter")).toBeUndefined();
+  it("any other key is no step", () => {
+    expect(stepOfArrow("Enter")).toBeUndefined();
   });
 });
 

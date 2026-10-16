@@ -8,6 +8,7 @@ export { registerIssues } from "./register.tsx";
 export { addSelectionBar, type SelectionBarProps } from "./selection-bars.ts";
 export type { IssueSelection } from "./use-selection.ts";
 export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
+export { issueCells } from "./issue-cells.tsx";
 export { priorityChoices, statusChoices } from "./issue-choices.ts";
 export { versionCounted } from "./issue-requests.ts";
 export type { SaveLongText } from "./use-description.ts";

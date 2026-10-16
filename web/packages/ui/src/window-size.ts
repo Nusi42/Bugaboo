@@ -89,12 +89,6 @@ export function stepOfArrow(key: string): WindowStep | undefined {
   return stepOfKey[key];
 }
 
-/** The size after an arrow key; nothing for any other key. */
-export function sizeAfterKey(from: WindowSize, key: string): WindowSize | undefined {
-  const step = stepOfArrow(key);
-  return step === undefined ? undefined : sizeAfterStep(from, step, keyboardStep);
-}
-
 function isSize(value: unknown): value is WindowSize {
   if (typeof value !== "object" || value === null) {
     return false;

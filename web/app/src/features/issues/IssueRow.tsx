@@ -1,21 +1,12 @@
 import { t } from "@bugaboo/messages";
-import {
-  Checkbox,
-  IssueTypeIcon,
-  Link,
-  listRowLook,
-  listShowsWord,
-  ListRow,
-  Priority,
-  StatusIcon,
-  iconSize,
-} from "@bugaboo/ui";
+import { Checkbox, listRowLook, listShowsWord, ListRow, Priority } from "@bugaboo/ui";
 
 import { formatAgo } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 
 import { issueColumns } from "./list-labels.ts";
+import { issueCells } from "./issue-cells.tsx";
 import type { IssueLine } from "./issues.ts";
 
 export interface IssueRowProps {
@@ -48,13 +39,17 @@ export function IssueRow({ line, href, selected, current, phone, now, onSelect }
       {...(phone ? { variant: listRowLook.phone } : {})}
       columns={issueColumns}
       cells={{
-        select: <Checkbox hideLabel label={line.key} isSelected={selected} onChange={onSelect} />,
-        status: (
-          <StatusIcon group={line.group} size={iconSize.small} label={t(`status.${line.status}`)} />
+        ...issueCells(
+          {
+            key: line.key,
+            title: line.title,
+            group: line.group,
+            statusWord: t(`status.${line.status}`),
+            type: line.issueType,
+          },
+          href,
         ),
-        key: line.key,
-        type: <IssueTypeIcon name={line.issueType.icon} label={line.issueType.name} />,
-        title: <Link href={href}>{line.title}</Link>,
+        select: <Checkbox hideLabel label={line.key} isSelected={selected} onChange={onSelect} />,
         priority: (
           <Priority
             priority={line.priority}

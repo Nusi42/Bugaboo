@@ -1,18 +1,9 @@
 import type { Schema } from "@bugaboo/api-client";
-import {
-  IssueTypeIcon,
-  Link,
-  listRowLook,
-  ListRow,
-  StatusIcon,
-  iconSize,
-  partOf,
-  part,
-  useLayout,
-} from "@bugaboo/ui";
+import { listRowLook, ListRow, partOf, part, useLayout } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { issueAddress } from "../../shared/paths.ts";
+import { issueCells } from "../issues/index.ts";
 import { statusWordsOf } from "./ref-status.ts";
 import type { ShownIssue } from "./shown-issue.ts";
 import { refColumns } from "./ref-columns.ts";
@@ -47,17 +38,16 @@ export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
       columns={refColumns}
       {...(phone ? { variant: listRowLook.phone } : {})}
       cells={{
-        status:
-          group === undefined || group === null || word === undefined ? undefined : (
-            <StatusIcon group={group} size={iconSize.small} label={word} />
-          ),
-        key: issue.key,
-        type: <IssueTypeIcon name={issue.issue_type.icon} label={issue.issue_type.name} />,
-        title: (
-          <>
-            {meaning === undefined ? null : <span {...partOf(part.muted)}>{meaning} </span>}
-            <Link href={issueAddress(issue.key)}>{issue.title ?? issue.key}</Link>
-          </>
+        ...issueCells(
+          {
+            key: issue.key,
+            title: issue.title ?? issue.key,
+            group,
+            statusWord: word,
+            type: issue.issue_type,
+          },
+          issueAddress(issue.key),
+          meaning === undefined ? undefined : <span {...partOf(part.muted)}>{meaning} </span>,
         ),
         action,
       }}

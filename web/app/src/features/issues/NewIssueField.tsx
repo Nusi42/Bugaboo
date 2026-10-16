@@ -1,11 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, MarkdownEditor, SelectField, partOf, part } from "@bugaboo/ui";
+import { MarkdownEditor, SelectField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { useImageHosts } from "../../shared/image-hosts.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 import { OwnFieldInput } from "../fields/index.ts";
 import { AssigneePicker } from "./AssigneePicker.tsx";
+import { ChangeAssigned } from "./AssignedRow.tsx";
 import { priorityChoices } from "./issue-choices.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
 
@@ -36,21 +37,13 @@ function AssignedField({
           <span key={person.id}>{person.name}</span>
         ))}
       </span>
-      <Button
-        look={buttonLook.quiet}
-        aria-label={
-          values.assignedTo.length === 0
-            ? t("issues.add-field", { field: name })
-            : t("issues.change-field", { field: name })
-        }
+      <ChangeAssigned
+        name={name}
+        empty={values.assignedTo.length === 0}
         onPress={() => {
           setPicking(true);
         }}
-      >
-        {values.assignedTo.length === 0
-          ? t("issues.add-field", { field: name })
-          : t("issues.change")}
-      </Button>
+      />
       <AssigneePicker
         isOpen={picking}
         onClose={() => {

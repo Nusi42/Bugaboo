@@ -82,6 +82,9 @@ export const legendLook = {
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;
 
+/** What the frame of the app says about itself: a phone, or a computer with its sidebar wide or narrow (UX §3). */
+export const appLayoutLook = { phone: "phone", side: "side", sideNarrow: "side-narrow" } as const;
+
 /** How a card looks besides the usual: without a frame on a phone, where a list gets one gutter and the width. */
 export const cardLook = { openOnPhone: "open-on-phone" } as const;
 export type CardLook = (typeof cardLook)[keyof typeof cardLook];

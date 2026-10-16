@@ -1,16 +1,8 @@
 import { t } from "@bugaboo/messages";
-import {
-  Link,
-  listRowLook,
-  listShowsWord,
-  ListGrid,
-  ListRow,
-  Priority,
-  StatusIcon,
-  iconSize,
-} from "@bugaboo/ui";
+import { listRowLook, listShowsWord, ListGrid, ListRow, Priority } from "@bugaboo/ui";
 
 import { issueAddress } from "../../shared/paths.ts";
+import { issueCells } from "./issue-cells.tsx";
 import type { IssueLine } from "./issues.ts";
 import { slimColumns } from "./list-labels.ts";
 
@@ -37,14 +29,16 @@ export function SlimIssueList({ lines, open }: SlimIssueListProps) {
           priority={line.priority}
           current={line.key === open}
           cells={{
-            status: (
-              <StatusIcon
-                group={line.group}
-                size={iconSize.small}
-                label={t(`status.${line.status}`)}
-              />
+            ...issueCells(
+              {
+                key: line.key,
+                title: line.title,
+                group: line.group,
+                statusWord: t(`status.${line.status}`),
+                type: line.issueType,
+              },
+              issueAddress(line.key),
             ),
-            key: line.key,
             priority: (
               <Priority
                 priority={line.priority}
@@ -52,7 +46,6 @@ export function SlimIssueList({ lines, open }: SlimIssueListProps) {
                 showWord={listShowsWord(line.priority)}
               />
             ),
-            title: <Link href={issueAddress(line.key)}>{line.title}</Link>,
           }}
         />
       ))}
