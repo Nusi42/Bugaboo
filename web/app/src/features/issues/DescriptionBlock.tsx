@@ -5,7 +5,7 @@ import { useState } from "react";
 import { CompareAndSave } from "./CompareAndSave.tsx";
 import { DescriptionEditor, DescriptionReading } from "./DescriptionEditor.tsx";
 import { DescriptionHead } from "./DescriptionHead.tsx";
-import { DescriptionNotes } from "./DescriptionNotes.tsx";
+import { DescriptionEditNotices } from "./DescriptionEditNotices.tsx";
 import { descriptionWords, sectionId, type LongTextWords } from "./long-text-words.ts";
 import type { IssueView } from "./slots.ts";
 import { useDescription, type Description } from "./use-description.ts";
@@ -51,7 +51,7 @@ export function LongTextBlock({
         canChange={canChange}
         words={words}
       />
-      <DescriptionNotes
+      <DescriptionEditNotices
         description={description}
         issue={issue}
         which={which}

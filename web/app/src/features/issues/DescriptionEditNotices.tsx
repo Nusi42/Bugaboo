@@ -10,7 +10,7 @@ import { Offered } from "./DescriptionDraft.tsx";
 import type { Description } from "./use-description.ts";
 import { useWhoChanged } from "./use-who-changed.ts";
 
-export interface DescriptionNotesProps {
+export interface DescriptionEditNoticesProps {
   readonly description: Description;
   /** The ID of the issue and the part of it, to find out who changed the text. */
   readonly issue: string;
@@ -21,7 +21,7 @@ export interface DescriptionNotesProps {
 }
 
 /** The note that tells why the text is *Not saved yet*, with the way on. */
-function Lost({ description, onCompare }: DescriptionNotesProps) {
+function Lost({ description, onCompare }: DescriptionEditNoticesProps) {
   const { phase } = description;
   if (phase.kind !== "lost") {
     return null;
@@ -34,7 +34,7 @@ function Lost({ description, onCompare }: DescriptionNotesProps) {
 }
 
 /** Somebody else is editing the text: who, since when, and the things the person can do. */
-function Held({ description }: Pick<DescriptionNotesProps, "description">) {
+function Held({ description }: Pick<DescriptionEditNoticesProps, "description">) {
   const { phase } = description;
   if (phase.kind !== "held") {
     return null;
@@ -55,7 +55,9 @@ function ChangedAfter({
   which,
   version,
   onCompare,
-}: Pick<DescriptionNotesProps, "issue" | "which" | "onCompare"> & { readonly version: number }) {
+}: Pick<DescriptionEditNoticesProps, "issue" | "which" | "onCompare"> & {
+  readonly version: number;
+}) {
   const name = useWhoChanged(issue, which, version);
   return (
     <Alert tone={alertTone.info}>
@@ -72,7 +74,7 @@ function ChangedAfter({
 }
 
 /** What the person needs to know while they edit: a draft, a request, a change, a failure. */
-export function DescriptionNotes(props: DescriptionNotesProps) {
+export function DescriptionEditNotices(props: DescriptionEditNoticesProps) {
   const { description, comparing, onCompare } = props;
   const { asked, phase, saved, startedFrom, problem } = description;
   const changedAfter = saved !== startedFrom && phase.kind !== "lost" && phase.kind !== "reading";
