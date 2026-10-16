@@ -14,6 +14,10 @@ describe("ux_01 the layout follows the width of the window", () => {
   });
 
   it("uses the breakpoints of the design tokens: 768 and 1280 pixels", () => {
-    expect(breakpoints).toEqual({ tablet: 768, computer: 1280 });
+    expect(breakpoints).toMatchObject({ tablet: 768, computer: 1280 });
+  });
+
+  it("has the widths where a window changes its form: 880 and 1200 pixels (UX §6.3)", () => {
+    expect(breakpoints).toMatchObject({ windowSide: 880, windowWide: 1200 });
   });
 });

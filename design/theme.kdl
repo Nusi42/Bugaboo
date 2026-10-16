@@ -113,6 +113,12 @@ tokens {
     size "size-window-width-min" "480px"
     size "size-window-height-min" "360px"
     size "size-window-button" "46px"
+    // The places to drag at the edges of a window.
+    size "size-window-handle" "8px"
+    // The size of the window right now: the code sets these two variables while the person drags,
+    // and nothing else sets a style at run time.
+    size "window-width" "$size-window"
+    size "window-height" "auto"
     size "bp-window-side" "880px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
@@ -274,7 +280,7 @@ tokens {
 contrast min=4.5 {
     text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
     backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ip" "tint-ip-hover" "tint-ip-selected" "tint-done" "tint-done-hover" "tint-done-selected" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
-    restricted "on-accent" on="accent" reason="On-accent text is only ever drawn on the accent fill."
+    restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
     restricted "cat3-fg" on="cat3-bg" reason="Category 3 text is only ever drawn on its own category 3 background."
@@ -1709,6 +1715,283 @@ part "legend.swatch[variant=critical]" {
 
 part "legend.swatch[variant=high]" {
     border-inline-start "$size-edge solid $warning"
+}
+
+// ───────────── Window (UX §6.3, R10) ─────────────
+//
+// A form opens as a window over the page, in the one overlay (variant `window`). It can be
+// minimized to a bar at the bottom, maximized, and resized at its edges. Its size is two variables
+// that the code sets while the person drags (`--window-width`, `--window-height`, the tokens of the
+// same names). The form follows the window's own width (container queries), not the screen's.
+
+part "overlay[variant=window]" {
+    align-items center
+    justify-content center
+    padding "$space-4"
+}
+
+part "overlay[variant=window][state=maximized]" {
+    padding 0
+}
+
+part "overlay.modal[variant=window]" {
+    container-type inline-size
+    width "min($window-width, 100%)"
+    height "$window-height"
+    min-width "min($size-window-width-min, 100%)"
+    min-height "min($size-window-height-min, 100%)"
+    max-height "100%"
+    border-radius "$r-card"
+}
+
+part "overlay.modal[variant=window][state=maximized]" {
+    width "100%"
+    height "100%"
+    border-radius 0
+}
+
+part "window" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+    outline none
+}
+
+// Everything inside the dialog: the keys of the keyboard are heard here.
+part "window.content" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+}
+
+part "window.title-bar" {
+    display flex
+    flex none
+    align-items stretch
+    min-height "$size-control"
+    border-bottom "$border-width solid $border"
+    border-radius "$r-card $r-card 0 0"
+    background "$bg-surface"
+}
+
+part "window.title" {
+    flex 1
+    min-width 0
+    margin 0
+    padding "0 $pad-box"
+    overflow hidden
+    font-size "$fs-lg"
+    line-height "$size-control"
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "window.control" {
+    display inline-flex
+    flex none
+    align-items center
+    justify-content center
+    width "$size-window-button"
+    min-height "$size-control"
+    padding 0
+    border 0
+    background transparent
+    color "$fg"
+    cursor pointer
+}
+
+part "window.control[hovered]" {
+    background "$bg-hover"
+}
+
+part "window.control[pressed]" {
+    background "$bg-selected"
+}
+
+part "window.control[variant=close][hovered]" "window.control[variant=close][pressed]" {
+    background "$danger"
+    color "$on-accent"
+}
+
+part "window.control[variant=close]" {
+    border-top-right-radius "$r-card"
+}
+
+part "window.control[variant=back]" {
+    width auto
+    padding 0 "$pad-control"
+    gap "$space-1"
+}
+
+part "window.control[focus-visible]" {
+    use "ring-inside"
+}
+
+// The scrolling part is the form; the title bar and the footer stay in place.
+part "window.body" {
+    flex 1
+    min-height 0
+    padding "$pad-dialog"
+    overflow-y auto
+}
+
+part "window.footer" {
+    display flex
+    flex none
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-3"
+    padding "$pad-box $pad-dialog"
+    border-top "$border-width solid $border"
+}
+
+part "window.footer-note" {
+    margin-inline-end auto
+    use "quiet-text"
+}
+
+// The places to drag: the four edges and the four corners.
+part "window.handle" {
+    position absolute
+    z-index "$z-raised"
+    touch-action none
+}
+
+part "window.handle[variant=e]" {
+    inset-block "$size-window-handle"
+    inset-inline-end 0
+    width "$size-window-handle"
+    cursor ew-resize
+}
+
+part "window.handle[variant=w]" {
+    inset-block "$size-window-handle"
+    inset-inline-start 0
+    width "$size-window-handle"
+    cursor ew-resize
+}
+
+part "window.handle[variant=s]" {
+    inset-inline "$size-window-handle"
+    bottom 0
+    height "$size-window-handle"
+    cursor ns-resize
+}
+
+part "window.handle[variant=n]" {
+    inset-inline "$size-window-handle"
+    top 0
+    height "$size-window-handle"
+    cursor ns-resize
+}
+
+part "window.handle[variant=se]" {
+    right 0
+    bottom 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nwse-resize
+}
+
+part "window.handle[variant=nw]" {
+    top 0
+    left 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nwse-resize
+}
+
+part "window.handle[variant=ne]" {
+    top 0
+    right 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nesw-resize
+}
+
+part "window.handle[variant=sw]" {
+    bottom 0
+    left 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nesw-resize
+}
+
+// The form inside: one column below 880, the fields at the side from 880, the text centered with a
+// readable width from 1200 (R10).
+part "window-layout" {
+    display grid
+    grid-template-columns "minmax(0, 1fr)"
+    gap "$gap-sections" "$space-5"
+    container "(min-width: $bp-window-side)" {
+        grid-template-columns "minmax(0, 1fr) $size-details"
+        align-items start
+    }
+    container "(min-width: $bp-window-wide)" {
+        grid-template-columns "minmax(0, $size-reading) $size-details"
+        justify-content center
+    }
+}
+
+part "window-layout.text" {
+    display flex
+    flex-direction column
+    gap "$gap-fields"
+    min-width 0
+}
+
+part "window-layout.fields" {
+    display flex
+    flex-direction column
+    gap "$gap-fields"
+    min-width 0
+}
+
+// A window that is minimized is a bar at the bottom of the page with its title and what it keeps.
+part "window-dock" {
+    position fixed
+    inset-inline-start "$space-4"
+    bottom 0
+    z-index "$z-panel"
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-control"
+    max-width "calc(100% - $space-4 * 2)"
+    padding 0 "$pad-box"
+    border "$border-width solid $border"
+    border-bottom 0
+    border-radius "$r-card $r-card 0 0"
+    background "$bg-raised"
+    box-shadow "$shadow"
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-ui"
+    cursor pointer
+}
+
+part "window-dock[hovered]" {
+    background "$bg-hover"
+}
+
+part "window-dock[focus-visible]" {
+    use "ring"
+}
+
+part "window-dock.title" {
+    overflow hidden
+    font-weight "$weight-bold"
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "window-dock.note" {
+    use "quiet-text"
+    white-space nowrap
 }
 
 // ───────────── Shared layout parts ─────────────

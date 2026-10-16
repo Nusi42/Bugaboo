@@ -145,7 +145,14 @@ fn scan(path: &str, text: &str) -> Vec<Finding> {
     findings
 }
 
+/// The one call that may set a style from code: a variable that is a token of the theme file, while
+/// the person drags the edge of a window. `variableOf` takes the name of a token only, so a
+/// property of the element or a name of the code's own is a type error and a finding.
+const RUN_TIME_VARIABLE: &str = ".style.setProperty(variableOf(";
+
 fn problem_in(code: &str) -> Option<String> {
+    let code = code.replace(RUN_TIME_VARIABLE, "(");
+    let code = code.as_str();
     if let Some((_, what)) = FROM_CODE.iter().find(|(text, _)| code.contains(text)) {
         return Some(format!(
             "{what} puts a style or a class on the page from code. Write a `part` rule with tokens in design/theme.kdl; a style the choices of the person cannot reach is a bug (ADR-0026)."
@@ -275,6 +282,23 @@ mod tests {
             "web/app/src/a.less",
         ] {
             assert!(!run(path, "a { b: c }").is_empty(), "{path}");
+        }
+    }
+
+    #[test]
+    fn a_variable_of_a_token_may_be_set_while_the_person_drags() {
+        let good = "element.style.setProperty(variableOf(\"window-width\"), `${width}px`);";
+        let found = run("web/packages/ui/src/a.ts", good);
+        assert!(found.is_empty(), "{found:?}");
+        // Only a variable of a token, named through `variableOf` (which only takes a token's
+        // name): not a free name, not a property of the element.
+        for bad in [
+            "element.style.setProperty(\"--window-width\", value);",
+            "element.style.setProperty(name, value);",
+            "element.style.setProperty(variableOf(\"window-width\"), value); element.style.width = x;",
+            "element.style.setProperty(\"width\", value);",
+        ] {
+            assert!(!run("web/packages/ui/src/a.ts", bad).is_empty(), "{bad}");
         }
     }
 

@@ -90,7 +90,9 @@
           // any React content (a mutable union), and the event of a form is React's event object.
           { "from": "package", "package": "react", "name": ["ReactNode", "FormEvent"] },
           // The keyboard event of the browser is its own object; the shortcuts read a few fields of it.
-          { "from": "lib", "name": ["KeyboardEvent"] },
+          // A window (UX §6.3) reads the size of its element and the keys and pointer of its edges.
+          { "from": "lib", "name": ["KeyboardEvent", "HTMLElement"] },
+          { "from": "package", "package": "react", "name": ["KeyboardEvent", "PointerEvent"] },
           {
             "from": "package",
             "package": "playwright",

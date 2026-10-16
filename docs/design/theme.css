@@ -49,6 +49,9 @@
   --size-window-width-min: 480px;
   --size-window-height-min: 360px;
   --size-window-button: 46px;
+  --size-window-handle: 8px;
+  --window-width: var(--size-window);
+  --window-height: auto;
   --bp-window-side: 880px;
   --bp-window-wide: 1200px;
   --size-day-week: 16px;

@@ -148,6 +148,10 @@ export {
   type ThemeChoice,
 } from "./theme.ts";
 export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";
+export { Window, type WindowProps } from "./Window.tsx";
+export type { WindowLabels } from "./WindowFrame.tsx";
+export { WindowLayout, type WindowLayoutProps } from "./WindowLayout.tsx";
+export { parseWindowSizes, type WindowSize, type WindowSizes } from "./window-size.ts";
 export {
   darkThemeIds,
   lightThemeIds,
