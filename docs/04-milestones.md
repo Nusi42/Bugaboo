@@ -39,7 +39,7 @@ flowchart LR
 
 1. **Where:** each builder works in its own clone (`bugaboo.winN`, branch `WINn`, ADR-0024), outside the main checkout (`<master>`).
 2. **Build:** the builder reads `CLAUDE.md`, the glossary, the coding standards and the relevant decision records; writes the acceptance tests; implements until they pass. Edit-time checks (Claude Code hooks) catch problems after every file.
-3. **Self-check:** `cargo xtask check staged` and the package's tests are green before the branch is pushed. The builder reports the exact commands it ran and their results.
+3. **Self-check:** `cargo xtask check staged` and the package's tests are green before the branch is pushed; a branch with a red test is not pushed. A package that changes screens also takes its own screenshots and checks them against the ten rules of UX design §1.1 (alignment, padding, state colors) before it is pushed. The builder reports the exact commands it ran and their results.
 4. **CI:** `cargo xtask ci` in `bugaboo.win1`, on Windows and in WSL, both databases.
 5. **Review:** at least one reviewer agent with a fresh context reads the diff against the work package, the decision records and the security rules. Packages that touch sign-in, permissions, files, search, AI or personal data always get the security review as well. UI packages get a UX review from screenshots (four themes × computer and phone) compared with the UX design. Every review applies the SSOT/DRY/ODR review gate of coding-standards §1 to the diff and the code it touches; a finding there blocks the merge.
 6. **Fix and merge:** findings go back to the builder; the lead merges the builder's `WINn` branch into `WIN1`, runs `cargo xtask ci` again, and fast-forwards `main` in the master repository. `main` is always green.

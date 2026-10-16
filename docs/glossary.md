@@ -228,6 +228,7 @@ Rules:
 | **Region**               | The choices about where you are: time zone, date format, number format and first day of the week | locale, localization, i18n (in UI) |
 | **Start page**           | The page Bugaboo opens after you sign in                           | landing page, home screen (in UI)  |
 | **Sign-in rules**        | The organization settings for how long people stay signed in and who must use two-step sign-in | authentication policy, session policy (in UI) |
+| **Create**               | The verb for bringing something new into Bugaboo, on every button and form: *Create issue*, *Create project*, *Create role* | make, add new (for something new) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
 | **Assistant**            | The built-in AI helper. Not an agent: it only proposes, and only to the person using it | copilot (in UI) |
