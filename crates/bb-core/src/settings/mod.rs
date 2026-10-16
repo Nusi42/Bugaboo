@@ -759,6 +759,7 @@ mod tests {
         assert!(AUTH_SIGN_UP_ENABLED.definition().touches_security());
         assert!(!APPEARANCE_MODE.definition().touches_security());
         assert!(!SHORTCUTS_KEYS.definition().touches_security());
+        assert!(!WINDOW_SIZES.definition().touches_security());
     }
 
     #[test]

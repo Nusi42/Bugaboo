@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { type Setting, type SettingValue } from "../../shared/my-settings.ts";
 import { numberIn } from "./number.ts";
-import { wordsOf } from "./texts.ts";
+import { hasNoGenericControl, wordsOf } from "./texts.ts";
 
 /** What a control needs: the setting, and what to do with a new value. */
 export interface SettingControlProps {
@@ -111,7 +111,7 @@ export function SettingControl({ setting, onChange }: SettingControlProps) {
       />
     );
   }
-  if (setting.format === "shortcut_keys" || setting.format === "page_address") {
+  if (hasNoGenericControl(setting)) {
     return null;
   }
   // Keyed by the stored value, so the box shows the new value after a reset.

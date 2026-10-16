@@ -100,6 +100,8 @@ enum FormatBody {
     PageAddress,
     /// The keys of the keyboard shortcuts, as one JSON object.
     ShortcutKeys,
+    /// The sizes of the windows of the forms, as one JSON object.
+    WindowSizes,
     /// A list of host names separated by commas.
     Hosts,
 }
@@ -271,6 +273,7 @@ impl From<&SettingView> for SettingBody {
                 Format::TimeZone => FormatBody::TimeZone,
                 Format::PageAddress => FormatBody::PageAddress,
                 Format::ShortcutKeys => FormatBody::ShortcutKeys,
+                Format::WindowSizes => FormatBody::WindowSizes,
                 Format::Hosts => FormatBody::Hosts,
             },
             choices: format

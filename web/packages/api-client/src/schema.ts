@@ -3928,7 +3928,14 @@ export interface components {
      * @description What kind of text a text setting holds.
      * @enum {string}
      */
-    FormatBody: "free" | "choice" | "time_zone" | "page_address" | "shortcut_keys" | "hosts";
+    FormatBody:
+      | "free"
+      | "choice"
+      | "time_zone"
+      | "page_address"
+      | "shortcut_keys"
+      | "window_sizes"
+      | "hosts";
     /** @description A group after it was made or renamed. */
     GroupBody: {
       /** @description The ID of the group. */

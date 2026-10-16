@@ -115,6 +115,9 @@ export const messages = {
   "setting.shortcuts.keys.name": "Your own keys",
   "setting.shortcuts.keys.help":
     "The keys you chose for keyboard shortcuts. A shortcut you did not change keeps its usual keys.",
+  "setting.window.sizes.name": "Your window sizes",
+  "setting.window.sizes.help":
+    "The size you gave each form that opens as a window. A form you did not resize keeps its usual size.",
   "setting.security.session-idle-minutes.name": "Sign out after no activity (minutes)",
   "setting.security.session-absolute-hours.name": "Longest sign-in (hours)",
   "setting.security.two-step-required.name": "Two-step sign-in for everybody",
@@ -173,10 +176,17 @@ export const messages = {
     "The folder {path} has other files in it and does not look like a Bugaboo data folder. Installing the service would change who owns them. Choose an empty folder or a Bugaboo data folder as the data folder in your settings.",
   "common.close": "Close",
   "common.undo": "Undo",
+  "window.minimize": "Minimize",
+  "window.maximize": "Maximize",
+  "window.restore-down": "Restore down",
+  "window.resize-keys":
+    "To change the size of this window, press Ctrl and Alt with the arrow keys.",
+  "window.draft-kept": "Draft kept",
   "common.nothing": "nothing",
   "common.issue-id": "Issue ID, for example WEB-142",
   "shell.search": "Search",
   "shell.narrow": "Narrow the menu",
+  "shell.back": "Back",
   "nav.my-settings": "My settings",
   "nav.organization-settings": "Organization settings",
   "nav.appearance": "Appearance",

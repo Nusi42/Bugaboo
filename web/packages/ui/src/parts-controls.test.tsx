@@ -45,6 +45,8 @@ describe("thm_11 the controls of packages/ui carry no class names and no styles"
     for (const name of ["switch", "switch.track", "switch.thumb"]) {
       expect(toggle).toContain(`data-part="${name}"`);
     }
+    // A real switch: assistive technology says "on" and "off", not "checked".
+    expect(toggle).toContain('role="switch"');
     const box = renderToStaticMarkup(
       <Checkbox label={text.yes} isSelected={false} onChange={nothing} />,
     );

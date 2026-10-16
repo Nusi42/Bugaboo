@@ -34,6 +34,7 @@ export type ButtonType = (typeof buttonType)[keyof typeof buttonType];
 
 /** Where something that opens over the page comes from. */
 export const overlayEdge = {
+  window: "window",
   center: "center",
   full: "full",
   bottom: "bottom",
@@ -41,6 +42,13 @@ export const overlayEdge = {
   top: "top",
 } as const;
 export type OverlayEdge = (typeof overlayEdge)[keyof typeof overlayEdge];
+
+/**
+ * What a window is doing: `normal` (it can be resized), `maximized` (it fills the page) or `full`
+ * (a phone: a full screen with Back, no resize).
+ */
+export const windowState = { normal: "normal", maximized: "maximized", full: "full" } as const;
+export type WindowState = (typeof windowState)[keyof typeof windowState];
 
 /** What a text field holds: plain text, an e-mail address, a password, or several lines. */
 export const fieldKind = {
@@ -61,3 +69,6 @@ export type IconSize = (typeof iconSize)[keyof typeof iconSize];
 /** How the choices of a picker look: a scrolling list of plain rows, or a column of bordered boxes. */
 export const pickerLook = { list: "list", boxed: "boxed" } as const;
 export type PickerLook = (typeof pickerLook)[keyof typeof pickerLook];
+
+/** How a row of the issue list is drawn besides the usual: the two lines of a phone. */
+export const listRowLook = { phone: "phone" } as const;

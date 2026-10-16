@@ -605,6 +605,7 @@ async fn bad_example_a_text_must_be_in_the_format_of_its_setting_and_on_a_level_
             ("region.time-zone", "Mars/Olympus Mons"),
             ("start.page", "https://evil.test/"),
             ("shortcuts.keys", "[1, 2]"),
+            ("window.sizes", "[800, 600]"),
         ] {
             let scope = Scope::Person(person);
             rejected(

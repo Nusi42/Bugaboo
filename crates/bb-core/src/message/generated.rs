@@ -3740,6 +3740,12 @@ pub const SETTING_UI_SOURCE_PERSON: MessageKey = MessageKey::new("setting.ui.sou
 /// The message `setting.ui.whole-number`.
 pub const SETTING_UI_WHOLE_NUMBER: MessageKey = MessageKey::new("setting.ui.whole-number");
 
+/// The message `setting.window.sizes.help`.
+pub const SETTING_WINDOW_SIZES_HELP: MessageKey = MessageKey::new("setting.window.sizes.help");
+
+/// The message `setting.window.sizes.name`.
+pub const SETTING_WINDOW_SIZES_NAME: MessageKey = MessageKey::new("setting.window.sizes.name");
+
 /// The message `setup.answer-yes`.
 pub const SETUP_ANSWER_YES: MessageKey = MessageKey::new("setup.answer-yes");
 
@@ -4055,6 +4061,21 @@ pub const THEME_PAPER: MessageKey = MessageKey::new("theme.paper");
 
 /// The message `validation.email`.
 pub const VALIDATION_EMAIL: MessageKey = MessageKey::new("validation.email");
+
+/// The message `window.draft-kept`.
+pub const WINDOW_DRAFT_KEPT: MessageKey = MessageKey::new("window.draft-kept");
+
+/// The message `window.maximize`.
+pub const WINDOW_MAXIMIZE: MessageKey = MessageKey::new("window.maximize");
+
+/// The message `window.minimize`.
+pub const WINDOW_MINIMIZE: MessageKey = MessageKey::new("window.minimize");
+
+/// The message `window.resize-keys`.
+pub const WINDOW_RESIZE_KEYS: MessageKey = MessageKey::new("window.resize-keys");
+
+/// The message `window.restore-down`.
+pub const WINDOW_RESTORE_DOWN: MessageKey = MessageKey::new("window.restore-down");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -10621,6 +10642,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.ui.source-person", "Your own choice"),
     ("setting.ui.source-project", "From {project}"),
     ("setting.ui.whole-number", "Enter a whole number."),
+    (
+        "setting.window.sizes.help",
+        "The size you gave each form that opens as a window. A form you did not resize keeps its usual size.",
+    ),
+    ("setting.window.sizes.name", "Your window sizes"),
     ("setup.answer-yes", "yes"),
     (
         "setup.ask.address",
@@ -10847,4 +10873,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "validation.email",
         "Type an e-mail address like name@example.com.",
     ),
+    ("window.draft-kept", "Draft kept"),
+    ("window.maximize", "Maximize"),
+    ("window.minimize", "Minimize"),
+    (
+        "window.resize-keys",
+        "To change the size of this window, press Ctrl and Alt with the arrow keys.",
+    ),
+    ("window.restore-down", "Restore down"),
 ];

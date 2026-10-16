@@ -545,7 +545,7 @@ async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_b
         };
         assert_ne!(bea.session, elsewhere.session);
 
-        for (key, value) in [
+        let chosen = [
             ("appearance.mode", text("dark")),
             ("appearance.dark-theme", text("midnight")),
             ("appearance.less-motion", SettingValue::Bool(true)),
@@ -553,18 +553,15 @@ async fn cfg_04_my_settings_are_kept_for_the_person_and_follow_them_to_another_b
             ("region.time-zone", text("Pacific/Auckland")),
             ("start.page", text("/me/appearance")),
             ("shortcuts.keys", text(r#"{"go-home":["g i"]}"#)),
-        ] {
+            (
+                "window.sizes",
+                text(r#"{"new-issue":{"width":800,"height":600}}"#),
+            ),
+        ];
+        for (key, value) in chosen.clone() {
             change(&rig, &bea, SettingsScope::Person, key, value).await?;
         }
-        for (key, value) in [
-            ("appearance.mode", text("dark")),
-            ("appearance.dark-theme", text("midnight")),
-            ("appearance.less-motion", SettingValue::Bool(true)),
-            ("appearance.larger-text", SettingValue::Bool(true)),
-            ("region.time-zone", text("Pacific/Auckland")),
-            ("start.page", text("/me/appearance")),
-            ("shortcuts.keys", text(r#"{"go-home":["g i"]}"#)),
-        ] {
+        for (key, value) in chosen {
             let view = one(&rig, &elsewhere, SettingsScope::Person, key, None).await?;
             assert_eq!((view.value, view.own), (value, true), "{key}");
         }

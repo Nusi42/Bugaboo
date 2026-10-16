@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { Dialog, Modal, ModalOverlay } from "react-aria-components";
+import { Dialog } from "react-aria-components";
 
 import { partOf } from "./parts.ts";
+import { OverlayLayer } from "./OverlayLayer.tsx";
 import { overlayEdge, type OverlayEdge } from "./props.ts";
 import { part } from "./tokens.ts";
 
@@ -31,17 +32,10 @@ export function Overlay({
   children,
 }: OverlayProps) {
   return (
-    <ModalOverlay
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      isDismissable
-      {...partOf(part.overlay, { variants: [from] })}
-    >
-      <Modal {...partOf(part.overlayModal, { variants: [from] })}>
-        <Dialog aria-label={label} {...partOf(part.overlayDialog)}>
-          {children}
-        </Dialog>
-      </Modal>
-    </ModalOverlay>
+    <OverlayLayer isOpen={isOpen} onOpenChange={onOpenChange} from={from} isDismissable>
+      <Dialog aria-label={label} {...partOf(part.overlayDialog)}>
+        {children}
+      </Dialog>
+    </OverlayLayer>
   );
 }

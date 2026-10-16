@@ -13,7 +13,7 @@ use anyhow::{Context as _, bail};
 
 use super::Generated;
 use super::theme_file::{
-    DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
+    AtRule, DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
     TokenKind, Variant, references, substitute,
 };
 use super::theme_selector;
@@ -26,6 +26,9 @@ pub(crate) const STYLE_SHEET: &str = "web/packages/ui/src/theme.css";
 const DOCS_SHEET: &str = "docs/design/theme.css";
 /// The names of the page frame for the scripts of the design pages (they cannot import `tokens.ts`).
 const FRAME_SCRIPT: &str = "docs/design/frame.js";
+/// The rules of the parts, for the pictures of the design pages: they are drawn with the markup of
+/// the parts themselves, so a picture cannot differ from the app (ADR-0026).
+const PARTS_SHEET: &str = "docs/design/parts.css";
 const TS_OUTPUT: &str = "web/packages/ui/src/tokens.ts";
 const RUST_OUTPUT: &str = "crates/bb-core/src/settings/themes.rs";
 
@@ -34,7 +37,7 @@ const GENERATED_BY: &str =
 
 /// The paths [`outputs`] writes.
 pub(crate) fn output_paths() -> Vec<&'static str> {
-    let mut paths = vec![STYLE_SHEET, DOCS_SHEET];
+    let mut paths = vec![STYLE_SHEET, DOCS_SHEET, PARTS_SHEET];
     paths.extend(DOC_SHEETS.iter().map(|(_, path)| *path));
     paths.push(FRAME_SCRIPT);
     paths.push(TS_OUTPUT);
@@ -62,7 +65,8 @@ pub(crate) fn outputs(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
 pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
     let mut generated = vec![
         Generated::new(STYLE_SHEET, css(file)?),
-        Generated::new(DOCS_SHEET, docs_theme_css(file)),
+        Generated::new(DOCS_SHEET, docs_theme_css(file)?),
+        Generated::new(PARTS_SHEET, parts_sheet_css(file)?),
         Generated::new(FRAME_SCRIPT, frame_script(file)),
         Generated::new(TS_OUTPUT, typescript(file)?),
         Generated::new(RUST_OUTPUT, rust(file)),
@@ -77,7 +81,7 @@ pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
 
 /// The whole style sheet.
 pub(crate) fn css(file: &ThemeFile) -> anyhow::Result<String> {
-    let mut out = tokens_only_css(file);
+    let mut out = tokens_only_css(file)?;
     let parts = parts_css(file)?;
     if !parts.is_empty() {
         out.push('\n');
@@ -89,15 +93,15 @@ pub(crate) fn css(file: &ThemeFile) -> anyhow::Result<String> {
 // ───────────── Tokens ─────────────
 
 /// The variables of every theme and mode, without the rules of the components.
-fn tokens_only_css(file: &ThemeFile) -> String {
+fn tokens_only_css(file: &ThemeFile) -> anyhow::Result<String> {
     let mut out = css_header(file);
-    out.push_str(&token_css(file));
-    out
+    out.push_str(&token_css(file)?);
+    Ok(out)
 }
 
 /// The design pages' copy of the tokens: the themes, and the tokens of the pages themselves.
-fn docs_theme_css(file: &ThemeFile) -> String {
-    let mut out = tokens_only_css(file);
+fn docs_theme_css(file: &ThemeFile) -> anyhow::Result<String> {
+    let mut out = tokens_only_css(file)?;
     let doc_tokens: Vec<&Token> = file.docs.iter().flat_map(|sheet| &sheet.tokens).collect();
     if !doc_tokens.is_empty() {
         out.push_str("\n/* The tokens of the design pages (the `docs` blocks). */\n:root {\n");
@@ -108,7 +112,15 @@ fn docs_theme_css(file: &ThemeFile) -> String {
         }
         out.push_str("}\n");
     }
-    out
+    Ok(out)
+}
+
+/// The rules of the parts, as the app's sheet has them, with the notice of a design page's sheet.
+fn parts_sheet_css(file: &ThemeFile) -> anyhow::Result<String> {
+    Ok(format!(
+        "/* {GENERATED_BY}\n   The rules of the parts of the app, for the pictures of the design pages. They use the same\n   data-part markup as the app. Needs theme.css. */\n{}",
+        parts_css(file)?
+    ))
 }
 
 /// One sheet of the design pages: the notice, then the keyframes and the rules.
@@ -120,7 +132,7 @@ fn doc_sheet_css(file: &ThemeFile, sheet: &DocSheet) -> anyhow::Result<String> {
     ))
 }
 
-fn token_css(file: &ThemeFile) -> String {
+fn token_css(file: &ThemeFile) -> anyhow::Result<String> {
     let light = file.default_light.as_str();
     let dark = file.default_dark.as_str();
     let mut out = String::from(":root {\n");
@@ -151,11 +163,11 @@ fn token_css(file: &ThemeFile) -> String {
         out.push_str("}\n");
     }
     for variant in &file.variants {
-        variant_blocks(&mut out, file, variant);
+        variant_blocks(&mut out, file, variant)?;
     }
     more_contrast_blocks(&mut out, file);
     forced_block(&mut out, file);
-    out
+    Ok(out)
 }
 
 /// The tokens that differ by theme, as one theme has them; with `only_more`, only the ones that
@@ -191,7 +203,7 @@ fn theme_declarations(
 
 /// What a choice (spacing, text size, motion) changes, switched on by its attribute on `<html>`
 /// and, where it has one, by the device setting too.
-fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) {
+fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) -> anyhow::Result<()> {
     let changed: Vec<(&Token, &str)> = file
         .tokens
         .iter()
@@ -209,17 +221,17 @@ fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) {
         }
     };
     if let Some(media) = &variant.media {
+        let media = resolve_query(file, media)?;
         let _ = write!(out, "\n@media {media} {{\n  :root {{\n");
         declarations(out, "    ");
         out.push_str("  }\n}\n");
     }
-    let _ = write!(
-        out,
-        "\n:root[{}=\"{}\"] {{\n",
-        variant.attribute, variant.value
-    );
-    declarations(out, "  ");
-    out.push_str("}\n");
+    if let Some((attribute, value)) = &variant.attribute {
+        let _ = write!(out, "\n:root[{attribute}=\"{value}\"] {{\n");
+        declarations(out, "  ");
+        out.push_str("}\n");
+    }
+    Ok(())
 }
 
 /// The colors that change for people whose device asks for more contrast, for every way a theme
@@ -430,9 +442,9 @@ fn rule_css(file: &ThemeFile, rule: &Rule) -> anyhow::Result<String> {
     if !plain.is_empty() {
         out.push_str(&block(&selector, &plain, ""));
     }
-    for (query, declarations) in media {
+    for (at, query, declarations) in media {
         let query = resolve_query(file, &query)?;
-        let _ = writeln!(out, "\n@media {query} {{");
+        let _ = writeln!(out, "\n{} {query} {{", at.css());
         out.push_str(&block(&selector, &declarations, "  "));
         out.push_str("}\n");
     }
@@ -461,7 +473,7 @@ fn block(selector: &str, declarations: &[&Declaration], indent: &str) -> String 
 /// How deep `use` may go before the mixins are taken to call each other in a circle.
 const MIXIN_DEPTH: usize = 8;
 
-type Blocks<'a> = Vec<(String, Vec<&'a Declaration>)>;
+type Blocks<'a> = Vec<(AtRule, String, Vec<&'a Declaration>)>;
 
 /// The lines of a rule with the mixins put in, and the lines under each media query apart.
 fn flatten<'a>(
@@ -485,14 +497,14 @@ fn flatten<'a>(
                     .with_context(|| format!("no mixin called `{mixin}`"))?;
                 flatten(file, &mixin.items, plain, media, depth + 1)?;
             }
-            Item::Media { query, items, .. } => {
+            Item::Media { at, query, items } => {
                 let mut inner = Vec::new();
                 let mut deeper = Vec::new();
                 flatten(file, items, &mut inner, &mut deeper, depth + 1)?;
                 if !deeper.is_empty() {
                     bail!("a media block inside another is not supported");
                 }
-                media.push((query.clone(), inner));
+                media.push((*at, query.clone(), inner));
             }
         }
     }
@@ -583,12 +595,16 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
     out.push_str("\n/** Where the layout changes, in pixels (the `bp-*` tokens). */\nexport const breakpoints = {\n");
     for token in &file.tokens {
         if let (Some(name), Some(value)) = (token.name.strip_prefix("bp-"), &token.same) {
-            let _ = writeln!(out, "  {name}: {},", value.trim_end_matches("px"));
+            let _ = writeln!(out, "  {}: {},", camel(name), value.trim_end_matches("px"));
         }
     }
     out.push_str("} as const;\n");
     out.push_str("\n/** The choices that change token values: the attribute on <html> and its value. */\nexport const variants = {\n");
-    for variant in &file.variants {
+    for (variant, (attribute, value)) in file
+        .variants
+        .iter()
+        .filter_map(|variant| variant.attribute.as_ref().map(|pair| (variant, pair)))
+    {
         // The formatter writes a key without quotes when it is a plain name.
         let key = if variant.name.contains('-') {
             format!("\"{}\"", variant.name)
@@ -597,11 +613,15 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         };
         let _ = writeln!(
             out,
-            "  {key}: {{ attribute: \"{}\", value: \"{}\" }},",
-            variant.attribute, variant.value
+            "  {key}: {{ attribute: \"{attribute}\", value: \"{value}\" }},"
         );
     }
     out.push_str("} as const;\n");
+    out.push_str("\n/** The variables the code may set while the person drags (`run-time=\"true\"` in the theme file). */\nexport const runTimeVariables = [\n");
+    for token in file.tokens.iter().filter(|token| token.run_time) {
+        let _ = writeln!(out, "  \"{}\",", token.name);
+    }
+    out.push_str("] as const;\nexport type RunTimeVariable = (typeof runTimeVariables)[number];\n");
     out.push_str("\nexport const colorTokens = [\n");
     for color in file.colors() {
         let _ = writeln!(out, "  \"{}\",", color.name);
@@ -759,6 +779,7 @@ mod tests {
             "previewLook: \"data-preview-look\",",
             "tablet: 768,",
             "computer: 1280,",
+            "windowSide: 880,",
             "lightThemeIds = [\"daylight\", \"paper\"]",
             "darkThemeIds = [\"dusk\", \"midnight\"]",
             "\"larger-text\": { attribute: \"data-text\", value: \"larger\" }",
@@ -794,6 +815,24 @@ mod tests {
     }
 
     #[test]
+    fn the_design_pages_get_the_rules_of_the_parts_to_draw_their_pictures_with() {
+        let outputs = generate(&file()).unwrap();
+        let sheet = |path: &str| {
+            outputs
+                .iter()
+                .find(|output| output.path == path)
+                .map(|output| output.content.clone())
+                .unwrap()
+        };
+        let parts = sheet("docs/design/parts.css");
+        // The same rules as the app's sheet, so a picture and the app look the same ...
+        assert!(parts.contains("[data-part=\"status-icon\"]"), "{parts}");
+        assert!(parts.contains(&parts_css(&file()).unwrap()));
+        // ... and none of the tokens, which the sheet of the pages already has.
+        assert!(!parts.contains("--bg-canvas:"));
+    }
+
+    #[test]
     fn rust_has_the_theme_choices_and_the_defaults() {
         let rust = rust(&file());
         for expected in [
@@ -817,6 +856,81 @@ mod tests {
             parts.contains("@media (forced-colors: active) {"),
             "{parts}"
         );
+    }
+
+    /// The theme file with a choice of the device and a rule under a container query added.
+    fn file_with_device_choice_and_container() -> ThemeFile {
+        let text =
+            std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+        let extra = "\nvariants {\n  variant \"zz-touch\" media=\"(pointer: coarse)\"\n}\ntokens {\n  size \"zz-height\" \"36px\" zz-touch=\"44px\"\n}\npart \"zz\" {\n  container \"(min-width: $bp-tablet)\" {\n    margin 0\n  }\n}\n";
+        ThemeFile::parse(&format!("{text}{extra}")).unwrap()
+    }
+
+    #[test]
+    fn a_choice_of_the_device_alone_is_a_media_block_and_has_no_attribute() {
+        let file = file_with_device_choice_and_container();
+        let css = css(&file).unwrap();
+        assert!(
+            css.contains("@media (pointer: coarse) {\n  :root {\n    --zz-height: 44px;"),
+            "{css}"
+        );
+        assert!(!css.contains("zz-touch\"]"), "{css}");
+        let ts = typescript(&file).unwrap();
+        assert!(!ts.contains("zz-touch"), "{ts}");
+    }
+
+    #[test]
+    fn the_media_query_of_a_choice_may_name_a_breakpoint_token() {
+        let css = css(&file()).unwrap();
+        assert!(
+            css.contains(
+                "@media (width < 768px) {\n  :root {\n    --fs-ui: calc(16px * var(--text-scale));"
+            ),
+            "{css}"
+        );
+    }
+
+    #[test]
+    fn only_the_marked_sizes_are_variables_the_code_may_set() {
+        let ts = typescript(&file()).unwrap();
+        assert!(
+            ts.contains(
+                "runTimeVariables = [\n  \"window-width\",\n  \"window-height\",\n] as const;"
+            ),
+            "{ts}"
+        );
+        let text =
+            std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+        let color = text.replacen(
+            "color \"accent\" ",
+            "color \"accent\" run-time=\"true\" ",
+            1,
+        );
+        assert!(ThemeFile::parse(&color).is_err());
+    }
+
+    #[test]
+    fn a_container_block_is_written_under_container_with_the_token_resolved() {
+        let css = css(&file_with_device_choice_and_container()).unwrap();
+        assert!(
+            css.contains("@container (min-width: 768px) {\n  [data-part=\"zz\"] {\n    margin: 0;"),
+            "{css}"
+        );
+    }
+
+    #[test]
+    fn a_choice_needs_an_attribute_and_a_value_or_only_a_device_setting() {
+        let text =
+            std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+        for extra in [
+            "\nvariants {\n  variant \"zz\" attribute=\"data-zz\"\n}\n",
+            "\nvariants {\n  variant \"zz\"\n}\n",
+        ] {
+            assert!(
+                ThemeFile::parse(&format!("{text}{extra}")).is_err(),
+                "{extra}"
+            );
+        }
     }
 
     #[test]

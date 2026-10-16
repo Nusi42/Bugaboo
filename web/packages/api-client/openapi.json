@@ -22191,7 +22191,15 @@
       "FormatBody": {
         "type": "string",
         "description": "What kind of text a text setting holds.",
-        "enum": ["free", "choice", "time_zone", "page_address", "shortcut_keys", "hosts"]
+        "enum": [
+          "free",
+          "choice",
+          "time_zone",
+          "page_address",
+          "shortcut_keys",
+          "window_sizes",
+          "hosts"
+        ]
       },
       "GroupBody": {
         "type": "object",

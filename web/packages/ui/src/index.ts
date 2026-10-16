@@ -46,7 +46,25 @@ export {
   type IssueTypeIconProps,
 } from "./IssueTypeIcon.tsx";
 export { layoutForWidth, layoutModes, useLayout, useUpright, type LayoutMode } from "./layout.ts";
+export {
+  Legend,
+  LegendItem,
+  type LegendItemProps,
+  type LegendLook,
+  type LegendProps,
+} from "./Legend.tsx";
 export { Link, type LinkProps } from "./Link.tsx";
+export { listColumns, type ListColumn } from "./list-columns.ts";
+export {
+  ListGrid,
+  ListGroup,
+  ListHead,
+  ListRow,
+  type ListGridProps,
+  type ListGroupProps,
+  type ListHeadProps,
+  type ListRowProps,
+} from "./ListGrid.tsx";
 export {
   LongPreview,
   type LongPreviewGroup,
@@ -60,8 +78,17 @@ export {
 } from "./markdown/MarkdownEditor.tsx";
 export { MarkdownView, type MarkdownViewProps } from "./markdown/MarkdownView.tsx";
 export { Listeners } from "./listeners.ts";
+export {
+  NameValueList,
+  NameValueRow,
+  type ChangeStatus,
+  type NameValueListProps,
+  type NameValueRowProps,
+} from "./NameValueRow.tsx";
 export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";
 export { Overlay, type OverlayProps } from "./Overlay.tsx";
+export { Priority, type PriorityProps } from "./Priority.tsx";
+export { rowStates, type RowStateInput, type RowStateWord } from "./row-state.ts";
 export {
   browserStorage,
   forgetStored,
@@ -92,6 +119,7 @@ export {
   buttonType,
   fieldKind,
   iconSize,
+  listRowLook,
   overlayEdge,
   pickerLook,
   type AlertTone,
@@ -103,6 +131,10 @@ export {
   type PickerLook,
 } from "./props.ts";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
+export { type PriorityWord, type StatusGroup } from "./status.ts";
+export { StatusButton, type StatusButtonProps } from "./StatusButton.tsx";
+export { StatusIcon, type StatusIconProps } from "./StatusIcon.tsx";
+export { StatusPill, type StatusPillProps } from "./StatusPill.tsx";
 export { SelectField, type SelectChoice, type SelectFieldProps } from "./SelectField.tsx";
 export { Skeleton, type SkeletonProps } from "./Skeleton.tsx";
 export { SubmitButton, type SubmitButtonProps } from "./SubmitButton.tsx";
@@ -117,6 +149,10 @@ export {
   type ThemeChoice,
 } from "./theme.ts";
 export { partOf, type PartAttributes, type PartChoices } from "./parts.ts";
+export { Window, type WindowProps } from "./Window.tsx";
+export type { WindowLabels } from "./WindowFrame.tsx";
+export { WindowLayout, type WindowLayoutProps } from "./WindowLayout.tsx";
+export { parseWindowSizes, type WindowSize, type WindowSizes } from "./window-size.ts";
 export {
   darkThemeIds,
   lightThemeIds,

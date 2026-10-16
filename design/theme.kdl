@@ -38,6 +38,9 @@ variants {
     variant "compact" attribute="data-spacing" value="compact"
     variant "larger-text" attribute="data-text" value="larger"
     variant "less-motion" attribute="data-motion" value="less" media="(prefers-reduced-motion: reduce)"
+    // Choices the device makes: a touch screen (fingers need 44 px, UX §7.4) and a phone (text 16).
+    variant "touch" media="(pointer: coarse), (width < $bp-tablet)"
+    variant "phone" media="(width < $bp-tablet)"
 }
 
 // Tokens. The first value (unnamed) is the same in every theme. A color has one value per
@@ -60,6 +63,8 @@ tokens {
     size "fs-md" "calc(16px * $text-scale)"
     size "fs-lg" "calc(20px * $text-scale)"
     size "fs-xl" "calc(24px * $text-scale)"
+    // The text of rows, fields and buttons: 14 on a computer, 16 on a phone (UX §7.3).
+    size "fs-ui" "calc(14px * $text-scale)" phone="calc(16px * $text-scale)"
 
     // Spacing (times the spacing choice)
     size "space-1" "calc(4px * $density)"
@@ -68,15 +73,56 @@ tokens {
     size "space-4" "calc(16px * $density)"
     size "space-5" "calc(24px * $density)"
     size "space-6" "calc(32px * $density)"
+    size "space-7" "calc(48px * $density)"
+
+    // Padding per container (UX §7.4, R2, R3): inside a control 12, a box, a row or a panel 16, a
+    // dialog or a page 24; between fields 20, between sections 28.
+    size "pad-control" "$space-3"
+    size "pad-box" "$space-4"
+    size "pad-dialog" "$space-5"
+    size "gap-fields" "calc(20px * $density)"
+    size "gap-sections" "calc(28px * $density)"
 
     // Sizes
     size "size-content" "640px"
     size "size-page" "960px"
     size "size-menu" "240px"
-    size "size-form" "440px"
+    size "size-form" "$size-dialog"
     size "size-qr" "200px"
     size "size-code" "220px"
-    size "size-target" "44px"
+    // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
+    // least, so no control is smaller (a test holds the tokens to it).
+    size "size-target-least" "24px"
+    size "size-control" "36px" touch="44px"
+    size "size-control-small" "28px" touch="44px"
+    // A row of a list: 44 with a mouse and 64 for a finger.
+    size "size-row" "44px" touch="64px"
+    // The coloured edge of a row for its priority.
+    size "size-edge" "4px"
+    // The name of a value in the details: 112 on a computer, 120 on a phone.
+    size "size-name" "112px" phone="120px"
+    // The columns of a list row (UX §4.2): the icon columns, the ID, the priority, the person.
+    size "size-col-icon" "24px"
+    size "size-col-key" "96px"
+    size "size-col-priority" "96px"
+    size "size-col-person" "144px"
+    size "size-col-labels" "160px"
+    size "size-col-changed" "96px"
+    // A window (UX §6.3): it starts 760 wide, the smallest is 480 x 360, and the form follows its own width.
+    size "size-window" "760px"
+    size "size-window-width-min" "480px"
+    size "size-window-height-min" "360px"
+    size "size-window-button" "46px"
+    // The places to drag at the edges of a window.
+    size "size-window-handle" "8px"
+    // The size of the window right now: the code sets these two variables while the person drags,
+    // and nothing else sets a style at run time.
+    size "window-width" "$size-window" run-time="true"
+    size "window-height" "auto" run-time="true"
+    size "bp-window-side" "880px"
+    size "bp-window-wide" "1200px"
+    // The width of one day on the timeline at the week zoom.
+    size "size-day-week" "16px"
 
     // Focus ring
     size "ring-width" "2px"
@@ -90,14 +136,16 @@ tokens {
     size "size-panel" "420px"
     size "size-bar" "56px"
     size "size-viewport" "100dvh"
-    size "size-dialog" "560px"
+    // A question is a small fixed dialog, 440 wide (R10); the palette of quick search is wider.
+    size "size-dialog" "440px"
+    size "size-palette" "560px"
     size "size-icon" "20px"
     size "size-icon-small" "16px"
     size "size-list" "300px"
     size "size-details" "300px"
     size "size-reading" "75ch"
     size "size-sheet-share" "85%"
-    size "size-matrix-cell" "calc($size-target * 3)"
+    size "size-matrix-cell" "calc($size-control * 3)"
     size "size-list-tall" "calc($size-list * 2)"
     // Placeholder lines and the sample of a theme: how much of the width a shorter line takes.
     size "size-line-medium" "80%"
@@ -172,7 +220,7 @@ tokens {
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
-    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#878d99" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#acb0b9"
+    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#8c939f" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
     color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#573cd0" paper-more="#2e5b87" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
     color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
@@ -185,10 +233,19 @@ tokens {
     color "success-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
     color "st-ns" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#abb1bb"
     color "st-ns-soft" daylight="#eef0f3" paper="#ece5da" dusk="#343944" midnight="#1a1c21"
-    color "st-ip" daylight="#1d5fd1" paper="#2f5d8a" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#264a6e" dusk-more="#b3d0ff" midnight-more="#82b1ff"
-    color "st-ip-soft" daylight="#e7effc" paper="#e4ecf4" dusk="#24365a" midnight="#10244a"
+    color "st-ip" daylight="#1d5fd1" paper="#1d6b80" dusk="#7fb0ff" midnight="#74a8ff" daylight-more="#16489f" paper-more="#14495a" dusk-more="#b3d0ff" midnight-more="#82b1ff"
+    color "st-ip-soft" daylight="#e7effc" paper="#dfeef1" dusk="#24365a" midnight="#10244a"
     color "st-done" daylight="#1f784c" paper="#3f6e3a" dusk="#6fd39a" midnight="#5fd38f" daylight-more="#165637" paper-more="#2e502a" dusk-more="#96dfb5"
     color "st-done-soft" daylight="#e6f4ec" paper="#e5eedf" dusk="#213d31" midnight="#0f2e1e"
+    // The tint of a row by its status group: the group's soft color mixed into the raised surface.
+    // The hovered and the selected row keep the hue and move away from the tint by the same step as
+    // the plain rows do, so the state stays visible on every tint (the `distinct` rules below).
+    color "tint-ip" daylight="#f5f9fe" paper="#f2f7f6" dusk="#293448" midnight="#131e34"
+    color "tint-ip-hover" daylight="#eef2f9" paper="#edf0ed" dusk="#2c384d" midnight="#18233a"
+    color "tint-ip-selected" daylight="#eaebfc" paper="#e2ebf0" dusk="#34385f" midnight="#1c234f" midnight-more="#1b224b"
+    color "tint-done" daylight="#f5fbf7" paper="#f5f7ef" dusk="#283638" midnight="#12231e"
+    color "tint-done-hover" daylight="#eef4f2" paper="#f0f0e6" dusk="#2c3a3d" midnight="#162824"
+    color "tint-done-selected" daylight="#eaedf5" paper="#e5ebe9" dusk="#333a50" midnight="#1c293a" midnight-more="#192734"
     color "cat1-bg" daylight="#fde7ef" paper="#f6e1e4" dusk="#4a2638" midnight="#3a1428"
     color "cat1-fg" daylight="#a3195b" paper="#97304a" dusk="#ff9cc8" midnight="#ff92c2"
     color "cat2-bg" daylight="#e3f1ff" paper="#e0eaf3" dusk="#213a5c" midnight="#10294a"
@@ -222,8 +279,8 @@ tokens {
 // background in every theme, except the pairs that are never used, each with its reason.
 contrast min=4.5 {
     text "fg" "fg-muted" "fg-subtle" "accent-fg" "on-accent" "danger" "warning" "success" "st-ns" "st-ip" "st-done" "cat1-fg" "cat2-fg" "cat3-fg" "cat4-fg" "cat5-fg" "cat6-fg" "cat7-fg" "cat8-fg" "cat9-fg" "cat10-fg" "cat11-fg" "cat12-fg"
-    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
-    restricted "on-accent" on="accent" reason="On-accent text is only ever drawn on the accent fill."
+    backgrounds "bg-canvas" "bg-surface" "bg-raised" "bg-sunken" "bg-hover" "bg-selected" "accent" "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-ns-soft" "st-ip-soft" "st-done-soft" "tint-ip" "tint-ip-hover" "tint-ip-selected" "tint-done" "tint-done-hover" "tint-done-selected" "cat1-bg" "cat2-bg" "cat3-bg" "cat4-bg" "cat5-bg" "cat6-bg" "cat7-bg" "cat8-bg" "cat9-bg" "cat10-bg" "cat11-bg" "cat12-bg"
+    restricted "on-accent" on="accent danger" reason="On-accent text is only ever drawn on the accent fill, and on the red of the Close button of a window."
     restricted "cat1-fg" on="cat1-bg" reason="Category 1 text is only ever drawn on its own category 1 background."
     restricted "cat2-fg" on="cat2-bg" reason="Category 2 text is only ever drawn on its own category 2 background."
     restricted "cat3-fg" on="cat3-bg" reason="Category 3 text is only ever drawn on its own category 3 background."
@@ -290,6 +347,17 @@ distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and s
     surfaces "bg-canvas" "bg-surface" "bg-raised"
 }
 
+distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
+    group {
+        states "tint-ip-hover" "tint-ip-selected"
+        surfaces "tint-ip"
+    }
+    group {
+        states "tint-done-hover" "tint-done-selected"
+        surfaces "tint-done"
+    }
+}
+
 
 // ───────────── Mixins ─────────────
 //
@@ -347,7 +415,7 @@ mixin "marked" {
 // The edge of anything that is pressed or typed in: a touch target with a line and a raised fill.
 mixin "control-box" {
     box-sizing border-box
-    min-height "$size-target"
+    min-height "$size-control"
     border "$border-width solid $border"
     border-radius "$r-ctl"
     background "$bg-raised"
@@ -357,10 +425,10 @@ mixin "control-box" {
 mixin "input-box" {
     use "control-box"
     width "100%"
-    padding "$space-2 $space-3"
+    padding "$space-2 $pad-control"
     color "$fg"
     font-family "$font"
-    font-size "$fs-md"
+    font-size "$fs-ui"
 }
 
 // A row of a list that is picked from: the people, the results of quick search.
@@ -369,7 +437,7 @@ mixin "pick-row" {
     flex-direction column
     gap "$space-1"
     box-sizing border-box
-    min-height "$size-target"
+    min-height "$size-control"
     padding "$space-2 $space-3"
     color "$fg"
     text-decoration none
@@ -379,7 +447,7 @@ mixin "pick-row" {
 // The words of a button, a menu item or a branch of the tree.
 mixin "menu-text" {
     color "$fg"
-    font-size "$fs-md"
+    font-size "$fs-ui"
     font-weight "$weight-bold"
     text-decoration none
 }
@@ -432,7 +500,7 @@ mixin "touch-row" {
     display flex
     align-items center
     gap "$space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     cursor pointer
 }
 
@@ -440,13 +508,13 @@ mixin "touch-row" {
 mixin "touch-link" {
     display inline-flex
     align-items center
-    min-height "$size-target"
+    min-height "$size-control"
 }
 
 // The name of a tab of a row of tabs: the editor of text, the sections of a form.
 mixin "tab-label" {
     padding "$space-2 $space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
@@ -552,6 +620,19 @@ part "muted" {
     line-height "$lh-body"
 }
 
+// Words for screen readers only: the name of a column that holds only an icon.
+part "visually-hidden" {
+    position absolute
+    width "$border-width"
+    height "$border-width"
+    margin "calc($border-width * -1)"
+    padding 0
+    overflow hidden
+    border 0
+    clip-path "inset(50%)"
+    white-space nowrap
+}
+
 // ───────────── Button (packages/ui: Button, IconButton) ─────────────
 //
 // The variants come before the states, so that a hovered quiet button is hovered.
@@ -562,7 +643,7 @@ part "button" {
     justify-content center
     gap "$space-2"
     use "control-box"
-    padding 0 "$space-4"
+    padding 0 "$pad-control"
     use "menu-text"
     font-family "$font"
     line-height "$lh-tight"
@@ -576,7 +657,7 @@ part "button[variant=wide]" {
 
 // A button with only an icon: as wide as it is high.
 part "button[variant=square]" {
-    width "$size-target"
+    width "$size-control"
     padding 0
 }
 
@@ -760,7 +841,7 @@ part "switch" {
 part "switch.track" {
     flex none
     box-sizing border-box
-    width "$size-target"
+    width "calc($space-4 * 2 + $space-1 * 2)"
     height "$space-5"
     padding "$space-1"
     border "$border-width solid $border"
@@ -883,7 +964,7 @@ part "choice-group.input" {
 part "choice-group.label" {
     display inline-flex
     align-items center
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0 "$space-4"
     border "$border-width solid $border"
     border-radius "$r-ctl"
@@ -987,14 +1068,14 @@ part "overlay.modal" {
 
 part "overlay.modal[variant=center]" {
     width "100%"
-    max-width "$size-dialog"
+    max-width "$size-palette"
     max-height "100%"
     border-radius "$r-card"
 }
 
 part "overlay.modal[variant=question]" {
     width "100%"
-    max-width "$size-form"
+    max-width "$size-dialog"
     border-radius "$r-card"
 }
 
@@ -1132,7 +1213,7 @@ part "picker.row" {
     align-items center
     justify-content space-between
     gap "$space-2 $space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0 "$space-2"
     border-radius "$r-ctl"
 }
@@ -1156,6 +1237,768 @@ part "picker.name[variant=boxed]" {
 part "picker.hint" {
     color "$fg-muted"
     font-size "$fs-sm"
+}
+
+// ───────────── Status and priority (R4, R5, UX §7.2) ─────────────
+//
+// A status belongs to a status group. The group gives the color and the icon, the status gives
+// the word. A priority has its own icon. Color is never alone: the icon and the word, or the
+// word as the accessible name, are always there.
+
+part "status-icon" {
+    flex none
+    width "$size-icon"
+    height "$size-icon"
+}
+
+part "status-icon[variant=small]" {
+    width "$size-icon-small"
+    height "$size-icon-small"
+}
+
+part "status-icon[variant=not-started]" {
+    color "$st-ns"
+}
+
+part "status-icon[variant=in-progress]" {
+    color "$st-ip"
+}
+
+part "status-icon[variant=done]" {
+    color "$st-done"
+}
+
+// The small pill that shows a status in lists and in text.
+part "status-pill" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    padding "$space-1 $pad-control"
+    border-radius "$r-pill"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+    line-height "$lh-tight"
+    white-space nowrap
+}
+
+part "status-pill[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "status-pill[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "status-pill[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+// The big button of the issue page: the status with its group's icon and color, and an arrow that
+// says it can be changed.
+part "status-button" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    use "control-box"
+    padding 0 "$pad-control"
+    border-color currentColor
+    font-family "$font"
+    font-size "$fs-ui"
+    font-weight "$weight-bold"
+    line-height "$lh-tight"
+    cursor pointer
+}
+
+part "status-button[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "status-button[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "status-button[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+part "status-button[hovered]" {
+    filter "brightness($hover-brightness)"
+}
+
+part "status-button[disabled]" {
+    opacity "$opacity-disabled"
+    cursor default
+}
+
+part "status-button[focus-visible]" {
+    use "ring"
+}
+
+part "priority" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    font-size "$fs-ui"
+    white-space nowrap
+}
+
+part "priority[variant=critical]" {
+    color "$danger"
+    font-weight "$weight-bold"
+}
+
+part "priority[variant=high]" {
+    color "$warning"
+    font-weight "$weight-bold"
+}
+
+part "priority[variant=normal]" {
+    color "$fg-muted"
+}
+
+part "priority[variant=low]" {
+    color "$fg-subtle"
+}
+
+part "priority-icon" {
+    flex none
+    width "$size-icon-small"
+    height "$size-icon-small"
+}
+
+// ───────────── Rows that carry their state (R4) ─────────────
+//
+// Any row can carry the state of its status group (a tint) and of its priority (an edge of 4 px at
+// its start), by the words of `rowStates`. A row of the list, an issue row and a bar of the
+// timeline are the rows that do. Hovered and selected rows keep the hue of their tint and stay
+// distinct from it (`distinct` above). The rules come after the rows' own, so they win.
+
+// A selected row is also ringed inside its edge, so it never relies on the fill alone.
+part "issue-row[state=selected]" "timeline-bar[state=selected]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
+part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
+    background "$tint-ip"
+}
+
+part "list-row[state=group-in-progress]:hover" "issue-row[state=group-in-progress]:hover" "timeline-bar[state=group-in-progress]:hover" {
+    background "$tint-ip-hover"
+}
+
+part "list-row[state=group-in-progress][state=selected]" "issue-row[state=group-in-progress][state=selected]" "timeline-bar[state=group-in-progress][state=selected]" {
+    background "$tint-ip-selected"
+}
+
+part "list-row[state=group-done]" "issue-row[state=group-done]" "timeline-bar[state=group-done]" {
+    background "$tint-done"
+}
+
+part "list-row[state=group-done]:hover" "issue-row[state=group-done]:hover" "timeline-bar[state=group-done]:hover" {
+    background "$tint-done-hover"
+}
+
+part "list-row[state=group-done][state=selected]" "issue-row[state=group-done][state=selected]" "timeline-bar[state=group-done][state=selected]" {
+    background "$tint-done-selected"
+}
+
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "timeline-bar[state=priority-critical]" {
+    border-inline-start "$size-edge solid $danger"
+}
+
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-bar[state=priority-high]" {
+    border-inline-start "$size-edge solid $warning"
+}
+
+// ───────────── The grid of the issue list (UX §4.2) ─────────────
+//
+// One grid with fixed columns (R1, R9): tick box, status icon, ID, type icon, title, labels,
+// priority, assigned person, changed. The header, the rows and the phone's rows are the same part,
+// so the columns line up. A column is named by the variant of its cell.
+
+part "list-grid" {
+    display flex
+    flex-direction column
+    min-width 0
+}
+
+part "list-row" {
+    position relative
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-row"
+    padding 0 "$pad-box"
+    border-inline-start "$size-edge solid transparent"
+    border-bottom "$border-width solid $border-subtle"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-ui"
+}
+
+part "list-row:hover" {
+    background "$bg-hover"
+}
+
+part "list-row[state=selected]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
+// The column names above the rows.
+part "list-row[variant=head]" {
+    min-height "$size-control"
+    background "$bg-surface"
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+}
+
+part "list-row[variant=head]:hover" {
+    background "$bg-surface"
+}
+
+part "list-row.cell" {
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "list-row.cell[variant=select]" {
+    flex none
+    display flex
+    align-items center
+    justify-content center
+    width "$size-control"
+}
+
+part "list-row.cell[variant=status]" "list-row.cell[variant=type]" {
+    flex none
+    display flex
+    align-items center
+    justify-content center
+    width "$size-col-icon"
+}
+
+part "list-row.cell[variant=key]" {
+    flex none
+    width "$size-col-key"
+    color "$fg-muted"
+    font-family "$mono"
+}
+
+part "list-row.cell[variant=title]" {
+    flex 1
+}
+
+part "list-row.cell[variant=labels]" {
+    flex none
+    width "$size-col-labels"
+}
+
+part "list-row.cell[variant=priority]" {
+    flex none
+    width "$size-col-priority"
+}
+
+part "list-row.cell[variant=person]" {
+    flex none
+    width "$size-col-person"
+}
+
+part "list-row.cell[variant=changed]" {
+    flex none
+    width "$size-col-changed"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// A done issue's title turns muted in lists.
+part "list-row[state=group-done] list-row.cell[variant=title]" {
+    color "$fg-muted"
+}
+
+// The whole row is the target of its title (R8): the title is not underlined and not a link color,
+// and the link reaches over the row.
+part "list-row.cell link" {
+    color inherit
+    text-decoration none
+}
+
+part "list-row.cell[variant=title] link::after" {
+    content "\"\""
+    position absolute
+    inset 0
+}
+
+part "list-row.cell[variant=title] link[focus-visible]::after" {
+    use "ring-inside"
+}
+
+// The checkbox and the buttons in a row stay above the link that reaches over it.
+part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.cell[variant=priority]" "list-row.cell[variant=person]" {
+    position relative
+}
+
+// On a phone the row has two lines: status, ID and priority, then the title, then the person and
+// the day (R9: the same order). The other columns are left out.
+part "list-row[variant=phone]" {
+    display grid
+    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
+    align-items center
+    gap "$space-1 $space-3"
+    padding "$space-3 $pad-box"
+    min-height "$size-row"
+}
+
+part "list-row[variant=phone] list-row.cell[variant=select]" "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
+    display none
+}
+
+part "list-row[variant=phone] list-row.cell" {
+    width auto
+}
+
+part "list-row[variant=phone] list-row.cell[variant=status]" {
+    grid-area status
+}
+
+part "list-row[variant=phone] list-row.cell[variant=key]" {
+    grid-area key
+}
+
+part "list-row[variant=phone] list-row.cell[variant=priority]" {
+    grid-area priority
+    justify-self end
+}
+
+part "list-row[variant=phone] list-row.cell[variant=title]" {
+    grid-area title
+    white-space normal
+    overflow-wrap anywhere
+}
+
+part "list-row[variant=phone] list-row.cell[variant=person]" {
+    grid-area person
+}
+
+part "list-row[variant=phone] list-row.cell[variant=changed]" {
+    grid-area changed
+    justify-self end
+}
+
+// The header of a group of rows: the group's icon and color, its name and how many issues it holds.
+part "list-group" {
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+    padding 0 "$pad-box"
+    border-bottom "$border-width solid $border-subtle"
+    background "$bg-surface"
+    font-size "$fs-ui"
+    font-weight "$weight-bold"
+}
+
+part "list-group.count" {
+    color "$fg-muted"
+    font-weight "$weight-regular"
+}
+
+// A bar of the timeline (UX §4.7): the same tint and edge as the row of the list.
+part "timeline-bar" {
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control-small"
+    padding 0 "$pad-control"
+    border "$border-width solid $border"
+    border-inline-start "$size-edge solid transparent"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-sm"
+}
+
+// ───────────── Name and value (Details, UX §4.4) ─────────────
+
+part "name-values" {
+    display flex
+    flex-direction column
+    margin 0
+}
+
+part "name-value" {
+    display grid
+    grid-template-columns "$size-name minmax(0, 1fr)"
+    align-items start
+    gap "$space-3"
+    min-height "$size-control"
+    padding "$space-1 0"
+}
+
+part "name-value.name" {
+    margin 0
+    padding-top "$space-2"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "name-value.value" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    min-width 0
+    min-height "$size-control"
+    margin 0
+    font-size "$fs-ui"
+}
+
+// *Saved* and *Undo* where the change happened (R7).
+part "name-value.saved" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+}
+
+// ───────────── Legend ─────────────
+//
+// A small key beside the toolbar: what the row color and the edge mean (UX §4.2, §4.7).
+
+part "legend" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2 $space-4"
+    margin 0
+    padding 0
+    color "$fg-muted"
+    font-size "$fs-sm"
+    list-style none
+}
+
+part "legend.item" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+}
+
+part "legend.swatch" {
+    flex none
+    box-sizing border-box
+    width "$size-icon-small"
+    height "$size-icon-small"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+}
+
+part "legend.swatch[variant=in-progress]" {
+    border-color "$st-ip"
+    background "$tint-ip"
+}
+
+part "legend.swatch[variant=done]" {
+    border-color "$st-done"
+    background "$tint-done"
+}
+
+part "legend.swatch[variant=critical]" {
+    border-inline-start "$size-edge solid $danger"
+}
+
+part "legend.swatch[variant=high]" {
+    border-inline-start "$size-edge solid $warning"
+}
+
+// ───────────── Window (UX §6.3, R10) ─────────────
+//
+// A form opens as a window over the page, in the one overlay (variant `window`). It can be
+// minimized to a bar at the bottom, maximized, and resized at its edges. Its size is two variables
+// that the code sets while the person drags (`--window-width`, `--window-height`, the tokens of the
+// same names). The form follows the window's own width (container queries), not the screen's.
+
+part "overlay[variant=window]" {
+    align-items center
+    justify-content center
+    padding "$space-4"
+}
+
+part "overlay[variant=window][state=maximized]" {
+    padding 0
+}
+
+part "overlay.modal[variant=window]" {
+    container-type inline-size
+    width "min($window-width, 100%)"
+    height "$window-height"
+    min-width "min($size-window-width-min, 100%)"
+    min-height "min($size-window-height-min, 100%)"
+    max-height "100%"
+    border-radius "$r-card"
+}
+
+part "overlay.modal[variant=window][state=maximized]" {
+    width "100%"
+    height "100%"
+    border-radius 0
+}
+
+part "window" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+    outline none
+}
+
+// Everything inside the dialog: the keys of the keyboard are heard here.
+part "window.content" {
+    display flex
+    flex 1
+    flex-direction column
+    min-height 0
+}
+
+part "window.title-bar" {
+    display flex
+    flex none
+    align-items stretch
+    min-height "$size-control"
+    border-bottom "$border-width solid $border"
+    border-radius "$r-card $r-card 0 0"
+    background "$bg-surface"
+}
+
+part "window.title" {
+    flex 1
+    min-width 0
+    margin 0
+    padding "0 $pad-box"
+    overflow hidden
+    font-size "$fs-lg"
+    line-height "$size-control"
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "window.control" {
+    display inline-flex
+    flex none
+    align-items center
+    justify-content center
+    width "$size-window-button"
+    min-height "$size-control"
+    padding 0
+    border 0
+    background transparent
+    color "$fg"
+    cursor pointer
+}
+
+part "window.control[hovered]" {
+    background "$bg-hover"
+}
+
+part "window.control[pressed]" {
+    background "$bg-selected"
+}
+
+part "window.control[variant=close][hovered]" "window.control[variant=close][pressed]" {
+    background "$danger"
+    color "$on-accent"
+}
+
+part "window.control[variant=close]" {
+    border-start-end-radius "$r-card"
+}
+
+part "window.control[variant=back]" {
+    width auto
+    padding 0 "$pad-control"
+    gap "$space-1"
+}
+
+part "window.control[focus-visible]" {
+    use "ring-inside"
+}
+
+// The scrolling part is the form; the title bar and the footer stay in place.
+part "window.body" {
+    flex 1
+    min-height 0
+    padding "$pad-dialog"
+    overflow-y auto
+}
+
+part "window.footer" {
+    display flex
+    flex none
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-3"
+    padding "$pad-box $pad-dialog"
+    border-top "$border-width solid $border"
+}
+
+part "window.footer-note" {
+    margin-inline-end auto
+    use "quiet-text"
+}
+
+// The places to drag: the four edges and the four corners.
+part "window.handle" {
+    position absolute
+    z-index "$z-raised"
+    touch-action none
+}
+
+part "window.handle[variant=e]" {
+    inset-block "$size-window-handle"
+    inset-inline-end 0
+    width "$size-window-handle"
+    cursor ew-resize
+}
+
+part "window.handle[variant=w]" {
+    inset-block "$size-window-handle"
+    inset-inline-start 0
+    width "$size-window-handle"
+    cursor ew-resize
+}
+
+part "window.handle[variant=s]" {
+    inset-inline "$size-window-handle"
+    bottom 0
+    height "$size-window-handle"
+    cursor ns-resize
+}
+
+part "window.handle[variant=n]" {
+    inset-inline "$size-window-handle"
+    top 0
+    height "$size-window-handle"
+    cursor ns-resize
+}
+
+part "window.handle[variant=se]" {
+    right 0
+    bottom 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nwse-resize
+}
+
+part "window.handle[variant=nw]" {
+    top 0
+    left 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nwse-resize
+}
+
+part "window.handle[variant=ne]" {
+    top 0
+    right 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nesw-resize
+}
+
+part "window.handle[variant=sw]" {
+    bottom 0
+    left 0
+    width "$size-window-handle"
+    height "$size-window-handle"
+    cursor nesw-resize
+}
+
+// The form inside: one column below 880, the fields at the side from 880, the text centered with a
+// readable width from 1200 (R10).
+part "window-layout" {
+    display grid
+    grid-template-columns "minmax(0, 1fr)"
+    gap "$gap-sections" "$space-5"
+    container "(min-width: $bp-window-side)" {
+        grid-template-columns "minmax(0, 1fr) $size-details"
+        align-items start
+    }
+    container "(min-width: $bp-window-wide)" {
+        grid-template-columns "minmax(0, $size-reading) $size-details"
+        justify-content center
+    }
+}
+
+part "window-layout.text" {
+    display flex
+    flex-direction column
+    gap "$gap-fields"
+    min-width 0
+}
+
+part "window-layout.fields" {
+    display flex
+    flex-direction column
+    gap "$gap-fields"
+    min-width 0
+}
+
+// A window that is minimized is a bar at the bottom of the page with its title and what it keeps.
+part "window-dock" {
+    position fixed
+    inset-inline-start "$space-4"
+    bottom 0
+    z-index "$z-panel"
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-control"
+    max-width "calc(100% - $space-4 * 2)"
+    padding 0 "$pad-box"
+    border "$border-width solid $border"
+    border-bottom 0
+    border-radius "$r-card $r-card 0 0"
+    background "$bg-raised"
+    box-shadow "$shadow"
+    color "$fg"
+    font-family "$font"
+    font-size "$fs-ui"
+    cursor pointer
+}
+
+part "window-dock[hovered]" {
+    background "$bg-hover"
+}
+
+part "window-dock[focus-visible]" {
+    use "ring"
+}
+
+part "window-dock.title" {
+    overflow hidden
+    font-weight "$weight-bold"
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "window-dock.note" {
+    use "quiet-text"
+    white-space nowrap
 }
 
 // ───────────── Shared layout parts ─────────────
@@ -1866,8 +2709,8 @@ part "project-tree.toggle" "project-tree.spacer" {
     align-items center
     justify-content center
     box-sizing border-box
-    width "$size-target"
-    min-height "$size-target"
+    width "$size-control"
+    min-height "$size-control"
 }
 
 part "project-tree.toggle" {
@@ -1900,7 +2743,7 @@ part "project-tree.link" {
     gap "$space-2"
     box-sizing border-box
     min-width 0
-    min-height "$size-target"
+    min-height "$size-control"
     padding "0 $space-3"
     border-radius "$r-ctl"
     use "menu-text"
@@ -2009,7 +2852,7 @@ part "access-keys.more" {
 }
 
 part "access-keys.more-title" {
-    min-height "$size-target"
+    min-height "$size-control"
     display flex
     align-items center
     font-weight "$weight-bold"
@@ -2647,7 +3490,7 @@ part "in-place.button" {
     use "bare-button"
     box-sizing border-box
     max-width "100%"
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0 "$space-2"
     border-radius "$r-ctl"
     color inherit
@@ -2748,7 +3591,7 @@ part "issue-fact.value" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
-    min-height "$size-target"
+    min-height "$size-control"
     font-size "$fs-md"
 }
 
@@ -3022,7 +3865,7 @@ part "list-editor.list" {
 }
 
 part "list-editor.open" {
-    min-height "$size-target"
+    min-height "$size-control"
     padding 0
     use "bare-button"
     color "$accent-fg"
@@ -3069,7 +3912,7 @@ part "shortcut-editor.row" {
 }
 
 part "shortcut-editor.label" {
-    min-width "$size-target"
+    min-width "$size-control"
     margin-inline-end "$space-2"
     font-weight "$weight-bold"
 }
@@ -3276,7 +4119,7 @@ part "markdown.panel" {
 
 part "markdown.preview" {
     use "surface-box"
-    min-height "$size-target"
+    min-height "$size-control"
     padding "$space-3"
 }
 
@@ -3331,7 +4174,7 @@ part "history.tabs" {
 
 part "history.tab" {
     padding "$space-2 $space-3"
-    min-height "$size-target"
+    min-height "$size-control"
     box-sizing border-box
     color "$fg-muted"
     font-size "$fs-md"
@@ -3446,8 +4289,8 @@ part "field-swatch" {
     display inline-flex
     align-items center
     justify-content center
-    min-width "$size-target"
-    min-height "$size-target"
+    min-width "$size-control"
+    min-height "$size-control"
     padding 0 "$space-2"
     border "$border-width solid $border"
     border-radius "$r-ctl"
@@ -4544,6 +5387,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         size "doc-space-560" "560px"
         size "doc-space-600" "600px"
         size "doc-space-640" "640px"
+        size "doc-space-1040" "1040px"
         size "doc-space-70" "70px"
         size "doc-space-78" "78px"
         size "doc-space-80" "80px"
@@ -4677,6 +5521,35 @@ docs "ux-design" description="The design page of the user experience: its readin
 
     rule ".frame-body > .scr" {
         min-width "$doc-space-640"
+    }
+
+    // The issue list has fixed columns that need room; the frame scrolls when the page is narrower.
+    rule ".frame-body > .scr.wide" {
+        min-width "$doc-space-1040"
+    }
+
+    // The page behind a window in the pictures. The window is the part of the app, drawn in place.
+    rule ".win-stage" {
+        display flex
+        flex-direction column
+        align-items center
+        gap "$space-4"
+        padding "$space-4"
+        background "$bg-sunken"
+    }
+
+    rule ".win-stage .win-wide" {
+        width "min(calc($size-window * 1.2), 100%)"
+    }
+
+    // The issue page: the text, and the Details at the side (300 to 340).
+    rule ".issue-grid" {
+        display grid
+        grid-template-columns "minmax(0, 1fr) $size-details"
+    }
+
+    rule ".win-stage .dock-flat" {
+        position static
     }
 
     rule ".frame.phone" {
@@ -5443,38 +6316,24 @@ docs "ux-design" description="The design page of the user experience: its readin
     rule ".tl .ln" {
         position relative
         border-bottom "$border-width solid $border-subtle"
-        min-height "$doc-space-31"
+        min-height "calc($size-control-small + $space-2)"
         background-image "repeating-linear-gradient(to right, transparent 0, transparent calc(20% - $doc-space-1), $border-subtle calc(20% - $doc-space-1), $border-subtle 20%)"
     }
 
+    // A bar of the timeline is the part `timeline-bar` (its tint and its edge); this only places it.
     rule ".bar" {
         position absolute
-        top "$doc-space-7"
-        height "$doc-space-17"
-        border-radius "$doc-r-small"
-        background "$st-ip"
-        color "$on-accent"
-        font-size "$doc-font-10"
-        padding "0 $doc-space-5"
-        display flex
-        align-items center
+        top "$space-1"
         font-family "$mono"
         white-space nowrap
         overflow hidden
-    }
-
-    rule ".bar.ns" {
-        background "$fg-subtle"
-    }
-
-    rule ".bar.dn" {
-        background "$st-done"
     }
 
     rule ".bar.goal" {
         background "$accent"
         height "$space-2"
         top "$space-3"
+        border-radius "$doc-r-small"
     }
 
     rule ".ms" {
@@ -5487,13 +6346,26 @@ docs "ux-design" description="The design page of the user experience: its readin
         border-radius "$doc-space-2"
     }
 
+    // Today is an accent line with a label; it is no longer red, because red means Critical.
     rule ".today" {
         position absolute
         top 0
         bottom 0
         width "$doc-space-2"
-        background "$danger"
-        opacity "$opacity-busy"
+        background "$accent"
+    }
+
+    rule ".today-label" {
+        position absolute
+        top 0
+        left "$doc-space-5"
+        padding "0 $doc-space-5"
+        border-radius "$doc-r-small"
+        background "$accent"
+        color "$on-accent"
+        font-size "$doc-font-10"
+        font-weight "$weight-bold"
+        white-space nowrap
     }
 
     rule ".dep" {
@@ -10059,8 +10931,8 @@ part "draggable.handle" {
     display inline-flex
     align-items center
     justify-content center
-    min-width "$size-target"
-    min-height "$size-target"
+    min-width "$size-control"
+    min-height "$size-control"
     border-radius "$r-ctl"
     color "$fg-muted"
     cursor grab
@@ -10102,7 +10974,7 @@ part "drop-slot" {
 }
 
 part "drop-slot[state=over]" {
-    min-height "$size-target"
+    min-height "$size-control"
     border "$border-width dashed $accent"
     background "$accent-soft"
 }
