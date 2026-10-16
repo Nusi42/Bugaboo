@@ -5,6 +5,15 @@ use std::path::{Path, PathBuf};
 use super::*;
 use crate::catalog::Catalog;
 
+/// The findings for `sources`, as a run of the whole repository gives them.
+fn evaluate(
+    terms: &[Term],
+    sources: &[Source],
+    exemptions: &Exemptions,
+) -> anyhow::Result<Vec<Finding>> {
+    evaluate_with(terms, sources, exemptions, Coverage::Whole)
+}
+
 const GLOSSARY_TEXT: &str = "\
 | Say | Meaning | Don't say |
 |-----|---------|-----------|
@@ -16,6 +25,9 @@ const GLOSSARY_TEXT: &str = "\
 | **Issue** | Anything tracked | ticket, work item |
 | **Sub-issue** | An issue under another | sub-task, custom field (UI), attribute |
 | **Page** | A document | — |
+| **Assigned to** | Who works on it | assignee (in UI and code) |
+| **Create** | Bring something new | make, add new (in UI and code) |
+| **Change many issues** | Change several together | bulk, mass update (in UI and code) |
 
 | Term | Meaning |
 |------|---------|
@@ -67,10 +79,119 @@ fn txt_terms_reads_the_dont_say_column_of_every_table() {
             "work item",
             "sub-task",
             "custom field",
-            "attribute"
+            "attribute",
+            "assignee",
+            "make",
+            "add new",
+            "bulk",
+            "mass update"
         ]
     );
     assert_eq!(terms[0].say, "Sign in");
+}
+
+/// The findings for one declared name of the code.
+fn code_hits(name: &str) -> Vec<String> {
+    let source = Source {
+        place: Place {
+            key: format!("crates/x/src/lib.rs#fn {name}"),
+            shown: format!("crates/x/src/lib.rs: fn {name}"),
+        },
+        kind: Kind::Code,
+        text: name.to_owned(),
+    };
+    evaluate(&terms(), &[source], &Exemptions::default())
+        .unwrap()
+        .into_iter()
+        .map(|finding| finding.message)
+        .collect()
+}
+
+#[test]
+fn txt_terms_a_code_name_with_a_word_that_asks_for_code_fails_with_the_row_of_the_glossary() {
+    // A Rust type, a TypeScript function and a message key, read as the words they are made of.
+    let declared = |names: Vec<code_names::Declared>| {
+        names
+            .into_iter()
+            .flat_map(|declared| code_hits(&declared.name))
+            .collect::<Vec<_>>()
+    };
+    let rust = declared(code_names::rust_names("pub struct IssueAssignee;").unwrap());
+    assert_eq!(rust.len(), 1, "{rust:?}");
+    assert!(rust[0].contains("\"assignee\"") && rust[0].contains("Say \"Assigned to\""));
+    let web = declared(code_names::web_names("export function makeProject() {}"));
+    assert_eq!(web.len(), 1, "{web:?}");
+    assert!(web[0].contains("\"make\"") && web[0].contains("Say \"Create\""));
+    for name in [
+        "many_change_run",
+        "ManyChangeRun",
+        "create_project",
+        "readable_id",
+    ] {
+        assert!(code_hits(name).is_empty(), "{name}");
+    }
+    assert_eq!(code_hits("apply_bulk").len(), 1);
+    assert_eq!(code_hits("AddNewIssue").len(), 1);
+}
+
+#[test]
+fn txt_terms_a_name_from_other_peoples_code_is_not_read() {
+    // The standard library names `make_ascii_lowercase`; this code only calls it.
+    let names = code_names::rust_names(
+        "fn lower(text: &mut String) { text.make_ascii_lowercase(); }
+         impl std::io::Write for Sink { fn make_writer(&self) {} }",
+    )
+    .unwrap();
+    let found: Vec<String> = names
+        .into_iter()
+        .flat_map(|declared| code_hits(&declared.name))
+        .collect();
+    assert!(found.is_empty(), "{found:?}");
+}
+
+#[test]
+fn txt_terms_the_ordinary_words_of_programming_are_right_in_code() {
+    // `ticket` is on the list for what people read, but its entry does not ask for code names.
+    assert!(code_hits("ticket_id").is_empty());
+    assert!(code_hits("TicketBody").is_empty());
+    assert_eq!(hits("Open a ticket.").len(), 1);
+}
+
+#[test]
+fn txt_terms_a_route_is_read_as_a_name_for_every_entry() {
+    let name = |text: &str| Source {
+        place: Place {
+            key: format!("api:path {text}"),
+            shown: format!("api: path {text}"),
+        },
+        kind: Kind::Name,
+        text: text.to_owned(),
+    };
+    let found = |text: &str| {
+        evaluate(&terms(), &[name(text)], &Exemptions::default())
+            .unwrap()
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect::<Vec<_>>()
+    };
+    let bulk = found("/api/v1/bulk/x");
+    assert_eq!(bulk.len(), 1, "{bulk:?}");
+    assert!(bulk[0].contains("Say \"Change many issues\""));
+    assert!(found("/api/v1/many-changes/x").is_empty());
+}
+
+#[test]
+fn txt_terms_the_entries_that_ask_for_code_are_the_ones_with_code_in_their_bracket() {
+    let terms = terms();
+    let asks = |word: &str| {
+        terms
+            .iter()
+            .find(|term| term.written == word)
+            .map(|term| term.code)
+    };
+    assert_eq!(asks("assignee"), Some(true));
+    assert_eq!(asks("ticket"), Some(false));
+    assert_eq!(asks("MFA"), Some(false));
 }
 
 #[test]
@@ -242,6 +363,22 @@ fn txt_terms_an_exemption_covers_its_place_and_goes_stale_without_one() {
 }
 
 #[test]
+fn txt_terms_an_exemption_of_a_name_in_code_is_not_stale_when_only_changed_files_were_read() {
+    let exempt = allow("make", "crates/x/src/lib.rs#fn make_ascii");
+    let sources = [text("Fine.")];
+    // The whole repository was read: nothing matches, so the exemption is stale.
+    let whole = evaluate_with(&terms(), &sources, &exempt, Coverage::Whole).unwrap();
+    assert_eq!(whole.len(), 1);
+    // Only the files that changed were read: the file may be one that was not read.
+    let changed = evaluate_with(&terms(), &sources, &exempt, Coverage::Changed).unwrap();
+    assert!(changed.is_empty());
+    // An exemption of a text is stale either way, because texts are always read whole.
+    let text_exempt = allow("make", "messages/en.json#key");
+    let stale = evaluate_with(&terms(), &sources, &text_exempt, Coverage::Changed).unwrap();
+    assert_eq!(stale.len(), 1);
+}
+
+#[test]
 fn txt_terms_an_entry_with_a_slash_is_read_as_its_parts() {
     let terms = banned_terms(
         "| Say | Meaning | Don't say |
@@ -345,7 +482,7 @@ fn scan_folder(folder: PathBuf) -> Vec<Finding> {
         files: None,
     };
     let files = context.selected("TXT-TERMS").unwrap();
-    scan(&repo, &files).unwrap()
+    scan_with(&repo, &files, &files, Coverage::Whole).unwrap()
 }
 
 fn fixture(side: &str) -> PathBuf {
@@ -363,13 +500,16 @@ fn bad_example() {
         .iter()
         .filter_map(|finding| finding.location.clone())
         .collect();
-    // One finding in each of the three places that are read.
+    // One finding in each of the places that are read, also in the names of Rust and TypeScript.
     for wanted in [
         "messages/en.json: ",
         "userDocs/page.md:",
         "openapi.json: path",
         "openapi.json: schema",
         "openapi.json: property",
+        "crates/demo/src/lib.rs: struct IssueAssignee",
+        "crates/demo/src/lib.rs: fn make_project",
+        "web/app/src/demo.ts: function makeProject",
     ] {
         assert!(
             places.iter().any(|place| place.contains(wanted)),

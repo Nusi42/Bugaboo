@@ -33,6 +33,7 @@
 //! matches anything fails, so the file cannot go stale.
 
 use std::collections::BTreeSet;
+use std::path::Path;
 
 use anyhow::Context as _;
 use globset::{Glob, GlobMatcher};
@@ -44,6 +45,7 @@ use super::{api_spec, exemptions};
 use crate::repo::Repo;
 use crate::source::read_text;
 
+mod code_names;
 mod readable;
 
 const GLOSSARY: &str = "docs/glossary.md";
@@ -54,6 +56,10 @@ const EXEMPTIONS_PATH: &str = "tools/checks/terms-exemptions.toml";
 const COLUMN: &str = "don't say";
 /// Words in a bracket that say the entry is about something people read.
 const READ_BY_PEOPLE: [&str; 3] = ["UI", "label", "tab"];
+/// The word in a bracket that says the entry is also about the names the code declares. Most
+/// entries are ordinary words of programming (`state`, `token`, `link`), which are right in code, so
+/// code names are only read for the entries that ask for it.
+const READ_IN_CODE: &str = "code";
 
 pub(crate) struct TxtTerms;
 
@@ -64,7 +70,21 @@ impl Check for TxtTerms {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let files = context.everything().selected(self.id())?;
-        scan(context.repo, &files)
+        // The words of texts and API names come from places that one changed file can break far
+        // away, so they are always read whole. The names in code are read in the files that changed
+        // (everywhere in a run of the whole repository): reading every file of the code takes longer
+        // than an edit may take.
+        match context.files {
+            Some(changed) => {
+                let code: Vec<String> = files
+                    .iter()
+                    .filter(|file| changed.contains(file))
+                    .cloned()
+                    .collect();
+                scan_with(context.repo, &files, &code, Coverage::Changed)
+            }
+            None => scan_with(context.repo, &files, &files, Coverage::Whole),
+        }
     }
 }
 
@@ -79,6 +99,11 @@ struct Term {
     words: Vec<String>,
     /// Matched exactly as written (the entry has a capital letter).
     exact: bool,
+    /// Read in what people read and in the API description (the entry has no bracket, or one with
+    /// `UI`, `label` or `tab`).
+    people: bool,
+    /// Read in the names the code declares (the bracket of the entry says `code`).
+    code: bool,
 }
 
 /// Where a word was found: `key` is what an exemption names, `shown` is what a finding names.
@@ -94,6 +119,9 @@ enum Kind {
     Text,
     /// A name in the API description: cut into words first.
     Name,
+    /// A name the code declares (a type, a function, a file, a message key): cut into words first,
+    /// and only the entries that say `code` apply.
+    Code,
 }
 
 struct Source {
@@ -133,9 +161,24 @@ impl exemptions::Exemption for Allow {
     }
 }
 
-/// Reads the glossary and the three places among `files` (the files the catalogue entry covers)
-/// and reports every banned word.
-pub(crate) fn scan(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Finding>> {
+/// How much of the code the names were read in.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Coverage {
+    /// In every file: an exemption that matches no name is stale.
+    Whole,
+    /// Only in the files that changed: an exemption of a name in code may be for a file that was
+    /// not read, so it is not called stale.
+    Changed,
+}
+
+/// Reads the glossary and the places among `files` (the files the catalogue entry covers), and
+/// the names of the code in `code_files`, and reports every banned word.
+fn scan_with(
+    repo: &Repo,
+    files: &[String],
+    code_files: &[String],
+    coverage: Coverage,
+) -> anyhow::Result<Vec<Finding>> {
     let glossary = read_text(repo, GLOSSARY)?;
     let terms = banned_terms(&glossary);
     let mut findings = Vec::new();
@@ -150,8 +193,8 @@ pub(crate) fn scan(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Finding>
     } else {
         Exemptions::default()
     };
-    let sources = sources(repo, files)?;
-    findings.extend(evaluate(&terms, &sources, &exemptions)?);
+    let sources = sources(repo, files, code_files)?;
+    findings.extend(evaluate_with(&terms, &sources, &exemptions, coverage)?);
     Ok(findings)
 }
 
@@ -168,13 +211,22 @@ fn in_folder<'a>(
 }
 
 /// Every text people read, with its place.
-fn sources(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Source>> {
+fn sources(repo: &Repo, files: &[String], code_files: &[String]) -> anyhow::Result<Vec<Source>> {
     let mut sources = Vec::new();
     for name in in_folder(files, MESSAGES_FOLDER, ".json") {
         let text = read_text(repo, name)?;
         let pairs: serde_json::Map<String, Value> =
             serde_json::from_str(&text).with_context(|| format!("{name} is not a JSON object"))?;
         for (key, value) in pairs {
+            // The key is a name the code uses; an exemption of the message covers both.
+            sources.push(Source {
+                place: Place {
+                    key: format!("{name}#{key}"),
+                    shown: format!("{name}: {key} (the key)"),
+                },
+                kind: Kind::Code,
+                text: key.clone(),
+            });
             if let Some(message) = value.as_str() {
                 sources.push(Source {
                     place: Place {
@@ -198,6 +250,7 @@ fn sources(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Source>> {
             text: readable::prose(&text),
         });
     }
+    sources.extend(code_sources(repo, code_files)?);
     for name in readable::api_names(&api_spec::load(repo)?) {
         let (key, shown) = readable::api_place(&name);
         sources.push(Source {
@@ -205,6 +258,42 @@ fn sources(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Source>> {
             kind: Kind::Name,
             text: name.text,
         });
+    }
+    Ok(sources)
+}
+
+/// The names the code declares (types, functions, modules, files and the like), each as a name to
+/// read. The place of a name is `path#what name`, the place of a folder or file is its path.
+fn code_sources(repo: &Repo, files: &[String]) -> anyhow::Result<Vec<Source>> {
+    let mut sources = Vec::new();
+    let mut named = |path: &str, what: &str, name: String| {
+        sources.push(Source {
+            place: Place {
+                key: format!("{path}#{what} {name}"),
+                shown: format!("{path}: {what} {name}"),
+            },
+            kind: Kind::Code,
+            text: name,
+        });
+    };
+    for (path, declared) in code_names::path_names(files) {
+        named(&path, declared.what, declared.name);
+    }
+    for path in files.iter().filter(|path| code_names::is_read(path)) {
+        let extension = Path::new(path)
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let declared = match extension.as_str() {
+            "rs" => code_names::rust_names(&read_text(repo, path)?)
+                .with_context(|| format!("{path} cannot be read for its names"))?,
+            "ts" | "tsx" => code_names::web_names(&read_text(repo, path)?),
+            _ => continue,
+        };
+        for declared in declared {
+            named(path, declared.what, declared.name);
+        }
     }
     Ok(sources)
 }
@@ -253,13 +342,18 @@ fn cell_terms(cell: &str, say: &str) -> Vec<Term> {
     for entry in split_entries(entries) {
         let (written, own) = split_bracket(&entry);
         let bracket = own.or(cell_bracket);
-        let read = bracket.is_none_or(|bracket| {
+        let people = bracket.is_none_or(|bracket| {
             bracket
                 .split(|c: char| !c.is_alphanumeric())
                 .any(|word| READ_BY_PEOPLE.contains(&word))
         });
+        let code = bracket.is_some_and(|bracket| {
+            bracket
+                .split(|c: char| !c.is_alphanumeric())
+                .any(|word| word == READ_IN_CODE)
+        });
         let written = written.trim();
-        if !read || written.is_empty() || written == "—" || written.contains('"') {
+        if !(people || code) || written.is_empty() || written == "—" || written.contains('"') {
             continue;
         }
         // `check out / check in` is two phrases. A list of single words (`none / read / write`)
@@ -288,6 +382,8 @@ fn cell_terms(cell: &str, say: &str) -> Vec<Term> {
                     say: say.to_owned(),
                     words,
                     exact,
+                    people,
+                    code,
                 });
             }
         }
@@ -376,7 +472,7 @@ fn find(text: &str, term: &Term, kind: Kind) -> Option<usize> {
         for (offset, wanted) in term.words.iter().enumerate() {
             let (word, at) = words[first + offset];
             let same = match (kind, term.exact) {
-                (Kind::Name, _) => word.to_lowercase() == wanted.to_lowercase(),
+                (Kind::Name | Kind::Code, _) => word.to_lowercase() == wanted.to_lowercase(),
                 (Kind::Text, true) => word == wanted,
                 (Kind::Text, false) => word.to_lowercase() == *wanted,
             };
@@ -422,10 +518,11 @@ fn line_of(text: &str, at: usize) -> usize {
     text[..at].matches('\n').count() + 1
 }
 
-fn evaluate(
+fn evaluate_with(
     terms: &[Term],
     sources: &[Source],
     exemptions: &Exemptions,
+    coverage: Coverage,
 ) -> anyhow::Result<Vec<Finding>> {
     let allowed = exemptions
         .allow
@@ -445,12 +542,20 @@ fn evaluate(
     let mut used: BTreeSet<(usize, usize)> = BTreeSet::new();
     let mut findings = exemptions::reason_findings(EXEMPTIONS_PATH, &exemptions.allow);
     for source in sources {
-        let text = if source.kind == Kind::Name {
-            name_words(&source.text)
-        } else {
+        let text = if source.kind == Kind::Text {
             source.text.clone()
+        } else {
+            name_words(&source.text)
         };
         for term in terms {
+            let reads = if source.kind == Kind::Code {
+                term.code
+            } else {
+                term.people
+            };
+            if !reads {
+                continue;
+            }
             let Some(at) = find(&text, term, source.kind) else {
                 continue;
             };
@@ -500,7 +605,9 @@ fn evaluate(
     }
     for (number, allow) in exemptions.allow.iter().enumerate() {
         for (pattern, text) in allow.at.iter().enumerate() {
-            if !used.contains(&(number, pattern)) {
+            // A name in code may be in a file that was not read.
+            let maybe_unread = coverage == Coverage::Changed && code_names::is_read(text);
+            if !used.contains(&(number, pattern)) && !maybe_unread {
                 findings.push(Finding::at(
                     EXEMPTIONS_PATH,
                     format!(
