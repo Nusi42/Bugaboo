@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { TextField, fieldKind } from "@bugaboo/ui";
-import { useState } from "react";
 
 import { boxWords } from "./box-words.ts";
 import { SaveForm } from "./SaveForm.tsx";
+import { useSynced } from "./use-synced.ts";
 import type { Sent, ValueEditorProps } from "./ValueEditor.tsx";
 
 /** The widest span of days a day box takes: the whole calendar. */
@@ -47,8 +47,8 @@ export function MomentEditor({
 }: ValueEditorProps) {
   const withTime = field.kind === "date-time";
   const [savedDay, savedTime] = partsOf(value, withTime);
-  const [day, setDay] = useState(savedDay);
-  const [time, setTime] = useState(savedTime);
+  const [day, setDay] = useSynced(savedDay);
+  const [time, setTime] = useSynced(savedTime);
   return (
     <SaveForm
       isPending={isPending}

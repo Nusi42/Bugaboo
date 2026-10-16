@@ -5,7 +5,6 @@ import type { IssueBlockProps } from "../issues/index.ts";
 import { FormSections, onlyFields } from "../layouts/index.ts";
 import { issueFieldsOf, useFields, type OwnField, type FieldValues } from "./fields.ts";
 import { FieldLine } from "./FieldLine.tsx";
-import { lineKey } from "./line-key.ts";
 
 /**
  * The own fields in the fields panel of the issue page (CF-06, UX §4.4): each field the person sees,
@@ -25,7 +24,7 @@ export function OwnFieldsPanel({ issue, mask, form, rowStatus, onChange }: Issue
   );
   const line = (field: OwnField) => (
     <FieldLine
-      key={lineKey(field, values[field.id])}
+      key={field.id}
       field={field}
       project={project}
       issue={issue.id ?? undefined}
