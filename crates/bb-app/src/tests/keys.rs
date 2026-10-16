@@ -34,8 +34,8 @@ impl World {
         let mut ids = SequentialIds::default();
         Self {
             person: UserId::generate(&mut ids),
-            projects: ids.make(|ids| ProjectId::generate(ids).unwrap()),
-            roles: ids.make(|ids| RoleId::generate(ids).unwrap()),
+            projects: ids.create(|ids| ProjectId::generate(ids).unwrap()),
+            roles: ids.create(|ids| RoleId::generate(ids).unwrap()),
         }
     }
 }

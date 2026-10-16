@@ -9,7 +9,7 @@ use bb_testing::{TestResult, each_database};
 
 use super::policy_rig::{Member, Org};
 use super::projects::{
-    LEAD, VIEW, api, asked, detail, list, make, missing_id, names, preview, relocate,
+    LEAD, VIEW, api, asked, create, detail, list, missing_id, names, preview, relocate,
 };
 use super::rig::{Rig, refused};
 
@@ -55,8 +55,8 @@ async fn prj_02_leaving_a_project_out_names_no_hidden_project() -> TestResult {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
         let looker = org.role("Looker", &VIEW).await?;
         let bea = org.person().await?;
         org.give(&bea, looker.id, web.id).await?;
@@ -82,11 +82,15 @@ async fn prj_01_projects_are_nested_to_the_limit_and_no_further() -> TestResult 
         let mut chain: Vec<ProjectId> = Vec::new();
         for level in 0..LEVELS {
             let parent = chain.last().copied();
-            chain.push(make(&org, &admin, parent, &format!("LVL{level}")).await?.id);
+            chain.push(
+                create(&org, &admin, parent, &format!("LVL{level}"))
+                    .await?
+                    .id,
+            );
         }
         // One more level is refused with a sentence, not made and not an internal failure.
         let deepest = *chain.last().ok_or("no projects")?;
-        let too_deep = refused(make(&org, &admin, Some(deepest), "ONEMORE").await);
+        let too_deep = refused(create(&org, &admin, Some(deepest), "ONEMORE").await);
         assert_eq!(too_deep, Some(ErrorCode::ProjectTooDeep));
         // The deepest project answers like every other, to those who see it and to those who do
         // not, and a list and a GET agree.
@@ -104,8 +108,8 @@ async fn prj_01_projects_are_nested_to_the_limit_and_no_further() -> TestResult 
         assert_eq!(hidden, asked(&org, &bob, "NOSUCH").await);
         assert!(hidden.is_some());
         // A move that would push what is inside past the limit is refused, one that fits is not.
-        let x = make(&org, &admin, None, "XROOT").await?;
-        make(&org, &admin, Some(x.id), "XLEAF").await?;
+        let x = create(&org, &admin, None, "XROOT").await?;
+        create(&org, &admin, Some(x.id), "XLEAF").await?;
         let one_too_deep = chain[LEVELS - 2];
         assert_eq!(
             refused(preview(&org, &admin, x.id, Some(one_too_deep)).await),
@@ -125,9 +129,9 @@ async fn prj_03_moving_needs_move_at_the_old_parent_also_with_move_at_the_new_on
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let other = make(&org, &admin, None, "OTHER").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
         let lead = org.role("Section lead", &LEAD).await?;
         let looker = org.role("Looker", &VIEW).await?;
         let cleo = org.person().await?;
@@ -154,9 +158,9 @@ async fn prj_03_a_visible_project_under_a_hidden_parent_is_forbidden_to_move_not
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
-        let other = make(&org, &admin, None, "OTHER").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
         let lead = org.role("Section lead", &LEAD).await?;
         let bea = org.person().await?;
         // Bea leads WEB and OTHER but does not see ACME, which holds WEB. Whatever the place,
@@ -184,8 +188,8 @@ async fn prj_03_a_project_says_whether_the_person_may_move_it() -> TestResult {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
         let lead = org.role("Section lead", &LEAD).await?;
         let looker = org.role("Looker", &VIEW).await?;
         let (ana, bea, cleo) = (
@@ -224,12 +228,12 @@ async fn prj_03_a_project_says_whether_the_person_may_move_it() -> TestResult {
 
 #[tokio::test]
 async fn prj_03_moving_to_the_top_level_needs_create_projects_as_well() -> TestResult {
-    each_database("prj_03_top_level_needs_make", async |db| {
+    each_database("prj_03_top_level_needs_create", async |db| {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let web = make(&org, &admin, None, "WEB").await?;
-        let docs = make(&org, &admin, Some(web.id), "DOCS").await?;
+        let web = create(&org, &admin, None, "WEB").await?;
+        let docs = create(&org, &admin, Some(web.id), "DOCS").await?;
         let mover = org
             .role(
                 "Mover",
@@ -262,11 +266,11 @@ async fn prj_03_the_places_a_project_can_go_leave_out_where_it_is_and_where_the_
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let other = make(&org, &admin, None, "OTHER").await?;
-        let third = make(&org, &admin, None, "THIRD").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
-        make(&org, &admin, Some(web.id), "DOCS").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
+        let third = create(&org, &admin, None, "THIRD").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
+        create(&org, &admin, Some(web.id), "DOCS").await?;
         let lead = org.role("Section lead", &LEAD).await?;
         let looker = org.role("Looker", &VIEW).await?;
         let ana = org.person().await?;

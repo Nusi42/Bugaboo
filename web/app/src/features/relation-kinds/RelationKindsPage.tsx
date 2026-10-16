@@ -5,7 +5,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditRelationKind } from "./EditRelationKind.tsx";
-import { MakeRelationKindForm } from "./MakeRelationKindForm.tsx";
+import { CreateRelationKindForm } from "./CreateRelationKindForm.tsx";
 import { relationKindLinesOf, useRelationKinds, type RelationKindLine } from "./relation-kinds.ts";
 
 export interface RelationKindsPageProps {
@@ -61,7 +61,7 @@ export function RelationKindsPage({ open, onOpen, onClose }: RelationKindsPagePr
       </Card>
       <Card heading={t("relation-kinds.create-title")}>
         <p {...partOf(part.text)}>{t("relation-kinds.create-intro")}</p>
-        <MakeRelationKindForm />
+        <CreateRelationKindForm />
       </Card>
     </div>
   );

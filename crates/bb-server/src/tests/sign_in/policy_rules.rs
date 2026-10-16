@@ -1,11 +1,13 @@
 //! The rules that keep the organization from locking itself out and from giving more than a person
 //! has, the starting roles, and the record of every change (SEC-02, SEC-08, SEC-15, ADR-0025).
 
-use bb_app::access::{MakeStartingRoles, Permission, PersonRef, StartingRole, make_starting_roles};
+use bb_app::access::{
+    CreateStartingRoles, Permission, PersonRef, StartingRole, create_starting_roles,
+};
 use bb_app::auth::AppError;
-use bb_app::people::{AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup};
+use bb_app::people::{AddGroupMember, CreateGroup, DeleteGroup, RemoveGroupMember, RenameGroup};
 use bb_app::roles::{
-    AssignmentView, AssignmentsQuery, ChangeRole, DeleteRole, Given, LevelsQuery, MakeRole,
+    AssignmentView, AssignmentsQuery, ChangeRole, CreateRole, DeleteRole, Given, LevelsQuery,
     RemoveAssignment, ResetRole, RoleView, RolesQuery, SetFieldLevel, SetPeopleLevel, Subject,
     WhoView,
 };
@@ -141,7 +143,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
             assert!(!role.two_step);
         }
         // Another start makes nothing new: the roles are made once.
-        make_starting_roles(&rig.services.ctx(Rig::info()), MakeStartingRoles).await?;
+        create_starting_roles(&rig.services.ctx(Rig::info()), CreateStartingRoles).await?;
         assert_eq!(roles(&org).await?.len(), 6);
 
         // A starting role can be renamed and changed like any role; its mark stays.
@@ -214,7 +216,7 @@ async fn sec_08_starting_roles_are_made_once_and_can_be_changed_and_reset() -> T
                 },
             )
             .await?;
-        make_starting_roles(&rig.services.ctx(Rig::info()), MakeStartingRoles).await?;
+        create_starting_roles(&rig.services.ctx(Rig::info()), CreateStartingRoles).await?;
         assert!(roles(&org).await?.iter().all(|role| role.name != "Guest"));
         Ok(())
     })
@@ -294,11 +296,11 @@ async fn sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role() -> TestRes
         org.give_everywhere(&mara, keeper.id).await?;
         // She can make a role with what she holds, and no more.
         let small = org
-            .make_role(&mara, "Small", &[Permission::SeeProjects])
+            .create_role(&mara, "Small", &[Permission::SeeProjects])
             .await?;
         assert_eq!(
             refused(
-                org.make_role(&mara, "Big", &[Permission::ManagePeople])
+                org.create_role(&mara, "Big", &[Permission::ManagePeople])
                     .await
             ),
             Some(ErrorCode::TooMuch)
@@ -337,7 +339,10 @@ async fn sec_08_nobody_adds_a_permission_they_do_not_hold_to_a_role() -> TestRes
         let cy = org.person().await?;
         org.give(&cy, keeper.id, projects.id).await?;
         assert_eq!(
-            refused(org.make_role(&cy, "Nope", &[Permission::SeeProjects]).await),
+            refused(
+                org.create_role(&cy, "Nope", &[Permission::SeeProjects])
+                    .await
+            ),
             Some(ErrorCode::Forbidden)
         );
         Ok(())
@@ -667,9 +672,9 @@ async fn projects_and_groups(org: &Org<'_>, journal: &Journal<'_>, bea: &Member)
     writes_one!(
         journal,
         SecurityAction::ProjectMade,
-        api.make_project(
+        api.create_project(
             Rig::info(),
-            bb_app::projects::MakeProject {
+            bb_app::projects::CreateProject {
                 session_token: session.clone(),
                 parent: Some(acme),
                 short_name: "WEB".to_owned(),
@@ -680,9 +685,9 @@ async fn projects_and_groups(org: &Org<'_>, journal: &Journal<'_>, bea: &Member)
     let group = writes_one!(
         journal,
         SecurityAction::GroupMade,
-        api.make_group(
+        api.create_group(
             Rig::info(),
-            MakeGroup {
+            CreateGroup {
                 session_token: session.clone(),
                 name: "Team".to_owned(),
             },
@@ -747,9 +752,9 @@ async fn roles_of_the_organization(org: &Org<'_>, journal: &Journal<'_>) -> Run<
     let made = writes_one!(
         journal,
         SecurityAction::RoleMade,
-        api.make_role(
+        api.create_role(
             Rig::info(),
-            MakeRole {
+            CreateRole {
                 session_token: session.clone(),
                 name: "Own".to_owned(),
                 permissions: vec![Permission::SeeProjects],
@@ -885,7 +890,7 @@ async fn sec_15_every_change_of_permissions_is_in_the_security_log() -> TestResu
             rig.database.security_log_entries(0, 10_000).await?.len(),
         );
         let refused_change = org
-            .make_role(&bea, "Nope", &[Permission::SeeProjects])
+            .create_role(&bea, "Nope", &[Permission::SeeProjects])
             .await;
         assert_eq!(refused(refused_change), Some(ErrorCode::Forbidden));
         assert_eq!(journal.events().await?, events);

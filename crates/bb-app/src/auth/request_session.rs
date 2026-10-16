@@ -45,7 +45,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|record| record.session.id))
     }
 
-    /// Makes a session for `person`; the caller stores it in its own change.
+    /// Creates a session for `person`; the caller stores it in its own change.
     pub(crate) fn new_session(
         &self,
         person: UserId,

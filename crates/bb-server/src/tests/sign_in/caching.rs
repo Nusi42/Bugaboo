@@ -10,7 +10,7 @@ use bb_app::access::Permission;
 use bb_app::bulk::BulkStore;
 use bb_app::context::SystemIds;
 use bb_app::ports::ChangeStore;
-use bb_app::roles::MakeRole;
+use bb_app::roles::CreateRole;
 use bb_core::bulk::{BulkRun, BulkStatus};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::id::{BulkRunId, EntityId, EventId};
@@ -75,9 +75,9 @@ async fn a_role(rig: &Rig) -> Result<String, Failure> {
     let admin = rig.sign_in(ADA_EMAIL, PASSWORD).await?.session_token;
     let role = rig
         .api()
-        .make_role(
+        .create_role(
             Rig::info(),
-            MakeRole {
+            CreateRole {
                 session_token: admin,
                 name: "Checker".to_owned(),
                 permissions: vec![Permission::SeeProjects],

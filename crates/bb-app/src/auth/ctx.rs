@@ -225,7 +225,7 @@ pub(crate) struct EventMaker {
 
 impl EventMaker {
     /// The event of a change to the record `entity`.
-    pub(crate) fn make(
+    pub(crate) fn create(
         &self,
         entity: EntityRef,
         changes: Vec<FieldChange>,
@@ -277,7 +277,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         changes: Vec<FieldChange>,
     ) -> Result<DomainEvent, AppError> {
         self.event_maker(actor)
-            .make(entity, changes)
+            .create(entity, changes)
             .map_err(|error| AppError::Internal(error.to_string()))
     }
 

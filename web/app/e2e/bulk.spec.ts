@@ -8,7 +8,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { labelNamesOf, makeLabel, tickTwo } from "./support/labels.ts";
+import { labelNamesOf, createLabel, tickTwo } from "./support/labels.ts";
 
 // Changing many issues at once (ISS-09, M3 WP-08): tick issues, choose what to do, read what would
 // change, apply, and take it back. The preview is the one long preview of the app.
@@ -27,7 +27,7 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  await makeLabel(admin, "release");
+  await createLabel(admin, "release");
   await signIn(page, ada);
   await tickTwo(page);
   const dialog = await openAction(page, t("bulk.action-label"));

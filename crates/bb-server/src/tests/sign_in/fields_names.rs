@@ -8,7 +8,7 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{FIELDS, make_field, reader_of};
+use super::fields_http::{FIELDS, create_field, reader_of};
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, id_in, ok};
 
@@ -44,7 +44,7 @@ async fn people_for(who: &mut Browser, site: &Site<'_>, query: &str) -> Result<R
 /// A person field of issues, made as the administrator; its ID.
 async fn person_field(ada: &mut Browser, name: &str) -> Result<String, Failure> {
     id_in(
-        &make_field(
+        &create_field(
             ada,
             json!({"name": name, "kind": "person", "applies_to": "issues"}),
         )
@@ -92,7 +92,7 @@ async fn cf_06_the_list_for_a_field_follows_its_level_for_the_issue_type() -> Te
             for_question.body
         );
         // An issue decides its type: the list for an issue of type Bug is refused as well.
-        let made = ok(&site.make(&mut ada, "A bug").await?)?.clone();
+        let made = ok(&site.create(&mut ada, "A bug").await?)?.clone();
         let key = made["key"].as_str().ok_or("no key")?;
         let for_issue = people_for(&mut tim, &site, &format!("field={tester}&issue={key}")).await?;
         assert_eq!(
@@ -110,7 +110,7 @@ async fn cf_06_a_project_field_is_not_opened_by_an_issue_type() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let sponsor = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Sponsor", "kind": "person", "applies_to": "projects"}),
             )
@@ -144,13 +144,13 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
         let tester = person_field(&mut ada, "Tester").await?;
         let secret = person_field(&mut ada, "Secret").await?;
         let note = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Note", "kind": "text", "applies_to": "issues"}),
             )
             .await?,
         )?;
-        let old = make_field(
+        let old = create_field(
             &mut ada,
             json!({"name": "Old", "kind": "person", "applies_to": "issues"}),
         )
@@ -172,7 +172,7 @@ async fn cf_01_the_list_for_a_field_refuses_a_field_that_is_not_here_for_people(
             )
             .await?)?)?;
         let elsewhere = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({
                     "name": "Beta only",
@@ -238,7 +238,7 @@ async fn cf_07_undo_needs_the_right_to_change_the_field() -> TestResult {
         let tester = person_field(&mut ada, "Tester").await?;
         let (_, vic) = site.person(StartingRole::Viewer, "vic").await?;
         let me = id_in(ok(&ada.send("GET", "/api/v1/auth/me", None).await?)?)?;
-        let made = ok(&site.make(&mut ada, "Undo me").await?)?.clone();
+        let made = ok(&site.create(&mut ada, "Undo me").await?)?.clone();
         ok(&set(&mut ada, &made, json!({ &tester: vic.to_string() })).await?)?;
         ok(&set(&mut ada, &made, json!({ &tester: me })).await?)?;
         // Somebody who only sees the field cannot put back what it held before.
@@ -269,14 +269,14 @@ async fn cf_07_undo_does_not_put_back_a_group_or_an_issue_that_is_gone() -> Test
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let team = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Team", "kind": "group", "applies_to": "issues"}),
             )
             .await?,
         )?;
         let twin = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Twin", "kind": "issue", "applies_to": "issues"}),
             )
@@ -288,8 +288,8 @@ async fn cf_07_undo_does_not_put_back_a_group_or_an_issue_that_is_gone() -> Test
         let other = id_in(ok(&ada
             .send("POST", "/api/v1/groups", Some(json!({"name": "Edge"})))
             .await?)?)?;
-        let made = ok(&site.make(&mut ada, "Undo me").await?)?.clone();
-        let gone = ok(&site.make(&mut ada, "Soon gone").await?)?.clone();
+        let made = ok(&site.create(&mut ada, "Undo me").await?)?.clone();
+        let gone = ok(&site.create(&mut ada, "Soon gone").await?)?.clone();
         let both = |group: &str, issue: &Value| json!({ &team: group, &twin: issue["id"] });
         ok(&set(&mut ada, &made, both(&group, &gone)).await?)?;
         ok(&set(&mut ada, &made, both(&other, &made)).await?)?;

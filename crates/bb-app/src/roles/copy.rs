@@ -28,7 +28,7 @@ pub struct CopyRole {
     pub name: String,
 }
 
-/// Makes a role from a copy of another: its permissions, its two-step switch and the levels it
+/// Creates a role from a copy of another: its permissions, its two-step switch and the levels it
 /// has set for itself (not those set for single projects). Nobody gives what they do not hold,
 /// so the copy holds no permission and no level above the person who makes it.
 ///

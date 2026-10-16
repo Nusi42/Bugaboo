@@ -136,13 +136,13 @@
       },
       "post": {
         "tags": ["access-keys"],
-        "summary": "Makes an access key. The key is shown once. The password is asked again.",
-        "operationId": "makeAccessKey",
+        "summary": "Creates an access key. The key is shown once. The password is asked again.",
+        "operationId": "createAccessKey",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MakeKeyBody"
+                "$ref": "#/components/schemas/CreateKeyBody"
               }
             }
           },
@@ -1158,7 +1158,7 @@
     "/api/v1/auth/invitation/accept": {
       "post": {
         "tags": ["auth"],
-        "summary": "Makes an account from an invitation link, and signs the person in.",
+        "summary": "Creates an account from an invitation link, and signs the person in.",
         "operationId": "acceptInvitation",
         "requestBody": {
           "content": {
@@ -1441,7 +1441,7 @@
       },
       "post": {
         "tags": ["auth"],
-        "summary": "Makes an invitation. The link is shown once. Needs the permission *Invite people*.",
+        "summary": "Creates an invitation. The link is shown once. Needs the permission *Invite people*.",
         "operationId": "createInvitation",
         "requestBody": {
           "content": {
@@ -2755,7 +2755,7 @@
     "/api/v1/auth/setup": {
       "post": {
         "tags": ["auth"],
-        "summary": "Makes the first administrator with the setup code, and signs them in. Setup is closed for\ngood afterwards.",
+        "summary": "Creates the first administrator with the setup code, and signs them in. Setup is closed for\ngood afterwards.",
         "operationId": "completeSetup",
         "requestBody": {
           "content": {
@@ -3002,7 +3002,7 @@
     "/api/v1/auth/sign-up": {
       "post": {
         "tags": ["auth"],
-        "summary": "Makes an account without an invitation, when an administrator allows it.",
+        "summary": "Creates an account without an invitation, when an administrator allows it.",
         "operationId": "signUp",
         "requestBody": {
           "content": {
@@ -3458,7 +3458,7 @@
     "/api/v1/auth/two-step/backup-codes": {
       "post": {
         "tags": ["auth"],
-        "summary": "Makes new backup codes; the old ones stop working. The password is typed again.",
+        "summary": "Creates new backup codes; the old ones stop working. The password is typed again.",
         "operationId": "renewBackupCodes",
         "requestBody": {
           "content": {
@@ -6654,8 +6654,8 @@
       },
       "post": {
         "tags": ["fields"],
-        "summary": "Makes an own field. Needs the permission *Manage fields*.",
-        "operationId": "makeField",
+        "summary": "Creates an own field. Needs the permission *Manage fields*.",
+        "operationId": "createField",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7649,7 +7649,7 @@
     "/api/v1/groups": {
       "get": {
         "tags": ["groups"],
-        "summary": "The groups, by name, a page at a time. Needs the permission *Make, rename and delete groups\nand change who is in them*.",
+        "summary": "The groups, by name, a page at a time. Needs the permission *Create, rename and delete groups\nand change who is in them*.",
         "operationId": "listGroups",
         "parameters": [
           {
@@ -7776,8 +7776,8 @@
       },
       "post": {
         "tags": ["groups"],
-        "summary": "Makes a group. Needs the permission *Make, rename and delete groups and change who is in them*.",
-        "operationId": "makeGroup",
+        "summary": "Creates a group. Needs the permission *Create, rename and delete groups and change who is in them*.",
+        "operationId": "createGroup",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7884,7 +7884,7 @@
     "/api/v1/groups/{group_id}": {
       "get": {
         "tags": ["groups"],
-        "summary": "One group, with what it is used for. Needs the permission *Make, rename and delete groups and\nchange who is in them*.",
+        "summary": "One group, with what it is used for. Needs the permission *Create, rename and delete groups and\nchange who is in them*.",
         "operationId": "getGroup",
         "parameters": [
           {
@@ -8001,7 +8001,7 @@
       },
       "delete": {
         "tags": ["groups"],
-        "summary": "Deletes a group, with its members and the rows that give it a role. Needs the permission\n*Make, rename and delete groups and change who is in them*, and, where the group has *No\naccess*, *Decide who has which role* there.",
+        "summary": "Deletes a group, with its members and the rows that give it a role. Needs the permission\n*Create, rename and delete groups and change who is in them*, and, where the group has *No\naccess*, *Decide who has which role* there.",
         "operationId": "deleteGroup",
         "parameters": [
           {
@@ -8101,7 +8101,7 @@
       },
       "patch": {
         "tags": ["groups"],
-        "summary": "Renames a group. Needs the permission *Make, rename and delete groups and change who is in\nthem*.",
+        "summary": "Renames a group. Needs the permission *Create, rename and delete groups and change who is in\nthem*.",
         "operationId": "renameGroup",
         "parameters": [
           {
@@ -8230,7 +8230,7 @@
     "/api/v1/groups/{group_id}/member-choices": {
       "get": {
         "tags": ["groups"],
-        "summary": "The people that can be put into a group, by name, a page at a time; those who are in it\nalready say so. Needs the permission *Make, rename and delete groups and change who is in\nthem*. Names only, never e-mail addresses.",
+        "summary": "The people that can be put into a group, by name, a page at a time; those who are in it\nalready say so. Needs the permission *Create, rename and delete groups and change who is in\nthem*. Names only, never e-mail addresses.",
         "operationId": "listMemberChoices",
         "parameters": [
           {
@@ -8387,7 +8387,7 @@
     "/api/v1/groups/{group_id}/members": {
       "get": {
         "tags": ["groups"],
-        "summary": "The people in a group, a page at a time. Needs the permission *Make, rename and delete groups\nand change who is in them*.",
+        "summary": "The people in a group, a page at a time. Needs the permission *Create, rename and delete groups\nand change who is in them*.",
         "operationId": "listGroupMembers",
         "parameters": [
           {
@@ -8535,7 +8535,7 @@
     "/api/v1/groups/{group_id}/members/{person_id}": {
       "put": {
         "tags": ["groups"],
-        "summary": "Puts a person into a group. Needs the permission *Make, rename and delete groups and change\nwho is in them*; nobody puts somebody into a group that has a role with more than they hold\nthemselves.",
+        "summary": "Puts a person into a group. Needs the permission *Create, rename and delete groups and change\nwho is in them*; nobody puts somebody into a group that has a role with more than they hold\nthemselves.",
         "operationId": "addGroupMember",
         "parameters": [
           {
@@ -8634,7 +8634,7 @@
       },
       "delete": {
         "tags": ["groups"],
-        "summary": "Takes a person out of a group. Needs the permission *Make, rename and delete groups and change\nwho is in them*, and, where the group has *No access*, *Decide who has which role* there.",
+        "summary": "Takes a person out of a group. Needs the permission *Create, rename and delete groups and change\nwho is in them*, and, where the group has *No access*, *Decide who has which role* there.",
         "operationId": "removeGroupMember",
         "parameters": [
           {
@@ -8861,8 +8861,8 @@
       },
       "post": {
         "tags": ["issue-types"],
-        "summary": "Makes an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.",
-        "operationId": "makeIssueType",
+        "summary": "Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "createIssueType",
         "requestBody": {
           "content": {
             "application/json": {
@@ -9919,7 +9919,7 @@
       },
       "put": {
         "tags": ["follow"],
-        "summary": "Makes the person a follower of the issue. Following it already changes nothing.",
+        "summary": "Creates the person a follower of the issue. Following it already changes nothing.",
         "operationId": "followIssue",
         "parameters": [
           {
@@ -11977,8 +11977,8 @@
     "/api/v1/label-groups": {
       "post": {
         "tags": ["tags"],
-        "summary": "Makes a group of labels. Needs *Manage labels and tags*.",
-        "operationId": "makeLabelGroup",
+        "summary": "Creates a group of labels. Needs *Manage labels and tags*.",
+        "operationId": "createLabelGroup",
         "requestBody": {
           "content": {
             "application/json": {
@@ -12299,8 +12299,8 @@
       },
       "post": {
         "tags": ["tags"],
-        "summary": "Makes a label. Needs *Manage labels and tags*.",
-        "operationId": "makeLabel",
+        "summary": "Creates a label. Needs *Manage labels and tags*.",
+        "operationId": "createLabel",
         "requestBody": {
           "content": {
             "application/json": {
@@ -12804,8 +12804,8 @@
     "/api/v1/layouts": {
       "post": {
         "tags": ["layouts"],
-        "summary": "Makes the layout of a place as a copy of the one that counts there (*Customize this form*).\nNeeds the permission *Manage issue types, kinds of relation and layouts*.",
-        "operationId": "makeLayout",
+        "summary": "Creates the layout of a place as a copy of the one that counts there (*Customize this form*).\nNeeds the permission *Manage issue types, kinds of relation and layouts*.",
+        "operationId": "createLayout",
         "requestBody": {
           "content": {
             "application/json": {
@@ -14660,7 +14660,7 @@
     "/api/v1/permissions": {
       "get": {
         "tags": ["roles"],
-        "summary": "The permissions of the catalogue, topic by topic: what the role page lists. Needs the\npermission *Make, change and delete roles*.",
+        "summary": "The permissions of the catalogue, topic by topic: what the role page lists. Needs the\npermission *Create, change and delete roles*.",
         "operationId": "listPermissions",
         "responses": {
           "200": {
@@ -14921,8 +14921,8 @@
       },
       "post": {
         "tags": ["projects"],
-        "summary": "Makes a project at the top level. Needs the permission *Create projects at the top level*.",
-        "operationId": "makeProject",
+        "summary": "Creates a project at the top level. Needs the permission *Create projects at the top level*.",
+        "operationId": "createProject",
         "requestBody": {
           "content": {
             "application/json": {
@@ -16028,8 +16028,8 @@
       },
       "post": {
         "tags": ["issues"],
-        "summary": "Makes an issue in a project. Needs the permission *Create issues*; the fields set must be ones\nthe person may change (the title always).",
-        "operationId": "makeIssue",
+        "summary": "Creates an issue in a project. Needs the permission *Create issues*; the fields set must be ones\nthe person may change (the title always).",
+        "operationId": "createIssue",
         "parameters": [
           {
             "name": "project",
@@ -16797,8 +16797,8 @@
     "/api/v1/projects/{project}/sub-projects": {
       "post": {
         "tags": ["projects"],
-        "summary": "Makes a sub-project. Needs the permission *Create sub-projects inside the project* in the\nproject it goes into.",
-        "operationId": "makeSubProject",
+        "summary": "Creates a sub-project. Needs the permission *Create sub-projects inside the project* in the\nproject it goes into.",
+        "operationId": "createSubProject",
         "parameters": [
           {
             "name": "project",
@@ -17169,8 +17169,8 @@
       },
       "post": {
         "tags": ["relations"],
-        "summary": "Makes a kind of relation. Needs the permission *Manage issue types, kinds of relation and\nlayouts*.",
-        "operationId": "makeRelationKind",
+        "summary": "Creates a kind of relation. Needs the permission *Manage issue types, kinds of relation and\nlayouts*.",
+        "operationId": "createRelationKind",
         "requestBody": {
           "content": {
             "application/json": {
@@ -17498,7 +17498,7 @@
     "/api/v1/roles": {
       "get": {
         "tags": ["roles"],
-        "summary": "The roles, in the order of roles, a page at a time. Needs the permission *Make, change and\ndelete roles*.",
+        "summary": "The roles, in the order of roles, a page at a time. Needs the permission *Create, change and\ndelete roles*.",
         "operationId": "listRoles",
         "parameters": [
           {
@@ -17634,8 +17634,8 @@
       },
       "post": {
         "tags": ["roles"],
-        "summary": "Makes a role. Needs the permission *Make, change and delete roles*; nobody gives a role a\npermission they do not hold themselves.",
-        "operationId": "makeRole",
+        "summary": "Creates a role. Needs the permission *Create, change and delete roles*; nobody gives a role a\npermission they do not hold themselves.",
+        "operationId": "createRole",
         "requestBody": {
           "content": {
             "application/json": {
@@ -17742,7 +17742,7 @@
     "/api/v1/roles/{role_id}": {
       "get": {
         "tags": ["roles"],
-        "summary": "One role, with its permissions and what it is used for. Needs the permission *Make, change and\ndelete roles*.",
+        "summary": "One role, with its permissions and what it is used for. Needs the permission *Create, change and\ndelete roles*.",
         "operationId": "getRole",
         "parameters": [
           {
@@ -17859,7 +17859,7 @@
       },
       "delete": {
         "tags": ["roles"],
-        "summary": "Deletes a role. A role that somebody has is deleted only with a `replacement`, which takes its\nplace in every row that gave it. Needs the permission *Make, change and delete roles*.",
+        "summary": "Deletes a role. A role that somebody has is deleted only with a `replacement`, which takes its\nplace in every row that gave it. Needs the permission *Create, change and delete roles*.",
         "operationId": "deleteRole",
         "parameters": [
           {
@@ -17978,7 +17978,7 @@
       },
       "patch": {
         "tags": ["roles"],
-        "summary": "Changes a role: its name, its permissions, its two-step switch. Needs the permission *Make,\nchange and delete roles*; nobody adds a permission they do not hold themselves, and nothing\nthat would leave nobody who can manage roles.",
+        "summary": "Changes a role: its name, its permissions, its two-step switch. Needs the permission *Create,\nchange and delete roles*; nobody adds a permission they do not hold themselves, and nothing\nthat would leave nobody who can manage roles.",
         "operationId": "changeRole",
         "parameters": [
           {
@@ -18107,7 +18107,7 @@
     "/api/v1/roles/{role_id}/copy": {
       "post": {
         "tags": ["roles"],
-        "summary": "Makes a role from a copy of another: its permissions, its two-step switch and its levels.\nNeeds the permission *Make, change and delete roles*; nobody copies a role that holds more\nthan they hold themselves.",
+        "summary": "Creates a role from a copy of another: its permissions, its two-step switch and its levels.\nNeeds the permission *Create, change and delete roles*; nobody copies a role that holds more\nthan they hold themselves.",
         "operationId": "copyRole",
         "parameters": [
           {
@@ -18236,7 +18236,7 @@
     "/api/v1/roles/{role_id}/reset": {
       "post": {
         "tags": ["roles"],
-        "summary": "Gives a starting role back the permissions and levels it had at the start (*Reset to the\nstarting permissions*). Needs the permission *Make, change and delete roles*.",
+        "summary": "Gives a starting role back the permissions and levels it had at the start (*Reset to the\nstarting permissions*). Needs the permission *Create, change and delete roles*.",
         "operationId": "resetRole",
         "parameters": [
           {
@@ -18365,7 +18365,7 @@
     "/api/v1/roles/{role_id}/second-step-gap": {
       "get": {
         "tags": ["auth"],
-        "summary": "How many people with a role still have to set up a second step. Needs the permission *Make,\nchange and delete roles*.",
+        "summary": "How many people with a role still have to set up a second step. Needs the permission *Create,\nchange and delete roles*.",
         "operationId": "getSecondStepGap",
         "parameters": [
           {
@@ -21415,6 +21415,43 @@
         "description": "Where a permission counts, as the API names it.",
         "enum": ["organization", "project"]
       },
+      "CreateKeyBody": {
+        "type": "object",
+        "description": "An access key to make.",
+        "required": ["password", "name", "choice"],
+        "properties": {
+          "choice": {
+            "$ref": "#/components/schemas/KeyChoice",
+            "description": "What it may do."
+          },
+          "expires_at": {
+            "type": ["string", "null"],
+            "description": "When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the key is called."
+          },
+          "password": {
+            "type": "string",
+            "description": "The password of the person, asked again so a stolen session cannot make a key."
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permission"
+            },
+            "description": "The single permissions; only with the choice `permissions`, and then at least one."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The projects the key is limited to; leave empty for every project. The key counts in\nthem and in their sub-projects, and gives nothing for the whole organization."
+          }
+        }
+      },
       "CreatedAccessKeyBody": {
         "type": "object",
         "description": "A new access key: the secret is shown only now.",
@@ -23882,43 +23919,6 @@
         "type": "string",
         "description": "How the value of an own field is shown.",
         "enum": ["badge", "pill", "plain-text", "progress-bar", "avatar"]
-      },
-      "MakeKeyBody": {
-        "type": "object",
-        "description": "An access key to make.",
-        "required": ["password", "name", "choice"],
-        "properties": {
-          "choice": {
-            "$ref": "#/components/schemas/KeyChoice",
-            "description": "What it may do."
-          },
-          "expires_at": {
-            "type": ["string", "null"],
-            "description": "When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the\ndefault number of days from now. It cannot be later than the longest time."
-          },
-          "name": {
-            "type": "string",
-            "description": "What the key is called."
-          },
-          "password": {
-            "type": "string",
-            "description": "The password of the person, asked again so a stolen session cannot make a key."
-          },
-          "permissions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Permission"
-            },
-            "description": "The single permissions; only with the choice `permissions`, and then at least one."
-          },
-          "projects": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The projects the key is limited to; leave empty for every project. The key counts in\nthem and in their sub-projects, and gives nothing for the whole organization."
-          }
-        }
       },
       "MeBody": {
         "type": "object",

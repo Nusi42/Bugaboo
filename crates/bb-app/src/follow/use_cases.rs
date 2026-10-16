@@ -31,7 +31,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Makes the person a follower of the issue. Following an issue already followed changes nothing
+/// Creates the person a follower of the issue. Following an issue already followed changes nothing
 /// and writes no event.
 ///
 /// # Errors

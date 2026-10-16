@@ -6,7 +6,7 @@ import { refreshKeys } from "./access-keys.ts";
 import { bodyOf, type Draft } from "./draft.ts";
 
 /** Asking the server to make the key. */
-export interface MakeKey {
+export interface CreateKey {
   /** Sends what the person filled in. */
   readonly send: (draft: Draft) => void;
   /** The plain message when the server refused, else `null`. */
@@ -15,10 +15,10 @@ export interface MakeKey {
 }
 
 /** Making a key: when it is made the list reads again and `onMade` gets the whole key, once. */
-export function useMakeKey(onMade: (secret: string) => void): MakeKey {
+export function useCreateKey(onMade: (secret: string) => void): CreateKey {
   // The answer holds the secret of the key: it is dropped from the cache of requests as soon as
   // nobody looks at it (`gcTime: 0`), and the request is reset once the secret has been handed on.
-  const make = api.query.useMutation("post", "/api/v1/access-keys", {
+  const create = api.query.useMutation("post", "/api/v1/access-keys", {
     gcTime: 0,
     onSuccess: (made: Schema<"CreatedAccessKeyBody">) => {
       refreshKeys();
@@ -27,16 +27,16 @@ export function useMakeKey(onMade: (secret: string) => void): MakeKey {
   });
   return {
     send: (draft) => {
-      make.mutate(
+      create.mutate(
         { body: bodyOf(draft) },
         {
           onSuccess: () => {
-            make.reset();
+            create.reset();
           },
         },
       );
     },
-    problem: make.isError ? messageOf(make.error) : null,
-    isPending: make.isPending,
+    problem: create.isError ? messageOf(create.error) : null,
+    isPending: create.isPending,
   };
 }

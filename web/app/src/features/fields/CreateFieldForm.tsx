@@ -17,7 +17,7 @@ import { useState } from "react";
 import { messageOf } from "../../shared/errors.ts";
 import { QueryGate } from "../shell/index.ts";
 import { typeExample, typeName, useFieldTypes, type KindWord, type TypeInfo } from "./fields.ts";
-import { useMakeField } from "./use-change-field.ts";
+import { useCreateField } from "./use-change-field.ts";
 import { wordsOfLines } from "./value-text.ts";
 
 const forChoices = fieldForWords.map((word) => ({ value: word, label: t(`field-for.${word}`) }));
@@ -89,9 +89,9 @@ function bodyOf(draft: Draft, withChoices: boolean) {
 }
 
 /** The form of a new field, once the kinds are known. */
-function MakeFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
+function CreateFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
   const [draft, setDraft] = useState(emptyDraft);
-  const make = useMakeField();
+  const create = useCreateField();
   const set =
     <Key extends keyof Draft>(key: Key) =>
     (value: Draft[Key]) => {
@@ -101,7 +101,7 @@ function MakeFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
   return (
     <Form
       onSubmit={() => {
-        make.mutate({ body: bodyOf(draft, hasChoices === true) });
+        create.mutate({ body: bodyOf(draft, hasChoices === true) });
       }}
     >
       <Questions
@@ -132,24 +132,24 @@ function MakeFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
         isSelected={draft.required}
         onChange={set("required")}
       />
-      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("fields.create")}</SubmitButton>
+        <SubmitButton isPending={create.isPending}>{t("fields.create")}</SubmitButton>
       </div>
     </Form>
   );
 }
 
 /**
- * *Make a field* (UX §5.3): it starts with "What kind of information?", the name comes next, and
+ * *Create a field* (UX §5.3): it starts with "What kind of information?", the name comes next, and
  * the choices of a *Pick one* or *Pick several* field are typed one on each line. The field page
  * has the rest: rules, look, where it is used.
  */
-export function MakeFieldForm() {
+export function CreateFieldForm() {
   const types = useFieldTypes();
   return (
     <QueryGate error={types.error} data={types.data}>
-      {(known) => <MakeFieldFields kinds={known.kinds} />}
+      {(known) => <CreateFieldFields kinds={known.kinds} />}
     </QueryGate>
   );
 }

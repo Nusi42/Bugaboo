@@ -18,9 +18,9 @@ async fn sec_06_taking_out_a_parent_the_person_cannot_see_changes_nothing_and_sa
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // A Guest sees only the issues they reported.
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let part = site.make(&mut gus, "Part of Gus").await?;
+        let part = site.create(&mut gus, "Part of Gus").await?;
         let part = ok(&part)?["key"].as_str().ok_or("no key")?.to_owned();
-        let goal = site.make(&mut ada, "Ada's goal").await?;
+        let goal = site.create(&mut ada, "Ada's goal").await?;
         let goal = ok(&goal)?["key"].as_str().ok_or("no key")?.to_owned();
         let seen = ada.send("GET", &format!("{ISSUES}/{part}"), None).await?;
         let version = ok(&seen)?["issue"]["version"].clone();
@@ -64,9 +64,9 @@ async fn sec_06_the_description_makes_a_chip_only_of_what_the_reader_may_see() -
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let secret = site.make(&mut ada, "Ada's secret").await?;
+        let secret = site.create(&mut ada, "Ada's secret").await?;
         let secret = ok(&secret)?["key"].as_str().ok_or("no key")?.to_owned();
-        let own = site.make(&mut gus, "Another problem of Gus").await?;
+        let own = site.create(&mut gus, "Another problem of Gus").await?;
         let own = ok(&own)?["key"].as_str().ok_or("no key")?.to_owned();
         let made = gus
             .send(
@@ -101,7 +101,7 @@ async fn sec_06_one_text_resolves_a_bounded_number_of_mentions_and_issue_ids() -
     each_database("sec_06_token_limits", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let home = site.make(&mut ada, "Where it is written").await?;
+        let home = site.create(&mut ada, "Where it is written").await?;
         let home = ok(&home)?["key"].as_str().ok_or("no key")?.to_owned();
         let mut handles = Vec::new();
         for number in 0..MAX_RESOLVED_MENTIONS + 5 {
@@ -113,7 +113,7 @@ async fn sec_06_one_text_resolves_a_bounded_number_of_mentions_and_issue_ids() -
         }
         let mut keys = Vec::new();
         for number in 0..MAX_RESOLVED_ISSUE_IDS + 5 {
-            let made = site.make(&mut ada, &format!("Issue {number}")).await?;
+            let made = site.create(&mut ada, &format!("Issue {number}")).await?;
             keys.push(ok(&made)?["key"].as_str().ok_or("no key")?.to_owned());
         }
         let text = format!("{} and {}", handles.join(" "), keys.join(" "));
@@ -149,7 +149,7 @@ async fn sec_06_whoever_cannot_restore_a_comment_is_not_told_it_is_in_the_trash(
     each_database("sec_06_comment_trash", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = site.make(&mut ada, "Printer jams").await?;
+        let issue = site.create(&mut ada, "Printer jams").await?;
         let issue = ok(&issue)?["key"].as_str().ok_or("no key")?.to_owned();
         let written = ada
             .send(

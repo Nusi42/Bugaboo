@@ -18,7 +18,9 @@ use jiff::Timestamp;
 use serde_json::json;
 
 use super::fields::member;
-use super::types::{ChangeIssueType, IssueTypePage, IssueTypeView, IssueTypesQuery, MakeIssueType};
+use super::types::{
+    ChangeIssueType, CreateIssueType, IssueTypePage, IssueTypeView, IssueTypesQuery,
+};
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, by, change_failed, entity, fixed_entity, internal, set_to,
 };
@@ -60,15 +62,15 @@ pub async fn issue_types<S: AuthStore>(
     }))
 }
 
-/// Makes an issue type, at the end of the order.
+/// Creates an issue type, at the end of the order.
 ///
 /// # Errors
 /// `access.forbidden` without *Manage issue types, kinds of relation and layouts* for the whole
 /// organization, `request.invalid` for a name that cannot be one, `name.taken` for a name another
 /// type has.
-pub async fn make_issue_type<S: AuthStore>(
+pub async fn create_issue_type<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeIssueType,
+    input: CreateIssueType,
 ) -> Result<Authorized<IssueTypeView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx
@@ -256,15 +258,15 @@ pub async fn change_issue_type<S: AuthStore>(
 /// Makes the issue types of the first start if there are none yet: *Bug, Task, Feature, Goal*,
 /// from the one definition in `bb-core`, with an event. It runs at every start and does only what
 /// is still to do, so it can be stopped half way and run again.
-pub struct MakeStartingIssueTypes;
+pub struct CreateStartingIssueTypes;
 
 /// Makes the starting issue types once.
 ///
 /// # Errors
 /// Fails when the store fails.
-pub async fn make_starting_issue_types<S: AuthStore>(
+pub async fn create_starting_issue_types<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    _input: MakeStartingIssueTypes,
+    _input: CreateStartingIssueTypes,
 ) -> Result<(), AppError> {
     let existing = ctx
         .store()

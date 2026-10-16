@@ -153,8 +153,12 @@ impl<'a> Site<'a> {
         json!({"issue_type": self.bug, "title": title})
     }
 
-    /// Makes an issue in ACME as `browser`; the answer.
-    pub(super) async fn make(&self, browser: &mut Browser, title: &str) -> Result<Reply, Failure> {
+    /// Creates an issue in ACME as `browser`; the answer.
+    pub(super) async fn create(
+        &self,
+        browser: &mut Browser,
+        title: &str,
+    ) -> Result<Reply, Failure> {
         browser
             .send(
                 "POST",

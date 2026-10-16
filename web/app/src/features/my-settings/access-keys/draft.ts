@@ -40,7 +40,7 @@ function withProject(list: readonly string[], item: string, on: boolean): readon
   return on ? [...without, item] : without;
 }
 
-/** The form of *Make an access key*, as a person fills it in. */
+/** The form of *Create an access key*, as a person fills it in. */
 export function useDraft(): Draft {
   const [name, setName] = useState("");
   const [choice, setChoice] = useState<PlainChoice>("see-only");

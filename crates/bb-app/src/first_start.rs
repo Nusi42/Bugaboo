@@ -6,14 +6,14 @@
 //! The server, the sample organization and the tests start this way and no one of them lists the
 //! steps itself.
 
-use crate::access::{MakeStartingRoles, make_starting_roles};
+use crate::access::{CreateStartingRoles, create_starting_roles};
 use bb_auth::HumanCode;
 
 use crate::auth::{
     AppError, AuthServices, AuthStore, IssueSetupCode, RequestInfo, issue_setup_code,
 };
-use crate::issues::{MakeStartingIssueTypes, make_starting_issue_types};
-use crate::relations::{MakeStartingRelationKinds, make_starting_relation_kinds};
+use crate::issues::{CreateStartingIssueTypes, create_starting_issue_types};
+use crate::relations::{CreateStartingRelationKinds, create_starting_relation_kinds};
 
 /// Makes what a new organization starts with, and the setup code while the organization has no
 /// administrator. Returns the new code when one was made.
@@ -25,8 +25,8 @@ pub async fn first_start<S: AuthStore>(
 ) -> Result<Option<HumanCode>, AppError> {
     // Nobody asks: the server does this by itself, so there is no request to name.
     let ctx = services.ctx(RequestInfo::default());
-    make_starting_roles(&ctx, MakeStartingRoles).await?;
-    make_starting_issue_types(&ctx, MakeStartingIssueTypes).await?;
-    make_starting_relation_kinds(&ctx, MakeStartingRelationKinds).await?;
+    create_starting_roles(&ctx, CreateStartingRoles).await?;
+    create_starting_issue_types(&ctx, CreateStartingIssueTypes).await?;
+    create_starting_relation_kinds(&ctx, CreateStartingRelationKinds).await?;
     issue_setup_code(&ctx, IssueSetupCode).await
 }

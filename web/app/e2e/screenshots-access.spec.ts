@@ -1,14 +1,14 @@
 import { t } from "@bugaboo/messages";
 
 import { addressInProject, paths } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin } from "./support/accounts.ts";
 import {
   ana,
   check,
   forgetFieldLevel,
   lea,
   levelList,
-  makePeopleWithRoles,
+  createPeopleWithRoles,
   pickLevel,
   projectIdOf,
   roleId,
@@ -19,7 +19,7 @@ import {
 } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { screenshotFolder, shotWhole } from "./support/screenshots.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -32,10 +32,10 @@ const MILESTONE = "M2";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const acme = await makeProject(admin, "ACME", "Acme Corporation");
-      await makeProject(admin, "WEB", "Website", acme);
-      await makePeopleWithRoles(server, admin, [
+      const admin = await createAdmin(server);
+      const acme = await createProject(admin, "ACME", "Acme Corporation");
+      await createProject(admin, "WEB", "Website", acme);
+      await createPeopleWithRoles(server, admin, [
         { person: bob, role: roleName.contributor, project: "ACME" },
         { person: cleo, role: roleName.guest, project: "ACME" },
         { person: ana, role: roleName.teamMember, project: "ACME" },

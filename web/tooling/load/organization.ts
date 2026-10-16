@@ -1,8 +1,14 @@
 import { giveRole, roleName } from "../../app/e2e/support/access.ts";
-import { ada, makeAdmin, makePerson, ownId, type Person } from "../../app/e2e/support/accounts.ts";
+import {
+  ada,
+  createAdmin,
+  createPerson,
+  ownId,
+  type Person,
+} from "../../app/e2e/support/accounts.ts";
 import { type ApiSession } from "../../app/e2e/support/api.ts";
-import { countIssueIds, makeIssue } from "../../app/e2e/support/issues.ts";
-import { makeProject } from "../../app/e2e/support/projects.ts";
+import { countIssueIds, createIssue } from "../../app/e2e/support/issues.ts";
+import { createProject } from "../../app/e2e/support/projects.ts";
 import { inOrder } from "../../app/e2e/support/sequence.ts";
 import { type Instance } from "../../app/e2e/support/server.ts";
 import { type Work } from "./book.ts";
@@ -31,13 +37,13 @@ export async function prepare(
   readonly ids: readonly string[];
   readonly issues: readonly Work[];
 }> {
-  const admin = await makeAdmin(server);
+  const admin = await createAdmin(server);
   await countIssueIds(admin);
-  await makeProject(admin, "LOAD", "Load");
+  await createProject(admin, "LOAD", "Load");
   const issues: Work[] = [];
   await inOrder(
     Array.from({ length: ISSUES }, (_, at) => async () => {
-      issues.push(await makeIssue(admin, "LOAD", `Shared issue ${String(at + 1)}`));
+      issues.push(await createIssue(admin, "LOAD", `Shared issue ${String(at + 1)}`));
     }),
   );
   const sessions: ApiSession[] = [admin];
@@ -45,7 +51,7 @@ export async function prepare(
     peopleOf(count)
       .slice(1)
       .map((person) => async () => {
-        const session = await makePerson(server, admin, person);
+        const session = await createPerson(server, admin, person);
         await giveRole(admin, await ownId(session), roleName.teamMember, "LOAD");
         sessions.push(session);
       }),

@@ -11,8 +11,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::layouts::{
-    DeleteLayout, EditorField, EditorRole, EditorSection, FieldInput, FormLayout, FormLayoutQuery,
-    InheritedFrom, LayoutEditor, LayoutEditorQuery, LayoutSlot, MakeLayout, SaveLayout,
+    CreateLayout, DeleteLayout, EditorField, EditorRole, EditorSection, FieldInput, FormLayout,
+    FormLayoutQuery, InheritedFrom, LayoutEditor, LayoutEditorQuery, LayoutSlot, SaveLayout,
     SectionInput,
 };
 use bb_core::ErrorCode;
@@ -397,17 +397,17 @@ async fn get_layout_editor(
     answer_authorized(&editor.map(|editor| LayoutEditorBody::from(&editor)))
 }
 
-/// Makes the layout of a place as a copy of the one that counts there (*Customize this form*).
+/// Creates the layout of a place as a copy of the one that counts there (*Customize this form*).
 /// Needs the permission *Manage issue types, kinds of relation and layouts*.
 #[utoipa::path(
     post,
     path = "/api/v1/layouts",
-    operation_id = "makeLayout",
+    operation_id = "createLayout",
     tag = "layouts",
     request_body = NewLayoutBody,
     responses((status = 200, description = "The layout of the place.", body = LayoutEditorBody), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer, ConflictAnswer)
 )]
-async fn make_layout(
+async fn create_layout(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -415,9 +415,9 @@ async fn make_layout(
 ) -> Result<Response, ApiError> {
     let editor = auth
         .api()?
-        .make_layout(
+        .create_layout(
             info,
-            MakeLayout {
+            CreateLayout {
                 session_token,
                 project: body.project,
                 issue_type: issue_type_in(body.issue_type.as_deref())?,
@@ -505,6 +505,6 @@ where
     OpenApiRouter::new()
         .routes(routes!(get_form_layout))
         .routes(routes!(get_layout_editor))
-        .routes(routes!(make_layout))
+        .routes(routes!(create_layout))
         .routes(routes!(save_layout, delete_layout))
 }

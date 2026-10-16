@@ -158,7 +158,7 @@ async fn auth_09_the_setup_code_makes_an_administrator_once_and_setup_is_closed_
 }
 
 #[tokio::test]
-async fn auth_09_two_requests_with_the_same_setup_code_make_one_administrator() -> TestResult {
+async fn auth_09_two_requests_with_the_same_setup_code_create_one_administrator() -> TestResult {
     each_database("auth_09_setup_race", async |db| {
         let rig = Rig::start(db).await?;
         let (first, second) = tokio::join!(rig.admin(ADA_EMAIL), rig.admin("eve@example.test"));

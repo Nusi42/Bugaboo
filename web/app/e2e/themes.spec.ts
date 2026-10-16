@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { makeAdmin } from "./support/accounts.ts";
+import { createAdmin } from "./support/accounts.ts";
 import {
   chooseTheme,
   expectNoSidewaysScroll,
@@ -14,7 +14,7 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

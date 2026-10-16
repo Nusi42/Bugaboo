@@ -9,7 +9,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use jiff::Timestamp;
 use serde_json::Value;
 
-use crate::{DEFAULT_SEED, Everything, Options, Sample, Target, make};
+use crate::{DEFAULT_SEED, Everything, Options, Sample, Target, create};
 
 /// The start of the clock of the tests, like the other tests.
 const START: i64 = bb_dev_words::accounts::CLOCK_START;
@@ -25,7 +25,7 @@ fn options() -> Options {
 
 async fn made(target: &Target, folder: &Path) -> Result<Sample, Failure> {
     let mut everything = Everything::new(ISSUES)?;
-    Ok(make(&options(), folder, target, &mut everything).await?)
+    Ok(create(&options(), folder, target, &mut everything).await?)
 }
 
 async fn dump_of(sample: Sample) -> Result<String, Failure> {

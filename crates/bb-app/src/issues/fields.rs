@@ -9,7 +9,7 @@ use bb_core::issue::ASSIGNEES_MAX;
 use bb_core::text::TITLE_MAX;
 use bb_policy::{Evaluation, FieldMask};
 
-use super::types::{ChangeIssue, MakeIssue};
+use super::types::{ChangeIssue, CreateIssue};
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::fields::is_kept;
 use crate::input::clean_text;
@@ -108,8 +108,8 @@ impl From<&ChangeIssue> for Given {
     }
 }
 
-impl From<&MakeIssue> for Given {
-    fn from(input: &MakeIssue) -> Self {
+impl From<&CreateIssue> for Given {
+    fn from(input: &CreateIssue) -> Self {
         Self([
             // The title is always there.
             true,

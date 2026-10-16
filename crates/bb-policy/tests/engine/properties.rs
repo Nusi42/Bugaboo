@@ -29,9 +29,9 @@ impl Tree {
         let mut ids = SequentialIds::default();
         Self {
             person: UserId::generate(&mut ids),
-            projects: ids.make(|ids| ProjectId::generate(ids).unwrap()),
-            roles: ids.make(|ids| RoleId::generate(ids).unwrap()),
-            groups: ids.make(|ids| GroupId::generate(ids).unwrap()),
+            projects: ids.create(|ids| ProjectId::generate(ids).unwrap()),
+            roles: ids.create(|ids| RoleId::generate(ids).unwrap()),
+            groups: ids.create(|ids| GroupId::generate(ids).unwrap()),
         }
     }
 }

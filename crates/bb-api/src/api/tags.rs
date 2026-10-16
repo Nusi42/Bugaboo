@@ -12,9 +12,10 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, ChangedIssue, CombineLabels,
-    CombineTags, IssueSorting, IssueSortingQuery, LabelChangePreviewQuery, LabelGroupView,
-    LabelRef, LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, RemoveLabel, RemoveTag,
-    TagChangePreview, TagChangePreviewQuery, TagRef, TagSuggestionsQuery, TagView, TagsQuery,
+    CombineTags, CreateLabel, CreateLabelGroup, IssueSorting, IssueSortingQuery,
+    LabelChangePreviewQuery, LabelGroupView, LabelRef, LabelView, Labels, LabelsQuery, RemoveLabel,
+    RemoveTag, TagChangePreview, TagChangePreviewQuery, TagRef, TagSuggestionsQuery, TagView,
+    TagsQuery,
 };
 use bb_core::id::{LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::{ChoiceColor, Edit};
@@ -828,11 +829,11 @@ async fn list_labels(
     answer_authorized(&labels.map(LabelsBody::from))
 }
 
-/// Makes a group of labels. Needs *Manage labels and tags*.
+/// Creates a group of labels. Needs *Manage labels and tags*.
 #[utoipa::path(
     post,
     path = "/api/v1/label-groups",
-    operation_id = "makeLabelGroup",
+    operation_id = "createLabelGroup",
     tag = "tags",
     request_body = NewLabelGroupBody,
     responses(
@@ -843,7 +844,7 @@ async fn list_labels(
         ConflictAnswer
     )
 )]
-async fn make_label_group(
+async fn create_label_group(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -851,9 +852,9 @@ async fn make_label_group(
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
-        .make_label_group(
+        .create_label_group(
             info,
-            MakeLabelGroup {
+            CreateLabelGroup {
                 session_token,
                 name: body.name,
                 pick_one: body.pick_one,
@@ -904,11 +905,11 @@ async fn change_label_group(
     answer_authorized(&changed.map(|group| LabelGroupBody::from(&group)))
 }
 
-/// Makes a label. Needs *Manage labels and tags*.
+/// Creates a label. Needs *Manage labels and tags*.
 #[utoipa::path(
     post,
     path = "/api/v1/labels",
-    operation_id = "makeLabel",
+    operation_id = "createLabel",
     tag = "tags",
     request_body = NewLabelBody,
     responses(
@@ -920,7 +921,7 @@ async fn change_label_group(
         ConflictAnswer
     )
 )]
-async fn make_label(
+async fn create_label(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -933,9 +934,9 @@ async fn make_label(
         .transpose()?;
     let made = auth
         .api()?
-        .make_label(
+        .create_label(
             info,
-            MakeLabel {
+            CreateLabel {
                 session_token,
                 name: body.name,
                 color: body.color,
@@ -1092,8 +1093,8 @@ where
         .routes(routes!(preview_tag_change))
         .routes(routes!(change_tag))
         .routes(routes!(combine_tags))
-        .routes(routes!(list_labels, make_label))
-        .routes(routes!(make_label_group))
+        .routes(routes!(list_labels, create_label))
+        .routes(routes!(create_label_group))
         .routes(routes!(change_label_group))
         .routes(routes!(preview_label_change))
         .routes(routes!(change_label))

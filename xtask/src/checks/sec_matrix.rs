@@ -35,7 +35,7 @@ const EXAMPLES_PATH: &str = "crates/bb-server/src/tests/matrix/examples.rs";
 /// How a row of the table starts: a plain route, or one with quirks.
 const ROW_STARTS: [&str; 2] = ["Example::route(\"", "Example::with(\""];
 /// The route that makes an access key.
-const KEY_ROUTE: &str = "makeAccessKey";
+const KEY_ROUTE: &str = "createAccessKey";
 
 /// The actors every record has: the fixed ones and one for each starting role.
 fn every_actor() -> Vec<String> {

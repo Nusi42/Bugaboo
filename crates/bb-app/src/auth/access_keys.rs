@@ -36,8 +36,8 @@ use super::events::{by, entity, set_to};
 use super::store::{AccessKeyRecord, AuthStore};
 use super::types::{
     AccessKeyPage, AccessKeyRules, AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery,
-    CreatedAccessKey, DeleteAccessKey, Done, MakeAccessKey, ProjectChoicePage, ProjectChoicesQuery,
-    RequireSessionQuery, SeeServerStatusQuery,
+    CreateAccessKey, CreatedAccessKey, DeleteAccessKey, Done, ProjectChoicePage,
+    ProjectChoicesQuery, RequireSessionQuery, SeeServerStatusQuery,
 };
 use crate::access::{Actor, KeyInUse};
 use crate::input::{clean_name, cursor_or_invalid};
@@ -268,16 +268,16 @@ fn a_try_at_the_key<S: AuthStore>(
     Ok((secret, stored, event))
 }
 
-/// Makes an access key for the person. The key is returned once; only a hash of its secret is
+/// Creates an access key for the person. The key is returned once; only a hash of its secret is
 /// kept. The password is asked again, so a stolen session cannot make a key that outlives it.
 ///
 /// # Errors
 /// `auth.wrong_credentials` for a wrong password, `request.invalid` for a name, a date, a choice
 /// or a project that cannot be used (or too many keys), `resource.not_found` for a project the
 /// person may not know about, `auth.access_key_not_allowed` for a key.
-pub async fn make_access_key<S: AuthStore>(
+pub async fn create_access_key<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeAccessKey,
+    input: CreateAccessKey,
 ) -> Result<Authorized<CreatedAccessKey>, AppError> {
     let record = ctx.active(&input.session_token).await?;
     ctx.confirm_password(&record.person, input.password).await?;

@@ -5,8 +5,8 @@
 //! rows it gives hold no permission, so a person who may give rows is never refused for holding
 //! less than the role (that rule has its own tests: `sec_02_*` and `sec_08_*`).
 
-use bb_app::people::{AddGroupMember, MakeGroup};
-use bb_app::roles::{AssignRole, Given, MakeRole, Subject};
+use bb_app::people::{AddGroupMember, CreateGroup};
+use bb_app::roles::{AssignRole, CreateRole, Given, Subject};
 use bb_core::access::AppliesTo;
 use bb_testing::Failure;
 use serde_json::json;
@@ -21,9 +21,9 @@ async fn a_group(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
-        .make_group(
+        .create_group(
             Rig::info(),
-            MakeGroup {
+            CreateGroup {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("Group {}", fixture.next_number()),
             },
@@ -40,9 +40,9 @@ async fn an_empty_role(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
-        .make_role(
+        .create_role(
             Rig::info(),
-            MakeRole {
+            CreateRole {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("Role {}", fixture.next_number()),
                 permissions: Vec::new(),
@@ -93,7 +93,7 @@ async fn groups_request(
             None,
         ),
         "listGroups" => ("GET", "/api/v1/groups".into(), None),
-        "makeGroup" => (
+        "createGroup" => (
             "POST",
             "/api/v1/groups".into(),
             Some(json!({"name": format!("Made {}", fixture.next_number())})),
@@ -170,7 +170,7 @@ async fn groups_request(
 async fn roles_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
     Ok(Some(match operation {
         "listRoles" => ("GET", "/api/v1/roles".into(), None),
-        "makeRole" => (
+        "createRole" => (
             "POST",
             "/api/v1/roles".into(),
             Some(json!({

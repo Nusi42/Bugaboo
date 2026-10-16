@@ -6,12 +6,12 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshRelationKinds } from "../../shared/query-keys.ts";
 
-/** *Make a kind of relation*: the words for both ends; the kind goes to the end of the list. */
-export function MakeRelationKindForm() {
+/** *Create a kind of relation*: the words for both ends; the kind goes to the end of the list. */
+export function CreateRelationKindForm() {
   const [forward, setForward] = useState("");
   const [backward, setBackward] = useState("");
   const [made, setMade] = useState<string | null>(null);
-  const make = api.query.useMutation("post", "/api/v1/relation-kinds", {
+  const create = api.query.useMutation("post", "/api/v1/relation-kinds", {
     onSuccess: (kind) => {
       refreshRelationKinds();
       setForward("");
@@ -23,7 +23,7 @@ export function MakeRelationKindForm() {
     <Form
       onSubmit={() => {
         setMade(null);
-        make.mutate({ body: { forward: forward.trim(), backward: backward.trim() } });
+        create.mutate({ body: { forward: forward.trim(), backward: backward.trim() } });
       }}
     >
       <TextField
@@ -38,12 +38,12 @@ export function MakeRelationKindForm() {
         value={backward}
         onChange={setBackward}
       />
-      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
         <Alert tone={alertTone.success}>{t("relation-kinds.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("relation-kinds.create")}</SubmitButton>
+        <SubmitButton isPending={create.isPending}>{t("relation-kinds.create")}</SubmitButton>
       </div>
     </Form>
   );

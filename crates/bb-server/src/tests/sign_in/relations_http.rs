@@ -65,9 +65,9 @@ async fn iss_03_a_parent_cannot_become_its_own_sub_issue() -> TestResult {
     each_database("iss_03_no_circles", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let a = key_of(&site.make(&mut ada, "Goal").await?)?;
-        let b = key_of(&site.make(&mut ada, "Step").await?)?;
-        let c = key_of(&site.make(&mut ada, "Part").await?)?;
+        let a = key_of(&site.create(&mut ada, "Goal").await?)?;
+        let b = key_of(&site.create(&mut ada, "Step").await?)?;
+        let c = key_of(&site.create(&mut ada, "Part").await?)?;
         // An issue under itself.
         let itself = put_under(&mut ada, &a, 1, Some(&a)).await?;
         assert_eq!(
@@ -110,10 +110,10 @@ async fn iss_03_progress_counts_only_the_sub_issues_you_see() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // A Guest sees only the issues they reported: the goal and one part of it.
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let goal = key_of(&site.make(&mut gus, "Goal of Gus").await?)?;
-        let mine = key_of(&site.make(&mut gus, "Part of Gus").await?)?;
-        let first = key_of(&site.make(&mut ada, "Part of Ada").await?)?;
-        let second = key_of(&site.make(&mut ada, "Another part of Ada").await?)?;
+        let goal = key_of(&site.create(&mut gus, "Goal of Gus").await?)?;
+        let mine = key_of(&site.create(&mut gus, "Part of Gus").await?)?;
+        let first = key_of(&site.create(&mut ada, "Part of Ada").await?)?;
+        let second = key_of(&site.create(&mut ada, "Another part of Ada").await?)?;
         for part in [&mine, &first, &second] {
             let put = put_under(&mut ada, part, 1, Some(&goal)).await?;
             ok(&put)?;
@@ -159,8 +159,8 @@ async fn iss_04_a_relation_shows_from_both_sides_in_their_own_words() -> TestRes
     each_database("iss_04_both_sides", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let blocker = key_of(&site.make(&mut ada, "Release notes").await?)?;
-        let victim = key_of(&site.make(&mut ada, "Release").await?)?;
+        let blocker = key_of(&site.create(&mut ada, "Release notes").await?)?;
+        let victim = key_of(&site.create(&mut ada, "Release").await?)?;
         let (blocks, related_to) = kinds(&mut ada).await?;
         let added = ada
             .send(
@@ -230,8 +230,8 @@ async fn iss_04_a_relation_to_a_hidden_issue_is_not_shown() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let theirs = key_of(&site.make(&mut gus, "Gus's problem").await?)?;
-        let secret = key_of(&site.make(&mut ada, "Ada's secret").await?)?;
+        let theirs = key_of(&site.create(&mut gus, "Gus's problem").await?)?;
+        let secret = key_of(&site.create(&mut ada, "Ada's secret").await?)?;
         let (blocks, _) = kinds(&mut ada).await?;
         ok(&ada
             .send(
@@ -278,8 +278,8 @@ async fn iss_04_adding_and_removing_is_in_both_histories() -> TestResult {
     each_database("iss_04_histories", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let first = key_of(&site.make(&mut ada, "First").await?)?;
-        let second = key_of(&site.make(&mut ada, "Second").await?)?;
+        let first = key_of(&site.create(&mut ada, "First").await?)?;
+        let second = key_of(&site.create(&mut ada, "Second").await?)?;
         let (blocks, _) = kinds(&mut ada).await?;
         let added = ada
             .send(
@@ -363,10 +363,10 @@ async fn iss_04_relations_made_at_the_same_moment_do_not_pass_the_limit() -> Tes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (blocks, _) = kinds(&mut ada).await?;
-        let hub = key_of(&site.make(&mut ada, "Hub").await?)?;
+        let hub = key_of(&site.create(&mut ada, "Hub").await?)?;
         // The hub holds one relation less than the limit.
         for number in 1..RELATIONS_MAX {
-            let other = key_of(&site.make(&mut ada, &format!("Other {number}")).await?)?;
+            let other = key_of(&site.create(&mut ada, &format!("Other {number}")).await?)?;
             let added = ada
                 .send(
                     "POST",
@@ -380,7 +380,7 @@ async fn iss_04_relations_made_at_the_same_moment_do_not_pass_the_limit() -> Tes
         let mut late = Vec::new();
         for number in 0..WANTING {
             late.push(key_of(
-                &site.make(&mut ada, &format!("Late {number}")).await?,
+                &site.create(&mut ada, &format!("Late {number}")).await?,
             )?);
         }
         let requests = late
@@ -418,15 +418,15 @@ async fn iss_04_relations_made_at_the_same_moment_do_not_pass_the_limit() -> Tes
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn iss_03_parents_set_at_the_same_moment_do_not_make_a_circle() -> TestResult {
+async fn iss_03_parents_set_at_the_same_moment_do_not_create_a_circle() -> TestResult {
     each_database("iss_03_circle_race", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         // Ten pairs: in each, A goes under B and B under A, both from version 1.
         let mut pairs = Vec::new();
         for number in 0..10 {
-            let a = key_of(&site.make(&mut ada, &format!("A {number}")).await?)?;
-            let b = key_of(&site.make(&mut ada, &format!("B {number}")).await?)?;
+            let a = key_of(&site.create(&mut ada, &format!("A {number}")).await?)?;
+            let b = key_of(&site.create(&mut ada, &format!("B {number}")).await?)?;
             pairs.push((a, b));
         }
         let put = |child: &str, parent: &str| {

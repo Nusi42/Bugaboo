@@ -18,7 +18,7 @@ mod issues;
 
 use crate::{
     ACCESS_KEYS, DEFAULT_SEED, EMAIL_DOMAIN, LATER_SECONDS, Later, NameList, Options, Organization,
-    PEOPLE, ROLE_MIX, STEP_SECONDS, Sample, SampleError, Step, Target, World, make,
+    PEOPLE, ROLE_MIX, STEP_SECONDS, Sample, SampleError, Step, Target, World, create,
 };
 
 /// One start moment for every test, so the dates are always the same.
@@ -33,7 +33,7 @@ fn options(seed: u64) -> Options {
 
 /// Makes the sample of `seed` in the folder, on the built-in database.
 async fn built_in(seed: u64, folder: &Path) -> Result<Sample, Failure> {
-    Ok(make(&options(seed), folder, &Target::BuiltIn, &mut Organization).await?)
+    Ok(create(&options(seed), folder, &Target::BuiltIn, &mut Organization).await?)
 }
 
 /// The canonical dump as the text of `dump.json`, and the sample closed.
@@ -53,7 +53,7 @@ async fn the_sample_is_the_same_from_the_same_seed_on_both_databases() -> TestRe
             tempfile::tempdir()?,
         );
         // On the database of this run, and twice on the built-in one: the three dumps are one.
-        let here = make(
+        let here = create(
             &options(DEFAULT_SEED),
             first.path(),
             &Target::Address(db.url().to_owned()),
@@ -124,7 +124,7 @@ async fn every_sample_address_is_under_bugaboo_example_and_every_name_is_from_th
 async fn every_sample_change_has_its_event_and_the_security_log_verifies() -> TestResult {
     each_database("every_sample_change_has_its_event", async |db| {
         let folder = tempfile::tempdir()?;
-        let sample = make(
+        let sample = create(
             &options(DEFAULT_SEED),
             folder.path(),
             &Target::Address(db.url().to_owned()),
@@ -402,7 +402,7 @@ async fn the_sample_holds_the_groups_roles_and_projects_of_architecture_11() -> 
         "the_sample_holds_the_groups_roles_and_projects_of_architecture_11",
         async |db| {
             let folder = tempfile::tempdir()?;
-            let sample = make(
+            let sample = create(
                 &options(DEFAULT_SEED),
                 folder.path(),
                 &Target::Address(db.url().to_owned()),
@@ -485,7 +485,7 @@ async fn the_sample_shows_the_role_mix_through_check_access() -> TestResult {
         async |db| {
             let folder = tempfile::tempdir()?;
             let mut checking = CheckingAccess::default();
-            let sample = make(
+            let sample = create(
                 &options(DEFAULT_SEED),
                 folder.path(),
                 &Target::Address(db.url().to_owned()),

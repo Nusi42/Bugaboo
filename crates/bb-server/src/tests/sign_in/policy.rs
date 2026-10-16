@@ -60,17 +60,17 @@ async fn sec_01_a_person_without_a_role_can_do_nothing_and_sees_no_project() -> 
         }
         // And she cannot do anything herself.
         assert_eq!(
-            refused(org.make_role(&bea, "Mine", &VIEW).await),
+            refused(org.create_role(&bea, "Mine", &VIEW).await),
             Some(ErrorCode::Forbidden)
         );
-        let make = |parent| {
+        let create = |parent| {
             let session = bea.session.clone();
             async move {
                 org.rig
                     .api()
-                    .make_project(
+                    .create_project(
                         Rig::info(),
-                        bb_app::projects::MakeProject {
+                        bb_app::projects::CreateProject {
                             session_token: session,
                             parent,
                             short_name: "MINE".to_owned(),
@@ -80,11 +80,11 @@ async fn sec_01_a_person_without_a_role_can_do_nothing_and_sees_no_project() -> 
                     .await
             }
         };
-        assert_eq!(refused(make(None).await), Some(ErrorCode::Forbidden));
+        assert_eq!(refused(create(None).await), Some(ErrorCode::Forbidden));
         // A project that exists but that she may not know about answers like one that does not
         // exist: the same code, the same everything.
-        let hidden = refused(make(Some(projects.acme)).await);
-        let missing = refused(make(Some(unknown_project())).await);
+        let hidden = refused(create(Some(projects.acme)).await);
+        let missing = refused(create(Some(unknown_project())).await);
         assert_eq!(hidden, Some(ErrorCode::NotFound));
         assert_eq!(hidden, missing);
         Ok(())

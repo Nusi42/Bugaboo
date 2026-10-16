@@ -5,7 +5,7 @@
 //! issue of their own and nobody else's work gets in the way; and the actor, who reported none of
 //! them, shows what the rules about other people's issues say (*See issues*, *Change issues*).
 
-use bb_app::issues::{DeleteIssue, IssueQuery, IssueTypesQuery, MakeIssue, MakeIssueType};
+use bb_app::issues::{CreateIssue, CreateIssueType, DeleteIssue, IssueQuery, IssueTypesQuery};
 use bb_core::issue::IssueIcon;
 use bb_testing::Failure;
 use serde_json::json;
@@ -61,9 +61,9 @@ pub(super) async fn an_issue(fixture: &Fixture<'_>) -> Result<String, Failure> {
     let made = fixture
         .rig()
         .api()
-        .make_issue(
+        .create_issue(
             Rig::info(),
-            MakeIssue {
+            CreateIssue {
                 session_token: fixture.admin_session().to_owned(),
                 project: fixture.project(Project::Target).to_string(),
                 issue_type: a_type(fixture).await?.parse().map_err(|_| "no type ID")?,
@@ -86,9 +86,9 @@ async fn a_new_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
-        .make_issue_type(
+        .create_issue_type(
             Rig::info(),
-            MakeIssueType {
+            CreateIssueType {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("Type {}", fixture.next_number()),
                 icon: IssueIcon::Bug,
@@ -108,7 +108,7 @@ pub(super) async fn issue_request(
     let target = fixture.project(Project::Target).to_string();
     Ok(Some(match operation {
         "listIssueTypes" => ("GET", "/api/v1/issue-types".into(), None),
-        "makeIssueType" => (
+        "createIssueType" => (
             "POST",
             "/api/v1/issue-types".into(),
             Some(json!({"name": format!("Type {}", fixture.next_number()), "icon": "bug"})),
@@ -124,7 +124,7 @@ pub(super) async fn issue_request(
             format!("/api/v1/projects/{target}/assignable-people"),
             None,
         ),
-        "makeIssue" => (
+        "createIssue" => (
             "POST",
             format!("/api/v1/projects/{target}/issues"),
             Some(json!({"issue_type": a_type(fixture).await?, "title": "Made by the matrix"})),

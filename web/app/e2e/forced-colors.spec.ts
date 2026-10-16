@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { themeIds } from "../../packages/ui/src/tokens.ts";
 
-import { makeAdmin } from "./support/accounts.ts";
+import { createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openRoleWithTickedBox } from "./support/roles.ts";
 
@@ -12,7 +12,7 @@ import { openRoleWithTickedBox } from "./support/roles.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

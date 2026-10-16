@@ -20,7 +20,7 @@ use serde::Serialize;
 use crate::preview::PreviewSummary;
 
 /// Make a project at the top level, or inside another project.
-pub struct MakeProject {
+pub struct CreateProject {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The project it goes into, or `None` for the top level.
@@ -176,7 +176,7 @@ impl Masked for ProjectPage {}
 pub const TRAIL_MAX: usize = 16;
 
 /// Where a person may move a project to: they need *Move projects* in the place it sits in, and
-/// for the top level *Make top-level projects* for the whole organization as well.
+/// for the top level *Create top-level projects* for the whole organization as well.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum MoveRight {
     /// Not anywhere.

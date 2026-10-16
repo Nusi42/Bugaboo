@@ -6,7 +6,7 @@ import { fieldAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate } from "../shell/index.ts";
 import { detailsOf, useFields } from "./fields.ts";
-import { MakeFieldForm } from "./MakeFieldForm.tsx";
+import { CreateFieldForm } from "./CreateFieldForm.tsx";
 
 /**
  * *Organization settings › Fields* (CF-01): the own fields as a list, each a link to its page, and
@@ -39,7 +39,7 @@ export function FieldsPage() {
       </Card>
       <Card heading={t("fields.create-title")}>
         <p {...partOf(part.text)}>{t("fields.create-intro")}</p>
-        <MakeFieldForm />
+        <CreateFieldForm />
       </Card>
     </div>
   );

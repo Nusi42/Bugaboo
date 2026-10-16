@@ -5,7 +5,7 @@
 //! read one field name a field that is not there: a person who may see no field is told so alike
 //! for a field that exists and one that does not (CF-06).
 
-use bb_app::fields::{MakeField, NewChoice};
+use bb_app::fields::{CreateField, NewChoice};
 use bb_core::own_fields::{FieldFor, FieldType, Rules, Scope};
 use bb_testing::Failure;
 use serde_json::json;
@@ -28,9 +28,9 @@ async fn a_field_of(
     let made = fixture
         .rig()
         .api()
-        .make_field(
+        .create_field(
             Rig::info(),
-            MakeField {
+            CreateField {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("Severity {number}"),
                 help: None,
@@ -81,7 +81,7 @@ pub(super) async fn field_request(
             format!("/api/v1/fields/{NO_SUCH_FIELD}/used-by"),
             None,
         ),
-        "makeField" => (
+        "createField" => (
             "POST",
             "/api/v1/fields".into(),
             Some(json!({

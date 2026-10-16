@@ -16,10 +16,10 @@ use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::IssueStore;
 use crate::tags::{
-    AddLabel, AddTag, ChangeLabel, ChangeTag, CombineLabels, CombineTags, IssueSortingQuery,
-    LabelChangePreviewQuery, MakeLabel, TagChangePreviewQuery, add_label, add_tag, change_label,
-    change_tag, combine_labels, combine_tags, issue_sorting, label_change_preview, make_label,
-    tag_change_preview,
+    AddLabel, AddTag, ChangeLabel, ChangeTag, CombineLabels, CombineTags, CreateLabel,
+    IssueSortingQuery, LabelChangePreviewQuery, TagChangePreviewQuery, add_label, add_tag,
+    change_label, change_tag, combine_labels, combine_tags, create_label, issue_sorting,
+    label_change_preview, tag_change_preview,
 };
 use crate::tags::{RemoveLabel, RemoveTag, remove_label, remove_tag};
 
@@ -355,12 +355,12 @@ async fn tag_03_combining_tags_needs_the_versions_the_person_looked_at() -> Outc
 }
 
 #[tokio::test]
-async fn tag_02_only_the_people_who_look_after_labels_make_and_change_them() -> Outcome {
+async fn tag_02_only_the_people_who_look_after_labels_create_and_change_them() -> Outcome {
     let world = World::new().await?;
     let bob = world.person("bob@example.test").await?;
-    let refused = make_label(
+    let refused = create_label(
         &world.ctx(),
-        MakeLabel {
+        CreateLabel {
             session_token: bob.session_token.clone(),
             name: "login".to_owned(),
             color: None,

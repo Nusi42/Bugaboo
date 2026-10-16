@@ -23,7 +23,7 @@ export async function treeLink(page: Page, name: string): Promise<Locator> {
 }
 
 /** Makes a project with the form that is open: the name, and the short name as it is typed. */
-export async function fillMake(page: Page, name: string, shortName: string): Promise<void> {
+export async function fillCreate(page: Page, name: string, shortName: string): Promise<void> {
   await page.getByLabel(t("projects.field-name"), { exact: true }).fill(name);
   await page.getByLabel(t("projects.field-short-name"), { exact: true }).fill(shortName);
   await page.getByRole("button", { name: t("projects.create"), exact: true }).click();
@@ -31,7 +31,7 @@ export async function fillMake(page: Page, name: string, shortName: string): Pro
 }
 
 /** Makes a project through the API, at the top level or inside another, and returns its ID. */
-export async function makeProject(
+export async function createProject(
   admin: ApiSession,
   shortName: string,
   name: string,

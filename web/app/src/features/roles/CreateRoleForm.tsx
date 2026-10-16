@@ -22,10 +22,10 @@ import { roleLinesOf, useRoles } from "./roles.ts";
 const EMPTY = "";
 
 /**
- * *Make a role* (SEC-08): a name, and where to start: an empty role, or a copy of a role that is
+ * *Create a role* (SEC-08): a name, and where to start: an empty role, or a copy of a role that is
  * close to what is needed. The new role opens on its own page, to choose what it allows.
  */
-export function MakeRoleForm() {
+export function CreateRoleForm() {
   const [name, setName] = useState("");
   const [from, setFrom] = useState(EMPTY);
   const navigate = useNavigate();

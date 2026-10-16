@@ -1,4 +1,4 @@
-//! *Make an issue* (ISS-01): in a project, with the code of its readable ID given out inside the
+//! *Create an issue* (ISS-01): in a project, with the code of its readable ID given out inside the
 //! change (ISS-01a).
 
 use std::sync::Arc;
@@ -15,7 +15,7 @@ use serde_json::json;
 
 use super::fields::{Given, clean_title, ensure_may_change, member};
 use super::ids::{code_plan_in, new_code_in};
-use super::types::{IssueView, MakeIssue};
+use super::types::{CreateIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::fields::{Item, PlannedValues};
@@ -58,7 +58,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn plan_new_issue(
         &self,
         actor: &Actor,
-        input: &MakeIssue,
+        input: &CreateIssue,
     ) -> Result<(Arc<Evaluation>, NewIssue), AppError> {
         let project = self
             .find_project(&input.project)
@@ -151,7 +151,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Makes an issue in a project. The person needs *Create issues* there; the fields they set must be
+/// Creates an issue in a project. The person needs *Create issues* there; the fields they set must be
 /// ones they may change (the title always).
 ///
 /// # Errors
@@ -159,9 +159,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// issue type that does not exist, `access.forbidden` without the permission or for a field the
 /// person may not change, `request.invalid` for a title, description or person that cannot be
 /// one, `issue.type_retired` for a retired issue type.
-pub async fn make_issue<S: AuthStore>(
+pub async fn create_issue<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeIssue,
+    input: CreateIssue,
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (access, new) = ctx.plan_new_issue(&actor, &input).await?;

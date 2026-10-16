@@ -111,12 +111,12 @@ function onMySettingsChange(listener: () => void): () => void {
 
 /** A value that is made again only when what it is made from is another one. */
 function remember<Input extends object | string, Output>(
-  make: (input: Input) => Output,
+  create: (input: Input) => Output,
 ): (input: Input) => Output {
   let last: { readonly input: Input; readonly output: Output } | null = null;
   return (input) => {
     if (last?.input !== input) {
-      last = { input, output: make(input) };
+      last = { input, output: create(input) };
     }
     return last.output;
   };

@@ -13,10 +13,10 @@ use super::world::World;
 use crate::bulk::{ApplyBulk, BulkAction, BulkChange, BulkTarget, apply_bulk};
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
-    ChangeIssue, ChangeIssueType, DeleteIssue, IssueTypesQuery, MakeIssue, MakeIssueType,
-    MakeStartingIssueTypes, MoveIssue, RestoreIssue, SaveDescription, change_issue,
-    change_issue_type, delete_issue, issue_types, make_issue, make_issue_type,
-    make_starting_issue_types, move_issue, restore_issue, save_description,
+    ChangeIssue, ChangeIssueType, CreateIssue, CreateIssueType, CreateStartingIssueTypes,
+    DeleteIssue, IssueTypesQuery, MoveIssue, RestoreIssue, SaveDescription, change_issue,
+    change_issue_type, create_issue, create_issue_type, create_starting_issue_types, delete_issue,
+    issue_types, move_issue, restore_issue, save_description,
 };
 
 /// The first issue type of the first start (*Bug*).
@@ -40,9 +40,9 @@ async fn a_type(world: &World) -> Result<IssueTypeId, String> {
 
 /// An issue of the project, made by Ada.
 pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueId, String> {
-    Ok(make_issue(
+    Ok(create_issue(
         &world.ctx(),
-        MakeIssue {
+        CreateIssue {
             session_token: token(world),
             project: project.to_string(),
             issue_type: a_type(world).await?,
@@ -60,13 +60,13 @@ pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueI
     .id)
 }
 
-pub(crate) async fn make_issue_scenario(world: &World) -> Added {
+pub(crate) async fn create_issue_scenario(world: &World) -> Added {
     let project = a_project(world, "ACME").await?;
     measured(
         &world.store,
-        make_issue(
+        create_issue(
             &world.ctx(),
-            MakeIssue {
+            CreateIssue {
                 session_token: token(world),
                 project: project.to_string(),
                 issue_type: a_type(world).await?,
@@ -185,12 +185,12 @@ pub(crate) async fn restore_issue_scenario(world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn make_issue_type_scenario(world: &World) -> Added {
+pub(crate) async fn create_issue_type_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_issue_type(
+        create_issue_type(
             &world.ctx(),
-            MakeIssueType {
+            CreateIssueType {
                 session_token: token(world),
                 name: "Question".to_owned(),
                 icon: IssueIcon::CircleHelp,
@@ -220,12 +220,12 @@ pub(crate) async fn change_issue_type_scenario(world: &World) -> Added {
 }
 
 /// A server that has not made its issue types: the first start.
-pub(crate) async fn make_starting_issue_types_scenario(_world: &World) -> Added {
+pub(crate) async fn create_starting_issue_types_scenario(_world: &World) -> Added {
     let bare = World::new_without_issue_types().await?;
     let store: &FakeStore = &bare.store;
     measured(
         store,
-        make_starting_issue_types(&bare.ctx(), MakeStartingIssueTypes),
+        create_starting_issue_types(&bare.ctx(), CreateStartingIssueTypes),
     )
     .await
 }

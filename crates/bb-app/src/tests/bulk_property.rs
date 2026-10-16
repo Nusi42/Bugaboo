@@ -29,7 +29,7 @@ use crate::history::{ChangeValue, FieldChangeView};
 use crate::issues::{ChangeIssue, DeleteIssue, IssueStore, change_issue, delete_issue};
 use crate::relations::{RelationKindsQuery, RelationStore, relation_kinds};
 use crate::roles::{
-    AssignRole, Given, MakeRole, SetFieldLevel, Subject, assign_role, make_role, set_level,
+    AssignRole, CreateRole, Given, SetFieldLevel, Subject, assign_role, create_role, set_level,
 };
 use crate::tags::TagStore;
 
@@ -193,9 +193,9 @@ async fn session_of(world: &World, who: usize, setup: &Setup) -> Result<String, 
             Permission::CreateIssues,
         ]);
     }
-    let role = make_role(
+    let role = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: admin.clone(),
             name: "Somebody".to_owned(),
             permissions,

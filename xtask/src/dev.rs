@@ -76,7 +76,7 @@ pub(crate) fn run(root: &Path, sample: bool) -> anyhow::Result<bool> {
     };
     // A fresh sample organization every time; its program says where the passwords are.
     let data_dir = if sample {
-        let Some(folder) = dataset::make_for_dev(root)? else {
+        let Some(folder) = dataset::create_for_dev(root)? else {
             return Ok(false);
         };
         folder

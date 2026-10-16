@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
 
-import { bob, makeAdmin, makePerson } from "./support/accounts.ts";
+import { bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { expectHome, signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
 
@@ -14,10 +14,10 @@ import { viewports } from "../../tooling/viewports.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
-      const website = await makeProject(admin, "WEB", "Website");
-      await makeProject(admin, "DOCS", "Documents", website);
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
+      const website = await createProject(admin, "WEB", "Website");
+      await createProject(admin, "DOCS", "Documents", website);
       await admin.dispose();
     },
   },

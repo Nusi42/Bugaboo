@@ -11,8 +11,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::issues::{
-    AssignablePeopleQuery, ChangeIssue, DeleteIssue, IssueDetail, IssueQuery,
-    IssueTypeRef as AppIssueTypeRef, IssueView, IssuesQuery, MakeIssue, MoveIssue, RestoreIssue,
+    AssignablePeopleQuery, ChangeIssue, CreateIssue, DeleteIssue, IssueDetail, IssueQuery,
+    IssueTypeRef as AppIssueTypeRef, IssueView, IssuesQuery, MoveIssue, RestoreIssue,
     SaveDescription,
 };
 use std::collections::BTreeMap;
@@ -419,12 +419,12 @@ async fn list_assignable_people(
     )?))
 }
 
-/// Makes an issue in a project. Needs the permission *Create issues*; the fields set must be ones
+/// Creates an issue in a project. Needs the permission *Create issues*; the fields set must be ones
 /// the person may change (the title always).
 #[utoipa::path(
     post,
     path = "/api/v1/projects/{project}/issues",
-    operation_id = "makeIssue",
+    operation_id = "createIssue",
     tag = "issues",
     params(("project" = String, Path, description = "The ID of the project, or its short name.")),
     request_body = NewIssueBody,
@@ -437,7 +437,7 @@ async fn list_assignable_people(
         ConflictAnswer
     )
 )]
-async fn make_issue(
+async fn create_issue(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -448,9 +448,9 @@ async fn make_issue(
     let assigned_to = people_in_body(body.assigned_to.as_deref())?;
     let made = auth
         .api()?
-        .make_issue(
+        .create_issue(
             info,
-            MakeIssue {
+            CreateIssue {
                 session_token,
                 project,
                 issue_type,
@@ -714,7 +714,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_issues, make_issue))
+        .routes(routes!(list_issues, create_issue))
         .routes(routes!(list_assignable_people))
         .routes(routes!(get_issue, change_issue, delete_issue))
         .routes(routes!(restore_issue))

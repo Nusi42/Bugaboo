@@ -52,7 +52,7 @@ pub use error::{SampleError, Step};
 pub use folder::Output;
 pub use generate::{
     DEFAULT_SEED, LATER_SECONDS, Later, LeftBehind, MadePerson, NothingMore, Options, STEP_SECONDS,
-    Sample, Target, World, make,
+    Sample, Target, World, create,
 };
 pub use issues::Everything;
 pub use names::NameList;

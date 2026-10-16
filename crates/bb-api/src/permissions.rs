@@ -143,7 +143,7 @@ pub const ROUTES: &[Route] = &[
     route("throwAwayDraft", Declared::SignedIn, Answer::Ordinary),
     route("checkVersions", Declared::ByRecord, Answer::Ordinary),
     route("listAccessKeys", Declared::OwnAccount, Answer::NeverStored),
-    route("makeAccessKey", Declared::OwnAccount, Answer::Secret),
+    route("createAccessKey", Declared::OwnAccount, Answer::Secret),
     route("deleteAccessKey", Declared::OwnAccount, Answer::Ordinary),
     route(
         "getAccessKeyRules",
@@ -246,12 +246,12 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "makeProject",
+        "createProject",
         Declared::Permission(Permission::CreateProjects),
         Answer::Ordinary,
     ),
     route(
-        "makeSubProject",
+        "createSubProject",
         Declared::Permission(Permission::CreateSubProjects),
         Answer::Ordinary,
     ),
@@ -285,7 +285,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "makeIssue",
+        "createIssue",
         Declared::Permission(Permission::CreateIssues),
         Answer::Ordinary,
     ),
@@ -316,7 +316,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route("listRelationKinds", Declared::SignedIn, Answer::Ordinary),
     route(
-        "makeRelationKind",
+        "createRelationKind",
         Declared::Permission(Permission::ManageIssueTypes),
         Answer::Ordinary,
     ),
@@ -407,7 +407,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route("listLabels", Declared::SignedIn, Answer::Ordinary),
     route(
-        "makeLabelGroup",
+        "createLabelGroup",
         Declared::Permission(Permission::ManageLabels),
         Answer::Ordinary,
     ),
@@ -417,7 +417,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
-        "makeLabel",
+        "createLabel",
         Declared::Permission(Permission::ManageLabels),
         Answer::Ordinary,
     ),
@@ -502,7 +502,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "makeLayout",
+        "createLayout",
         Declared::Permission(Permission::ManageIssueTypes),
         Answer::Ordinary,
     ),
@@ -517,7 +517,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
-        "makeIssueType",
+        "createIssueType",
         Declared::Permission(Permission::ManageIssueTypes),
         Answer::Ordinary,
     ),
@@ -542,7 +542,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "makeGroup",
+        "createGroup",
         Declared::Permission(Permission::ManageGroups),
         Answer::Ordinary,
     ),
@@ -587,7 +587,7 @@ pub const ROUTES: &[Route] = &[
         Answer::NeverStored,
     ),
     route(
-        "makeRole",
+        "createRole",
         Declared::Permission(Permission::ManageRoles),
         Answer::Ordinary,
     ),
@@ -666,7 +666,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
-        "makeField",
+        "createField",
         Declared::Permission(Permission::ManageFields),
         Answer::Ordinary,
     ),

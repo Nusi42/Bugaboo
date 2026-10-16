@@ -11,7 +11,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::ProjectLabel;
 use bb_app::auth::{
-    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, DeleteAccessKey, MakeAccessKey,
+    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, CreateAccessKey, DeleteAccessKey,
     ProjectChoice, ProjectChoicesQuery, RequireSessionQuery,
 };
 use bb_core::access_key::KeyChoice;
@@ -225,7 +225,7 @@ impl Masked for AccessKeyRulesBody {}
 
 /// An access key to make.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct MakeKeyBody {
+pub(crate) struct CreateKeyBody {
     /// The password of the person, asked again so a stolen session cannot make a key.
     password: String,
     /// What the key is called.
@@ -285,13 +285,13 @@ async fn list_access_keys(
     )?))
 }
 
-/// Makes an access key. The key is shown once. The password is asked again.
+/// Creates an access key. The key is shown once. The password is asked again.
 #[utoipa::path(
     post,
     path = "/api/v1/access-keys",
-    operation_id = "makeAccessKey",
+    operation_id = "createAccessKey",
     tag = "access-keys",
-    request_body = MakeKeyBody,
+    request_body = CreateKeyBody,
     responses(
         (status = 200, description = "The key, with its secret.", body = CreatedAccessKeyBody),
         InvalidAnswer,
@@ -300,11 +300,11 @@ async fn list_access_keys(
         NotFoundAnswer
     )
 )]
-async fn make_access_key(
+async fn create_access_key(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    body: Result<ApiJson<MakeKeyBody>, ApiError>,
+    body: Result<ApiJson<CreateKeyBody>, ApiError>,
 ) -> Result<Response, ApiError> {
     // Who asks comes before what is asked: a key is turned away before its body is looked at.
     auth.api()?
@@ -323,9 +323,9 @@ async fn make_access_key(
         .collect::<Result<Vec<_>, _>>()?;
     let created = auth
         .api()?
-        .make_access_key(
+        .create_access_key(
             info,
-            MakeAccessKey {
+            CreateAccessKey {
                 session_token,
                 password: body.password,
                 name: body.name,
@@ -487,7 +487,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_access_keys, make_access_key))
+        .routes(routes!(list_access_keys, create_access_key))
         .routes(routes!(get_access_key_rules))
         .routes(routes!(list_project_choices))
         .routes(routes!(delete_access_key))

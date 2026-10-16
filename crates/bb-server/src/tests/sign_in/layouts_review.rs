@@ -16,7 +16,7 @@ use bb_core::layout::{LayoutKind, built_in_fields};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{make_field, reader_of};
+use super::fields_http::{create_field, reader_of};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, id_in, ok};
 use super::layouts_http::{
@@ -51,7 +51,7 @@ async fn cfg_01_a_lead_who_may_not_know_a_field_never_reads_its_id_and_keeps_it_
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let salary = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Salary band", "kind": "text", "applies_to": "issues"}),
             )
@@ -268,7 +268,7 @@ async fn cfg_01_a_place_with_many_own_fields_can_be_customized_and_saved() -> Te
         let (_site, mut ada) = Site::start(&rig, &app).await?;
         // More than a hundred, which was the most a layout held once.
         for number in 0..101 {
-            make_field(
+            create_field(
                 &mut ada,
                 json!({"name": format!("Field {number}"), "kind": "text", "applies_to": "issues"}),
             )
@@ -323,7 +323,7 @@ async fn cf_03_a_required_field_with_a_default_is_not_asked_for_on_the_form() ->
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let asked = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({
                     "name": "Customer", "kind": "text", "applies_to": "issues",
@@ -333,7 +333,7 @@ async fn cf_03_a_required_field_with_a_default_is_not_asked_for_on_the_form() ->
             .await?,
         )?;
         let defaulted = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({
                     "name": "Region", "kind": "text", "applies_to": "issues",

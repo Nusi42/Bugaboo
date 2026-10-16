@@ -16,13 +16,13 @@
 
 mod assignees;
 mod change;
+mod create;
 mod delete;
 mod description;
 pub(crate) mod editing;
 mod fields;
 mod ids;
 mod issue_types;
-mod make;
 mod moving;
 mod read;
 mod store;
@@ -33,13 +33,13 @@ pub(crate) use visible::{Where, seen_by};
 
 pub use assignees::{AssignablePeoplePage, AssignablePeopleQuery, assignable_people};
 pub use change::change_issue;
+pub use create::create_issue;
 pub use delete::{delete_issue, restore_issue};
 pub use description::save_description;
 pub use issue_types::{
-    MakeStartingIssueTypes, change_issue_type, issue_types, make_issue_type,
-    make_starting_issue_types,
+    CreateStartingIssueTypes, change_issue_type, create_issue_type, create_starting_issue_types,
+    issue_types,
 };
-pub use make::make_issue;
 pub use moving::move_issue;
 pub use read::{issue, issues};
 pub use store::{InTrash, IssueFound, IssueStore};

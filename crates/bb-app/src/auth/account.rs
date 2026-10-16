@@ -131,7 +131,7 @@ pub async fn issue_setup_code<S: AuthStore>(
     Ok(code)
 }
 
-/// Makes the first administrator with the setup code and signs them in. The setup code is used
+/// Creates the first administrator with the setup code and signs them in. The setup code is used
 /// up in the same change, so it works once, and setup is closed for good afterwards.
 ///
 /// # Errors
@@ -242,7 +242,7 @@ pub async fn complete_setup<S: AuthStore>(
     ctx.started(&new, &person, &settings, None)
 }
 
-/// Makes an account without an invitation, when an administrator allows it, and signs the
+/// Creates an account without an invitation, when an administrator allows it, and signs the
 /// person in.
 ///
 /// # Errors
@@ -305,7 +305,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     ctx.started(&new, &person, &settings, None)
 }
 
-/// Makes an account from an invitation link and signs the person in. The invitation is used up
+/// Creates an account from an invitation link and signs the person in. The invitation is used up
 /// in the same change.
 ///
 /// # Errors

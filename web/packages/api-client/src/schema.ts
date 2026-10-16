@@ -12,8 +12,8 @@ export interface paths {
     /** The access keys of the person, a page at a time. */
     get: operations["listAccessKeys"];
     put?: never;
-    /** Makes an access key. The key is shown once. The password is asked again. */
-    post: operations["makeAccessKey"];
+    /** Creates an access key. The key is shown once. The password is asked again. */
+    post: operations["createAccessKey"];
     delete?: never;
     options?: never;
     head?: never;
@@ -169,7 +169,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes an account from an invitation link, and signs the person in. */
+    /** Creates an account from an invitation link, and signs the person in. */
     post: operations["acceptInvitation"];
     delete?: never;
     options?: never;
@@ -207,7 +207,7 @@ export interface paths {
     /** The open invitations, a page at a time. Needs the permission *Invite people*. */
     get: operations["listInvitations"];
     put?: never;
-    /** Makes an invitation. The link is shown once. Needs the permission *Invite people*. */
+    /** Creates an invitation. The link is shown once. Needs the permission *Invite people*. */
     post: operations["createInvitation"];
     delete?: never;
     options?: never;
@@ -450,7 +450,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes the first administrator with the setup code, and signs them in. Setup is closed for
+     * Creates the first administrator with the setup code, and signs them in. Setup is closed for
      *     good afterwards.
      */
     post: operations["completeSetup"];
@@ -506,7 +506,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes an account without an invitation, when an administrator allows it. */
+    /** Creates an account without an invitation, when an administrator allows it. */
     post: operations["signUp"];
     delete?: never;
     options?: never;
@@ -575,7 +575,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes new backup codes; the old ones stop working. The password is typed again. */
+    /** Creates new backup codes; the old ones stop working. The password is typed again. */
     post: operations["renewBackupCodes"];
     delete?: never;
     options?: never;
@@ -1077,8 +1077,8 @@ export interface paths {
     /** The own fields the person sees, for the organization or for one project. */
     get: operations["listFields"];
     put?: never;
-    /** Makes an own field. Needs the permission *Manage fields*. */
-    post: operations["makeField"];
+    /** Creates an own field. Needs the permission *Manage fields*. */
+    post: operations["createField"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1206,13 +1206,13 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The groups, by name, a page at a time. Needs the permission *Make, rename and delete groups
+     * The groups, by name, a page at a time. Needs the permission *Create, rename and delete groups
      *     and change who is in them*.
      */
     get: operations["listGroups"];
     put?: never;
-    /** Makes a group. Needs the permission *Make, rename and delete groups and change who is in them*. */
-    post: operations["makeGroup"];
+    /** Creates a group. Needs the permission *Create, rename and delete groups and change who is in them*. */
+    post: operations["createGroup"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1227,7 +1227,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * One group, with what it is used for. Needs the permission *Make, rename and delete groups and
+     * One group, with what it is used for. Needs the permission *Create, rename and delete groups and
      *     change who is in them*.
      */
     get: operations["getGroup"];
@@ -1235,14 +1235,14 @@ export interface paths {
     post?: never;
     /**
      * Deletes a group, with its members and the rows that give it a role. Needs the permission
-     *     *Make, rename and delete groups and change who is in them*, and, where the group has *No
+     *     *Create, rename and delete groups and change who is in them*, and, where the group has *No
      *     access*, *Decide who has which role* there.
      */
     delete: operations["deleteGroup"];
     options?: never;
     head?: never;
     /**
-     * Renames a group. Needs the permission *Make, rename and delete groups and change who is in
+     * Renames a group. Needs the permission *Create, rename and delete groups and change who is in
      *     them*.
      */
     patch: operations["renameGroup"];
@@ -1257,7 +1257,7 @@ export interface paths {
     };
     /**
      * The people that can be put into a group, by name, a page at a time; those who are in it
-     *     already say so. Needs the permission *Make, rename and delete groups and change who is in
+     *     already say so. Needs the permission *Create, rename and delete groups and change who is in
      *     them*. Names only, never e-mail addresses.
      */
     get: operations["listMemberChoices"];
@@ -1277,7 +1277,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The people in a group, a page at a time. Needs the permission *Make, rename and delete groups
+     * The people in a group, a page at a time. Needs the permission *Create, rename and delete groups
      *     and change who is in them*.
      */
     get: operations["listGroupMembers"];
@@ -1298,14 +1298,14 @@ export interface paths {
     };
     get?: never;
     /**
-     * Puts a person into a group. Needs the permission *Make, rename and delete groups and change
+     * Puts a person into a group. Needs the permission *Create, rename and delete groups and change
      *     who is in them*; nobody puts somebody into a group that has a role with more than they hold
      *     themselves.
      */
     put: operations["addGroupMember"];
     post?: never;
     /**
-     * Takes a person out of a group. Needs the permission *Make, rename and delete groups and change
+     * Takes a person out of a group. Needs the permission *Create, rename and delete groups and change
      *     who is in them*, and, where the group has *No access*, *Decide who has which role* there.
      */
     delete: operations["removeGroupMember"];
@@ -1327,8 +1327,8 @@ export interface paths {
      */
     get: operations["listIssueTypes"];
     put?: never;
-    /** Makes an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*. */
-    post: operations["makeIssueType"];
+    /** Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*. */
+    post: operations["createIssueType"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1455,7 +1455,7 @@ export interface paths {
     };
     /** Whether the person follows the issue (*Follow* or *Following*). */
     get: operations["getFollowing"];
-    /** Makes the person a follower of the issue. Following it already changes nothing. */
+    /** Creates the person a follower of the issue. Following it already changes nothing. */
     put: operations["followIssue"];
     post?: never;
     /** Takes the person out of the followers of the issue. Not following changes nothing. */
@@ -1750,8 +1750,8 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes a group of labels. Needs *Manage labels and tags*. */
-    post: operations["makeLabelGroup"];
+    /** Creates a group of labels. Needs *Manage labels and tags*. */
+    post: operations["createLabelGroup"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1788,8 +1788,8 @@ export interface paths {
      */
     get: operations["listLabels"];
     put?: never;
-    /** Makes a label. Needs *Manage labels and tags*. */
-    post: operations["makeLabel"];
+    /** Creates a label. Needs *Manage labels and tags*. */
+    post: operations["createLabel"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1866,10 +1866,10 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes the layout of a place as a copy of the one that counts there (*Customize this form*).
+     * Creates the layout of a place as a copy of the one that counts there (*Customize this form*).
      *     Needs the permission *Manage issue types, kinds of relation and layouts*.
      */
-    post: operations["makeLayout"];
+    post: operations["createLayout"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2144,7 +2144,7 @@ export interface paths {
     };
     /**
      * The permissions of the catalogue, topic by topic: what the role page lists. Needs the
-     *     permission *Make, change and delete roles*.
+     *     permission *Create, change and delete roles*.
      */
     get: operations["listPermissions"];
     put?: never;
@@ -2169,8 +2169,8 @@ export interface paths {
      */
     get: operations["listProjects"];
     put?: never;
-    /** Makes a project at the top level. Needs the permission *Create projects at the top level*. */
-    post: operations["makeProject"];
+    /** Creates a project at the top level. Needs the permission *Create projects at the top level*. */
+    post: operations["createProject"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2288,10 +2288,10 @@ export interface paths {
     get: operations["listIssues"];
     put?: never;
     /**
-     * Makes an issue in a project. Needs the permission *Create issues*; the fields set must be ones
+     * Creates an issue in a project. Needs the permission *Create issues*; the fields set must be ones
      *     the person may change (the title always).
      */
-    post: operations["makeIssue"];
+    post: operations["createIssue"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2396,10 +2396,10 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes a sub-project. Needs the permission *Create sub-projects inside the project* in the
+     * Creates a sub-project. Needs the permission *Create sub-projects inside the project* in the
      *     project it goes into.
      */
-    post: operations["makeSubProject"];
+    post: operations["createSubProject"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2440,10 +2440,10 @@ export interface paths {
     get: operations["listRelationKinds"];
     put?: never;
     /**
-     * Makes a kind of relation. Needs the permission *Manage issue types, kinds of relation and
+     * Creates a kind of relation. Needs the permission *Manage issue types, kinds of relation and
      *     layouts*.
      */
-    post: operations["makeRelationKind"];
+    post: operations["createRelationKind"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2495,16 +2495,16 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The roles, in the order of roles, a page at a time. Needs the permission *Make, change and
+     * The roles, in the order of roles, a page at a time. Needs the permission *Create, change and
      *     delete roles*.
      */
     get: operations["listRoles"];
     put?: never;
     /**
-     * Makes a role. Needs the permission *Make, change and delete roles*; nobody gives a role a
+     * Creates a role. Needs the permission *Create, change and delete roles*; nobody gives a role a
      *     permission they do not hold themselves.
      */
-    post: operations["makeRole"];
+    post: operations["createRole"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2519,7 +2519,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * One role, with its permissions and what it is used for. Needs the permission *Make, change and
+     * One role, with its permissions and what it is used for. Needs the permission *Create, change and
      *     delete roles*.
      */
     get: operations["getRole"];
@@ -2527,13 +2527,13 @@ export interface paths {
     post?: never;
     /**
      * Deletes a role. A role that somebody has is deleted only with a `replacement`, which takes its
-     *     place in every row that gave it. Needs the permission *Make, change and delete roles*.
+     *     place in every row that gave it. Needs the permission *Create, change and delete roles*.
      */
     delete: operations["deleteRole"];
     options?: never;
     head?: never;
     /**
-     * Changes a role: its name, its permissions, its two-step switch. Needs the permission *Make,
+     * Changes a role: its name, its permissions, its two-step switch. Needs the permission *Create,
      *     change and delete roles*; nobody adds a permission they do not hold themselves, and nothing
      *     that would leave nobody who can manage roles.
      */
@@ -2550,8 +2550,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes a role from a copy of another: its permissions, its two-step switch and its levels.
-     *     Needs the permission *Make, change and delete roles*; nobody copies a role that holds more
+     * Creates a role from a copy of another: its permissions, its two-step switch and its levels.
+     *     Needs the permission *Create, change and delete roles*; nobody copies a role that holds more
      *     than they hold themselves.
      */
     post: operations["copyRole"];
@@ -2572,7 +2572,7 @@ export interface paths {
     put?: never;
     /**
      * Gives a starting role back the permissions and levels it had at the start (*Reset to the
-     *     starting permissions*). Needs the permission *Make, change and delete roles*.
+     *     starting permissions*). Needs the permission *Create, change and delete roles*.
      */
     post: operations["resetRole"];
     delete?: never;
@@ -2589,7 +2589,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * How many people with a role still have to set up a second step. Needs the permission *Make,
+     * How many people with a role still have to set up a second step. Needs the permission *Create,
      *     change and delete roles*.
      */
     get: operations["getSecondStepGap"];
@@ -3506,6 +3506,27 @@ export interface components {
      * @enum {string}
      */
     CountsBody: "organization" | "project";
+    /** @description An access key to make. */
+    CreateKeyBody: {
+      /** @description What it may do. */
+      choice: components["schemas"]["KeyChoice"];
+      /**
+       * @description When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
+       *     default number of days from now. It cannot be later than the longest time.
+       */
+      expires_at?: string | null;
+      /** @description What the key is called. */
+      name: string;
+      /** @description The password of the person, asked again so a stolen session cannot make a key. */
+      password: string;
+      /** @description The single permissions; only with the choice `permissions`, and then at least one. */
+      permissions?: components["schemas"]["Permission"][];
+      /**
+       * @description The projects the key is limited to; leave empty for every project. The key counts in
+       *     them and in their sub-projects, and gives nothing for the whole organization.
+       */
+      projects?: string[];
+    };
     /** @description A new access key: the secret is shown only now. */
     CreatedAccessKeyBody: {
       /** @description The key as it will be listed. */
@@ -4691,27 +4712,6 @@ export interface components {
      * @enum {string}
      */
     Look: "badge" | "pill" | "plain-text" | "progress-bar" | "avatar";
-    /** @description An access key to make. */
-    MakeKeyBody: {
-      /** @description What it may do. */
-      choice: components["schemas"]["KeyChoice"];
-      /**
-       * @description When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
-       *     default number of days from now. It cannot be later than the longest time.
-       */
-      expires_at?: string | null;
-      /** @description What the key is called. */
-      name: string;
-      /** @description The password of the person, asked again so a stolen session cannot make a key. */
-      password: string;
-      /** @description The single permissions; only with the choice `permissions`, and then at least one. */
-      permissions?: components["schemas"]["Permission"][];
-      /**
-       * @description The projects the key is limited to; leave empty for every project. The key counts in
-       *     them and in their sub-projects, and gives nothing for the whole organization.
-       */
-      projects?: string[];
-    };
     /**
      * @description Who is signed in, and what they may do for the whole organization (the menus of the browser app
      *     follow it; the server decides again at every request).
@@ -6854,7 +6854,7 @@ export interface operations {
       };
     };
   };
-  makeAccessKey: {
+  createAccessKey: {
     parameters: {
       query?: never;
       header?: never;
@@ -6863,7 +6863,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["MakeKeyBody"];
+        "application/json": components["schemas"]["CreateKeyBody"];
       };
     };
     responses: {
@@ -11960,7 +11960,7 @@ export interface operations {
       };
     };
   };
-  makeField: {
+  createField: {
     parameters: {
       query?: never;
       header?: never;
@@ -12814,7 +12814,7 @@ export interface operations {
       };
     };
   };
-  makeGroup: {
+  createGroup: {
     parameters: {
       query?: never;
       header?: never;
@@ -13619,7 +13619,7 @@ export interface operations {
       };
     };
   };
-  makeIssueType: {
+  createIssueType: {
     parameters: {
       query?: never;
       header?: never;
@@ -15942,7 +15942,7 @@ export interface operations {
       };
     };
   };
-  makeLabelGroup: {
+  createLabelGroup: {
     parameters: {
       query?: never;
       header?: never;
@@ -16201,7 +16201,7 @@ export interface operations {
       };
     };
   };
-  makeLabel: {
+  createLabel: {
     parameters: {
       query?: never;
       header?: never;
@@ -16602,7 +16602,7 @@ export interface operations {
       };
     };
   };
-  makeLayout: {
+  createLayout: {
     parameters: {
       query?: never;
       header?: never;
@@ -18184,7 +18184,7 @@ export interface operations {
       };
     };
   };
-  makeProject: {
+  createProject: {
     parameters: {
       query?: never;
       header?: never;
@@ -18954,7 +18954,7 @@ export interface operations {
       };
     };
   };
-  makeIssue: {
+  createIssue: {
     parameters: {
       query?: never;
       header?: never;
@@ -19548,7 +19548,7 @@ export interface operations {
       };
     };
   };
-  makeSubProject: {
+  createSubProject: {
     parameters: {
       query?: never;
       header?: never;
@@ -19811,7 +19811,7 @@ export interface operations {
       };
     };
   };
-  makeRelationKind: {
+  createRelationKind: {
     parameters: {
       query?: never;
       header?: never;
@@ -20165,7 +20165,7 @@ export interface operations {
       };
     };
   };
-  makeRole: {
+  createRole: {
     parameters: {
       query?: never;
       header?: never;

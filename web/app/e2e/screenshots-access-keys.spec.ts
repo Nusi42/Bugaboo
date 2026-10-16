@@ -2,7 +2,7 @@ import { settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
 import { sendPassword, signIn, signOut } from "./support/flows.ts";
@@ -19,8 +19,8 @@ const MILESTONE = "M2";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, cleo)).dispose();
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, cleo)).dispose();
       // Two keys that were made earlier, so the list has something to show.
       await admin.client.POST("/api/v1/access-keys", {
         body: { password: ada.password, name: "Nightly report", choice: "see-only" },

@@ -345,7 +345,7 @@ pub struct LabelsQuery {
 }
 
 /// Make a group of labels, at the end of the order.
-pub struct MakeLabelGroup {
+pub struct CreateLabelGroup {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What it is called.
@@ -371,7 +371,7 @@ pub struct ChangeLabelGroup {
 }
 
 /// Make a label, at the end of the order.
-pub struct MakeLabel {
+pub struct CreateLabel {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What it is called.

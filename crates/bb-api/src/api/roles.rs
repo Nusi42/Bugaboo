@@ -2,14 +2,14 @@
 //! making a role (from nothing or from a copy), changing it, giving a starting role its starting
 //! permissions back, and deleting it; and the permission catalogue the role page is made from.
 //!
-//! All of them need the permission *Make, change and delete roles*. What the use cases refuse
+//! All of them need the permission *Create, change and delete roles*. What the use cases refuse
 //! beyond that (nobody adds a permission they do not hold, the last administrator, a role in
 //! use deleted without a replacement) comes back as the refusal of the use case.
 
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::roles::{
-    ChangeRole, CopyRole, DeleteRole, MakeRole, PermissionCatalogue, PermissionsQuery, ResetRole,
+    ChangeRole, CopyRole, CreateRole, DeleteRole, PermissionCatalogue, PermissionsQuery, ResetRole,
     RoleDetail, RoleQuery, RoleView, RolesQuery,
 };
 use bb_core::id::RoleId;
@@ -271,7 +271,7 @@ pub(crate) struct RolesFilter {
     giveable: Option<bool>,
 }
 
-/// The roles, in the order of roles, a page at a time. Needs the permission *Make, change and
+/// The roles, in the order of roles, a page at a time. Needs the permission *Create, change and
 /// delete roles*.
 #[utoipa::path(
     get,
@@ -312,12 +312,12 @@ async fn list_roles(
     Ok(answer(Page::of_authorized(ROLES_LIST, &listed, &fields)?))
 }
 
-/// Makes a role. Needs the permission *Make, change and delete roles*; nobody gives a role a
+/// Creates a role. Needs the permission *Create, change and delete roles*; nobody gives a role a
 /// permission they do not hold themselves.
 #[utoipa::path(
     post,
     path = "/api/v1/roles",
-    operation_id = "makeRole",
+    operation_id = "createRole",
     tag = "roles",
     request_body = NewRoleBody,
     responses(
@@ -328,7 +328,7 @@ async fn list_roles(
         ConflictAnswer
     )
 )]
-async fn make_role(
+async fn create_role(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -336,9 +336,9 @@ async fn make_role(
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
-        .make_role(
+        .create_role(
             info,
-            MakeRole {
+            CreateRole {
                 session_token,
                 name: body.name,
                 permissions: body.permissions,
@@ -349,7 +349,7 @@ async fn make_role(
     answer_authorized(&made.map(|role| RoleBody::from(&role)))
 }
 
-/// One role, with its permissions and what it is used for. Needs the permission *Make, change and
+/// One role, with its permissions and what it is used for. Needs the permission *Create, change and
 /// delete roles*.
 #[utoipa::path(
     get,
@@ -379,7 +379,7 @@ async fn get_role(
     answer_authorized(&found.map(|detail| RoleDetailBody::from(&detail)))
 }
 
-/// Changes a role: its name, its permissions, its two-step switch. Needs the permission *Make,
+/// Changes a role: its name, its permissions, its two-step switch. Needs the permission *Create,
 /// change and delete roles*; nobody adds a permission they do not hold themselves, and nothing
 /// that would leave nobody who can manage roles.
 #[utoipa::path(
@@ -424,7 +424,7 @@ async fn change_role(
 }
 
 /// Deletes a role. A role that somebody has is deleted only with a `replacement`, which takes its
-/// place in every row that gave it. Needs the permission *Make, change and delete roles*.
+/// place in every row that gave it. Needs the permission *Create, change and delete roles*.
 #[utoipa::path(
     delete,
     path = "/api/v1/roles/{role_id}",
@@ -467,8 +467,8 @@ async fn delete_role(
     Ok(done())
 }
 
-/// Makes a role from a copy of another: its permissions, its two-step switch and its levels.
-/// Needs the permission *Make, change and delete roles*; nobody copies a role that holds more
+/// Creates a role from a copy of another: its permissions, its two-step switch and its levels.
+/// Needs the permission *Create, change and delete roles*; nobody copies a role that holds more
 /// than they hold themselves.
 #[utoipa::path(
     post,
@@ -509,7 +509,7 @@ async fn copy_role(
 }
 
 /// Gives a starting role back the permissions and levels it had at the start (*Reset to the
-/// starting permissions*). Needs the permission *Make, change and delete roles*.
+/// starting permissions*). Needs the permission *Create, change and delete roles*.
 #[utoipa::path(
     post,
     path = "/api/v1/roles/{role_id}/reset",
@@ -549,7 +549,7 @@ async fn reset_role(
 }
 
 /// The permissions of the catalogue, topic by topic: what the role page lists. Needs the
-/// permission *Make, change and delete roles*.
+/// permission *Create, change and delete roles*.
 #[utoipa::path(
     get,
     path = "/api/v1/permissions",
@@ -576,7 +576,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_roles, make_role))
+        .routes(routes!(list_roles, create_role))
         .routes(routes!(get_role, change_role, delete_role))
         .routes(routes!(copy_role))
         .routes(routes!(reset_role))

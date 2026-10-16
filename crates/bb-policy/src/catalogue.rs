@@ -105,7 +105,7 @@ permissions! {
     EditAnyway => ("edit-anyway", Issues, Project, Manage),
     /// Manage issue types, kinds of relation and layouts.
     ManageIssueTypes => ("manage-issue-types", WorkSettings, Project, Manage),
-    /// Make, change and retire fields.
+    /// Create, change and retire fields.
     ManageFields => ("manage-fields", WorkSettings, Organization, Manage),
     /// Manage labels and tags, also renaming and combining them.
     ManageLabels => ("manage-labels", WorkSettings, Project, Manage),
@@ -119,9 +119,9 @@ permissions! {
     ManagePeople => ("manage-people", People, Organization, Manage),
     /// Invite people and take invitations back.
     ManageInvitations => ("manage-invitations", People, Organization, Manage),
-    /// Make, rename and delete groups and change who is in them.
+    /// Create, rename and delete groups and change who is in them.
     ManageGroups => ("manage-groups", People, Organization, Manage),
-    /// Make, change and delete roles.
+    /// Create, change and delete roles.
     ManageRoles => ("manage-roles", People, Organization, Manage),
     /// Change organization settings.
     ChangeOrganizationSettings => ("change-organization-settings", Settings, Organization, Manage),

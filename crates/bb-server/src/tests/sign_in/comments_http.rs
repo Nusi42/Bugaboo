@@ -63,7 +63,7 @@ async fn iss_05_an_edited_comment_keeps_its_earlier_versions() -> TestResult {
     each_database("iss_05_versions", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         let written = comment(&mut ada, &issue, "It jams on page two.").await?;
         let id = id_of(&written)?;
         assert_eq!(written.body["version"], 1);
@@ -137,7 +137,7 @@ async fn iss_05_a_comment_goes_to_the_trash_and_comes_back_and_needs_the_permiss
     each_database("iss_05_trash", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         // A Viewer may see the issue, not comment on it.
         let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
         let refused = comment(&mut vera, &issue, "Me too.").await?;
@@ -188,7 +188,7 @@ async fn iss_05_a_guest_can_mention_a_role_but_not_a_person() -> TestResult {
         let (mut lena, _) = site
             .person_called(StartingRole::ProjectLead, "lena", "Lena Lead")
             .await?;
-        let issue = key_of(&site.make(&mut gus, "Gus cannot sign in").await?)?;
+        let issue = key_of(&site.create(&mut gus, "Gus cannot sign in").await?)?;
         // What Gus may name: groups and roles, no person.
         let choices = gus
             .send("GET", &format!("{ISSUES}/{issue}/mention-choices"), None)
@@ -261,9 +261,9 @@ async fn iss_05_a_hidden_issue_id_in_a_comment_stays_text() -> TestResult {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let theirs = key_of(&site.make(&mut gus, "Gus's problem").await?)?;
-        let secret = key_of(&site.make(&mut ada, "Ada's secret").await?)?;
-        let own = key_of(&site.make(&mut gus, "Another problem of Gus").await?)?;
+        let theirs = key_of(&site.create(&mut gus, "Gus's problem").await?)?;
+        let secret = key_of(&site.create(&mut ada, "Ada's secret").await?)?;
+        let own = key_of(&site.create(&mut gus, "Another problem of Gus").await?)?;
         let written = comment(&mut gus, &theirs, &format!("See {secret} and {own}.")).await?;
         let html = ok(&written)?["html"].as_str().ok_or("no html")?.to_owned();
         // Gus sees his own issue as a chip and the other one as text.
@@ -323,7 +323,7 @@ async fn iss_06_history_leaves_out_changes_to_fields_the_reader_cannot_see() -> 
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut reader = reader_without_priority(&site, &rig).await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         ok(&ada
             .send(
                 "PATCH",
@@ -397,7 +397,7 @@ async fn iss_06_the_history_reader_resumes_after_a_restart() -> TestResult {
     each_database("iss_06_resume", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         for text in ["One.", "Two.", "Three."] {
             ok(&comment(&mut ada, &issue, text).await?)?;
         }
@@ -446,7 +446,7 @@ async fn iss_07_reporting_assigning_and_commenting_start_following() -> TestResu
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
         let (mut cora, cora_id) = site.person(StartingRole::TeamMember, "cora").await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         let names = |list: &Reply| -> Vec<String> {
             items(list)
                 .iter()
@@ -512,7 +512,7 @@ async fn iss_07_a_followers_list_hidden_for_the_reader_is_left_out_with_its_leng
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
-        let issue = key_of(&site.make(&mut gus, "Gus cannot print").await?)?;
+        let issue = key_of(&site.create(&mut gus, "Gus cannot print").await?)?;
         // Ada comments, so two people follow the issue.
         ok(&comment(&mut ada, &issue, "On it.").await?)?;
         let for_ada = ada
@@ -541,7 +541,7 @@ async fn iss_07_a_viewer_sees_the_followers_by_role_and_not_by_name() -> TestRes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut bob, bob_id) = site.person(StartingRole::Viewer, "bob").await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         let (mut cora, cora_id) = site
             .person_called(StartingRole::TeamMember, "cora", "Cora Carpenter")
             .await?;
@@ -580,7 +580,7 @@ async fn iss_05_a_comment_that_is_too_long_is_refused_and_nothing_is_stored() ->
     each_database("iss_05_comment_too_long", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Long story").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Long story").await?)?;
         let fits = comment(&mut ada, &issue, &"a".repeat(LONG_TEXT_MAX)).await?;
         ok(&fits)?;
         let too_long = comment(&mut ada, &issue, &"a".repeat(LONG_TEXT_MAX + 1)).await?;
@@ -616,7 +616,7 @@ async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> 
             .person_called(StartingRole::TeamMember, "bob", "Bob Builder")
             .await?;
         // Gus reported nothing here, so he cannot see Ada's issue; Ada names him and Bob.
-        let issue = key_of(&site.make(&mut ada, "Budget plan").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Budget plan").await?)?;
         let written = comment(&mut ada, &issue, "Please ask @gus.guest and @bob.builder.").await?;
         let comment_id: CommentId = ok(&written)?["id"].as_str().ok_or("no id")?.parse()?;
         // A name is a chip only for a person who may see the issue (the one rule of every list of
@@ -644,7 +644,7 @@ async fn iss_06_a_page_of_hidden_rows_still_answers_with_a_cursor_and_repeats_no
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut reader = reader_without_priority(&site, &rig).await?;
-        let issue = key_of(&site.make(&mut ada, "Printer jams").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         // One change the reader sees, then many they do not (the newest are read first).
         ok(&ada
             .send(

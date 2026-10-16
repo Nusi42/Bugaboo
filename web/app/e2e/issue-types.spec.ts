@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 
 // Issue types and the mode of issue IDs (ISS-02, ISS-01a, WP-03): the four types of the first
@@ -15,9 +15,9 @@ import { addressInProject, paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
-      await makeProject(admin, "WEB", "Website");
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
+      await createProject(admin, "WEB", "Website");
       await admin.dispose();
     },
   },

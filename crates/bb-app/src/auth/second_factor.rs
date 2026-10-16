@@ -380,7 +380,7 @@ pub async fn remove_code_app<S: AuthStore>(
     Ok(Done)
 }
 
-/// Makes new backup codes; the old ones stop working. The person types their password again.
+/// Creates new backup codes; the old ones stop working. The person types their password again.
 ///
 /// # Errors
 /// `auth.wrong_credentials` for a wrong password, `request.invalid` without a code app.

@@ -12,7 +12,7 @@ use super::scenarios_layouts::{a_layout, lock_the_layout_for, slot_of};
 use super::world::{Outcome, World};
 use crate::access::{ROLES_MAX, RoleRecord};
 use crate::layouts::{FieldInput, SaveLayout, SectionInput, save_layout};
-use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
+use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 
 /// Roles beyond the first `ROLES_MAX`, as the last in the order.
 fn more_roles(world: &World, count: usize) -> Result<Vec<RoleId>, String> {
@@ -141,9 +141,9 @@ async fn the_draft_of_somebody_who_may_not_decide_roles_holds_no_role() -> Outco
     let project = a_project(&world, "ACME").await?;
     let editor = a_layout(&world, "ACME").await?;
     let slot = slot_of(&editor)?;
-    let role = make_role(
+    let role = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: admin.clone(),
             name: "Layout manager".to_owned(),
             permissions: vec![Permission::SeeProjects, Permission::ManageIssueTypes],

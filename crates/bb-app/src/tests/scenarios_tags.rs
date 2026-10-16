@@ -10,8 +10,8 @@ use super::scenarios_issues::an_issue;
 use super::world::World;
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
-    MakeLabel, MakeLabelGroup, RemoveLabel, RemoveTag, add_label, add_tag, change_label,
-    change_label_group, change_tag, combine_labels, combine_tags, make_label, make_label_group,
+    CreateLabel, CreateLabelGroup, RemoveLabel, RemoveTag, add_label, add_tag, change_label,
+    change_label_group, change_tag, combine_labels, combine_tags, create_label, create_label_group,
     remove_label, remove_tag,
 };
 
@@ -21,9 +21,9 @@ pub(crate) async fn a_label_group(
     name: &str,
     pick_one: bool,
 ) -> Result<LabelGroupId, String> {
-    Ok(make_label_group(
+    Ok(create_label_group(
         &world.ctx(),
-        MakeLabelGroup {
+        CreateLabelGroup {
             session_token: token(world),
             name: name.to_owned(),
             pick_one,
@@ -41,9 +41,9 @@ pub(crate) async fn a_label(
     name: &str,
     group: Option<LabelGroupId>,
 ) -> Result<LabelId, String> {
-    Ok(make_label(
+    Ok(create_label(
         &world.ctx(),
-        MakeLabel {
+        CreateLabel {
             session_token: token(world),
             name: name.to_owned(),
             color: None,
@@ -187,12 +187,12 @@ pub(crate) async fn combine_tags_scenario(world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn make_label_group_scenario(world: &World) -> Added {
+pub(crate) async fn create_label_group_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_label_group(
+        create_label_group(
             &world.ctx(),
-            MakeLabelGroup {
+            CreateLabelGroup {
                 session_token: token(world),
                 name: "Area".to_owned(),
                 pick_one: true,
@@ -221,12 +221,12 @@ pub(crate) async fn change_label_group_scenario(world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn make_label_scenario(world: &World) -> Added {
+pub(crate) async fn create_label_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_label(
+        create_label(
             &world.ctx(),
-            MakeLabel {
+            CreateLabel {
                 session_token: token(world),
                 name: "login".to_owned(),
                 color: None,

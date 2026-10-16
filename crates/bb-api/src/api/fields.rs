@@ -9,8 +9,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::fields::{
-    AddChoice, ChangeChoice, ChangeField, ChoiceView, CombineChoices, FieldPage, FieldQuery,
-    FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, MakeField, NewChoice,
+    AddChoice, ChangeChoice, ChangeField, ChoiceView, CombineChoices, CreateField, FieldPage,
+    FieldQuery, FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, NewChoice,
     ReorderChoices, SaveFieldText, ScopeView,
 };
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LockToken, ProjectId};
@@ -477,11 +477,11 @@ async fn get_field_used_by(
     answer_authorized(&usage.map(|usage| FieldUsedByBody::from(&usage)))
 }
 
-/// Makes an own field. Needs the permission *Manage fields*.
+/// Creates an own field. Needs the permission *Manage fields*.
 #[utoipa::path(
     post,
     path = "/api/v1/fields",
-    operation_id = "makeField",
+    operation_id = "createField",
     tag = "fields",
     request_body = NewFieldBody,
     responses(
@@ -492,7 +492,7 @@ async fn get_field_used_by(
         ConflictAnswer
     )
 )]
-async fn make_field(
+async fn create_field(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -511,9 +511,9 @@ async fn make_field(
         .collect();
     let made = auth
         .api()?
-        .make_field(
+        .create_field(
             info,
-            MakeField {
+            CreateField {
                 session_token,
                 name: body.name,
                 help: body.help,
@@ -822,7 +822,7 @@ where
 {
     OpenApiRouter::new()
         .routes(routes!(list_field_types))
-        .routes(routes!(list_fields, make_field))
+        .routes(routes!(list_fields, create_field))
         .routes(routes!(get_field, change_field))
         .routes(routes!(get_field_used_by))
         .routes(routes!(add_choice))

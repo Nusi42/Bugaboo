@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 use bb_core::message::{self, Message, MessageKey};
 use bb_dev_words::database::{DatabaseKind, parse as parse_database};
-use bb_sample::{DEFAULT_SEED, Everything, Layout, Options, Output, SampleError, Target, make};
+use bb_sample::{DEFAULT_SEED, Everything, Layout, Options, Output, SampleError, Target, create};
 use clap::{CommandFactory as _, FromArgMatches as _, Parser};
 use jiff::Timestamp;
 
@@ -63,7 +63,7 @@ async fn run(args: &Args, layout: &Layout) -> Result<String, SampleError> {
         Some(issues) => Everything::new(issues)?,
         None => Everything::full()?,
     };
-    let sample = make(&options, &output.data_folder(), &target, &mut everything).await?;
+    let sample = create(&options, &output.data_folder(), &target, &mut everything).await?;
     sample.verify_security_log().await?;
     output.write_dump(&sample.dump().await?.to_json()?)?;
     output.write_sign_in(&sample.sign_in_text())?;

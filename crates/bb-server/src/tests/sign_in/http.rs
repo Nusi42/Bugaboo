@@ -123,7 +123,7 @@ impl Browser {
         Ok(browser)
     }
 
-    /// Makes the first administrator (Ada) with the setup code of `rig`; this browser is signed in
+    /// Creates the first administrator (Ada) with the setup code of `rig`; this browser is signed in
     /// as her, and the answer is returned.
     pub(super) async fn set_up(&mut self, rig: &Rig) -> Result<Reply, Failure> {
         self.send(

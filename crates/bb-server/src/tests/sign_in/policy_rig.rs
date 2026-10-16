@@ -6,11 +6,11 @@ use std::collections::BTreeMap;
 
 use bb_app::access::Permission;
 use bb_app::auth::{AppError, Started};
-use bb_app::people::{AddGroupMember, MakeGroup};
-use bb_app::projects::{MakeProject, ProjectView};
+use bb_app::people::{AddGroupMember, CreateGroup};
+use bb_app::projects::{CreateProject, ProjectView};
 use bb_app::roles::{
-    AccessAnswer, AssignRole, AssignmentView, CheckAccessQuery, Given, MakeRole, PermissionAnswer,
-    RoleView, RolesQuery, Subject,
+    AccessAnswer, AssignRole, AssignmentView, CheckAccessQuery, CreateRole, Given,
+    PermissionAnswer, RoleView, RolesQuery, Subject,
 };
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, RoleId, UserId};
@@ -90,7 +90,7 @@ impl<'a> Org<'a> {
 
     /// A role made by the administrator.
     pub(super) async fn role(&self, name: &str, permissions: &[Permission]) -> Run<RoleView> {
-        self.make_role(&self.admin, name, permissions)
+        self.create_role(&self.admin, name, permissions)
             .await
             .map_err(Into::into)
     }
@@ -105,7 +105,7 @@ impl<'a> Org<'a> {
     }
 
     /// A role made by somebody; the answer, or why it was refused.
-    pub(super) async fn make_role(
+    pub(super) async fn create_role(
         &self,
         by: &Member,
         name: &str,
@@ -114,9 +114,9 @@ impl<'a> Org<'a> {
         Ok(self
             .rig
             .api()
-            .make_role(
+            .create_role(
                 Rig::info(),
-                MakeRole {
+                CreateRole {
                     session_token: by.session.clone(),
                     name: name.to_owned(),
                     permissions: permissions.to_vec(),
@@ -136,9 +136,9 @@ impl<'a> Org<'a> {
         Ok(self
             .rig
             .api()
-            .make_project(
+            .create_project(
                 Rig::info(),
-                MakeProject {
+                CreateProject {
                     session_token: self.admin.session.clone(),
                     parent,
                     short_name: short_name.to_owned(),
@@ -154,9 +154,9 @@ impl<'a> Org<'a> {
         Ok(self
             .rig
             .api()
-            .make_group(
+            .create_group(
                 Rig::info(),
-                MakeGroup {
+                CreateGroup {
                     session_token: self.admin.session.clone(),
                     name: name.to_owned(),
                 },

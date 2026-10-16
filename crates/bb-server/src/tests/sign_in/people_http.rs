@@ -46,7 +46,7 @@ impl Organization {
     }
 
     /// Ada makes something and the answer must be a success: its ID.
-    pub(super) async fn make(&mut self, path: &str, body: Value) -> Result<String, Failure> {
+    pub(super) async fn create(&mut self, path: &str, body: Value) -> Result<String, Failure> {
         let reply = self.ada.send("POST", path, Some(body)).await?;
         assert_eq!(reply.status, StatusCode::OK, "{path}: {}", reply.body);
         id_of(&reply)
@@ -163,20 +163,20 @@ async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         let viewer = org.role_named("Viewer").await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
-        let group = org.make("/api/v1/groups", json!({"name": "Backend"})).await?;
+        let group = org.create("/api/v1/groups", json!({"name": "Backend"})).await?;
         let added = org
             .ada
             .send("PUT", &format!("/api/v1/groups/{group}/members/{bob_id}"), None)
             .await?;
         assert_eq!(added.status, StatusCode::NO_CONTENT, "{}", added.body);
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": bob_id}, "role": viewer}),
         )
         .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": bob_id}, "role": viewer, "applies_to": "project-and-sub-projects"}),
         )
@@ -218,13 +218,13 @@ async fn sec_02_the_page_of_a_person_lists_their_groups_and_the_roles_the_viewer
         // Somebody who manages people, and nothing else, sees neither groups nor roles: the page
         // shows what they may know, and says nothing about what they may not.
         let people_only = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "People only", "permissions": ["manage-people"], "two_step": false}),
             )
             .await?;
         let (mut dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": dana_id}, "role": people_only}),
         )
@@ -255,7 +255,7 @@ async fn sec_02_groups_are_made_and_renamed_over_http() -> TestResult {
     each_database("sec_02_http_groups_made", async |db| {
         let mut org = start(db).await?;
         let group = org
-            .make("/api/v1/groups", json!({"name": "Backend"}))
+            .create("/api/v1/groups", json!({"name": "Backend"}))
             .await?;
         let taken = org
             .ada
@@ -296,7 +296,7 @@ async fn sec_02_the_people_of_a_group_are_listed_picked_and_taken_out_over_http(
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         let (_cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
         let group = org
-            .make("/api/v1/groups", json!({"name": "Backend"}))
+            .create("/api/v1/groups", json!({"name": "Backend"}))
             .await?;
 
         // Putting people in, with the picker that says who is in already.
@@ -390,7 +390,7 @@ async fn sec_02_the_picker_of_a_group_names_people_and_says_who_is_in_already() 
         let mut org = start(db).await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         let group = org
-            .make("/api/v1/groups", json!({"name": "Backend"}))
+            .create("/api/v1/groups", json!({"name": "Backend"}))
             .await?;
         org.ada
             .send(
@@ -434,7 +434,7 @@ async fn sec_02_a_person_who_may_not_manage_groups_is_refused_on_every_group_rou
         let mut org = start(db).await?;
         let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         let group = org
-            .make("/api/v1/groups", json!({"name": "Backend"}))
+            .create("/api/v1/groups", json!({"name": "Backend"}))
             .await?;
         let routes: [(&str, String, Option<Value>); 8] = [
             ("GET", "/api/v1/groups".into(), None),

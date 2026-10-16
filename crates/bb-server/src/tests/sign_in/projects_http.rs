@@ -29,8 +29,8 @@ async fn administrator(db: &bb_testing::TestDatabase) -> Result<(Browser, axum::
     Ok((ada, app))
 }
 
-/// Makes a project at the top level, or inside `parent`, and says what the server answered.
-async fn make(
+/// Creates a project at the top level, or inside `parent`, and says what the server answered.
+async fn create(
     browser: &mut Browser,
     parent: Option<&str>,
     short_name: &str,
@@ -51,23 +51,23 @@ async fn make(
 
 #[tokio::test]
 async fn prj_01_projects_are_made_over_http_by_the_rules_of_the_form() -> TestResult {
-    each_database("prj_01_http_make", async |db| {
+    each_database("prj_01_http_create", async |db| {
         let (mut ada, _app) = administrator(db).await?;
-        let acme = make(&mut ada, None, "ACME", "Acme").await?;
+        let acme = create(&mut ada, None, "ACME", "Acme").await?;
         assert_eq!(acme.status, StatusCode::OK, "{}", acme.body);
         assert_eq!(acme.body["version"], 1);
         let acme_id = id_in(&acme.body)?;
-        let bad = make(&mut ada, None, "acme", "Acme").await?;
+        let bad = create(&mut ada, None, "acme", "Acme").await?;
         assert_eq!(
             (bad.status, bad.code()),
             (StatusCode::BAD_REQUEST, "request.invalid")
         );
-        let taken = make(&mut ada, Some(&acme_id), "ACME", "Again").await?;
+        let taken = create(&mut ada, Some(&acme_id), "ACME", "Again").await?;
         assert_eq!(
             (taken.status, taken.code()),
             (StatusCode::CONFLICT, "name.taken")
         );
-        let web = make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
+        let web = create(&mut ada, Some(&acme_id), "WEB", "Website").await?;
         assert_eq!(web.status, StatusCode::OK, "{}", web.body);
         assert_eq!(web.body["parent"], acme_id);
         Ok(())
@@ -79,8 +79,8 @@ async fn prj_01_projects_are_made_over_http_by_the_rules_of_the_form() -> TestRe
 async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> TestResult {
     each_database("prj_02_http_list", async |db| {
         let (mut ada, _app) = administrator(db).await?;
-        let acme_id = id_in(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
-        make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
+        let acme_id = id_in(&create(&mut ada, None, "ACME", "Acme").await?.body)?;
+        create(&mut ada, Some(&acme_id), "WEB", "Website").await?;
         let top = ada.send("GET", PROJECTS, None).await?;
         assert_eq!(top.status, StatusCode::OK);
         assert_eq!(short_names(&top.body), ["ACME"]);
@@ -97,7 +97,7 @@ async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> 
             .await?;
         assert_eq!(short_names(&found.body), ["WEB"]);
         for short_name in ["CCC", "BBB"] {
-            make(&mut ada, None, short_name, short_name).await?;
+            create(&mut ada, None, short_name, short_name).await?;
         }
         let first = ada
             .send("GET", &format!("{PROJECTS}?limit=2"), None)
@@ -121,8 +121,8 @@ async fn prj_02_projects_are_listed_as_a_tree_a_search_and_pages_over_http() -> 
 async fn prj_01_a_project_is_shown_by_its_address_and_changed_over_http() -> TestResult {
     each_database("prj_01_http_change", async |db| {
         let (mut ada, _app) = administrator(db).await?;
-        let acme_id = id_in(&make(&mut ada, None, "ACME", "Acme").await?.body)?;
-        let web = make(&mut ada, Some(&acme_id), "WEB", "Website").await?;
+        let acme_id = id_in(&create(&mut ada, None, "ACME", "Acme").await?.body)?;
+        let web = create(&mut ada, Some(&acme_id), "WEB", "Website").await?;
         let web_id = id_in(&web.body)?;
         let one = ada.send("GET", &format!("{PROJECTS}/WEB"), None).await?;
         assert_eq!(one.status, StatusCode::OK, "{}", one.body);
@@ -167,7 +167,7 @@ async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() ->
     each_database("prj_01_http_hidden", async |db| {
         let (mut ada, app) = administrator(db).await?;
         let mut bob = ada.invite("bob@example.test", "Bob").await?;
-        make(&mut ada, None, "ACME", "Acme").await?;
+        create(&mut ada, None, "ACME", "Acme").await?;
         // The list is empty and says nothing more; a project is not found, exactly like one that
         // does not exist; he may make nothing.
         let empty = bob.send("GET", PROJECTS, None).await?;
@@ -179,7 +179,7 @@ async fn prj_01_a_person_without_a_role_sees_no_project_and_is_told_nothing() ->
         assert_eq!(hidden.body["code"], "resource.not_found");
         assert_eq!(hidden.body["message_key"], missing.body["message_key"]);
         assert_eq!(hidden.body["title"], missing.body["title"]);
-        let denied = make(&mut bob, None, "MINE", "Mine").await?;
+        let denied = create(&mut bob, None, "MINE", "Mine").await?;
         assert_eq!(
             (denied.status, denied.code()),
             (StatusCode::FORBIDDEN, "access.forbidden")

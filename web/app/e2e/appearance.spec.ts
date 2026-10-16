@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { tokenValue } from "./support/tokens.ts";
 import { type Page } from "@playwright/test";
 
-import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
 import {
   expectNoOverlap,
   expectNoSidewaysScroll,
@@ -21,7 +21,7 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

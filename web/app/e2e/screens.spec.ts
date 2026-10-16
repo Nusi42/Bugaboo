@@ -7,8 +7,8 @@ import {
   bob,
   cleo,
   invite,
-  makeAdmin,
-  makePerson,
+  createAdmin,
+  createPerson,
   setSignUpPolicy,
 } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
@@ -22,10 +22,10 @@ let openLink = "";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const session = await makePerson(server, admin, bob);
+      const admin = await createAdmin(server);
+      const session = await createPerson(server, admin, bob);
       await addCodeApp(session, bob.password);
-      await (await makePerson(server, admin, cleo)).dispose();
+      await (await createPerson(server, admin, cleo)).dispose();
       openLink = await invite(admin, "guest@example.test");
       await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();

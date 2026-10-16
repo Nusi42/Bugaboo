@@ -271,7 +271,7 @@ pub(crate) async fn renew_step_in<S: AuthStore>(
             serde_json::json!(IssueKey::new(renewal.short_name.clone(), code).to_string())
         };
         let event = events
-            .make(
+            .create(
                 entity(RecordKind::Issue, issue),
                 vec![
                     FieldChange {

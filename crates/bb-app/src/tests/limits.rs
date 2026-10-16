@@ -196,7 +196,7 @@ async fn cf_01_a_full_store_of_fields_and_choices_answers_limit_reached() -> Out
     use bb_core::own_fields::{CHOICES_MAX, FIELDS_MAX, FieldType};
 
     use super::scenarios_fields::{a_field, new_field};
-    use crate::fields::{AddChoice, add_choice, make_field};
+    use crate::fields::{AddChoice, add_choice, create_field};
 
     let world = World::new().await?;
     // A field with as many choices as it may hold takes no more.
@@ -229,7 +229,7 @@ async fn cf_01_a_full_store_of_fields_and_choices_answers_limit_reached() -> Out
             .await
             .map_err(text)?;
     }
-    let refused = make_field(
+    let refused = create_field(
         &world.ctx(),
         new_field(&world, "One field too many", FieldType::Text, &[]),
     )

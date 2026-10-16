@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { usePageTitle } from "../../../shared/use-page.ts";
 import { KeyList } from "./KeyList.tsx";
-import { MakeKeyForm } from "./MakeKeyForm.tsx";
+import { CreateKeyForm } from "./CreateKeyForm.tsx";
 import { ShownOnce } from "./ShownOnce.tsx";
 
 /** What the page shows apart from the list: the button, the form, or the key that was just made. */
@@ -40,7 +40,7 @@ export function AccessKeysPage() {
       {making.step === "shown" ? <ShownOnce secret={making.secret} onDone={idle} /> : null}
       {making.step === "form" ? (
         <Card heading={t("access-keys.create")}>
-          <MakeKeyForm
+          <CreateKeyForm
             onMade={(secret) => {
               setMaking({ step: "shown", secret });
             }}

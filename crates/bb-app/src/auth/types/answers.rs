@@ -222,7 +222,7 @@ pub struct AccessKeyPage {
     pub next_cursor: Option<String>,
 }
 
-/// How long a new access key lives in this organization: what the form of *Make an access key*
+/// How long a new access key lives in this organization: what the form of *Create an access key*
 /// offers (the two organization settings for the default and the longest time of a key).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AccessKeyRules {

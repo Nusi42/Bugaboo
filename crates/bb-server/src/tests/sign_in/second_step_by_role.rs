@@ -6,11 +6,11 @@ use bb_app::access::Permission;
 use bb_app::auth::SecondStepStore as _;
 use bb_app::auth::{
     AccessKeyRulesQuery, AccessKeysQuery, AppError, AuthenticateQuery, ConfirmCodeApp,
-    DeleteAccessKey, InvitationsQuery, MakeAccessKey, SecondStepGapQuery, SessionsQuery,
+    CreateAccessKey, DeleteAccessKey, InvitationsQuery, SecondStepGapQuery, SessionsQuery,
     StartCodeApp, TwoStepQuery,
 };
 use bb_app::context::Clock as _;
-use bb_app::roles::{AssignRole, ChangeRole, Given, MakeRole, Subject};
+use bb_app::roles::{AssignRole, ChangeRole, CreateRole, Given, Subject};
 use bb_auth::TotpSecret;
 use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
@@ -39,9 +39,9 @@ pub(super) async fn role_with(
     Ok(org
         .rig
         .api()
-        .make_role(
+        .create_role(
             Rig::info(),
-            MakeRole {
+            CreateRole {
                 session_token: org.admin.session.clone(),
                 name: name.to_owned(),
                 permissions: vec![permission],
@@ -143,9 +143,9 @@ async fn only_setting_up_is_open(rig: &Rig, bob: &Member) -> Run<()> {
     // Nor can it make or delete a key, or ask for the rules of a new one.
     let made = rig
         .api()
-        .make_access_key(
+        .create_access_key(
             Rig::info(),
-            MakeAccessKey {
+            CreateAccessKey {
                 session_token: session.clone(),
                 password: PASSWORD.to_owned(),
                 name: "A key".to_owned(),

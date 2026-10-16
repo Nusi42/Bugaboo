@@ -151,7 +151,7 @@ impl<K: Hash + Eq + Clone> Window<K> {
         let mut table = self.lock();
         let mut key = key;
         if table.entries.len() >= MAX_CLIENTS && !table.entries.contains_key(&key) {
-            make_room(&mut table, now);
+            create_room(&mut table, now);
             if table.entries.len() >= MAX_CLIENTS {
                 match &self.overflow {
                     Overflow::Share(shared) => key = shared.clone(),
@@ -185,7 +185,7 @@ fn seconds_left(started: Instant, now: Instant) -> u64 {
 
 /// Throws out the counters whose window is over, when the table is full. A full table is swept
 /// at most once per [`SWEEP_EVERY`]; counters that are still running are never thrown away.
-fn make_room<K>(table: &mut Table<K>, now: Instant) {
+fn create_room<K>(table: &mut Table<K>, now: Instant) {
     let due = table
         .last_sweep
         .is_none_or(|last| now.saturating_duration_since(last) >= SWEEP_EVERY);

@@ -61,13 +61,13 @@ async fn admins_through_a_group(org: &mut Organization) -> Result<Admins, Failur
     let administrator = org.role_named("Administrator").await?;
     let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
     let ada_id = me(&mut org.ada).await?;
-    org.make(
+    org.create(
         "/api/v1/assignments",
         json!({"who": {"person": bob_id}, "role": administrator}),
     )
     .await?;
     let group = org
-        .make("/api/v1/groups", json!({"name": "Admins"}))
+        .create("/api/v1/groups", json!({"name": "Admins"}))
         .await?;
     let put = org
         .ada
@@ -79,7 +79,7 @@ async fn admins_through_a_group(org: &mut Organization) -> Result<Admins, Failur
         .await?;
     assert_eq!(put.status, StatusCode::NO_CONTENT, "{}", put.body);
     let group_row = org
-        .make(
+        .create(
             "/api/v1/assignments",
             json!({"who": {"group": group}, "role": administrator}),
         )
@@ -189,16 +189,16 @@ async fn sec_08_no_access_on_yourself_or_your_group_is_told_when_it_takes_the_wa
         let mut org = start(db).await?;
         let lead = org.role_named("Project lead").await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
         let (mut cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
         let (_dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
-        let group = org.make("/api/v1/groups", json!({"name": "Leads"})).await?;
+        let group = org.create("/api/v1/groups", json!({"name": "Leads"})).await?;
         org.ada
             .send("PUT", &format!("/api/v1/groups/{group}/members/{cleo_id}"), None)
             .await?;
         // Cleo leads ACME through the group Leads and decides who has which role there.
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"group": group}, "role": lead, "applies_to": "project-and-sub-projects"}),
         )
@@ -264,7 +264,7 @@ async fn sec_08_changing_or_deleting_a_role_you_hold_is_told_when_it_takes_the_w
             BOTH
         );
         let copy = org
-            .make(&format!("/api/v1/roles/{administrator}/copy"), json!({"name": "Second"}))
+            .create(&format!("/api/v1/roles/{administrator}/copy"), json!({"name": "Second"}))
             .await?;
         assert!(
             loses(
@@ -280,7 +280,7 @@ async fn sec_08_changing_or_deleting_a_role_you_hold_is_told_when_it_takes_the_w
 }
 
 #[tokio::test]
-async fn sec_08_a_person_who_may_not_make_the_change_is_told_it_takes_nothing_and_nothing_more()
+async fn sec_08_a_person_who_may_not_apply_the_change_is_told_it_takes_nothing_and_nothing_more()
 -> TestResult {
     each_database("sec_08_own_loss_silent", async |db| {
         let mut org = start(db).await?;

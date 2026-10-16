@@ -73,16 +73,16 @@ pub(super) async fn list(
         .into_value())
 }
 
-pub(super) async fn make(
+pub(super) async fn create(
     org: &Org<'_>,
     by: &Member,
     parent: Option<ProjectId>,
     short_name: &str,
 ) -> Result<ProjectView, AppError> {
     Ok(api(org)
-        .make_project(
+        .create_project(
             Rig::info(),
-            bb_app::projects::MakeProject {
+            bb_app::projects::CreateProject {
                 session_token: by.session.clone(),
                 parent,
                 short_name: short_name.to_owned(),
@@ -184,7 +184,7 @@ async fn prj_01_projects_nest_to_any_depth_and_short_names_are_unique() -> TestR
         let mut made = Vec::new();
         // Twelve projects, each inside the one before.
         for number in 0..12 {
-            let project = make(&org, &admin, parent, &format!("DEEP{number}")).await?;
+            let project = create(&org, &admin, parent, &format!("DEEP{number}")).await?;
             parent = Some(project.id);
             made.push(project);
         }
@@ -195,7 +195,7 @@ async fn prj_01_projects_nest_to_any_depth_and_short_names_are_unique() -> TestR
         // A short name is unique in the whole organization, at any depth.
         for place in [None, Some(made[3].id), Some(made[11].id)] {
             assert_eq!(
-                refused(make(&org, &admin, place, "DEEP5").await),
+                refused(create(&org, &admin, place, "DEEP5").await),
                 Some(ErrorCode::NameTaken)
             );
         }
@@ -231,13 +231,13 @@ async fn prj_01_a_short_name_breaks_no_rule_of_m2_q4_when_a_project_is_made() ->
         // The server takes only capitals; the form turns typed letters into capitals.
         for bad in ["web", "W", "ABCDEFGHIJK", "2WEB", "WE B", "WEB-1", "ÄB", ""] {
             assert_eq!(
-                refused(make(&org, &admin, None, bad).await),
+                refused(create(&org, &admin, None, bad).await),
                 Some(ErrorCode::InvalidRequest),
                 "{bad:?}"
             );
         }
         for good in ["WE", "APP2", "ABCDEFGHIJ"] {
-            make(&org, &admin, None, good).await?;
+            create(&org, &admin, None, good).await?;
         }
         Ok(())
     })
@@ -250,7 +250,7 @@ async fn prj_01_an_old_short_name_redirects() -> TestResult {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let web = make(&org, &admin, None, "WEB").await?;
+        let web = create(&org, &admin, None, "WEB").await?;
         let renamed = change(&org, &admin, &web, None, Some("SITE")).await?;
         assert_eq!(renamed.short_name.as_str(), "SITE");
         assert_eq!(renamed.version, 2);
@@ -265,10 +265,10 @@ async fn prj_01_an_old_short_name_redirects() -> TestResult {
         );
         // Nobody else can take the old short name; the project can.
         assert_eq!(
-            refused(make(&org, &admin, None, "WEB").await),
+            refused(create(&org, &admin, None, "WEB").await),
             Some(ErrorCode::NameTaken)
         );
-        let other = make(&org, &admin, None, "OTHER").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
         assert_eq!(
             refused(change(&org, &admin, &other, None, Some("WEB")).await),
             Some(ErrorCode::NameTaken)
@@ -278,7 +278,7 @@ async fn prj_01_an_old_short_name_redirects() -> TestResult {
         // Now SITE is the old one, and stays with the project.
         assert_eq!(detail(&org, &admin, "SITE").await?.project.id, web.id);
         assert_eq!(
-            refused(make(&org, &admin, None, "SITE").await),
+            refused(create(&org, &admin, None, "SITE").await),
             Some(ErrorCode::NameTaken)
         );
         // A change made on an old version is stopped, a name alone leaves the short name be.
@@ -302,10 +302,10 @@ async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_create_project
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let secret = make(&org, &admin, None, "SECRET").await?;
+        let secret = create(&org, &admin, None, "SECRET").await?;
         let renamed = change(&org, &admin, &secret, None, Some("OPEN")).await?;
         assert_eq!(renamed.short_name.as_str(), "OPEN");
-        let ours = make(&org, &admin, None, "OURS").await?;
+        let ours = create(&org, &admin, None, "OURS").await?;
 
         // Maker may create projects at the top level and sees none of them.
         let maker_role = org.role("Maker", &[Permission::CreateProjects]).await?;
@@ -313,15 +313,15 @@ async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_create_project
         org.give_everywhere(&maker, maker_role.id).await?;
         // The same answer for a hidden project's short name, for its old one, and for a short
         // name that a project she cannot see once had; a free one works.
-        let current = refused(make(&org, &maker, None, "OPEN").await);
-        let old = refused(make(&org, &maker, None, "SECRET").await);
+        let current = refused(create(&org, &maker, None, "OPEN").await);
+        let old = refused(create(&org, &maker, None, "SECRET").await);
         assert_eq!(current, Some(ErrorCode::NameTaken));
         assert_eq!(old, current);
         assert_eq!(
             asked(&org, &maker, "OPEN").await,
             Some(AppError::Refused(ErrorCode::NotFound))
         );
-        make(&org, &maker, None, "FREE").await?;
+        create(&org, &maker, None, "FREE").await?;
 
         // Cleo leads OURS: she may change its settings, but may make no project where it sits,
         // so she is told nothing about short names of others, taken or not, and never refused
@@ -349,11 +349,11 @@ async fn prj_01_a_hidden_project_answers_not_found_like_a_missing_one() -> TestR
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let hidden = make(&org, &admin, None, "HIDDEN").await?;
-        let inner = make(&org, &admin, Some(hidden.id), "INNER").await?;
+        let hidden = create(&org, &admin, None, "HIDDEN").await?;
+        let inner = create(&org, &admin, Some(hidden.id), "INNER").await?;
         let bob = org.person().await?;
         let viewer = org.role("Looker", &VIEW).await?;
-        let shown = make(&org, &admin, None, "SHOWN").await?;
+        let shown = create(&org, &admin, None, "SHOWN").await?;
         org.give(&bob, viewer.id, shown.id).await?;
 
         let not_found = Some(AppError::Refused(ErrorCode::NotFound));
@@ -437,9 +437,9 @@ async fn prj_01_a_visible_sub_project_of_a_hidden_project_does_not_name_it() -> 
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
-        let api_project = make(&org, &admin, Some(web.id), "API").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
+        let api_project = create(&org, &admin, Some(web.id), "API").await?;
         let bea = org.person().await?;
         let viewer = org.role("Looker", &VIEW).await?;
         // Bea sees WEB and what is inside it, but not ACME above it.
@@ -513,10 +513,10 @@ async fn prj_03_the_move_preview_names_who_gains_and_loses_access() -> TestResul
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let other = make(&org, &admin, None, "OTHER").await?;
-        let web = make(&org, &admin, Some(other.id), "WEB").await?;
-        make(&org, &admin, Some(web.id), "API").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
+        let web = create(&org, &admin, Some(other.id), "WEB").await?;
+        create(&org, &admin, Some(web.id), "API").await?;
         let viewer = org.role("Looker", &VIEW).await?;
         let bob = org.person().await?;
         let cleo = org.person().await?;
@@ -610,9 +610,9 @@ async fn prj_03_a_project_cannot_move_below_itself() -> TestResult {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
-        let api_project = make(&org, &admin, Some(web.id), "API").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
+        let api_project = create(&org, &admin, Some(web.id), "API").await?;
         for to in [acme.id, web.id, api_project.id] {
             assert_eq!(
                 refused(preview(&org, &admin, acme.id, Some(to)).await),
@@ -643,9 +643,9 @@ async fn prj_03_moving_needs_the_right_in_the_old_and_the_new_parent() -> TestRe
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let other = make(&org, &admin, None, "OTHER").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
         let lead = org.role("Section lead", &LEAD).await?;
         let viewer = org.role("Looker", &VIEW).await?;
         let bob = org.person().await?;
@@ -681,8 +681,8 @@ async fn prj_03_a_move_after_the_tree_changed_asks_again() -> TestResult {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, None, "WEB").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, None, "WEB").await?;
         let viewer = org.role("Looker", &VIEW).await?;
         let bob = org.person().await?;
         let shown = preview(&org, &admin, web.id, Some(acme.id)).await?;
@@ -701,7 +701,7 @@ async fn prj_03_a_move_after_the_tree_changed_asks_again() -> TestResult {
         assert_ne!(again.preview, shown.preview);
         relocate(&org, &admin, web.id, Some(acme.id), &again.preview).await?;
         // The same goes for a rename of one of the two parents, and for an unknown version.
-        let other = make(&org, &admin, None, "OTHER").await?;
+        let other = create(&org, &admin, None, "OTHER").await?;
         let third = preview(&org, &admin, web.id, Some(other.id)).await?;
         change(&org, &admin, &other, Some("Renamed"), None).await?;
         assert_eq!(
@@ -723,9 +723,9 @@ async fn prj_03_a_move_cannot_let_somebody_lift_a_no_access_they_are_subject_to(
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let x = make(&org, &admin, None, "XRAY").await?;
-        let inside = make(&org, &admin, Some(x.id), "XIN").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let x = create(&org, &admin, None, "XRAY").await?;
+        let inside = create(&org, &admin, Some(x.id), "XIN").await?;
         let lead = org.role("Section lead", &LEAD).await?;
         let bob = org.person().await?;
         // Bob leads ACME with its sub-projects, and has a No access on X.
@@ -829,8 +829,8 @@ async fn prj_03_a_move_out_from_under_a_no_access_is_named_in_the_preview() -> T
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let acme = make(&org, &admin, None, "ACME").await?;
-        let web = make(&org, &admin, Some(acme.id), "WEB").await?;
+        let acme = create(&org, &admin, None, "ACME").await?;
+        let web = create(&org, &admin, Some(acme.id), "WEB").await?;
         let viewer = org.role("Looker", &VIEW).await?;
         let bob = org.person().await?;
         org.give_everywhere(&bob, viewer.id).await?;
@@ -854,10 +854,10 @@ async fn priv_13_no_project_answer_holds_a_count() -> TestResult {
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
         // Two top-level projects, each with hidden sub-projects (three and none).
-        let loud = make(&org, &admin, None, "LOUD").await?;
-        let quiet = make(&org, &admin, None, "QUIET").await?;
+        let loud = create(&org, &admin, None, "LOUD").await?;
+        let quiet = create(&org, &admin, None, "QUIET").await?;
         for short_name in ["ONE", "TWO", "THREE"] {
-            make(&org, &admin, Some(loud.id), short_name).await?;
+            create(&org, &admin, Some(loud.id), short_name).await?;
         }
         let viewer = org.role("Looker", &VIEW).await?;
         let bea = org.person().await?;
@@ -956,7 +956,7 @@ async fn prj_01_changes_write_their_event_and_entry_of_the_log() -> TestResult {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let admin = org.admin.clone();
-        let web = make(&org, &admin, None, "WEB").await?;
+        let web = create(&org, &admin, None, "WEB").await?;
         let entries = |action: SecurityAction| {
             let database = rig.database.clone();
             async move {

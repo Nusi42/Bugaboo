@@ -5,7 +5,7 @@
 //! the matrix in the target project (`examples_issues::an_issue`). The routes of the people who
 //! look after tags and labels make what they work on first, as the administrator.
 
-use bb_app::tags::{AddTag, MakeLabel, MakeLabelGroup};
+use bb_app::tags::{AddTag, CreateLabel, CreateLabelGroup};
 use bb_testing::Failure;
 use serde_json::json;
 
@@ -46,9 +46,9 @@ async fn a_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
-        .make_label(
+        .create_label(
             Rig::info(),
-            MakeLabel {
+            CreateLabel {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("label {}", fixture.next_number()),
                 color: None,
@@ -147,7 +147,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             Some(json!({"into": a_tag(fixture).await?, "version": 1, "into_version": 1})),
         ),
         "listLabels" => ("GET", "/api/v1/labels".into(), None),
-        "makeLabelGroup" => (
+        "createLabelGroup" => (
             "POST",
             "/api/v1/label-groups".into(),
             Some(json!({"name": format!("group {}", fixture.next_number()), "pick_one": true})),
@@ -156,9 +156,9 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             let made = fixture
                 .rig()
                 .api()
-                .make_label_group(
+                .create_label_group(
                     Rig::info(),
-                    MakeLabelGroup {
+                    CreateLabelGroup {
                         session_token: fixture.admin_session().to_owned(),
                         name: format!("group {}", fixture.next_number()),
                         pick_one: false,
@@ -173,7 +173,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
                 Some(json!({"version": 1, "name": format!("renamed {}", fixture.next_number())})),
             )
         }
-        "makeLabel" => (
+        "createLabel" => (
             "POST",
             "/api/v1/labels".into(),
             Some(json!({"name": format!("label {}", fixture.next_number())})),

@@ -4,8 +4,8 @@
 
 use bb_app::access::{NOT_FOR_KEYS, Permission};
 use bb_app::auth::{
-    AccessKeyRulesQuery, AppError, ChangePassword, ChangeSignUpPolicy, CreateInvitation,
-    MakeAccessKey, SignOutEverywhere, SignUpPolicy, SignUpPolicyQuery,
+    AccessKeyRulesQuery, AppError, ChangePassword, ChangeSignUpPolicy, CreateAccessKey,
+    CreateInvitation, SignOutEverywhere, SignUpPolicy, SignUpPolicyQuery,
 };
 use bb_app::roles::ChangeRole;
 use bb_core::ErrorCode;
@@ -157,9 +157,9 @@ async fn auth_07_single_permissions_of_a_key_never_include_those_a_key_never_hol
             for never in NOT_FOR_KEYS {
                 let asked = rig
                     .api()
-                    .make_access_key(
+                    .create_access_key(
                         Rig::info(),
-                        MakeAccessKey {
+                        CreateAccessKey {
                             session_token: org.admin.session.clone(),
                             password: PASSWORD.to_owned(),
                             name: "Inviting".to_owned(),

@@ -1,4 +1,4 @@
-//! *Make a project* (PRJ-01): at the top level, or inside another project.
+//! *Create a project* (PRJ-01): at the top level, or inside another project.
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
@@ -10,12 +10,12 @@ use bb_policy::{Authorized, Permission, Place, Tree};
 use serde_json::json;
 
 use super::Why;
-use super::types::{MakeProject, ProjectView};
+use super::types::{CreateProject, ProjectView};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::input::clean_name;
 use crate::member;
 
-/// Makes a project. Top level takes *Create projects*; a sub-project takes *Create sub-projects* in
+/// Creates a project. Top level takes *Create projects*; a sub-project takes *Create sub-projects* in
 /// its parent.
 ///
 /// # Errors
@@ -24,9 +24,9 @@ use crate::member;
 /// `project.too_deep` when the project would be nested deeper than a tree may go, `name.taken`
 /// when the short name is taken, or was used by a project once (only a person who
 /// may create projects there is told, with the same answer whether the project is hidden or not).
-pub async fn make_project<S: AuthStore>(
+pub async fn create_project<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeProject,
+    input: CreateProject,
 ) -> Result<Authorized<ProjectView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let access = match input.parent {

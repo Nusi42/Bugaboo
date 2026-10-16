@@ -21,37 +21,36 @@ use webauthn_authenticator_rs::softpasskey::SoftPasskey;
 
 use super::fake::FakeStore;
 use super::world::{OTHER_PASSWORD, PASSWORD, PUBLIC_URL, World};
-use crate::access::{MakeStartingRoles, Permission, make_starting_roles};
+use crate::access::{CreateStartingRoles, Permission, create_starting_roles};
 use crate::auth::{
-    AddPasskey, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp,
-    CreateInvitation, DeleteAccessKey, EndSession, IssueSetupCode, MakeAccessKey,
-    PasskeyRegistrationQuery, PasskeySecondStep, PasskeySecondStepQuery, PasskeySignIn,
-    PasskeySignInQuery, RemoveCodeApp, RemovePasskey, RenewBackupCodes, RevokeInvitation,
-    SecondStep, SignIn, SignOut, SignOutEverywhere, SignUp, SignUpPolicy, StartCodeApp, Started,
-    accept_invitation, add_passkey, change_password, change_sign_up_policy, complete_setup,
-    confirm_code_app, create_invitation, end_session, issue_setup_code,
-    passkey_registration_options, passkey_second_step, passkey_second_step_options,
-    passkey_sign_in, passkey_sign_in_options, remove_code_app, remove_passkey, renew_backup_codes,
-    revoke_invitation, second_step, sessions, sign_in, sign_out, sign_out_everywhere, sign_up,
-    start_code_app,
+    AddPasskey, ChangePassword, ChangeSignUpPolicy, CompleteSetup, ConfirmCodeApp, CreateAccessKey,
+    CreateInvitation, DeleteAccessKey, EndSession, IssueSetupCode, PasskeyRegistrationQuery,
+    PasskeySecondStep, PasskeySecondStepQuery, PasskeySignIn, PasskeySignInQuery, RemoveCodeApp,
+    RemovePasskey, RenewBackupCodes, RevokeInvitation, SecondStep, SignIn, SignOut,
+    SignOutEverywhere, SignUp, SignUpPolicy, StartCodeApp, Started, accept_invitation, add_passkey,
+    change_password, change_sign_up_policy, complete_setup, confirm_code_app, create_invitation,
+    end_session, issue_setup_code, passkey_registration_options, passkey_second_step,
+    passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
+    remove_passkey, renew_backup_codes, revoke_invitation, second_step, sessions, sign_in,
+    sign_out, sign_out_everywhere, sign_up, start_code_app,
 };
-use crate::auth::{SecondStepStore as _, delete_access_key, make_access_key};
+use crate::auth::{SecondStepStore as _, create_access_key, delete_access_key};
 use crate::editing::{
     AskToFinish, EditAnyway, ReleaseStuckLock, TakeLockQuery, ask_to_finish, edit_anyway,
     release_stuck_lock, take_lock,
 };
 use crate::people::{
-    AddGroupMember, DeleteGroup, MakeGroup, RemoveGroupMember, RenameGroup, add_group_member,
-    delete_group, make_group, remove_group_member, rename_group,
+    AddGroupMember, CreateGroup, DeleteGroup, RemoveGroupMember, RenameGroup, add_group_member,
+    create_group, delete_group, remove_group_member, rename_group,
 };
 use crate::projects::{
-    ChangeProject, MakeProject, MovePreviewQuery, MoveProject, change_project, make_project,
+    ChangeProject, CreateProject, MovePreviewQuery, MoveProject, change_project, create_project,
     move_project, preview_move,
 };
 use crate::roles::{
-    AssignRole, ChangeRole, CopyRole, DeleteRole, Given, MakeRole, RemoveAssignment, ResetRole,
-    SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, copy_role, delete_role,
-    make_role, remove_assignment, reset_role, set_level,
+    AssignRole, ChangeRole, CopyRole, CreateRole, DeleteRole, Given, RemoveAssignment, ResetRole,
+    SetFieldLevel, SetPeopleLevel, Subject, assign_role, change_role, copy_role, create_role,
+    delete_role, remove_assignment, reset_role, set_level,
 };
 use crate::settings::{
     ChangeSetting, LockSetting, ResetSetting, SettingsScope, change_setting, lock_setting,
@@ -603,7 +602,7 @@ pub(crate) async fn issue_setup_code_scenario(_world: &World) -> Added {
     // A server that nobody set up: the starting roles are there, nobody can manage roles, and the
     // start makes the setup code.
     let bare = World::bare()?;
-    make_starting_roles(&bare.ctx(), MakeStartingRoles)
+    create_starting_roles(&bare.ctx(), CreateStartingRoles)
         .await
         .map_err(text)?;
     measured(&bare.store, issue_setup_code(&bare.ctx(), IssueSetupCode)).await
@@ -612,7 +611,7 @@ pub(crate) async fn issue_setup_code_scenario(_world: &World) -> Added {
 pub(crate) async fn complete_setup_scenario(_world: &World) -> Added {
     let bare = World::bare()?;
     // The start of the program makes the starting roles before the person comes to set up.
-    make_starting_roles(&bare.ctx(), MakeStartingRoles)
+    create_starting_roles(&bare.ctx(), CreateStartingRoles)
         .await
         .map_err(text)?;
     let code = issue_setup_code(&bare.ctx(), IssueSetupCode)
@@ -635,11 +634,11 @@ pub(crate) async fn complete_setup_scenario(_world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn make_starting_roles_scenario(_world: &World) -> Added {
+pub(crate) async fn create_starting_roles_scenario(_world: &World) -> Added {
     let bare = World::bare()?;
     measured(
         &bare.store,
-        make_starting_roles(&bare.ctx(), MakeStartingRoles),
+        create_starting_roles(&bare.ctx(), CreateStartingRoles),
     )
     .await
 }
@@ -651,9 +650,9 @@ pub(crate) fn token(world: &World) -> String {
 }
 
 async fn a_group(world: &World, name: &str) -> Result<GroupId, String> {
-    Ok(make_group(
+    Ok(create_group(
         &world.ctx(),
-        MakeGroup {
+        CreateGroup {
             session_token: token(world),
             name: name.to_owned(),
         },
@@ -665,9 +664,9 @@ async fn a_group(world: &World, name: &str) -> Result<GroupId, String> {
 }
 
 async fn a_role(world: &World, name: &str) -> Result<RoleId, String> {
-    Ok(make_role(
+    Ok(create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: token(world),
             name: name.to_owned(),
             permissions: vec![Permission::SeeProjects],
@@ -681,9 +680,9 @@ async fn a_role(world: &World, name: &str) -> Result<RoleId, String> {
 }
 
 pub(crate) async fn a_project(world: &World, short_name: &str) -> Result<ProjectId, String> {
-    Ok(make_project(
+    Ok(create_project(
         &world.ctx(),
-        MakeProject {
+        CreateProject {
             session_token: token(world),
             parent: None,
             short_name: short_name.to_owned(),
@@ -705,12 +704,12 @@ async fn a_person(world: &World) -> Result<UserId, String> {
         .id)
 }
 
-pub(crate) async fn make_group_scenario(world: &World) -> Added {
+pub(crate) async fn create_group_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_group(
+        create_group(
             &world.ctx(),
-            MakeGroup {
+            CreateGroup {
                 session_token: token(world),
                 name: "Team".to_owned(),
             },
@@ -793,12 +792,12 @@ pub(crate) async fn remove_group_member_scenario(world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn make_role_scenario(world: &World) -> Added {
+pub(crate) async fn create_role_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_role(
+        create_role(
             &world.ctx(),
-            MakeRole {
+            CreateRole {
                 session_token: token(world),
                 name: "Own".to_owned(),
                 permissions: vec![Permission::SeeProjects],
@@ -972,12 +971,12 @@ pub(crate) async fn set_people_level_scenario(world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn make_project_scenario(world: &World) -> Added {
+pub(crate) async fn create_project_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_project(
+        create_project(
             &world.ctx(),
-            MakeProject {
+            CreateProject {
                 session_token: token(world),
                 parent: None,
                 short_name: "ACME".to_owned(),
@@ -1103,8 +1102,8 @@ pub(crate) async fn move_project_scenario(world: &World) -> Added {
 // ---- Access keys ----
 
 /// Ada makes a key that may only see.
-fn see_only_key(world: &World) -> MakeAccessKey {
-    MakeAccessKey {
+fn see_only_key(world: &World) -> CreateAccessKey {
+    CreateAccessKey {
         session_token: token(world),
         password: PASSWORD.to_owned(),
         name: "Nightly report".to_owned(),
@@ -1115,16 +1114,16 @@ fn see_only_key(world: &World) -> MakeAccessKey {
     }
 }
 
-pub(crate) async fn make_access_key_scenario(world: &World) -> Added {
+pub(crate) async fn create_access_key_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_access_key(&world.ctx(), see_only_key(world)),
+        create_access_key(&world.ctx(), see_only_key(world)),
     )
     .await
 }
 
 pub(crate) async fn delete_access_key_scenario(world: &World) -> Added {
-    let made = make_access_key(&world.ctx(), see_only_key(world))
+    let made = create_access_key(&world.ctx(), see_only_key(world))
         .await
         .map_err(text)?
         .into_value();
@@ -1147,9 +1146,9 @@ pub(crate) async fn delete_access_key_scenario(world: &World) -> Added {
 async fn bob_is_editing(world: &World) -> Result<EditWhat, String> {
     let project = a_project(world, "ACME").await?;
     let bob = world.person("bob@example.test").await.map_err(text)?;
-    let role = make_role(
+    let role = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: token(world),
             name: "Editor".to_owned(),
             permissions: vec![Permission::SeeProjects, Permission::ChangeProjectSettings],

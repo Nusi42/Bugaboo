@@ -236,7 +236,7 @@ async fn remove_code_app(
     Ok(done())
 }
 
-/// Makes new backup codes; the old ones stop working. The password is typed again.
+/// Creates new backup codes; the old ones stop working. The password is typed again.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/two-step/backup-codes",

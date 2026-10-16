@@ -18,7 +18,7 @@ use bb_policy::{Authorized, Permission};
 use serde_json::{Value, json};
 
 use super::read::{Where, offered_roles};
-use super::types::{DeleteLayout, LayoutEditor, MakeLayout, SaveLayout, SectionInput};
+use super::types::{CreateLayout, DeleteLayout, LayoutEditor, SaveLayout, SectionInput};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::editing::{TextSave, Written};
 use crate::member::layout as member;
@@ -210,16 +210,16 @@ fn keep_unknown_fields(
     }
 }
 
-/// Makes the layout of a place as a copy of the one that counts there now, so the place can change
+/// Creates the layout of a place as a copy of the one that counts there now, so the place can change
 /// it (*Customize this form*). A place that has one is shown as it is.
 ///
 /// # Errors
 /// `resource.not_found` for a project the person may not know about, `access.forbidden` without
 /// *Manage issue types, kinds of relation and layouts* at the place, `edit.version_changed` when
 /// somebody made the layout at the same moment.
-pub async fn make_layout<S: AuthStore>(
+pub async fn create_layout<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeLayout,
+    input: CreateLayout,
 ) -> Result<Authorized<LayoutEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let at = ctx

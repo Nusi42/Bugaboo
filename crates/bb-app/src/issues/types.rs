@@ -21,7 +21,7 @@ use serde_json::Value;
 use crate::projects::ProjectRef;
 
 /// Make an issue in a project.
-pub struct MakeIssue {
+pub struct CreateIssue {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The project it goes into, by its ID or its short name (an old one too).
@@ -262,7 +262,7 @@ pub struct IssuePage {
 }
 
 /// Make an issue type.
-pub struct MakeIssueType {
+pub struct CreateIssueType {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What it is called, as typed.

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import { useKey } from "./support/api.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -10,7 +10,7 @@ import { openFromMenu, signIn, signOut } from "./support/flows.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });
@@ -51,8 +51,8 @@ async function startKey(page: Page, name: string) {
   return form;
 }
 
-/** Presses *Make the key* after the password was typed again, and returns the key that is shown. */
-async function makeKey(page: Page, form: Form): Promise<string> {
+/** Presses *Create the key* after the password was typed again, and returns the key that is shown. */
+async function createKey(page: Page, form: Form): Promise<string> {
   await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);
   await form.getByRole("button", { name: t("access-keys.submit") }).click();
   await expect(page.getByRole("region", { name: t("access-keys.shown-title") })).toBeVisible();
@@ -75,7 +75,7 @@ async function keyShown(page: Page): Promise<string> {
 }
 
 /** Makes a key that may do everything, and copies it with the button; returns the key. */
-async function makeAndCopy(page: Page): Promise<string> {
+async function createAndCopy(page: Page): Promise<string> {
   const form = await startKey(page, "Nightly report");
   await form.getByRole("radio", { name: t("access-keys.choice.everything") }).check();
   await expectGoodInEveryTheme(page);
@@ -132,7 +132,7 @@ test("auth_07 a person makes a key, copies it, uses it from a script, deletes it
   await openAccessKeys(page);
   await expect(page.getByText(t("access-keys.empty"))).toBeVisible();
   await expectGoodInEveryTheme(page);
-  const key = await makeAndCopy(page);
+  const key = await createAndCopy(page);
   // A script that has the key works as the person.
   const script = await useKey(server.url, key);
   expect(await script.get(STATUS)).toEqual({ status: 200, code: undefined });
@@ -153,7 +153,7 @@ test("auth_07 a key that may only see is refused what needs more, and single per
   await openAccessKeys(page);
 
   // The first choice is *See only*: it looks at the status and changes nothing.
-  const seeOnly = await makeKey(page, await startKey(page, "Only looking"));
+  const seeOnly = await createKey(page, await startKey(page, "Only looking"));
   const lookingScript = await useKey(server.url, seeOnly);
   expect(await lookingScript.get(STATUS)).toEqual({ status: 200, code: undefined });
   expect(await lookingScript.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
@@ -164,7 +164,7 @@ test("auth_07 a key that may only see is refused what needs more, and single per
   await pressWords(form, t("access-keys.single"));
   await tick(form, t("permission.see-status"));
   await expectGoodInEveryTheme(page);
-  const status = await makeKey(page, form);
+  const status = await createKey(page, form);
   const statusScript = await useKey(server.url, status);
   expect(await statusScript.get(STATUS)).toEqual({ status: 200, code: undefined });
   expect(await statusScript.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });

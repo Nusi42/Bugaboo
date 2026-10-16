@@ -6,11 +6,11 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshAccess } from "../../shared/query-keys.ts";
 
-/** *Make a group*: a name; the group starts empty. */
-export function MakeGroupForm() {
+/** *Create a group*: a name; the group starts empty. */
+export function CreateGroupForm() {
   const [name, setName] = useState("");
   const [made, setMade] = useState<string | null>(null);
-  const make = api.query.useMutation("post", "/api/v1/groups", {
+  const create = api.query.useMutation("post", "/api/v1/groups", {
     onSuccess: (group) => {
       refreshAccess();
       setName("");
@@ -21,7 +21,7 @@ export function MakeGroupForm() {
     <Form
       onSubmit={() => {
         setMade(null);
-        make.mutate({ body: { name: name.trim() } });
+        create.mutate({ body: { name: name.trim() } });
       }}
     >
       <TextField
@@ -30,12 +30,12 @@ export function MakeGroupForm() {
         value={name}
         onChange={setName}
       />
-      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
         <Alert tone={alertTone.success}>{t("groups.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("groups.create")}</SubmitButton>
+        <SubmitButton isPending={create.isPending}>{t("groups.create")}</SubmitButton>
       </div>
     </Form>
   );

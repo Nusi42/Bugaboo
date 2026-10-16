@@ -31,7 +31,7 @@ pub(crate) struct SecondStepGapBody {
 
 impl Masked for SecondStepGapBody {}
 
-/// How many people with a role still have to set up a second step. Needs the permission *Make,
+/// How many people with a role still have to set up a second step. Needs the permission *Create,
 /// change and delete roles*.
 #[utoipa::path(
     get,

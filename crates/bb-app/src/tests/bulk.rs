@@ -20,9 +20,9 @@ use crate::bulk::{
     BulkTarget, apply_bulk, bulk_run, preview_bulk,
 };
 use crate::issues::{
-    ChangeIssue, IssueTypesQuery, MakeIssue, change_issue, issue_types, make_issue,
+    ChangeIssue, CreateIssue, IssueTypesQuery, change_issue, create_issue, issue_types,
 };
-use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
+use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 
 pub(super) fn done() -> BulkAction {
     BulkAction::Change {
@@ -97,9 +97,9 @@ async fn iss_09_an_issue_you_cannot_change_is_skipped_with_its_reason() -> Outco
         an_issue(&world, closed_off).await?,
     );
     // Bob sees the issues of OPEN and may not change any of them; he does not know SHUT.
-    let reader = make_role(
+    let reader = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: admin.clone(),
             name: "Reader".to_owned(),
             permissions: vec![Permission::SeeProjects, Permission::SeeIssues],
@@ -213,9 +213,9 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
     let mut made = Vec::new();
     for issue_type in [kept, retired] {
         made.push(
-            make_issue(
+            create_issue(
                 &world.ctx(),
-                MakeIssue {
+                CreateIssue {
                     session_token: admin.clone(),
                     project: from.to_string(),
                     issue_type,
@@ -351,9 +351,9 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     let mut issues = Vec::new();
     for number in 0..=BULK_JOB_ABOVE {
         issues.push(
-            make_issue(
+            create_issue(
                 &world.ctx(),
-                MakeIssue {
+                CreateIssue {
                     session_token: admin.clone(),
                     project: project.to_string(),
                     issue_type: kind,
@@ -494,9 +494,9 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
     let kind = types_first(&world).await?;
     let mut targets = Vec::new();
     for number in 0..=BULK_JOB_ABOVE {
-        let made = make_issue(
+        let made = create_issue(
             &world.ctx(),
-            MakeIssue {
+            CreateIssue {
                 session_token: admin.clone(),
                 project: project.to_string(),
                 issue_type: kind,

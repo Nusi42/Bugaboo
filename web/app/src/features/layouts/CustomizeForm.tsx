@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
-import { useMakeLayout, type EditorQuery } from "./layouts.ts";
+import { useCreateLayout, type EditorQuery } from "./layouts.ts";
 
 /** What the form uses now, in words: the layout of another place, or the starting layout. */
 function usedNow(editor: Schema<"LayoutEditorBody">): string {
@@ -32,7 +32,7 @@ export function CustomizeForm({
   readonly editor: Schema<"LayoutEditorBody">;
   readonly query: EditorQuery;
 }) {
-  const make = useMakeLayout(query);
+  const create = useCreateLayout(query);
   const project = editor.project;
   return (
     <div {...partOf(part.stack)}>
@@ -40,9 +40,9 @@ export function CustomizeForm({
       <div {...partOf(part.row)}>
         <Button
           look={buttonLook.primary}
-          isPending={make.isPending}
+          isPending={create.isPending}
           onPress={() => {
-            make.mutate();
+            create.mutate();
           }}
         >
           {project === null || project === undefined
@@ -50,7 +50,7 @@ export function CustomizeForm({
             : t("layouts.customize-project", { project: project.name })}
         </Button>
       </div>
-      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
     </div>
   );
 }

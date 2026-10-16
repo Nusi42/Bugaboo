@@ -449,7 +449,7 @@ async fn record_combined<S: AuthStore>(
             changes.push(counted_up(version));
         }
         let event = events
-            .make(
+            .create(
                 EntityRef {
                     kind: item_kind,
                     id: item,

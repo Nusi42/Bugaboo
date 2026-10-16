@@ -14,7 +14,7 @@ fn plan_of(wanted: u32, seed: u64) -> Plan {
 }
 
 #[test]
-fn a_share_is_whole_and_the_shares_make_the_total() {
+fn a_share_is_whole_and_the_shares_add_up_to_the_total() {
     assert_eq!(allocate(10, &[1, 1, 1]), [4, 3, 3]);
     assert_eq!(allocate(100, &[45, 30, 20, 5]), [45, 30, 20, 5]);
     assert_eq!(allocate(7, &[0, 0]), [0, 0]);
@@ -87,7 +87,7 @@ fn everything_comes_after_the_issue_it_is_about_and_the_steps_are_in_order_of_ti
     let mut made = vec![None; plan.issues.len()];
     for step in &plan.steps {
         match step.action {
-            Action::Make(issue) => made[issue] = Some(step.at),
+            Action::Create(issue) => made[issue] = Some(step.at),
             Action::Parent(issue)
             | Action::Tag(issue, _)
             | Action::Label(issue, _)

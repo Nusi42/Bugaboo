@@ -10,7 +10,7 @@ use bb_core::own_fields::EDIT_PART_PREFIX;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::make_field;
+use super::fields_http::create_field;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, id_in, key_in, ok};
 
@@ -42,8 +42,8 @@ struct Target {
 }
 
 impl Target {
-    async fn make(text: LongText, site: &Site<'_>, ada: &mut Browser) -> Result<Self, Failure> {
-        let made = ok(&site.make(ada, "Has a long text").await?)?.clone();
+    async fn create(text: LongText, site: &Site<'_>, ada: &mut Browser) -> Result<Self, Failure> {
+        let made = ok(&site.create(ada, "Has a long text").await?)?.clone();
         let (issue, key) = (id_in(&made)?, key_in(&made)?);
         Ok(match text {
             LongText::Description => Self {
@@ -54,7 +54,7 @@ impl Target {
                 key,
             },
             LongText::OwnField => {
-                let notes = make_field(
+                let notes = create_field(
                     ada,
                     json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
                 )
@@ -113,7 +113,7 @@ async fn adr_0019_a_change_of_another_field_does_not_refuse_a_long_text() -> Tes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         for text in LONG_TEXTS {
-            let target = Target::make(text, &site, &mut ada).await?;
+            let target = Target::create(text, &site, &mut ada).await?;
             let token = target.lock(&mut ada).await?;
             // Somebody changes the priority meanwhile: the version of the issue counts up, and the
             // text is not what they changed.
@@ -148,7 +148,7 @@ async fn adr_0019_a_stale_long_text_gets_the_structured_answer_and_the_text_is_k
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         for text in LONG_TEXTS {
-            let target = Target::make(text, &site, &mut ada).await?;
+            let target = Target::create(text, &site, &mut ada).await?;
             // The text itself changes meanwhile (the first save lets the lock go).
             let first = target.save(&mut ada, 1, "First").await?;
             assert_eq!(first.status, StatusCode::OK, "{text:?}: {}", first.body);

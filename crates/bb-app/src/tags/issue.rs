@@ -221,7 +221,7 @@ async fn count_up_and_record<S: AuthStore>(
         return Err(stopped.stop::<S>(ErrorCode::NotFound));
     };
     let event = maker
-        .make(
+        .create(
             entity(RecordKind::Issue, issue),
             vec![names, counted_up(version - 1)],
         )

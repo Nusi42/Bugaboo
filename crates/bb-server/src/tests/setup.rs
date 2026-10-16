@@ -119,7 +119,7 @@ fn ops_10_a_database_url_with_a_password_on_the_setup_command_line_warns() -> Te
 }
 
 #[test]
-fn ops_03_the_defaults_make_a_file_the_server_accepts() -> TestResult {
+fn ops_03_the_defaults_create_a_file_the_server_accepts() -> TestResult {
     let folder = tempfile::tempdir()?;
     let target = folder.path().join("bugaboo.toml");
     // Enter for every question: all defaults, the suggested port included.

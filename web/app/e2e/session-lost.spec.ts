@@ -1,7 +1,7 @@
 import { CSRF_COOKIE } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
   addressWith,
@@ -18,7 +18,7 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
@@ -14,9 +14,9 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
-      await (await makePerson(server, admin, cleo)).dispose();
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
+      await (await createPerson(server, admin, cleo)).dispose();
       await admin.dispose();
     },
   },

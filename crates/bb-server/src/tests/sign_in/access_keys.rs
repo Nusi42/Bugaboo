@@ -10,11 +10,11 @@ use std::fmt::Write as _;
 
 use bb_app::access::Permission;
 use bb_app::auth::{
-    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, AppError, ChangePassword,
-    CreatedAccessKey, DeleteAccessKey, InvitationsQuery, MakeAccessKey, ProjectChoicesQuery,
-    RequestInfo, StartCodeApp, TwoStepQuery,
+    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, AppError, ChangePassword, CreateAccessKey,
+    CreatedAccessKey, DeleteAccessKey, InvitationsQuery, ProjectChoicesQuery, RequestInfo,
+    StartCodeApp, TwoStepQuery,
 };
-use bb_app::projects::MakeProject;
+use bb_app::projects::CreateProject;
 use bb_app::roles::{CheckAccessQuery, RemoveAssignment};
 use bb_auth::AccessKeySecret;
 use bb_core::ErrorCode;
@@ -53,7 +53,7 @@ pub(super) async fn made(
     choice: KeyChoice,
     expires_at: Option<String>,
 ) -> Run<CreatedAccessKey> {
-    Ok(make_with(rig, owner, choice, &[], &[], expires_at).await?)
+    Ok(create_with(rig, owner, choice, &[], &[], expires_at).await?)
 }
 
 /// The secret of a new key of `owner`.
@@ -62,17 +62,17 @@ pub(super) async fn key_of(rig: &Rig, owner: &Member, choice: KeyChoice) -> Run<
 }
 
 /// A key of `owner`: the answer, or why it was refused.
-pub(super) async fn make(
+pub(super) async fn create(
     rig: &Rig,
     owner: &Member,
     choice: KeyChoice,
     permissions: &[Permission],
     projects: &[ProjectId],
 ) -> Result<CreatedAccessKey, AppError> {
-    make_with(rig, owner, choice, permissions, projects, None).await
+    create_with(rig, owner, choice, permissions, projects, None).await
 }
 
-async fn make_with(
+async fn create_with(
     rig: &Rig,
     owner: &Member,
     choice: KeyChoice,
@@ -82,9 +82,9 @@ async fn make_with(
 ) -> Result<CreatedAccessKey, AppError> {
     Ok(rig
         .api()
-        .make_access_key(
+        .create_access_key(
             Rig::info(),
-            MakeAccessKey {
+            CreateAccessKey {
                 session_token: owner.session.clone(),
                 password: PASSWORD.to_owned(),
                 name: "Nightly report".to_owned(),
@@ -129,11 +129,11 @@ pub(super) async fn probe(rig: &Rig, credential: &str) -> Result<(), AppError> {
 }
 
 /// *Create projects* at the top level, asked with `credential`.
-async fn make_project(rig: &Rig, credential: &str, short_name: &str) -> Result<(), AppError> {
+async fn create_project(rig: &Rig, credential: &str, short_name: &str) -> Result<(), AppError> {
     rig.api()
-        .make_project(
+        .create_project(
             Rig::info(),
-            MakeProject {
+            CreateProject {
                 session_token: credential.to_owned(),
                 parent: None,
                 short_name: short_name.to_owned(),
@@ -189,7 +189,7 @@ async fn auth_07_a_key_is_shown_once_and_only_its_hash_is_stored() -> TestResult
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let created = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
+        let created = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
         let key = created.secret.clone();
         // `bb_`, the public prefix, `_` and 256 bits.
         assert!(key.starts_with("bb_"), "{key}");
@@ -247,10 +247,12 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
         let bob = bob(&org).await?;
         let judge = |result: Result<(), AppError>| refused(result);
         // *See only*: *Check access* (See), not *Create projects* (Change) or *Invite people* (Manage).
-        let see = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?.secret;
+        let see = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[])
+            .await?
+            .secret;
         assert_eq!(judge(check(&rig, &see, bob.id, None).await), None);
         assert_eq!(
-            judge(make_project(&rig, &see, "SEEONLY").await),
+            judge(create_project(&rig, &see, "SEEONLY").await),
             Some(ErrorCode::Forbidden)
         );
         assert_eq!(
@@ -258,29 +260,29 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             Some(ErrorCode::Forbidden)
         );
         // *See and change* adds the kind *Change*.
-        let change = make(&rig, &bob, KeyChoice::SeeAndChange, &[], &[])
+        let change = create(&rig, &bob, KeyChoice::SeeAndChange, &[], &[])
             .await?
             .secret;
         assert_eq!(judge(check(&rig, &change, bob.id, None).await), None);
-        assert_eq!(judge(make_project(&rig, &change, "CHANGE1").await), None);
+        assert_eq!(judge(create_project(&rig, &change, "CHANGE1").await), None);
         assert_eq!(
             judge(invitations(&rig, &change).await),
             Some(ErrorCode::Forbidden)
         );
         // *Everything I can do*: all of Bob's permissions, and no more (and never inviting people
         // or changing roles, whatever the owner holds).
-        let all = make(&rig, &bob, KeyChoice::Everything, &[], &[])
+        let all = create(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         assert_eq!(judge(check(&rig, &all, bob.id, None).await), None);
-        assert_eq!(judge(make_project(&rig, &all, "ALLOFIT").await), None);
+        assert_eq!(judge(create_project(&rig, &all, "ALLOFIT").await), None);
         // Not even the one that says everything invites people: that stays in the app.
         assert_eq!(
             judge(invitations(&rig, &all).await),
             Some(ErrorCode::Forbidden)
         );
         // Single permissions: only those.
-        let single = make(
+        let single = create(
             &rig,
             &bob,
             KeyChoice::Permissions,
@@ -289,7 +291,7 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
         )
         .await?
         .secret;
-        assert_eq!(judge(make_project(&rig, &single, "SINGLE1").await), None);
+        assert_eq!(judge(create_project(&rig, &single, "SINGLE1").await), None);
         assert_eq!(
             judge(check(&rig, &single, bob.id, None).await),
             Some(ErrorCode::Forbidden)
@@ -297,7 +299,7 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
         // A key never holds more than its owner: Ada may see the status of the server, Bob may
         // not, and a key of Bob with that permission (a single permission, or everything) cannot
         // either.
-        let greedy = make(
+        let greedy = create(
             &rig,
             &bob,
             KeyChoice::Permissions,
@@ -328,7 +330,7 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             Some(ErrorCode::Forbidden)
         );
         // The keys of the administrator hold what she holds (and no more than keys may).
-        let ada = make(&rig, &org.admin, KeyChoice::Everything, &[], &[])
+        let ada = create(&rig, &org.admin, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         assert!(status(ada).await.is_ok());
@@ -346,7 +348,7 @@ async fn auth_07_a_key_for_projects_counts_in_them_and_their_sub_projects_only()
         let web = org.project(None, "WEB").await?;
         let api = org.project(Some(web.id), "API").await?;
         let other = org.project(None, "OTHER").await?;
-        let key = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[web.id])
+        let key = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[web.id])
             .await?
             .secret;
         // In the project and in its sub-project: yes.
@@ -383,7 +385,7 @@ async fn auth_07_a_key_follows_its_owner_losing_a_role_at_once() -> TestResult {
         let bob = org.person().await?;
         let role = org.role("Checker", &CHECKER).await?;
         let row = org.give_everywhere(&bob, role.id).await?;
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[])
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         assert_eq!(refused(probe(&rig, &key).await), None);
@@ -414,12 +416,12 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer() -
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let works = make(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
+        let works = create(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
         let expires = later(rig.clock_now(), 2 * DAY).to_string();
-        let runs_out = make_with(&rig, &bob, KeyChoice::Everything, &[], &[], Some(expires))
+        let runs_out = create_with(&rig, &bob, KeyChoice::Everything, &[], &[], Some(expires))
             .await?
             .secret;
-        let deleted = make(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
+        let deleted = create(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
         rig.api()
             .delete_access_key(
                 Rig::info(),
@@ -459,7 +461,7 @@ async fn auth_07_the_prefix_of_a_key_has_to_be_the_stored_one() -> TestResult {
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
         assert_eq!(refused(probe(&rig, &key.secret).await), None);
         // The right secret under another public prefix is not the key: one text only.
         let (start, secret) = key.secret.split_at(3 + 8);
@@ -549,10 +551,10 @@ async fn the_sign_in_data_turns_the_key_away(rig: &Rig, key: &str) -> Run<()> {
         )
         .await;
     assert_eq!(refused(who), not_allowed);
-    let make_another = api
-        .make_access_key(
+    let create_another = api
+        .create_access_key(
             info(),
-            MakeAccessKey {
+            CreateAccessKey {
                 session_token: token(),
                 password: PASSWORD.to_owned(),
                 name: "Another".to_owned(),
@@ -563,7 +565,7 @@ async fn the_sign_in_data_turns_the_key_away(rig: &Rig, key: &str) -> Run<()> {
             },
         )
         .await;
-    assert_eq!(refused(make_another), not_allowed);
+    assert_eq!(refused(create_another), not_allowed);
     let own = api
         .access_keys(
             info(),
@@ -584,7 +586,7 @@ async fn auth_07_a_key_cannot_change_the_owners_sign_in_data() -> TestResult {
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[])
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         the_sign_in_data_turns_the_key_away(&rig, &key).await?;
@@ -610,7 +612,7 @@ async fn auth_07_a_key_cannot_change_the_owners_sign_in_data() -> TestResult {
 
 #[tokio::test]
 async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> TestResult {
-    each_database("auth_07_make_rules", async |db| {
+    each_database("auth_07_create_rules", async |db| {
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
@@ -619,9 +621,9 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
         // A wrong password: nothing is made.
         let wrong = rig
             .api()
-            .make_access_key(
+            .create_access_key(
                 Rig::info(),
-                MakeAccessKey {
+                CreateAccessKey {
                     session_token: bob.session.clone(),
                     password: "Wrong-Password-1".to_owned(),
                     name: "Report".to_owned(),
@@ -637,9 +639,9 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
         for name in ["", "   ", &"x".repeat(101)] {
             let result = rig
                 .api()
-                .make_access_key(
+                .create_access_key(
                     Rig::info(),
-                    MakeAccessKey {
+                    CreateAccessKey {
                         session_token: bob.session.clone(),
                         password: PASSWORD.to_owned(),
                         name: name.to_owned(),
@@ -653,9 +655,9 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
             assert_eq!(refused(result), invalid, "{name:?}");
         }
         // Single permissions only with that choice, and at least one then.
-        let none = make(&rig, &bob, KeyChoice::Permissions, &[], &[]).await;
+        let none = create(&rig, &bob, KeyChoice::Permissions, &[], &[]).await;
         assert_eq!(refused(none), invalid);
-        let both = make(
+        let both = create(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -665,7 +667,7 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
         .await;
         assert_eq!(refused(both), invalid);
         // A project that does not exist, and a project that Bob may not know about.
-        let missing = make(
+        let missing = create(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -675,7 +677,7 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
         .await;
         assert_eq!(refused(missing), Some(ErrorCode::NotFound));
         org.forbid(&bob, web.id).await?;
-        let hidden = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[web.id]).await;
+        let hidden = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[web.id]).await;
         assert_eq!(refused(hidden), Some(ErrorCode::NotFound));
         Ok(())
     })
@@ -685,16 +687,16 @@ async fn auth_07_making_a_key_checks_the_password_the_name_and_the_choice() -> T
 #[tokio::test]
 async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_the_longest_time()
 -> TestResult {
-    each_database("auth_07_make_dates", async |db| {
+    each_database("auth_07_create_dates", async |db| {
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
         let invalid = Some(ErrorCode::InvalidRequest);
         // The default is 90 days; a date picked in the past, or beyond a year, is refused.
         let now = rig.clock_now();
-        let made = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
+        let made = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
         assert_eq!(made.key.expires_at, later(now, 90 * DAY));
-        let past = make_with(
+        let past = create_with(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -704,7 +706,7 @@ async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_th
         )
         .await;
         assert_eq!(refused(past), invalid);
-        let too_late = make_with(
+        let too_late = create_with(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -714,7 +716,7 @@ async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_th
         )
         .await;
         assert_eq!(refused(too_late), invalid);
-        let not_a_date = make_with(
+        let not_a_date = create_with(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -724,7 +726,7 @@ async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_th
         )
         .await;
         assert_eq!(refused(not_a_date), invalid);
-        let in_a_year = make_with(
+        let in_a_year = create_with(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -742,9 +744,9 @@ async fn auth_07_a_key_lives_90_days_unless_a_date_is_picked_and_never_beyond_th
         ] {
             rig.set_organization_setting(key, days).await?;
         }
-        let capped = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
+        let capped = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
         assert_eq!(capped.key.expires_at, later(now, 30 * DAY));
-        let beyond = make_with(
+        let beyond = create_with(
             &rig,
             &bob,
             KeyChoice::SeeOnly,
@@ -765,7 +767,7 @@ async fn auth_07_only_the_owner_lists_and_deletes_a_key_and_a_deleted_key_is_gon
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[]).await?;
         // The administrator has no key and cannot see or delete Bob's.
         assert!(keys_of(&rig, &org.admin).await?.is_empty());
         let result = rig
@@ -806,7 +808,7 @@ async fn sec_15_making_and_deleting_keys_is_in_the_security_log() -> TestResult 
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
         let before = rig.database.security_log_entries(0, 1000).await?.len();
-        let key = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
+        let key = create(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?;
         rig.api()
             .delete_access_key(
                 Rig::info(),
@@ -899,7 +901,7 @@ async fn sec_14_guessing_keys_is_limited_per_network_and_a_working_key_costs_not
         let rig = Rig::start_with(db, Tries::Few).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[])
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         // A working key does not use anything up, however often it is used.
@@ -933,7 +935,7 @@ async fn auth_07_the_last_use_of_a_key_is_kept_to_the_minute() -> TestResult {
         let rig = Rig::start_with(db, Tries::Roomy).await?;
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[])
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         assert_eq!(keys_of(&rig, &bob).await?[0].last_used_at, None);
@@ -1028,7 +1030,7 @@ async fn auth_07_a_person_chooses_the_projects_of_a_key_from_those_they_know_abo
             .await;
         assert_eq!(refused(bad), Some(ErrorCode::InvalidRequest));
         // A key cannot ask: choosing is part of making a key.
-        let key = make(&rig, &bob, KeyChoice::Everything, &[], &[])
+        let key = create(&rig, &bob, KeyChoice::Everything, &[], &[])
             .await?
             .secret;
         let by_key = rig

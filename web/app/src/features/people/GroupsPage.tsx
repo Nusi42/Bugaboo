@@ -6,7 +6,7 @@ import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { GroupEditor } from "./GroupEditor.tsx";
 import { groupLinesOf, useGroups } from "./groups.ts";
-import { MakeGroupForm } from "./MakeGroupForm.tsx";
+import { CreateGroupForm } from "./CreateGroupForm.tsx";
 
 export interface GroupsPageProps {
   /** The ID of the group that is open in the side panel, from the address. */
@@ -57,7 +57,7 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
       </Card>
       <Card heading={t("groups.create-title")}>
         <p {...partOf(part.text)}>{t("groups.create-intro")}</p>
-        <MakeGroupForm />
+        <CreateGroupForm />
       </Card>
     </div>
   );

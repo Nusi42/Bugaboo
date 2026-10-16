@@ -6,12 +6,12 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshLabels } from "./labels.ts";
 
-/** *Make a group of labels*: a name, and whether an issue gets at most one label of it. */
-export function MakeGroupForm() {
+/** *Create a group of labels*: a name, and whether an issue gets at most one label of it. */
+export function CreateLabelGroupForm() {
   const [name, setName] = useState("");
   const [pickOne, setPickOne] = useState(false);
   const [made, setMade] = useState<string | null>(null);
-  const make = api.query.useMutation("post", "/api/v1/label-groups", {
+  const create = api.query.useMutation("post", "/api/v1/label-groups", {
     onSuccess: (group) => {
       refreshLabels();
       setMade(group.name);
@@ -23,7 +23,7 @@ export function MakeGroupForm() {
     <Form
       onSubmit={() => {
         setMade(null);
-        make.mutate({ body: { name: name.trim(), pick_one: pickOne } });
+        create.mutate({ body: { name: name.trim(), pick_one: pickOne } });
       }}
     >
       <TextField
@@ -33,12 +33,12 @@ export function MakeGroupForm() {
         onChange={setName}
       />
       <Switch label={t("labels.field-pick-one")} isSelected={pickOne} onChange={setPickOne} />
-      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
         <Alert tone={alertTone.success}>{t("labels.group-made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("labels.make-group")}</SubmitButton>
+        <SubmitButton isPending={create.isPending}>{t("labels.make-group")}</SubmitButton>
       </div>
     </Form>
   );

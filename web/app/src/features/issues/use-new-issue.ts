@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNow } from "../../shared/use-now.ts";
 import { useFormLayout, type FormView } from "../layouts/index.ts";
 import { forForm } from "./new-issue-form.ts";
-import { useMakeIssue } from "./use-make-issue.ts";
+import { useCreateIssue } from "./use-create-issue.ts";
 import { useNewIssueValues, type NewIssueValuesState } from "./use-new-issue-values.ts";
 
 /** What the new-issue form needs: its values and draft, and what making the issue does. */
@@ -25,7 +25,7 @@ export function useNewIssue(): NewIssue {
   const state = useNewIssueValues();
   const [lastKey, setLastKey] = useState<string | null>(null);
   const shortName = state.project?.shortName;
-  const make = useMakeIssue(shortName);
+  const create = useCreateIssue(shortName);
   const now = useNow();
   const layout = useFormLayout({
     project: shortName,
@@ -40,11 +40,11 @@ export function useNewIssue(): NewIssue {
     change: (next) => {
       setLastKey(null);
       // What was refused is about the values before this change.
-      make.reset();
+      create.reset();
       state.change(next);
     },
     create: (another, onMade) => {
-      make.mutate(forForm(state.values, layout.shows), {
+      create.mutate(forForm(state.values, layout.shows), {
         onSuccess: (made: Schema<"IssueItem">) => {
           const key = made.key ?? "";
           if (another) {
@@ -57,7 +57,7 @@ export function useNewIssue(): NewIssue {
         },
       });
     },
-    pending: make.isPending,
-    error: make.isError ? make.error : null,
+    pending: create.isPending,
+    error: create.isError ? create.error : null,
   };
 }

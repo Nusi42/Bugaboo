@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { onThisLayout } from "./support/layout.ts";
@@ -11,7 +11,7 @@ import { viewports } from "../../tooling/viewports.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

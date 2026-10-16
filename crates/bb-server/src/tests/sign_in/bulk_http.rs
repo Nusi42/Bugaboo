@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use bb_app::access::StartingRole;
-use bb_app::issues::MakeIssue;
+use bb_app::issues::CreateIssue;
 use bb_core::bulk::BULK_JOB_ABOVE;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
@@ -55,7 +55,7 @@ async fn iss_09_the_preview_equals_what_happens() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut issues = Vec::new();
         for title in ["One", "Two", "Three"] {
-            issues.push(key_of(&site.make(&mut ada, title).await?)?);
+            issues.push(key_of(&site.create(&mut ada, title).await?)?);
         }
         // The middle one is done already: the change has nothing to do there.
         ok(&ada
@@ -101,7 +101,7 @@ async fn iss_09_an_issue_you_cannot_change_is_skipped_with_its_reason() -> TestR
     each_database("iss_09_skipped_with_reason", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Ada's issue").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Ada's issue").await?)?;
         let secret = ada
             .send(
                 "POST",
@@ -147,8 +147,8 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (first, second) = (
-            key_of(&site.make(&mut ada, "First").await?)?,
-            key_of(&site.make(&mut ada, "Second").await?)?,
+            key_of(&site.create(&mut ada, "First").await?)?,
+            key_of(&site.create(&mut ada, "Second").await?)?,
         );
         let preview = ada
             .send(
@@ -205,7 +205,7 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult 
             .as_str()
             .ok_or("no second issue type")?
             .to_owned();
-        let bug = key_of(&site.make(&mut ada, "A bug").await?)?;
+        let bug = key_of(&site.create(&mut ada, "A bug").await?)?;
         let made = ada
             .send(
                 "POST",
@@ -265,9 +265,9 @@ pub(super) async fn targets_for_a_job(rig: &Rig, site: &Site<'_>) -> Result<Vec<
     for number in 0..=BULK_JOB_ABOVE {
         let made = rig
             .api()
-            .make_issue(
+            .create_issue(
                 Rig::info(),
-                MakeIssue {
+                CreateIssue {
                     session_token: site.org.admin.session.clone(),
                     project: site.acme.clone(),
                     issue_type: site.bug.parse().map_err(|_| "no type ID")?,

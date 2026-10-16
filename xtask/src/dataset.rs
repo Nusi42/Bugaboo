@@ -79,7 +79,7 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
         (None, DatabaseKind::Sqlite) => in_folder(repo.root(), &layout.out),
         (None, DatabaseKind::Postgres) => in_folder(repo.root(), &layout.out_postgres),
     };
-    let make = |url: Option<&str>| {
+    let create = |url: Option<&str>| {
         let mut command = program_command(
             &program,
             repo.root(),
@@ -98,10 +98,10 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
         Ok::<bool, anyhow::Error>(status.success())
     };
     match request.database {
-        DatabaseKind::Sqlite => make(None),
+        DatabaseKind::Sqlite => create(None),
         DatabaseKind::Postgres => {
             let finished = db::with_postgres(repo, |postgres| {
-                make(Some(&postgres.empty_database(SAMPLE_DATABASE)?))
+                create(Some(&postgres.empty_database(SAMPLE_DATABASE)?))
             })?;
             if finished {
                 output::info(&how_to_start_on_postgres(&out.join(&layout.data_folder)));
@@ -129,7 +129,7 @@ fn how_to_start_on_postgres(data_folder: &Path) -> String {
 
 /// Makes the sample on SQLite for `cargo xtask dev --sample`, new every time, and returns its data
 /// folder. `None` when the program did not build or did not finish.
-pub(crate) fn make_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
+pub(crate) fn create_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
     let Some(program) = build_program(root)? else {
         return Ok(None);
     };

@@ -8,7 +8,7 @@ import { layoutOf } from "./layout.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 
 /** Makes a label through the API and returns its ID. */
-export async function makeLabel(admin: ApiSession, name: string): Promise<string> {
+export async function createLabel(admin: ApiSession, name: string): Promise<string> {
   return dataOf(await admin.client.POST("/api/v1/labels", { body: { name } })).id;
 }
 

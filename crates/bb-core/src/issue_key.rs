@@ -334,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    fn iss_01a_random_draws_make_readable_codes_of_the_asked_length_and_then_longer_ones() {
+    fn iss_01a_random_draws_create_readable_codes_of_the_asked_length_and_then_longer_ones() {
         let mut source = SequentialIds::default();
         let draws: Vec<String> = CodeDraws::new(&mut source, 4, 6).collect();
         assert_eq!((shortest_code(), longest_code()), (4, 8));

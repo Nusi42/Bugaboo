@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
+import { ada, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { inOrder } from "./support/sequence.ts";
@@ -18,8 +18,8 @@ const LAST = `Role ${String(MANY).padStart(3, "0")}`;
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const lead = await makePerson(server, admin, cleo);
+      const admin = await createAdmin(server);
+      const lead = await createPerson(server, admin, cleo);
       const cleoId = await ownId(lead);
       await lead.dispose();
       // One after the other, so that the last one is the last in the order of roles.

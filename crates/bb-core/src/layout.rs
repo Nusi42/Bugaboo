@@ -414,7 +414,7 @@ mod tests {
     }
 
     #[test]
-    fn rows_and_content_make_each_other() {
+    fn rows_and_content_convert_into_each_other() {
         let (layout, team, guest) = ids();
         let content = LayoutContent {
             sections: vec![

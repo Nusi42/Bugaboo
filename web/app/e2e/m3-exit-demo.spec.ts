@@ -1,7 +1,7 @@
 import { theBugIsRelatedToTwoIssues } from "./support/demo-m3-after.ts";
 import { twoPeopleEditTheDescription } from "./support/demo-m3-edit.ts";
 import { theGuestSeesSomeone } from "./support/demo-m3-guest.ts";
-import { aGuestMakesABug, aTeamMemberMakesABug } from "./support/demo-m3-make.ts";
+import { aGuestMakesABug, aTeamMemberMakesABug } from "./support/demo-m3-create.ts";
 import { prepareTheDemo } from "./support/demo-m3-prepare.ts";
 import { test } from "./support/fixtures.ts";
 

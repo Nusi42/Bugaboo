@@ -16,9 +16,9 @@ use tracing_subscriber::fmt::MakeWriter;
 use super::world::{Outcome, PASSWORD, World};
 use crate::access::ProjectLabel;
 use crate::auth::{AppError, CreateInvitation, SignIn, create_invitation, sign_in};
-use crate::projects::{MakeProject, make_project};
+use crate::projects::{CreateProject, create_project};
 use crate::roles::{
-    AssignRole, Given, MakeRole, RemoveAssignment, Subject, assign_role, make_role,
+    AssignRole, CreateRole, Given, RemoveAssignment, Subject, assign_role, create_role,
     remove_assignment,
 };
 use bb_core::access::AppliesTo;
@@ -174,9 +174,9 @@ async fn sec_03_evaluations_are_kept_for_one_request_and_a_role_taken_away_count
     let world = World::new().await?;
     let bob = world.person("bob@example.test").await?.person.id;
     let token = world.admin.session_token.clone();
-    let role = make_role(
+    let role = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: token.clone(),
             name: "Watcher".to_owned(),
             permissions: vec![Permission::SeeStatus],
@@ -246,9 +246,9 @@ async fn sec_03_evaluations_are_kept_for_one_request_and_a_role_taken_away_count
 async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outcome {
     use bb_core::access_key::KeyChoice;
 
-    use crate::auth::{MakeAccessKey, make_access_key};
+    use crate::auth::{CreateAccessKey, create_access_key};
     let world = World::new().await?;
-    let ask_for = |name: &str| MakeAccessKey {
+    let ask_for = |name: &str| CreateAccessKey {
         session_token: world.admin.session_token.clone(),
         password: PASSWORD.to_owned(),
         name: name.to_owned(),
@@ -259,7 +259,7 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
     };
     // One clash: the key is made with a new secret, and nobody sees that it happened.
     super::fake::clash_the_next_key_prefix();
-    let made = make_access_key(&world.ctx(), ask_for("After a clash"))
+    let made = create_access_key(&world.ctx(), ask_for("After a clash"))
         .await?
         .into_value();
     assert_eq!(made.key.name, "After a clash");
@@ -267,7 +267,7 @@ async fn auth_07_a_key_whose_public_prefix_is_taken_is_made_again_once() -> Outc
     // The store refusing more than once is not a clash of prefixes: the use case gives up.
     super::fake::clash_the_next_key_prefix();
     super::fake::clash_the_next_key_prefix();
-    let again = make_access_key(&world.ctx(), ask_for("Again")).await;
+    let again = create_access_key(&world.ctx(), ask_for("Again")).await;
     assert!(again.is_ok(), "a second key is stored after one clash");
     Ok(())
 }
@@ -280,9 +280,9 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
 -> Outcome {
     let world = World::new().await?;
     let token = world.admin.session_token.clone();
-    let made = make_project(
+    let made = create_project(
         &world.ctx(),
-        MakeProject {
+        CreateProject {
             session_token: token.clone(),
             parent: None,
             short_name: "ACME".to_owned(),

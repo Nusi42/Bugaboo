@@ -77,7 +77,7 @@ pub(crate) struct PlannedIssue {
 /// What happens at a step.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Action {
-    Make(usize),
+    Create(usize),
     Parent(usize),
     Tag(usize, usize),
     Label(usize, usize),
@@ -340,7 +340,7 @@ impl Plan {
                     action,
                 });
             };
-            push(offset, Action::Make(at), random);
+            push(offset, Action::Create(at), random);
             if issue.parent.is_some() {
                 offset += 1;
                 push(offset, Action::Parent(at), random);

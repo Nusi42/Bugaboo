@@ -60,7 +60,7 @@ async function theRolesOfTheSample(page: Page): Promise<void> {
 }
 
 /** Step 1: the administrator makes a role from a copy of Viewer and lets it see the server's state. */
-async function makeARole(page: Page): Promise<void> {
+async function createARole(page: Page): Promise<void> {
   await openFromMenu(page, t("nav.roles"));
   await expect(page.getByRole("heading", { level: 1, name: t("nav.roles") })).toBeVisible();
   await theRolesOfTheSample(page);
@@ -205,7 +205,8 @@ test("the exit demo: an administrator makes a role, hides what Contributors and 
 }) => {
   test.setTimeout(240_000);
   await signIn(page, sampleAdministrator());
-  await test.step("1. The administrator makes a role from a copy of Viewer", () => makeARole(page));
+  await test.step("1. The administrator makes a role from a copy of Viewer", () =>
+    createARole(page));
   await test.step("2. The administrator hides Cost center from Contributors on the Website", () =>
     hideCostCenter(page));
   await test.step("3. The administrator hides names from Guests on the Website", () =>

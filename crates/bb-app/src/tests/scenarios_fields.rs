@@ -12,14 +12,19 @@ use super::scenarios::{Added, a_project, measured, text, token};
 use super::scenarios_issues::an_issue;
 use super::world::World;
 use crate::fields::{
-    AddChoice, ChangeChoice, ChangeField, CombineChoices, FieldView, MakeField, NewChoice,
+    AddChoice, ChangeChoice, ChangeField, CombineChoices, CreateField, FieldView, NewChoice,
     ReorderChoices, SaveFieldText, add_choice, change_choice, change_field, combine_choices,
-    make_field, reorder_choices, save_field_text,
+    create_field, reorder_choices, save_field_text,
 };
 
 /// The input that makes a field of this type for issues, with these choices.
-pub(crate) fn new_field(world: &World, name: &str, kind: FieldType, choices: &[&str]) -> MakeField {
-    MakeField {
+pub(crate) fn new_field(
+    world: &World,
+    name: &str,
+    kind: FieldType,
+    choices: &[&str],
+) -> CreateField {
+    CreateField {
         session_token: token(world),
         name: name.to_owned(),
         help: None,
@@ -41,7 +46,7 @@ pub(crate) fn new_field(world: &World, name: &str, kind: FieldType, choices: &[&
     }
 }
 
-/// Makes a field and says what it looks like now.
+/// Creates a field and says what it looks like now.
 pub(crate) async fn a_field(
     world: &World,
     name: &str,
@@ -49,17 +54,17 @@ pub(crate) async fn a_field(
     choices: &[&str],
 ) -> Result<FieldView, String> {
     Ok(
-        make_field(&world.ctx(), new_field(world, name, kind, choices))
+        create_field(&world.ctx(), new_field(world, name, kind, choices))
             .await
             .map_err(text)?
             .into_value(),
     )
 }
 
-pub(crate) async fn make_field_scenario(world: &World) -> Added {
+pub(crate) async fn create_field_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_field(
+        create_field(
             &world.ctx(),
             new_field(world, "Customer", FieldType::Text, &[]),
         ),

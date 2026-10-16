@@ -51,7 +51,7 @@ impl TestNotes {
         self.versions.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Makes a note with this ID, at version 1, and names it.
+    /// Creates a note with this ID, at version 1, and names it.
     #[must_use]
     pub fn add(&self, id: EntityId) -> EntityRef {
         self.versions().insert(id, 1);

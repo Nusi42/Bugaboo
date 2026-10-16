@@ -53,7 +53,9 @@ async fn iss_17_the_description_is_saved_under_the_lock_and_rendered_by_the_serv
     each_database("iss_17_save_description", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let made = site.make(&mut ada, "The login button does nothing").await?;
+        let made = site
+            .create(&mut ada, "The login button does nothing")
+            .await?;
         let (id, key) = ids_of(ok(&made)?)?;
         let path = format!("{ISSUES}/{key}/description");
         let token = lock(&mut ada, &id).await?;
@@ -102,7 +104,7 @@ async fn m3_f50_a_change_never_carries_the_description_whoever_holds_the_lock() 
     each_database("m3_f50_patch_no_description", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let made = site.make(&mut ada, "Nobody overwrites the text").await?;
+        let made = site.create(&mut ada, "Nobody overwrites the text").await?;
         let (id, key) = ids_of(ok(&made)?)?;
         let _held = lock(&mut ada, &id).await?;
         let path = format!("{ISSUES}/{key}");
@@ -129,7 +131,7 @@ async fn ux_06_the_box_learns_who_is_editing_before_the_first_key() -> TestResul
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut tim, _) = site.person(StartingRole::TeamMember, "tim").await?;
         let (mut vera, _) = site.person(StartingRole::Viewer, "vera").await?;
-        let made = site.make(&mut ada, "Somebody is typing").await?;
+        let made = site.create(&mut ada, "Somebody is typing").await?;
         let (id, _) = ids_of(ok(&made)?)?;
         let ask = format!("{LOCKS}?kind=issue&id={id}&part=description");
         // Nobody edits: nothing is held, and asking takes no lock.
@@ -166,7 +168,7 @@ async fn iss_17_who_may_not_change_the_issue_gets_no_lock_and_no_save() -> TestR
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut viewer, _) = site.person(StartingRole::Viewer, "vera").await?;
-        let made = site.make(&mut ada, "Not yours").await?;
+        let made = site.create(&mut ada, "Not yours").await?;
         let (id, key) = ids_of(ok(&made)?)?;
         let refused = viewer
             .send(
@@ -216,7 +218,7 @@ async fn m3_f10_the_image_hosts_come_split_and_an_image_from_one_is_shown() -> T
             json!(["images.example.com", "cdn.example.org"])
         );
         // The server renders an image from a listed host as an image and from any other as a link.
-        let made = site.make(&mut ada, "Pictures").await?;
+        let made = site.create(&mut ada, "Pictures").await?;
         let (id, key) = ids_of(ok(&made)?)?;
         let token = lock(&mut ada, &id).await?;
         ada.send(

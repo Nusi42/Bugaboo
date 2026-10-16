@@ -283,7 +283,7 @@ impl MoveWrite {
             json!(IssueKey::new(short_name.clone(), code.clone()).to_string())
         };
         let followed = events
-            .make(
+            .create(
                 entity(RecordKind::Issue, self.id),
                 vec![FieldChange {
                     field: member::KEY.to_owned(),

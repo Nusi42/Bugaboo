@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { addCodeApp, bob, makeAdmin, makePerson, type TwoStep } from "./support/accounts.ts";
+import { addCodeApp, bob, createAdmin, createPerson, type TwoStep } from "./support/accounts.ts";
 import { addVirtualAuthenticator } from "./support/authenticator.ts";
 import { expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
@@ -23,8 +23,8 @@ let twoStep: TwoStep;
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const session = await makePerson(server, admin, bob);
+      const admin = await createAdmin(server);
+      const session = await createPerson(server, admin, bob);
       twoStep = await addCodeApp(session, bob.password);
       await admin.dispose();
       await session.dispose();

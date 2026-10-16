@@ -10,13 +10,13 @@ use jiff::Timestamp;
 use super::scenarios::{Added, a_project, measured, text, token};
 use super::world::World;
 use crate::layouts::{
-    DeleteLayout, LayoutEditor, LayoutSlot, MakeLayout, SaveLayout, SectionInput, delete_layout,
-    make_layout, save_layout,
+    CreateLayout, DeleteLayout, LayoutEditor, LayoutSlot, SaveLayout, SectionInput, create_layout,
+    delete_layout, save_layout,
 };
 
 /// The input that makes the layout of the new-issue form of a project.
-pub(crate) fn new_layout(world: &World, project: Option<&str>) -> MakeLayout {
-    MakeLayout {
+pub(crate) fn new_layout(world: &World, project: Option<&str>) -> CreateLayout {
+    CreateLayout {
         session_token: token(world),
         project: project.map(str::to_owned),
         issue_type: None,
@@ -24,12 +24,14 @@ pub(crate) fn new_layout(world: &World, project: Option<&str>) -> MakeLayout {
     }
 }
 
-/// Makes the layout of a project and says what the editor shows.
+/// Creates the layout of a project and says what the editor shows.
 pub(crate) async fn a_layout(world: &World, project: &str) -> Result<LayoutEditor, String> {
-    Ok(make_layout(&world.ctx(), new_layout(world, Some(project)))
-        .await
-        .map_err(text)?
-        .into_value())
+    Ok(
+        create_layout(&world.ctx(), new_layout(world, Some(project)))
+            .await
+            .map_err(text)?
+            .into_value(),
+    )
 }
 
 /// The slot of an editor that has a layout of its own.
@@ -63,11 +65,11 @@ pub(crate) fn lock_the_layout_for(world: &World, slot: LayoutSlot, holder: UserI
     token
 }
 
-pub(crate) async fn make_layout_scenario(world: &World) -> Added {
+pub(crate) async fn create_layout_scenario(world: &World) -> Added {
     a_project(world, "ACME").await?;
     measured(
         &world.store,
-        make_layout(&world.ctx(), new_layout(world, Some("ACME"))),
+        create_layout(&world.ctx(), new_layout(world, Some("ACME"))),
     )
     .await
 }

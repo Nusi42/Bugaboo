@@ -4,7 +4,7 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::issues::{ChangeIssueType, IssueTypeView, IssueTypesQuery, MakeIssueType};
+use bb_app::issues::{ChangeIssueType, CreateIssueType, IssueTypeView, IssueTypesQuery};
 use bb_core::id::IssueTypeId;
 use bb_core::issue::IssueIcon;
 use bb_policy::Masked;
@@ -136,11 +136,11 @@ async fn list_issue_types(
     )?))
 }
 
-/// Makes an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.
+/// Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.
 #[utoipa::path(
     post,
     path = "/api/v1/issue-types",
-    operation_id = "makeIssueType",
+    operation_id = "createIssueType",
     tag = "issue-types",
     request_body = NewIssueTypeBody,
     responses(
@@ -151,7 +151,7 @@ async fn list_issue_types(
         ConflictAnswer
     )
 )]
-async fn make_issue_type(
+async fn create_issue_type(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -159,9 +159,9 @@ async fn make_issue_type(
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
-        .make_issue_type(
+        .create_issue_type(
             info,
-            MakeIssueType {
+            CreateIssueType {
                 session_token,
                 name: body.name,
                 icon: body.icon,
@@ -221,6 +221,6 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_issue_types, make_issue_type))
+        .routes(routes!(list_issue_types, create_issue_type))
         .routes(routes!(change_issue_type))
 }

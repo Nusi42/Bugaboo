@@ -72,8 +72,8 @@ impl SequentialIds {
 impl SequentialIds {
     /// `N` things made one after another with `make` (`|ids| ProjectId::generate(ids)`), for the
     /// tests that need a handful of IDs of a kind.
-    pub fn make<const N: usize, T>(&mut self, mut make: impl FnMut(&mut Self) -> T) -> [T; N] {
-        std::array::from_fn(|_| make(self))
+    pub fn create<const N: usize, T>(&mut self, mut create: impl FnMut(&mut Self) -> T) -> [T; N] {
+        std::array::from_fn(|_| create(self))
     }
 }
 

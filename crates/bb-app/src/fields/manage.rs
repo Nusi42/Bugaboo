@@ -26,7 +26,7 @@ use serde_json::{Value, json};
 
 use super::member;
 use super::pattern::{Linear, is_usable};
-use super::types::{ChangeField, Definition, FieldView, MakeField, NewChoice};
+use super::types::{ChangeField, CreateField, Definition, FieldView, NewChoice};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::input::{clean_name, clean_text};
 use crate::projects::Why;
@@ -230,16 +230,16 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Makes an own field, at the end of the order, with its choices and the level every role starts
+/// Creates an own field, at the end of the order, with its choices and the level every role starts
 /// with.
 ///
 /// # Errors
 /// `access.forbidden` without *Manage fields*, `request.invalid` for a name, help text, rule,
 /// default, look, scope or choice that cannot be, `name.taken` for a name another field (or two
 /// choices) has.
-pub async fn make_field<S: AuthStore>(
+pub async fn create_field<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeField,
+    input: CreateField,
 ) -> Result<Authorized<FieldView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx

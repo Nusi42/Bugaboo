@@ -58,7 +58,7 @@ async fn changed<T: Send>(
     ChangeStore::record_change(storage, &event, write).await
 }
 
-async fn make_person(
+async fn create_person(
     storage: &AuthStorage,
     source: &mut impl IdSource,
     email: &str,
@@ -75,7 +75,7 @@ async fn make_person(
     Ok(id)
 }
 
-async fn make_project(
+async fn create_project(
     storage: &AuthStorage,
     source: &mut impl IdSource,
     parent: Option<ProjectId>,
@@ -148,9 +148,9 @@ async fn adr_0018_values_are_stored_per_level_and_the_lowest_level_wins() -> Tes
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let person = make_person(storage, &mut source, "ada@example.test").await?;
-        let someone_else = make_person(storage, &mut source, "bea@example.test").await?;
-        let project = make_project(storage, &mut source, None, "ACME").await?;
+        let person = create_person(storage, &mut source, "ada@example.test").await?;
+        let someone_else = create_person(storage, &mut source, "bea@example.test").await?;
+        let project = create_project(storage, &mut source, None, "ACME").await?;
         let scopes = Scopes {
             project: Some(project),
             person: Some(person),
@@ -213,12 +213,12 @@ async fn cfg_06_a_project_value_is_inherited_by_sub_projects_and_a_person_value_
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let ada = make_person(storage, &mut source, "ada@example.test").await?;
-        let bea = make_person(storage, &mut source, "bea@example.test").await?;
-        let acme = make_project(storage, &mut source, None, "ACME").await?;
-        let web = make_project(storage, &mut source, Some(acme), "WEB").await?;
-        let shop = make_project(storage, &mut source, Some(web), "SHOP").await?;
-        let other = make_project(storage, &mut source, None, "OTHER").await?;
+        let ada = create_person(storage, &mut source, "ada@example.test").await?;
+        let bea = create_person(storage, &mut source, "bea@example.test").await?;
+        let acme = create_project(storage, &mut source, None, "ACME").await?;
+        let web = create_project(storage, &mut source, Some(acme), "WEB").await?;
+        let shop = create_project(storage, &mut source, Some(web), "SHOP").await?;
+        let other = create_project(storage, &mut source, None, "OTHER").await?;
         let layers =
             async |project, person| database.setting_layers(&Scopes { project, person }).await;
 
@@ -279,8 +279,8 @@ async fn cfg_06_a_locked_organization_value_wins_and_lower_values_are_refused() 
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let ada = make_person(storage, &mut source, "ada@example.test").await?;
-        let acme = make_project(storage, &mut source, None, "ACME").await?;
+        let ada = create_person(storage, &mut source, "ada@example.test").await?;
+        let acme = create_project(storage, &mut source, None, "ACME").await?;
         let scopes = Scopes {
             project: Some(acme),
             person: Some(ada),
@@ -427,9 +427,9 @@ async fn cfg_06_reset_to_default_removes_only_that_layer() -> TestResult {
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let ada = make_person(storage, &mut source, "ada@example.test").await?;
-        let acme = make_project(storage, &mut source, None, "ACME").await?;
-        let web = make_project(storage, &mut source, Some(acme), "WEB").await?;
+        let ada = create_person(storage, &mut source, "ada@example.test").await?;
+        let acme = create_project(storage, &mut source, None, "ACME").await?;
+        let web = create_project(storage, &mut source, Some(acme), "WEB").await?;
         let scopes = Scopes {
             project: Some(web),
             person: Some(ada),
@@ -478,8 +478,8 @@ async fn cfg_04_a_persons_values_are_their_own_and_belong_to_a_person_who_exists
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let ada = make_person(storage, &mut source, "ada@example.test").await?;
-        let bea = make_person(storage, &mut source, "bea@example.test").await?;
+        let ada = create_person(storage, &mut source, "ada@example.test").await?;
+        let bea = create_person(storage, &mut source, "bea@example.test").await?;
         let mode = "appearance.mode";
         put(storage, &mut source, Scope::Person(ada), mode, text("dark")).await?;
         put(
@@ -594,8 +594,8 @@ async fn bad_example_a_text_must_be_in_the_format_of_its_setting_and_on_a_level_
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let person = make_person(storage, &mut source, "ada@example.test").await?;
-        let acme = make_project(storage, &mut source, None, "ACME").await?;
+        let person = create_person(storage, &mut source, "ada@example.test").await?;
+        let acme = create_project(storage, &mut source, None, "ACME").await?;
         let history = TechnicalName::new("history").unwrap();
         let events_before = database.outbox_after(&history, 100).await?.len();
         // A choice that is not on the list, a time zone that is not one, a page that is another
@@ -775,7 +775,7 @@ async fn cfg_06_a_bounded_number_and_a_switch_are_stored_on_a_project() -> TestR
         let fixture = fixture(db).await?;
         let (storage, database) = (&fixture.storage, fixture.storage.database());
         let mut source = ids();
-        let acme = make_project(storage, &mut source, None, "ACME").await?;
+        let acme = create_project(storage, &mut source, None, "ACME").await?;
         let limit = "test.project-limit";
         put(
             storage,

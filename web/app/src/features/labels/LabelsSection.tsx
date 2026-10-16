@@ -4,7 +4,7 @@ import { Card, partOf, part } from "@bugaboo/ui";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditLabel } from "./EditLabel.tsx";
 import type { Label, LabelGroup } from "./labels.ts";
-import { MakeLabelForm } from "./MakeLabelForm.tsx";
+import { CreateLabelForm } from "./CreateLabelForm.tsx";
 import type { OpenProps } from "./OpenProps.ts";
 
 interface LabelsSectionProps extends OpenProps {
@@ -42,7 +42,7 @@ export function LabelsSection(props: LabelsSectionProps) {
       />
       <h3>{t("labels.create-label-title")}</h3>
       <p {...partOf(part.text)}>{t("labels.create-label-intro")}</p>
-      <MakeLabelForm groups={props.groups} />
+      <CreateLabelForm groups={props.groups} />
     </Card>
   );
 }

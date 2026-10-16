@@ -268,7 +268,7 @@ impl Rewrite {
         events: &EventMaker,
         touched: &Touched,
     ) -> Result<DomainEvent, bb_core::id::IdError> {
-        events.make(
+        events.create(
             entity(RecordKind::Issue, touched.issue),
             vec![FieldChange {
                 field: self.sorted.member().to_owned(),

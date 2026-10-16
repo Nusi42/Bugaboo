@@ -4,10 +4,10 @@
 //! *No access*) and must be refused. Every probe runs on both databases (ARCH-DB-PARITY).
 
 use bb_app::access::{
-    MakeStartingRoles, Permission, PolicyStore as _, StartingRole, make_starting_roles,
+    CreateStartingRoles, Permission, PolicyStore as _, StartingRole, create_starting_roles,
 };
 use bb_app::people::{AddGroupMember, DeleteGroup, PeopleQuery, RemoveGroupMember};
-use bb_app::projects::MakeProject;
+use bb_app::projects::CreateProject;
 use bb_app::roles::{
     DeleteRole, Given, ReasonView, RemoveAssignment, ResetRole, RolesQuery, SetFieldLevel,
     SetPeopleLevel, Subject,
@@ -744,13 +744,13 @@ limit: bb_core::paging::PAGE_SIZE_MAX,
 }
 
 #[tokio::test]
-async fn sec_08_two_servers_starting_together_make_the_starting_roles_once() -> TestResult {
+async fn sec_08_two_servers_starting_together_create_the_starting_roles_once() -> TestResult {
     each_database("sec_08_starting_race", async |db| {
         let rig = Rig::start_unstarted(db).await?;
         let (first, second) = (rig.services.ctx(Rig::info()), rig.services.ctx(Rig::info()));
         let (first, second) = tokio::join!(
-            make_starting_roles(&first, MakeStartingRoles),
-            make_starting_roles(&second, MakeStartingRoles)
+            create_starting_roles(&first, CreateStartingRoles),
+            create_starting_roles(&second, CreateStartingRoles)
         );
         first?;
         second?;
@@ -924,7 +924,7 @@ async fn sec_02_only_rows_that_can_exist_are_made() -> TestResult {
         let acme = org.project(None, "ACME").await?.id;
         let bob = org.person().await?;
         let reader = org.role("Reader", &[Permission::SeeProjects]).await?;
-        let make = |given, project, applies_to| {
+        let create = |given, project, applies_to| {
             org.assign(
                 &org.admin,
                 Subject::Person(bob.id),
@@ -938,9 +938,12 @@ async fn sec_02_only_rows_that_can_exist_are_made() -> TestResult {
         // A role for the whole organization counts everywhere and says so; *No access* is only
         // set on a project and covers it and what is below it; a role on a project is for the
         // project alone or with what is below it.
-        assert_eq!(refused(make(role, None, AppliesTo::Project).await), invalid);
         assert_eq!(
-            refused(make(role, None, AppliesTo::ProjectAndSubProjects).await),
+            refused(create(role, None, AppliesTo::Project).await),
+            invalid
+        );
+        assert_eq!(
+            refused(create(role, None, AppliesTo::ProjectAndSubProjects).await),
             invalid
         );
         for applies_to in [
@@ -949,27 +952,27 @@ async fn sec_02_only_rows_that_can_exist_are_made() -> TestResult {
             AppliesTo::ProjectAndSubProjects,
         ] {
             assert_eq!(
-                refused(make(Given::NoAccess, None, applies_to).await),
+                refused(create(Given::NoAccess, None, applies_to).await),
                 invalid,
                 "No access for the whole organization: {applies_to:?}"
             );
         }
         assert_eq!(
-            refused(make(Given::NoAccess, Some(acme), AppliesTo::Project).await),
+            refused(create(Given::NoAccess, Some(acme), AppliesTo::Project).await),
             invalid
         );
         assert_eq!(
-            refused(make(Given::NoAccess, Some(acme), AppliesTo::Organization).await),
+            refused(create(Given::NoAccess, Some(acme), AppliesTo::Organization).await),
             invalid
         );
         assert_eq!(
-            refused(make(role, Some(acme), AppliesTo::Organization).await),
+            refused(create(role, Some(acme), AppliesTo::Organization).await),
             invalid
         );
         // The three that can exist (a role and *No access* for one person on one project are a
         // conflict of their own, so *No access* is for somebody else).
-        make(role, None, AppliesTo::Organization).await?;
-        make(role, Some(acme), AppliesTo::Project).await?;
+        create(role, None, AppliesTo::Organization).await?;
+        create(role, Some(acme), AppliesTo::Project).await?;
         let cleo = org.person().await?;
         org.assign(
             &org.admin,
@@ -1032,9 +1035,9 @@ async fn sec_02_a_role_with_sub_projects_needs_a_row_that_reaches_sub_projects()
         let bobs = org
             .rig
             .api()
-            .make_project(
+            .create_project(
                 Rig::info(),
-                MakeProject {
+                CreateProject {
                     session_token: bob.session.clone(),
                     parent: Some(acme),
                     short_name: "BOBS".to_owned(),

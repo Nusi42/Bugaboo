@@ -19,8 +19,8 @@ use super::rig::Rig;
 
 pub(super) const FIELDS: &str = "/api/v1/fields";
 
-/// Makes a field as `browser`; the answer, which has to be a success.
-pub(super) async fn make_field(browser: &mut Browser, body: Value) -> Result<Value, Failure> {
+/// Creates a field as `browser`; the answer, which has to be a success.
+pub(super) async fn create_field(browser: &mut Browser, body: Value) -> Result<Value, Failure> {
     let made = browser.send("POST", FIELDS, Some(body)).await?;
     Ok(ok(&made)?.clone())
 }
@@ -30,15 +30,15 @@ fn acme_issues() -> String {
     format!("{PROJECTS}/ACME/issues")
 }
 
-/// Makes an issue of the type `bug` in ACME with these values of own fields; the answer.
-async fn make_with(ada: &mut Browser, bug: &str, fields: Value) -> Result<Reply, Failure> {
+/// Creates an issue of the type `bug` in ACME with these values of own fields; the answer.
+async fn create_with(ada: &mut Browser, bug: &str, fields: Value) -> Result<Reply, Failure> {
     let body = json!({"issue_type": bug, "title": "An issue", "fields": fields});
     ada.send("POST", &acme_issues(), Some(body)).await
 }
 
 /// A field *Severity* with three choices, for issues.
 pub(super) async fn severity(ada: &mut Browser) -> Result<Value, Failure> {
-    make_field(
+    create_field(
         ada,
         json!({
             "name": "Severity",
@@ -55,7 +55,7 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
     each_database("cf_03_rules", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let customer = make_field(
+        let customer = create_field(
             &mut ada,
             json!({
                 "name": "Customer",
@@ -76,26 +76,26 @@ async fn cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence(
             );
         };
         refused(
-            &make_with(&mut ada, &site.bug, json!({})).await?,
+            &create_with(&mut ada, &site.bug, json!({})).await?,
             "field.required",
             &key,
         );
         refused(
-            &make_with(&mut ada, &site.bug, json!({ &key: "Customer" })).await?,
+            &create_with(&mut ada, &site.bug, json!({ &key: "Customer" })).await?,
             "field.too_long",
             &key,
         );
         refused(
-            &make_with(&mut ada, &site.bug, json!({ &key: "Ab1" })).await?,
+            &create_with(&mut ada, &site.bug, json!({ &key: "Ab1" })).await?,
             "field.no_match",
             &key,
         );
         refused(
-            &make_with(&mut ada, &site.bug, json!({ &key: 7 })).await?,
+            &create_with(&mut ada, &site.bug, json!({ &key: 7 })).await?,
             "field.wrong_value",
             &key,
         );
-        let made = make_with(&mut ada, &site.bug, json!({ &key: "Acme" })).await?;
+        let made = create_with(&mut ada, &site.bug, json!({ &key: "Acme" })).await?;
         let issue = ok(&made)?;
         assert_eq!(issue["own_fields"][&key], "Acme");
         // A change is refused the same way, and a required field cannot be emptied.
@@ -157,7 +157,7 @@ async fn cf_03_a_field_for_one_project_is_not_offered_elsewhere() -> TestResult 
             .as_str()
             .ok_or("no project")?
             .to_owned();
-        let field = make_field(
+        let field = create_field(
             &mut ada,
             json!({
                 "name": "Customer",
@@ -270,7 +270,7 @@ async fn an_issue_per_type(
         .as_str()
         .ok_or("no type")?
         .to_owned();
-    let in_bug = ok(&site.make(ada, "A bug").await?)?["key"]
+    let in_bug = ok(&site.create(ada, "A bug").await?)?["key"]
         .as_str()
         .ok_or("no key")?
         .to_owned();
@@ -439,7 +439,7 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
         let (key, major) = (id_in(&level)?, id_in(&level["choices"][1])?);
         // A long text is sent as HTML next to the values: hidden, it is in no answer either.
         let notes = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
             )
@@ -690,7 +690,7 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
     each_database("cf_06_names", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let salary = make_field(
+        let salary = create_field(
             &mut ada,
             json!({"name": "Salary band", "kind": "text", "applies_to": "issues"}),
         )
@@ -705,7 +705,7 @@ async fn cf_06_a_lead_who_may_not_see_a_field_reads_neither_its_name_nor_its_row
             .as_str()
             .ok_or("no project")?
             .to_owned();
-        let only_beta = make_field(
+        let only_beta = create_field(
             &mut ada,
             json!({
                 "name": "Beta only",
@@ -798,9 +798,13 @@ async fn move_preview_hides(
 ) -> TestResult {
     // The move preview: a project with a sub-project (and a field that is only for the
     // sub-project) moves below ACME, where Pia has a role that reads all three fields.
-    let make = |short: &'static str| json!({"short_name": short, "name": short});
-    let moved = id_in(&ada.send("POST", PROJECTS, Some(make("MOVED"))).await?.body)?;
-    let sub = id_in(&ada.send("POST", PROJECTS, Some(make("MSUB"))).await?.body)?;
+    let create = |short: &'static str| json!({"short_name": short, "name": short});
+    let moved = id_in(
+        &ada.send("POST", PROJECTS, Some(create("MOVED")))
+            .await?
+            .body,
+    )?;
+    let sub = id_in(&ada.send("POST", PROJECTS, Some(create("MSUB"))).await?.body)?;
     let into_moved = ada
         .send(
             "POST",
@@ -816,7 +820,7 @@ async fn move_preview_hides(
             Some(json!({"to": moved, "preview": version})),
         )
         .await?)?;
-    let sub_only = make_field(
+    let sub_only = create_field(
         ada,
         json!({
             "name": "Sub only",
@@ -915,13 +919,13 @@ async fn cf_06_an_own_field_never_starts_with_a_default_that_cannot_be_kept() ->
             .await?;
         refuse(&long);
         // A starting value is used, and dropped when the rules no longer allow it.
-        let field = make_field(
+        let field = create_field(
             &mut ada,
             json!({"name": "Region", "kind": "text", "applies_to": "issues", "default_value": "North"}),
         )
         .await?;
         let key = id_in(&field)?;
-        let made = ok(&site.make(&mut ada, "Uses the default").await?)?.clone();
+        let made = ok(&site.create(&mut ada, "Uses the default").await?)?.clone();
         assert_eq!(made["own_fields"][&key], "North");
         let tightened = ada
             .send(
@@ -931,7 +935,7 @@ async fn cf_06_an_own_field_never_starts_with_a_default_that_cannot_be_kept() ->
             )
             .await?;
         assert!(ok(&tightened)?["default_value"].is_null(), "{}", tightened.body);
-        let later = ok(&site.make(&mut ada, "Starts empty").await?)?.clone();
+        let later = ok(&site.create(&mut ada, "Starts empty").await?)?.clone();
         assert!(later["own_fields"].get(&key).is_none());
         Ok(())
     })
@@ -948,7 +952,7 @@ async fn reference_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
         ("Duplicate of", "issue"),
         ("Notes", "long-text"),
     ] {
-        let made = make_field(
+        let made = create_field(
             ada,
             json!({"name": name, "kind": kind, "applies_to": "issues"}),
         )
@@ -1028,10 +1032,10 @@ async fn cf_01_people_groups_and_issues_are_shown_for_the_viewer_and_a_long_text
         let group = id_in(ok(&ada
             .send("POST", "/api/v1/groups", Some(json!({"name": "Core"})))
             .await?)?)?;
-        let first = ok(&site.make(&mut ada, "The first").await?)?.clone();
+        let first = ok(&site.create(&mut ada, "The first").await?)?.clone();
         let (guest, _) = site.person(StartingRole::Guest, "gus").await?;
         let mut guest = guest;
-        let second = ok(&site.make(&mut guest, "The second").await?)?.clone();
+        let second = ok(&site.create(&mut guest, "The second").await?)?.clone();
         let path = format!("{ISSUES}/{}", second["key"].as_str().ok_or("no key")?);
         let values = json!({
             tester: me, reviewers: [me], team: group, duplicate: first["id"],
@@ -1118,13 +1122,13 @@ async fn locked_notes(
     site: &Site<'_>,
     ada: &mut Browser,
 ) -> Result<(String, Value, String, Reply), Failure> {
-    let notes = make_field(
+    let notes = create_field(
         ada,
         json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
     )
     .await?;
     let field = id_in(&notes)?;
-    let made = ok(&site.make(ada, "Has notes").await?)?.clone();
+    let made = ok(&site.create(ada, "Has notes").await?)?.clone();
     let (id, key) = (
         id_in(&made)?,
         made["key"].as_str().ok_or("no key")?.to_owned(),

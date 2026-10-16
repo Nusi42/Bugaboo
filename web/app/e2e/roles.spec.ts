@@ -2,13 +2,13 @@ import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths, projectAddress, roleAddress } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
 import { twoStepOf } from "./support/roles.ts";
-import { makeProject } from "./support/projects.ts";
-import { addToGroup, giveRole, makeGroup, roleIds, roleName } from "./support/access.ts";
+import { createProject } from "./support/projects.ts";
+import { addToGroup, giveRole, createGroup, roleIds, roleName } from "./support/access.ts";
 
 // Roles & permissions and Who has which role (SEC-02, SEC-03, SEC-08, WP-11): a role is made from a
 // copy and changed, a group gets it on a project, the row comes down to a sub-project and is changed
@@ -20,17 +20,17 @@ let roles: ReadonlyMap<string, string> = new Map();
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const bobSession = await makePerson(server, admin, bob);
+      const admin = await createAdmin(server);
+      const bobSession = await createPerson(server, admin, bob);
       const bobId = await ownId(bobSession);
       await bobSession.dispose();
-      const lead = await makePerson(server, admin, cleo);
+      const lead = await createPerson(server, admin, cleo);
       const cleoId = await ownId(lead);
       await lead.dispose();
-      const acme = await makeProject(admin, "ACME", "Acme");
-      await makeProject(admin, "WEB", "Website", acme);
-      await makeProject(admin, "LAB", "Lab");
-      await addToGroup(admin, await makeGroup(admin, "Backend"), bobId);
+      const acme = await createProject(admin, "ACME", "Acme");
+      await createProject(admin, "WEB", "Website", acme);
+      await createProject(admin, "LAB", "Lab");
+      await addToGroup(admin, await createGroup(admin, "Backend"), bobId);
       roles = await roleIds(admin);
       await giveRole(admin, cleoId, roleName.projectLead, "ACME");
       await admin.dispose();

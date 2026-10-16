@@ -4,22 +4,22 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { ProjectNameField, ShortNameField } from "./ProjectFields.tsx";
-import { useMakeProject } from "./use-projects.ts";
+import { useCreateProject } from "./use-projects.ts";
 
-export interface MakeProjectFormProps {
+export interface CreateProjectFormProps {
   /** The project it goes into (an ID); the top level without it. */
   readonly inside?: string;
 }
 
-/** *Make a project*: a name and a short name; at the top level, or inside the project given. */
-export function MakeProjectForm({ inside }: MakeProjectFormProps) {
+/** *Create a project*: a name and a short name; at the top level, or inside the project given. */
+export function CreateProjectForm({ inside }: CreateProjectFormProps) {
   const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
   const [made, setMade] = useState<string | null>(null);
-  const make = useMakeProject(inside);
+  const create = useCreateProject(inside);
   const submit = (): void => {
     setMade(null);
-    make.mutate(
+    create.mutate(
       { shortName: shortName.trim(), name: name.trim() },
       {
         onSuccess: (project) => {
@@ -34,12 +34,12 @@ export function MakeProjectForm({ inside }: MakeProjectFormProps) {
     <Form onSubmit={submit}>
       <ProjectNameField value={name} onChange={setName} />
       <ShortNameField value={shortName} onChange={setShortName} />
-      {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
+      {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
         <Alert tone={alertTone.success}>{t("projects.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("projects.create")}</SubmitButton>
+        <SubmitButton isPending={create.isPending}>{t("projects.create")}</SubmitButton>
       </div>
     </Form>
   );

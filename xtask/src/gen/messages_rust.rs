@@ -147,7 +147,7 @@ fn format(repo: &Repo, source: &str) -> anyhow::Result<String> {
 mod tests {
     use super::*;
 
-    fn make(messages: &[(&str, &str)]) -> anyhow::Result<String> {
+    fn create(messages: &[(&str, &str)]) -> anyhow::Result<String> {
         let owned: Vec<(String, String)> = messages
             .iter()
             .map(|(k, t)| ((*k).to_owned(), (*t).to_owned()))
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn keys_become_constants_and_functions() {
-        let code = make(&[
+        let code = create(&[
             ("a.b-c", "Plain"),
             ("a.count", "{n, plural, one {# item} other {# items}}"),
             ("a.hi", "Hi {name}"),
@@ -177,12 +177,12 @@ mod tests {
 
     #[test]
     fn names_that_collide_are_rejected() {
-        assert!(make(&[("a-b.c", "x"), ("a.b-c", "y")]).is_err());
+        assert!(create(&[("a-b.c", "x"), ("a.b-c", "y")]).is_err());
     }
 
     #[test]
     fn the_catalog_is_sorted_by_key() {
-        let code = make(&[("b.x", "1"), ("a.y", "2")]).unwrap();
+        let code = create(&[("b.x", "1"), ("a.y", "2")]).unwrap();
         assert!(code.find("\"a.y\"").unwrap() < code.find("\"b.x\"").unwrap());
     }
 

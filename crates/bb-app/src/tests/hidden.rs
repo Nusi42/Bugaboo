@@ -5,7 +5,7 @@ use bb_core::ErrorCode;
 
 use super::world::{Outcome, World};
 use crate::auth::AppError;
-use crate::projects::{MakeProject, ProjectQuery, make_project, project};
+use crate::projects::{CreateProject, ProjectQuery, create_project, project};
 
 /// The reads the store answers while `address` is asked for, and what the answer was.
 async fn reads_for(
@@ -28,9 +28,9 @@ async fn reads_for(
 #[tokio::test]
 async fn prj_01_a_hidden_project_and_a_missing_one_cost_the_same_reads() -> Outcome {
     let world = World::new().await?;
-    let secret = make_project(
+    let secret = create_project(
         &world.ctx(),
-        MakeProject {
+        CreateProject {
             session_token: world.admin.session_token.clone(),
             parent: None,
             short_name: "SECRET".to_owned(),
@@ -66,13 +66,13 @@ async fn prj_01_a_person_who_may_only_create_sub_projects_in_a_project_they_cann
     use bb_core::access::AppliesTo;
     use bb_policy::Permission;
 
-    use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
+    use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 
     let world = World::new().await?;
     let admin = world.admin.session_token.clone();
-    let secret = make_project(
+    let secret = create_project(
         &world.ctx(),
-        MakeProject {
+        CreateProject {
             session_token: admin.clone(),
             parent: None,
             short_name: "SECRET".to_owned(),
@@ -83,9 +83,9 @@ async fn prj_01_a_person_who_may_only_create_sub_projects_in_a_project_they_cann
     .into_value();
     // A role that only lets them create sub-projects, given in the project: it does not let them
     // see it, so the project is not there for them, as for anybody who does not see it.
-    let only = make_role(
+    let only = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: admin.clone(),
             name: "Only sub-projects".to_owned(),
             permissions: vec![Permission::CreateSubProjects],
@@ -106,18 +106,18 @@ async fn prj_01_a_person_who_may_only_create_sub_projects_in_a_project_they_cann
         },
     )
     .await?;
-    let make_in = |parent: Option<bb_core::id::ProjectId>, short: &str| MakeProject {
+    let create_in = |parent: Option<bb_core::id::ProjectId>, short: &str| CreateProject {
         session_token: bob.session_token.clone(),
         parent,
         short_name: short.to_owned(),
         name: "Mine".to_owned(),
     };
-    let hidden = make_project(&world.ctx(), make_in(Some(secret.id), "MINE"))
+    let hidden = create_project(&world.ctx(), create_in(Some(secret.id), "MINE"))
         .await
         .err();
-    let missing = make_project(
+    let missing = create_project(
         &world.ctx(),
-        make_in(
+        create_in(
             Some(bb_core::id::ProjectId::from_parts(
                 jiff::Timestamp::UNIX_EPOCH,
                 [7; 10],

@@ -282,7 +282,7 @@ pub(crate) fn create_private(path: &Path) -> Result<(), DataFolderError> {
     if path.is_dir() {
         return Ok(());
     }
-    make_folder(path).map_err(|error| DataFolderError::Create {
+    create_folder(path).map_err(|error| DataFolderError::Create {
         path: path.to_path_buf(),
         reason: error.to_string(),
     })?;
@@ -296,7 +296,7 @@ pub(crate) fn create_private(path: &Path) -> Result<(), DataFolderError> {
 }
 
 #[cfg(unix)]
-fn make_folder(path: &Path) -> std::io::Result<()> {
+fn create_folder(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::DirBuilderExt as _;
     std::fs::DirBuilder::new()
         .recursive(true)
@@ -305,7 +305,7 @@ fn make_folder(path: &Path) -> std::io::Result<()> {
 }
 
 #[cfg(not(unix))]
-fn make_folder(path: &Path) -> std::io::Result<()> {
+fn create_folder(path: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(path)
 }
 
@@ -462,7 +462,7 @@ fn write_private_with(
         return Err(not_there());
     }
     let name = path.file_name().ok_or_else(not_there)?;
-    let staging = make_staging_folder(path)?;
+    let staging = create_staging_folder(path)?;
     let staged = staging.join(name);
     let placed = open_private(&staged)
         .and_then(|mut file| {
@@ -520,16 +520,16 @@ fn copy_new(from: &Path, to: &Path) -> std::io::Result<()> {
 const STAGING_TRIES: usize = 5;
 
 /// Makes the folder in which a secret file is made before it is moved to `path`.
-fn make_staging_folder(path: &Path) -> std::io::Result<PathBuf> {
-    make_staging_folder_with(|| staging_name(path))
+fn create_staging_folder(path: &Path) -> std::io::Result<PathBuf> {
+    create_staging_folder_with(|| staging_name(path))
 }
 
-/// Makes a new folder under the first name that is free. A name that is taken (by somebody who
+/// Creates a new folder under the first name that is free. A name that is taken (by somebody who
 /// guessed it, or by a call that is running) is never used: the folder is made with a plain
 /// `create_dir`, which fails when the name exists, whoever made it and whatever it is (a link
 /// included), and the next name is tried. The new folder is for its owner only from the moment it
 /// exists (Linux), or at once after (Windows, where nothing can be in it yet).
-fn make_staging_folder_with(
+fn create_staging_folder_with(
     mut name: impl FnMut() -> std::io::Result<PathBuf>,
 ) -> std::io::Result<PathBuf> {
     for _ in 0..STAGING_TRIES {
@@ -833,14 +833,14 @@ mod tests {
         // The first name is taken by somebody else: the next one is used, and nothing is ever
         // written into the folder that was there.
         let mut offered = vec![planted.clone(), fresh.clone()].into_iter();
-        let made = make_staging_folder_with(|| Ok(offered.next().unwrap())).unwrap();
+        let made = create_staging_folder_with(|| Ok(offered.next().unwrap())).unwrap();
         assert_eq!(made, fresh);
         assert_eq!(names(&planted), ["theirs.txt"]);
         // Names that are all taken give up after a few tries, with an error.
         let taken = temp.path().join("taken");
         std::fs::create_dir(&taken).unwrap();
         let mut tries = 0;
-        let error = make_staging_folder_with(|| {
+        let error = create_staging_folder_with(|| {
             tries += 1;
             Ok(taken.clone())
         })
@@ -870,7 +870,7 @@ mod tests {
         // The file is first written in a folder of its own that is for the owner only, and moved
         // into place after: nobody who can read the target folder can catch it half-made.
         let temp = tempfile::tempdir().unwrap();
-        let staging = make_staging_folder(&temp.path().join("code.txt")).unwrap();
+        let staging = create_staging_folder(&temp.path().join("code.txt")).unwrap();
         let output = std::process::Command::new("icacls")
             .arg(&staging)
             .output()

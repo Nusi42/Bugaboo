@@ -32,7 +32,7 @@ export const cleo: Person = {
 };
 
 /** Makes the first administrator through the API, with the setup code the server saved. */
-export async function makeAdmin(server: Instance, person: Person = ada): Promise<ApiSession> {
+export async function createAdmin(server: Instance, person: Person = ada): Promise<ApiSession> {
   const session = await openSession(server.url);
   await session.client.POST("/api/v1/auth/setup", {
     body: {
@@ -101,7 +101,7 @@ export async function invite(admin: ApiSession, email: string): Promise<string> 
 }
 
 /** Makes an account for `person` with an invitation from `admin`, and signs the person in. */
-export async function makePerson(
+export async function createPerson(
   server: Instance,
   admin: ApiSession,
   person: Person,

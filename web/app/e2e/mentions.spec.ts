@@ -2,11 +2,11 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { giveRole, roleName } from "./support/access.ts";
-import { ada, bob, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
+import { ada, bob, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { paths } from "../src/shared/paths.ts";
 
 // The *Mentions* block of the start page (ISS-05, M3-Q3, M3-Q7, WP-07): a comment that names a
@@ -16,11 +16,11 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const bobSession = await makePerson(server, admin, bob);
+      const admin = await createAdmin(server);
+      const bobSession = await createPerson(server, admin, bob);
       await giveRole(admin, await ownId(bobSession), roleName.teamMember, null);
       await bobSession.dispose();
-      await makeProject(admin, "ACME", "Acme");
+      await createProject(admin, "ACME", "Acme");
       const types = dataOf(await admin.client.GET("/api/v1/issue-types"));
       const bug = types.items[0]?.id ?? "";
       const issue = dataOf(

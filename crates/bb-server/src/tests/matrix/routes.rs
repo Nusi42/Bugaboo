@@ -24,7 +24,7 @@ use axum::http::StatusCode;
 use bb_api::openapi::{Operation, operations};
 use bb_api::permissions::Declared;
 use bb_app::access::{Permission, StartingRole};
-use bb_app::auth::MakeAccessKey;
+use bb_app::auth::CreateAccessKey;
 use bb_app::roles::SetFieldLevel;
 use bb_core::access::FieldLevel;
 use bb_core::access_key::KeyChoice;
@@ -398,9 +398,9 @@ async fn hold(
             };
             let made = rig
                 .api()
-                .make_access_key(
+                .create_access_key(
                     Rig::info(),
-                    MakeAccessKey {
+                    CreateAccessKey {
                         session_token: member.session.clone(),
                         password: PASSWORD.to_owned(),
                         name: actor.name(),

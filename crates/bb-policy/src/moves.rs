@@ -61,7 +61,7 @@ pub struct MoveRequest<'a> {
 /// Whether the person may ask for this move at all: the one set of rules the preview and the move
 /// both stand on, judged on the tree and on who has which role as they are given. They see the
 /// project; they may move projects in the new and in the old parent (a move to or from the top
-/// level takes the permission for the whole organization, and to the top level also *Make
+/// level takes the permission for the whole organization, and to the top level also *Create
 /// projects*); the project does not go inside itself, nor where it is already, nor deeper than a
 /// tree may go.
 ///
