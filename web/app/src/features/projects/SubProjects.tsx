@@ -58,7 +58,7 @@ export function SubProjects({ project }: { readonly project: OneProject }) {
               setMaking(true);
             }}
           >
-            {t("projects.make-sub-project")}
+            {t("projects.create-sub-project")}
           </Button>
         </div>
       ) : null}

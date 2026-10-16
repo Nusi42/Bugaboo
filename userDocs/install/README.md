@@ -8,7 +8,7 @@ Choose the page that fits your computer:
 - [Install on Linux](linux.md)
 - [Install on Windows with WSL](wsl.md)
 
-When Bugaboo runs, make your own account: [Your first sign-in](../sign-in/first-sign-in.md).
+When Bugaboo runs, create your own account: [Your first sign-in](../sign-in/first-sign-in.md).
 
 ## What the questions are about
 
@@ -19,7 +19,7 @@ The command `bugaboo setup` asks these questions. Press Enter to accept the answ
 | Where should Bugaboo keep its data? | The path of a folder. Everything Bugaboo stores goes there. Back this folder up. |
 | Who should be able to open Bugaboo? | `127.0.0.1` for this computer only, or `0.0.0.0` for everyone who can reach this computer. |
 | Which port should Bugaboo listen on? | The suggestion is fine unless another program uses it. Bugaboo tells you when the port is busy. |
-| How should the connection be secured? | `self-signed` lets Bugaboo make its own certificate. Browsers warn about it until you trust it. Choose `files` if you already have a certificate, or `off` only on this computer or behind a proxy that does HTTPS. |
+| How should the connection be secured? | `self-signed` lets Bugaboo create its own certificate. Browsers warn about it until you trust it. Choose `files` if you already have a certificate, or `off` only on this computer or behind a proxy that does HTTPS. |
 | Which web address will people type? | The address people use in their browser, for example `https://bugaboo.example.com`. Passkeys belong to the host name of this address. |
 | Which database? | `built-in` is right for a start. |
 
@@ -29,11 +29,11 @@ To skip the questions, for example in a script, run `bugaboo setup --non-interac
 
 ## Your own certificate before the first start
 
-If you already have a certificate, put the files into a folder named `tls` inside the data folder before Bugaboo has ever started, and choose `files` in the questions above. When you then run `bugaboo service install`, Bugaboo refuses the folder, because it holds files that Bugaboo did not make, and the message names the flag `--take-over-data-folder`. Run the command again with that flag to let the service take the folder over. The flag takes over nothing else: a folder with any other files in it is still refused.
+If you already have a certificate, put the files into a folder named `tls` inside the data folder before Bugaboo has ever started, and choose `files` in the questions above. When you then run `bugaboo service install`, Bugaboo refuses the folder, because it holds files that Bugaboo did not create, and the message names the flag `--take-over-data-folder`. Run the command again with that flag to let the service take the folder over. The flag takes over nothing else: a folder with any other files in it is still refused.
 
 ## The setup code
 
-The first time Bugaboo starts, nobody has an account. So that only you can make the first one, Bugaboo makes a setup code. It works once and changes every time Bugaboo starts.
+The first time Bugaboo starts, nobody has an account. So that only you can create the first one, Bugaboo creates a setup code. It works once and changes every time Bugaboo starts.
 
 - When you start Bugaboo yourself with `bugaboo serve`, the code is shown in that window, on the line that starts with "Setup is open".
 - When Bugaboo runs as a service, the code is in the file `setup-code.txt` inside the data folder.

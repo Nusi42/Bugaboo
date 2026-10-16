@@ -63,7 +63,7 @@ export const messages = {
   "setting.auth.access-key-longest-days.help":
     "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
-    "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+    "Let people create an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
   "setting.content.image-hosts.help":
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
@@ -82,7 +82,7 @@ export const messages = {
   "setting.appearance.dark-theme.help":
     "The theme Bugaboo shows when your device is dark. It counts when you choose Match my device.",
   "setting.appearance.spacing.help": "How close together things are. Compact fits more on a page.",
-  "setting.appearance.larger-text.help": "Makes all text a step bigger.",
+  "setting.appearance.larger-text.help": "Enlarges all text by a step.",
   "setting.appearance.less-motion.help":
     "Fewer moving effects. Bugaboo also follows the setting of your device.",
   "setting.appearance.issue-view.name": "Open issues in",
@@ -136,7 +136,7 @@ export const messages = {
     "Who should be able to open Bugaboo? Type 127.0.0.1 for this computer only, or 0.0.0.0 for everyone who can reach this computer.",
   "setup.ask.port": "Which port should Bugaboo listen on?",
   "setup.ask.tls":
-    "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo make its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
+    "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo create its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
   "setup.ask.tls-cert": "Where is the certificate file?",
   "setup.ask.tls-key": "Where is the private key file?",
   "setup.ask.public-url":
@@ -152,7 +152,7 @@ export const messages = {
   "setup.input-ended": "The questions were not all answered, so nothing was saved.",
   "setup.saved": "Saved your answers in {path}.",
   "setup.next":
-    "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to make the first administrator in your browser.",
+    "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to create the first administrator in your browser.",
   "setup.service-hint": "To have Bugaboo start with the computer, run: bugaboo service install",
   "common.cancel": "Cancel",
   "common.loading": "Loading…",
@@ -161,11 +161,11 @@ export const messages = {
   "validation.email": "Type an e-mail address like name@example.com.",
   "field.email": "E-mail address",
   "field.password": "Password",
-  "field.password-help": "At least 12 characters. A few words in a row make a good password.",
+  "field.password-help": "At least 12 characters. A few words in a row give a good password.",
   "field.name": "Your name",
   "field.name-help": "The name other people see.",
   "field.confirm-password": "Your password",
-  "field.confirm-password-help": "Type your password again to make sure it is you.",
+  "field.confirm-password-help": "Type your password again to confirm it is you.",
   "nav.home": "Home",
   "nav.security": "Sign-in & security",
   "nav.sessions": "Where you're signed in",
@@ -260,7 +260,7 @@ export const messages = {
   "error.project.move-lifts-no-access":
     "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
   "error.project.too-deep":
-    "Projects cannot be nested any deeper than this. Make or move it somewhere higher up.",
+    "Projects cannot be nested any deeper than this. Create or move it somewhere higher up.",
   "error.project.move-into-itself":
     "A project cannot go inside itself or inside one of its own sub-projects.",
   "error.project.preview-changed":
@@ -274,7 +274,7 @@ export const messages = {
   "access-keys.more": "More options",
   "permission.see-projects": "See the project and what is in it",
   "permission.see-issues": "See every issue of the project, not only the ones they reported",
-  "permission.make-issues": "Make issues",
+  "permission.make-issues": "Create issues",
   "permission.change-issues": "Change anybody's issues, in the fields they may change",
   "permission.change-own-issues": "Change the issues they reported, in the fields they may change",
   "permission.comment": "Write comments on the issues they see",
@@ -282,10 +282,10 @@ export const messages = {
   "permission.move-issues": "Move issues into or out of the project",
   "permission.edit-anyway": "Take over text someone else is editing; their text is kept",
   "permission.manage-issue-types": "Manage issue types, kinds of relation and layouts",
-  "permission.manage-fields": "Make, change and retire fields",
+  "permission.manage-fields": "Create, change and retire fields",
   "permission.manage-labels": "Manage labels and tags, also rename and combine them",
-  "permission.make-projects": "Make projects at the top level",
-  "permission.make-sub-projects": "Make sub-projects inside the project",
+  "permission.make-projects": "Create projects at the top level",
+  "permission.make-sub-projects": "Create sub-projects inside the project",
   "permission.move-projects": "Move sub-projects into or out of the project",
   "permission.change-project-settings": "Change the project's name, short name and settings",
   "permission.decide-roles": "Decide who has which role, including No access",
@@ -295,8 +295,8 @@ export const messages = {
   "permission.manage-people":
     "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
   "permission.manage-invitations": "Invite people and take invitations back",
-  "permission.manage-groups": "Make, rename and delete groups and change who is in them",
-  "permission.manage-roles": "Make, change and delete roles",
+  "permission.manage-groups": "Create, rename and delete groups and change who is in them",
+  "permission.manage-roles": "Create, change and delete roles",
   "permission.change-organization-settings": "Change organization settings",
   "permission.see-status": "See how the server is doing",
   "starting-role.administrator": "Administrator",
@@ -368,7 +368,7 @@ export const messages = {
   "own.ask-title": "This takes away your own way to manage roles",
   "own.ask-text":
     "{lost} The organization always keeps someone who can manage roles, but it may no longer be you.",
-  "own.lost-manage-roles": "You could no longer make, change or delete roles.",
+  "own.lost-manage-roles": "You could no longer create, change or delete roles.",
   "own.lost-decide-roles": "You could no longer decide who has which role.",
   "own.ask-yes": "Do it anyway",
   "own.ask-keep": "Keep what I have",
@@ -393,7 +393,7 @@ export const messages = {
   "history.tabs": "What to show",
   "history.people-none": "nobody",
   "error.issue.parent-circle":
-    "That would make a circle of issues or a chain that is too long. Choose another issue.",
+    "That would create a circle of issues or a chain that is too long. Choose another issue.",
   "error.limit.reached": "There is no room for more of these. Take some away first.",
   "error.relation.exists": "Those two issues are related in that way already.",
   "status.open": "Open",
@@ -527,13 +527,13 @@ export const messages = {
   "editing.lost-changed": "Not saved yet: {name} changed {thing} after you. Your text is kept.",
   "editing.draft-continue": "Continue your draft from {when}",
   "editing.draft-drop": "Throw the draft away",
-  "shortcut.new-issue": "Make a new issue",
+  "shortcut.new-issue": "Create a new issue",
   "shortcut.change-status": "Change the status of the open issue",
   "shortcut.assign": "Choose who the open issue is assigned to",
   "shortcut.edit-description": "Edit the description of the open issue",
   "shortcut.on-issue": "On an open issue",
   "bulk-skip.not-found": "It was deleted, or you can no longer see it",
-  "bulk-skip.not-allowed": "You may not make this change to it",
+  "bulk-skip.not-allowed": "You may not change it this way",
   "bulk-skip.nothing-to-change": "It is like that already",
   "bulk-skip.changed-since": "It changed after the preview",
   "bulk-skip.type-missing": "The other project does not offer its issue type",

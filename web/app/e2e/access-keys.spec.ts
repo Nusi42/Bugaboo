@@ -45,8 +45,8 @@ async function openAccessKeys(page: Page): Promise<void> {
 
 /** Opens the form, fills in the name and the password, and leaves what else is picked to the test. */
 async function startKey(page: Page, name: string) {
-  await page.getByRole("button", { name: t("access-keys.make"), exact: true }).click();
-  const form = page.getByRole("region", { name: t("access-keys.make"), exact: true });
+  await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
+  const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
   await form.getByLabel(t("access-keys.name")).fill(name);
   return form;
 }
@@ -215,7 +215,7 @@ test("auth_07 the form asks for a name, a permission when single ones are chosen
   await form.getByRole("button", { name: t("common.cancel") }).click();
   await expect(form).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: t("access-keys.make"), exact: true }),
+    page.getByRole("button", { name: t("access-keys.create"), exact: true }),
   ).toBeVisible();
   await signOut(page);
 });

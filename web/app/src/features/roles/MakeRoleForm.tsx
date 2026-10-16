@@ -66,7 +66,9 @@ export function MakeRoleForm() {
       <SelectField label={t("roles.start-from")} choices={start} value={from} onChange={setFrom} />
       {problem === null ? null : <Alert tone={alertTone.danger}>{messageOf(problem)}</Alert>}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={empty.isPending || copy.isPending}>{t("roles.make")}</SubmitButton>
+        <SubmitButton isPending={empty.isPending || copy.isPending}>
+          {t("roles.create")}
+        </SubmitButton>
       </div>
     </Form>
   );

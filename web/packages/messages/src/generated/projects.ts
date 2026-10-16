@@ -13,13 +13,14 @@ export const messages = {
     "The projects you can see. Open one to change its name or short name. A project is moved on its own settings page.",
   "projects.search": "Search projects",
   "projects.nothing": "No project found. Try another word.",
-  "projects.none-yet": "There is no project yet. Make the first one below.",
+  "projects.none-yet": "There is no project yet. Create the first one below.",
   "projects.more": "Show more projects",
   "projects.inside": "Inside {name}",
   "projects.at-the-top": "At the top level",
-  "projects.make-title": "Make a project",
-  "projects.make-intro": "A project at the top level. Sub-projects are made inside their project.",
-  "projects.make": "Make the project",
+  "projects.create-title": "Create a project",
+  "projects.create-intro":
+    "A project at the top level. Sub-projects are created inside their project.",
+  "projects.create": "Create the project",
   "projects.made": "{name} was made.",
   "projects.field-name": "Name",
   "projects.field-name-help": "What people call the project.",
@@ -29,7 +30,7 @@ export const messages = {
   "projects.short-name-change-help":
     "The old short name stays with this project: its old addresses keep working, and nobody else can take it.",
   "projects.short-name-fixed":
-    "You can change the name here. Changing the short name takes the right to make projects where this project sits.",
+    "You can change the name here. Changing the short name takes the right to create projects where this project sits.",
   "projects.edit-title": "Name and short name",
   "projects.open": "Open the project",
   "projects.settings-back": "Back to the project",
@@ -39,7 +40,7 @@ export const messages = {
   "projects.sub-projects": "Sub-projects",
   "projects.sub-projects-empty": "This project has no sub-projects yet.",
   "projects.sub-projects-ask": "Ask a project lead if you need one.",
-  "projects.make-sub-project": "Make a sub-project",
+  "projects.create-sub-project": "Create a sub-project",
   "projects.sub-projects-more": "Show more sub-projects",
   "projects.move-title": "Move this project",
   "projects.move-text":

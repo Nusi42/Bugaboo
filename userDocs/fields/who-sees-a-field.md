@@ -2,7 +2,7 @@
 
 Each role has one of three levels for every field, own fields too: **Hidden**, **Can see** or **Can change**. Hidden means the field does not exist for that role: it is in no issue, no list, no history and no answer of the programming interface, and asking for it is refused exactly like asking for a field that does not exist.
 
-*Organization settings › Field permissions* has the table. A new own field starts with **Can see** for every role that sees projects, and **Can change** for the roles that can change issues (Team member and up). Whoever makes the field can change that at once.
+*Organization settings › Field permissions* has the table. A new own field starts with **Can see** for every role that sees projects, and **Can change** for the roles that can change issues (Team member and up). Whoever creates the field can change that at once.
 
 ## For one issue type
 

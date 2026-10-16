@@ -55,8 +55,8 @@ export function GroupsPage({ open, onOpen, onClose }: GroupsPageProps) {
           </Button>
         ) : null}
       </Card>
-      <Card heading={t("groups.make-title")}>
-        <p {...partOf(part.text)}>{t("groups.make-intro")}</p>
+      <Card heading={t("groups.create-title")}>
+        <p {...partOf(part.text)}>{t("groups.create-intro")}</p>
         <MakeGroupForm />
       </Card>
     </div>

@@ -59,8 +59,8 @@ export function RelationKindsPage({ open, onOpen, onClose }: RelationKindsPagePr
           </Button>
         ) : null}
       </Card>
-      <Card heading={t("relation-kinds.make-title")}>
-        <p {...partOf(part.text)}>{t("relation-kinds.make-intro")}</p>
+      <Card heading={t("relation-kinds.create-title")}>
+        <p {...partOf(part.text)}>{t("relation-kinds.create-intro")}</p>
         <MakeRelationKindForm />
       </Card>
     </div>

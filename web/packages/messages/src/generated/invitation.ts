@@ -5,7 +5,7 @@ import { register } from "../registry.ts";
 export const messages = {
   "invitation.title": "Join Bugaboo",
   "invitation.intro": "You are invited. Your account will use the e-mail address {email}.",
-  "invitation.submit": "Make my account",
+  "invitation.submit": "Create my account",
   "invitation.invalid-title": "This invitation does not work",
   "invitation.incomplete": "This link is not complete. Open the whole link that you were sent.",
   "invitation.sign-in": "Go to sign in",

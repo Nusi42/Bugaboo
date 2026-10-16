@@ -19,6 +19,9 @@ pub const ACCESS_KEYS_COPIED: MessageKey = MessageKey::new("access-keys.copied")
 /// The message `access-keys.copy`.
 pub const ACCESS_KEYS_COPY: MessageKey = MessageKey::new("access-keys.copy");
 
+/// The message `access-keys.create`.
+pub const ACCESS_KEYS_CREATE: MessageKey = MessageKey::new("access-keys.create");
+
 /// The message `access-keys.delete`.
 pub const ACCESS_KEYS_DELETE: MessageKey = MessageKey::new("access-keys.delete");
 
@@ -65,9 +68,6 @@ pub const ACCESS_KEYS_KEY_LABEL: MessageKey = MessageKey::new("access-keys.key-l
 
 /// The message `access-keys.list`.
 pub const ACCESS_KEYS_LIST: MessageKey = MessageKey::new("access-keys.list");
-
-/// The message `access-keys.make`.
-pub const ACCESS_KEYS_MAKE: MessageKey = MessageKey::new("access-keys.make");
 
 /// The message `access-keys.may`.
 pub const ACCESS_KEYS_MAY: MessageKey = MessageKey::new("access-keys.may");
@@ -1231,6 +1231,15 @@ pub const FIELDS_COMBINE: MessageKey = MessageKey::new("fields.combine");
 /// The message `fields.combine-into`.
 pub const FIELDS_COMBINE_INTO: MessageKey = MessageKey::new("fields.combine-into");
 
+/// The message `fields.create`.
+pub const FIELDS_CREATE: MessageKey = MessageKey::new("fields.create");
+
+/// The message `fields.create-intro`.
+pub const FIELDS_CREATE_INTRO: MessageKey = MessageKey::new("fields.create-intro");
+
+/// The message `fields.create-title`.
+pub const FIELDS_CREATE_TITLE: MessageKey = MessageKey::new("fields.create-title");
+
 /// The message `fields.default-help`.
 pub const FIELDS_DEFAULT_HELP: MessageKey = MessageKey::new("fields.default-help");
 
@@ -1278,15 +1287,6 @@ pub const FIELDS_LOOK_PREVIEW: MessageKey = MessageKey::new("fields.look-preview
 
 /// The message `fields.look-sample`.
 pub const FIELDS_LOOK_SAMPLE: MessageKey = MessageKey::new("fields.look-sample");
-
-/// The message `fields.make`.
-pub const FIELDS_MAKE: MessageKey = MessageKey::new("fields.make");
-
-/// The message `fields.make-intro`.
-pub const FIELDS_MAKE_INTRO: MessageKey = MessageKey::new("fields.make-intro");
-
-/// The message `fields.make-title`.
-pub const FIELDS_MAKE_TITLE: MessageKey = MessageKey::new("fields.make-title");
 
 /// The message `fields.never-to-assistant`.
 pub const FIELDS_NEVER_TO_ASSISTANT: MessageKey = MessageKey::new("fields.never-to-assistant");
@@ -1562,6 +1562,15 @@ pub const GROUPS_ADD_SEARCH: MessageKey = MessageKey::new("groups.add-search");
 /// The message `groups.add-title`.
 pub const GROUPS_ADD_TITLE: MessageKey = MessageKey::new("groups.add-title");
 
+/// The message `groups.create`.
+pub const GROUPS_CREATE: MessageKey = MessageKey::new("groups.create");
+
+/// The message `groups.create-intro`.
+pub const GROUPS_CREATE_INTRO: MessageKey = MessageKey::new("groups.create-intro");
+
+/// The message `groups.create-title`.
+pub const GROUPS_CREATE_TITLE: MessageKey = MessageKey::new("groups.create-title");
+
 /// The message `groups.delete`.
 pub const GROUPS_DELETE: MessageKey = MessageKey::new("groups.delete");
 
@@ -1576,15 +1585,6 @@ pub const GROUPS_IN_ALREADY: MessageKey = MessageKey::new("groups.in-already");
 
 /// The message `groups.intro`.
 pub const GROUPS_INTRO: MessageKey = MessageKey::new("groups.intro");
-
-/// The message `groups.make`.
-pub const GROUPS_MAKE: MessageKey = MessageKey::new("groups.make");
-
-/// The message `groups.make-intro`.
-pub const GROUPS_MAKE_INTRO: MessageKey = MessageKey::new("groups.make-intro");
-
-/// The message `groups.make-title`.
-pub const GROUPS_MAKE_TITLE: MessageKey = MessageKey::new("groups.make-title");
 
 /// The message `groups.members`.
 pub const GROUPS_MEMBERS: MessageKey = MessageKey::new("groups.members");
@@ -1831,6 +1831,15 @@ pub const ISSUE_TYPE_GOAL: MessageKey = MessageKey::new("issue-type.goal");
 /// The message `issue-type.task`.
 pub const ISSUE_TYPE_TASK: MessageKey = MessageKey::new("issue-type.task");
 
+/// The message `issue-types.create`.
+pub const ISSUE_TYPES_CREATE: MessageKey = MessageKey::new("issue-types.create");
+
+/// The message `issue-types.create-intro`.
+pub const ISSUE_TYPES_CREATE_INTRO: MessageKey = MessageKey::new("issue-types.create-intro");
+
+/// The message `issue-types.create-title`.
+pub const ISSUE_TYPES_CREATE_TITLE: MessageKey = MessageKey::new("issue-types.create-title");
+
 /// The message `issue-types.field-icon`.
 pub const ISSUE_TYPES_FIELD_ICON: MessageKey = MessageKey::new("issue-types.field-icon");
 
@@ -1839,15 +1848,6 @@ pub const ISSUE_TYPES_FIELD_NAME: MessageKey = MessageKey::new("issue-types.fiel
 
 /// The message `issue-types.intro`.
 pub const ISSUE_TYPES_INTRO: MessageKey = MessageKey::new("issue-types.intro");
-
-/// The message `issue-types.make`.
-pub const ISSUE_TYPES_MAKE: MessageKey = MessageKey::new("issue-types.make");
-
-/// The message `issue-types.make-intro`.
-pub const ISSUE_TYPES_MAKE_INTRO: MessageKey = MessageKey::new("issue-types.make-intro");
-
-/// The message `issue-types.make-title`.
-pub const ISSUE_TYPES_MAKE_TITLE: MessageKey = MessageKey::new("issue-types.make-title");
 
 /// The message `issue-types.more`.
 pub const ISSUE_TYPES_MORE: MessageKey = MessageKey::new("issue-types.more");
@@ -2086,6 +2086,15 @@ pub const LABELS_COMBINE_TITLE: MessageKey = MessageKey::new("labels.combine-tit
 /// The message `labels.combined`.
 pub const LABELS_COMBINED: MessageKey = MessageKey::new("labels.combined");
 
+/// The message `labels.create-label`.
+pub const LABELS_CREATE_LABEL: MessageKey = MessageKey::new("labels.create-label");
+
+/// The message `labels.create-label-intro`.
+pub const LABELS_CREATE_LABEL_INTRO: MessageKey = MessageKey::new("labels.create-label-intro");
+
+/// The message `labels.create-label-title`.
+pub const LABELS_CREATE_LABEL_TITLE: MessageKey = MessageKey::new("labels.create-label-title");
+
 /// The message `labels.field-group-name`.
 pub const LABELS_FIELD_GROUP_NAME: MessageKey = MessageKey::new("labels.field-group-name");
 
@@ -2136,15 +2145,6 @@ pub const LABELS_MAKE_GROUP_INTRO: MessageKey = MessageKey::new("labels.make-gro
 
 /// The message `labels.make-group-title`.
 pub const LABELS_MAKE_GROUP_TITLE: MessageKey = MessageKey::new("labels.make-group-title");
-
-/// The message `labels.make-label`.
-pub const LABELS_MAKE_LABEL: MessageKey = MessageKey::new("labels.make-label");
-
-/// The message `labels.make-label-intro`.
-pub const LABELS_MAKE_LABEL_INTRO: MessageKey = MessageKey::new("labels.make-label-intro");
-
-/// The message `labels.make-label-title`.
-pub const LABELS_MAKE_LABEL_TITLE: MessageKey = MessageKey::new("labels.make-label-title");
 
 /// The message `labels.no-group`.
 pub const LABELS_NO_GROUP: MessageKey = MessageKey::new("labels.no-group");
@@ -2759,6 +2759,18 @@ pub const PRIORITY_NORMAL: MessageKey = MessageKey::new("priority.normal");
 /// The message `projects.at-the-top`.
 pub const PROJECTS_AT_THE_TOP: MessageKey = MessageKey::new("projects.at-the-top");
 
+/// The message `projects.create`.
+pub const PROJECTS_CREATE: MessageKey = MessageKey::new("projects.create");
+
+/// The message `projects.create-intro`.
+pub const PROJECTS_CREATE_INTRO: MessageKey = MessageKey::new("projects.create-intro");
+
+/// The message `projects.create-sub-project`.
+pub const PROJECTS_CREATE_SUB_PROJECT: MessageKey = MessageKey::new("projects.create-sub-project");
+
+/// The message `projects.create-title`.
+pub const PROJECTS_CREATE_TITLE: MessageKey = MessageKey::new("projects.create-title");
+
 /// The message `projects.edit-title`.
 pub const PROJECTS_EDIT_TITLE: MessageKey = MessageKey::new("projects.edit-title");
 
@@ -2783,18 +2795,6 @@ pub const PROJECTS_INTRO: MessageKey = MessageKey::new("projects.intro");
 
 /// The message `projects.issue-ids-title`.
 pub const PROJECTS_ISSUE_IDS_TITLE: MessageKey = MessageKey::new("projects.issue-ids-title");
-
-/// The message `projects.make`.
-pub const PROJECTS_MAKE: MessageKey = MessageKey::new("projects.make");
-
-/// The message `projects.make-intro`.
-pub const PROJECTS_MAKE_INTRO: MessageKey = MessageKey::new("projects.make-intro");
-
-/// The message `projects.make-sub-project`.
-pub const PROJECTS_MAKE_SUB_PROJECT: MessageKey = MessageKey::new("projects.make-sub-project");
-
-/// The message `projects.make-title`.
-pub const PROJECTS_MAKE_TITLE: MessageKey = MessageKey::new("projects.make-title");
 
 /// The message `projects.more`.
 pub const PROJECTS_MORE: MessageKey = MessageKey::new("projects.more");
@@ -2973,6 +2973,15 @@ pub const RELATION_KIND_IS_CAUSED_BY: MessageKey = MessageKey::new("relation-kin
 /// The message `relation-kind.related-to`.
 pub const RELATION_KIND_RELATED_TO: MessageKey = MessageKey::new("relation-kind.related-to");
 
+/// The message `relation-kinds.create`.
+pub const RELATION_KINDS_CREATE: MessageKey = MessageKey::new("relation-kinds.create");
+
+/// The message `relation-kinds.create-intro`.
+pub const RELATION_KINDS_CREATE_INTRO: MessageKey = MessageKey::new("relation-kinds.create-intro");
+
+/// The message `relation-kinds.create-title`.
+pub const RELATION_KINDS_CREATE_TITLE: MessageKey = MessageKey::new("relation-kinds.create-title");
+
 /// The message `relation-kinds.field-backward`.
 pub const RELATION_KINDS_FIELD_BACKWARD: MessageKey =
     MessageKey::new("relation-kinds.field-backward");
@@ -2983,15 +2992,6 @@ pub const RELATION_KINDS_FIELD_FORWARD: MessageKey =
 
 /// The message `relation-kinds.intro`.
 pub const RELATION_KINDS_INTRO: MessageKey = MessageKey::new("relation-kinds.intro");
-
-/// The message `relation-kinds.make`.
-pub const RELATION_KINDS_MAKE: MessageKey = MessageKey::new("relation-kinds.make");
-
-/// The message `relation-kinds.make-intro`.
-pub const RELATION_KINDS_MAKE_INTRO: MessageKey = MessageKey::new("relation-kinds.make-intro");
-
-/// The message `relation-kinds.make-title`.
-pub const RELATION_KINDS_MAKE_TITLE: MessageKey = MessageKey::new("relation-kinds.make-title");
 
 /// The message `relation-kinds.more`.
 pub const RELATION_KINDS_MORE: MessageKey = MessageKey::new("relation-kinds.more");
@@ -3042,6 +3042,15 @@ pub const ROLES_COPY_HELP: MessageKey = MessageKey::new("roles.copy-help");
 /// The message `roles.counts-organization`.
 pub const ROLES_COUNTS_ORGANIZATION: MessageKey = MessageKey::new("roles.counts-organization");
 
+/// The message `roles.create`.
+pub const ROLES_CREATE: MessageKey = MessageKey::new("roles.create");
+
+/// The message `roles.create-intro`.
+pub const ROLES_CREATE_INTRO: MessageKey = MessageKey::new("roles.create-intro");
+
+/// The message `roles.create-title`.
+pub const ROLES_CREATE_TITLE: MessageKey = MessageKey::new("roles.create-title");
+
 /// The message `roles.delete`.
 pub const ROLES_DELETE: MessageKey = MessageKey::new("roles.delete");
 
@@ -3065,15 +3074,6 @@ pub const ROLES_INTRO: MessageKey = MessageKey::new("roles.intro");
 
 /// The message `roles.list`.
 pub const ROLES_LIST: MessageKey = MessageKey::new("roles.list");
-
-/// The message `roles.make`.
-pub const ROLES_MAKE: MessageKey = MessageKey::new("roles.make");
-
-/// The message `roles.make-intro`.
-pub const ROLES_MAKE_INTRO: MessageKey = MessageKey::new("roles.make-intro");
-
-/// The message `roles.make-title`.
-pub const ROLES_MAKE_TITLE: MessageKey = MessageKey::new("roles.make-title");
 
 /// The message `roles.more`.
 pub const ROLES_MORE: MessageKey = MessageKey::new("roles.more");
@@ -3954,8 +3954,8 @@ pub const SHORTCUTS_USE: MessageKey = MessageKey::new("shortcuts.use");
 /// The message `shortcuts.usual`.
 pub const SHORTCUTS_USUAL: MessageKey = MessageKey::new("shortcuts.usual");
 
-/// The message `sign-in.make-account`.
-pub const SIGN_IN_MAKE_ACCOUNT: MessageKey = MessageKey::new("sign-in.make-account");
+/// The message `sign-in.create-account`.
+pub const SIGN_IN_CREATE_ACCOUNT: MessageKey = MessageKey::new("sign-in.create-account");
 
 /// The message `sign-in.or`.
 pub const SIGN_IN_OR: MessageKey = MessageKey::new("sign-in.or");
@@ -7620,6 +7620,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access-keys.choice.see-only", "See only"),
     ("access-keys.copied", "Copied"),
     ("access-keys.copy", "Copy the key"),
+    ("access-keys.create", "Create an access key"),
     ("access-keys.delete", "Delete"),
     ("access-keys.delete-confirm", "Delete the key"),
     ("access-keys.delete-name", "Delete the access key {name}"),
@@ -7654,11 +7655,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "access-keys.intro",
-        "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you make it.",
+        "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you create it.",
     ),
     ("access-keys.key-label", "The access key"),
     ("access-keys.list", "Your access keys"),
-    ("access-keys.make", "Make an access key"),
     ("access-keys.may", "What it may do"),
     ("access-keys.more", "More options"),
     ("access-keys.name", "Name"),
@@ -7702,7 +7702,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("access-keys.shown-title", "Your new access key"),
     ("access-keys.single", "Choose single permissions instead"),
-    ("access-keys.submit", "Make the key"),
+    ("access-keys.submit", "Create the key"),
     ("access-keys.title", "Access keys"),
     (
         "access.ceiling",
@@ -7811,7 +7811,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {# backup code is left} other {# backup codes are left}}.",
     ),
     ("backup.list", "Your backup codes"),
-    ("backup.renew", "Make new backup codes"),
+    ("backup.renew", "Create new backup codes"),
     ("backup.renew-help", "The old codes stop working."),
     ("backup.saved", "I have saved them"),
     (
@@ -7832,10 +7832,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "bulk-skip.limit-reached",
         "It already has as many of these as it can hold",
     ),
-    (
-        "bulk-skip.not-allowed",
-        "You may not make this change to it",
-    ),
+    ("bulk-skip.not-allowed", "You may not change it this way"),
     (
         "bulk-skip.not-found",
         "It was deleted, or you can no longer see it",
@@ -8058,11 +8055,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cli.about.rotate-key",
-        "Make a new master key and use it for every stored secret",
+        "Create a new master key and use it for every stored secret",
     ),
     (
         "cli.about.sample",
-        "Make the sample organization: fictional people, the same every time from a seed",
+        "Create the sample organization: fictional people, the same every time from a seed",
     ),
     ("cli.about.security-log", "Look at the security log"),
     (
@@ -8310,7 +8307,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cookie.csrf.purpose",
-        "Protects you from other websites that try to make Bugaboo do something in your name.",
+        "Protects you from other websites that try to get Bugaboo to do something in your name.",
     ),
     (
         "cookie.session.purpose",
@@ -8495,7 +8492,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.issue.parent-circle",
-        "That would make a circle of issues or a chain that is too long. Choose another issue.",
+        "That would create a circle of issues or a chain that is too long. Choose another issue.",
     ),
     (
         "error.issue.type-retired",
@@ -8527,7 +8524,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.project.too-deep",
-        "Projects cannot be nested any deeper than this. Make or move it somewhere higher up.",
+        "Projects cannot be nested any deeper than this. Create or move it somewhere higher up.",
     ),
     (
         "error.rate-limit.exceeded",
@@ -8662,7 +8659,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("field.confirm-password", "Your password"),
     (
         "field.confirm-password-help",
-        "Type your password again to make sure it is you.",
+        "Type your password again to confirm it is you.",
     ),
     ("field.email", "E-mail address"),
     ("field.name", "Your name"),
@@ -8670,7 +8667,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("field.password", "Password"),
     (
         "field.password-help",
-        "At least 12 characters. A few words in a row make a good password.",
+        "At least 12 characters. A few words in a row give a good password.",
     ),
     ("field.unknown-name", "{field}"),
     ("fields.add-choice", "New choice"),
@@ -8707,6 +8704,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "fields.combine-title",
         "Combine {name} with another choice?",
     ),
+    ("fields.create", "Create the field"),
+    (
+        "fields.create-intro",
+        "Start with what kind of information the field holds. You can change everything else later, except the kind.",
+    ),
+    ("fields.create-title", "Create a field"),
     (
         "fields.default-help",
         "The value a new issue or project starts with. Leave it empty for none.",
@@ -8733,12 +8736,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.look-label", "How values are shown"),
     ("fields.look-preview", "The look in all four themes"),
     ("fields.look-sample", "Sample"),
-    ("fields.make", "Make the field"),
-    (
-        "fields.make-intro",
-        "Start with what kind of information the field holds. You can change everything else later, except the kind.",
-    ),
-    ("fields.make-title", "Make a field"),
     (
         "fields.never-to-assistant",
         "Never send this field to the assistant",
@@ -8757,7 +8754,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("fields.not-found", "This field is not here."),
     (
         "fields.nothing",
-        "There are no fields of your own yet. Make one below.",
+        "There are no fields of your own yet. Create one below.",
     ),
     ("fields.nothing-picked", "Nothing picked"),
     ("fields.offer-again", "Offer this field again"),
@@ -8851,15 +8848,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "first-run.account.intro",
         "An administrator can invite people and look after the server. This account is the first one.",
     ),
-    ("first-run.account.submit", "Make my account"),
-    ("first-run.account.title", "Make the first administrator"),
+    ("first-run.account.submit", "Create my account"),
+    ("first-run.account.title", "Create the first administrator"),
     (
         "first-run.code.help",
         "It looks like k7q2-x9mf-3hd8-vt4w. Capital letters and hyphens do not matter.",
     ),
     (
         "first-run.code.intro",
-        "Bugaboo was just installed, so nobody has an account yet. To make sure that only you can make the first one, Bugaboo shows a setup code where it is running.",
+        "Bugaboo was just installed, so nobody has an account yet. So that only you can create the first one, Bugaboo shows a setup code where it is running.",
     ),
     ("first-run.code.label", "Setup code"),
     (
@@ -8905,6 +8902,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("groups.add-search", "Search people by name"),
     ("groups.add-title", "Put people into the group"),
     ("groups.added", "{name} is in the group {group}."),
+    ("groups.create", "Create the group"),
+    (
+        "groups.create-intro",
+        "A new group is empty. Put people into it afterwards.",
+    ),
+    ("groups.create-title", "Create a group"),
     ("groups.delete", "Delete the group"),
     ("groups.delete-name", "Delete the group {name}"),
     (
@@ -8923,19 +8926,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "groups.made",
         "The group {name} is made. Open it in the list to put people into it.",
     ),
-    ("groups.make", "Make the group"),
-    (
-        "groups.make-intro",
-        "A new group is empty. Put people into it afterwards.",
-    ),
-    ("groups.make-title", "Make a group"),
     ("groups.members", "People in the group"),
     ("groups.members-more", "Show more people"),
     ("groups.members-none", "Nobody is in this group yet."),
     ("groups.more", "Show more groups"),
     (
         "groups.none-yet",
-        "There are no groups yet. Make the first one below.",
+        "There are no groups yet. Create the first one below.",
     ),
     ("groups.nothing", "No group found. Try another word."),
     ("groups.remove", "Take out"),
@@ -8997,16 +8994,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("invitation.invalid-title", "This invitation does not work"),
     ("invitation.sign-in", "Go to sign in"),
-    ("invitation.submit", "Make my account"),
+    ("invitation.submit", "Create my account"),
     ("invitation.title", "Join Bugaboo"),
     ("invitations.copied", "Link copied"),
     ("invitations.copy", "Copy the link"),
-    ("invitations.create", "Make an invitation"),
+    ("invitations.create", "Create an invitation"),
     ("invitations.created", "Invitation for {email}"),
     ("invitations.expires", "Runs out {when}"),
     (
         "invitations.intro",
-        "An invitation is a link that lets one person make their account. It works once and runs out after 7 days.",
+        "An invitation is a link that lets one person create their account. It works once and runs out after 7 days.",
     ),
     ("invitations.link", "Link to send"),
     (
@@ -9071,19 +9068,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
     ("issue-type.task", "Task"),
+    ("issue-types.create", "Create the issue type"),
+    (
+        "issue-types.create-intro",
+        "A new type goes to the end of the list. Pick an icon so people find it quickly.",
+    ),
+    ("issue-types.create-title", "Create an issue type"),
     ("issue-types.field-icon", "Icon"),
     ("issue-types.field-name", "Name"),
     (
         "issue-types.intro",
-        "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who makes an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
+        "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who creates an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
     ),
     ("issue-types.made", "The issue type {name} is made."),
-    ("issue-types.make", "Make the issue type"),
-    (
-        "issue-types.make-intro",
-        "A new type goes to the end of the list. Pick an icon so people find it quickly.",
-    ),
-    ("issue-types.make-title", "Make an issue type"),
     ("issue-types.more", "Show more issue types"),
     ("issue-types.nothing", "No issue type has that name."),
     ("issue-types.offer-again", "Offer the issue type again"),
@@ -9290,6 +9287,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.combine-pick", "Choose one"),
     ("labels.combine-title", "Combine with another one"),
     ("labels.combined", "Combined."),
+    ("labels.create-label", "Create label"),
+    (
+        "labels.create-label-intro",
+        "A label has a name, a color and, if you like, a group.",
+    ),
+    ("labels.create-label-title", "Create a label"),
     ("labels.field-color", "Color of {name}"),
     ("labels.field-group-name", "Name of the group"),
     ("labels.field-label-group", "Group"),
@@ -9313,18 +9316,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.labels-nothing", "No label has that name."),
     ("labels.labels-search", "Search labels"),
     ("labels.labels-title", "Labels"),
-    ("labels.make-group", "Make group"),
+    ("labels.make-group", "Create group"),
     (
         "labels.make-group-intro",
         "A group keeps labels that belong together. Tick the box when an issue may have only one label of the group.",
     ),
-    ("labels.make-group-title", "Make a group of labels"),
-    ("labels.make-label", "Make label"),
-    (
-        "labels.make-label-intro",
-        "A label has a name, a color and, if you like, a group.",
-    ),
-    ("labels.make-label-title", "Make a label"),
+    ("labels.make-group-title", "Create a group of labels"),
     ("labels.no-group", "No group"),
     ("labels.none-labels", "No labels."),
     ("labels.none-tags", "No tags."),
@@ -9557,7 +9554,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "own.lost-manage-roles",
-        "You could no longer make, change or delete roles.",
+        "You could no longer create, change or delete roles.",
     ),
     ("page.not-found.home", "Go to the start page"),
     (
@@ -9694,16 +9691,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.edit-anyway",
         "Take over text someone else is editing; their text is kept",
     ),
-    ("permission.make-issues", "Make issues"),
-    ("permission.make-projects", "Make projects at the top level"),
+    ("permission.make-issues", "Create issues"),
+    (
+        "permission.make-projects",
+        "Create projects at the top level",
+    ),
     (
         "permission.make-sub-projects",
-        "Make sub-projects inside the project",
+        "Create sub-projects inside the project",
     ),
-    ("permission.manage-fields", "Make, change and retire fields"),
+    (
+        "permission.manage-fields",
+        "Create, change and retire fields",
+    ),
     (
         "permission.manage-groups",
-        "Make, rename and delete groups and change who is in them",
+        "Create, rename and delete groups and change who is in them",
     ),
     (
         "permission.manage-invitations",
@@ -9721,7 +9724,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.manage-people",
         "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
     ),
-    ("permission.manage-roles", "Make, change and delete roles"),
+    ("permission.manage-roles", "Create, change and delete roles"),
     (
         "permission.move-issues",
         "Move issues into or out of the project",
@@ -9764,6 +9767,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("priority.low", "Low"),
     ("priority.normal", "Normal"),
     ("projects.at-the-top", "At the top level"),
+    ("projects.create", "Create the project"),
+    (
+        "projects.create-intro",
+        "A project at the top level. Sub-projects are created inside their project.",
+    ),
+    ("projects.create-sub-project", "Create a sub-project"),
+    ("projects.create-title", "Create a project"),
     ("projects.edit-title", "Name and short name"),
     ("projects.field-name", "Name"),
     ("projects.field-name-help", "What people call the project."),
@@ -9817,13 +9827,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{person} in {project}: {before} becomes {after}.",
     ),
     ("projects.made", "{name} was made."),
-    ("projects.make", "Make the project"),
-    (
-        "projects.make-intro",
-        "A project at the top level. Sub-projects are made inside their project.",
-    ),
-    ("projects.make-sub-project", "Make a sub-project"),
-    ("projects.make-title", "Make a project"),
     ("projects.more", "Show more projects"),
     ("projects.move-button", "Move"),
     ("projects.move-confirm", "Move the project"),
@@ -9841,7 +9844,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.no-role", "no role"),
     (
         "projects.none-yet",
-        "There is no project yet. Make the first one below.",
+        "There is no project yet. Create the first one below.",
     ),
     ("projects.nothing", "No project found. Try another word."),
     ("projects.open", "Open the project"),
@@ -9894,7 +9897,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "projects.short-name-fixed",
-        "You can change the name here. Changing the short name takes the right to make projects where this project sits.",
+        "You can change the name here. Changing the short name takes the right to create projects where this project sits.",
     ),
     ("projects.sub-projects", "Sub-projects"),
     (
@@ -9924,7 +9927,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("related-issues.none", "No related issues yet."),
     (
         "related-issues.nothing-to-pick",
-        "There is no kind of relation to pick. Someone who manages kinds of relation can make one.",
+        "There is no kind of relation to pick. Someone who manages kinds of relation can create one.",
     ),
     (
         "related-issues.take-away",
@@ -9939,6 +9942,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("relation-kind.is-blocked-by", "is blocked by"),
     ("relation-kind.is-caused-by", "is caused by"),
     ("relation-kind.related-to", "related to"),
+    ("relation-kinds.create", "Create the kind of relation"),
+    (
+        "relation-kinds.create-intro",
+        "Write what the first issue reads and what the second one reads, like blocks and is blocked by. Use the same words twice for a kind that reads alike from both ends.",
+    ),
+    ("relation-kinds.create-title", "Create a kind of relation"),
     (
         "relation-kinds.field-backward",
         "Words for the second issue",
@@ -9952,12 +9961,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "relation-kinds.made",
         "The kind of relation {name} is made.",
     ),
-    ("relation-kinds.make", "Make the kind of relation"),
-    (
-        "relation-kinds.make-intro",
-        "Write what the first issue reads and what the second one reads, like blocks and is blocked by. Use the same words twice for a kind that reads alike from both ends.",
-    ),
-    ("relation-kinds.make-title", "Make a kind of relation"),
     ("relation-kinds.more", "Show more kinds of relation"),
     (
         "relation-kinds.nothing",
@@ -9988,13 +9991,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("roles.copy-field", "Name of the copy"),
     (
         "roles.copy-help",
-        "Make a new role that starts with the permissions of this one.",
+        "Create a new role that starts with the permissions of this one.",
     ),
     ("roles.copy-of", "Copy of {name}"),
     (
         "roles.counts-organization",
         "Counts only when the role is given for the whole organization.",
     ),
+    ("roles.create", "Create the role"),
+    (
+        "roles.create-intro",
+        "Start from an empty role, or from a copy of the role that is closest to what you need. Then choose what it allows.",
+    ),
+    ("roles.create-title", "Create a role"),
     ("roles.delete", "Delete the role"),
     ("roles.delete-name", "Delete the role {name}"),
     ("roles.delete-title", "Delete the role {name}?"),
@@ -10016,12 +10025,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A role is a set of permissions, given to people or groups. Open a role to change what it allows.",
     ),
     ("roles.list", "Roles"),
-    ("roles.make", "Make the role"),
-    (
-        "roles.make-intro",
-        "Start from an empty role, or from a copy of the role that is closest to what you need. Then choose what it allows.",
-    ),
-    ("roles.make-title", "Make a role"),
     ("roles.more", "Show more roles"),
     ("roles.no-access", "No access"),
     ("roles.own", "Role of your organization"),
@@ -10383,7 +10386,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("server.error", "Error: {message}"),
     (
         "server.keys-missing",
-        "The data folder has stored secrets or a security log, but its key files in the keys folder are missing. Restore them from your backup. Bugaboo does not make new keys, because the stored secrets could never be read again.",
+        "The data folder has stored secrets or a security log, but its key files in the keys folder are missing. Restore them from your backup. Bugaboo does not create new keys, because the stored secrets could never be read again.",
     ),
     (
         "server.listening",
@@ -10400,11 +10403,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "server.setup-code",
-        "Setup is open. Open Bugaboo in your browser and enter this setup code to make the first administrator: {code}",
+        "Setup is open. Open Bugaboo in your browser and enter this setup code to create the first administrator: {code}",
     ),
     (
         "server.setup-code-file",
-        "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to make the first administrator.",
+        "Setup is open. The setup code is saved in {path}. Read it there and enter it in your browser to create the first administrator.",
     ),
     (
         "server.setup-code-file-failed",
@@ -10528,7 +10531,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.appearance.issue-view.name", "Open issues in"),
     (
         "setting.appearance.larger-text.help",
-        "Makes all text a step bigger.",
+        "Enlarges all text by a step.",
     ),
     (
         "setting.appearance.less-motion.help",
@@ -10572,7 +10575,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.sign-up-enabled.help",
-        "Let people make an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+        "Let people create an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
     ),
     (
         "setting.auth.sign-up-enabled.name",
@@ -10756,7 +10759,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setup.ask.tls",
-        "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo make its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
+        "How should the connection be secured (HTTPS)? Type self-signed to let Bugaboo create its own certificate, files to use a certificate you already have, or off for plain HTTP (only on this computer or behind a proxy).",
     ),
     ("setup.ask.tls-cert", "Where is the certificate file?"),
     ("setup.ask.tls-key", "Where is the private key file?"),
@@ -10775,7 +10778,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setup.next",
-        "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to make the first administrator in your browser.",
+        "Start Bugaboo with: bugaboo serve. The first start shows a setup code in that window. You need it to create the first administrator in your browser.",
     ),
     ("setup.not-usable", "That does not work: {reason}"),
     ("setup.replace-refused", "Nothing was changed."),
@@ -10829,7 +10832,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "shortcut.list-previous",
         "Open the previous item in the list",
     ),
-    ("shortcut.new-issue", "Make a new issue"),
+    ("shortcut.new-issue", "Create a new issue"),
     ("shortcut.on-issue", "On an open issue"),
     ("shortcut.or", "or"),
     ("shortcut.quick-search", "Open quick search"),
@@ -10866,7 +10869,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("shortcuts.search", "Search the shortcuts"),
     ("shortcuts.use", "Use these keys"),
     ("shortcuts.usual", "Usual keys"),
-    ("sign-in.make-account", "Make an account"),
+    ("sign-in.create-account", "Create an account"),
     ("sign-in.or", "or"),
     ("sign-in.passkey", "Sign in with a passkey"),
     ("sign-in.signed-out", "You are signed out."),
@@ -10875,7 +10878,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sign-up-policy.confirm-no", "Keep it off"),
     (
         "sign-up-policy.confirm-text",
-        "No domain is listed. Everybody who can reach Bugaboo will be able to make an account.",
+        "No domain is listed. Everybody who can reach Bugaboo will be able to create an account.",
     ),
     ("sign-up-policy.confirm-title", "Let everybody sign up?"),
     ("sign-up-policy.confirm-yes", "Let everybody sign up"),
@@ -10886,21 +10889,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up-policy.intro",
-        "When this is on, anyone who can open Bugaboo can make an account without being invited.",
+        "When this is on, anyone who can open Bugaboo can create an account without being invited.",
     ),
-    ("sign-up-policy.switch", "Let people make their own account"),
+    (
+        "sign-up-policy.switch",
+        "Let people create their own account",
+    ),
     ("sign-up-policy.title", "Signing up without an invitation"),
     (
         "sign-up-policy.warning",
-        "No domain is listed, so everyone who can reach Bugaboo can make an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+        "No domain is listed, so everyone who can reach Bugaboo can create an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
     ),
     (
         "sign-up.closed",
         "Making your own account is switched off here. Ask an administrator to invite you.",
     ),
     ("sign-up.have-account", "I already have an account"),
-    ("sign-up.submit", "Make my account"),
-    ("sign-up.title", "Make an account"),
+    ("sign-up.submit", "Create my account"),
+    ("sign-up.title", "Create an account"),
     ("starting-role.administrator", "Administrator"),
     ("starting-role.contributor", "Contributor"),
     ("starting-role.guest", "Guest"),
@@ -10932,11 +10938,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("theme.paper", "Paper"),
     (
         "tls.generate-failed",
-        "Bugaboo could not make a certificate: {reason}",
+        "Bugaboo could not create a certificate: {reason}",
     ),
     (
         "tls.key-readable",
-        "The private key {path} can be read by other people on this computer. Make it readable by the account that runs Bugaboo only.",
+        "The private key {path} can be read by other people on this computer. Let only the account that runs Bugaboo read it.",
     ),
     (
         "tls.no-certificate",

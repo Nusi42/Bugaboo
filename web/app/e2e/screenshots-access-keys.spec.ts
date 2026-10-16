@@ -45,8 +45,8 @@ async function theKeysAndTheForm(page: Page): Promise<void> {
   await expect(page.getByText("Nightly report")).toBeVisible();
   await shot(page, "40-access-keys", MILESTONE);
 
-  await page.getByRole("button", { name: t("access-keys.make"), exact: true }).click();
-  const form = page.getByRole("region", { name: t("access-keys.make"), exact: true });
+  await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
+  const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
   await form.getByLabel(t("access-keys.name")).fill("Backup script");
   await form.getByRole("radio", { name: t("access-keys.choice.see-and-change") }).check();
   await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);

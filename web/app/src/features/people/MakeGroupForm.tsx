@@ -35,7 +35,7 @@ export function MakeGroupForm() {
         <Alert tone={alertTone.success}>{t("groups.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("groups.make")}</SubmitButton>
+        <SubmitButton isPending={make.isPending}>{t("groups.create")}</SubmitButton>
       </div>
     </Form>
   );

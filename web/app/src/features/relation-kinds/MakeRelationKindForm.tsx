@@ -43,7 +43,7 @@ export function MakeRelationKindForm() {
         <Alert tone={alertTone.success}>{t("relation-kinds.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("relation-kinds.make")}</SubmitButton>
+        <SubmitButton isPending={make.isPending}>{t("relation-kinds.create")}</SubmitButton>
       </div>
     </Form>
   );

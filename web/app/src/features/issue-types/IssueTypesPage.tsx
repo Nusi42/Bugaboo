@@ -68,8 +68,8 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
           </Button>
         ) : null}
       </Card>
-      <Card heading={t("issue-types.make-title")}>
-        <p {...partOf(part.text)}>{t("issue-types.make-intro")}</p>
+      <Card heading={t("issue-types.create-title")}>
+        <p {...partOf(part.text)}>{t("issue-types.create-intro")}</p>
         <MakeIssueTypeForm />
       </Card>
     </div>

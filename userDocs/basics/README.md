@@ -1,6 +1,6 @@
 # The basics
 
-How Bugaboo is laid out and how to make it yours.
+How Bugaboo is laid out and how to set it up your way.
 
 - [Finding your way around](moving-around.md): the menu, the bar at the top, quick search and the settings
 - [Keyboard shortcuts](keyboard-shortcuts.md): faster ways to do things, and how to choose your own keys

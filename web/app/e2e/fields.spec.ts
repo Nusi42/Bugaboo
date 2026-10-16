@@ -39,7 +39,7 @@ async function makeField(
   if (choices.length > 0) {
     await page.getByLabel(t("fields.field-choices"), { exact: true }).fill(choices.join("\n"));
   }
-  await page.getByRole("button", { name: t("fields.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("fields.create"), exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }
 

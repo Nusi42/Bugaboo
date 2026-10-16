@@ -4,9 +4,9 @@ A role is a named set of permissions, given to people or groups for the whole or
 
 *Organization settings › Roles & permissions* lists the roles, in the order of roles. Press a role to open its page.
 
-## Making a role
+## Creating a role
 
-Under "Make a role", type a name and choose where to start: an empty role, or a copy of the role that is closest to what you need. The new role opens on its page, where you choose what it allows.
+Under "Create a role", type a name and choose where to start: an empty role, or a copy of the role that is closest to what you need. The new role opens on its page, where you choose what it allows.
 
 On the page of a role, "Copy this role" does the same from there.
 

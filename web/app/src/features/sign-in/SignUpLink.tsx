@@ -10,7 +10,7 @@ export function SignUpLink() {
   const open = useQuery(statusOptions()).data?.sign_up_open === true;
   return open ? (
     <p {...partOf(part.muted)}>
-      <Link href={paths.signUp}>{t("sign-in.make-account")}</Link>
+      <Link href={paths.signUp}>{t("sign-in.create-account")}</Link>
     </p>
   ) : null;
 }

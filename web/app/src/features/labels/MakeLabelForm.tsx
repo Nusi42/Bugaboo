@@ -51,7 +51,7 @@ export function MakeLabelForm({ groups }: { readonly groups: readonly LabelGroup
         <Alert tone={alertTone.success}>{t("labels.label-made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("labels.make-label")}</SubmitButton>
+        <SubmitButton isPending={make.isPending}>{t("labels.create-label")}</SubmitButton>
       </div>
     </Form>
   );

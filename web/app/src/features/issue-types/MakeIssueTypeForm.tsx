@@ -47,7 +47,7 @@ export function MakeIssueTypeForm() {
         <Alert tone={alertTone.success}>{t("issue-types.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("issue-types.make")}</SubmitButton>
+        <SubmitButton isPending={make.isPending}>{t("issue-types.create")}</SubmitButton>
       </div>
     </Form>
   );

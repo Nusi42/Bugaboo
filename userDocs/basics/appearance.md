@@ -16,7 +16,7 @@ The pages you see before signing in have the choice of theme at the bottom, so y
 
 ## Larger text
 
-Switch on "Larger text" to make all text bigger. Buttons and spacing keep their shape.
+Switch on "Larger text" to enlarge all text. Buttons and spacing keep their shape.
 
 ## Less motion
 

@@ -23,7 +23,7 @@ export const messages = {
   "related-issues.take-away": "Take away the relation: {name} {other}",
   "related-issues.take-away-short": "Take away",
   "related-issues.nothing-to-pick":
-    "There is no kind of relation to pick. Someone who manages kinds of relation can make one.",
+    "There is no kind of relation to pick. Someone who manages kinds of relation can create one.",
 } as const;
 
 register(messages);

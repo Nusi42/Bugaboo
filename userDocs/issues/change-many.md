@@ -14,7 +14,7 @@ Each opens a window. Fill in what you want and press **Show what changes**. Buga
 
 Bugaboo judges every issue again, with your own rights, in the preview and when you apply. An issue is **skipped**, and says why, when for example:
 
-- it is not there for you, or you may not make this change to it;
+- it is not there for you, or you may not change it this way;
 - it is like that already;
 - it changed after the preview (somebody else was faster; nothing is overwritten);
 - the other project does not offer its issue type, or does not use a field it has a value in (when moving);

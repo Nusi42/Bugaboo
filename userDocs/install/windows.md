@@ -18,7 +18,7 @@
 
 ## Start with the computer
 
-To have Bugaboo start with Windows, make it a service. Open the terminal as an administrator (right-click, "Run as administrator") and run:
+To have Bugaboo start with Windows, run it as a service. Open the terminal as an administrator (right-click, "Run as administrator") and run:
 
 ```text
 bugaboo service install
@@ -36,4 +36,4 @@ bugaboo service uninstall
 
 ## The browser warns about the certificate
 
-With `self-signed`, Bugaboo makes the certificate itself, so the browser does not know it. The warning is expected. The certificate is in the data folder. Add it to your browser or to Windows as trusted, or use your own certificate with the answer `files`.
+With `self-signed`, Bugaboo creates the certificate itself, so the browser does not know it. The warning is expected. The certificate is in the data folder. Add it to your browser or to Windows as trusted, or use your own certificate with the answer `files`.

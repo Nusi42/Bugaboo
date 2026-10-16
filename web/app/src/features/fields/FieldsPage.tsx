@@ -37,8 +37,8 @@ export function FieldsPage() {
           }
         </QueryGate>
       </Card>
-      <Card heading={t("fields.make-title")}>
-        <p {...partOf(part.text)}>{t("fields.make-intro")}</p>
+      <Card heading={t("fields.create-title")}>
+        <p {...partOf(part.text)}>{t("fields.create-intro")}</p>
         <MakeFieldForm />
       </Card>
     </div>

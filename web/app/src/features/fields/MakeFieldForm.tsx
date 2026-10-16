@@ -134,7 +134,7 @@ function MakeFieldFields({ kinds }: { readonly kinds: readonly TypeInfo[] }) {
       />
       {make.isError ? <Alert tone={alertTone.danger}>{messageOf(make.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("fields.make")}</SubmitButton>
+        <SubmitButton isPending={make.isPending}>{t("fields.create")}</SubmitButton>
       </div>
     </Form>
   );

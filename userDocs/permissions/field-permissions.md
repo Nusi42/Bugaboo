@@ -6,7 +6,7 @@ For each role you choose, for every field, one of three levels:
 - **Can see**: the field is shown.
 - **Can change**: the field is shown and can be changed, where the person can change the item at all.
 
-The fields are the built-in ones: Title, Description, Status, Priority, Assigned to, Reported by, Due date, Labels, Tags, Planned for release, Found in release, Estimated time, Time left, Time spent, Activity and Cost center. Fields you make yourself join the table later.
+The fields are the built-in ones: Title, Description, Status, Priority, Assigned to, Reported by, Due date, Labels, Tags, Planned for release, Found in release, Estimated time, Time left, Time spent, Activity and Cost center. Fields you create yourself join the table later.
 
 ## For the whole organization
 

@@ -52,7 +52,7 @@ export const messages = {
   "backup.intro":
     "Each backup code works once. They are for when you cannot use your code app. Keep them somewhere safe.",
   "backup.left": "{count, plural, one {# backup code is left} other {# backup codes are left}}.",
-  "backup.renew": "Make new backup codes",
+  "backup.renew": "Create new backup codes",
   "backup.renew-help": "The old codes stop working.",
   "backup.shown-once": "These codes are shown only now. Save them before you leave this page.",
   "backup.list": "Your backup codes",

@@ -12,7 +12,7 @@ On a phone an issue always takes the whole page, and a bar at the bottom offers 
 
 ## Changing a value where it stands
 
-Click the title to change it. The big button under the title shows the status with its icon and color; press it to see the changes you can make and pick one. The **Details** are rows with the name at the left and the value at the right: pick another priority from its list, and choose who the issue is assigned to with "Change" (you can pick only people of the project). Each change shows at once and says "Saving…" and then "Saved · 10:42" where you made it. For the priority and the people, "Undo" stands in the same row for ten seconds; for the status and the title it is in the message at the bottom. On a phone the Details are closed behind "All details", which still says who the issue is assigned to and its priority.
+Click the title to change it. The big button under the title shows the status with its icon and color; press it to see the changes you can apply and pick one. The **Details** are rows with the name at the left and the value at the right: pick another priority from its list, and choose who the issue is assigned to with "Change" (you can pick only people of the project). Each change shows at once and says "Saving…" and then "Saved · 10:42" where you made it. For the priority and the people, "Undo" stands in the same row for ten seconds; for the status and the title it is in the message at the bottom. On a phone the Details are closed behind "All details", which still says who the issue is assigned to and its priority.
 
 A field you can see and may not change shows a lock and says so. A field you may not see is left out. Where Bugaboo may not tell you who somebody is, you see their role ("a Team member") or "Someone".
 

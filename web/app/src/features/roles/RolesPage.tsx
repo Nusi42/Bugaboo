@@ -15,8 +15,8 @@ function Roles() {
         <p {...partOf(part.text)}>{t("roles.intro")}</p>
         <RoleList />
       </Card>
-      <Card heading={t("roles.make-title")}>
-        <p {...partOf(part.text)}>{t("roles.make-intro")}</p>
+      <Card heading={t("roles.create-title")}>
+        <p {...partOf(part.text)}>{t("roles.create-intro")}</p>
         <MakeRoleForm />
       </Card>
     </>

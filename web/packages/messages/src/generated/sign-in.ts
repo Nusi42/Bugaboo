@@ -7,7 +7,7 @@ export const messages = {
   "sign-in.submit": "Sign in",
   "sign-in.passkey": "Sign in with a passkey",
   "sign-in.or": "or",
-  "sign-in.make-account": "Make an account",
+  "sign-in.create-account": "Create an account",
   "sign-in.signed-out": "You are signed out.",
   "second-step.title": "One more step",
   "second-step.intro":

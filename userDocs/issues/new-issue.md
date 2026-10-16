@@ -1,4 +1,4 @@
-# Making a new issue
+# Creating a new issue
 
 Press "New issue" in the menu (or in the bar at the bottom of a phone), or press `c` anywhere. The form opens as a **window** over the page, and as a whole page with "Back" on a phone.
 
@@ -6,7 +6,7 @@ Press "New issue" in the menu (or in the bar at the bottom of a phone), or press
 2. **Type.** The first issue type is chosen; pick another one from the list.
 3. **Fields.** The title says "(required)" in words. You can also write a description and choose a priority. In a window that is 880 wide or more, the title and the description stand at the left and the other fields at the side.
 
-"Create" makes the issue and opens it the way you chose in *My settings* ("Open issues in"). "Create and start another" makes it and leaves the dialog open with the same project and type, so you can write the next one.
+"Create" creates the issue and opens it the way you chose in *My settings* ("Open issues in"). "Create and start another" creates it and leaves the dialog open with the same project and type, so you can write the next one.
 
 ## The window
 

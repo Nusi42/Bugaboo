@@ -68,7 +68,7 @@ async function makeARole(page: Page): Promise<void> {
   await page.getByLabel(t("roles.start-from"), { exact: true }).selectOption({
     label: t("roles.start-copy", { name: t("starting-role.viewer") }),
   });
-  await page.getByRole("button", { name: t("roles.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("roles.create"), exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: NEW_ROLE })).toBeVisible();
   const status = page.getByRole("checkbox", { name: t("permission.see-status"), exact: true });
   await expect(status).not.toBeChecked();

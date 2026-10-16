@@ -21,8 +21,8 @@ A tag can be limited to some projects. In another project it is not offered whil
 
 *Organization settings › Labels and tags* is for people who hold the permission "Manage labels and tags". There are three lists:
 
-- **Groups of labels:** make a group, rename it, make it a group to pick one from, or **retire** it. A group cannot become a group to pick one from while an issue already has two of its labels: Bugaboo says so, and you take the extra labels off first.
-- **Labels:** make a label (name, color, group), change them, or retire it. A retired label is not offered for new issues, and the issues that have it keep it.
+- **Groups of labels:** create a group, rename it, turn it into a group to pick one from, or **retire** it. A group cannot become a group to pick one from while an issue already has two of its labels: Bugaboo says so, and you take the extra labels off first.
+- **Labels:** create a label (name, color, group), change them, or retire it. A retired label is not offered for new issues, and the issues that have it keep it.
 - **Tags:** rename a tag, change its color, and choose the projects it is for, or *Use in all projects*.
 
 Colors are the twelve colors of the theme, so a label is readable in every theme.

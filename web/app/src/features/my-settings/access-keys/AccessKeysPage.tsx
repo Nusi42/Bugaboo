@@ -32,14 +32,14 @@ export function AccessKeysPage() {
                 setMaking({ step: "form" });
               }}
             >
-              {t("access-keys.make")}
+              {t("access-keys.create")}
             </Button>
           </div>
         ) : null}
       </Card>
       {making.step === "shown" ? <ShownOnce secret={making.secret} onDone={idle} /> : null}
       {making.step === "form" ? (
-        <Card heading={t("access-keys.make")}>
+        <Card heading={t("access-keys.create")}>
           <MakeKeyForm
             onMade={(secret) => {
               setMaking({ step: "shown", secret });

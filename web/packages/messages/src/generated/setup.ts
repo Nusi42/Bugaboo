@@ -11,16 +11,16 @@ export const messages = {
   "first-run.step.safer": "Keep it safe",
   "first-run.step.done": "Done",
   "first-run.code.intro":
-    "Bugaboo was just installed, so nobody has an account yet. To make sure that only you can make the first one, Bugaboo shows a setup code where it is running.",
+    "Bugaboo was just installed, so nobody has an account yet. So that only you can create the first one, Bugaboo shows a setup code where it is running.",
   "first-run.code.where":
     "Look in the window where Bugaboo is running for the line that starts with Setup is open. If Bugaboo runs as a service, the code is in the file setup-code.txt inside its data folder.",
   "first-run.code.label": "Setup code",
   "first-run.code.help":
     "It looks like k7q2-x9mf-3hd8-vt4w. Capital letters and hyphens do not matter.",
-  "first-run.account.title": "Make the first administrator",
+  "first-run.account.title": "Create the first administrator",
   "first-run.account.intro":
     "An administrator can invite people and look after the server. This account is the first one.",
-  "first-run.account.submit": "Make my account",
+  "first-run.account.submit": "Create my account",
   "first-run.safer.title": "Keep your account safe",
   "first-run.safer.intro":
     "A password alone can be guessed or stolen. You can add a second check now, or later in Sign-in & security.",

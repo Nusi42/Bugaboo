@@ -26,7 +26,7 @@ export async function treeLink(page: Page, name: string): Promise<Locator> {
 export async function fillMake(page: Page, name: string, shortName: string): Promise<void> {
   await page.getByLabel(t("projects.field-name"), { exact: true }).fill(name);
   await page.getByLabel(t("projects.field-short-name"), { exact: true }).fill(shortName);
-  await page.getByRole("button", { name: t("projects.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("projects.create"), exact: true }).click();
   await expect(page.getByText(t("projects.made", { name }))).toBeVisible();
 }
 

@@ -40,8 +40,8 @@ export function LabelsSection(props: LabelsSectionProps) {
         onOpen={props.onOpen}
         onClose={props.onClose}
       />
-      <h3>{t("labels.make-label-title")}</h3>
-      <p {...partOf(part.text)}>{t("labels.make-label-intro")}</p>
+      <h3>{t("labels.create-label-title")}</h3>
+      <p {...partOf(part.text)}>{t("labels.create-label-intro")}</p>
       <MakeLabelForm groups={props.groups} />
     </Card>
   );

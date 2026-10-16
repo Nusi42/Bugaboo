@@ -21,4 +21,4 @@ A **relation** links two issues in words that you choose from a list, for exampl
 
 *Organization settings › Kinds of relation* lists the kinds. Bugaboo starts with four: *blocks / is blocked by*, *duplicate of / has duplicate*, *causes / is caused by* and *related to*. A kind whose two names are the same reads alike from both sides.
 
-People who hold the permission "Manage issue types, kinds of relation and layouts" can make a kind, change its words, and **retire** it. A retired kind is not offered for new relations, and the relations that use it stay. Names must differ, whatever the capital letters, in either direction.
+People who hold the permission "Manage issue types, kinds of relation and layouts" can create a kind, change its words, and **retire** it. A retired kind is not offered for new relations, and the relations that use it stay. Names must differ, whatever the capital letters, in either direction.

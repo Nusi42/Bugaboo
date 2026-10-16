@@ -83,7 +83,7 @@ test("sec_02 a group is made, people are put into it and taken out with Undo", a
   await openFromMenu(page, t("nav.groups"));
   await expect(page.getByText(t("groups.none-yet"))).toBeVisible();
   await page.getByLabel(t("groups.field-name"), { exact: true }).fill("Backend");
-  await page.getByRole("button", { name: t("groups.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("groups.create"), exact: true }).click();
   await expect(page.getByText(t("groups.made", { name: "Backend" }))).toBeVisible();
   await page.getByRole("button", { name: "Backend", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Backend" });

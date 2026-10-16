@@ -24,7 +24,7 @@ export async function copyViewerRole(page: Page, name = "Reviewer"): Promise<voi
   await page.getByLabel(t("roles.start-from"), { exact: true }).selectOption({
     label: t("roles.start-copy", { name: "Viewer" }),
   });
-  await page.getByRole("button", { name: t("roles.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("roles.create"), exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }
 

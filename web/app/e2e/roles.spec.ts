@@ -64,7 +64,7 @@ test("sec_08 a role is made from a copy of a starting role, changed and kept", a
   await page.getByLabel(t("roles.start-from"), { exact: true }).selectOption({
     label: t("roles.start-copy", { name: "Viewer" }),
   });
-  await page.getByRole("button", { name: t("roles.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("roles.create"), exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Reviewer" })).toBeVisible();
   // The copy holds what Viewer holds, and the change is saved at once.
   await expect(permission(page, "permission.see-projects")).toBeChecked();

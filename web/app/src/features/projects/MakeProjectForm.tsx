@@ -39,7 +39,7 @@ export function MakeProjectForm({ inside }: MakeProjectFormProps) {
         <Alert tone={alertTone.success}>{t("projects.made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={make.isPending}>{t("projects.make")}</SubmitButton>
+        <SubmitButton isPending={make.isPending}>{t("projects.create")}</SubmitButton>
       </div>
     </Form>
   );

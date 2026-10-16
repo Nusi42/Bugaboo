@@ -71,8 +71,8 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
           </Button>
         ) : null}
       </Card>
-      <Card heading={t("projects.make-title")}>
-        <p {...partOf(part.text)}>{t("projects.make-intro")}</p>
+      <Card heading={t("projects.create-title")}>
+        <p {...partOf(part.text)}>{t("projects.create-intro")}</p>
         <MakeProjectForm />
       </Card>
     </div>
