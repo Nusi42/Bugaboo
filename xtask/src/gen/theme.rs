@@ -617,6 +617,11 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         );
     }
     out.push_str("} as const;\n");
+    out.push_str("\n/** The variables the code may set while the person drags (`run-time=\"true\"` in the theme file). */\nexport const runTimeVariables = [\n");
+    for token in file.tokens.iter().filter(|token| token.run_time) {
+        let _ = writeln!(out, "  \"{}\",", token.name);
+    }
+    out.push_str("] as const;\nexport type RunTimeVariable = (typeof runTimeVariables)[number];\n");
     out.push_str("\nexport const colorTokens = [\n");
     for color in file.colors() {
         let _ = writeln!(out, "  \"{}\",", color.name);
@@ -883,6 +888,25 @@ mod tests {
             ),
             "{css}"
         );
+    }
+
+    #[test]
+    fn only_the_marked_sizes_are_variables_the_code_may_set() {
+        let ts = typescript(&file()).unwrap();
+        assert!(
+            ts.contains(
+                "runTimeVariables = [\n  \"window-width\",\n  \"window-height\",\n] as const;"
+            ),
+            "{ts}"
+        );
+        let text =
+            std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+        let color = text.replacen(
+            "color \"accent\" ",
+            "color \"accent\" run-time=\"true\" ",
+            1,
+        );
+        assert!(ThemeFile::parse(&color).is_err());
     }
 
     #[test]

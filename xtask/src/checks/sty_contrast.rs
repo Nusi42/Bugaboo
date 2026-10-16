@@ -128,12 +128,14 @@ fn distinct_findings_of(file: &ThemeFile, spec: &DistinctSpec) -> Vec<Finding> {
                 ));
             }
         };
-        for (index, state) in spec.states.iter().enumerate() {
-            for surface in &spec.surfaces {
-                check(state, surface, spec.min_against_surfaces);
-            }
-            for other in &spec.states[index + 1..] {
-                check(state, other, spec.min_between_states);
+        for group in &spec.groups {
+            for (index, state) in group.states.iter().enumerate() {
+                for surface in &group.surfaces {
+                    check(state, surface, spec.min_against_surfaces);
+                }
+                for other in &group.states[index + 1..] {
+                    check(state, other, spec.min_between_states);
+                }
             }
         }
     }
@@ -285,6 +287,18 @@ mod tests {
         let bad = format!("{}    non-text \"border\" {}", &text[..start], &text[end..]);
         let error = ThemeFile::parse(&bad).err().unwrap();
         assert!(format!("{error:#}").contains("border-subtle"), "{error:#}");
+    }
+
+    #[test]
+    fn a_hover_color_that_vanishes_into_a_tint_is_rejected() {
+        let findings = evaluate(&with_value("tint-ip-hover", "daylight", "#f4f8fe"));
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("tint-ip-hover") && f.message.contains("`tint-ip`")),
+            "{:?}",
+            messages(&findings)
+        );
     }
 
     #[test]

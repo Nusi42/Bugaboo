@@ -25,20 +25,48 @@ pub(crate) struct Exclusion {
 
 /// State backgrounds (hover, selected) that must stay visible against the surfaces.
 pub(crate) struct DistinctSpec {
-    pub(crate) states: Vec<String>,
-    pub(crate) surfaces: Vec<String>,
+    /// The states and the surfaces they must stay visible on: one group for the plain surfaces, one
+    /// for each kind of tinted row. A rule has one group of its own, or `group { … }` children.
+    pub(crate) groups: Vec<DistinctGroup>,
     /// Smallest contrast ratio between a state and each surface.
     pub(crate) min_against_surfaces: f64,
     /// Smallest contrast ratio between two states.
     pub(crate) min_between_states: f64,
 }
 
-impl DistinctSpec {
-    pub(crate) fn parse(node: Node<'_>) -> anyhow::Result<Self> {
-        reason(node)?;
+/// Some states and the surfaces they sit on.
+pub(crate) struct DistinctGroup {
+    pub(crate) states: Vec<String>,
+    pub(crate) surfaces: Vec<String>,
+}
+
+impl DistinctGroup {
+    fn parse(node: Node<'_>) -> anyhow::Result<Self> {
         Ok(Self {
             states: node.words("states")?,
             surfaces: node.words("surfaces")?,
+        })
+    }
+}
+
+impl DistinctSpec {
+    pub(crate) fn parse(node: Node<'_>) -> anyhow::Result<Self> {
+        reason(node)?;
+        let children: Vec<Node<'_>> = node
+            .children()
+            .into_iter()
+            .filter(|child| child.name() == "group")
+            .collect();
+        let groups = if children.is_empty() {
+            vec![DistinctGroup::parse(node)?]
+        } else {
+            children
+                .into_iter()
+                .map(DistinctGroup::parse)
+                .collect::<anyhow::Result<Vec<_>>>()?
+        };
+        Ok(Self {
+            groups,
             min_against_surfaces: node.number_prop("min-against-surfaces")?,
             min_between_states: node.number_prop("min-between-states")?,
         })

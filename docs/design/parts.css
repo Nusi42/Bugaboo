@@ -856,6 +856,13 @@ body {
   height: var(--size-icon-small);
 }
 
+[data-part="issue-row"][data-state~="selected"],
+[data-part="timeline-bar"][data-state~="selected"] {
+  background: var(--bg-selected);
+  outline: var(--ring-width) solid var(--accent);
+  outline-offset: calc(var(--ring-width) * -1);
+}
+
 [data-part="list-row"][data-state~="group-in-progress"],
 [data-part="issue-row"][data-state~="group-in-progress"],
 [data-part="timeline-bar"][data-state~="group-in-progress"] {
@@ -1291,7 +1298,7 @@ body {
 }
 
 [data-part="window.control"][data-variant~="close"] {
-  border-top-right-radius: var(--r-card);
+  border-start-end-radius: var(--r-card);
 }
 
 [data-part="window.control"][data-variant~="back"] {

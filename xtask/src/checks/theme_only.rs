@@ -16,6 +16,11 @@
 //!   `.sass`, `.less`), and no
 //!   `import`, `import()` or `require` of one, with or without `?inline` or `?raw` after the name.
 //!
+//! One exception, for the size a person drags a window to (coding-standards §4): in
+//! `web/packages/ui/src/` only, `element.style.setProperty(variableOf("…"), value)`, where
+//! `variableOf` (defined once, in `variables.ts`) is typed with the tokens that the theme file marks
+//! `run-time="true"`. A second definition of `variableOf` is a finding.
+//!
 //! The pages of the documents and the mockups (`docs/**/*.html`) follow the same rule: no
 //! `<style>` element and no `style` attribute in the markup, because their look is written in the
 //! `docs` blocks of the theme file and generated (M2C-F93). A `style` attribute that the page's own
@@ -138,7 +143,7 @@ fn scan(path: &str, text: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
     for (index, line) in text.lines().enumerate() {
         let code = code_of(line);
-        if let Some(problem) = problem_in(code) {
+        if let Some(problem) = problem_in(path, code) {
             findings.push(Finding::at(format!("{path}:{}", index + 1), problem));
         }
     }
@@ -149,9 +154,23 @@ fn scan(path: &str, text: &str) -> Vec<Finding> {
 /// the person drags the edge of a window. `variableOf` takes the name of a token only, so a
 /// property of the element or a name of the code's own is a type error and a finding.
 const RUN_TIME_VARIABLE: &str = ".style.setProperty(variableOf(";
+/// Where that call may stand, and the one file that may define `variableOf`: the parts package. Its
+/// parameter is typed with the variables marked `run-time="true"` in the theme file, so it can only
+/// name a size that a person drags (coding-standards §4).
+const RUN_TIME_PLACE: &str = "web/packages/ui/src/";
+const RUN_TIME_DEFINITION: &str = "web/packages/ui/src/variables.ts";
 
-fn problem_in(code: &str) -> Option<String> {
-    let code = code.replace(RUN_TIME_VARIABLE, "(");
+fn problem_in(path: &str, code: &str) -> Option<String> {
+    if path != RUN_TIME_DEFINITION && defines_variable_of(code) {
+        return Some(format!(
+            "A second `variableOf`. The one in {RUN_TIME_DEFINITION} is typed with the run-time variables of the theme file; use it (coding-standards §4)."
+        ));
+    }
+    let code = if path.starts_with(RUN_TIME_PLACE) {
+        code.replace(RUN_TIME_VARIABLE, "(")
+    } else {
+        code.to_owned()
+    };
     let code = code.as_str();
     if let Some((_, what)) = FROM_CODE.iter().find(|(text, _)| code.contains(text)) {
         return Some(format!(
@@ -180,6 +199,13 @@ fn problem_in(code: &str) -> Option<String> {
         ));
     }
     None
+}
+
+/// Whether the line defines a function or a constant called `variableOf`.
+fn defines_variable_of(code: &str) -> bool {
+    ["function variableOf", "const variableOf", "let variableOf"]
+        .iter()
+        .any(|definition| code.contains(definition))
 }
 
 /// `setAttribute("style", …)`, `setAttribute('class', …)` and `createElement("style")`, written
@@ -290,6 +316,19 @@ mod tests {
         let good = "element.style.setProperty(variableOf(\"window-width\"), `${width}px`);";
         let found = run("web/packages/ui/src/a.ts", good);
         assert!(found.is_empty(), "{found:?}");
+        // Only in the parts package, and only with the one `variableOf`.
+        assert!(!run("web/app/src/a.ts", good).is_empty());
+        for second in [
+            "function variableOf(name: string): string {",
+            "export const variableOf = (name: string) => name;",
+        ] {
+            assert!(!run("web/app/src/b.ts", second).is_empty(), "{second}");
+            assert!(
+                !run("web/packages/ui/src/b.ts", second).is_empty(),
+                "{second}"
+            );
+            assert!(run(RUN_TIME_DEFINITION, second).is_empty(), "{second}");
+        }
         // Only a variable of a token, named through `variableOf` (which only takes a token's
         // name): not a free name, not a property of the element.
         for bad in [

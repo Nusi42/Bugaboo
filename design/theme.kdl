@@ -117,8 +117,8 @@ tokens {
     size "size-window-handle" "8px"
     // The size of the window right now: the code sets these two variables while the person drags,
     // and nothing else sets a style at run time.
-    size "window-width" "$size-window"
-    size "window-height" "auto"
+    size "window-width" "$size-window" run-time="true"
+    size "window-height" "auto" run-time="true"
     size "bp-window-side" "880px"
     size "bp-window-wide" "1200px"
     // The width of one day on the timeline at the week zoom.
@@ -220,7 +220,7 @@ tokens {
     color "border-subtle" daylight="#eaedf1" paper="#eae3d7" dusk="#313641" midnight="#1a1c21" daylight-more="#8c8e91" paper-more="#8c8881" dusk-more="#797c84" midnight-more="#66676a"
     color "fg" daylight="#16181d" paper="#2b2620" dusk="#e5e8ed" midnight="#f2f3f5"
     color "fg-muted" daylight="#5a6170" paper="#6a6157" dusk="#a3aab7" midnight="#9ca3af" daylight-more="#464c57" paper-more="#4d4740" dusk-more="#cbcfd6" midnight-more="#b2b7c1"
-    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#878d99" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#acb0b9"
+    color "fg-subtle" daylight="#636879" paper="#6b635a" dusk="#a0a6b1" midnight="#8c939f" daylight-more="#484c58" paper-more="#4d4741" dusk-more="#cccfd5" midnight-more="#afb4bd"
     color "accent" daylight="#5b3fd9" paper="#2f5d8a" dusk="#a495ff" midnight="#9483ff" daylight-more="#573cd0" paper-more="#2e5b87" dusk-more="#a697ff" midnight-more="#9b8cff" forced="Highlight"
     color "accent-soft" daylight="#eeeafd" paper="#e4ecf4" dusk="#37325a" midnight="#221d47"
     color "accent-fg" daylight="#4a2fc4" paper="#284f75" dusk="#c2b8ff" midnight="#b7abff" daylight-more="#492ec0" paper-more="#264a6e" dusk-more="#d0c8ff"
@@ -300,7 +300,7 @@ contrast min=4.5 {
     }
     exclude reason="Hint text sits on plain surfaces, never on tinted backgrounds." {
         text "fg-subtle"
-        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-*-soft" "tint-*" "cat*-bg"
+        on "accent-soft" "danger-soft" "warning-soft" "success-soft" "st-*-soft" "cat*-bg"
     }
     exclude reason="Accent text sits on plain surfaces or the accent tint, not on status or category tints." {
         text "accent-fg"
@@ -348,13 +348,14 @@ distinct min-against-surfaces=1.08 min-between-states=1.04 reason="Hovered and s
 }
 
 distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
-    states "tint-ip-hover" "tint-ip-selected"
-    surfaces "tint-ip"
-}
-
-distinct min-against-surfaces=1.06 min-between-states=1.04 reason="On a row tinted by its status group, the hovered and the selected row differ from the tint by at least 1.06:1, and from each other by at least 1.04:1, in every theme. A selected row also draws a ring inside its edge, so it never relies on the fill alone." {
-    states "tint-done-hover" "tint-done-selected"
-    surfaces "tint-done"
+    group {
+        states "tint-ip-hover" "tint-ip-selected"
+        surfaces "tint-ip"
+    }
+    group {
+        states "tint-done-hover" "tint-done-selected"
+        surfaces "tint-done"
+    }
 }
 
 
@@ -1378,6 +1379,12 @@ part "priority-icon" {
 // timeline are the rows that do. Hovered and selected rows keep the hue of their tint and stay
 // distinct from it (`distinct` above). The rules come after the rows' own, so they win.
 
+// A selected row is also ringed inside its edge, so it never relies on the fill alone.
+part "issue-row[state=selected]" "timeline-bar[state=selected]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
 part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
     background "$tint-ip"
 }
@@ -1816,7 +1823,7 @@ part "window.control[variant=close][hovered]" "window.control[variant=close][pre
 }
 
 part "window.control[variant=close]" {
-    border-top-right-radius "$r-card"
+    border-start-end-radius "$r-card"
 }
 
 part "window.control[variant=back]" {

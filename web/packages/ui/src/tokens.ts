@@ -31,6 +31,10 @@ export const variants = {
   "less-motion": { attribute: "data-motion", value: "less" },
 } as const;
 
+/** The variables the code may set while the person drags (`run-time="true"` in the theme file). */
+export const runTimeVariables = ["window-width", "window-height"] as const;
+export type RunTimeVariable = (typeof runTimeVariables)[number];
+
 export const colorTokens = [
   "bg-canvas",
   "bg-surface",
@@ -301,9 +305,9 @@ export const part = {
   statusButton: "status-button",
   priority: "priority",
   priorityIcon: "priority-icon",
-  listRow: "list-row",
   issueRow: "issue-row",
   timelineBar: "timeline-bar",
+  listRow: "list-row",
   listGrid: "list-grid",
   listRowCell: "list-row.cell",
   listGroup: "list-group",
@@ -634,16 +638,16 @@ export const partWords = {
   "status-button": { variant: ["not-started", "in-progress", "done"], state: [] },
   priority: { variant: ["critical", "high", "normal", "low"], state: [] },
   "priority-icon": { variant: [], state: [] },
-  "list-row": {
-    variant: ["head", "phone"],
-    state: ["group-in-progress", "selected", "group-done", "priority-critical", "priority-high"],
-  },
   "issue-row": {
     variant: ["current"],
-    state: ["group-in-progress", "selected", "group-done", "priority-critical", "priority-high"],
+    state: ["selected", "group-in-progress", "group-done", "priority-critical", "priority-high"],
   },
   "timeline-bar": {
     variant: [],
+    state: ["selected", "group-in-progress", "group-done", "priority-critical", "priority-high"],
+  },
+  "list-row": {
+    variant: ["head", "phone"],
     state: ["group-in-progress", "selected", "group-done", "priority-critical", "priority-high"],
   },
   "list-grid": { variant: [], state: [] },

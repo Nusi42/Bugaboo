@@ -94,6 +94,9 @@ pub(crate) struct Token {
     pub(crate) forced: Option<String>,
     /// The value while a choice is on (the name of a [`Variant`]).
     pub(crate) variants: Vec<(String, String)>,
+    /// Marked `run-time="true"`: the code may set this variable while the person drags something
+    /// (the size of a window). Only a size can be one.
+    pub(crate) run_time: bool,
     pub(crate) line: usize,
 }
 
@@ -536,13 +539,23 @@ impl Builder {
             more: Vec::new(),
             forced: None,
             variants: Vec::new(),
+            run_time: false,
             line: node.line(),
         };
         if self.tokens.iter().any(|other| other.name == token.name) {
             return Err(node.problem(format!("`{}` is defined twice", token.name)));
         }
         for (key, value) in node.props()? {
-            self.mode_value(&mut token, node, &key, value)?;
+            if key == "run-time" {
+                if value != "true" || token.kind != TokenKind::Size {
+                    return Err(
+                        node.problem("`run-time=\"true\"` marks a size, and says nothing else")
+                    );
+                }
+                token.run_time = true;
+            } else {
+                self.mode_value(&mut token, node, &key, value)?;
+            }
         }
         self.check_token(&token, node)?;
         Ok(token)
@@ -681,8 +694,11 @@ impl ThemeFile {
         let spec = &self.contrast;
         if let Some(unknown) = spec
             .named_colors()
-            .chain(self.distinct.iter().flat_map(|spec| &spec.states))
-            .chain(self.distinct.iter().flat_map(|spec| &spec.surfaces))
+            .chain(self.distinct.iter().flat_map(|spec| {
+                spec.groups
+                    .iter()
+                    .flat_map(|group| group.states.iter().chain(&group.surfaces))
+            }))
             .find(|name| {
                 self.token(name)
                     .is_none_or(|token| token.kind != TokenKind::Color)

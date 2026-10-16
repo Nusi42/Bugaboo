@@ -120,6 +120,7 @@ there. LINT-DRY (§7) catches copied blocks automatically; the rest is review.
   no `className`, no CSS file but the one that `cargo xtask gen theme` writes. A component emits
   `data-part`, `data-variant` and `data-state` (`partOf`), plus React Aria's own `data-*`
   attributes. Enforced by: THEME-ONLY.
+- **One exception: the size a person drags.** A window follows the pointer, so its size is two variables of the theme file that the code sets: only `element.style.setProperty(variableOf("…"), value)`, only in `web/packages/ui/src/`, where `variableOf` (defined once, in `variables.ts`) takes only a token that the theme file marks `run-time="true"` (today `window-width` and `window-height`). A color or a spacing is never set from code, and a second `variableOf` is a finding. Enforced by: THEME-ONLY.
 - No `eval`, `new Function`, `document.write`, a timer given a string, or inline event-handler
   strings (these would break the CSP). Enforced by: SEC-PATTERNS. Setting HTML from a string is
   the next rule.
