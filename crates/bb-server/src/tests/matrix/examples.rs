@@ -401,14 +401,14 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("changeLabel"),
     Example::route("combineLabels"),
     Example::with("moveIssue", &[Quirk::AnIssueOfTheTarget]),
-    Example::with("previewBulkChange", &[Quirk::SkipsWhatItMayNotChange]),
-    Example::with("applyBulkChange", &[Quirk::SkipsWhatItMayNotChange]),
+    Example::with("previewManyChanges", &[Quirk::SkipsWhatItMayNotChange]),
+    Example::with("applyManyChanges", &[Quirk::SkipsWhatItMayNotChange]),
     Example::with(
-        "getBulkRun",
+        "getManyChangeRun",
         &[Quirk::KeysActAsThePerson, Quirk::NamesAMissingThing],
     ),
     Example::with(
-        "cancelBulkRun",
+        "stopManyChangeRun",
         &[Quirk::SessionOnly, Quirk::NamesAMissingThing],
     ),
     Example::with(

@@ -8,25 +8,26 @@
 use std::collections::BTreeMap;
 
 use bb_core::access::{AppliesTo, FieldLevel};
-use bb_core::bulk::SkipReason;
 use bb_core::fields::Field;
 use bb_core::id::{IssueId, LabelId, ProjectId, RelationKindId};
 use bb_core::issue::{Issue, Priority, Status};
+use bb_core::many_changes::SkipReason;
 use bb_core::relation::Direction;
 use bb_policy::Permission;
 use proptest::prelude::*;
 
-use super::bulk::{apply, done, preview, targets};
+use super::many_changes::{apply, done, preview, targets};
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::scenarios_tags::{a_label, labelled};
 use super::world::World;
 use crate::auth::AppError;
-use crate::bulk::{
-    BulkAction, BulkChange, BulkDetail, BulkPreview, BulkResult, BulkRow, BulkTarget,
-};
 use crate::history::{ChangeValue, FieldChangeView};
 use crate::issues::{ChangeIssue, DeleteIssue, IssueStore, change_issue, delete_issue};
+use crate::many_changes::{
+    ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangePreview, ManyChangeResult,
+    ManyChangeRow, ManyChangeTarget,
+};
 use crate::relations::{RelationKindsQuery, RelationStore, relation_kinds};
 use crate::roles::{
     AssignRole, CreateRole, Given, SetFieldLevel, Subject, assign_role, create_role, set_level,
@@ -238,21 +239,21 @@ async fn session_of(world: &World, who: usize, setup: &Setup) -> Result<String, 
     Ok(bob.session_token)
 }
 
-fn action_of(which: usize, setup: &Setup) -> BulkAction {
+fn action_of(which: usize, setup: &Setup) -> ManyChangeAction {
     match which {
         0 => done(),
-        1 => BulkAction::Change {
-            change: BulkChange {
+        1 => ManyChangeAction::Change {
+            change: ManyChange {
                 priority: Some(Priority::High),
-                ..BulkChange::default()
+                ..ManyChange::default()
             },
         },
-        2 => BulkAction::AddLabel { label: setup.label },
-        3 => BulkAction::Delete,
-        4 => BulkAction::Move {
+        2 => ManyChangeAction::AddLabel { label: setup.label },
+        3 => ManyChangeAction::Delete,
+        4 => ManyChangeAction::Move {
             project: setup.into.to_string(),
         },
-        _ => BulkAction::AddRelation {
+        _ => ManyChangeAction::AddRelation {
             relation_kind: setup.kind,
             direction: Direction::Forward,
             other: setup.anchor.to_string(),
@@ -267,9 +268,11 @@ fn text_of(value: Option<&ChangeValue>) -> Option<&str> {
     }
 }
 
-fn changed_field<'a>(row: &'a BulkRow, field: &str) -> Option<&'a FieldChangeView> {
+fn changed_field<'a>(row: &'a ManyChangeRow, field: &str) -> Option<&'a FieldChangeView> {
     match &row.detail {
-        Some(BulkDetail::Changes { fields }) => fields.iter().find(|each| each.field == field),
+        Some(ManyChangeDetail::Changes { fields }) => {
+            fields.iter().find(|each| each.field == field)
+        }
         _ => None,
     }
 }
@@ -277,9 +280,9 @@ fn changed_field<'a>(row: &'a BulkRow, field: &str) -> Option<&'a FieldChangeVie
 /// What the preview's detail says for an issue it did not skip, against how the issue stands after
 /// the change; and the issue as it was for one it did skip.
 fn compare(
-    action: &BulkAction,
+    action: &ManyChangeAction,
     setup: &Setup,
-    row: &BulkRow,
+    row: &ManyChangeRow,
     before: &Stands,
     after: &Stands,
 ) -> Result<(), TestCaseError> {
@@ -287,39 +290,39 @@ fn compare(
         prop_assert_eq!(before, after, "a skipped issue is left as it was");
         return Ok(());
     }
-    if !matches!(action, BulkAction::AddRelation { .. }) {
+    if !matches!(action, ManyChangeAction::AddRelation { .. }) {
         // A relation is its own record and does not count the version of the issue.
         prop_assert!(after.version > before.version, "a changed issue counts up");
     }
     match action {
-        BulkAction::Change { change } if change.status.is_some() => {
+        ManyChangeAction::Change { change } if change.status.is_some() => {
             let shown = changed_field(row, "status").ok_or_else(|| broke("no status in detail"))?;
             prop_assert_eq!(text_of(shown.after.as_ref()), Some(after.status.code()));
             prop_assert_eq!(Some(after.status), change.status);
         }
-        BulkAction::Change { change } => {
+        ManyChangeAction::Change { change } => {
             let shown =
                 changed_field(row, "priority").ok_or_else(|| broke("no priority in detail"))?;
             prop_assert_eq!(text_of(shown.after.as_ref()), Some(after.priority.code()));
             prop_assert_eq!(Some(after.priority), change.priority);
         }
-        BulkAction::AddLabel { label } => {
+        ManyChangeAction::AddLabel { label } => {
             prop_assert!(after.labels.contains(label));
             let shown = changed_field(row, "labels").ok_or_else(|| broke("no labels in detail"))?;
             let named = matches!(&shown.after, Some(ChangeValue::Names { names }) if names.iter().any(|name| name == "urgent"));
             prop_assert!(named);
         }
-        BulkAction::Delete => prop_assert!(after.in_trash),
-        BulkAction::Move { .. } => {
+        ManyChangeAction::Delete => prop_assert!(after.in_trash),
+        ManyChangeAction::Move { .. } => {
             prop_assert_eq!(after.project, setup.into);
             let shown =
                 changed_field(row, "project").ok_or_else(|| broke("no project in detail"))?;
             let moved = matches!(&shown.after, Some(ChangeValue::Project { project }) if project.id == setup.into);
             prop_assert!(moved);
         }
-        BulkAction::AddRelation { .. } => {
+        ManyChangeAction::AddRelation { .. } => {
             prop_assert_eq!(after.relations, before.relations + 1);
-            let related = matches!(row.detail, Some(BulkDetail::Relation { .. }));
+            let related = matches!(row.detail, Some(ManyChangeDetail::Relation { .. }));
             prop_assert!(related);
         }
     }
@@ -346,14 +349,15 @@ async fn the_preview_is_what_happens(
             .map_err(broke)?,
         );
     }
-    let looked: Result<BulkPreview, AppError> = preview(&world, &session, &asked, &action).await;
+    let looked: Result<ManyChangePreview, AppError> =
+        preview(&world, &session, &asked, &action).await;
     let looked = match looked {
         Ok(looked) => looked,
         Err(refusal) => {
             // A change the person may not even ask for is refused the same way when it is made.
             let wanted = asked
                 .iter()
-                .map(|issue| BulkTarget {
+                .map(|issue| ManyChangeTarget {
                     issue: issue.to_string(),
                     version: 1,
                 })
@@ -373,12 +377,12 @@ async fn the_preview_is_what_happens(
         prop_assert!(looked.rows.iter().all(|row| row.skipped.is_some()));
         return Ok(());
     }
-    let result: BulkResult = apply(&world, &session, wanted, &action)
+    let result: ManyChangeResult = apply(&world, &session, wanted, &action)
         .await
         .map_err(broke)?;
     // The issues the preview could read were sent, in the order asked; those that are not there
     // for this person have no version and were not.
-    let sent: Vec<&BulkRow> = looked
+    let sent: Vec<&ManyChangeRow> = looked
         .rows
         .iter()
         .filter(|row| row.version.is_some())

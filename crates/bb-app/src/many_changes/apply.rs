@@ -5,19 +5,24 @@
 //! change, so each issue has its own change and its own event, and the history of every issue
 //! shows what happened to it. An issue that changed after the preview is named and left alone.
 //!
-//! More than [`BULK_JOB_ABOVE`] issues are not waited for: the change is queued as a background
+//! More than [`MANY_CHANGES_JOB_ABOVE`] issues are not waited for: the change is queued as a background
 //! job (ADR-0017) that goes on a step at a time, and a person reads how far it is (`run.rs`).
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_ISSUES_MAX, BULK_JOB_ABOVE, BulkItem, BulkRun, BulkStatus, SkipReason};
 use bb_core::event::RecordKind;
-use bb_core::id::{BulkRunId, JobId};
+use bb_core::id::{JobId, ManyChangeRunId};
+use bb_core::many_changes::{
+    MANY_CHANGES_ISSUES_MAX, MANY_CHANGES_JOB_ABOVE, ManyChangeItem, ManyChangeRun,
+    ManyChangeStatus, SkipReason,
+};
 use bb_policy::{Authorized, Place};
 use serde_json::json;
 
 use super::judge::{Judged, Probe, Selection, skip_of};
 use super::run::step_payload;
-use super::types::{ApplyBulk, BulkAction, BulkOutcome, BulkResult, BulkTarget};
+use super::types::{
+    ApplyManyChanges, ManyChangeAction, ManyChangeOutcome, ManyChangeResult, ManyChangeTarget,
+};
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, set_to};
 use crate::issues::{ChangeIssue, DeleteIssue, MoveIssue, change_issue, delete_issue, move_issue};
 use crate::jobs::{kind, kind_name};
@@ -30,15 +35,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(super) async fn apply_item(
         &self,
         selection: &Selection<'_>,
-        target: &BulkTarget,
+        target: &ManyChangeTarget,
         maker: &mut LineMaker,
-    ) -> Result<BulkOutcome, AppError> {
+    ) -> Result<ManyChangeOutcome, AppError> {
         let probe = Probe {
             address: &target.issue,
             version: Some(target.version),
         };
         let judgment = self.judge_item(selection, &probe, maker).await?;
-        let outcome = |skipped: Option<SkipReason>| BulkOutcome {
+        let outcome = |skipped: Option<SkipReason>| ManyChangeOutcome {
             address: target.issue.clone(),
             issue: judgment.issue.clone(),
             skipped,
@@ -50,7 +55,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // judgment gave and, if the issue changed in the instant between, says so.
         let token = selection.token.to_owned();
         let done = match selection.action {
-            BulkAction::Change { change } => change_issue(
+            ManyChangeAction::Change { change } => change_issue(
                 self,
                 ChangeIssue {
                     session_token: token,
@@ -66,7 +71,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await
             .map(drop),
-            BulkAction::Move { project } => move_issue(
+            ManyChangeAction::Move { project } => move_issue(
                 self,
                 MoveIssue {
                     session_token: token,
@@ -77,7 +82,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await
             .map(drop),
-            BulkAction::AddLabel { label } => add_label(
+            ManyChangeAction::AddLabel { label } => add_label(
                 self,
                 AddLabel {
                     session_token: token,
@@ -87,7 +92,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await
             .map(drop),
-            BulkAction::AddRelation {
+            ManyChangeAction::AddRelation {
                 relation_kind,
                 direction,
                 other,
@@ -103,7 +108,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await
             .map(drop),
-            BulkAction::Delete => delete_issue(
+            ManyChangeAction::Delete => delete_issue(
                 self,
                 DeleteIssue {
                     session_token: token,
@@ -121,7 +126,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// Changes many issues at once, after the preview, each on the version the preview read. Up to
-/// [`BULK_JOB_ABOVE`] issues are changed before the answer comes; more are queued as a job that
+/// [`MANY_CHANGES_JOB_ABOVE`] issues are changed before the answer comes; more are queued as a job that
 /// goes on in the background, and the answer holds the run to read how far it is.
 ///
 /// # Errors
@@ -129,25 +134,25 @@ impl<S: AuthStore> Ctx<'_, S> {
 /// `resource.not_found` for a project, a label, a kind of relation or an issue named in the action
 /// that is not there for the person, `auth.access_key_not_allowed` for a change to more issues than
 /// a script may wait for (an access key splits the work into requests that fit).
-pub async fn apply_bulk<S: AuthStore>(
+pub async fn apply_many_changes<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: ApplyBulk,
-) -> Result<Authorized<BulkResult>, AppError> {
+    input: ApplyManyChanges,
+) -> Result<Authorized<ManyChangeResult>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    if input.issues.is_empty() || input.issues.len() > BULK_ISSUES_MAX {
+    if input.issues.is_empty() || input.issues.len() > MANY_CHANGES_ISSUES_MAX {
         return Err(ErrorCode::InvalidRequest.into());
     }
     let selection = ctx
         .selection(&actor, &input.session_token, &input.action)
         .await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    if input.issues.len() <= BULK_JOB_ABOVE {
+    if input.issues.len() <= MANY_CHANGES_JOB_ABOVE {
         let mut maker = ctx.line_maker().await?;
         let mut outcomes = Vec::with_capacity(input.issues.len());
         for target in &input.issues {
             outcomes.push(ctx.apply_item(&selection, target, &mut maker).await?);
         }
-        return Ok(held.authorize(BulkResult {
+        return Ok(held.authorize(ManyChangeResult {
             outcomes,
             run: None,
         }));
@@ -158,8 +163,9 @@ pub async fn apply_bulk<S: AuthStore>(
         return Err(ErrorCode::AccessKeyNotAllowed.into());
     }
     let mut ids = ctx.ids();
-    let run = BulkRun {
-        id: BulkRunId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?,
+    let run = ManyChangeRun {
+        id: ManyChangeRunId::generate(&mut ids)
+            .map_err(|error| AppError::Internal(error.to_string()))?,
         person: actor.person.id,
         action: serde_json::to_value(&input.action)
             .map_err(|error| AppError::Internal(error.to_string()))?,
@@ -172,14 +178,14 @@ pub async fn apply_bulk<S: AuthStore>(
                 target
                     .issue
                     .parse()
-                    .map(|issue| BulkItem {
+                    .map(|issue| ManyChangeItem {
                         issue,
                         version: target.version,
                     })
                     .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))
             })
             .collect::<Result<Vec<_>, _>>()?,
-        status: BulkStatus::Queued,
+        status: ManyChangeStatus::Queued,
         done: 0,
         changed: 0,
         skipped: Vec::new(),
@@ -197,18 +203,18 @@ pub async fn apply_bulk<S: AuthStore>(
         ],
     )?;
     let (stored, now) = (run.clone(), ctx.now());
-    let name = kind_name(kind::BULK_STEP)?;
+    let name = kind_name(kind::MANY_CHANGES_STEP)?;
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                S::insert_bulk_run(transaction, &stored).await?;
+                S::insert_many_changes_run(transaction, &stored).await?;
                 S::enqueue_job(transaction, job, &name, &payload, now, now).await
             })
         })
         .await
         .map_err(|error| crate::auth::internal::<S>(&error))?;
     let view = ctx.run_view(&actor, &run).await?;
-    Ok(held.authorize(BulkResult {
+    Ok(held.authorize(ManyChangeResult {
         outcomes: Vec::new(),
         run: Some(view),
     }))

@@ -1,15 +1,15 @@
 //! The jobs and the runs of changes to many issues of the in-memory store.
 
-use bb_core::bulk::{BulkRun, BulkStatus, RunsToEnd};
-use bb_core::id::{BulkRunId, JobId};
+use bb_core::id::{JobId, ManyChangeRunId};
 use bb_core::job::{FailureKind, FailureOutcome, Job, JobState};
+use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus, RunsToEnd};
 use bb_core::technical::TechnicalName;
 use jiff::{SignedDuration, Timestamp};
 use serde_json::Value;
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::bulk::BulkStore;
 use crate::jobs::{JOB_ATTEMPTS_MAX, JobStore};
+use crate::many_changes::ManyChangeStore;
 
 fn job(id: JobId, kind: &TechnicalName, payload: &Value, run_at: Timestamp, now: Timestamp) -> Job {
     Job {
@@ -140,9 +140,17 @@ impl JobStore for FakeStore {
     }
 }
 
-impl BulkStore for FakeStore {
-    async fn bulk_run_in(tx: &mut Tx, id: BulkRunId) -> Result<Option<BulkRun>, FakeError> {
-        Ok(tx.state.bulk_runs.iter().find(|run| run.id == id).cloned())
+impl ManyChangeStore for FakeStore {
+    async fn many_changes_run_in(
+        tx: &mut Tx,
+        id: ManyChangeRunId,
+    ) -> Result<Option<ManyChangeRun>, FakeError> {
+        Ok(tx
+            .state
+            .many_changes_runs
+            .iter()
+            .find(|run| run.id == id)
+            .cloned())
     }
 
     async fn event_with_reason(&self, reason: &str, since: Timestamp) -> Result<bool, FakeError> {
@@ -153,9 +161,9 @@ impl BulkStore for FakeStore {
             .any(|event| event.time >= since && event.reason.as_deref() == Some(reason)))
     }
 
-    async fn save_bulk_progress(
+    async fn save_many_changes_progress(
         &self,
-        run: &BulkRun,
+        run: &ManyChangeRun,
         expected_done: i64,
     ) -> Result<bool, FakeError> {
         let mut shared = self.lock();
@@ -163,10 +171,13 @@ impl BulkStore for FakeStore {
             shared.progress_failures -= 1;
             return Err(FakeError::Failed);
         }
-        let Some(found) = shared.state.bulk_runs.iter_mut().find(|found| {
+        let Some(found) = shared.state.many_changes_runs.iter_mut().find(|found| {
             found.id == run.id
                 && found.done == expected_done
-                && matches!(found.status, BulkStatus::Queued | BulkStatus::Running)
+                && matches!(
+                    found.status,
+                    ManyChangeStatus::Queued | ManyChangeStatus::Running
+                )
         }) else {
             return Ok(false);
         };
@@ -178,30 +189,36 @@ impl BulkStore for FakeStore {
         Ok(true)
     }
 
-    async fn insert_bulk_run(tx: &mut Tx, run: &BulkRun) -> Result<(), FakeError> {
-        tx.state.bulk_runs.push(run.clone());
+    async fn insert_many_changes_run(tx: &mut Tx, run: &ManyChangeRun) -> Result<(), FakeError> {
+        tx.state.many_changes_runs.push(run.clone());
         Ok(())
     }
 
-    async fn bulk_run_is_over(&self, id: BulkRunId) -> Result<bool, FakeError> {
-        Ok(!self.lock().state.bulk_runs.iter().any(|run| {
-            run.id == id && matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
+    async fn many_changes_run_is_over(&self, id: ManyChangeRunId) -> Result<bool, FakeError> {
+        Ok(!self.lock().state.many_changes_runs.iter().any(|run| {
+            run.id == id
+                && matches!(
+                    run.status,
+                    ManyChangeStatus::Queued | ManyChangeStatus::Running
+                )
         }))
     }
 
-    async fn end_bulk_runs(
+    async fn end_many_changes_runs(
         tx: &mut Tx,
         which: &RunsToEnd,
-        status: BulkStatus,
+        status: ManyChangeStatus,
         at: Timestamp,
     ) -> Result<u64, FakeError> {
         let mut ended = 0;
-        for run in tx.state.bulk_runs.iter_mut().filter(|run| {
-            matches!(run.status, BulkStatus::Queued | BulkStatus::Running)
-                && match which {
-                    RunsToEnd::One(id) => run.id == *id,
-                    RunsToEnd::OfPerson(person) => run.person == *person,
-                }
+        for run in tx.state.many_changes_runs.iter_mut().filter(|run| {
+            matches!(
+                run.status,
+                ManyChangeStatus::Queued | ManyChangeStatus::Running
+            ) && match which {
+                RunsToEnd::One(id) => run.id == *id,
+                RunsToEnd::OfPerson(person) => run.person == *person,
+            }
         }) {
             run.status = status;
             run.finished_at = Some(at);

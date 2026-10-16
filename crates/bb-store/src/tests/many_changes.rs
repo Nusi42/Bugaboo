@@ -3,12 +3,14 @@
 //! two workers took the same step, and a job queued in the change that makes the run is leased
 //! once.
 
-use bb_app::bulk::BulkStore;
 use bb_app::jobs::{JOB_ATTEMPTS_MAX, JobStore};
+use bb_app::many_changes::ManyChangeStore;
 use bb_app::ports::{BoxFuture, ChangeStore};
-use bb_core::bulk::{BulkItem, BulkRun, BulkSkip, BulkStatus, SkipReason};
-use bb_core::id::{BulkRunId, IdSource, IssueId, JobId, UserId};
+use bb_core::id::{IdSource, IssueId, JobId, ManyChangeRunId, UserId};
 use bb_core::job::{FailureKind, FailureOutcome};
+use bb_core::many_changes::{
+    ManyChangeItem, ManyChangeRun, ManyChangeSkip, ManyChangeStatus, SkipReason,
+};
 use bb_core::technical::TechnicalName;
 use bb_testing::{TestResult, each_database};
 use jiff::SignedDuration;
@@ -25,18 +27,18 @@ async fn changed<T: Send>(
     ChangeStore::record_change(storage, &event(source, 5), write).await
 }
 
-fn a_run(source: &mut impl IdSource, issues: usize) -> BulkRun {
-    BulkRun {
-        id: BulkRunId::generate(source).unwrap(),
+fn a_run(source: &mut impl IdSource, issues: usize) -> ManyChangeRun {
+    ManyChangeRun {
+        id: ManyChangeRunId::generate(source).unwrap(),
         person: UserId::generate(source),
         action: json!({"kind": "delete"}),
         items: (0..issues)
-            .map(|_| BulkItem {
+            .map(|_| ManyChangeItem {
                 issue: IssueId::generate(source).unwrap(),
                 version: 1,
             })
             .collect(),
-        status: BulkStatus::Queued,
+        status: ManyChangeStatus::Queued,
         done: 0,
         changed: 0,
         skipped: Vec::new(),
@@ -59,12 +61,12 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         let (queued_kind, queued_payload) = (kind.clone(), payload.clone());
         changed(storage, &mut source, move |tx| {
             Box::pin(async move {
-                AuthStorage::insert_bulk_run(tx, &stored).await?;
+                AuthStorage::insert_many_changes_run(tx, &stored).await?;
                 AuthStorage::enqueue_job(tx, job, &queued_kind, &queued_payload, at(1), at(1)).await
             })
         })
         .await?;
-        assert_eq!(storage.bulk_run(run.id).await?, Some(run.clone()));
+        assert_eq!(storage.many_changes_run(run.id).await?, Some(run.clone()));
         // The job is leased once, with the payload that names the run.
         let worker = TechnicalName::new("worker.one")?;
         let leased = storage
@@ -85,22 +87,22 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         );
         // Counting an issue: only the worker that is at that issue counts it.
         let mut progress = run.clone();
-        progress.status = BulkStatus::Running;
+        progress.status = ManyChangeStatus::Running;
         progress.done = 1;
         progress.changed = 1;
-        assert!(storage.save_bulk_progress(&progress, 0).await?);
-        let late = storage.save_bulk_progress(&progress, 0).await?;
+        assert!(storage.save_many_changes_progress(&progress, 0).await?);
+        let late = storage.save_many_changes_progress(&progress, 0).await?;
         assert!(!late, "the same issue is not counted twice");
         progress.done = 3;
         progress.changed = 2;
-        progress.status = BulkStatus::Done;
-        progress.skipped = vec![BulkSkip {
+        progress.status = ManyChangeStatus::Done;
+        progress.skipped = vec![ManyChangeSkip {
             issue: run.items[2].issue,
             reason: SkipReason::ChangedSince,
         }];
         progress.finished_at = Some(at(9));
-        assert!(storage.save_bulk_progress(&progress, 1).await?);
-        assert_eq!(storage.bulk_run(run.id).await?, Some(progress));
+        assert!(storage.save_many_changes_progress(&progress, 1).await?);
+        assert_eq!(storage.many_changes_run(run.id).await?, Some(progress));
         // The worker reports the job done.
         assert!(storage.complete_job(leased[0].id, &worker).await?);
         Ok(())

@@ -71,8 +71,8 @@ export const crowdIssues = {
   status: "WEB-2",
   fields: "WEB-3",
   network: "WEB-4",
-  bulk: ["WEB-5", "WEB-6", "WEB-7", "WEB-8"],
-  bulkEditing: ["WEB-9", "WEB-10", "WEB-11", "WEB-12"],
+  manyChanges: ["WEB-5", "WEB-6", "WEB-7", "WEB-8"],
+  manyChangeEditing: ["WEB-9", "WEB-10", "WEB-11", "WEB-12"],
 } as const;
 
 /** The titles of the issues, in the order they are made. */

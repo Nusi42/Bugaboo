@@ -10,13 +10,15 @@ use bb_core::technical::TechnicalName;
 use super::fake::FakeStore;
 use super::scenarios::{Added, a_project, measured, text, token};
 use super::world::World;
-use crate::bulk::{ApplyBulk, BulkAction, BulkChange, BulkTarget, apply_bulk};
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::issues::{
     ChangeIssue, ChangeIssueType, CreateIssue, CreateIssueType, CreateStartingIssueTypes,
     DeleteIssue, IssueTypesQuery, MoveIssue, RestoreIssue, SaveDescription, change_issue,
     change_issue_type, create_issue, create_issue_type, create_starting_issue_types, delete_issue,
     issue_types, move_issue, restore_issue, save_description,
+};
+use crate::many_changes::{
+    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeTarget, apply_many_changes,
 };
 
 /// The first issue type of the first start (*Bug*).
@@ -251,23 +253,23 @@ pub(crate) async fn move_issue_scenario(world: &World) -> Added {
     .await
 }
 
-pub(crate) async fn apply_bulk_scenario(world: &World) -> Added {
+pub(crate) async fn apply_many_changes_scenario(world: &World) -> Added {
     let project = a_project(world, "ACME").await?;
     let issue = an_issue(world, project).await?;
     measured(
         &world.store,
-        apply_bulk(
+        apply_many_changes(
             &world.ctx(),
-            ApplyBulk {
+            ApplyManyChanges {
                 session_token: token(world),
-                issues: vec![BulkTarget {
+                issues: vec![ManyChangeTarget {
                     issue: issue.to_string(),
                     version: 1,
                 }],
-                action: BulkAction::Change {
-                    change: BulkChange {
+                action: ManyChangeAction::Change {
+                    change: ManyChange {
                         status: Some(Status::Done),
-                        ..BulkChange::default()
+                        ..ManyChange::default()
                     },
                 },
             },

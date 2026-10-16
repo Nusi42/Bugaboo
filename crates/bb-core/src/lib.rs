@@ -10,7 +10,6 @@ pub mod words;
 
 pub mod access;
 pub mod access_key;
-pub mod bulk;
 pub mod comment;
 pub mod edit;
 pub mod entities;
@@ -26,6 +25,7 @@ pub mod issue_key;
 pub mod job;
 pub mod layout;
 pub mod lookup;
+pub mod many_changes;
 pub mod message;
 pub mod migration;
 pub mod network;

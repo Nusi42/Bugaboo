@@ -116,7 +116,7 @@ impl<S> AuthServices<S> {
 
     /// The context of a background job that makes changes as `actor`, the person who asked for
     /// them: the use cases it runs take the actor from here and not from a session, which a job
-    /// does not have. Only a job that a signed-in request queued gets one (`bulk`), with the
+    /// does not have. Only a job that a signed-in request queued gets one (`many-changes`), with the
     /// person it stored.
     #[must_use]
     pub(crate) fn ctx_acting_as(&self, actor: ActingPerson) -> Ctx<'_, S> {
@@ -184,7 +184,7 @@ pub struct Ctx<'a, S> {
     /// an access key to tell who asks.
     pub(crate) acting: Option<ActingPerson>,
     /// The reason the events of the changes made now carry, set by a job for the issue it works on
-    /// (`bulk`); none for a request.
+    /// (`many-changes`); none for a request.
     pub(crate) reason: Mutex<Option<String>>,
 }
 

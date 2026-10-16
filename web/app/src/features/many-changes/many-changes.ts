@@ -5,37 +5,37 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 
 /** What is done to many issues at once: one of five things. */
-export type BulkAction = Schema<"BulkActionBody">;
+export type ManyChangeAction = Schema<"ManyChangeActionBody">;
 /** The same, as it is built to be sent. */
-export type NewBulkAction = components["schemas"]["BulkActionBody"];
+export type NewManyChangeAction = components["schemas"]["ManyChangeActionBody"];
 /** The word that says which of the five. */
-export type BulkKind = BulkAction["kind"];
-export type BulkPreview = Schema<"BulkPreviewBody">;
-export type BulkRow = Schema<"BulkRowBody">;
-export type BulkResult = Schema<"BulkResultBody">;
-export type BulkRun = Schema<"BulkRunBody">;
+export type ManyChangeKind = ManyChangeAction["kind"];
+export type ManyChangePreview = Schema<"ManyChangePreviewBody">;
+export type ManyChangeRow = Schema<"ManyChangeRowBody">;
+export type ManyChangeResult = Schema<"ManyChangeResultBody">;
+export type ManyChangeRun = Schema<"ManyChangeRunBody">;
 
 /** The five things, as the words the server knows them by. */
-export const bulkKind = {
+export const manyChangeKind = {
   change: "change",
   move: "move",
   label: "add_label",
   relation: "add_relation",
   delete: "delete",
-} as const satisfies Record<string, BulkKind>;
+} as const satisfies Record<string, ManyChangeKind>;
 
 /** What a change to many issues would do to each issue, without doing it. */
-export function usePreviewBulk() {
+export function usePreviewManyChanges() {
   return api.query.useMutation("post", "/api/v1/many-changes/preview");
 }
 
 /** What was sent when a change was applied: the thing that was done. */
-type SentBulk = Readonly<{ body: Readonly<{ action: BulkAction }> }>;
+type SentManyChanges = Readonly<{ body: Readonly<{ action: ManyChangeAction }> }>;
 
 /** What came of applying a change: what the server answered, or why it did not work. */
-export interface BulkApplied {
-  readonly action: BulkAction;
-  readonly result: BulkResult | null;
+export interface ManyChangeApplied {
+  readonly action: ManyChangeAction;
+  readonly result: ManyChangeResult | null;
   readonly failed: string | null;
 }
 
@@ -43,31 +43,33 @@ export interface BulkApplied {
  * Changes the issues the preview showed, each on the version the preview was made from. What came
  * of it is reported to `onApplied` also when the dialog that asked is gone by then.
  */
-export function useApplyBulk(onApplied: (applied: BulkApplied) => void) {
+export function useApplyManyChanges(onApplied: (applied: ManyChangeApplied) => void) {
   return api.query.useMutation("post", "/api/v1/many-changes", {
-    onSuccess: (result: BulkResult, sent: SentBulk) => {
+    onSuccess: (result: ManyChangeResult, sent: SentManyChanges) => {
       onApplied({ action: sent.body.action, result, failed: null });
     },
-    onError: (error: unknown, sent: SentBulk) => {
+    onError: (error: unknown, sent: SentManyChanges) => {
       onApplied({ action: sent.body.action, result: null, failed: messageOf(error) });
     },
   });
 }
 
 /** Whether a change that goes on in the background is still going. */
-export function isRunning(run: BulkRun): boolean {
+export function isRunning(run: ManyChangeRun): boolean {
   return run.status === "queued" || run.status === "running";
 }
 
 /** How far a change in the background is; it is read every second until it is over. */
-export function useBulkRun(run: string | undefined) {
+export function useManyChangeRun(run: string | undefined) {
   return api.query.useQuery(
     "get",
     "/api/v1/many-changes/runs/{run}",
     { params: { path: { run: run ?? "" } } },
     {
       enabled: run !== undefined,
-      refetchInterval: (query: Readonly<{ state: Readonly<{ data: BulkRun | undefined }> }>) => {
+      refetchInterval: (
+        query: Readonly<{ state: Readonly<{ data: ManyChangeRun | undefined }> }>,
+      ) => {
         const known = query.state.data;
         return known !== undefined && !isRunning(known) ? false : 1000;
       },
@@ -76,7 +78,7 @@ export function useBulkRun(run: string | undefined) {
 }
 
 /** The issues a preview would change, with the version each was read at: what the change is sent for. */
-export function targetsOf(preview: BulkPreview): { issue: string; version: number }[] {
+export function targetsOf(preview: ManyChangePreview): { issue: string; version: number }[] {
   return preview.rows.flatMap((row) =>
     row.issue !== undefined &&
     row.issue !== null &&

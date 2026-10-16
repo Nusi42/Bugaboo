@@ -7,11 +7,11 @@ use bb_app::access::{Permission, StartingRole};
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::bulk_http::targets_for_a_job;
 use super::exit_masks::person_with_levels;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::Site;
 use super::issues_site::ok;
+use super::many_changes_http::targets_for_a_job;
 use super::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
 const CHANGES: &str = "/api/v1/many-changes";

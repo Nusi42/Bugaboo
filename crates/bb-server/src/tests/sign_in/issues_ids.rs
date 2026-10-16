@@ -8,10 +8,10 @@ use bb_app::auth::AuthApi as _;
 use bb_app::context::SystemIds;
 use bb_app::issues::CreateIssue;
 use bb_app::jobs::JobStore as _;
-use bb_core::bulk::{BULK_JOB_ABOVE, BULK_STEP};
 use bb_core::event::{Actor, EntityKind, RecordKind};
 use bb_core::id::JobId;
 use bb_core::issue_key::IssueKey;
+use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, MANY_CHANGES_STEP};
 use bb_core::technical::TechnicalName;
 use bb_core::text::CROCKFORD;
 use bb_testing::{Failure, TestResult, each_database};
@@ -546,7 +546,7 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         mode(&mut ada, Some("counting")).await?;
-        let total = BULK_JOB_ABOVE + 101;
+        let total = MANY_CHANGES_JOB_ABOVE + 101;
         let mut old = Vec::new();
         for number in 0..total {
             let made = rig
@@ -581,7 +581,7 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
         let counting = counting_ids(&mut ada).await?;
         assert_eq!(
             counting,
-            total - BULK_STEP,
+            total - MANY_CHANGES_STEP,
             "a step is renewed in the change itself"
         );
         // The job goes on until none is left.

@@ -12,9 +12,9 @@ use bb_auth::{
     looks_like_access_key,
 };
 use bb_core::ErrorCode;
-use bb_core::bulk::{BulkStatus, RunsToEnd};
 use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{SessionId, UserId};
+use bb_core::many_changes::{ManyChangeStatus, RunsToEnd};
 use bb_core::sign_in::{SecurityAction, SessionStage};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -555,10 +555,10 @@ pub async fn sign_out_everywhere<S: AuthStore>(
                 S::delete_sessions_of(transaction, person, None).await?;
                 // What the person started in the background does not go on after they signed out
                 // everywhere (a lost device).
-                S::end_bulk_runs(
+                S::end_many_changes_runs(
                     transaction,
                     &RunsToEnd::OfPerson(person),
-                    BulkStatus::Stopped,
+                    ManyChangeStatus::Stopped,
                     now,
                 )
                 .await?;

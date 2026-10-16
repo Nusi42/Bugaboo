@@ -75,7 +75,7 @@ async function joinIssues(): Promise<void> {
   if (issuesJoined) {
     return;
   }
-  const [issues, fields, relations, history, follow, labels, bulk] = await Promise.all([
+  const [issues, fields, relations, history, follow, labels, manyChanges] = await Promise.all([
     import("../features/issues/index.ts"),
     import("../features/fields/index.ts"),
     import("../features/relations/index.ts"),
@@ -93,7 +93,7 @@ async function joinIssues(): Promise<void> {
     history.registerHistoryBlock();
     follow.registerFollowersBlock();
     labels.registerLabelBlocks();
-    bulk.registerBulk();
+    manyChanges.registerManyChanges();
   }
 }
 

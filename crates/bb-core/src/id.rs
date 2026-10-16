@@ -321,7 +321,7 @@ define_ordered_id! {
 
 define_ordered_id! {
     /// The ID of one run of a change to many issues (ISS-09).
-    BulkRunId
+    ManyChangeRunId
 }
 
 define_ordered_id! {
@@ -418,7 +418,7 @@ into_entity_id!(
     TagId,
     LabelId,
     LabelGroupId,
-    BulkRunId,
+    ManyChangeRunId,
     EventId,
     JobId,
     SessionId,

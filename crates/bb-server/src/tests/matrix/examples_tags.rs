@@ -196,12 +196,15 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             format!("/api/v1/labels/{}/combine", a_label(fixture).await?),
             Some(json!({"into": a_label(fixture).await?, "version": 1, "into_version": 1})),
         ),
-        _ => return bulk_request(fixture, operation).await,
+        _ => return many_changes_request(fixture, operation).await,
     }))
 }
 
 /// The request of a route of moving an issue or changing many issues, if the operation is one.
-async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
+async fn many_changes_request(
+    fixture: &Fixture<'_>,
+    operation: &str,
+) -> Result<Option<Request>, Failure> {
     Ok(Some(match operation {
         "moveIssue" => {
             let issue = an_issue(fixture).await?;
@@ -215,7 +218,7 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
                 })),
             )
         }
-        "previewBulkChange" => (
+        "previewManyChanges" => (
             "POST",
             "/api/v1/many-changes/preview".into(),
             Some(json!({
@@ -223,7 +226,7 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
                 "action": {"kind": "change", "change": {"status": "done"}},
             })),
         ),
-        "applyBulkChange" => {
+        "applyManyChanges" => {
             let issue = an_issue(fixture).await?;
             let version = version_of(fixture, &issue).await?;
             (
@@ -235,12 +238,12 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
                 })),
             )
         }
-        "getBulkRun" => (
+        "getManyChangeRun" => (
             "GET",
             format!("/api/v1/many-changes/runs/{NOBODYS_ID}"),
             None,
         ),
-        "cancelBulkRun" => (
+        "stopManyChangeRun" => (
             "POST",
             format!("/api/v1/many-changes/runs/{NOBODYS_ID}/stop"),
             None,

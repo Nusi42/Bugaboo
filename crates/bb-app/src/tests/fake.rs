@@ -115,7 +115,7 @@ pub(crate) struct State {
     pub(crate) labels: Vec<bb_core::tags::Label>,
     pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
     pub(crate) jobs: Vec<bb_core::job::Job>,
-    pub(crate) bulk_runs: Vec<bb_core::bulk::BulkRun>,
+    pub(crate) many_changes_runs: Vec<bb_core::many_changes::ManyChangeRun>,
     pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,
 }
 
@@ -187,7 +187,7 @@ impl FakeStore {
 
     /// Makes the next `times` savings of the progress of a run fail, as the database does when it
     /// breaks for a while.
-    pub(crate) fn fail_bulk_progress(&self, times: usize) {
+    pub(crate) fn fail_many_changes_progress(&self, times: usize) {
         self.lock().progress_failures = times;
     }
 

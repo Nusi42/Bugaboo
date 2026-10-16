@@ -593,7 +593,7 @@ pub(crate) enum IssueLabelRow {
 
 /// Runs of changes to many issues that go on in the background (ISS-09).
 #[derive(Clone, Copy, Iden)]
-pub(crate) enum BulkRunRow {
+pub(crate) enum ManyChangeRunRow {
     #[iden = "bulk_run"]
     Table,
     Id,
@@ -1145,7 +1145,7 @@ stored_tables! {
         AddedBy => added_by,
         AddedAt => added_at,
     },
-    BulkRunRow => bb_core::bulk::BulkRun {
+    ManyChangeRunRow => bb_core::many_changes::ManyChangeRun {
         Id => id,
         Person => person,
         Action => action,

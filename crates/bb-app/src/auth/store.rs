@@ -24,7 +24,6 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
-use crate::bulk::BulkStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
 use crate::fields::FieldStore;
@@ -32,6 +31,7 @@ use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::issues::IssueStore;
 use crate::layouts::LayoutStore;
+use crate::many_changes::ManyChangeStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -322,7 +322,7 @@ pub trait AuthStore:
     + IssueStore
     + RelationStore
     + TagStore
-    + BulkStore
+    + ManyChangeStore
     + CommentStore
     + FollowStore
     + HistoryStore

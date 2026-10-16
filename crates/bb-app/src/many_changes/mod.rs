@@ -20,10 +20,10 @@ mod run;
 mod store;
 mod types;
 
-pub use apply::apply_bulk;
-pub use preview::preview_bulk;
+pub use apply::apply_many_changes;
+pub use preview::preview_many_changes;
 #[cfg(test)]
 pub(crate) use run::step_payload;
-pub use run::{bulk_run, cancel_bulk_run};
-pub use store::BulkStore;
+pub use run::{many_changes_run, stop_many_changes_run};
+pub use store::ManyChangeStore;
 pub use types::*;

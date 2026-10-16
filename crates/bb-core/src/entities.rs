@@ -20,7 +20,7 @@ crate::entities! {
     crate::access_key::AccessKey,
     crate::access_key::AccessKeyPermission,
     crate::access_key::AccessKeyProject,
-    crate::bulk::BulkRun,
+    crate::many_changes::ManyChangeRun,
     crate::comment::Comment,
     crate::comment::CommentVersion,
     crate::comment::Mention,

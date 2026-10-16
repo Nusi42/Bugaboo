@@ -4,16 +4,16 @@ import { Alert, alertTone, partOf, part, type LongPreviewGroup } from "@bugaboo/
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { changeValueText } from "../../shared/change-value.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
-import { skipText, type BulkPreview, type BulkRow } from "./bulk.ts";
+import { skipText, type ManyChangePreview, type ManyChangeRow } from "./many-changes.ts";
 
-export interface BulkPreviewViewProps {
-  readonly preview: BulkPreview;
+export interface ManyChangePreviewViewProps {
+  readonly preview: ManyChangePreview;
   /** What happens to each issue that changes when the row has nothing more to say: "Is deleted". */
   readonly plain: string;
 }
 
 /** The lines under an issue that will change: what changes in it, or the one thing that happens. */
-function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
+function changeLines(row: ManyChangeRow, plain: string): LongPreviewGroup["lines"] {
   const detail = row.detail;
   if (detail?.kind === "changes") {
     return detail.fields.map((change) => ({
@@ -36,7 +36,7 @@ function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
 }
 
 /** One issue of the preview: its readable ID and what happens to it, or why it is left alone. */
-function groupOf(row: BulkRow, plain: string): LongPreviewGroup {
+function groupOf(row: ManyChangeRow, plain: string): LongPreviewGroup {
   const skipped = row.skipped !== undefined && row.skipped !== null;
   return {
     key: row.address,
@@ -50,7 +50,7 @@ function groupOf(row: BulkRow, plain: string): LongPreviewGroup {
  * What the change would do to each ticked issue (*Show, then do*), as the one long preview of the
  * app: the sentence on top, the issues below, the ones that are left alone quieter.
  */
-export function BulkPreviewView({ preview, plain }: BulkPreviewViewProps) {
+export function ManyChangePreviewView({ preview, plain }: ManyChangePreviewViewProps) {
   return (
     <div {...partOf(part.stack)}>
       <AppLongPreview

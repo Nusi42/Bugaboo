@@ -8,19 +8,19 @@
 
 use jiff::Timestamp;
 
-use crate::id::{BulkRunId, IssueId, UserId};
+use crate::id::{IssueId, ManyChangeRunId, UserId};
 use crate::personal::Entity;
 
 /// The most issues one change names, so a preview stays a page and a run stays a run.
-pub const BULK_ISSUES_MAX: usize = 5000;
+pub const MANY_CHANGES_ISSUES_MAX: usize = 5000;
 
 /// A change to more issues than this runs as a background job (ADR-0017), with progress and a note
 /// when it is done.
-pub const BULK_JOB_ABOVE: usize = 1000;
+pub const MANY_CHANGES_JOB_ABOVE: usize = 1000;
 
 /// How many issues one step of a background run changes before it hands the rest back to the
 /// queue: a worker that stops loses at most one step.
-pub const BULK_STEP: usize = 100;
+pub const MANY_CHANGES_STEP: usize = 100;
 
 words! {
     /// Why an issue of the selection is left alone.
@@ -59,7 +59,7 @@ words_in_api!(SkipReason, "Why an issue of the selection is left alone.");
 
 words! {
     /// Where a run of a change to many issues is.
-    pub enum BulkStatus {
+    pub enum ManyChangeStatus {
         /// Waiting for a worker.
         Queued => "queued",
         /// A worker is changing the issues.
@@ -76,45 +76,48 @@ words! {
     messages name = "many-changes-status."
 }
 
-words_in_api!(BulkStatus, "Where a run of a change to many issues is.");
+words_in_api!(
+    ManyChangeStatus,
+    "Where a run of a change to many issues is."
+);
 
 /// Which runs to end: the one run, or every run of a person.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RunsToEnd {
     /// This run.
-    One(BulkRunId),
+    One(ManyChangeRunId),
     /// Every run of this person.
     OfPerson(UserId),
 }
 
 /// One issue of a selection with the version the person looked at.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct BulkItem {
+pub struct ManyChangeItem {
     /// The issue.
     pub issue: IssueId,
     /// The version the preview read.
     pub version: i64,
 }
 
-impl crate::personal::NotPersonal for BulkItem {}
+impl crate::personal::NotPersonal for ManyChangeItem {}
 
 /// An issue a run left alone, with why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct BulkSkip {
+pub struct ManyChangeSkip {
     /// The issue.
     pub issue: IssueId,
     /// Why.
     pub reason: SkipReason,
 }
 
-impl crate::personal::NotPersonal for BulkSkip {}
+impl crate::personal::NotPersonal for ManyChangeSkip {}
 
 /// A change to many issues that runs in the background.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
-pub struct BulkRun {
+pub struct ManyChangeRun {
     /// The ID of the run.
     #[not_personal]
-    pub id: BulkRunId,
+    pub id: ManyChangeRunId,
     /// Who asked for it: the changes are made as this person.
     #[personal(category = "activity", basis = "contract")]
     pub person: UserId,
@@ -123,10 +126,10 @@ pub struct BulkRun {
     pub action: serde_json::Value,
     /// The issues and the versions the preview read.
     #[not_personal]
-    pub items: Vec<BulkItem>,
+    pub items: Vec<ManyChangeItem>,
     /// Where the run is.
     #[not_personal]
-    pub status: BulkStatus,
+    pub status: ManyChangeStatus,
     /// How many issues have been looked at (changed or skipped): the next one is at this place.
     #[not_personal]
     pub done: i64,
@@ -135,7 +138,7 @@ pub struct BulkRun {
     pub changed: i64,
     /// The issues left alone with why.
     #[not_personal]
-    pub skipped: Vec<BulkSkip>,
+    pub skipped: Vec<ManyChangeSkip>,
     /// When the person asked.
     #[not_personal]
     pub created_at: Timestamp,
@@ -143,7 +146,7 @@ pub struct BulkRun {
     #[not_personal]
     pub finished_at: Option<Timestamp>,
 }
-impl BulkRun {
+impl ManyChangeRun {
     /// The reason the event of the change to the issue at `index` carries, so a worker that stops
     /// between the change and counting it can tell, when it goes on, that the change was made
     /// (ADR-0017).

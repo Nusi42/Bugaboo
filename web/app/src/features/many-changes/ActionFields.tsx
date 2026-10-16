@@ -5,11 +5,11 @@ import { ProjectsToUse } from "../fields/index.ts";
 import { priorityChoices, statusChoices } from "../issues/index.ts";
 import { useLabels } from "../labels/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
-import { bulkKind, type BulkKind } from "./bulk.ts";
+import { manyChangeKind, type ManyChangeKind } from "./many-changes.ts";
 import { NONE, type Draft } from "./draft.ts";
 
 export interface ActionFieldsProps {
-  readonly kind: BulkKind;
+  readonly kind: ManyChangeKind;
   readonly draft: Draft;
   readonly onDraft: (draft: Draft) => void;
   /** The words a relation can be made with. */
@@ -118,16 +118,16 @@ function RelationFields({ draft, onDraft, relations }: ActionFieldsProps) {
 
 /** What the person fills in for the thing they chose; deleting asks for nothing. */
 export function ActionFields(props: ActionFieldsProps) {
-  if (props.kind === bulkKind.change) {
+  if (props.kind === manyChangeKind.change) {
     return <ChangeFields {...props} />;
   }
-  if (props.kind === bulkKind.move) {
+  if (props.kind === manyChangeKind.move) {
     return <MoveFields {...props} />;
   }
-  if (props.kind === bulkKind.label) {
+  if (props.kind === manyChangeKind.label) {
     return <LabelFields {...props} />;
   }
-  if (props.kind === bulkKind.relation) {
+  if (props.kind === manyChangeKind.relation) {
     return <RelationFields {...props} />;
   }
   return <p {...partOf(part.text)}>{t("many-changes.delete-text")}</p>;

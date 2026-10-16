@@ -28,10 +28,6 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
-use crate::bulk::{
-    ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunStatus, BulkRunView,
-    apply_bulk, bulk_run, cancel_bulk_run, preview_bulk,
-};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
@@ -66,6 +62,11 @@ use crate::issues::{
 use crate::layouts::{
     CreateLayout, DeleteLayout, FormLayout, FormLayoutQuery, LayoutEditor, LayoutEditorQuery,
     SaveLayout, create_layout, delete_layout, form_layout, layout_editor, save_layout,
+};
+use crate::many_changes::{
+    ApplyManyChanges, ManyChangePreview, ManyChangePreviewQuery, ManyChangeResult,
+    ManyChangeRunQuery, ManyChangeRunStatus, ManyChangeRunView, apply_many_changes,
+    many_changes_run, preview_many_changes, stop_many_changes_run,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
@@ -484,13 +485,13 @@ use_cases! {
     /// Saves the long text of an own field of an issue, under its edit lock.
     save_field_text(SaveFieldText) -> Authorized<IssueView>;
     /// Says what a change to many issues would do to each issue.
-    preview_bulk(BulkPreviewQuery) -> Authorized<BulkPreview>;
+    preview_many_changes(ManyChangePreviewQuery) -> Authorized<ManyChangePreview>;
     /// Changes many issues at once after the preview.
-    apply_bulk(ApplyBulk) -> Authorized<BulkResult>;
+    apply_many_changes(ApplyManyChanges) -> Authorized<ManyChangeResult>;
     /// Shows how far a change to many issues that goes on in the background is.
-    bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
+    many_changes_run(ManyChangeRunQuery) -> Authorized<ManyChangeRunView>;
     /// Stops a change to many issues that goes on in the background.
-    cancel_bulk_run(BulkRunQuery) -> Authorized<BulkRunStatus>;
+    stop_many_changes_run(ManyChangeRunQuery) -> Authorized<ManyChangeRunStatus>;
     /// Shows the tags and labels of an issue.
     issue_labels_and_tags(IssueLabelsAndTagsQuery) -> Authorized<IssueLabelsAndTags>;
     /// Puts a tag on an issue by its name.

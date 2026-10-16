@@ -6,11 +6,13 @@
 //! and the version of the issue it read, which the change takes back.
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_ISSUES_MAX, BULK_JOB_ABOVE};
+use bb_core::many_changes::{MANY_CHANGES_ISSUES_MAX, MANY_CHANGES_JOB_ABOVE};
 use bb_policy::{Authorized, Place};
 
 use super::judge::{Judged, Planned, Probe, Selection};
-use super::types::{BulkAction, BulkDetail, BulkPreview, BulkPreviewQuery, BulkRow};
+use super::types::{
+    ManyChangeAction, ManyChangeDetail, ManyChangePreview, ManyChangePreviewQuery, ManyChangeRow,
+};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::history::ChangeReader;
@@ -28,11 +30,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &'a Actor,
         token: &'a str,
-        action: &'a BulkAction,
+        action: &'a ManyChangeAction,
     ) -> Result<Selection<'a>, AppError> {
         let mut other = None;
         match action {
-            BulkAction::Change { change } => {
+            ManyChangeAction::Change { change } => {
                 if change.status.is_none()
                     && change.priority.is_none()
                     && change.assigned_to.is_none()
@@ -41,13 +43,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                     return Err(ErrorCode::InvalidRequest.into());
                 }
             }
-            BulkAction::Move { project } => {
+            ManyChangeAction::Move { project } => {
                 self.move_target(actor, project).await?;
             }
-            BulkAction::AddLabel { label } => {
+            ManyChangeAction::AddLabel { label } => {
                 self.label_exists(*label).await?;
             }
-            BulkAction::AddRelation {
+            ManyChangeAction::AddRelation {
                 relation_kind,
                 other: address,
                 ..
@@ -66,7 +68,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 }
                 other = Some(self.visible_issue(actor, address).await?.0.id);
             }
-            BulkAction::Delete => {}
+            ManyChangeAction::Delete => {}
         }
         Ok(Selection {
             actor,
@@ -83,18 +85,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         reader: &mut ChangeReader,
         planned: Planned,
         maker: &mut LineMaker,
-    ) -> Result<Option<BulkDetail>, AppError> {
+    ) -> Result<Option<ManyChangeDetail>, AppError> {
         Ok(match planned {
             Planned::Fields(plan) => {
                 let fields = self
                     .changes_as_read(reader, actor, &plan.held, &plan.issue, &plan.changes)
                     .await?;
-                Some(BulkDetail::Changes { fields })
+                Some(ManyChangeDetail::Changes { fields })
             }
             Planned::Relation { name, other } => self
                 .line_of(actor, maker, &other)
                 .await?
-                .map(|issue| BulkDetail::Relation { name, issue }),
+                .map(|issue| ManyChangeDetail::Relation { name, issue }),
             Planned::Trash => None,
         })
     }
@@ -105,7 +107,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `request.invalid` for an empty selection or one with more issues than
-/// [`BULK_ISSUES_MAX`].
+/// [`MANY_CHANGES_ISSUES_MAX`].
 pub(super) fn distinct<'a>(
     addresses: impl IntoIterator<Item = &'a str>,
 ) -> Result<Vec<&'a str>, AppError> {
@@ -114,7 +116,7 @@ pub(super) fn distinct<'a>(
         .into_iter()
         .filter(|address| seen.insert(*address))
         .collect();
-    if each.is_empty() || each.len() > BULK_ISSUES_MAX {
+    if each.is_empty() || each.len() > MANY_CHANGES_ISSUES_MAX {
         return Err(ErrorCode::InvalidRequest.into());
     }
     Ok(each)
@@ -127,10 +129,10 @@ pub(super) fn distinct<'a>(
 /// `request.invalid` for no issue, too many issues, or an action that asks for nothing,
 /// `resource.not_found` for a project, a label, a kind of relation or an issue named in the
 /// action that is not there for the person.
-pub async fn preview_bulk<S: AuthStore>(
+pub async fn preview_many_changes<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: BulkPreviewQuery,
-) -> Result<Authorized<BulkPreview>, AppError> {
+    input: ManyChangePreviewQuery,
+) -> Result<Authorized<ManyChangePreview>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let addresses = distinct(input.issues.iter().map(String::as_str))?;
     let selection = ctx
@@ -161,7 +163,7 @@ pub async fn preview_bulk<S: AuthStore>(
                 )
             }
         };
-        rows.push(BulkRow {
+        rows.push(ManyChangeRow {
             address: (*address).to_owned(),
             issue: judgment.issue,
             version: judgment.version,
@@ -169,9 +171,9 @@ pub async fn preview_bulk<S: AuthStore>(
             detail,
         });
     }
-    Ok(held.authorize(BulkPreview {
+    Ok(held.authorize(ManyChangePreview {
         summary: PreviewSummary::of(will_change, skipped),
         rows,
-        runs_in_background: addresses.len() > BULK_JOB_ABOVE,
+        runs_in_background: addresses.len() > MANY_CHANGES_JOB_ABOVE,
     }))
 }

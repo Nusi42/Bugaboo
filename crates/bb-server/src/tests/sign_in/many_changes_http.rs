@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use bb_app::access::StartingRole;
 use bb_app::issues::CreateIssue;
-use bb_core::bulk::BULK_JOB_ABOVE;
+use bb_core::many_changes::MANY_CHANGES_JOB_ABOVE;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -262,7 +262,7 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult 
 /// (the issue and the version the preview read): what it takes to start a run in the background.
 pub(super) async fn targets_for_a_job(rig: &Rig, site: &Site<'_>) -> Result<Vec<Value>, Failure> {
     let mut targets = Vec::new();
-    for number in 0..=BULK_JOB_ABOVE {
+    for number in 0..=MANY_CHANGES_JOB_ABOVE {
         let made = rig
             .api()
             .create_issue(

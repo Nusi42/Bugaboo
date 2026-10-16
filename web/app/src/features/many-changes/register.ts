@@ -4,8 +4,8 @@ import { addSelectionBar, type SelectionBarProps } from "../issues/index.ts";
 
 // Loaded when issues are first ticked, so the first page stays small (coding-standards section 6).
 const LazyBar = lazy(async () => {
-  const loaded = await import("./BulkBar.tsx");
-  return { default: loaded.BulkBar };
+  const loaded = await import("./ManyChangeBar.tsx");
+  return { default: loaded.ManyChangeBar };
 });
 
 /** The bar of changing many issues at once, which loads itself when it first shows. */
@@ -14,6 +14,6 @@ function Bar(props: SelectionBarProps): ReactNode {
 }
 
 /** Puts the bar of changing many issues at once under the list of issues (WP-08). */
-export function registerBulk(): void {
-  addSelectionBar({ id: "bulk", order: 0, component: Bar });
+export function registerManyChanges(): void {
+  addSelectionBar({ id: "many-changes", order: 0, component: Bar });
 }

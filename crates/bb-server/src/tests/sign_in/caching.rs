@@ -7,13 +7,13 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use bb_api::openapi::operations;
 use bb_app::access::Permission;
-use bb_app::bulk::BulkStore;
 use bb_app::context::SystemIds;
+use bb_app::many_changes::ManyChangeStore;
 use bb_app::ports::ChangeStore;
 use bb_app::roles::CreateRole;
-use bb_core::bulk::{BulkRun, BulkStatus};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef, RecordKind};
-use bb_core::id::{BulkRunId, EntityId, EventId};
+use bb_core::id::{EntityId, EventId, ManyChangeRunId};
+use bb_core::many_changes::{ManyChangeRun, ManyChangeStatus};
 use bb_store::AuthStorage;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
@@ -37,12 +37,12 @@ fn get_routes() -> Vec<String> {
 /// the row is written as the first request of such a change writes it.
 async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
     let mut ids = SystemIds;
-    let run = BulkRun {
-        id: BulkRunId::generate(&mut ids)?,
+    let run = ManyChangeRun {
+        id: ManyChangeRunId::generate(&mut ids)?,
         person: person.parse().map_err(|_| "no person")?,
         action: json!({"kind": "delete"}),
         items: Vec::new(),
-        status: BulkStatus::Done,
+        status: ManyChangeStatus::Done,
         done: 0,
         changed: 0,
         skipped: Vec::new(),
@@ -63,7 +63,7 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
     };
     let stored = run.clone();
     ChangeStore::record_change(&rig.storage, &event, move |transaction| {
-        Box::pin(async move { AuthStorage::insert_bulk_run(transaction, &stored).await })
+        Box::pin(async move { AuthStorage::insert_many_changes_run(transaction, &stored).await })
     })
     .await
     .map_err(|error| error.to_string())?;

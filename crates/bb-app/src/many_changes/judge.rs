@@ -7,15 +7,15 @@
 //! reason a person can read; an issue that changed after the preview is named and left alone.
 
 use bb_core::ErrorCode;
-use bb_core::bulk::SkipReason;
 use bb_core::event::FieldChange;
 use bb_core::id::{IssueId, LabelId};
 use bb_core::issue::Issue;
+use bb_core::many_changes::SkipReason;
 use bb_policy::Evaluation;
 use serde_json::json;
 use std::sync::Arc;
 
-use super::types::{BulkAction, BulkChange};
+use super::types::{ManyChange, ManyChangeAction};
 use crate::access::Actor;
 use crate::auth::AppError;
 use crate::auth::{AuthStore, Ctx};
@@ -77,7 +77,7 @@ pub(super) struct Selection<'a> {
     pub(super) actor: &'a Actor,
     /// The secret of the session of the request (for the use cases that are run for each issue).
     pub(super) token: &'a str,
-    pub(super) action: &'a BulkAction,
+    pub(super) action: &'a ManyChangeAction,
     /// The issue at the other end of a relation, found once.
     pub(super) other: Option<IssueId>,
 }
@@ -191,19 +191,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(Judgment::skipped(line, version, SkipReason::ChangedSince));
         }
         let judged = match selection.action {
-            BulkAction::Change { change } => {
+            ManyChangeAction::Change { change } => {
                 or_skip(self.judge_change(selection, change, &issue).await)?
             }
-            BulkAction::Move { project } => {
+            ManyChangeAction::Move { project } => {
                 or_skip(self.judge_move(actor, project, &issue, held).await)?
             }
-            BulkAction::AddLabel { label } => {
+            ManyChangeAction::AddLabel { label } => {
                 or_skip(self.judge_label(actor, *label, &issue, held).await)?
             }
-            BulkAction::AddRelation { .. } => {
+            ManyChangeAction::AddRelation { .. } => {
                 or_skip(self.judge_relation(selection, &issue).await)?
             }
-            BulkAction::Delete => or_skip(
+            ManyChangeAction::Delete => or_skip(
                 self.issue_to_delete(actor, &issue.id.to_string())
                     .await
                     .map(|_| Judged::Change(Planned::Trash)),
@@ -219,7 +219,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     async fn judge_change(
         &self,
         selection: &Selection<'_>,
-        change: &BulkChange,
+        change: &ManyChange,
         issue: &Issue,
     ) -> Result<Judged, AppError> {
         let asked = ChangeIssue {
@@ -297,7 +297,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         selection: &Selection<'_>,
         issue: &Issue,
     ) -> Result<Judged, AppError> {
-        let BulkAction::AddRelation {
+        let ManyChangeAction::AddRelation {
             relation_kind,
             direction,
             other,

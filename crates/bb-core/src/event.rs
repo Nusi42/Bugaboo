@@ -208,7 +208,7 @@ pub struct DomainEvent {
     #[personal(category = "content", basis = "legitimate_interests")]
     pub changes: Vec<FieldChange>,
     /// Why, when the person said so; for a change a job made as the person, the item of the job
-    /// (a change to many issues, `BulkRun::item_reason`).
+    /// (a change to many issues, `ManyChangeRun::item_reason`).
     #[personal(category = "content", basis = "legitimate_interests")]
     pub reason: Option<String>,
 }

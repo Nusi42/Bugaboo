@@ -1869,10 +1869,10 @@ export interface paths {
     /**
      * Changes many issues at once, each on the version the preview read. Each issue is judged again,
      *     and one that changed since the preview is named and left alone. More than 1,000 issues run in
-     *     the background: the answer holds the run, and `getBulkRun` says how far it is. A script with an
+     *     the background: the answer holds the run, and `getManyChangeRun` says how far it is. A script with an
      *     access key sends at most 1,000 issues at a time.
      */
-    post: operations["applyBulkChange"];
+    post: operations["applyManyChanges"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1892,7 +1892,7 @@ export interface paths {
      * Says what a change to many issues would do to each issue: what will change, what is left alone
      *     and why, and the version of each issue, which the change takes back. Nothing is changed.
      */
-    post: operations["previewBulkChange"];
+    post: operations["previewManyChanges"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1910,7 +1910,7 @@ export interface paths {
      * How far a change to many issues that goes on in the background is. Only the person who asked
      *     for it reads it.
      */
-    get: operations["getBulkRun"];
+    get: operations["getManyChangeRun"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1933,7 +1933,7 @@ export interface paths {
      *     the rest is left alone. The person who asked for it may stop it, and so may whoever holds
      *     *Manage people*. The answer holds the status only.
      */
-    post: operations["cancelBulkRun"];
+    post: operations["stopManyChangeRun"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2895,11 +2895,11 @@ export interface components {
      */
     AppliesToBody: "organization" | "project" | "project-and-sub-projects";
     /** @description The issues to change, with the versions the preview read, and what to do. */
-    ApplyBulkBody: {
+    ApplyManyChangesBody: {
       /** @description What to do. */
-      action: components["schemas"]["BulkActionBody"];
+      action: components["schemas"]["ManyChangeActionBody"];
       /** @description The issues. */
-      issues: components["schemas"]["BulkTargetBody"][];
+      issues: components["schemas"]["ManyChangeTargetBody"][];
     };
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
@@ -2944,166 +2944,6 @@ export interface components {
        * @description The largest value.
        */
       most: number;
-    };
-    /** @description What is done to every issue of the selection. */
-    BulkActionBody:
-      | {
-          /** @description What to change. */
-          change: components["schemas"]["BulkChangeBody"];
-          /** @enum {string} */
-          kind: "change";
-        }
-      | {
-          /** @enum {string} */
-          kind: "move";
-          /** @description The project, by its ID or its short name. */
-          project: string;
-        }
-      | {
-          /** @enum {string} */
-          kind: "add_label";
-          /** @description The ID of the label. */
-          label: string;
-        }
-      | {
-          /** @description Which end the issues of the selection are. */
-          direction: components["schemas"]["Direction"];
-          /** @enum {string} */
-          kind: "add_relation";
-          /** @description The issue at the other end, by its readable or internal ID. */
-          other: string;
-          /** @description The ID of the kind of relation. */
-          relation_kind: string;
-        }
-      | {
-          /** @enum {string} */
-          kind: "delete";
-        };
-    /** @description What a person asks for in the fields of many issues: what is left out stays as it is. */
-    BulkChangeBody: {
-      /**
-       * @description The IDs of the people the issues are assigned to from now on: all of them, not the ones to
-       *     add.
-       */
-      assigned_to?: string[] | null;
-      /** @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away. */
-      fields?: {
-        [key: string]: unknown;
-      };
-      priority?: components["schemas"]["Priority"] | null;
-      status?: components["schemas"]["Status"] | null;
-    };
-    /** @description What a row of the preview says will happen to the issue. */
-    BulkDetailBody:
-      | {
-          /** @description The fields. */
-          fields: components["schemas"]["FieldChangeBody"][];
-          /** @enum {string} */
-          kind: "changes";
-        }
-      | {
-          /** @description The issue at the other end. */
-          issue: components["schemas"]["IssueRef"];
-          /** @enum {string} */
-          kind: "relation";
-          /** @description What the issue reads (*blocks*). */
-          name: string;
-        };
-    /** @description What happened to one issue of the selection. */
-    BulkOutcomeBody: {
-      /** @description What the person asked for the issue by. */
-      address: string;
-      issue?: components["schemas"]["IssueRef"] | null;
-      skipped?: components["schemas"]["SkipReason"] | null;
-    };
-    /** @description What the change to many issues would do, with the sentence on top. */
-    BulkPreviewBody: {
-      /** @description Every issue of the selection, in the order asked. */
-      rows: components["schemas"]["BulkRowBody"][];
-      /** @description The change is too big to wait for: it runs in the background and says when it is done. */
-      runs_in_background: boolean;
-      /** @description How many will change and how many are left alone. */
-      summary: components["schemas"]["PreviewSummaryBody"];
-    };
-    /** @description What a change to many issues did: at once, or the run that goes on in the background. */
-    BulkResultBody: {
-      /** @description What happened to each issue, when it was done at once. */
-      outcomes: components["schemas"]["BulkOutcomeBody"][];
-      run?: components["schemas"]["BulkRunBody"] | null;
-    };
-    /** @description One issue of the preview: what will happen to it. */
-    BulkRowBody: {
-      /** @description What the person asked for the issue by. */
-      address: string;
-      detail?: components["schemas"]["BulkDetailBody"] | null;
-      issue?: components["schemas"]["IssueRef"] | null;
-      skipped?: components["schemas"]["SkipReason"] | null;
-      /**
-       * Format: int64
-       * @description The version the preview read; the change takes it back.
-       */
-      version?: number | null;
-    };
-    /** @description How far a change that goes on in the background is. */
-    BulkRunBody: {
-      /**
-       * Format: int32
-       * @description How many of those it changed.
-       */
-      changed: number;
-      /** @description When it was asked for. */
-      created_at: string;
-      /**
-       * Format: int32
-       * @description How many it has looked at.
-       */
-      done: number;
-      /** @description When it ended; left out while it goes on. */
-      finished_at?: string | null;
-      /** @description The ID of the run. */
-      id: string;
-      /** @description The first of the issues it left alone, with why. */
-      skipped: components["schemas"]["BulkSkippedBody"][];
-      /**
-       * Format: int32
-       * @description How many issues it left alone in all.
-       */
-      skipped_count: number;
-      /** @description Where it is. */
-      status: components["schemas"]["BulkStatus"];
-      /**
-       * Format: int32
-       * @description How many issues it has.
-       */
-      total: number;
-    };
-    /** @description Where a change that goes on in the background is, and nothing more. */
-    BulkRunStatusBody: {
-      /** @description The ID of the run. */
-      id: string;
-      /** @description Where it is. */
-      status: components["schemas"]["BulkStatus"];
-    };
-    /** @description An issue a run left alone. */
-    BulkSkippedBody: {
-      issue?: components["schemas"]["IssueRef"] | null;
-      /** @description Why. */
-      reason: components["schemas"]["SkipReason"];
-    };
-    /**
-     * @description Where a run of a change to many issues is.
-     * @enum {string}
-     */
-    BulkStatus: "queued" | "running" | "done" | "failed" | "stopped";
-    /** @description One issue of the change with the version the preview read. */
-    BulkTargetBody: {
-      /** @description The issue. A change to more than 1,000 issues names them by their internal IDs. */
-      issue: string;
-      /**
-       * Format: int64
-       * @description The version of the issue the preview read.
-       */
-      version: number;
     };
     /** @description The HTTPS certificate the server uses itself. */
     CertificateBody: {
@@ -4712,6 +4552,166 @@ export interface components {
      * @enum {string}
      */
     Look: "badge" | "pill" | "plain-text" | "progress-bar" | "avatar";
+    /** @description What is done to every issue of the selection. */
+    ManyChangeActionBody:
+      | {
+          /** @description What to change. */
+          change: components["schemas"]["ManyChangeBody"];
+          /** @enum {string} */
+          kind: "change";
+        }
+      | {
+          /** @enum {string} */
+          kind: "move";
+          /** @description The project, by its ID or its short name. */
+          project: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "add_label";
+          /** @description The ID of the label. */
+          label: string;
+        }
+      | {
+          /** @description Which end the issues of the selection are. */
+          direction: components["schemas"]["Direction"];
+          /** @enum {string} */
+          kind: "add_relation";
+          /** @description The issue at the other end, by its readable or internal ID. */
+          other: string;
+          /** @description The ID of the kind of relation. */
+          relation_kind: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "delete";
+        };
+    /** @description What a person asks for in the fields of many issues: what is left out stays as it is. */
+    ManyChangeBody: {
+      /**
+       * @description The IDs of the people the issues are assigned to from now on: all of them, not the ones to
+       *     add.
+       */
+      assigned_to?: string[] | null;
+      /** @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away. */
+      fields?: {
+        [key: string]: unknown;
+      };
+      priority?: components["schemas"]["Priority"] | null;
+      status?: components["schemas"]["Status"] | null;
+    };
+    /** @description What a row of the preview says will happen to the issue. */
+    ManyChangeDetailBody:
+      | {
+          /** @description The fields. */
+          fields: components["schemas"]["FieldChangeBody"][];
+          /** @enum {string} */
+          kind: "changes";
+        }
+      | {
+          /** @description The issue at the other end. */
+          issue: components["schemas"]["IssueRef"];
+          /** @enum {string} */
+          kind: "relation";
+          /** @description What the issue reads (*blocks*). */
+          name: string;
+        };
+    /** @description What happened to one issue of the selection. */
+    ManyChangeOutcomeBody: {
+      /** @description What the person asked for the issue by. */
+      address: string;
+      issue?: components["schemas"]["IssueRef"] | null;
+      skipped?: components["schemas"]["SkipReason"] | null;
+    };
+    /** @description What the change to many issues would do, with the sentence on top. */
+    ManyChangePreviewBody: {
+      /** @description Every issue of the selection, in the order asked. */
+      rows: components["schemas"]["ManyChangeRowBody"][];
+      /** @description The change is too big to wait for: it runs in the background and says when it is done. */
+      runs_in_background: boolean;
+      /** @description How many will change and how many are left alone. */
+      summary: components["schemas"]["PreviewSummaryBody"];
+    };
+    /** @description What a change to many issues did: at once, or the run that goes on in the background. */
+    ManyChangeResultBody: {
+      /** @description What happened to each issue, when it was done at once. */
+      outcomes: components["schemas"]["ManyChangeOutcomeBody"][];
+      run?: components["schemas"]["ManyChangeRunBody"] | null;
+    };
+    /** @description One issue of the preview: what will happen to it. */
+    ManyChangeRowBody: {
+      /** @description What the person asked for the issue by. */
+      address: string;
+      detail?: components["schemas"]["ManyChangeDetailBody"] | null;
+      issue?: components["schemas"]["IssueRef"] | null;
+      skipped?: components["schemas"]["SkipReason"] | null;
+      /**
+       * Format: int64
+       * @description The version the preview read; the change takes it back.
+       */
+      version?: number | null;
+    };
+    /** @description How far a change that goes on in the background is. */
+    ManyChangeRunBody: {
+      /**
+       * Format: int32
+       * @description How many of those it changed.
+       */
+      changed: number;
+      /** @description When it was asked for. */
+      created_at: string;
+      /**
+       * Format: int32
+       * @description How many it has looked at.
+       */
+      done: number;
+      /** @description When it ended; left out while it goes on. */
+      finished_at?: string | null;
+      /** @description The ID of the run. */
+      id: string;
+      /** @description The first of the issues it left alone, with why. */
+      skipped: components["schemas"]["ManyChangeSkippedBody"][];
+      /**
+       * Format: int32
+       * @description How many issues it left alone in all.
+       */
+      skipped_count: number;
+      /** @description Where it is. */
+      status: components["schemas"]["ManyChangeStatus"];
+      /**
+       * Format: int32
+       * @description How many issues it has.
+       */
+      total: number;
+    };
+    /** @description Where a change that goes on in the background is, and nothing more. */
+    ManyChangeRunStatusBody: {
+      /** @description The ID of the run. */
+      id: string;
+      /** @description Where it is. */
+      status: components["schemas"]["ManyChangeStatus"];
+    };
+    /** @description An issue a run left alone. */
+    ManyChangeSkippedBody: {
+      issue?: components["schemas"]["IssueRef"] | null;
+      /** @description Why. */
+      reason: components["schemas"]["SkipReason"];
+    };
+    /**
+     * @description Where a run of a change to many issues is.
+     * @enum {string}
+     */
+    ManyChangeStatus: "queued" | "running" | "done" | "failed" | "stopped";
+    /** @description One issue of the change with the version the preview read. */
+    ManyChangeTargetBody: {
+      /** @description The issue. A change to more than 1,000 issues names them by their internal IDs. */
+      issue: string;
+      /**
+       * Format: int64
+       * @description The version of the issue the preview read.
+       */
+      version: number;
+    };
     /**
      * @description Who is signed in, and what they may do for the whole organization (the menus of the browser app
      *     follow it; the server decides again at every request).
@@ -5829,19 +5829,19 @@ export interface components {
           /** @enum {string} */
           kind: "hidden";
         };
-    /** @description The issues to look at and what would be done to them. */
-    PreviewBulkBody: {
-      /** @description What would be done. */
-      action: components["schemas"]["BulkActionBody"];
-      /** @description The issues, by their readable or internal IDs. */
-      issues: string[];
-    };
     /** @description What to preview: a new name, or the one it would be combined with. */
     PreviewChangeBody: {
       /** @description The ID of the tag or label it would be combined with. */
       into?: string | null;
       /** @description The new name, when it is renamed. */
       name?: string | null;
+    };
+    /** @description The issues to look at and what would be done to them. */
+    PreviewManyChangesBody: {
+      /** @description What would be done. */
+      action: components["schemas"]["ManyChangeActionBody"];
+      /** @description The issues, by their readable or internal IDs. */
+      issues: string[];
     };
     /** @description How many things a preview says will change and how many it leaves alone. */
     PreviewSummaryBody: {
@@ -16749,7 +16749,7 @@ export interface operations {
       };
     };
   };
-  applyBulkChange: {
+  applyManyChanges: {
     parameters: {
       query?: never;
       header?: never;
@@ -16758,7 +16758,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ApplyBulkBody"];
+        "application/json": components["schemas"]["ApplyManyChangesBody"];
       };
     };
     responses: {
@@ -16768,7 +16768,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["BulkResultBody"];
+          "application/json": components["schemas"]["ManyChangeResultBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -16847,7 +16847,7 @@ export interface operations {
       };
     };
   };
-  previewBulkChange: {
+  previewManyChanges: {
     parameters: {
       query?: never;
       header?: never;
@@ -16856,7 +16856,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["PreviewBulkBody"];
+        "application/json": components["schemas"]["PreviewManyChangesBody"];
       };
     };
     responses: {
@@ -16866,7 +16866,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["BulkPreviewBody"];
+          "application/json": components["schemas"]["ManyChangePreviewBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -16927,7 +16927,7 @@ export interface operations {
       };
     };
   };
-  getBulkRun: {
+  getManyChangeRun: {
     parameters: {
       query?: never;
       header?: never;
@@ -16947,7 +16947,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["BulkRunBody"];
+          "application/json": components["schemas"]["ManyChangeRunBody"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
@@ -17008,7 +17008,7 @@ export interface operations {
       };
     };
   };
-  cancelBulkRun: {
+  stopManyChangeRun: {
     parameters: {
       query?: never;
       header?: never;
@@ -17026,7 +17026,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["BulkRunStatusBody"];
+          "application/json": components["schemas"]["ManyChangeRunStatusBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */

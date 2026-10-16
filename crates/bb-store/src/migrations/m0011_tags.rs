@@ -12,7 +12,7 @@ use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
 use crate::schema::{
-    BulkRunRow, IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, ProjectRow,
+    IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, ManyChangeRunRow, ProjectRow,
     TagProjectRow, TagRow,
 };
 
@@ -206,22 +206,22 @@ fn labels() -> Vec<Step> {
 fn runs() -> Vec<Step> {
     vec![Step::Table(
         Table::create()
-            .table(BulkRunRow::Table)
-            .col(id_column(BulkRunRow::Id).primary_key())
+            .table(ManyChangeRunRow::Table)
+            .col(id_column(ManyChangeRunRow::Id).primary_key())
             // No reference to the person: a removed person leaves a tombstone (PRIV-04).
-            .col(id_column(BulkRunRow::Person))
-            .col(ColumnDef::new(BulkRunRow::Action).text().not_null())
-            .col(ColumnDef::new(BulkRunRow::Items).text().not_null())
-            .col(ColumnDef::new(BulkRunRow::Status).text().not_null())
-            .col(ColumnDef::new(BulkRunRow::Done).big_integer().not_null())
-            .col(ColumnDef::new(BulkRunRow::Changed).big_integer().not_null())
-            .col(ColumnDef::new(BulkRunRow::Skipped).text().not_null())
+            .col(id_column(ManyChangeRunRow::Person))
+            .col(ColumnDef::new(ManyChangeRunRow::Action).text().not_null())
+            .col(ColumnDef::new(ManyChangeRunRow::Items).text().not_null())
+            .col(ColumnDef::new(ManyChangeRunRow::Status).text().not_null())
+            .col(ColumnDef::new(ManyChangeRunRow::Done).big_integer().not_null())
+            .col(ColumnDef::new(ManyChangeRunRow::Changed).big_integer().not_null())
+            .col(ColumnDef::new(ManyChangeRunRow::Skipped).text().not_null())
             .col(
-                ColumnDef::new(BulkRunRow::CreatedAt)
+                ColumnDef::new(ManyChangeRunRow::CreatedAt)
                     .big_integer()
                     .not_null(),
             )
-            .col(ColumnDef::new(BulkRunRow::FinishedAt).big_integer())
+            .col(ColumnDef::new(ManyChangeRunRow::FinishedAt).big_integer())
             .to_owned(),
     )]
 }

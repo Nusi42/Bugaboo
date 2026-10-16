@@ -16,16 +16,16 @@ type NewStatus = components["schemas"]["Status"];
 export const done = "done" satisfies NewStatus;
 
 /** What is done to every issue of the selection (a body that is sent is not read-only). */
-type Action = components["schemas"]["BulkActionBody"];
+type Action = components["schemas"]["ManyChangeActionBody"];
 
 /** The body that changes the issues, each on a version. */
-type ApplyBody = components["schemas"]["ApplyBulkBody"];
+type ApplyBody = components["schemas"]["ApplyManyChangesBody"];
 
 /** What the preview said, one row for each issue asked for. */
-export type BulkPreview = Schema<"BulkPreviewBody">;
+export type ManyChangePreview = Schema<"ManyChangePreviewBody">;
 
 /** What the change did: one outcome for each issue. */
-export type BulkResult = Schema<"BulkResultBody">;
+export type ManyChangeResult = Schema<"ManyChangeResultBody">;
 
 /** The one thing done to every issue: a new status. */
 function statusAction(status: NewStatus): Action {
@@ -37,7 +37,7 @@ export async function previewStatus(
   session: ApiSession,
   keys: readonly string[],
   status: NewStatus,
-): Promise<BulkPreview> {
+): Promise<ManyChangePreview> {
   return dataOf(
     await session.client.POST("/api/v1/many-changes/preview", {
       body: { issues: [...keys], action: statusAction(status) },
@@ -49,7 +49,7 @@ export async function previewStatus(
  * The body that changes the status of the issues a preview found changeable, each on the version
  * the preview read; a row the preview left alone is not sent.
  */
-export function bulkBody(preview: BulkPreview, status: NewStatus): ApplyBody {
+export function manyChangeBody(preview: ManyChangePreview, status: NewStatus): ApplyBody {
   return {
     issues: preview.rows.flatMap((row) =>
       row.issue === undefined ||
@@ -66,11 +66,11 @@ export function bulkBody(preview: BulkPreview, status: NewStatus): ApplyBody {
 /** Changes the status of the issues of a preview, each on the version the preview read. */
 export async function changeMany(
   session: ApiSession,
-  preview: BulkPreview,
+  preview: ManyChangePreview,
   status: NewStatus,
-): Promise<BulkResult> {
+): Promise<ManyChangeResult> {
   return dataOf(
-    await session.client.POST("/api/v1/many-changes", { body: bulkBody(preview, status) }),
+    await session.client.POST("/api/v1/many-changes", { body: manyChangeBody(preview, status) }),
   );
 }
 

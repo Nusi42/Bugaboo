@@ -99,25 +99,6 @@ Defined in `crates/bb-core/src/sign_in.rs`.
 | `code_hash` | Yes           | `credentials` | `contract`  | The hash of the code.                            |
 | `used_at`   | Yes           | `activity`    | `contract`  | When it was used. A used code never works again. |
 
-### BulkRun
-
-A change to many issues that runs in the background.
-
-Defined in `crates/bb-core/src/bulk.rs`.
-
-| Field         | Personal data | Category   | Legal basis            | What it holds                                                                            |
-| ------------- | ------------- | ---------- | ---------------------- | ---------------------------------------------------------------------------------------- |
-| `id`          | No            | –          | –                      | The ID of the run.                                                                       |
-| `person`      | Yes           | `activity` | `contract`             | Who asked for it: the changes are made as this person.                                   |
-| `action`      | Yes           | `content`  | `legitimate_interests` | What the change is, as the use case wrote it. It can hold what a person typed (a value). |
-| `items`       | No            | –          | –                      | The issues and the versions the preview read.                                            |
-| `status`      | No            | –          | –                      | Where the run is.                                                                        |
-| `done`        | No            | –          | –                      | How many issues have been looked at (changed or skipped): the next one is at this place. |
-| `changed`     | No            | –          | –                      | How many of them were changed.                                                           |
-| `skipped`     | No            | –          | –                      | The issues left alone with why.                                                          |
-| `created_at`  | No            | –          | –                      | When the person asked.                                                                   |
-| `finished_at` | No            | –          | –                      | When the run ended.                                                                      |
-
 ### Comment
 
 A comment under an issue (ISS-05).
@@ -162,7 +143,7 @@ Defined in `crates/bb-core/src/event.rs`.
 | `channel` | No            | –          | –                      | Where the change came from.                                                                                                                                                  |
 | `entity`  | No            | –          | –                      | The record it is about.                                                                                                                                                      |
 | `changes` | Yes           | `content`  | `legitimate_interests` | The fields that changed. They can hold anything a person typed, but never credentials, password hashes or secrets: use cases leave those fields out of the changes (review). |
-| `reason`  | Yes           | `content`  | `legitimate_interests` | Why, when the person said so; for a change a job made as the person, the item of the job (a change to many issues, `BulkRun::item_reason`).                                  |
+| `reason`  | Yes           | `content`  | `legitimate_interests` | Why, when the person said so; for a change a job made as the person, the item of the job (a change to many issues, `ManyChangeRun::item_reason`).                            |
 
 ### Draft
 
@@ -543,6 +524,25 @@ Defined in `crates/bb-core/src/access.rs`.
 | Field    | Personal data | Category       | Legal basis | What it holds |
 | -------- | ------------- | -------------- | ----------- | ------------- |
 | `person` | Yes           | `organization` | `contract`  | The person.   |
+
+### ManyChangeRun
+
+A change to many issues that runs in the background.
+
+Defined in `crates/bb-core/src/many_changes.rs`.
+
+| Field         | Personal data | Category   | Legal basis            | What it holds                                                                            |
+| ------------- | ------------- | ---------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `id`          | No            | –          | –                      | The ID of the run.                                                                       |
+| `person`      | Yes           | `activity` | `contract`             | Who asked for it: the changes are made as this person.                                   |
+| `action`      | Yes           | `content`  | `legitimate_interests` | What the change is, as the use case wrote it. It can hold what a person typed (a value). |
+| `items`       | No            | –          | –                      | The issues and the versions the preview read.                                            |
+| `status`      | No            | –          | –                      | Where the run is.                                                                        |
+| `done`        | No            | –          | –                      | How many issues have been looked at (changed or skipped): the next one is at this place. |
+| `changed`     | No            | –          | –                      | How many of them were changed.                                                           |
+| `skipped`     | No            | –          | –                      | The issues left alone with why.                                                          |
+| `created_at`  | No            | –          | –                      | When the person asked.                                                                   |
+| `finished_at` | No            | –          | –                      | When the run ended.                                                                      |
 
 ### Mention
 

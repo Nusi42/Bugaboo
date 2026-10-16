@@ -23,8 +23,8 @@ pub const JOB_ATTEMPTS_MAX: u32 = 5;
 
 /// The kinds of job, each with the name the queue stores.
 pub mod kind {
-    /// One step of a change to many issues (`bulk`); the payload names the run.
-    pub const BULK_STEP: &str = "many-changes.step";
+    /// One step of a change to many issues (`many-changes`); the payload names the run.
+    pub const MANY_CHANGES_STEP: &str = "many-changes.step";
     /// One step of giving the issues of a project new IDs after its mode of IDs changed
     /// (`issues::ids`); the payload names the project and the person who changed the mode.
     pub const RENEW_IDS: &str = "issues.renew-ids";
@@ -145,7 +145,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// puts it on the dead-letter list.
     async fn do_job(&self, job: &Job) -> Result<(), JobFailure> {
         match job.kind.as_str() {
-            kind::BULK_STEP => Box::pin(self.run_bulk_step(&job.payload))
+            kind::MANY_CHANGES_STEP => Box::pin(self.run_many_changes_step(&job.payload))
                 .await
                 .map_err(|error| {
                     tracing::warn!(cause = %error, "a step of a change to many issues failed");
@@ -189,7 +189,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// renewal of issue IDs has no record of its own, so its death is only logged (M3-F150).
     async fn job_gave_up(&self, job: &Job) {
         let ended = match job.kind.as_str() {
-            kind::BULK_STEP => self.fail_bulk_run(&job.payload).await,
+            kind::MANY_CHANGES_STEP => self.fail_many_changes_run(&job.payload).await,
             kind::RENEW_IDS => {
                 tracing::error!("renewing issue IDs gave up; the job is on the dead-letter list");
                 Ok(())

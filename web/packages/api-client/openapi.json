@@ -13020,14 +13020,14 @@
     },
     "/api/v1/many-changes": {
       "post": {
-        "tags": ["bulk"],
-        "summary": "Changes many issues at once, each on the version the preview read. Each issue is judged again,\nand one that changed since the preview is named and left alone. More than 1,000 issues run in\nthe background: the answer holds the run, and `getBulkRun` says how far it is. A script with an\naccess key sends at most 1,000 issues at a time.",
-        "operationId": "applyBulkChange",
+        "tags": ["many-changes"],
+        "summary": "Changes many issues at once, each on the version the preview read. Each issue is judged again,\nand one that changed since the preview is named and left alone. More than 1,000 issues run in\nthe background: the answer holds the run, and `getManyChangeRun` says how far it is. A script with an\naccess key sends at most 1,000 issues at a time.",
+        "operationId": "applyManyChanges",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApplyBulkBody"
+                "$ref": "#/components/schemas/ApplyManyChangesBody"
               }
             }
           },
@@ -13039,7 +13039,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkResultBody"
+                  "$ref": "#/components/schemas/ManyChangeResultBody"
                 }
               }
             }
@@ -13138,14 +13138,14 @@
     },
     "/api/v1/many-changes/preview": {
       "post": {
-        "tags": ["bulk"],
+        "tags": ["many-changes"],
         "summary": "Says what a change to many issues would do to each issue: what will change, what is left alone\nand why, and the version of each issue, which the change takes back. Nothing is changed.",
-        "operationId": "previewBulkChange",
+        "operationId": "previewManyChanges",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PreviewBulkBody"
+                "$ref": "#/components/schemas/PreviewManyChangesBody"
               }
             }
           },
@@ -13157,7 +13157,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkPreviewBody"
+                  "$ref": "#/components/schemas/ManyChangePreviewBody"
                 }
               }
             }
@@ -13236,9 +13236,9 @@
     },
     "/api/v1/many-changes/runs/{run}": {
       "get": {
-        "tags": ["bulk"],
+        "tags": ["many-changes"],
         "summary": "How far a change to many issues that goes on in the background is. Only the person who asked\nfor it reads it.",
-        "operationId": "getBulkRun",
+        "operationId": "getManyChangeRun",
         "parameters": [
           {
             "name": "run",
@@ -13264,7 +13264,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkRunBody"
+                  "$ref": "#/components/schemas/ManyChangeRunBody"
                 }
               }
             }
@@ -13345,9 +13345,9 @@
     },
     "/api/v1/many-changes/runs/{run}/stop": {
       "post": {
-        "tags": ["bulk"],
+        "tags": ["many-changes"],
         "summary": "Stops a change to many issues that goes on in the background: what was changed so far stays and\nthe rest is left alone. The person who asked for it may stop it, and so may whoever holds\n*Manage people*. The answer holds the status only.",
-        "operationId": "cancelBulkRun",
+        "operationId": "stopManyChangeRun",
         "parameters": [
           {
             "name": "run",
@@ -13365,7 +13365,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BulkRunStatusBody"
+                  "$ref": "#/components/schemas/ManyChangeRunStatusBody"
                 }
               }
             }
@@ -19958,19 +19958,19 @@
         "description": "Where a role given to somebody counts (*Where it counts*).",
         "enum": ["organization", "project", "project-and-sub-projects"]
       },
-      "ApplyBulkBody": {
+      "ApplyManyChangesBody": {
         "type": "object",
         "description": "The issues to change, with the versions the preview read, and what to do.",
         "required": ["issues", "action"],
         "properties": {
           "action": {
-            "$ref": "#/components/schemas/BulkActionBody",
+            "$ref": "#/components/schemas/ManyChangeActionBody",
             "description": "What to do."
           },
           "issues": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BulkTargetBody"
+              "$ref": "#/components/schemas/ManyChangeTargetBody"
             },
             "description": "The issues."
           }
@@ -20096,425 +20096,6 @@
             "type": "integer",
             "format": "int64",
             "description": "The largest value."
-          }
-        }
-      },
-      "BulkActionBody": {
-        "oneOf": [
-          {
-            "type": "object",
-            "description": "Change fields (*Change fields*, *Change status*).",
-            "required": ["change", "kind"],
-            "properties": {
-              "change": {
-                "$ref": "#/components/schemas/BulkChangeBody",
-                "description": "What to change."
-              },
-              "kind": {
-                "type": "string",
-                "enum": ["change"]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "Move the issues into a project.",
-            "required": ["project", "kind"],
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": ["move"]
-              },
-              "project": {
-                "type": "string",
-                "description": "The project, by its ID or its short name."
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "Put a label on the issues.",
-            "required": ["label", "kind"],
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": ["add_label"]
-              },
-              "label": {
-                "type": "string",
-                "description": "The ID of the label."
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "Relate every issue to one other issue.",
-            "required": ["relation_kind", "direction", "other", "kind"],
-            "properties": {
-              "direction": {
-                "$ref": "#/components/schemas/Direction",
-                "description": "Which end the issues of the selection are."
-              },
-              "kind": {
-                "type": "string",
-                "enum": ["add_relation"]
-              },
-              "other": {
-                "type": "string",
-                "description": "The issue at the other end, by its readable or internal ID."
-              },
-              "relation_kind": {
-                "type": "string",
-                "description": "The ID of the kind of relation."
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "Put the issues into the trash.",
-            "required": ["kind"],
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": ["delete"]
-              }
-            }
-          }
-        ],
-        "description": "What is done to every issue of the selection."
-      },
-      "BulkChangeBody": {
-        "type": "object",
-        "description": "What a person asks for in the fields of many issues: what is left out stays as it is.",
-        "properties": {
-          "assigned_to": {
-            "type": ["array", "null"],
-            "items": {
-              "type": "string"
-            },
-            "description": "The IDs of the people the issues are assigned to from now on: all of them, not the ones to\nadd."
-          },
-          "fields": {
-            "type": "object",
-            "description": "The values of own fields to set, by the key (ID) of the field; `null` takes a value away.",
-            "additionalProperties": {},
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "priority": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Priority",
-                "description": "A new priority."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "A new status."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "BulkDetailBody": {
-        "oneOf": [
-          {
-            "type": "object",
-            "description": "The fields that would change.",
-            "required": ["fields", "kind"],
-            "properties": {
-              "fields": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/FieldChangeBody"
-                },
-                "description": "The fields."
-              },
-              "kind": {
-                "type": "string",
-                "enum": ["changes"]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "The relation that would be added.",
-            "required": ["name", "issue", "kind"],
-            "properties": {
-              "issue": {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "The issue at the other end."
-              },
-              "kind": {
-                "type": "string",
-                "enum": ["relation"]
-              },
-              "name": {
-                "type": "string",
-                "description": "What the issue reads (*blocks*)."
-              }
-            }
-          }
-        ],
-        "description": "What a row of the preview says will happen to the issue."
-      },
-      "BulkOutcomeBody": {
-        "type": "object",
-        "description": "What happened to one issue of the selection.",
-        "required": ["address"],
-        "properties": {
-          "address": {
-            "type": "string",
-            "description": "What the person asked for the issue by."
-          },
-          "issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "The issue, as the person sees it; left out for an issue that is not there for them."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "skipped": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/SkipReason",
-                "description": "Why the issue was left alone; left out when it was changed."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "BulkPreviewBody": {
-        "type": "object",
-        "description": "What the change to many issues would do, with the sentence on top.",
-        "required": ["summary", "rows", "runs_in_background"],
-        "properties": {
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BulkRowBody"
-            },
-            "description": "Every issue of the selection, in the order asked."
-          },
-          "runs_in_background": {
-            "type": "boolean",
-            "description": "The change is too big to wait for: it runs in the background and says when it is done."
-          },
-          "summary": {
-            "$ref": "#/components/schemas/PreviewSummaryBody",
-            "description": "How many will change and how many are left alone."
-          }
-        }
-      },
-      "BulkResultBody": {
-        "type": "object",
-        "description": "What a change to many issues did: at once, or the run that goes on in the background.",
-        "required": ["outcomes"],
-        "properties": {
-          "outcomes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BulkOutcomeBody"
-            },
-            "description": "What happened to each issue, when it was done at once."
-          },
-          "run": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BulkRunBody",
-                "description": "The run, when it goes on in the background."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "BulkRowBody": {
-        "type": "object",
-        "description": "One issue of the preview: what will happen to it.",
-        "required": ["address"],
-        "properties": {
-          "address": {
-            "type": "string",
-            "description": "What the person asked for the issue by."
-          },
-          "detail": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BulkDetailBody",
-                "description": "What will change."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "The issue, as the person sees it; left out for an issue that is not there for them."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "skipped": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/SkipReason",
-                "description": "Why the issue is left alone; left out when it will change."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "version": {
-            "type": ["integer", "null"],
-            "format": "int64",
-            "description": "The version the preview read; the change takes it back."
-          }
-        }
-      },
-      "BulkRunBody": {
-        "type": "object",
-        "description": "How far a change that goes on in the background is.",
-        "required": [
-          "id",
-          "status",
-          "total",
-          "done",
-          "changed",
-          "skipped",
-          "skipped_count",
-          "created_at"
-        ],
-        "properties": {
-          "changed": {
-            "type": "integer",
-            "format": "int32",
-            "description": "How many of those it changed.",
-            "minimum": 0
-          },
-          "created_at": {
-            "type": "string",
-            "description": "When it was asked for."
-          },
-          "done": {
-            "type": "integer",
-            "format": "int32",
-            "description": "How many it has looked at.",
-            "minimum": 0
-          },
-          "finished_at": {
-            "type": ["string", "null"],
-            "description": "When it ended; left out while it goes on."
-          },
-          "id": {
-            "type": "string",
-            "description": "The ID of the run."
-          },
-          "skipped": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BulkSkippedBody"
-            },
-            "description": "The first of the issues it left alone, with why."
-          },
-          "skipped_count": {
-            "type": "integer",
-            "format": "int32",
-            "description": "How many issues it left alone in all.",
-            "minimum": 0
-          },
-          "status": {
-            "$ref": "#/components/schemas/BulkStatus",
-            "description": "Where it is."
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32",
-            "description": "How many issues it has.",
-            "minimum": 0
-          }
-        }
-      },
-      "BulkRunStatusBody": {
-        "type": "object",
-        "description": "Where a change that goes on in the background is, and nothing more.",
-        "required": ["id", "status"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The ID of the run."
-          },
-          "status": {
-            "$ref": "#/components/schemas/BulkStatus",
-            "description": "Where it is."
-          }
-        }
-      },
-      "BulkSkippedBody": {
-        "type": "object",
-        "description": "An issue a run left alone.",
-        "required": ["reason"],
-        "properties": {
-          "issue": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/IssueRef",
-                "description": "The issue, as the person sees it; left out for an issue that is not there for them."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "reason": {
-            "$ref": "#/components/schemas/SkipReason",
-            "description": "Why."
-          }
-        }
-      },
-      "BulkStatus": {
-        "type": "string",
-        "description": "Where a run of a change to many issues is.",
-        "enum": ["queued", "running", "done", "failed", "stopped"]
-      },
-      "BulkTargetBody": {
-        "type": "object",
-        "description": "One issue of the change with the version the preview read.",
-        "required": ["issue", "version"],
-        "properties": {
-          "issue": {
-            "type": "string",
-            "description": "The issue. A change to more than 1,000 issues names them by their internal IDs."
-          },
-          "version": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The version of the issue the preview read."
           }
         }
       },
@@ -23920,6 +23501,425 @@
         "description": "How the value of an own field is shown.",
         "enum": ["badge", "pill", "plain-text", "progress-bar", "avatar"]
       },
+      "ManyChangeActionBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Change fields (*Change fields*, *Change status*).",
+            "required": ["change", "kind"],
+            "properties": {
+              "change": {
+                "$ref": "#/components/schemas/ManyChangeBody",
+                "description": "What to change."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["change"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Move the issues into a project.",
+            "required": ["project", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["move"]
+              },
+              "project": {
+                "type": "string",
+                "description": "The project, by its ID or its short name."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Put a label on the issues.",
+            "required": ["label", "kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["add_label"]
+              },
+              "label": {
+                "type": "string",
+                "description": "The ID of the label."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Relate every issue to one other issue.",
+            "required": ["relation_kind", "direction", "other", "kind"],
+            "properties": {
+              "direction": {
+                "$ref": "#/components/schemas/Direction",
+                "description": "Which end the issues of the selection are."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["add_relation"]
+              },
+              "other": {
+                "type": "string",
+                "description": "The issue at the other end, by its readable or internal ID."
+              },
+              "relation_kind": {
+                "type": "string",
+                "description": "The ID of the kind of relation."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Put the issues into the trash.",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["delete"]
+              }
+            }
+          }
+        ],
+        "description": "What is done to every issue of the selection."
+      },
+      "ManyChangeBody": {
+        "type": "object",
+        "description": "What a person asks for in the fields of many issues: what is left out stays as it is.",
+        "properties": {
+          "assigned_to": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the people the issues are assigned to from now on: all of them, not the ones to\nadd."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The values of own fields to set, by the key (ID) of the field; `null` takes a value away.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "priority": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Priority",
+                "description": "A new priority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Status",
+                "description": "A new status."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ManyChangeDetailBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The fields that would change.",
+            "required": ["fields", "kind"],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FieldChangeBody"
+                },
+                "description": "The fields."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["changes"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The relation that would be added.",
+            "required": ["name", "issue", "kind"],
+            "properties": {
+              "issue": {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue at the other end."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["relation"]
+              },
+              "name": {
+                "type": "string",
+                "description": "What the issue reads (*blocks*)."
+              }
+            }
+          }
+        ],
+        "description": "What a row of the preview says will happen to the issue."
+      },
+      "ManyChangeOutcomeBody": {
+        "type": "object",
+        "description": "What happened to one issue of the selection.",
+        "required": ["address"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "What the person asked for the issue by."
+          },
+          "issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue, as the person sees it; left out for an issue that is not there for them."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skipped": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SkipReason",
+                "description": "Why the issue was left alone; left out when it was changed."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ManyChangePreviewBody": {
+        "type": "object",
+        "description": "What the change to many issues would do, with the sentence on top.",
+        "required": ["summary", "rows", "runs_in_background"],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManyChangeRowBody"
+            },
+            "description": "Every issue of the selection, in the order asked."
+          },
+          "runs_in_background": {
+            "type": "boolean",
+            "description": "The change is too big to wait for: it runs in the background and says when it is done."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PreviewSummaryBody",
+            "description": "How many will change and how many are left alone."
+          }
+        }
+      },
+      "ManyChangeResultBody": {
+        "type": "object",
+        "description": "What a change to many issues did: at once, or the run that goes on in the background.",
+        "required": ["outcomes"],
+        "properties": {
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManyChangeOutcomeBody"
+            },
+            "description": "What happened to each issue, when it was done at once."
+          },
+          "run": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ManyChangeRunBody",
+                "description": "The run, when it goes on in the background."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ManyChangeRowBody": {
+        "type": "object",
+        "description": "One issue of the preview: what will happen to it.",
+        "required": ["address"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "What the person asked for the issue by."
+          },
+          "detail": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ManyChangeDetailBody",
+                "description": "What will change."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue, as the person sees it; left out for an issue that is not there for them."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skipped": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SkipReason",
+                "description": "Why the issue is left alone; left out when it will change."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "The version the preview read; the change takes it back."
+          }
+        }
+      },
+      "ManyChangeRunBody": {
+        "type": "object",
+        "description": "How far a change that goes on in the background is.",
+        "required": [
+          "id",
+          "status",
+          "total",
+          "done",
+          "changed",
+          "skipped",
+          "skipped_count",
+          "created_at"
+        ],
+        "properties": {
+          "changed": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many of those it changed.",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "description": "When it was asked for."
+          },
+          "done": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many it has looked at.",
+            "minimum": 0
+          },
+          "finished_at": {
+            "type": ["string", "null"],
+            "description": "When it ended; left out while it goes on."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the run."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManyChangeSkippedBody"
+            },
+            "description": "The first of the issues it left alone, with why."
+          },
+          "skipped_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many issues it left alone in all.",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/ManyChangeStatus",
+            "description": "Where it is."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many issues it has.",
+            "minimum": 0
+          }
+        }
+      },
+      "ManyChangeRunStatusBody": {
+        "type": "object",
+        "description": "Where a change that goes on in the background is, and nothing more.",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the run."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ManyChangeStatus",
+            "description": "Where it is."
+          }
+        }
+      },
+      "ManyChangeSkippedBody": {
+        "type": "object",
+        "description": "An issue a run left alone.",
+        "required": ["reason"],
+        "properties": {
+          "issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue, as the person sees it; left out for an issue that is not there for them."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/SkipReason",
+            "description": "Why."
+          }
+        }
+      },
+      "ManyChangeStatus": {
+        "type": "string",
+        "description": "Where a run of a change to many issues is.",
+        "enum": ["queued", "running", "done", "failed", "stopped"]
+      },
+      "ManyChangeTargetBody": {
+        "type": "object",
+        "description": "One issue of the change with the version the preview read.",
+        "required": ["issue", "version"],
+        "properties": {
+          "issue": {
+            "type": "string",
+            "description": "The issue. A change to more than 1,000 issues names them by their internal IDs."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version of the issue the preview read."
+          }
+        }
+      },
       "MeBody": {
         "type": "object",
         "description": "Who is signed in, and what they may do for the whole organization (the menus of the browser app\nfollow it; the server decides again at every request).",
@@ -26431,24 +26431,6 @@
         ],
         "description": "Where a row of *Who has which role* is: the whole organization, a project, or a project the\nperson cannot see (which is not named)."
       },
-      "PreviewBulkBody": {
-        "type": "object",
-        "description": "The issues to look at and what would be done to them.",
-        "required": ["issues", "action"],
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/BulkActionBody",
-            "description": "What would be done."
-          },
-          "issues": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The issues, by their readable or internal IDs."
-          }
-        }
-      },
       "PreviewChangeBody": {
         "type": "object",
         "description": "What to preview: a new name, or the one it would be combined with.",
@@ -26460,6 +26442,24 @@
           "name": {
             "type": ["string", "null"],
             "description": "The new name, when it is renamed."
+          }
+        }
+      },
+      "PreviewManyChangesBody": {
+        "type": "object",
+        "description": "The issues to look at and what would be done to them.",
+        "required": ["issues", "action"],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ManyChangeActionBody",
+            "description": "What would be done."
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The issues, by their readable or internal IDs."
           }
         }
       },

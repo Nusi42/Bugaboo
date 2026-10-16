@@ -4,17 +4,17 @@ import { Alert, alertTone, AskDialog, Button } from "@bugaboo/ui";
 import { messageOf } from "../../shared/errors.ts";
 import { actionName, applyName } from "./action-names.ts";
 import { ActionFields } from "./ActionFields.tsx";
-import type { BulkApplied, BulkKind } from "./bulk.ts";
-import { BulkPreviewView } from "./BulkPreviewView.tsx";
-import { useBulkDialog } from "./use-bulk-dialog.ts";
+import type { ManyChangeApplied, ManyChangeKind } from "./many-changes.ts";
+import { ManyChangePreviewView } from "./ManyChangePreviewView.tsx";
+import { useManyChangeDialog } from "./use-many-change-dialog.ts";
 
-export interface BulkDialogProps {
-  readonly kind: BulkKind;
+export interface ManyChangeDialogProps {
+  readonly kind: ManyChangeKind;
   /** The IDs of the issues that are ticked. */
   readonly issues: readonly string[];
   readonly isOpen: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  readonly onApplied: (applied: BulkApplied) => void;
+  readonly onApplied: (applied: ManyChangeApplied) => void;
 }
 
 /**
@@ -22,8 +22,14 @@ export interface BulkDialogProps {
  * only then *Apply*. The preview is made from the versions of the issues, and applying sends those
  * versions back, so an issue that changed meanwhile is skipped and not overwritten.
  */
-export function BulkDialog({ kind, issues, isOpen, onOpenChange, onApplied }: BulkDialogProps) {
-  const dialog = useBulkDialog(kind, issues, onApplied);
+export function ManyChangeDialog({
+  kind,
+  issues,
+  isOpen,
+  onOpenChange,
+  onApplied,
+}: ManyChangeDialogProps) {
+  const dialog = useManyChangeDialog(kind, issues, onApplied);
   const { preview } = dialog;
   return (
     <AskDialog
@@ -58,7 +64,7 @@ export function BulkDialog({ kind, issues, isOpen, onOpenChange, onApplied }: Bu
       </div>
       {preview.isError ? <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert> : null}
       {preview.data === undefined ? null : (
-        <BulkPreviewView preview={preview.data} plain={dialog.plain} />
+        <ManyChangePreviewView preview={preview.data} plain={dialog.plain} />
       )}
     </AskDialog>
   );

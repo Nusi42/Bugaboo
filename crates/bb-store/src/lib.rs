@@ -10,7 +10,6 @@
 mod access_keys;
 mod anchor;
 mod auth;
-mod bulk;
 mod chain;
 mod comments;
 mod db;
@@ -25,6 +24,7 @@ mod jobs;
 mod keys;
 mod layout;
 mod layouts;
+mod many_changes;
 mod migrations;
 mod paging;
 mod policy;

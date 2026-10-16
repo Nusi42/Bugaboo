@@ -3,7 +3,7 @@ import { priorityWords, statusWords } from "@bugaboo/api-client";
 import { wordOf } from "../../shared/present.ts";
 import type { ProjectChoice } from "../fields/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
-import { bulkKind, type BulkKind, type NewBulkAction } from "./bulk.ts";
+import { manyChangeKind, type ManyChangeKind, type NewManyChangeAction } from "./many-changes.ts";
 
 /** The choice that stands for leaving a field as it is, or for nothing picked yet. */
 export const NONE = "";
@@ -30,13 +30,13 @@ export const emptyDraft: Draft = {
 };
 
 /** The request of a change of status or priority; nothing while both are left as they are. */
-function changeOf(draft: Draft): NewBulkAction | null {
+function changeOf(draft: Draft): NewManyChangeAction | null {
   const status = wordOf(statusWords, draft.status);
   const priority = wordOf(priorityWords, draft.priority);
   return status === undefined && priority === undefined
     ? null
     : {
-        kind: bulkKind.change,
+        kind: manyChangeKind.change,
         change: {
           ...(status === undefined ? {} : { status }),
           ...(priority === undefined ? {} : { priority }),
@@ -45,12 +45,15 @@ function changeOf(draft: Draft): NewBulkAction | null {
 }
 
 /** The request of adding a relation; nothing while the words or the other issue are not filled in. */
-function relationOf(draft: Draft, relations: readonly RelationChoice[]): NewBulkAction | null {
+function relationOf(
+  draft: Draft,
+  relations: readonly RelationChoice[],
+): NewManyChangeAction | null {
   const words = relations.find((each) => each.key === draft.relation);
   return words === undefined || draft.other.trim() === ""
     ? null
     : {
-        kind: bulkKind.relation,
+        kind: manyChangeKind.relation,
         relation_kind: words.kind,
         direction: words.direction,
         other: draft.other.trim(),
@@ -59,18 +62,20 @@ function relationOf(draft: Draft, relations: readonly RelationChoice[]): NewBulk
 
 /** What the five things need, as the request says it; nothing while what they need is not filled in. */
 export function actionOf(
-  kind: BulkKind,
+  kind: ManyChangeKind,
   draft: Draft,
   relations: readonly RelationChoice[],
-): NewBulkAction | null {
-  if (kind === bulkKind.change) {
+): NewManyChangeAction | null {
+  if (kind === manyChangeKind.change) {
     return changeOf(draft);
   }
-  if (kind === bulkKind.move) {
+  if (kind === manyChangeKind.move) {
     return draft.project === null ? null : { kind, project: draft.project.id };
   }
-  if (kind === bulkKind.label) {
+  if (kind === manyChangeKind.label) {
     return draft.label === NONE ? null : { kind, label: draft.label };
   }
-  return kind === bulkKind.relation ? relationOf(draft, relations) : { kind: bulkKind.delete };
+  return kind === manyChangeKind.relation
+    ? relationOf(draft, relations)
+    : { kind: manyChangeKind.delete };
 }

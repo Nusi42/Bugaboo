@@ -5,7 +5,7 @@ import {
   applyAndExpectSkipped,
   previewDoneOnScreen,
   tickIssues,
-} from "../support/bulk-pages.ts";
+} from "../support/many-changes-pages.ts";
 import {
   done,
   expectEvents,
@@ -13,7 +13,7 @@ import {
   knowing,
   knownOf,
   statusOf,
-} from "../support/bulk.ts";
+} from "../support/many-changes.ts";
 import { signedInPage } from "../support/crowd-pages.ts";
 import { ben, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import {
@@ -34,8 +34,8 @@ import { issueOf, readIssue, savedNote } from "../support/issues.ts";
 test.use({ preparation: { run: prepareCrowd } });
 test.describe.configure({ mode: "serial" });
 
-const [changedSince, ...others] = crowdIssues.bulk;
-const [underEdit] = crowdIssues.bulkEditing;
+const [changedSince, ...others] = crowdIssues.manyChanges;
+const [underEdit] = crowdIssues.manyChangeEditing;
 
 test("iss_09_changing_many_issues_skips_the_one_changed_since_the_preview_and_names_it", async ({
   browser,
@@ -45,12 +45,12 @@ test("iss_09_changing_many_issues_skips_the_one_changed_since_the_preview_and_na
 }) => {
   const look = { viewport, hasTouch };
   const admin = await signedInAdmin(server);
-  const issues = await Promise.all(crowdIssues.bulk.map((key) => issueOf(admin, key)));
+  const issues = await Promise.all(crowdIssues.manyChanges.map((key) => issueOf(admin, key)));
   const saved = await issueOf(admin, changedSince);
   const known = await knowing(admin, issues);
   const page = await signedInPage(browser, server, ada, look);
-  await tickIssues(page, crowdIssues.bulk);
-  const dialog = await previewDoneOnScreen(page, crowdIssues.bulk.length);
+  await tickIssues(page, crowdIssues.manyChanges);
+  const dialog = await previewDoneOnScreen(page, crowdIssues.manyChanges.length);
   // Somebody saves the text of one issue, and lets go of its lock, before the change is confirmed.
   const editor = await signedInPage(browser, server, ben, look);
   await startEditing(editor, changedSince);
@@ -81,20 +81,20 @@ test("iss_09_changing_many_issues_changes_the_one_somebody_is_editing_and_their_
 }) => {
   const look = { viewport, hasTouch };
   const admin = await signedInAdmin(server);
-  const issues = await Promise.all(crowdIssues.bulkEditing.map((key) => issueOf(admin, key)));
+  const issues = await Promise.all(crowdIssues.manyChangeEditing.map((key) => issueOf(admin, key)));
   const mine = await issueOf(admin, underEdit);
   const known = await knowing(admin, issues);
   const page = await signedInPage(browser, server, ada, look);
-  await tickIssues(page, crowdIssues.bulkEditing);
-  const dialog = await previewDoneOnScreen(page, crowdIssues.bulkEditing.length);
+  await tickIssues(page, crowdIssues.manyChangeEditing);
+  const dialog = await previewDoneOnScreen(page, crowdIssues.manyChangeEditing.length);
   // Ben holds the lock of the description with text that is not saved while the change is confirmed.
   const editor = await signedInPage(browser, server, ben, look);
   await startEditing(editor, underEdit);
   await typeUnderLock(editor, "Ben is still writing this");
   // The lock covers the text only: all four issues change, the one under edit too.
-  await applyAndExpectAllChanged(page, dialog, crowdIssues.bulkEditing.length);
+  await applyAndExpectAllChanged(page, dialog, crowdIssues.manyChangeEditing.length);
   expect(await Promise.all(issues.map((issue) => statusOf(admin, issue)))).toEqual(
-    crowdIssues.bulkEditing.map(() => done),
+    crowdIssues.manyChangeEditing.map(() => done),
   );
   // Then Ben saves: the status is another field, so his text lands and he is told nothing.
   await saveButton(editor).click();

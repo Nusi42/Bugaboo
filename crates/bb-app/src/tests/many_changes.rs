@@ -6,29 +6,30 @@
 use std::collections::BTreeMap;
 
 use bb_core::access::AppliesTo;
-use bb_core::bulk::{BULK_JOB_ABOVE, BulkStatus, SkipReason};
 use bb_core::id::IssueId;
 use bb_core::issue::Status;
+use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, ManyChangeStatus, SkipReason};
 use bb_policy::Permission;
 
 use super::scenarios::{a_project, token};
 use super::scenarios_issues::an_issue;
 use super::scenarios_tags::{a_label, a_label_group, labelled, tagged};
 use super::world::{Outcome, World};
-use crate::bulk::{
-    ApplyBulk, BulkAction, BulkChange, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery,
-    BulkTarget, apply_bulk, bulk_run, preview_bulk,
-};
 use crate::issues::{
     ChangeIssue, CreateIssue, IssueTypesQuery, change_issue, create_issue, issue_types,
 };
+use crate::many_changes::{
+    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangePreview, ManyChangePreviewQuery,
+    ManyChangeResult, ManyChangeRunQuery, ManyChangeTarget, apply_many_changes, many_changes_run,
+    preview_many_changes,
+};
 use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 
-pub(super) fn done() -> BulkAction {
-    BulkAction::Change {
-        change: BulkChange {
+pub(super) fn done() -> ManyChangeAction {
+    ManyChangeAction::Change {
+        change: ManyChange {
             status: Some(Status::Done),
-            ..BulkChange::default()
+            ..ManyChange::default()
         },
     }
 }
@@ -37,11 +38,11 @@ pub(super) async fn preview(
     world: &World,
     session: &str,
     issues: &[IssueId],
-    action: &BulkAction,
-) -> Result<BulkPreview, crate::auth::AppError> {
-    Ok(preview_bulk(
+    action: &ManyChangeAction,
+) -> Result<ManyChangePreview, crate::auth::AppError> {
+    Ok(preview_many_changes(
         &world.ctx(),
-        BulkPreviewQuery {
+        ManyChangePreviewQuery {
             session_token: session.to_owned(),
             issues: issues.iter().map(ToString::to_string).collect(),
             action: action.clone(),
@@ -52,12 +53,12 @@ pub(super) async fn preview(
 }
 
 /// What the preview read, as the targets the change takes back.
-pub(super) fn targets(preview: &BulkPreview) -> Vec<BulkTarget> {
+pub(super) fn targets(preview: &ManyChangePreview) -> Vec<ManyChangeTarget> {
     preview
         .rows
         .iter()
         .filter_map(|row| {
-            row.version.map(|version| BulkTarget {
+            row.version.map(|version| ManyChangeTarget {
                 issue: row.address.clone(),
                 version,
             })
@@ -68,12 +69,12 @@ pub(super) fn targets(preview: &BulkPreview) -> Vec<BulkTarget> {
 pub(super) async fn apply(
     world: &World,
     session: &str,
-    targets: Vec<BulkTarget>,
-    action: &BulkAction,
-) -> Result<BulkResult, crate::auth::AppError> {
-    Ok(apply_bulk(
+    targets: Vec<ManyChangeTarget>,
+    action: &ManyChangeAction,
+) -> Result<ManyChangeResult, crate::auth::AppError> {
+    Ok(apply_many_changes(
         &world.ctx(),
-        ApplyBulk {
+        ApplyManyChanges {
             session_token: session.to_owned(),
             issues: targets,
             action: action.clone(),
@@ -138,7 +139,7 @@ async fn iss_09_an_issue_you_cannot_change_is_skipped_with_its_reason() -> Outco
     let result = apply(
         &world,
         &bob.session_token,
-        vec![BulkTarget {
+        vec![ManyChangeTarget {
             issue: mine.to_string(),
             version: 1,
         }],
@@ -245,7 +246,7 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
         },
     )
     .await?;
-    let action = BulkAction::Move {
+    let action = ManyChangeAction::Move {
         project: to.to_string(),
     };
     let asked = preview(&world, &admin, &made, &action).await?;
@@ -283,7 +284,7 @@ async fn iss_09_a_move_skips_an_issue_with_a_tag_the_other_project_does_not_allo
         },
     )
     .await?;
-    let action = BulkAction::Move {
+    let action = ManyChangeAction::Move {
         project: to.to_string(),
     };
     let asked = preview(&world, &admin, &[limited, free], &action).await?;
@@ -304,7 +305,7 @@ async fn iss_09_adding_a_label_names_the_issues_that_have_it_already() -> Outcom
     );
     let label = a_label(&world, "urgent", None).await?;
     labelled(&world, has_it, label).await?;
-    let action = BulkAction::AddLabel { label };
+    let action = ManyChangeAction::AddLabel { label };
     let asked = preview(&world, &token(&world), &[has_it, lacks_it], &action).await?;
     let reasons: Vec<Option<SkipReason>> = asked.rows.iter().map(|row| row.skipped).collect();
     assert_eq!(reasons, vec![Some(SkipReason::NothingToChange), None]);
@@ -328,7 +329,7 @@ async fn iss_09_a_label_put_on_after_the_preview_makes_the_change_skip_and_name_
         a_label(&world, "urgent", Some(group)).await?,
     );
     labelled(&world, first, low).await?;
-    let action = BulkAction::AddLabel { label: high };
+    let action = ManyChangeAction::AddLabel { label: high };
     let asked = preview(&world, &admin, &[first, second], &action).await?;
     assert_eq!(asked.summary.will_change, 2);
     // Somebody takes another label of the Pick one group meanwhile: apply would replace it, not
@@ -349,7 +350,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     let project = a_project(&world, "ACME").await?;
     let kind = types_first(&world).await?;
     let mut issues = Vec::new();
-    for number in 0..=BULK_JOB_ABOVE {
+    for number in 0..=MANY_CHANGES_JOB_ABOVE {
         issues.push(
             create_issue(
                 &world.ctx(),
@@ -370,13 +371,16 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
             .id,
         );
     }
-    assert_eq!(issues.len(), BULK_JOB_ABOVE + 1);
+    assert_eq!(issues.len(), MANY_CHANGES_JOB_ABOVE + 1);
     let asked = preview(&world, &admin, &issues, &done()).await?;
     assert!(asked.runs_in_background);
     let events_before = world.store.event_count();
     let result = apply(&world, &admin, targets(&asked), &done()).await?;
     let started = result.run.ok_or("a big change must start a run")?;
-    assert_eq!((started.status, started.done), (BulkStatus::Queued, 0));
+    assert_eq!(
+        (started.status, started.done),
+        (ManyChangeStatus::Queued, 0)
+    );
     // Only the run is written before a worker takes the first step.
     assert_eq!(world.store.event_count(), events_before + 1);
     let mut rounds = 0;
@@ -388,16 +392,16 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
         rounds += 1;
         assert!(rounds < 100, "the run does not end");
     }
-    let finished = bulk_run(
+    let finished = many_changes_run(
         &world.ctx(),
-        BulkRunQuery {
+        ManyChangeRunQuery {
             session_token: admin,
             run: started.id,
         },
     )
     .await?
     .into_value();
-    assert_eq!(finished.status, BulkStatus::Done);
+    assert_eq!(finished.status, ManyChangeStatus::Done);
     assert_eq!((finished.done, finished.changed), (1001, 1001));
     assert_eq!(finished.skipped_count, 0);
     // One event for each issue, and the one of the run.
@@ -410,8 +414,8 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
 #[tokio::test]
 async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_it_goes_on()
 -> Outcome {
-    use bb_core::bulk::{BulkItem, BulkRun};
-    use bb_core::id::BulkRunId;
+    use bb_core::id::ManyChangeRunId;
+    use bb_core::many_changes::{ManyChangeItem, ManyChangeRun};
 
     let world = World::new().await?;
     let project = a_project(&world, "ACME").await?;
@@ -419,42 +423,45 @@ async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_
     for _ in 0..3 {
         issues.push(an_issue(&world, project).await?);
     }
-    let run = BulkRun {
-        id: BulkRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+    let run = ManyChangeRun {
+        id: ManyChangeRunId::generate(&mut bb_core::id::SequentialIds::default())?,
         person: world.admin.person.id,
         action: serde_json::to_value(done())?,
         items: issues
             .iter()
-            .map(|issue| BulkItem {
+            .map(|issue| ManyChangeItem {
                 issue: *issue,
                 version: 1,
             })
             .collect(),
-        status: BulkStatus::Queued,
+        status: ManyChangeStatus::Queued,
         done: 0,
         changed: 0,
         skipped: Vec::new(),
         created_at: world.ctx().now(),
         finished_at: None,
     };
-    world.store.lock().state.bulk_runs.push(run.clone());
-    let payload = crate::bulk::step_payload(run.id);
-    world.ctx().run_bulk_step(&payload).await?;
-    let finished = world.store.lock().state.bulk_runs[0].clone();
-    assert_eq!((finished.status, finished.changed), (BulkStatus::Done, 3));
+    world.store.lock().state.many_changes_runs.push(run.clone());
+    let payload = crate::many_changes::step_payload(run.id);
+    world.ctx().run_many_changes_step(&payload).await?;
+    let finished = world.store.lock().state.many_changes_runs[0].clone();
+    assert_eq!(
+        (finished.status, finished.changed),
+        (ManyChangeStatus::Done, 3)
+    );
     // The worker died after it changed the third issue and before it counted it: the run is
     // back at two issues counted, and the issue is changed.
     {
         let mut shared = world.store.lock();
-        let stopped = &mut shared.state.bulk_runs[0];
-        stopped.status = BulkStatus::Running;
+        let stopped = &mut shared.state.many_changes_runs[0];
+        stopped.status = ManyChangeStatus::Running;
         stopped.done = 2;
         stopped.changed = 2;
         stopped.finished_at = None;
     }
-    world.ctx().run_bulk_step(&payload).await?;
-    let again = world.store.lock().state.bulk_runs[0].clone();
-    assert_eq!(again.status, BulkStatus::Done);
+    world.ctx().run_many_changes_step(&payload).await?;
+    let again = world.store.lock().state.many_changes_runs[0].clone();
+    assert_eq!(again.status, ManyChangeStatus::Done);
     assert_eq!(
         (again.done, again.changed),
         (3, 3),
@@ -493,7 +500,7 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
     let project = a_project(&world, "ACME").await?;
     let kind = types_first(&world).await?;
     let mut targets = Vec::new();
-    for number in 0..=BULK_JOB_ABOVE {
+    for number in 0..=MANY_CHANGES_JOB_ABOVE {
         let made = create_issue(
             &world.ctx(),
             CreateIssue {
@@ -510,7 +517,7 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
         )
         .await?
         .into_value();
-        targets.push(BulkTarget {
+        targets.push(ManyChangeTarget {
             issue: made.id.to_string(),
             version: made.version,
         });
@@ -518,9 +525,9 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
     let result = apply(&world, &admin, targets, &done()).await?;
     let run = result.run.ok_or("no run")?;
     let bob = world.person("bob@example.test").await?;
-    let read = bulk_run(
+    let read = many_changes_run(
         &world.ctx(),
-        BulkRunQuery {
+        ManyChangeRunQuery {
             session_token: bob.session_token,
             run: run.id,
         },
@@ -538,9 +545,9 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
 async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
-    let none = preview_bulk(
+    let none = preview_many_changes(
         &world.ctx(),
-        BulkPreviewQuery {
+        ManyChangePreviewQuery {
             session_token: admin.clone(),
             issues: Vec::new(),
             action: done(),
@@ -554,13 +561,13 @@ async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
             bb_core::ErrorCode::InvalidRequest
         ))
     );
-    let nothing_asked = preview_bulk(
+    let nothing_asked = preview_many_changes(
         &world.ctx(),
-        BulkPreviewQuery {
+        ManyChangePreviewQuery {
             session_token: admin,
             issues: vec!["x".to_owned()],
-            action: BulkAction::Change {
-                change: BulkChange::default(),
+            action: ManyChangeAction::Change {
+                change: ManyChange::default(),
             },
         },
     )
@@ -578,40 +585,40 @@ async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
 /// A run of three issues that waits for its first step, with that step in the queue.
 async fn run_with_a_step_waiting(
     world: &World,
-) -> Result<bb_core::bulk::BulkRun, Box<dyn std::error::Error + Send + Sync>> {
-    use bb_core::bulk::{BulkItem, BulkRun};
-    use bb_core::id::{BulkRunId, JobId};
+) -> Result<bb_core::many_changes::ManyChangeRun, Box<dyn std::error::Error + Send + Sync>> {
+    use bb_core::id::{JobId, ManyChangeRunId};
+    use bb_core::many_changes::{ManyChangeItem, ManyChangeRun};
 
     use crate::jobs::{JobStore as _, kind, kind_name};
 
     let project = a_project(world, "ACME").await?;
     let mut items = Vec::new();
     for _ in 0..3 {
-        items.push(BulkItem {
+        items.push(ManyChangeItem {
             issue: an_issue(world, project).await?,
             version: 1,
         });
     }
     let now = world.ctx().now();
-    let run = BulkRun {
-        id: BulkRunId::generate(&mut bb_core::id::SequentialIds::default())?,
+    let run = ManyChangeRun {
+        id: ManyChangeRunId::generate(&mut bb_core::id::SequentialIds::default())?,
         person: world.admin.person.id,
         action: serde_json::to_value(done())?,
         items,
-        status: BulkStatus::Queued,
+        status: ManyChangeStatus::Queued,
         done: 0,
         changed: 0,
         skipped: Vec::new(),
         created_at: now,
         finished_at: None,
     };
-    world.store.lock().state.bulk_runs.push(run.clone());
+    world.store.lock().state.many_changes_runs.push(run.clone());
     world
         .store
         .queue_job(
             JobId::generate(&mut bb_core::id::SequentialIds::default())?,
-            &kind_name(kind::BULK_STEP)?,
-            &crate::bulk::step_payload(run.id),
+            &kind_name(kind::MANY_CHANGES_STEP)?,
+            &crate::many_changes::step_payload(run.id),
             now,
             now,
         )
@@ -631,15 +638,15 @@ async fn adr_0017_a_step_that_keeps_failing_ends_its_run_as_failed() -> Outcome 
     // "running". The saving that ends the run works again.
     world
         .store
-        .fail_bulk_progress(usize::try_from(crate::jobs::JOB_ATTEMPTS_MAX)?);
+        .fail_many_changes_progress(usize::try_from(crate::jobs::JOB_ATTEMPTS_MAX)?);
     for _ in 0..crate::jobs::JOB_ATTEMPTS_MAX {
         world.ctx().run_due_jobs().await?;
     }
     let shared = world.store.lock();
     assert_eq!(shared.state.jobs[0].state, JobState::Dead);
-    let ended = &shared.state.bulk_runs[0];
+    let ended = &shared.state.many_changes_runs[0];
     assert_eq!(ended.id, run.id);
-    assert_eq!(ended.status, BulkStatus::Failed);
+    assert_eq!(ended.status, ManyChangeStatus::Failed);
     assert!(ended.finished_at.is_some());
     Ok(())
 }
@@ -658,7 +665,7 @@ async fn adr_0017_a_step_that_is_refused_is_not_started_again() -> Outcome {
         .store
         .queue_job(
             JobId::generate(&mut bb_core::id::SequentialIds::default())?,
-            &kind_name(kind::BULK_STEP)?,
+            &kind_name(kind::MANY_CHANGES_STEP)?,
             &serde_json::json!({}),
             now,
             now,
@@ -676,15 +683,15 @@ async fn adr_0017_a_step_that_is_refused_is_not_started_again() -> Outcome {
 async fn iss_09_a_stopped_run_changes_nothing_more() -> Outcome {
     let world = World::new().await?;
     let run = run_with_a_step_waiting(&world).await?;
-    world.store.lock().state.bulk_runs[0].status = BulkStatus::Stopped;
+    world.store.lock().state.many_changes_runs[0].status = ManyChangeStatus::Stopped;
     world
         .ctx()
-        .run_bulk_step(&crate::bulk::step_payload(run.id))
+        .run_many_changes_step(&crate::many_changes::step_payload(run.id))
         .await?;
-    let after = world.store.lock().state.bulk_runs[0].clone();
+    let after = world.store.lock().state.many_changes_runs[0].clone();
     assert_eq!(
         (after.status, after.done, after.changed),
-        (BulkStatus::Stopped, 0, 0)
+        (ManyChangeStatus::Stopped, 0, 0)
     );
     Ok(())
 }

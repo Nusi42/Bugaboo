@@ -3,12 +3,12 @@ import { Alert, alertTone, FieldValue, partOf, part } from "@bugaboo/ui";
 import { useEffect } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { isRunning, skipText, useBulkRun, type BulkRun } from "./bulk.ts";
+import { isRunning, skipText, useManyChangeRun, type ManyChangeRun } from "./many-changes.ts";
 import { progressLook } from "./progress-look.ts";
 import { refreshIssues } from "../../shared/query-keys.ts";
 
 /** The issues that were left alone and why, one line each. */
-export function SkippedList({ skipped }: { readonly skipped: BulkRun["skipped"] }) {
+export function SkippedList({ skipped }: { readonly skipped: ManyChangeRun["skipped"] }) {
   if (skipped.length === 0) {
     return null;
   }
@@ -32,7 +32,7 @@ export function SkippedList({ skipped }: { readonly skipped: BulkRun["skipped"] 
 
 /** How far a change in the background is, read every second until it is over. */
 export function RunProgress({ run }: { readonly run: string }) {
-  const read = useBulkRun(run);
+  const read = useManyChangeRun(run);
   const data = read.data;
   const over = data !== undefined && !isRunning(data);
   useEffect(() => {
@@ -51,7 +51,7 @@ export function RunProgress({ run }: { readonly run: string }) {
   }
   if (over) {
     return (
-      <div {...partOf(part.bulkProgress)}>
+      <div {...partOf(part.manyChangeProgress)}>
         <Alert tone={alertTone.success}>
           {t("many-changes.result-done", { changed: data.changed, skipped: data.skipped_count })}
         </Alert>
@@ -60,7 +60,7 @@ export function RunProgress({ run }: { readonly run: string }) {
     );
   }
   return (
-    <output {...partOf(part.bulkProgress)} aria-label={t("many-changes.progress-label")}>
+    <output {...partOf(part.manyChangeProgress)} aria-label={t("many-changes.progress-label")}>
       <FieldValue
         look={progressLook}
         text={t("many-changes.progress", { done: data.done, total: data.total })}

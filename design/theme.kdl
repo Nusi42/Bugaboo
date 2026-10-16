@@ -2783,7 +2783,7 @@ part "chip" {
 }
 
 // The bar of the list that acts on the issues ticked.
-part "bulk-bar" {
+part "many-change-bar" {
     use "surface-box"
     display flex
     flex-wrap wrap
@@ -2793,7 +2793,7 @@ part "bulk-bar" {
 }
 
 // How far a change that goes on in the background is.
-part "bulk-progress" {
+part "many-change-progress" {
     display flex
     flex-direction column
     gap "$space-2"

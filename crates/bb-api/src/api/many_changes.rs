@@ -11,14 +11,15 @@ use std::collections::BTreeMap;
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::bulk::{
-    ApplyBulk, BulkAction, BulkChange, BulkDetail, BulkOutcome, BulkPreview, BulkPreviewQuery,
-    BulkResult, BulkRow, BulkRunQuery, BulkRunStatus, BulkRunView, BulkSkipped, BulkTarget,
-};
 use bb_app::history::{ChangeValue, FieldChangeView};
-use bb_core::bulk::{BulkStatus, SkipReason};
-use bb_core::id::{BulkRunId, LabelId, RelationKindId, UserId};
+use bb_app::many_changes::{
+    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangeOutcome,
+    ManyChangePreview, ManyChangePreviewQuery, ManyChangeResult, ManyChangeRow, ManyChangeRunQuery,
+    ManyChangeRunStatus, ManyChangeRunView, ManyChangeSkipped, ManyChangeTarget,
+};
+use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
 use bb_core::issue::{Priority, Status};
+use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
@@ -40,7 +41,7 @@ use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// What a person asks for in the fields of many issues: what is left out stays as it is.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct BulkChangeBody {
+pub(crate) struct ManyChangeBody {
     /// A new status.
     status: Option<Status>,
     /// A new priority.
@@ -56,11 +57,11 @@ pub(crate) struct BulkChangeBody {
 /// What is done to every issue of the selection.
 #[derive(Deserialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub(crate) enum BulkActionBody {
+pub(crate) enum ManyChangeActionBody {
     /// Change fields (*Change fields*, *Change status*).
     Change {
         /// What to change.
-        change: BulkChangeBody,
+        change: ManyChangeBody,
     },
     /// Move the issues into a project.
     Move {
@@ -85,12 +86,12 @@ pub(crate) enum BulkActionBody {
     Delete,
 }
 
-impl BulkActionBody {
+impl ManyChangeActionBody {
     /// The action as the use cases take it.
-    fn into_action(self) -> Result<BulkAction, ApiError> {
+    fn into_action(self) -> Result<ManyChangeAction, ApiError> {
         Ok(match self {
-            Self::Change { change } => BulkAction::Change {
-                change: BulkChange {
+            Self::Change { change } => ManyChangeAction::Change {
+                change: ManyChange {
                     status: change.status,
                     priority: change.priority,
                     assigned_to: change
@@ -105,36 +106,36 @@ impl BulkActionBody {
                     fields: change.fields,
                 },
             },
-            Self::Move { project } => BulkAction::Move { project },
-            Self::AddLabel { label } => BulkAction::AddLabel {
+            Self::Move { project } => ManyChangeAction::Move { project },
+            Self::AddLabel { label } => ManyChangeAction::AddLabel {
                 label: body_id::<LabelId>(&label)?,
             },
             Self::AddRelation {
                 relation_kind,
                 direction,
                 other,
-            } => BulkAction::AddRelation {
+            } => ManyChangeAction::AddRelation {
                 relation_kind: body_id::<RelationKindId>(&relation_kind)?,
                 direction,
                 other,
             },
-            Self::Delete => BulkAction::Delete,
+            Self::Delete => ManyChangeAction::Delete,
         })
     }
 }
 
 /// The issues to look at and what would be done to them.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct PreviewBulkBody {
+pub(crate) struct PreviewManyChangesBody {
     /// The issues, by their readable or internal IDs.
     issues: Vec<String>,
     /// What would be done.
-    action: BulkActionBody,
+    action: ManyChangeActionBody,
 }
 
 /// One issue of the change with the version the preview read.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct BulkTargetBody {
+pub(crate) struct ManyChangeTargetBody {
     /// The issue. A change to more than 1,000 issues names them by their internal IDs.
     issue: String,
     /// The version of the issue the preview read.
@@ -143,11 +144,11 @@ pub(crate) struct BulkTargetBody {
 
 /// The issues to change, with the versions the preview read, and what to do.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct ApplyBulkBody {
+pub(crate) struct ApplyManyChangesBody {
     /// The issues.
-    issues: Vec<BulkTargetBody>,
+    issues: Vec<ManyChangeTargetBody>,
     /// What to do.
-    action: BulkActionBody,
+    action: ManyChangeActionBody,
 }
 
 /// A value in a change, as the person may see it.
@@ -242,7 +243,7 @@ impl From<&FieldChangeView> for FieldChangeBody {
 /// What a row of the preview says will happen to the issue.
 #[derive(Serialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub(crate) enum BulkDetailBody {
+pub(crate) enum ManyChangeDetailBody {
     /// The fields that would change.
     Changes {
         /// The fields.
@@ -257,13 +258,13 @@ pub(crate) enum BulkDetailBody {
     },
 }
 
-impl From<&BulkDetail> for BulkDetailBody {
-    fn from(detail: &BulkDetail) -> Self {
+impl From<&ManyChangeDetail> for ManyChangeDetailBody {
+    fn from(detail: &ManyChangeDetail) -> Self {
         match detail {
-            BulkDetail::Changes { fields } => Self::Changes {
+            ManyChangeDetail::Changes { fields } => Self::Changes {
                 fields: fields.iter().map(FieldChangeBody::from).collect(),
             },
-            BulkDetail::Relation { name, issue } => Self::Relation {
+            ManyChangeDetail::Relation { name, issue } => Self::Relation {
                 name: name.clone(),
                 issue: Box::new(IssueRef::from(issue)),
             },
@@ -273,7 +274,7 @@ impl From<&BulkDetail> for BulkDetailBody {
 
 /// One issue of the preview: what will happen to it.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkRowBody {
+pub(crate) struct ManyChangeRowBody {
     /// What the person asked for the issue by.
     address: String,
     /// The issue, as the person sees it; left out for an issue that is not there for them.
@@ -287,39 +288,39 @@ pub(crate) struct BulkRowBody {
     skipped: Option<SkipReason>,
     /// What will change.
     #[serde(skip_serializing_if = "Option::is_none")]
-    detail: Option<BulkDetailBody>,
+    detail: Option<ManyChangeDetailBody>,
 }
 
-impl From<&BulkRow> for BulkRowBody {
-    fn from(row: &BulkRow) -> Self {
+impl From<&ManyChangeRow> for ManyChangeRowBody {
+    fn from(row: &ManyChangeRow) -> Self {
         Self {
             address: row.address.clone(),
             issue: row.issue.as_ref().map(IssueRef::from),
             version: row.version,
             skipped: row.skipped,
-            detail: row.detail.as_ref().map(BulkDetailBody::from),
+            detail: row.detail.as_ref().map(ManyChangeDetailBody::from),
         }
     }
 }
 
 /// What the change to many issues would do, with the sentence on top.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkPreviewBody {
+pub(crate) struct ManyChangePreviewBody {
     /// How many will change and how many are left alone.
     summary: PreviewSummaryBody,
     /// Every issue of the selection, in the order asked.
-    rows: Vec<BulkRowBody>,
+    rows: Vec<ManyChangeRowBody>,
     /// The change is too big to wait for: it runs in the background and says when it is done.
     runs_in_background: bool,
 }
 
-impl Masked for BulkPreviewBody {}
+impl Masked for ManyChangePreviewBody {}
 
-impl From<BulkPreview> for BulkPreviewBody {
-    fn from(preview: BulkPreview) -> Self {
+impl From<ManyChangePreview> for ManyChangePreviewBody {
+    fn from(preview: ManyChangePreview) -> Self {
         Self {
             summary: PreviewSummaryBody::from(preview.summary),
-            rows: preview.rows.iter().map(BulkRowBody::from).collect(),
+            rows: preview.rows.iter().map(ManyChangeRowBody::from).collect(),
             runs_in_background: preview.runs_in_background,
         }
     }
@@ -327,7 +328,7 @@ impl From<BulkPreview> for BulkPreviewBody {
 
 /// What happened to one issue of the selection.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkOutcomeBody {
+pub(crate) struct ManyChangeOutcomeBody {
     /// What the person asked for the issue by.
     address: String,
     /// The issue, as the person sees it; left out for an issue that is not there for them.
@@ -338,8 +339,8 @@ pub(crate) struct BulkOutcomeBody {
     skipped: Option<SkipReason>,
 }
 
-impl From<&BulkOutcome> for BulkOutcomeBody {
-    fn from(outcome: &BulkOutcome) -> Self {
+impl From<&ManyChangeOutcome> for ManyChangeOutcomeBody {
+    fn from(outcome: &ManyChangeOutcome) -> Self {
         Self {
             address: outcome.address.clone(),
             issue: outcome.issue.as_ref().map(IssueRef::from),
@@ -350,7 +351,7 @@ impl From<&BulkOutcome> for BulkOutcomeBody {
 
 /// An issue a run left alone.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkSkippedBody {
+pub(crate) struct ManyChangeSkippedBody {
     /// The issue, as the person sees it; left out for an issue that is not there for them.
     #[serde(skip_serializing_if = "Option::is_none")]
     issue: Option<IssueRef>,
@@ -358,8 +359,8 @@ pub(crate) struct BulkSkippedBody {
     reason: SkipReason,
 }
 
-impl From<&BulkSkipped> for BulkSkippedBody {
-    fn from(skipped: &BulkSkipped) -> Self {
+impl From<&ManyChangeSkipped> for ManyChangeSkippedBody {
+    fn from(skipped: &ManyChangeSkipped) -> Self {
         Self {
             issue: skipped.issue.as_ref().map(IssueRef::from),
             reason: skipped.reason,
@@ -369,17 +370,17 @@ impl From<&BulkSkipped> for BulkSkippedBody {
 
 /// Where a change that goes on in the background is, and nothing more.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkRunStatusBody {
+pub(crate) struct ManyChangeRunStatusBody {
     /// The ID of the run.
     id: String,
     /// Where it is.
-    status: BulkStatus,
+    status: ManyChangeStatus,
 }
 
-impl Masked for BulkRunStatusBody {}
+impl Masked for ManyChangeRunStatusBody {}
 
-impl From<&BulkRunStatus> for BulkRunStatusBody {
-    fn from(run: &BulkRunStatus) -> Self {
+impl From<&ManyChangeRunStatus> for ManyChangeRunStatusBody {
+    fn from(run: &ManyChangeRunStatus) -> Self {
         Self {
             id: run.id.to_string(),
             status: run.status,
@@ -389,11 +390,11 @@ impl From<&BulkRunStatus> for BulkRunStatusBody {
 
 /// How far a change that goes on in the background is.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkRunBody {
+pub(crate) struct ManyChangeRunBody {
     /// The ID of the run.
     id: String,
     /// Where it is.
-    status: BulkStatus,
+    status: ManyChangeStatus,
     /// How many issues it has.
     total: u32,
     /// How many it has looked at.
@@ -401,7 +402,7 @@ pub(crate) struct BulkRunBody {
     /// How many of those it changed.
     changed: u32,
     /// The first of the issues it left alone, with why.
-    skipped: Vec<BulkSkippedBody>,
+    skipped: Vec<ManyChangeSkippedBody>,
     /// How many issues it left alone in all.
     skipped_count: u32,
     /// When it was asked for.
@@ -411,17 +412,21 @@ pub(crate) struct BulkRunBody {
     finished_at: Option<String>,
 }
 
-impl Masked for BulkRunBody {}
+impl Masked for ManyChangeRunBody {}
 
-impl From<&BulkRunView> for BulkRunBody {
-    fn from(run: &BulkRunView) -> Self {
+impl From<&ManyChangeRunView> for ManyChangeRunBody {
+    fn from(run: &ManyChangeRunView) -> Self {
         Self {
             id: run.id.to_string(),
             status: run.status,
             total: run.total,
             done: run.done,
             changed: run.changed,
-            skipped: run.skipped.iter().map(BulkSkippedBody::from).collect(),
+            skipped: run
+                .skipped
+                .iter()
+                .map(ManyChangeSkippedBody::from)
+                .collect(),
             skipped_count: run.skipped_count,
             created_at: run.created_at.to_string(),
             finished_at: run.finished_at.map(|at| at.to_string()),
@@ -431,21 +436,25 @@ impl From<&BulkRunView> for BulkRunBody {
 
 /// What a change to many issues did: at once, or the run that goes on in the background.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct BulkResultBody {
+pub(crate) struct ManyChangeResultBody {
     /// What happened to each issue, when it was done at once.
-    outcomes: Vec<BulkOutcomeBody>,
+    outcomes: Vec<ManyChangeOutcomeBody>,
     /// The run, when it goes on in the background.
     #[serde(skip_serializing_if = "Option::is_none")]
-    run: Option<BulkRunBody>,
+    run: Option<ManyChangeRunBody>,
 }
 
-impl Masked for BulkResultBody {}
+impl Masked for ManyChangeResultBody {}
 
-impl From<BulkResult> for BulkResultBody {
-    fn from(result: BulkResult) -> Self {
+impl From<ManyChangeResult> for ManyChangeResultBody {
+    fn from(result: ManyChangeResult) -> Self {
         Self {
-            outcomes: result.outcomes.iter().map(BulkOutcomeBody::from).collect(),
-            run: result.run.as_ref().map(BulkRunBody::from),
+            outcomes: result
+                .outcomes
+                .iter()
+                .map(ManyChangeOutcomeBody::from)
+                .collect(),
+            run: result.run.as_ref().map(ManyChangeRunBody::from),
         }
     }
 }
@@ -455,48 +464,48 @@ impl From<BulkResult> for BulkResultBody {
 #[utoipa::path(
     post,
     path = "/api/v1/many-changes/preview",
-    operation_id = "previewBulkChange",
-    tag = "bulk",
-    request_body = PreviewBulkBody,
+    operation_id = "previewManyChanges",
+    tag = "many-changes",
+    request_body = PreviewManyChangesBody,
     responses(
-        (status = 200, description = "What would happen to each issue.", body = BulkPreviewBody),
+        (status = 200, description = "What would happen to each issue.", body = ManyChangePreviewBody),
         InvalidAnswer,
         NotSignedInAnswer,
         NotFoundAnswer
     )
 )]
-async fn preview_bulk_change(
+async fn preview_many_changes(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<PreviewBulkBody>,
+    ApiJson(body): ApiJson<PreviewManyChangesBody>,
 ) -> Result<Response, ApiError> {
     let preview = auth
         .api()?
-        .preview_bulk(
+        .preview_many_changes(
             info,
-            BulkPreviewQuery {
+            ManyChangePreviewQuery {
                 session_token,
                 issues: body.issues,
                 action: body.action.into_action()?,
             },
         )
         .await?;
-    answer_authorized(&preview.map(BulkPreviewBody::from))
+    answer_authorized(&preview.map(ManyChangePreviewBody::from))
 }
 
 /// Changes many issues at once, each on the version the preview read. Each issue is judged again,
 /// and one that changed since the preview is named and left alone. More than 1,000 issues run in
-/// the background: the answer holds the run, and `getBulkRun` says how far it is. A script with an
+/// the background: the answer holds the run, and `getManyChangeRun` says how far it is. A script with an
 /// access key sends at most 1,000 issues at a time.
 #[utoipa::path(
     post,
     path = "/api/v1/many-changes",
-    operation_id = "applyBulkChange",
-    tag = "bulk",
-    request_body = ApplyBulkBody,
+    operation_id = "applyManyChanges",
+    tag = "many-changes",
+    request_body = ApplyManyChangesBody,
     responses(
-        (status = 200, description = "What happened to each issue, or the run.", body = BulkResultBody),
+        (status = 200, description = "What happened to each issue, or the run.", body = ManyChangeResultBody),
         InvalidAnswer,
         NotSignedInAnswer,
         ForbiddenAnswer,
@@ -504,22 +513,22 @@ async fn preview_bulk_change(
         ConflictAnswer
     )
 )]
-async fn apply_bulk_change(
+async fn apply_many_changes(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiJson(body): ApiJson<ApplyBulkBody>,
+    ApiJson(body): ApiJson<ApplyManyChangesBody>,
 ) -> Result<Response, ApiError> {
     let result = auth
         .api()?
-        .apply_bulk(
+        .apply_many_changes(
             info,
-            ApplyBulk {
+            ApplyManyChanges {
                 session_token,
                 issues: body
                     .issues
                     .into_iter()
-                    .map(|target| BulkTarget {
+                    .map(|target| ManyChangeTarget {
                         issue: target.issue,
                         version: target.version,
                     })
@@ -528,7 +537,7 @@ async fn apply_bulk_change(
             },
         )
         .await?;
-    answer_authorized(&result.map(BulkResultBody::from))
+    answer_authorized(&result.map(ManyChangeResultBody::from))
 }
 
 /// How far a change to many issues that goes on in the background is. Only the person who asked
@@ -536,23 +545,23 @@ async fn apply_bulk_change(
 #[utoipa::path(
     get,
     path = "/api/v1/many-changes/runs/{run}",
-    operation_id = "getBulkRun",
-    tag = "bulk",
+    operation_id = "getManyChangeRun",
+    tag = "many-changes",
     params(("run" = String, Path, description = "The ID of the run.")),
-    responses((status = 200, description = "How far the run is.", body = BulkRunBody), NotSignedInAnswer, NotFoundAnswer)
+    responses((status = 200, description = "How far the run is.", body = ManyChangeRunBody), NotSignedInAnswer, NotFoundAnswer)
 )]
-async fn get_bulk_run(
+async fn get_many_changes_run(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let run: BulkRunId = path_id(&run)?;
+    let run: ManyChangeRunId = path_id(&run)?;
     let found = auth
         .api()?
-        .bulk_run(info, BulkRunQuery { session_token, run })
+        .many_changes_run(info, ManyChangeRunQuery { session_token, run })
         .await?;
-    answer_authorized(&found.map(|run| BulkRunBody::from(&run)))
+    answer_authorized(&found.map(|run| ManyChangeRunBody::from(&run)))
 }
 
 /// Stops a change to many issues that goes on in the background: what was changed so far stays and
@@ -561,23 +570,23 @@ async fn get_bulk_run(
 #[utoipa::path(
     post,
     path = "/api/v1/many-changes/runs/{run}/stop",
-    operation_id = "cancelBulkRun",
-    tag = "bulk",
+    operation_id = "stopManyChangeRun",
+    tag = "many-changes",
     params(("run" = String, Path, description = "The ID of the run.")),
-    responses((status = 200, description = "Where the run is after the stop.", body = BulkRunStatusBody), NotSignedInAnswer, NotFoundAnswer)
+    responses((status = 200, description = "Where the run is after the stop.", body = ManyChangeRunStatusBody), NotSignedInAnswer, NotFoundAnswer)
 )]
-async fn cancel_bulk_run(
+async fn stop_many_changes_run(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(run): ApiPath<String>,
 ) -> Result<Response, ApiError> {
-    let run: BulkRunId = path_id(&run)?;
+    let run: ManyChangeRunId = path_id(&run)?;
     let found = auth
         .api()?
-        .cancel_bulk_run(info, BulkRunQuery { session_token, run })
+        .stop_many_changes_run(info, ManyChangeRunQuery { session_token, run })
         .await?;
-    answer_authorized(&found.map(|run| BulkRunStatusBody::from(&run)))
+    answer_authorized(&found.map(|run| ManyChangeRunStatusBody::from(&run)))
 }
 
 /// The routes of changing many issues at once.
@@ -587,8 +596,8 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(preview_bulk_change))
-        .routes(routes!(apply_bulk_change))
-        .routes(routes!(get_bulk_run))
-        .routes(routes!(cancel_bulk_run))
+        .routes(routes!(preview_many_changes))
+        .routes(routes!(apply_many_changes))
+        .routes(routes!(get_many_changes_run))
+        .routes(routes!(stop_many_changes_run))
 }

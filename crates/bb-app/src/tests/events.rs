@@ -91,7 +91,7 @@ table! {
     "release_stuck_lock" => s::release_stuck_lock_scenario,
     "create_issue" => si::create_issue_scenario,
     "move_issue" => si::move_issue_scenario,
-    "apply_bulk" => si::apply_bulk_scenario,
+    "apply_many_changes" => si::apply_many_changes_scenario,
     "change_issue" => si::change_issue_scenario,
     "save_description" => si::save_description_scenario,
     "delete_issue" => si::delete_issue_scenario,

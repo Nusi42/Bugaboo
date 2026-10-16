@@ -4,17 +4,17 @@ import { useState } from "react";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
 import { relationChoices } from "../relations/index.ts";
 import {
-  bulkKind,
+  manyChangeKind,
   targetsOf,
-  useApplyBulk,
-  usePreviewBulk,
-  type BulkApplied,
-  type BulkKind,
-} from "./bulk.ts";
+  useApplyManyChanges,
+  usePreviewManyChanges,
+  type ManyChangeApplied,
+  type ManyChangeKind,
+} from "./many-changes.ts";
 import { actionOf, emptyDraft, type Draft } from "./draft.ts";
 
 /** What is filled in for one of the five things, and the request it makes (nothing while it is not complete). */
-function useBulkDraft(kind: BulkKind) {
+function useManyChangeDraft(kind: ManyChangeKind) {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const kinds = useRelationKinds();
   const relations = relationChoices(relationKindLinesOf(kinds.data?.pages));
@@ -23,7 +23,7 @@ function useBulkDraft(kind: BulkKind) {
     setDraft,
     relations,
     action: actionOf(kind, draft, relations),
-    plain: kind === bulkKind.delete ? t("many-changes.line-delete") : "",
+    plain: kind === manyChangeKind.delete ? t("many-changes.line-delete") : "",
   };
 }
 
@@ -31,14 +31,14 @@ function useBulkDraft(kind: BulkKind) {
  * What the dialog of changing many issues keeps: what is filled in, the preview of it, and the
  * request that applies it on the versions the preview was made from.
  */
-export function useBulkDialog(
-  kind: BulkKind,
+export function useManyChangeDialog(
+  kind: ManyChangeKind,
   issues: readonly string[],
-  onApplied: (applied: BulkApplied) => void,
+  onApplied: (applied: ManyChangeApplied) => void,
 ) {
-  const { draft, setDraft, relations, action, plain } = useBulkDraft(kind);
-  const preview = usePreviewBulk();
-  const apply = useApplyBulk(onApplied);
+  const { draft, setDraft, relations, action, plain } = useManyChangeDraft(kind);
+  const preview = usePreviewManyChanges();
+  const apply = useApplyManyChanges(onApplied);
   const changes = preview.data === undefined ? [] : targetsOf(preview.data);
   return {
     draft,

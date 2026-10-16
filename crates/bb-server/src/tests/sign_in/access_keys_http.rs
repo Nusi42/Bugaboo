@@ -280,7 +280,7 @@ const MY_SETTINGS: [&str; 11] = [
     "listRelationKinds",
     "listFields",
     "getField",
-    "getBulkRun",
+    "getManyChangeRun",
     "listLabels",
 ];
 

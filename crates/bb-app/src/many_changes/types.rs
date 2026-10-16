@@ -8,9 +8,9 @@
 
 use std::collections::BTreeMap;
 
-use bb_core::bulk::{BulkStatus, SkipReason};
-use bb_core::id::{BulkRunId, LabelId, RelationKindId, UserId};
+use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
 use bb_core::issue::{Priority, Status};
+use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::relation::Direction;
 use bb_policy::Masked;
 use jiff::Timestamp;
@@ -24,7 +24,7 @@ use crate::relations::IssueLine;
 /// Fields to change on every issue: what is `Some` is changed. The same fields as changing one
 /// issue, except those that only make sense for one (the title, the issue type).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct BulkChange {
+pub struct ManyChange {
     /// A new status.
     pub status: Option<Status>,
     /// A new priority.
@@ -38,11 +38,11 @@ pub struct BulkChange {
 /// What is done to every issue of the selection.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub enum BulkAction {
+pub enum ManyChangeAction {
     /// Change fields (*Change fields*, *Change status*).
     Change {
         /// What to change.
-        change: BulkChange,
+        change: ManyChange,
     },
     /// Move the issues into a project.
     Move {
@@ -67,7 +67,7 @@ pub enum BulkAction {
     Delete,
 }
 
-impl BulkAction {
+impl ManyChangeAction {
     /// What the action is called in the event of a run.
     #[must_use]
     pub const fn word(&self) -> &'static str {
@@ -83,7 +83,7 @@ impl BulkAction {
 
 /// One issue of the selection as the change takes it: the version the preview read.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BulkTarget {
+pub struct ManyChangeTarget {
     /// The issue, by its readable ID (also an old one) or its internal ID.
     pub issue: String,
     /// The version of the issue the preview read.
@@ -91,37 +91,37 @@ pub struct BulkTarget {
 }
 
 /// What the change to many issues would do.
-pub struct BulkPreviewQuery {
+pub struct ManyChangePreviewQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The issues, by their readable or internal IDs.
     pub issues: Vec<String>,
     /// What would be done.
-    pub action: BulkAction,
+    pub action: ManyChangeAction,
 }
 
 /// Change many issues, after the preview.
-pub struct ApplyBulk {
+pub struct ApplyManyChanges {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The issues with the versions the preview read.
-    pub issues: Vec<BulkTarget>,
+    pub issues: Vec<ManyChangeTarget>,
     /// What to do.
-    pub action: BulkAction,
+    pub action: ManyChangeAction,
 }
 
 /// Which run of a change to many issues.
-pub struct BulkRunQuery {
+pub struct ManyChangeRunQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The run.
-    pub run: BulkRunId,
+    pub run: ManyChangeRunId,
 }
 
 /// What a row of the preview says about the issue.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub enum BulkDetail {
+pub enum ManyChangeDetail {
     /// The fields that would change, as the history will show them.
     Changes {
         /// The fields.
@@ -138,7 +138,7 @@ pub enum BulkDetail {
 
 /// One issue of the preview: what will happen to it.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct BulkRow {
+pub struct ManyChangeRow {
     /// What the person asked for the issue by.
     pub address: String,
     /// The issue, as the person sees it; none for an issue that is not there for them.
@@ -148,25 +148,25 @@ pub struct BulkRow {
     /// Why the issue is left alone; none when it will change.
     pub skipped: Option<SkipReason>,
     /// What will change.
-    pub detail: Option<BulkDetail>,
+    pub detail: Option<ManyChangeDetail>,
 }
 
 /// What the change to many issues would do, per issue, with the sentence on top.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct BulkPreview {
+pub struct ManyChangePreview {
     /// How many will change and how many are left alone.
     pub summary: PreviewSummary,
     /// Every issue of the selection, in the order asked.
-    pub rows: Vec<BulkRow>,
+    pub rows: Vec<ManyChangeRow>,
     /// The change is too big to wait for: it runs in the background and says when it is done.
     pub runs_in_background: bool,
 }
 
-impl Masked for BulkPreview {}
+impl Masked for ManyChangePreview {}
 
 /// What happened to one issue of the selection.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct BulkOutcome {
+pub struct ManyChangeOutcome {
     /// What the person asked for the issue by.
     pub address: String,
     /// The issue, as the person sees it; none for an issue that is not there for them.
@@ -177,7 +177,7 @@ pub struct BulkOutcome {
 
 /// An issue a run left alone.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct BulkSkipped {
+pub struct ManyChangeSkipped {
     /// The issue, as the person sees it; none for an issue that is not there for them.
     pub issue: Option<IssueLine>,
     /// Why.
@@ -187,22 +187,22 @@ pub struct BulkSkipped {
 /// Where a run in the background is, and nothing more: what somebody who stopped the run of another
 /// person is told (the counts are of the issues that person named).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-pub struct BulkRunStatus {
+pub struct ManyChangeRunStatus {
     /// The run.
-    pub id: BulkRunId,
+    pub id: ManyChangeRunId,
     /// Where it is.
-    pub status: BulkStatus,
+    pub status: ManyChangeStatus,
 }
 
-impl Masked for BulkRunStatus {}
+impl Masked for ManyChangeRunStatus {}
 
 /// How far a run in the background is.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct BulkRunView {
+pub struct ManyChangeRunView {
     /// The run.
-    pub id: BulkRunId,
+    pub id: ManyChangeRunId,
     /// Where it is.
-    pub status: BulkStatus,
+    pub status: ManyChangeStatus,
     /// How many issues it has.
     pub total: u32,
     /// How many it has looked at.
@@ -210,7 +210,7 @@ pub struct BulkRunView {
     /// How many of those it changed.
     pub changed: u32,
     /// The first of the issues it left alone, with why.
-    pub skipped: Vec<BulkSkipped>,
+    pub skipped: Vec<ManyChangeSkipped>,
     /// How many issues it left alone in all.
     pub skipped_count: u32,
     /// When it was asked for.
@@ -219,18 +219,18 @@ pub struct BulkRunView {
     pub finished_at: Option<Timestamp>,
 }
 
-impl Masked for BulkRunView {}
+impl Masked for ManyChangeRunView {}
 
 /// What a change to many issues did: at once, or the run that goes on in the background.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct BulkResult {
+pub struct ManyChangeResult {
     /// What happened to each issue, when it was done at once.
-    pub outcomes: Vec<BulkOutcome>,
+    pub outcomes: Vec<ManyChangeOutcome>,
     /// The run, when it goes on in the background.
-    pub run: Option<BulkRunView>,
+    pub run: Option<ManyChangeRunView>,
 }
 
-impl Masked for BulkResult {}
+impl Masked for ManyChangeResult {}
 
 /// The most issues a run lists as left alone.
 pub const RUN_SKIPPED_MAX: usize = 50;

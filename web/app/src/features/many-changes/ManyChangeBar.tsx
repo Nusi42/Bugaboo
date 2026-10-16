@@ -5,30 +5,30 @@ import { useState } from "react";
 import type { SelectionBarProps } from "../issues/index.ts";
 import { actionName } from "./action-names.ts";
 import { afterApply } from "./after-apply.ts";
-import { bulkKind, type BulkApplied, type BulkKind } from "./bulk.ts";
-import { BulkDialog } from "./BulkDialog.tsx";
-import { BulkOutcome } from "./BulkOutcome.tsx";
+import { manyChangeKind, type ManyChangeApplied, type ManyChangeKind } from "./many-changes.ts";
+import { ManyChangeDialog } from "./ManyChangeDialog.tsx";
+import { ManyChangeOutcome } from "./ManyChangeOutcome.tsx";
 
 /** The five things, in the order of the buttons. */
-const kinds: readonly BulkKind[] = [
-  bulkKind.change,
-  bulkKind.move,
-  bulkKind.label,
-  bulkKind.relation,
-  bulkKind.delete,
+const kinds: readonly ManyChangeKind[] = [
+  manyChangeKind.change,
+  manyChangeKind.move,
+  manyChangeKind.label,
+  manyChangeKind.relation,
+  manyChangeKind.delete,
 ];
 
 /**
  * The bar under the list while issues are ticked (ISS-09): the five things that can be done to
  * them at once. Each opens a dialog that shows what would change before anything does.
  */
-export function BulkBar({ selection }: SelectionBarProps) {
-  const [open, setOpen] = useState<BulkKind | null>(null);
-  const [applied, setApplied] = useState<BulkApplied | null>(null);
+export function ManyChangeBar({ selection }: SelectionBarProps) {
+  const [open, setOpen] = useState<ManyChangeKind | null>(null);
+  const [applied, setApplied] = useState<ManyChangeApplied | null>(null);
   return (
     <div {...partOf(part.stack)}>
       {selection.ids.length === 0 ? null : (
-        <section {...partOf(part.bulkBar)} aria-label={t("many-changes.bar")}>
+        <section {...partOf(part.manyChangeBar)} aria-label={t("many-changes.bar")}>
           {kinds.map((kind) => (
             <Button
               key={kind}
@@ -43,7 +43,7 @@ export function BulkBar({ selection }: SelectionBarProps) {
         </section>
       )}
       {open === null ? null : (
-        <BulkDialog
+        <ManyChangeDialog
           kind={open}
           issues={selection.ids}
           isOpen
@@ -58,7 +58,7 @@ export function BulkBar({ selection }: SelectionBarProps) {
           }}
         />
       )}
-      {applied === null ? null : <BulkOutcome applied={applied} />}
+      {applied === null ? null : <ManyChangeOutcome applied={applied} />}
     </div>
   );
 }
