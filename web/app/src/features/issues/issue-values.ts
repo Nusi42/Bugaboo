@@ -41,6 +41,8 @@ export function rowFieldOf(values: IssueValues): RowField | undefined {
 export interface IssueEdit {
   readonly values: IssueValues;
   readonly version: number;
+  /** Called with the version the server made of it, once it did: what *Undo* of this change is sent on. */
+  readonly landed?: (version: number) => void;
 }
 
 /** Whether what the cache holds under the key is the page of an issue. */

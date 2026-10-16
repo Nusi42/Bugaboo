@@ -5,8 +5,12 @@ import { queryKeys } from "../../shared/query-keys.ts";
 import { versionOf } from "../../shared/version.ts";
 import { isDetail, type IssueEdit } from "./issue-values.ts";
 
-/** Asks the server for the change, after the changes that were asked for before it. */
-export async function sendChange(id: string, edit: IssueEdit): Promise<void> {
+/**
+ * Asks the server for the change, after the changes that were asked for before it. Answers with the
+ * version the change made: *Undo* is sent on that one, so a change that somebody else made after it
+ * is not overwritten but comes back as a conflict.
+ */
+export async function sendChange(id: string, edit: IssueEdit): Promise<number | undefined> {
   const { values, version } = edit;
   const body = {
     version,
@@ -19,10 +23,11 @@ export async function sendChange(id: string, edit: IssueEdit): Promise<void> {
     ...(values.own === undefined ? {} : { fields: values.own }),
   };
   // One after the other: each change is made on the version the one before it has just made.
-  await inOrder(`issue:${id}`, () =>
+  const answer = await inOrder(`issue:${id}`, () =>
     api.client.PATCH("/api/v1/issues/{issue}", { params: { path: { issue: id } }, body }),
   );
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+  return answer.data?.version ?? undefined;
 }
 
 /**

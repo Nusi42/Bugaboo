@@ -58,7 +58,10 @@ interface Notes {
 function sendAndNote(id: string, notes: Notes): (edit: IssueEdit) => Promise<void> {
   return async (edit) => {
     try {
-      await sendChange(id, edit);
+      const version = await sendChange(id, edit);
+      if (version !== undefined) {
+        edit.landed?.(version);
+      }
     } catch (error) {
       const conflict = conflictOf(error);
       if (conflict !== undefined) {
@@ -97,6 +100,26 @@ function useLastRow(): {
   };
 }
 
+/** What the answers to a change that came second do. */
+interface ConflictWays {
+  /** Takes the change back and reads the issue again. */
+  readonly drop: () => void;
+  /** Sends the values again, on this version when the server named one. */
+  readonly again: (values: IssueValues, version: number | null | undefined) => void;
+}
+
+/** The two answers to a change that somebody else made first: *Keep Ben's* and *Use mine*. */
+function conflictAnswers(held: Held, ways: ConflictWays): IssueConflict {
+  return {
+    sentence: held.sentence,
+    theirs: keepTheirsText(held.conflict),
+    keepTheirs: ways.drop,
+    useMine: () => {
+      ways.again(held.edit.values, held.conflict.version);
+    },
+  };
+}
+
 /** What the page of an issue gets for changing short values. */
 export interface IssueChanges {
   /** Shows the change at once and sends it; *Undo* is on offer for 10 seconds. */
@@ -131,20 +154,23 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     apply: after,
     send: sendAndNote(id, { held: setHeld, savedAt: setSavedAt }),
   });
-  const run = (values: IssueValues, version: number): void => {
+  const run = (values: IssueValues, version: number, landed?: (version: number) => void): void => {
     setHeld(null);
-    mutation.change({ values, version });
+    mutation.change({ values, version, ...(landed === undefined ? {} : { landed }) });
   };
   return {
     change: (values) => {
       const before = valuesBefore(detail, values);
-      run(values, versionNow(address, detail.issue));
+      const made: { version?: number } = {};
+      run(values, versionNow(address, detail.issue), (version) => {
+        made.version = version;
+      });
       const field = rowFieldOf(values);
       const offer = undoStore.offer({
         message: changeSentence(values),
         inline: field !== undefined,
         undo: () => {
-          run(before, versionNow(address, detail.issue));
+          run(before, made.version ?? versionNow(address, detail.issue));
         },
       });
       rowChanged(field, offer);
@@ -156,16 +182,14 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     conflict:
       held === null
         ? null
-        : {
-            sentence: held.sentence,
-            theirs: keepTheirsText(held.conflict),
-            keepTheirs: () => {
+        : conflictAnswers(held, {
+            drop: () => {
               setHeld(null);
               readAgain(address);
             },
-            useMine: () => {
-              run(held.edit.values, held.conflict.version ?? versionNow(address, detail.issue));
+            again: (values, version) => {
+              run(values, version ?? versionNow(address, detail.issue));
             },
-          },
+          }),
   };
 }
