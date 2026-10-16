@@ -14,9 +14,9 @@ import { LabelsPart, TagsPart } from "./LabelsAndTagsParts.tsx";
  * of them show (`form.shows`, like *Reported by*), and a person who may not see a field gets
  * nothing of it (SEC-06).
  */
-export function IssueLabelsAndTagsBlock({ issue, issueKey, form }: IssueBlockProps) {
+export function IssueLabelsAndTagsBlock({ issue, readableId, form }: IssueBlockProps) {
   const heading = useId();
-  const labelsAndTags = useIssueLabelsAndTags(issueKey);
+  const labelsAndTags = useIssueLabelsAndTags(readableId);
   const [showTags, showLabels] = [form.shows("tags"), form.shows("labels")];
   if (labelsAndTags.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(labelsAndTags.error)}</Alert>;
@@ -31,9 +31,9 @@ export function IssueLabelsAndTagsBlock({ issue, issueKey, form }: IssueBlockPro
         {t("labels.labels-and-tags-title")}
       </h3>
       {showTags ? (
-        <TagsPart body={body} issueKey={issueKey} project={issue.project?.short_name} />
+        <TagsPart body={body} readableId={readableId} project={issue.project?.short_name} />
       ) : null}
-      {showLabels ? <LabelsPart body={body} issueKey={issueKey} /> : null}
+      {showLabels ? <LabelsPart body={body} readableId={readableId} /> : null}
     </section>
   );
 }

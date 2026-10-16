@@ -49,7 +49,7 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
  * *History* (ISS-06): the comments and the changes of the issue in time order, in three tabs, with
  * the box to write a comment. A change to a field the reader may not see is not in it.
  */
-export function HistoryBlock({ issueKey }: { readonly issueKey: string }) {
+export function HistoryBlock({ readableId }: { readonly readableId: string }) {
   const heading = useId();
   const [tab, setTab] = useState<HistoryTabName>("everything");
   return (
@@ -57,7 +57,7 @@ export function HistoryBlock({ issueKey }: { readonly issueKey: string }) {
       <h2 id={heading} {...partOf(part.issueSectionTitle)}>
         {t("history.title")}
       </h2>
-      <CommentComposer issue={issueKey} />
+      <CommentComposer issue={readableId} />
       <Tabs
         selectedKey={tab}
         onSelectionChange={(key) => {
@@ -73,7 +73,7 @@ export function HistoryBlock({ issueKey }: { readonly issueKey: string }) {
         </TabList>
         {historyTabs.map((each) => (
           <TabPanel key={each} id={each}>
-            <Entries issue={issueKey} tab={each} />
+            <Entries issue={readableId} tab={each} />
           </TabPanel>
         ))}
       </Tabs>

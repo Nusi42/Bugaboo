@@ -10,8 +10,8 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, UserId};
-use bb_core::issue_key::IssueKey;
 use bb_core::paging::{Cut, page_len, read_len};
+use bb_core::readable_id::ReadableId;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 
@@ -30,7 +30,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let store = self.store();
         let nowhere = IssueId::from_parts(Timestamp::UNIX_EPOCH, [0; 10])
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        if let Ok(key) = address.parse::<IssueKey>() {
+        if let Ok(key) = address.parse::<ReadableId>() {
             let Some(project) = store
                 .project_by_address(&key.short_name)
                 .await

@@ -7,9 +7,9 @@ use std::sync::Arc;
 use bb_core::event::RecordKind;
 use bb_core::id::{EntityId, IssueId, IssueTypeId, UserId};
 use bb_core::issue::Issue;
-use bb_core::issue_key::IssueKey;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::Project;
+use bb_core::readable_id::ReadableId;
 use bb_policy::{Evaluation, PeopleContext, PersonRef};
 
 use super::types::{IssueTypeRef, IssueView};
@@ -131,7 +131,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(IssueView {
             id: issue.id,
-            key: IssueKey::new(views.project.short_name.clone(), issue.code.clone()).to_string(),
+            key: ReadableId::new(views.project.short_name.clone(), issue.code.clone()).to_string(),
             project: ProjectRef::from(&views.project),
             issue_type,
             title: issue.title.clone(),

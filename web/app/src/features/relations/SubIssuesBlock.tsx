@@ -42,7 +42,7 @@ function useParentChange() {
 }
 
 /** *Add sub-issue*: the readable ID of an issue that then sits under this one, with *Undo*. */
-function AddSubIssue({ issueKey }: { readonly issueKey: string }) {
+function AddSubIssue({ readableId }: { readonly readableId: string }) {
   const [other, setOther] = useState("");
   const { added, error, pending, put } = useParentChange();
   return (
@@ -50,7 +50,7 @@ function AddSubIssue({ issueKey }: { readonly issueKey: string }) {
       onSubmit={() => {
         const child = other.trim();
         setOther("");
-        void put(child, issueKey);
+        void put(child, readableId);
       }}
     >
       <TextField
@@ -98,11 +98,11 @@ function TakeOut({ child, label }: { readonly child: string; readonly label: str
 /** *Part of: Goal …*, the issue this one sits under, when the viewer may see it. */
 function PartOf({
   above,
-  issueKey,
+  readableId,
   mayChange,
 }: {
   readonly above: ShownIssue;
-  readonly issueKey: string;
+  readonly readableId: string;
   readonly mayChange: boolean;
 }) {
   return (
@@ -110,7 +110,7 @@ function PartOf({
       <span>{t("issue-field.parent")}</span>
       <IssueRefLine issue={above}>
         {mayChange ? (
-          <TakeOut child={issueKey} label={t("sub-issues.not-part-of", { key: above.key })} />
+          <TakeOut child={readableId} label={t("sub-issues.not-part-of", { key: above.key })} />
         ) : null}
       </IssueRefLine>
     </div>
@@ -164,10 +164,10 @@ function Parts({
  * *Sub-issues* (ISS-03): the issue this one sits under, how far its parts are (counting only the
  * ones the viewer may see), the parts, and *Add sub-issue*.
  */
-export function SubIssuesBlock({ issueKey }: BlockProps) {
+export function SubIssuesBlock({ readableId }: BlockProps) {
   const heading = useId();
-  const header = useIssueRelations(issueKey);
-  const list = useSubIssues(issueKey);
+  const header = useIssueRelations(readableId);
+  const list = useSubIssues(readableId);
   const above = header.data?.part_of;
   const progress = header.data?.progress;
   const mayChange = header.data?.may_change === true;
@@ -178,7 +178,7 @@ export function SubIssuesBlock({ issueKey }: BlockProps) {
       </h2>
       {header.isError ? <Alert tone={alertTone.danger}>{messageOf(header.error)}</Alert> : null}
       {above === undefined || above === null ? null : (
-        <PartOf above={above} issueKey={issueKey} mayChange={mayChange} />
+        <PartOf above={above} readableId={readableId} mayChange={mayChange} />
       )}
       {progress === undefined || progress === null ? null : (
         <Progress done={progress.done} total={progress.total} />
@@ -194,7 +194,7 @@ export function SubIssuesBlock({ issueKey }: BlockProps) {
           {t("sub-issues.more")}
         </Button>
       ) : null}
-      {mayChange ? <AddSubIssue issueKey={issueKey} /> : null}
+      {mayChange ? <AddSubIssue readableId={readableId} /> : null}
     </section>
   );
 }

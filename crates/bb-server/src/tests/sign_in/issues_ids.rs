@@ -10,8 +10,8 @@ use bb_app::issues::CreateIssue;
 use bb_app::jobs::JobStore as _;
 use bb_core::event::{Actor, EntityKind, RecordKind};
 use bb_core::id::JobId;
-use bb_core::issue_key::IssueKey;
 use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, MANY_CHANGES_STEP};
+use bb_core::readable_id::ReadableId;
 use bb_core::technical::TechnicalName;
 use bb_core::text::CROCKFORD;
 use bb_testing::{Failure, TestResult, each_database};
@@ -39,7 +39,7 @@ async fn mode(ada: &mut Browser, value: Option<&str>) -> Result<(), Failure> {
 
 /// The code of an issue ID (`ACME-142` is `142`).
 fn code_of(key: &Value) -> Result<String, Failure> {
-    let key: IssueKey = key.as_str().ok_or("no issue ID")?.parse()?;
+    let key: ReadableId = key.as_str().ok_or("no issue ID")?.parse()?;
     Ok(key.code.to_string())
 }
 

@@ -13,8 +13,8 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias};
-use bb_core::issue_key::{IssueCode, IssueKey};
 use bb_core::project::{Project, ShortName};
+use bb_core::readable_id::{IssueCode, ReadableId};
 use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -280,7 +280,7 @@ impl MoveWrite {
             .ok_or_else(S::aborted)?
             .short_name;
         let key = |short_name: &ShortName, code: &IssueCode| {
-            json!(IssueKey::new(short_name.clone(), code.clone()).to_string())
+            json!(ReadableId::new(short_name.clone(), code.clone()).to_string())
         };
         let followed = events
             .create(

@@ -12,8 +12,8 @@ use std::collections::{BTreeMap, HashMap};
 use bb_core::fields::Field;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::Issue;
-use bb_core::issue_key::IssueKey;
 use bb_core::project::Project;
+use bb_core::readable_id::ReadableId;
 
 use super::types::IssueLine;
 use crate::access::Actor;
@@ -83,7 +83,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let status_seen = mask.can_see(Field::Status);
         Ok(Some(IssueLine {
             id: issue.id,
-            key: IssueKey::new(project.short_name.clone(), issue.code.clone()).to_string(),
+            key: ReadableId::new(project.short_name.clone(), issue.code.clone()).to_string(),
             project: ProjectRef::from(project),
             issue_type,
             title: mask.can_see(Field::Title).then(|| issue.title.clone()),

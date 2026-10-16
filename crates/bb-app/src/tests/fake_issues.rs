@@ -4,7 +4,7 @@
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType};
-use bb_core::issue_key::IssueCode;
+use bb_core::readable_id::IssueCode;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};

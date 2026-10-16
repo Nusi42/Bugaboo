@@ -71,8 +71,8 @@ mod test_support {
     use bb_app::ports::ChangeStore;
     use bb_core::id::{IssueId, IssueTypeId, ProjectId};
     use bb_core::issue::{Issue, IssueIcon, IssueType, Priority, Status};
-    use bb_core::issue_key::IssueCode;
     use bb_core::project::{Project, ShortName};
+    use bb_core::readable_id::IssueCode;
     use bb_core::version::FIRST_VERSION;
 
     use crate::{AuthStorage, Database, LogSeal};

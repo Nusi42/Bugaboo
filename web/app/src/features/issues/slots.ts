@@ -63,7 +63,7 @@ export interface IssueBlockProps {
   /** The address the page was opened with: what a block that reads the issue again asks for. */
   readonly address: string;
   /** The readable ID (`WEB-142`), for links and for the records a block reads. */
-  readonly issueKey: string;
+  readonly readableId: string;
   /** The long-text own fields as the server rendered them (WP-05), by the key of the field. */
   readonly ownFieldsHtml: IssueDetail["own_fields_html"];
   /** What the person may change in this issue. */

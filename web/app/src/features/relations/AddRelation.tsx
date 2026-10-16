@@ -21,13 +21,13 @@ import { relationChoices, type BlockProps, type RelationChoice } from "./relatio
 
 /** What *Add relation* shows after the third step: the relation that was made, with *Undo*. */
 function Added({
-  issueKey,
+  readableId,
   other,
   name,
   relation,
   onUndo,
 }: {
-  readonly issueKey: string;
+  readonly readableId: string;
   readonly other: string;
   readonly name: string;
   readonly relation: string;
@@ -35,7 +35,7 @@ function Added({
 }) {
   return (
     <Alert tone={alertTone.success}>
-      <span>{t("related-issues.added", { key: issueKey, name, other })}</span>
+      <span>{t("related-issues.added", { key: readableId, name, other })}</span>
       <Button
         look={buttonLook.quiet}
         onPress={() => {
@@ -97,7 +97,7 @@ function Steps({
 }
 
 /** What the three steps keep: the words picked, the other issue, and the relation just made. */
-function useAddRelation(issueKey: string) {
+function useAddRelation(readableId: string) {
   const kinds = useRelationKinds();
   const choices = relationChoices(relationKindLinesOf(kinds.data?.pages));
   const [chosen, setChosen] = useState<string | null>(null);
@@ -121,7 +121,7 @@ function useAddRelation(issueKey: string) {
   const submit = () => {
     if (choice !== undefined) {
       add.mutate({
-        params: { path: { issue: issueKey } },
+        params: { path: { issue: readableId } },
         body: { other: other.trim(), kind: choice.kind, direction: choice.direction },
       });
     }
@@ -133,8 +133,11 @@ function useAddRelation(issueKey: string) {
  * *Add relation* in three small steps (UX §4.4): pick the words, find the issue, and see it done
  * with *Undo*. The relation then shows on both issues, each in its own words.
  */
-export function AddRelation({ issueKey, onClose }: BlockProps & { readonly onClose: () => void }) {
-  const state = useAddRelation(issueKey);
+export function AddRelation({
+  readableId,
+  onClose,
+}: BlockProps & { readonly onClose: () => void }) {
+  const state = useAddRelation(readableId);
   if (state.kinds.isSuccess && state.choices.length === 0) {
     return <p {...partOf(part.muted)}>{t("related-issues.nothing-to-pick")}</p>;
   }
@@ -157,7 +160,7 @@ export function AddRelation({ issueKey, onClose }: BlockProps & { readonly onClo
       ) : null}
       {state.made === null ? null : (
         <Added
-          issueKey={issueKey}
+          readableId={readableId}
           other={state.made.other}
           name={state.made.name}
           relation={state.made.relation}

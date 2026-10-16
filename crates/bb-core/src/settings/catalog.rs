@@ -6,8 +6,8 @@ use super::themes::{
 use super::{
     Bool, ChangedBy, Choice, Format, Integer, Level, Setting, SettingDefinition, Text, settings,
 };
-use crate::issue_key::IdMode;
 use crate::message;
+use crate::readable_id::IdMode;
 
 /// The choices of *Theme*: follow the device, or always light or always dark.
 const MODE_CHOICES: &[Choice] = &[

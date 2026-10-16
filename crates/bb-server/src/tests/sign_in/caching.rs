@@ -90,11 +90,11 @@ async fn a_role(rig: &Rig) -> Result<String, Failure> {
 }
 
 /// The ID of a comment written on the issue, for the routes that name a comment.
-async fn a_comment_on(ada: &mut Browser, issue_key: &str) -> Result<String, Failure> {
+async fn a_comment_on(ada: &mut Browser, readable_id: &str) -> Result<String, Failure> {
     let written = ada
         .send(
             "POST",
-            &format!("/api/v1/issues/{issue_key}/comments"),
+            &format!("/api/v1/issues/{readable_id}/comments"),
             Some(json!({"text": "A comment to read the versions of."})),
         )
         .await?;
@@ -135,9 +135,9 @@ async fn a_field(ada: &mut Browser) -> Result<String, Failure> {
 /// The IDs of a comment on the issue and of an own field.
 async fn a_comment_and_a_field(
     ada: &mut Browser,
-    issue_key: &str,
+    readable_id: &str,
 ) -> Result<(String, String), Failure> {
-    Ok((a_comment_on(ada, issue_key).await?, a_field(ada).await?))
+    Ok((a_comment_on(ada, readable_id).await?, a_field(ada).await?))
 }
 
 /// The address of a route that is about something named in its query: the draft and lock routes
@@ -184,9 +184,9 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .ok_or("no person")?
                 .to_owned(),
         );
-        let issue_key = an_issue_in_example(&mut ada).await?;
+        let readable_id = an_issue_in_example(&mut ada).await?;
         // A comment and an own field, for the routes that name one.
-        let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &issue_key).await?;
+        let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &readable_id).await?;
         let run_id = a_run_of(&rig, &person_id).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
@@ -205,7 +205,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{group_id}", &group_id)
                 .replace("{person_id}", &person_id)
                 .replace("{person}", &person_id)
-                .replace("{issue}", &issue_key)
+                .replace("{issue}", &readable_id)
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
                 .replace("{run}", &run_id)

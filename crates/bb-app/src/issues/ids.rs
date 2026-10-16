@@ -13,9 +13,9 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::{IdSource, JobId, ProjectId, UserId};
 use bb_core::issue::IssueAlias;
-use bb_core::issue_key::{IdMode, IssueCode, IssueKey, code_length, longest_code};
 use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, MANY_CHANGES_STEP};
 use bb_core::project::ShortName;
+use bb_core::readable_id::{IdMode, IssueCode, ReadableId, code_length, longest_code};
 use bb_core::settings::{
     ISSUES_ID_LENGTH, ISSUES_ID_MODE, Layers, Scope, SettingDefinition, SettingValue,
 };
@@ -268,7 +268,7 @@ pub(crate) async fn renew_step_in<S: AuthStore>(
             .await?
             .map_or(FIRST_VERSION, |found| found.version);
         let key = |code: IssueCode| {
-            serde_json::json!(IssueKey::new(renewal.short_name.clone(), code).to_string())
+            serde_json::json!(ReadableId::new(renewal.short_name.clone(), code).to_string())
         };
         let event = events
             .create(

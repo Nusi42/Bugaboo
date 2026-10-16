@@ -4,7 +4,7 @@
 use bb_app::issues::{InTrash, IssueStore as _};
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::id::IdSource;
-use bb_core::issue_key::IssueCode;
+use bb_core::readable_id::IssueCode;
 use bb_testing::{TestResult, each_database};
 use jiff::Timestamp;
 

@@ -161,27 +161,27 @@ impl crate::personal::NotPersonal for IssueCode {}
 
 /// The text is not an issue ID.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct InvalidIssueKey;
+pub struct InvalidReadableId;
 
-impl fmt::Display for InvalidIssueKey {
+impl fmt::Display for InvalidReadableId {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("an issue ID is a short name, a dash and a code, like WEB-142")
     }
 }
 
-impl std::error::Error for InvalidIssueKey {}
+impl std::error::Error for InvalidReadableId {}
 
 /// A readable issue ID, as written (`WEB-142`): the short name of a project and a code. It may be
 /// an old one: the store finds the issue that has it now.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct IssueKey {
+pub struct ReadableId {
     /// The project's short name (an old one counts: it stays with the project).
     pub short_name: ShortName,
     /// The code.
     pub code: IssueCode,
 }
 
-impl IssueKey {
+impl ReadableId {
     /// The key of `code` in the project that has `short_name`.
     #[must_use]
     pub const fn new(short_name: ShortName, code: IssueCode) -> Self {
@@ -189,12 +189,12 @@ impl IssueKey {
     }
 }
 
-impl FromStr for IssueKey {
-    type Err = InvalidIssueKey;
+impl FromStr for ReadableId {
+    type Err = InvalidReadableId;
 
     /// Reads `WEB-142` and `WEB-K7Q2X`, also in lower case.
-    fn from_str(text: &str) -> Result<Self, InvalidIssueKey> {
-        let (short_name, code) = text.split_once(KEY_SEPARATOR).ok_or(InvalidIssueKey)?;
+    fn from_str(text: &str) -> Result<Self, InvalidReadableId> {
+        let (short_name, code) = text.split_once(KEY_SEPARATOR).ok_or(InvalidReadableId)?;
         let capitals = text.to_ascii_uppercase();
         let (short_name_capitals, code_capitals) = (
             &capitals[..short_name.len()],
@@ -202,13 +202,13 @@ impl FromStr for IssueKey {
         );
         debug_assert_eq!(code.len(), code_capitals.len());
         Ok(Self {
-            short_name: ShortName::new(short_name_capitals).map_err(|_| InvalidIssueKey)?,
-            code: IssueCode::new(code_capitals).map_err(|_| InvalidIssueKey)?,
+            short_name: ShortName::new(short_name_capitals).map_err(|_| InvalidReadableId)?,
+            code: IssueCode::new(code_capitals).map_err(|_| InvalidReadableId)?,
         })
     }
 }
 
-impl fmt::Display for IssueKey {
+impl fmt::Display for ReadableId {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{}{KEY_SEPARATOR}{}", self.short_name, self.code)
     }
@@ -310,15 +310,15 @@ mod tests {
     #[test]
     fn iss_01a_a_key_is_read_in_both_forms_and_written_the_same() {
         for text in ["WEB-142", "WEB-K7Q2X", "AB-1", "APP2-ZZZZ"] {
-            let key: IssueKey = text.parse().unwrap();
+            let key: ReadableId = text.parse().unwrap();
             assert_eq!(key.to_string(), text);
         }
-        let lower: IssueKey = "web-k7q2x".parse().unwrap();
+        let lower: ReadableId = "web-k7q2x".parse().unwrap();
         assert_eq!(lower.to_string(), "WEB-K7Q2X");
         for bad in [
             "", "WEB", "WEB-", "-142", "W-1", "WEB--1", "WEB-0", "WEB-K7", "WEB 142", "WEB-1-2",
         ] {
-            assert_eq!(bad.parse::<IssueKey>(), Err(InvalidIssueKey), "{bad:?}");
+            assert_eq!(bad.parse::<ReadableId>(), Err(InvalidReadableId), "{bad:?}");
         }
     }
 

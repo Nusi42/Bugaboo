@@ -7,7 +7,7 @@ import type { RelationKindLine } from "../relation-kinds/index.ts";
 
 /** What a block of the issue page needs of the page: the readable ID of the issue. */
 export interface BlockProps {
-  readonly issueKey: string;
+  readonly readableId: string;
 }
 
 /** How an issue stands among the others: the issue it sits under and the progress of its parts. */

@@ -90,8 +90,8 @@ function countOf(loaded: number, more: boolean): string {
  * names when asked for. A reader who may not see followers gets neither names nor a number.
  * People who report, are assigned or comment follow by themselves.
  */
-export function FollowersBlock({ issueKey }: { readonly issueKey: string }) {
-  const list = useFollowers(issueKey);
+export function FollowersBlock({ readableId }: { readonly readableId: string }) {
+  const list = useFollowers(readableId);
   const [shown, setShown] = useState(false);
   const people = itemsOf(list.data?.pages);
   return (
@@ -108,7 +108,7 @@ export function FollowersBlock({ issueKey }: { readonly issueKey: string }) {
               {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
             </Button>
           )}
-          <FollowButton issue={issueKey} />
+          <FollowButton issue={readableId} />
         </NameValueRow>
       </NameValueList>
       {shown ? <FollowerNames people={people} /> : null}

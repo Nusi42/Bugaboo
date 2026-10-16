@@ -12,18 +12,18 @@ import { afterLabelsAndTags, type Counted } from "./labels.ts";
 /** What the two parts get: the answer for the issue, and the issue it is about. */
 export interface LabelsAndTagsPartProps {
   readonly body: Readonly<Schema<"IssueLabelsAndTagsBody">>;
-  readonly issueKey: string;
+  readonly readableId: string;
 }
 
 /** The tags of the issue, with the ways to take one off and to add one. */
 export function TagsPart({
   body,
-  issueKey,
+  readableId,
   project,
 }: LabelsAndTagsPartProps & { readonly project: string | undefined }) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/tags/{tag}", {
     onSuccess: (labelsAndTags: Counted) => {
-      afterLabelsAndTags(issueKey, labelsAndTags);
+      afterLabelsAndTags(readableId, labelsAndTags);
     },
   });
   return (
@@ -36,13 +36,13 @@ export function TagsPart({
         onTakeOff={
           body.may_change_tags
             ? (tag) => {
-                takeOff.mutate({ params: { path: { issue: issueKey, tag: tag.id } } });
+                takeOff.mutate({ params: { path: { issue: readableId, tag: tag.id } } });
               }
             : undefined
         }
       />
       {body.may_change_tags && project !== undefined ? (
-        <AddTag issue={issueKey} project={project} issueType={body.issue_type.id} />
+        <AddTag issue={readableId} project={project} issueType={body.issue_type.id} />
       ) : null}
       {takeOff.isError ? <Alert tone={alertTone.danger}>{messageOf(takeOff.error)}</Alert> : null}
     </>
@@ -50,10 +50,10 @@ export function TagsPart({
 }
 
 /** The labels of the issue, with the ways to take one off and to add one. */
-export function LabelsPart({ body, issueKey }: LabelsAndTagsPartProps) {
+export function LabelsPart({ body, readableId }: LabelsAndTagsPartProps) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/labels/{label}", {
     onSuccess: (labelsAndTags: Counted) => {
-      afterLabelsAndTags(issueKey, labelsAndTags);
+      afterLabelsAndTags(readableId, labelsAndTags);
     },
   });
   return (
@@ -66,12 +66,12 @@ export function LabelsPart({ body, issueKey }: LabelsAndTagsPartProps) {
         onTakeOff={
           body.may_change_labels
             ? (label) => {
-                takeOff.mutate({ params: { path: { issue: issueKey, label: label.id } } });
+                takeOff.mutate({ params: { path: { issue: readableId, label: label.id } } });
               }
             : undefined
         }
       />
-      {body.may_change_labels ? <AddLabel issue={issueKey} has={body.labels ?? []} /> : null}
+      {body.may_change_labels ? <AddLabel issue={readableId} has={body.labels ?? []} /> : null}
       {takeOff.isError ? <Alert tone={alertTone.danger}>{messageOf(takeOff.error)}</Alert> : null}
     </>
   );
