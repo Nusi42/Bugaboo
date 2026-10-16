@@ -15,7 +15,8 @@
 //! Two more rules (PERF-03, PERF-02). Every `GET` documents the `ETag` header of its `200` answer
 //! and the `304` answer, so a client can ask again cheaply. A `GET` marked `x-never-stored` (its
 //! answer holds personal data and no cache keeps it) has no tag to ask with and is left out. A list names related things by ID
-//! (or by a reference schema whose name ends in `Ref`, like `PersonRef`); an item that embeds
+//! (or by a reference schema whose name ends in `Ref` or `LabelBody`, like `PersonRef` and
+//! `ProjectLabelBody`); an item that embeds
 //! another object is only allowed when the route declares the query parameter `include` with the
 //! closed set of names it may embed, and `include` is only allowed on a route that embeds.
 
@@ -35,8 +36,9 @@ const EXEMPTIONS_PATH: &str = "tools/checks/lean-exemptions.toml";
 /// The header every `GET` answer documents, and the status of the answer to a match.
 const ETAG_HEADER: &str = "etag";
 const NOT_MODIFIED: &str = "304";
-/// A schema whose name ends like this is a reference to a thing, not the thing itself.
-const REFERENCE_SUFFIX: &str = "Ref";
+/// A schema whose name ends like one of these is a reference to a thing, not the thing itself: its
+/// ID and the words to show for it (`LabelBody`: a project that may be shown or hidden).
+const REFERENCE_SUFFIXES: [&str; 2] = ["Ref", "LabelBody"];
 
 pub(crate) struct ArchLean;
 
@@ -221,7 +223,11 @@ fn embeds(spec: &Value, property: &Value) -> bool {
             .get("$ref")
             .and_then(Value::as_str)
             .and_then(|reference| reference.rsplit('/').next());
-        if reference.is_some_and(|name| name.ends_with(REFERENCE_SUFFIX)) {
+        if reference.is_some_and(|name| {
+            REFERENCE_SUFFIXES
+                .iter()
+                .any(|suffix| name.ends_with(suffix))
+        }) {
             return false;
         }
         let resolved = resolve(spec, candidate);
@@ -271,8 +277,11 @@ fn include_findings(spec: &Value, operation: &Value, schema: &Value, place: &str
         (None, false) => vec![Finding::at(
             place,
             format!(
-                "The items embed `{}`. Name related things by ID (or a `{REFERENCE_SUFFIX}` schema), or declare the query parameter `{INCLUDE}` with the names that may be embedded.",
-                embedded.join("`, `")
+                "The items embed `{}`. Name related things by ID (or a schema whose name ends in {}), or declare the query parameter `{INCLUDE}` with the names that may be embedded.",
+                embedded.join("`, `"),
+                REFERENCE_SUFFIXES
+                    .map(|suffix| format!("`{suffix}`"))
+                    .join(" or ")
             ),
         )],
         (Some(_), true) => vec![Finding::at(
@@ -557,6 +566,19 @@ mod tests {
             assert_eq!(found.len(), 1, "{name}: {found:?}");
             assert!(found[0].contains(expected), "{name}: {found:?}");
         }
+    }
+
+    #[test]
+    fn good_example_a_label_of_a_project_is_a_reference_too() {
+        let text = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../tools/checks/fixtures/ARCH-LEAN/good/references-by-id.json"),
+        )
+        .unwrap();
+        let spec: Value =
+            serde_json::from_str(&text.replace("PersonRef", "ProjectLabelBody")).unwrap();
+        let found = messages(&spec, &[]);
+        assert!(found.is_empty(), "{found:?}");
     }
 
     #[test]

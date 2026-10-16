@@ -2816,7 +2816,7 @@ export interface components {
       /** @description The public start of the key, after `bb_`. */
       prefix: string;
       /** @description The projects the key is limited to; empty for every project. */
-      projects: components["schemas"]["KeyProjectRef"][];
+      projects: components["schemas"]["ProjectLabelBody"][];
     };
     /**
      * @description An access key in a list: the fields that can be asked for. An answer holds only those that
@@ -2841,7 +2841,7 @@ export interface components {
       /** @description The public start of the key, after `bb_`. */
       prefix?: string | null;
       /** @description The projects the key is limited to; empty for every project. */
-      projects?: components["schemas"]["KeyProjectRef"][] | null;
+      projects?: components["schemas"]["ProjectLabelBody"][] | null;
     };
     /** @description How long a new access key lives in this organization, and what a key can be limited to. */
     AccessKeyRulesBody: {
@@ -3188,7 +3188,7 @@ export interface components {
       permissions: components["schemas"]["PermissionAnswerBody"][];
       /** @description The person who was checked, as the person who asks may see them. */
       person: components["schemas"]["PersonRef"];
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
     };
     /** @description The records on the screen. */
     CheckVersionsBody: {
@@ -4171,20 +4171,6 @@ export interface components {
      */
     KeyChoice: "see-only" | "see-and-change" | "everything" | "permissions";
     /**
-     * @description A project a key is limited to, as its owner may see it: a reference by ID, and the names only
-     *     of a project the owner may know about (*a project you can't see* otherwise).
-     */
-    KeyProjectRef: {
-      /** @description The ID of the project. Only for a visible one. */
-      id?: string | null;
-      /** @description Its name. Only for a visible one. */
-      name?: string | null;
-      /** @description Its short name. Only for a visible one. */
-      short_name?: string | null;
-      /** @description `visible` or `hidden`. */
-      shown: components["schemas"]["ProjectShown"];
-    };
-    /**
      * @description The type of a setting.
      * @enum {string}
      */
@@ -4381,7 +4367,7 @@ export interface components {
         }
       | {
           /** @description The project above, or *a project you can't see*. */
-          from: components["schemas"]["KeyProjectRef"];
+          from: components["schemas"]["ProjectLabelBody"];
           /** @enum {string} */
           kind: "inherited";
         }
@@ -4399,7 +4385,7 @@ export interface components {
           /** @enum {string} */
           kind: "project";
           /** @description The project, or *a project you can't see*. */
-          project: components["schemas"]["KeyProjectRef"];
+          project: components["schemas"]["ProjectLabelBody"];
         }
       | {
           /** @enum {string} */
@@ -4456,7 +4442,7 @@ export interface components {
       issue_type?: string | null;
       /** @description The levels a cell can be set to, the lowest first. */
       levels: ("hidden" | "can-see" | "can-change")[];
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description The roles, in the order of roles: the columns. */
       roles: components["schemas"]["RoleRefBody"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
@@ -4470,7 +4456,7 @@ export interface components {
       issue_type?: string | null;
       /** @description The levels a cell can be set to, the lowest first. */
       levels: ("hidden" | "role-only" | "names")[];
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description The roles, in the order of roles: the columns. */
       roles: components["schemas"]["RoleRefBody"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
@@ -5093,7 +5079,7 @@ export interface components {
         /** @description The public start of the key, after `bb_`. */
         prefix?: string | null;
         /** @description The projects the key is limited to; empty for every project. */
-        projects?: components["schemas"]["KeyProjectRef"][] | null;
+        projects?: components["schemas"]["ProjectLabelBody"][] | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -5991,6 +5977,20 @@ export interface components {
       /** @description The letters of its issue IDs and address. */
       short_name?: string | null;
     };
+    /**
+     * @description A project a key is limited to, as its owner may see it: a reference by ID, and the names only
+     *     of a project the owner may know about (*a project you can't see* otherwise).
+     */
+    ProjectLabelBody: {
+      /** @description The ID of the project. Only for a visible one. */
+      id?: string | null;
+      /** @description Its name. Only for a visible one. */
+      name?: string | null;
+      /** @description Its short name. Only for a visible one. */
+      short_name?: string | null;
+      /** @description `visible` or `hidden`. */
+      shown: components["schemas"]["ProjectShown"];
+    };
     /** @description A project as a small reference: what a name in a sentence needs. */
     ProjectRef: {
       /** @description The ID of the project. */
@@ -6077,7 +6077,7 @@ export interface components {
       assignment: string;
       /** @description Whether it comes from above the place that was checked. */
       inherited: boolean;
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description Whom it is for. */
       who: components["schemas"]["ReasonWhoBody"];
     };

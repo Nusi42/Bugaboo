@@ -51,7 +51,7 @@ const KEYS_LIST: &str = "access-keys";
 /// A project a key is limited to, as its owner may see it: a reference by ID, and the names only
 /// of a project the owner may know about (*a project you can't see* otherwise).
 #[derive(Serialize, ToSchema)]
-pub(crate) struct KeyProjectRef {
+pub(crate) struct ProjectLabelBody {
     /// `visible` or `hidden`.
     shown: ProjectShown,
     /// The ID of the project. Only for a visible one.
@@ -73,7 +73,7 @@ enum ProjectShown {
     Hidden,
 }
 
-impl From<&ProjectLabel> for KeyProjectRef {
+impl From<&ProjectLabel> for ProjectLabelBody {
     fn from(label: &ProjectLabel) -> Self {
         match label {
             ProjectLabel::Visible {
@@ -117,7 +117,7 @@ pub(crate) struct AccessKeyItem {
     permissions: Option<Vec<Permission>>,
     /// The projects the key is limited to; empty for every project.
     #[serde(skip_serializing_if = "Option::is_none")]
-    projects: Option<Vec<KeyProjectRef>>,
+    projects: Option<Vec<ProjectLabelBody>>,
     /// When it was made.
     #[serde(skip_serializing_if = "Option::is_none")]
     created_at: Option<String>,
@@ -142,7 +142,7 @@ impl From<&AccessKeyView> for AccessKeyItem {
             prefix: Some(key.prefix.clone()),
             choice: Some(key.choice),
             permissions: Some(key.permissions.clone()),
-            projects: Some(key.projects.iter().map(KeyProjectRef::from).collect()),
+            projects: Some(key.projects.iter().map(ProjectLabelBody::from).collect()),
             created_at: Some(key.created_at.to_string()),
             expires_at: Some(key.expires_at.to_string()),
             last_used_at: key.last_used_at.map(|moment| moment.to_string()),
@@ -165,7 +165,7 @@ pub(crate) struct AccessKeyBody {
     /// The single permissions, when the choice is `permissions`.
     permissions: Vec<Permission>,
     /// The projects the key is limited to; empty for every project.
-    projects: Vec<KeyProjectRef>,
+    projects: Vec<ProjectLabelBody>,
     /// When it was made.
     created_at: String,
     /// When it stops working.
@@ -180,7 +180,7 @@ impl From<&AccessKeyView> for AccessKeyBody {
             prefix: key.prefix.clone(),
             choice: key.choice,
             permissions: key.permissions.clone(),
-            projects: key.projects.iter().map(KeyProjectRef::from).collect(),
+            projects: key.projects.iter().map(ProjectLabelBody::from).collect(),
             created_at: key.created_at.to_string(),
             expires_at: key.expires_at.to_string(),
         }

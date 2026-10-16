@@ -19798,7 +19798,7 @@
           "projects": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/KeyProjectRef"
+              "$ref": "#/components/schemas/ProjectLabelBody"
             },
             "description": "The projects the key is limited to; empty for every project."
           }
@@ -19857,7 +19857,7 @@
           "projects": {
             "type": ["array", "null"],
             "items": {
-              "$ref": "#/components/schemas/KeyProjectRef"
+              "$ref": "#/components/schemas/ProjectLabelBody"
             },
             "description": "The projects the key is limited to; empty for every project."
           }
@@ -20677,7 +20677,7 @@
           "project": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/KeyProjectRef",
+                "$ref": "#/components/schemas/ProjectLabelBody",
                 "description": "The project that was checked, or `null` for the whole organization."
               },
               {
@@ -22701,29 +22701,6 @@
         "description": "What the key may do: see only, see and change, everything its owner can do, or single permissions.",
         "enum": ["see-only", "see-and-change", "everything", "permissions"]
       },
-      "KeyProjectRef": {
-        "type": "object",
-        "description": "A project a key is limited to, as its owner may see it: a reference by ID, and the names only\nof a project the owner may know about (*a project you can't see* otherwise).",
-        "required": ["shown"],
-        "properties": {
-          "id": {
-            "type": ["string", "null"],
-            "description": "The ID of the project. Only for a visible one."
-          },
-          "name": {
-            "type": ["string", "null"],
-            "description": "Its name. Only for a visible one."
-          },
-          "short_name": {
-            "type": ["string", "null"],
-            "description": "Its short name. Only for a visible one."
-          },
-          "shown": {
-            "$ref": "#/components/schemas/ProjectShown",
-            "description": "`visible` or `hidden`."
-          }
-        }
-      },
       "KindBody": {
         "type": "string",
         "description": "The type of a setting.",
@@ -23098,7 +23075,7 @@
             "required": ["from", "kind"],
             "properties": {
               "from": {
-                "$ref": "#/components/schemas/KeyProjectRef",
+                "$ref": "#/components/schemas/ProjectLabelBody",
                 "description": "The project above, or *a project you can't see*."
               },
               "kind": {
@@ -23144,7 +23121,7 @@
                 "enum": ["project"]
               },
               "project": {
-                "$ref": "#/components/schemas/KeyProjectRef",
+                "$ref": "#/components/schemas/ProjectLabelBody",
                 "description": "The project, or *a project you can't see*."
               }
             }
@@ -23261,7 +23238,7 @@
           "project": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/KeyProjectRef",
+                "$ref": "#/components/schemas/ProjectLabelBody",
                 "description": "The project, or `null` for the whole organization."
               },
               {
@@ -23310,7 +23287,7 @@
           "project": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/KeyProjectRef",
+                "$ref": "#/components/schemas/ProjectLabelBody",
                 "description": "The project, or `null` for the whole organization."
               },
               {
@@ -24779,7 +24756,7 @@
                 "projects": {
                   "type": ["array", "null"],
                   "items": {
-                    "$ref": "#/components/schemas/KeyProjectRef"
+                    "$ref": "#/components/schemas/ProjectLabelBody"
                   },
                   "description": "The projects the key is limited to; empty for every project."
                 }
@@ -26734,6 +26711,29 @@
           }
         }
       },
+      "ProjectLabelBody": {
+        "type": "object",
+        "description": "A project a key is limited to, as its owner may see it: a reference by ID, and the names only\nof a project the owner may know about (*a project you can't see* otherwise).",
+        "required": ["shown"],
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the project. Only for a visible one."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Its name. Only for a visible one."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "Its short name. Only for a visible one."
+          },
+          "shown": {
+            "$ref": "#/components/schemas/ProjectShown",
+            "description": "`visible` or `hidden`."
+          }
+        }
+      },
       "ProjectRef": {
         "type": "object",
         "description": "A project as a small reference: what a name in a sentence needs.",
@@ -26933,7 +26933,7 @@
           "project": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/KeyProjectRef",
+                "$ref": "#/components/schemas/ProjectLabelBody",
                 "description": "The project it is on, or `null` for the whole organization; *a project you can't see* when\nthe person who asks may not know it."
               },
               {

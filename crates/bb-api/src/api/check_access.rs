@@ -24,7 +24,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
-use super::access_keys::KeyProjectRef;
+use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
     answer_authorized,
@@ -65,7 +65,7 @@ pub(crate) struct ReasonRowBody {
     who: ReasonWhoBody,
     /// The project it is on, or `null` for the whole organization; *a project you can't see* when
     /// the person who asks may not know it.
-    project: Option<KeyProjectRef>,
+    project: Option<ProjectLabelBody>,
     /// Where it counts.
     applies_to: AppliesTo,
     /// Whether it comes from above the place that was checked.
@@ -85,7 +85,7 @@ impl From<&ReasonRowView> for ReasonRowBody {
                     },
                 },
             },
-            project: row.project.as_ref().map(KeyProjectRef::from),
+            project: row.project.as_ref().map(ProjectLabelBody::from),
             applies_to: row.applies_to,
             inherited: row.inherited,
         }
@@ -205,7 +205,7 @@ pub(crate) enum LevelPlaceBody {
     /// For a project (the place or the nearest parent that set one).
     Project {
         /// The project, or *a project you can't see*.
-        project: KeyProjectRef,
+        project: ProjectLabelBody,
     },
     /// The role's own level, for the whole organization.
     RoleOwn,
@@ -217,7 +217,7 @@ impl From<&LevelPlace> for LevelPlaceBody {
     fn from(place: &LevelPlace) -> Self {
         match place {
             LevelPlace::Project { project } => Self::Project {
-                project: KeyProjectRef::from(project),
+                project: ProjectLabelBody::from(project),
             },
             LevelPlace::RoleOwn => Self::RoleOwn,
             LevelPlace::Unset => Self::Unset,
@@ -275,7 +275,7 @@ pub(crate) struct CheckAccessBody {
     /// The person who was checked, as the person who asks may see them.
     person: PersonRef,
     /// The project that was checked, or `null` for the whole organization.
-    project: Option<KeyProjectRef>,
+    project: Option<ProjectLabelBody>,
     /// Every permission that counts here.
     permissions: Vec<PermissionAnswerBody>,
     /// Every field of the catalogue.
@@ -290,7 +290,7 @@ impl From<AccessAnswer> for CheckAccessBody {
     fn from(checked: AccessAnswer) -> Self {
         Self {
             person: checked.person,
-            project: checked.place.as_ref().map(KeyProjectRef::from),
+            project: checked.place.as_ref().map(ProjectLabelBody::from),
             permissions: checked.permissions.iter().map(Into::into).collect(),
             fields: checked.fields.iter().map(level_body).collect(),
             kinds: checked.kinds.iter().map(level_body).collect(),
