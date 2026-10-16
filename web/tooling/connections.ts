@@ -8,16 +8,18 @@
  */
 
 /**
- * The most connections in TIME_WAIT and CLOSE_WAIT that the servers of the tests (the ports of
- * their workers) may have at the same moment during a run. A run peaked at 1,248 after M4 WP-03
- * (1,989 before it; architecture §11), so this is about twice that. Windows gives out 16,384
- * ports for connections, so five work folders that each reach it at the same time stay under that.
- * Not to be raised to make a run pass.
+ * The most connections in `TIME_WAIT` and `CLOSE_WAIT` that the servers of the tests (the ports of
+ * their workers) may have at the same moment during a run. A run peaked at about 1,250 after M4
+ * WP-03 and at 1,989 before it (architecture §11), so a fall back to the old way of testing is
+ * seen. Not to be raised to make a run pass.
  */
-export const MOST_LEFTOVER_CONNECTIONS = 2_500;
+export const MOST_LEFTOVER_CONNECTIONS = 1_800;
 
-/** How often the computer is asked for its connections. */
-export const SAMPLE_EVERY_MS = 1000;
+/** The pause after a look at the computer before the next one starts (a look takes seconds). */
+export const PAUSE_BETWEEN_LOOKS_MS = 1000;
+
+/** The first port that Windows gives to the connections that programs open (its dynamic range). */
+export const FIRST_DYNAMIC_PORT = 49_152;
 
 /** What the guard counts of one worker's server. */
 export interface Counts {
@@ -33,6 +35,8 @@ export interface Counts {
 export interface Sample {
   readonly total: Counts;
   readonly byPort: Readonly<Record<number, Counts>>;
+  /** Information only: the connections in TIME_WAIT of the whole computer, whoever owns them. */
+  readonly machineTimeWait: number;
 }
 
 const NONE: Counts = { established: 0, timeWait: 0, closeWait: 0 };
@@ -78,6 +82,7 @@ function added(counts: Counts | undefined, state: keyof Counts): Counts {
 export function countConnections(listing: string, from: number, to: number): Sample {
   const byPort: Record<number, Counts> = {};
   let total = NONE;
+  let machineTimeWait = 0;
   const inRange = (port: number | undefined): port is number =>
     port !== undefined && port >= from && port <= to;
   for (const line of listing.split("\n")) {
@@ -88,6 +93,9 @@ export function countConnections(listing: string, from: number, to: number): Sam
     if (state === undefined || ends.length < 2) {
       continue;
     }
+    if (state === "timeWait" && local !== undefined && local >= FIRST_DYNAMIC_PORT) {
+      machineTimeWait += 1;
+    }
     const server = inRange(remote) ? remote : inRange(local) ? local : undefined;
     // An open connection is two lines on this computer; the one whose remote end is the server
     // is the one of the tests.
@@ -97,7 +105,7 @@ export function countConnections(listing: string, from: number, to: number): Sam
     byPort[server] = added(byPort[server], state);
     total = added(total, state);
   }
-  return { total, byPort };
+  return { total, byPort, machineTimeWait };
 }
 
 /** What counts against the limit: connections that were closed and are not let go yet. */
@@ -117,7 +125,9 @@ interface Peak {
 export class ConnectionGuard {
   private peak: Peak = { left: 0, counts: NONE, port: undefined, spec: "" };
   private mostOpen = 0;
+  private mostOnTheComputer = 0;
   private looks = 0;
+  private failedLooks = 0;
 
   private readonly limit: number;
 
@@ -125,10 +135,16 @@ export class ConnectionGuard {
     this.limit = limit;
   }
 
+  /** Notes a look that could not be made (the command that lists the connections failed). */
+  public recordFailure(): void {
+    this.failedLooks += 1;
+  }
+
   /** Takes one look; `specs` says, for each worker port, which spec its worker ran last. */
   public record(sample: Sample, specs: Readonly<Record<number, string>>): void {
     this.looks += 1;
     this.mostOpen = Math.max(this.mostOpen, sample.total.established);
+    this.mostOnTheComputer = Math.max(this.mostOnTheComputer, sample.machineTimeWait);
     const left = leftOver(sample.total);
     if (left <= this.peak.left) {
       return;
@@ -157,15 +173,16 @@ export class ConnectionGuard {
     return (
       `Connections of the tests: at most ${String(this.peak.left)} left over at once ` +
       `(${String(counts.timeWait)} in TIME_WAIT, ${String(counts.closeWait)} in CLOSE_WAIT), ` +
-      `at most ${String(this.mostOpen)} open, in ${String(this.looks)} looks; ` +
+      `at most ${String(this.mostOpen)} open, in ${String(this.looks)} looks (${String(this.failedLooks)} failed); ` +
+      `the whole computer had at most ${String(this.mostOnTheComputer)} in TIME_WAIT (for information); ` +
       `the limit is ${String(this.limit)}.${where}`
     );
   }
 
   /** The sentence that fails the run when the peak is over the limit, else `undefined`. */
   public verdict(): string | undefined {
-    if (this.looks === 0) {
-      return "The connections of the tests could not be counted, so nobody knows whether the run uses up the ports of the computer. Is `netstat` (Windows) or `ss` (Linux) installed?";
+    if (this.looks === 0 || this.failedLooks > 0) {
+      return `The connections of the tests could not be counted in ${String(this.failedLooks)} looks (${String(this.looks)} worked), so nobody knows whether the run uses up the ports of the computer. Is PowerShell (Windows) or \`ss\` (Linux) working?`;
     }
     if (this.peak.left <= this.limit) {
       return undefined;

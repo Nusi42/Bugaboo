@@ -47,7 +47,7 @@ const powershell = `
 
 /** A sample with these counts on one port. */
 function sampleOf(port: number, counts: Counts): Sample {
-  return { total: counts, byPort: { [port]: counts } };
+  return { total: counts, byPort: { [port]: counts }, machineTimeWait: 0 };
 }
 
 const calm: Counts = { established: 4, timeWait: 20, closeWait: 0 };
@@ -106,9 +106,29 @@ describe("test_03 the connection guard fails a run over its limit (M4 WP-03)", (
     expect(sentence).toContain("crowd.spec.ts [phone]");
     expect(sentence).toContain("port 47413");
   });
+});
 
+describe("test_07 the connection guard does not pass what it could not see (M4 WP-03)", () => {
   it("fails a run that could not look at all, instead of passing unseen", () => {
     expect(new ConnectionGuard(100).verdict()).toContain("could not be counted");
+  });
+
+  it("fails a run in which any look failed, and says how many", () => {
+    const guard = new ConnectionGuard(100);
+    guard.record(sampleOf(47410, calm), {});
+    guard.recordFailure();
+    expect(guard.verdict()).toContain("1 looks");
+    expect(guard.summary()).toContain("(1 failed)");
+  });
+
+  it("tells how many connections in TIME_WAIT the whole computer had, and does not fail for it", () => {
+    const { machineTimeWait } = countConnections(netstat, FROM, TO);
+    // Of the lines of the list, the ones in TIME_WAIT with a local port of the dynamic range.
+    expect(machineTimeWait).toBe(4);
+    const guard = new ConnectionGuard(100);
+    guard.record({ ...sampleOf(47410, calm), machineTimeWait: 9000 }, {});
+    expect(guard.verdict()).toBeUndefined();
+    expect(guard.summary()).toContain("the whole computer had at most 9000 in TIME_WAIT");
   });
 
   it("adds closed connections only to the left-over count", () => {

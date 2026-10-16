@@ -2,33 +2,43 @@ import { execFile } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
-import type { FullResult, Reporter, TestCase, TestResult } from "@playwright/test/reporter";
+import type {
+  FullConfig,
+  FullResult,
+  Reporter,
+  TestCase,
+  TestResult,
+} from "@playwright/test/reporter";
 
-import { ConnectionGuard, countConnections, SAMPLE_EVERY_MS, type Sample } from "./connections.ts";
-import { readPorts, repoRoot } from "./ports.ts";
+import {
+  ConnectionGuard,
+  countConnections,
+  PAUSE_BETWEEN_LOOKS_MS,
+  type Sample,
+} from "./connections.ts";
+import { readPorts } from "./ports.ts";
 
 /**
- * The commands that list the connections of the ports `from` to `to`, as lines of
- * `local:port remote:port state`; the first that works on this computer is used. Windows is asked
- * through PowerShell: `netstat` there prints the states in the language of the system.
+ * The commands that list the connections, as lines of `local:port remote:port state`; the first
+ * that works on this computer is used. Windows is asked through PowerShell (`pwsh` when there is no
+ * `powershell`): `netstat` there prints the states in the language of the system. Only the states
+ * the guard reads are listed.
  */
-function listers(from: number, to: number): readonly (readonly [string, readonly string[]])[] {
-  const inRange = (port: string): string =>
-    `($_.${port} -ge ${String(from)} -and $_.${port} -le ${String(to)})`;
+function listers(): readonly (readonly [string, readonly string[]])[] {
   const script =
-    `Get-NetTCPConnection | Where-Object { ${inRange("LocalPort")} -or ${inRange("RemotePort")} } | ` +
+    "Get-NetTCPConnection -State Established, TimeWait, CloseWait | " +
     "ForEach-Object { '{0}:{1} {2}:{3} {4}' -f $_.LocalAddress, $_.LocalPort, $_.RemoteAddress, $_.RemotePort, $_.State }";
+  const flags = ["-NoProfile", "-NonInteractive", "-Command", script];
   return process.platform === "win32"
-    ? [["powershell", ["-NoProfile", "-NonInteractive", "-Command", script]]]
+    ? [
+        ["powershell", flags],
+        ["pwsh", flags],
+      ]
     : [
         ["ss", ["-tan"]],
         ["netstat", ["-ant"]],
       ];
 }
-
-/** Where the run writes what it saw: the peak and, look by look, the counts (for the report). */
-const RESULT_FOLDER = resolve(repoRoot, "test-results");
-const SPEC_FOLDER = resolve(repoRoot, "web/app/e2e");
 
 /** What the first command that works prints (nothing is a list of no connection); `null` when none works. */
 function listing(
@@ -56,7 +66,8 @@ function listing(
 
 /**
  * Counts the connections of the servers of the tests all through the run, and fails the run at the
- * end when more were left over at once than `MOST_LEFTOVER_CONNECTIONS` (TEST-CONNECTIONS).
+ * end when more were left over at once than `MOST_LEFTOVER_CONNECTIONS` (TEST-CONNECTIONS). A look
+ * takes seconds on Windows, so the next one is planned only when the one before has ended.
  */
 export default class ConnectionGuardReporter implements Reporter {
   private readonly ports = readPorts();
@@ -65,35 +76,44 @@ export default class ConnectionGuardReporter implements Reporter {
   private readonly specs: Record<number, string> = {};
   private readonly series = ["seconds,established,time_wait,close_wait"];
   private started = Date.now();
+  private specFolder = "";
+  private resultFolder = "";
+  private stopped = false;
   private timer: NodeJS.Timeout | undefined;
-  private looking: Promise<void> = Promise.resolve();
+  private inFlight: Promise<void> = Promise.resolve();
 
-  public onBegin(): void {
+  public onBegin(config: FullConfig): void {
+    // Every project has the same folders: the config says them once.
+    const [project] = config.projects;
+    if (project === undefined) {
+      throw new Error("The config has no project.");
+    }
+    this.specFolder = project.testDir;
+    this.resultFolder = project.outputDir;
     this.started = Date.now();
-    this.timer = setInterval(() => {
-      this.looking = this.looking.then(() => this.look());
-    }, SAMPLE_EVERY_MS);
+    this.plan();
   }
 
   public onTestBegin(test: TestCase, result: TestResult): void {
-    const file = relative(SPEC_FOLDER, test.location.file).replaceAll("\\", "/");
+    const file = relative(this.specFolder, test.location.file).replaceAll("\\", "/");
     const project = test.parent.project()?.name ?? "";
     this.specs[this.ports.e2eWorkersFrom + result.parallelIndex] = `${file} [${project}]`;
   }
 
   public async onEnd(): Promise<{ status: FullResult["status"] } | undefined> {
-    if (this.timer !== undefined) {
-      clearInterval(this.timer);
+    this.stopped = true;
+    clearTimeout(this.timer);
+    // Only the look that is under way is waited for; a run too short for any look makes one.
+    await this.inFlight;
+    if (this.series.length === 1) {
+      await this.look();
     }
-    await this.looking;
-    await this.look();
     const summary = this.guard.summary();
     const verdict = this.guard.verdict();
-    mkdirSync(RESULT_FOLDER, { recursive: true });
-    writeFileSync(resolve(RESULT_FOLDER, "connections.csv"), `${this.series.join("\n")}\n`);
-    writeFileSync(resolve(RESULT_FOLDER, "connections.txt"), `${summary}\n${verdict ?? ""}\n`);
-    process.stdout.write(`${summary}
-`);
+    mkdirSync(this.resultFolder, { recursive: true });
+    writeFileSync(resolve(this.resultFolder, "connections.csv"), `${this.series.join("\n")}\n`);
+    writeFileSync(resolve(this.resultFolder, "connections.txt"), `${summary}\n${verdict ?? ""}\n`);
+    process.stdout.write(`${summary}\n`);
     if (verdict === undefined) {
       return undefined;
     }
@@ -105,9 +125,23 @@ export default class ConnectionGuardReporter implements Reporter {
     return false;
   }
 
+  /** Plans the next look after a pause; the timer does not keep the process alive. */
+  private plan(): void {
+    if (this.stopped) {
+      return;
+    }
+    this.timer = setTimeout(() => {
+      this.inFlight = this.look().then(() => {
+        this.plan();
+      });
+    }, PAUSE_BETWEEN_LOOKS_MS);
+    this.timer.unref();
+  }
+
   private async look(): Promise<void> {
-    const text = await listing(listers(this.ports.e2eWorkersFrom, this.ports.e2eWorkersTo));
+    const text = await listing(listers());
     if (text === null) {
+      this.guard.recordFailure();
       return;
     }
     const sample: Sample = countConnections(
