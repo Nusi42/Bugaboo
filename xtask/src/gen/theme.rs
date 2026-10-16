@@ -26,6 +26,9 @@ pub(crate) const STYLE_SHEET: &str = "web/packages/ui/src/theme.css";
 const DOCS_SHEET: &str = "docs/design/theme.css";
 /// The names of the page frame for the scripts of the design pages (they cannot import `tokens.ts`).
 const FRAME_SCRIPT: &str = "docs/design/frame.js";
+/// The rules of the parts, for the pictures of the design pages: they are drawn with the markup of
+/// the parts themselves, so a picture cannot differ from the app (ADR-0026).
+const PARTS_SHEET: &str = "docs/design/parts.css";
 const TS_OUTPUT: &str = "web/packages/ui/src/tokens.ts";
 const RUST_OUTPUT: &str = "crates/bb-core/src/settings/themes.rs";
 
@@ -34,7 +37,7 @@ const GENERATED_BY: &str =
 
 /// The paths [`outputs`] writes.
 pub(crate) fn output_paths() -> Vec<&'static str> {
-    let mut paths = vec![STYLE_SHEET, DOCS_SHEET];
+    let mut paths = vec![STYLE_SHEET, DOCS_SHEET, PARTS_SHEET];
     paths.extend(DOC_SHEETS.iter().map(|(_, path)| *path));
     paths.push(FRAME_SCRIPT);
     paths.push(TS_OUTPUT);
@@ -63,6 +66,7 @@ pub(crate) fn generate(file: &ThemeFile) -> anyhow::Result<Vec<Generated>> {
     let mut generated = vec![
         Generated::new(STYLE_SHEET, css(file)?),
         Generated::new(DOCS_SHEET, docs_theme_css(file)?),
+        Generated::new(PARTS_SHEET, parts_sheet_css(file)?),
         Generated::new(FRAME_SCRIPT, frame_script(file)),
         Generated::new(TS_OUTPUT, typescript(file)?),
         Generated::new(RUST_OUTPUT, rust(file)),
@@ -109,6 +113,14 @@ fn docs_theme_css(file: &ThemeFile) -> anyhow::Result<String> {
         out.push_str("}\n");
     }
     Ok(out)
+}
+
+/// The rules of the parts, as the app's sheet has them, with the notice of a design page's sheet.
+fn parts_sheet_css(file: &ThemeFile) -> anyhow::Result<String> {
+    Ok(format!(
+        "/* {GENERATED_BY}\n   The rules of the parts of the app, for the pictures of the design pages. They use the same\n   data-part markup as the app. Needs theme.css. */\n{}",
+        parts_css(file)?
+    ))
 }
 
 /// One sheet of the design pages: the notice, then the keyframes and the rules.
@@ -795,6 +807,24 @@ mod tests {
         let tokens = sheet("docs/design/theme.css");
         assert!(tokens.contains("--doc-space-7: 7px;"));
         assert!(!sheet(STYLE_SHEET).contains("--doc-"));
+    }
+
+    #[test]
+    fn the_design_pages_get_the_rules_of_the_parts_to_draw_their_pictures_with() {
+        let outputs = generate(&file()).unwrap();
+        let sheet = |path: &str| {
+            outputs
+                .iter()
+                .find(|output| output.path == path)
+                .map(|output| output.content.clone())
+                .unwrap()
+        };
+        let parts = sheet("docs/design/parts.css");
+        // The same rules as the app's sheet, so a picture and the app look the same ...
+        assert!(parts.contains("[data-part=\"status-icon\"]"), "{parts}");
+        assert!(parts.contains(&parts_css(&file()).unwrap()));
+        // ... and none of the tokens, which the sheet of the pages already has.
+        assert!(!parts.contains("--bg-canvas:"));
     }
 
     #[test]

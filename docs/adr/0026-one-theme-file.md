@@ -33,6 +33,14 @@ The sister project compiles its theme to CSS **in the browser** and injects it a
 10. **Moving was done in two steps.** M2C C-01 built the engine and moved the primitives of `packages/ui`. M2C C-06 moved every app feature, the shell and the other components (M2C-F90): there is no CSS Module, no `cx` and no exemption any more, and THEME-ONLY passes with nothing exempt. What several features said the same way is one part (`stack`, `text`, `muted`, `row`, `list`, `item`, `facts`, `hint`, …, M2C-F65), and the focus ring, the skip link and the forced-colors outline of the marked item (`marked`) are written once.
 11. **The names of the page frame are written once.** The attributes of `<html>` that the sheets and the code use (`data-look`, `data-theme`, `data-preview-look`) are the `frame` line of the file. `gen theme` writes them to the sheets, to `tokens.ts` (`pageAttributes`), which `theme.ts`, the theme sample and the end-to-end specs read, and to `docs/design/frame.js` (`bugabooFrame`), which the scripts of the design pages read (M2C-F91). The choices (`data-spacing`, `data-text`, `data-motion`) are read from `variants` the same way.
 
+## Update (M3 WP-16, the new look)
+
+- **Choices of the device.** A `variant` may have only `media=` (no attribute on the page): `touch` (`(pointer: coarse), (width < $bp-tablet)`) gives a token its finger value (`size-control` 36 becomes 44, `size-row` 44 becomes 64), `phone` gives text 16. A media query may name a `$token` with a plain value.
+- **Container queries.** A rule may hold `container "(min-width: $bp-window-side)" { … }`, written as `@container`: a window follows its own width, not the screen's (UX §6.3).
+- **One run-time style.** The size a person drags a window to is two variables of the theme file (`window-width`, `window-height`). THEME-ONLY allows exactly `element.style.setProperty(variableOf("…"), value)`: `variableOf` only takes the name of a token, and nothing else may set a style from code.
+- **The pictures use the parts.** `cargo xtask gen theme` also writes `docs/design/parts.css`, the rules of the parts without the tokens, so the pictures of the UX design are drawn with the same `data-part` markup as the app and cannot differ from it.
+- **Several `distinct` rules.** The hovered and the selected row must differ from the tint of a status group as well as from the plain surfaces, so the file has one `distinct` rule for the plain surfaces and one for each tint.
+
 ## Consequences
 
 - A change of look is a change in one file, and the generated sheet shows it in the diff. A rule exists once: the focus ring, the muted text, the field label.

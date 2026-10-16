@@ -126,6 +126,32 @@
   min-width: var(--doc-space-640);
 }
 
+.frame-body > .scr.wide {
+  min-width: var(--doc-space-1040);
+}
+
+.win-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-sunken);
+}
+
+.win-stage .win-wide {
+  width: min(calc(var(--size-window) * 1.2), 100%);
+}
+
+.issue-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--size-details);
+}
+
+.win-stage .dock-flat {
+  position: static;
+}
+
 .frame.phone {
   flex: 0 0 var(--doc-space-300);
   border-radius: var(--doc-space-28);
@@ -892,7 +918,7 @@
 .tl .ln {
   position: relative;
   border-bottom: var(--border-width) solid var(--border-subtle);
-  min-height: var(--doc-space-31);
+  min-height: calc(var(--size-control-small) + var(--space-2));
   background-image: repeating-linear-gradient(
     to right,
     transparent 0,
@@ -904,32 +930,17 @@
 
 .bar {
   position: absolute;
-  top: var(--doc-space-7);
-  height: var(--doc-space-17);
-  border-radius: var(--doc-r-small);
-  background: var(--st-ip);
-  color: var(--on-accent);
-  font-size: var(--doc-font-10);
-  padding: 0 var(--doc-space-5);
-  display: flex;
-  align-items: center;
+  top: var(--space-1);
   font-family: var(--mono);
   white-space: nowrap;
   overflow: hidden;
-}
-
-.bar.ns {
-  background: var(--fg-subtle);
-}
-
-.bar.dn {
-  background: var(--st-done);
 }
 
 .bar.goal {
   background: var(--accent);
   height: var(--space-2);
   top: var(--space-3);
+  border-radius: var(--doc-r-small);
 }
 
 .ms {
@@ -947,8 +958,20 @@
   top: 0;
   bottom: 0;
   width: var(--doc-space-2);
-  background: var(--danger);
-  opacity: var(--opacity-busy);
+  background: var(--accent);
+}
+
+.today-label {
+  position: absolute;
+  top: 0;
+  left: var(--doc-space-5);
+  padding: 0 var(--doc-space-5);
+  border-radius: var(--doc-r-small);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--doc-font-10);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
 }
 
 .dep {

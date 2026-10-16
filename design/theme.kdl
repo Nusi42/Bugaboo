@@ -5380,6 +5380,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         size "doc-space-560" "560px"
         size "doc-space-600" "600px"
         size "doc-space-640" "640px"
+        size "doc-space-1040" "1040px"
         size "doc-space-70" "70px"
         size "doc-space-78" "78px"
         size "doc-space-80" "80px"
@@ -5513,6 +5514,35 @@ docs "ux-design" description="The design page of the user experience: its readin
 
     rule ".frame-body > .scr" {
         min-width "$doc-space-640"
+    }
+
+    // The issue list has fixed columns that need room; the frame scrolls when the page is narrower.
+    rule ".frame-body > .scr.wide" {
+        min-width "$doc-space-1040"
+    }
+
+    // The page behind a window in the pictures. The window is the part of the app, drawn in place.
+    rule ".win-stage" {
+        display flex
+        flex-direction column
+        align-items center
+        gap "$space-4"
+        padding "$space-4"
+        background "$bg-sunken"
+    }
+
+    rule ".win-stage .win-wide" {
+        width "min(calc($size-window * 1.2), 100%)"
+    }
+
+    // The issue page: the text, and the Details at the side (300 to 340).
+    rule ".issue-grid" {
+        display grid
+        grid-template-columns "minmax(0, 1fr) $size-details"
+    }
+
+    rule ".win-stage .dock-flat" {
+        position static
     }
 
     rule ".frame.phone" {
@@ -6279,38 +6309,24 @@ docs "ux-design" description="The design page of the user experience: its readin
     rule ".tl .ln" {
         position relative
         border-bottom "$border-width solid $border-subtle"
-        min-height "$doc-space-31"
+        min-height "calc($size-control-small + $space-2)"
         background-image "repeating-linear-gradient(to right, transparent 0, transparent calc(20% - $doc-space-1), $border-subtle calc(20% - $doc-space-1), $border-subtle 20%)"
     }
 
+    // A bar of the timeline is the part `timeline-bar` (its tint and its edge); this only places it.
     rule ".bar" {
         position absolute
-        top "$doc-space-7"
-        height "$doc-space-17"
-        border-radius "$doc-r-small"
-        background "$st-ip"
-        color "$on-accent"
-        font-size "$doc-font-10"
-        padding "0 $doc-space-5"
-        display flex
-        align-items center
+        top "$space-1"
         font-family "$mono"
         white-space nowrap
         overflow hidden
-    }
-
-    rule ".bar.ns" {
-        background "$fg-subtle"
-    }
-
-    rule ".bar.dn" {
-        background "$st-done"
     }
 
     rule ".bar.goal" {
         background "$accent"
         height "$space-2"
         top "$space-3"
+        border-radius "$doc-r-small"
     }
 
     rule ".ms" {
@@ -6323,13 +6339,26 @@ docs "ux-design" description="The design page of the user experience: its readin
         border-radius "$doc-space-2"
     }
 
+    // Today is an accent line with a label; it is no longer red, because red means Critical.
     rule ".today" {
         position absolute
         top 0
         bottom 0
         width "$doc-space-2"
-        background "$danger"
-        opacity "$opacity-busy"
+        background "$accent"
+    }
+
+    rule ".today-label" {
+        position absolute
+        top 0
+        left "$doc-space-5"
+        padding "0 $doc-space-5"
+        border-radius "$doc-r-small"
+        background "$accent"
+        color "$on-accent"
+        font-size "$doc-font-10"
+        font-weight "$weight-bold"
+        white-space nowrap
     }
 
     rule ".dep" {
