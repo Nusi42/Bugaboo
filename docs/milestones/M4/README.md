@@ -8,18 +8,18 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 
 | Wave | WP | Name | Who | Folder / branch |
 |------|----|------|-----|-----------------|
-| 1 | WP-01 | Words, permissions, decision records, the name map and the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
+| 1 | [WP-01](WP-01-m4-docs.md) | Words, permissions, decision records, the name map and the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
 | 1 | [WP-02](WP-02-names-before-the-api-freeze.md) | Names before the API freeze: *Create*, the code names, big files split | Builder | `bugaboo.win2` / `WIN2` |
 | 1 | [WP-03](WP-03-browser-tests-without-running-out-of-connections.md) | Browser tests that never run out of connections | Builder | `bugaboo.win3` / `WIN3` |
-| 2 | WP-04 | Workflows on the server: statuses as data, status changes and their rules, starter workflows | Builder | `bugaboo.win2` / `WIN2` |
-| 2 | WP-05 | Files on issues and comments: upload, safe storage, type checks, previews | Builder | `bugaboo.win3` / `WIN3` |
-| 2 | WP-06 | Notifications and e-mail on the server | Builder | `bugaboo.win4` / `WIN4` |
-| 3 | WP-07 | The workflow editor and status changes on screen | Builder | `bugaboo.win2` / `WIN2` |
-| 3 | WP-08 | Notifications on screen, notification settings, the mail server | Builder | `bugaboo.win4` / `WIN4` |
-| 3 | WP-09 | The issue page after the new look (M3 follow-ups) | Builder | `bugaboo.win3` / `WIN3` |
-| 4 | WP-10 | Sample organization part 3, ten people with workflows, speed, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
+| 2 | [WP-04](WP-04-workflows-on-the-server.md) | Workflows on the server: statuses as data, status changes and their rules, starter workflows | Builder | `bugaboo.win2` / `WIN2` |
+| 2 | [WP-05](WP-05-files-on-issues-and-comments.md) | Files on issues and comments: upload, safe storage, type checks, previews | Builder | `bugaboo.win3` / `WIN3` |
+| 2 | [WP-06](WP-06-notifications-and-e-mail-on-the-server.md) | Notifications and e-mail on the server | Builder | `bugaboo.win4` / `WIN4` |
+| 3 | [WP-07](WP-07-workflow-editor-and-status-changes-on-screen.md) | The workflow editor and status changes on screen | Builder | `bugaboo.win2` / `WIN2` |
+| 3 | [WP-08](WP-08-notifications-on-screen-and-the-mail-server.md) | Notifications on screen, notification settings, the mail server | Builder | `bugaboo.win4` / `WIN4` |
+| 3 | [WP-09](WP-09-issue-page-after-the-new-look.md) | The issue page after the new look (M3 follow-ups) | Builder | `bugaboo.win3` / `WIN3` |
+| 4 | [WP-10](WP-10-sample-organization-and-exit-demo.md) | Sample organization part 3, ten people with workflows, speed, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 
-Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written in WP-01, after the maintainer's answers.
+Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files were written in WP-01, after the maintainer's answers.
 
 ## The packages in short
 
@@ -120,7 +120,7 @@ As in M3: a package changes only what it owns; shared files get added lines only
 | Follow-up | Package |
 |-----------|---------|
 | M3-F141, M3-F152, M3-F153, M2-F93, M2C-F42 | WP-02 |
-| M2C-F104 (showcase pictures differ between runs) | WP-03 |
+| M2C-F104 (showcase pictures differ between runs) | [WP-03](WP-03-browser-tests-without-running-out-of-connections.md) |
 | M3-F22, F44, F53, F122, F124, F23 (*Priority* as a list stays: decided in WP-01) | WP-04 |
 | M1-F30 (attachments get their own body limit; the row said M5) | WP-05 |
 | M3-F75, F125, F126, F132, F150, F70 (a unique handle for mentions, decided in WP-01), M2-F65 (e-mail column), M1-F21, M1-F43, M1-F61 (jobs that keep and delete) | WP-06 |
