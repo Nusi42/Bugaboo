@@ -75,6 +75,15 @@ impl Check for TxtTerms {
         // (everywhere in a run of the whole repository): reading every file of the code takes longer
         // than an edit may take.
         match context.files {
+            // The words and the exemptions decide what every name means, so a change of either is
+            // read against all of the code.
+            Some(changed)
+                if changed
+                    .iter()
+                    .any(|file| file == GLOSSARY || file == EXEMPTIONS_PATH) =>
+            {
+                scan_with(context.repo, &files, &files, Coverage::Whole)
+            }
             Some(changed) => {
                 let code: Vec<String> = files
                     .iter()

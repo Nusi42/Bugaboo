@@ -16,15 +16,12 @@ use anyhow::Context as _;
 /// The folders whose code is read.
 const CODE_FOLDERS: [&str; 3] = ["crates/", "xtask/", "web/"];
 
-/// Files and folders in the code folders that are not read: they are written by a program from a
-/// source that is read, or they belong to other people.
-const NOT_READ: [&str; 5] = [
-    "generated",
-    "node_modules",
-    "tools/checks/fixtures",
-    "openapi.json",
-    "schema.ts",
-];
+/// Folders in the code folders that are not read: other people's code, and what a program writes.
+const NOT_READ_FOLDERS: [&str; 2] = ["generated", "node_modules"];
+
+/// Files that are not read, whatever folder they are in: they are written by a program from a
+/// source that is read.
+const NOT_READ_FILES: [&str; 3] = ["generated.rs", "openapi.json", "schema.ts"];
 
 /// One name the code declares, and what kind of thing it names.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -37,8 +34,10 @@ pub(super) struct Declared {
 
 /// Whether `path` is a file of the code folders that this module reads.
 pub(super) fn is_read(path: &str) -> bool {
+    let file = path.rsplit('/').next().unwrap_or(path);
     CODE_FOLDERS.iter().any(|folder| path.starts_with(folder))
-        && !NOT_READ.iter().any(|skip| path.contains(skip))
+        && !NOT_READ_FILES.contains(&file)
+        && !path.split('/').any(|part| NOT_READ_FOLDERS.contains(&part))
 }
 
 /// The names of the folders and files in `paths` (each path lists the folders it is in once, and
