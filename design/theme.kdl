@@ -834,7 +834,7 @@ part "switch" {
 part "switch.track" {
     flex none
     box-sizing border-box
-    width "$size-control"
+    width "calc($space-4 * 2 + $space-1 * 2)"
     height "$space-5"
     padding "$space-1"
     border "$border-width solid $border"
@@ -1617,6 +1617,98 @@ part "timeline-bar" {
     background "$bg-raised"
     color "$fg"
     font-size "$fs-sm"
+}
+
+// ───────────── Name and value (Details, UX §4.4) ─────────────
+
+part "name-values" {
+    display flex
+    flex-direction column
+    margin 0
+}
+
+part "name-value" {
+    display grid
+    grid-template-columns "$size-name minmax(0, 1fr)"
+    align-items start
+    gap "$space-3"
+    min-height "$size-control"
+    padding "$space-1 0"
+}
+
+part "name-value.name" {
+    margin 0
+    padding-top "$space-2"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "name-value.value" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    min-width 0
+    min-height "$size-control"
+    margin 0
+    font-size "$fs-ui"
+}
+
+// *Saved* and *Undo* where the change happened (R7).
+part "name-value.saved" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+}
+
+// ───────────── Legend ─────────────
+//
+// A small key beside the toolbar: what the row color and the edge mean (UX §4.2, §4.7).
+
+part "legend" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2 $space-4"
+    margin 0
+    padding 0
+    color "$fg-muted"
+    font-size "$fs-sm"
+    list-style none
+}
+
+part "legend.item" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+}
+
+part "legend.swatch" {
+    flex none
+    box-sizing border-box
+    width "$size-icon-small"
+    height "$size-icon-small"
+    border "$border-width solid $border"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+}
+
+part "legend.swatch[variant=in-progress]" {
+    border-color "$st-ip"
+    background "$tint-ip"
+}
+
+part "legend.swatch[variant=done]" {
+    border-color "$st-done"
+    background "$tint-done"
+}
+
+part "legend.swatch[variant=critical]" {
+    border-inline-start "$size-edge solid $danger"
+}
+
+part "legend.swatch[variant=high]" {
+    border-inline-start "$size-edge solid $warning"
 }
 
 // ───────────── Shared layout parts ─────────────

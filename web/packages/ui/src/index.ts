@@ -46,6 +46,13 @@ export {
   type IssueTypeIconProps,
 } from "./IssueTypeIcon.tsx";
 export { layoutForWidth, layoutModes, useLayout, useUpright, type LayoutMode } from "./layout.ts";
+export {
+  Legend,
+  LegendItem,
+  type LegendItemProps,
+  type LegendLook,
+  type LegendProps,
+} from "./Legend.tsx";
 export { Link, type LinkProps } from "./Link.tsx";
 export { listColumns, type ListColumn } from "./list-columns.ts";
 export {
@@ -71,6 +78,13 @@ export {
 } from "./markdown/MarkdownEditor.tsx";
 export { MarkdownView, type MarkdownViewProps } from "./markdown/MarkdownView.tsx";
 export { Listeners } from "./listeners.ts";
+export {
+  NameValueList,
+  NameValueRow,
+  type ChangeStatus,
+  type NameValueListProps,
+  type NameValueRowProps,
+} from "./NameValueRow.tsx";
 export { OrDivider, type OrDividerProps } from "./OrDivider.tsx";
 export { Overlay, type OverlayProps } from "./Overlay.tsx";
 export { Priority, type PriorityProps } from "./Priority.tsx";

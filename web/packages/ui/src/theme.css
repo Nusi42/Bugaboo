@@ -1020,7 +1020,7 @@ body {
 [data-part="switch.track"] {
   flex: none;
   box-sizing: border-box;
-  width: var(--size-control);
+  width: calc(var(--space-4) * 2 + var(--space-1) * 2);
   height: var(--space-5);
   padding: var(--space-1);
   border: var(--border-width) solid var(--border);
@@ -1834,6 +1834,91 @@ body {
   background: var(--bg-raised);
   color: var(--fg);
   font-size: var(--fs-sm);
+}
+
+[data-part="name-values"] {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+[data-part="name-value"] {
+  display: grid;
+  grid-template-columns: var(--size-name) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  min-height: var(--size-control);
+  padding: var(--space-1) 0;
+}
+
+[data-part="name-value.name"] {
+  margin: 0;
+  padding-top: var(--space-2);
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+[data-part="name-value.value"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--size-control);
+  margin: 0;
+  font-size: var(--fs-ui);
+}
+
+[data-part="name-value.saved"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+[data-part="legend"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+  list-style: none;
+}
+
+[data-part="legend.item"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+[data-part="legend.swatch"] {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--size-icon-small);
+  height: var(--size-icon-small);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-raised);
+}
+
+[data-part="legend.swatch"][data-variant~="in-progress"] {
+  border-color: var(--st-ip);
+  background: var(--tint-ip);
+}
+
+[data-part="legend.swatch"][data-variant~="done"] {
+  border-color: var(--st-done);
+  background: var(--tint-done);
+}
+
+[data-part="legend.swatch"][data-variant~="critical"] {
+  border-inline-start: var(--size-edge) solid var(--danger);
+}
+
+[data-part="legend.swatch"][data-variant~="high"] {
+  border-inline-start: var(--size-edge) solid var(--warning);
 }
 
 [data-part="stack"] {
