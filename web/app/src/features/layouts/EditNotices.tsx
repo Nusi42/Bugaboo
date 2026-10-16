@@ -6,7 +6,7 @@ import { HeldNote } from "../../shared/editing/HeldNote.tsx";
 import type { LayoutLock } from "./use-layout-lock.ts";
 
 /** What the person needs to know about the lock on the layout: somebody else holds it, or it was lost. */
-export function LockNotes({ lock }: { readonly lock: LayoutLock }) {
+export function EditNotices({ lock }: { readonly lock: LayoutLock }) {
   const { state } = lock;
   if (state.phase === "held") {
     return (
