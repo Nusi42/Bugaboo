@@ -199,6 +199,7 @@ export interface MessageArguments {
     who: string | number;
   };
   "history.set": { after: string | number; field: string | number; who: string | number };
+  "history.set-people": { after: string | number; field: string | number; who: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };

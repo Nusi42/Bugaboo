@@ -26,6 +26,18 @@ describe("iss_06 the history lists choices", () => {
   });
 });
 
+describe("iss_06 the history of a field of people reads as a sentence", () => {
+  it("reads a field of people that was first set without a doubled to (M3 review)", () => {
+    // The name of the field already ends in a preposition: *set Assigned to to nobody* is not a sentence.
+    expect(changeSentence(change({ field: "assigned-to", after_people: [] }))).toBe(
+      "Ben set Assigned to: nobody",
+    );
+    expect(changeSentence(change({ field: "assigned-to", after_people: [ana] }))).toBe(
+      "Ben set Assigned to: Ana",
+    );
+  });
+});
+
 describe("iss_06 the history in plain sentences", () => {
   it("says what a field was and is, with the words of status and priority", () => {
     expect(

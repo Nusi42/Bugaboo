@@ -5486,6 +5486,23 @@ pub fn history_set(
     )
 }
 
+/// The message `history.set-people`.
+#[must_use]
+pub fn history_set_people(
+    after: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.set-people"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
 /// The message `home.title`.
 #[must_use]
 pub fn home_title(name: impl std::fmt::Display) -> Message {
@@ -8938,6 +8955,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} took away a relation: this issue · {name} · {issue}",
     ),
     ("history.set", "{who} set {field} to {after}"),
+    ("history.set-people", "{who} set {field}: {after}"),
     ("history.system", "Bugaboo"),
     ("history.tab-changes", "Changes"),
     ("history.tab-comments", "Comments"),

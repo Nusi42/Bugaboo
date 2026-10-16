@@ -12,6 +12,7 @@ export const messages = {
   "history.system": "Bugaboo",
   "history.changed": "{who} changed {field} from {before} to {after}",
   "history.set": "{who} set {field} to {after}",
+  "history.set-people": "{who} set {field}: {after}",
   "history.cleared": "{who} cleared {field}",
   "history.changed-long-text": "{who} changed {field}",
   "history.relation-added": "{who} added a relation: this issue · {name} · {issue}",
