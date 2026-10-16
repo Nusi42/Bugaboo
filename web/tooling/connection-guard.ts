@@ -79,6 +79,8 @@ export default class ConnectionGuardReporter implements Reporter {
   private specFolder = "";
   private resultFolder = "";
   private stopped = false;
+  /** Set when a project that waits for the others runs (the speed tests): no look disturbs it. */
+  private quiet = false;
   private timer: NodeJS.Timeout | undefined;
   private inFlight: Promise<void> = Promise.resolve();
 
@@ -97,6 +99,9 @@ export default class ConnectionGuardReporter implements Reporter {
   public onTestBegin(test: TestCase, result: TestResult): void {
     const file = relative(this.specFolder, test.location.file).replaceAll("\\", "/");
     const project = test.parent.project()?.name ?? "";
+    if ((test.parent.project()?.dependencies.length ?? 0) > 0) {
+      this.quiet = true;
+    }
     this.specs[this.ports.e2eWorkersFrom + result.parallelIndex] = `${file} [${project}]`;
   }
 
@@ -131,7 +136,8 @@ export default class ConnectionGuardReporter implements Reporter {
       return;
     }
     this.timer = setTimeout(() => {
-      this.inFlight = this.look().then(() => {
+      // The projects that wait for the others measure speed on a computer that is otherwise idle.
+      this.inFlight = (this.quiet ? Promise.resolve() : this.look()).then(() => {
         this.plan();
       });
     }, PAUSE_BETWEEN_LOOKS_MS);
