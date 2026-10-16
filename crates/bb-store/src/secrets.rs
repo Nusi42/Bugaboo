@@ -21,7 +21,7 @@ use zeroize::Zeroizing;
 use crate::db::Transaction;
 use crate::db::{Database, Row, to_micros};
 use crate::error::{SecretProblem, StoreError};
-use crate::keys::{KEY_LENGTH, KeyRing, MasterKey, random_bytes};
+use crate::keys::{KEY_LENGTH, KeyRing, MasterKey, OpenMode, random_bytes};
 use crate::schema::{Secret as Columns, SecurityLog, SecurityLogCheckpoint};
 
 const VALUE_LABEL: &[u8] = b"bugaboo.secret.value.v1";
@@ -98,7 +98,12 @@ impl Database {
     /// damaged.
     pub async fn open_keys(&self, folder: &std::path::Path) -> Result<KeyRing, StoreError> {
         let has_data = self.has_key_bound_data().await?;
-        KeyRing::open(folder, !has_data)
+        let mode = if has_data {
+            OpenMode::ExistingOnly
+        } else {
+            OpenMode::CreateMissing
+        };
+        KeyRing::open(folder, mode)
     }
 
     /// Whether the database holds anything that only the key files can make sense of.
@@ -541,7 +546,7 @@ mod tests {
             for file in ["master.key", "log.key"] {
                 std::fs::copy(folder.path().join(file), backup.path().join(file))?;
             }
-            let old_ring = KeyRing::open(backup.path(), false)?;
+            let old_ring = KeyRing::open(backup.path(), OpenMode::ExistingOnly)?;
             for (secret, value) in [("a.one", "1"), ("b.two", "22"), ("c.three", "333")] {
                 database
                     .put_secret(&ring, &name(secret), value.as_bytes(), at(1))
@@ -570,7 +575,7 @@ mod tests {
             assert_eq!(database.rotate_master_key(&ring, at(5)).await?, 3);
             assert_eq!(ring.ids()?, [name("k2")], "k1 is not used any more");
             assert_eq!(
-                KeyRing::open(folder.path(), false)?.ids()?,
+                KeyRing::open(folder.path(), OpenMode::ExistingOnly)?.ids()?,
                 [name("k2")],
                 "the key file has only the new key"
             );
@@ -616,7 +621,7 @@ mod tests {
                 .await?;
             // Step one of a rotation only: the new key is in the file, nothing re-wrapped yet.
             ring.add_key()?;
-            let reopened = KeyRing::open(folder.path(), false)?;
+            let reopened = KeyRing::open(folder.path(), OpenMode::ExistingOnly)?;
             assert_eq!(reopened.ids()?, [name("k1"), name("k2")]);
             assert_eq!(
                 database
@@ -645,7 +650,7 @@ mod tests {
         each_database("sec_16_retired_key", async |db| {
             let database = open(db).await?;
             let (folder, server) = keys();
-            let command_line = KeyRing::open(folder.path(), false)?;
+            let command_line = KeyRing::open(folder.path(), OpenMode::ExistingOnly)?;
             database
                 .put_secret(&server, &name("a.one"), b"1", at(1))
                 .await?;
