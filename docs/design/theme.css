@@ -71,6 +71,7 @@
   --size-list: 300px;
   --size-details: 300px;
   --size-reading: 75ch;
+  --size-main: 780px;
   --size-sheet-share: 85%;
   --size-matrix-cell: calc(var(--size-control) * 3);
   --size-list-tall: calc(var(--size-list) * 2);

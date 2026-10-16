@@ -10,6 +10,8 @@ export interface UndoOffer {
   readonly undo?: () => void;
   /** Where the focus goes after `undo`: the thing that is back. Without it, the content heading. */
   readonly restoredFocus?: () => HTMLElement | null;
+  /** The screen shows *Undo* where the change happened (a row of the Details), not at the bottom. */
+  readonly inline?: boolean;
 }
 
 /** What a caller gives: the sentence and the way back. */
@@ -17,6 +19,7 @@ export interface UndoRequest {
   readonly message: string;
   readonly undo?: () => void;
   readonly restoredFocus?: () => HTMLElement | null;
+  readonly inline?: boolean;
 }
 
 /**

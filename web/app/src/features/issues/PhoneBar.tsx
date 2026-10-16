@@ -1,7 +1,6 @@
 import type { MenuAction } from "@bugaboo/ui";
 
-import { focusChoice } from "./focus-choice.ts";
-import { statusId } from "./bar-targets.ts";
+import { openStatusMenu } from "./bar-targets.ts";
 import { historyId } from "./history-id.ts";
 import { IssueBar } from "./IssueBar.tsx";
 
@@ -17,8 +16,8 @@ export function PhoneBar({ actions }: { readonly actions: readonly MenuAction[] 
   return (
     <IssueBar
       onStatus={() => {
-        // The same lookup as the key for the status: a status the person may not change has no list.
-        focusChoice(goTo(statusId));
+        // The same as the key for the status: a status the person may not change has no list.
+        openStatusMenu();
       }}
       onComment={() => {
         goTo(historyId)?.querySelector("textarea")?.focus();

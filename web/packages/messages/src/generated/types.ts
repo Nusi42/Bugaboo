@@ -377,5 +377,6 @@ export interface MessageArguments {
   "sub-issues.not-part-of": { key: string | number };
   "sub-issues.progress": { done: string | number; total: string | number };
   "sub-issues.take-out": { key: string | number };
+  "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
 }

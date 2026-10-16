@@ -66,9 +66,11 @@ export function UndoHost({ aboveBar = false }: { readonly aboveBar?: boolean }) 
   );
   return (
     <div {...partOf(part.undoHost, { variants: [aboveBar && "above-bar"] })} role={politeStatus}>
-      {offers.map((offer) => (
-        <Offer key={offer.id} offer={offer} />
-      ))}
+      {offers
+        .filter((offer) => offer.inline !== true)
+        .map((offer) => (
+          <Offer key={offer.id} offer={offer} />
+        ))}
     </div>
   );
 }

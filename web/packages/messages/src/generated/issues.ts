@@ -43,6 +43,8 @@ export const messages = {
   "issues.open-full-page": "Open full page",
   "issues.side-panel-view": "Open in the side panel",
   "issues.details": "Details",
+  "issues.change-status": "Change the status",
+  "issues.summary-separator": " · ",
   "issues.all-details": "All details",
   "issues.hide-details": "Hide details",
   "issues.created-on": "Created",

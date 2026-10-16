@@ -1167,6 +1167,14 @@ body {
   font-size: var(--fs-ui);
 }
 
+[data-part="name-value.reason"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--fg-muted);
+  font-size: var(--fs-base);
+}
+
 [data-part="name-value.saved"] {
   display: inline-flex;
   align-items: center;
@@ -3170,48 +3178,18 @@ body {
   line-height: var(--lh-snug);
 }
 
-[data-part="issue-facts"] {
-  border: var(--border-width) solid var(--border-subtle);
-  border-radius: var(--r-ctl);
-  background: var(--bg-surface);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3) var(--space-5);
-  padding: var(--space-3);
-}
-
-[data-part="issue-fact"] {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: var(--size-list);
-}
-
-[data-part="issue-fact"][data-variant~="compact"] {
-  min-width: 0;
-}
-
-[data-part="issue-fact.name"] {
-  color: var(--fg-muted);
-  font-size: var(--fs-base);
-}
-
-[data-part="issue-fact.value"] {
+[data-part="issue-status-line"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  min-height: var(--size-control);
-  font-size: var(--fs-md);
+  gap: var(--space-2) var(--space-3);
 }
 
-[data-part="issue-fact.reason"] {
+[data-part="issue-details-toggle"] {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1);
-  color: var(--fg-muted);
-  font-size: var(--fs-base);
+  gap: var(--space-2) var(--space-3);
 }
 
 [data-part="issue-body"] {
@@ -3231,6 +3209,7 @@ body {
   flex-direction: column;
   gap: var(--space-5);
   min-width: 0;
+  max-width: var(--size-main);
 }
 
 [data-part="issue-details"] {
@@ -3801,29 +3780,6 @@ body {
   align-items: center;
   gap: var(--space-2) var(--space-3);
   min-width: 0;
-}
-
-[data-part="issue-ref.status"] {
-  padding: 0 var(--space-2);
-  border-radius: var(--r-ctl);
-  font-size: var(--fs-xs);
-  font-weight: var(--weight-bold);
-  white-space: nowrap;
-}
-
-[data-part="issue-ref.status"][data-variant~="not-started"] {
-  background: var(--st-ns-soft);
-  color: var(--st-ns);
-}
-
-[data-part="issue-ref.status"][data-variant~="in-progress"] {
-  background: var(--st-ip-soft);
-  color: var(--st-ip);
-}
-
-[data-part="issue-ref.status"][data-variant~="done"] {
-  background: var(--st-done-soft);
-  color: var(--st-done);
 }
 
 [data-part="progress"] {

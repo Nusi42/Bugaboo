@@ -17,6 +17,20 @@ export interface IssueValues {
   readonly own?: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * The fields of the Details that save in place with *Saved* and *Undo* in their own row (R7):
+ * the names of the rows. The title, the status and the own fields say it elsewhere.
+ */
+export type RowField = "priority" | "assigned-to";
+
+/** The row of the Details a change belongs to, when it belongs to one. */
+export function rowFieldOf(values: IssueValues): RowField | undefined {
+  if (values.assignedTo !== undefined) {
+    return "assigned-to";
+  }
+  return values.priority === undefined ? undefined : "priority";
+}
+
 /** One change on its way: the values, and the version on screen that it is made on. */
 export interface IssueEdit {
   readonly values: IssueValues;

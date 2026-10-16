@@ -144,6 +144,7 @@ tokens {
     size "size-list" "300px"
     size "size-details" "300px"
     size "size-reading" "75ch"
+    size "size-main" "780px"
     size "size-sheet-share" "85%"
     size "size-matrix-cell" "calc($size-control * 3)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -1672,6 +1673,14 @@ part "name-value.value" {
     min-height "$size-control"
     margin 0
     font-size "$fs-ui"
+}
+
+// Why a value cannot be changed, with its lock.
+part "name-value.reason" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    use "quiet-text"
 }
 
 // *Saved* and *Undo* where the change happened (R7).
@@ -3579,46 +3588,20 @@ part "issue-title" {
     line-height "$lh-snug"
 }
 
-// The most used fields under the title (UX §3.4): each says its name, its value or the way to
-// change it, and, when it cannot be changed, why.
-part "issue-facts" {
-    use "surface-box"
-    display flex
-    flex-wrap wrap
-    gap "$space-3" "$space-5"
-    padding "$space-3"
-}
-
-part "issue-fact" {
-    display flex
-    flex 1
-    flex-direction column
-    gap "$space-1"
-    min-width "$size-list"
-}
-
-part "issue-fact[variant=compact]" {
-    min-width 0
-}
-
-part "issue-fact.name" {
-    use "quiet-text"
-}
-
-part "issue-fact.value" {
+// The big status button under the title, and what stands beside it.
+part "issue-status-line" {
     display flex
     flex-wrap wrap
     align-items center
-    gap "$space-2"
-    min-height "$size-control"
-    font-size "$fs-md"
+    gap "$space-2" "$space-3"
 }
 
-part "issue-fact.reason" {
+// On a smaller screen the Details sit behind a button that still says the main values.
+part "issue-details-toggle" {
     display flex
+    flex-wrap wrap
     align-items center
-    gap "$space-1"
-    use "quiet-text"
+    gap "$space-2" "$space-3"
 }
 
 part "issue-body" {
@@ -3638,6 +3621,7 @@ part "issue-main" {
     flex-direction column
     gap "$space-5"
     min-width 0
+    max-width "$size-main"
 }
 
 // Details on wide screens keep their own scroll bar, so long details never push the description away.
@@ -4153,29 +4137,6 @@ part "issue-ref" {
     align-items center
     gap "$space-2 $space-3"
     min-width 0
-}
-
-part "issue-ref.status" {
-    padding "0 $space-2"
-    border-radius "$r-ctl"
-    font-size "$fs-xs"
-    font-weight "$weight-bold"
-    white-space nowrap
-}
-
-part "issue-ref.status[variant=not-started]" {
-    background "$st-ns-soft"
-    color "$st-ns"
-}
-
-part "issue-ref.status[variant=in-progress]" {
-    background "$st-ip-soft"
-    color "$st-ip"
-}
-
-part "issue-ref.status[variant=done]" {
-    background "$st-done-soft"
-    color "$st-done"
 }
 
 // How far the sub-issues are: the browser's own bar, in the accent color.

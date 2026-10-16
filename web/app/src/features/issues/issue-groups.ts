@@ -1,5 +1,4 @@
-import { statusGroupWords } from "@bugaboo/api-client";
-import type { StatusGroup } from "@bugaboo/ui";
+import { statusGroupWords, type Schema } from "@bugaboo/api-client";
 
 import type { IssueLine } from "./issues.ts";
 
@@ -12,16 +11,16 @@ const place = {
   "in-progress": 0,
   "not-started": 1,
   done: 2,
-} as const satisfies Readonly<Record<StatusGroup, number>>;
+} as const satisfies Readonly<Record<Schema<"StatusGroup">, number>>;
 
 /** The issues of one group of statuses, in the order the list had them. */
 export interface IssueGroup {
-  readonly group: StatusGroup;
+  readonly group: Schema<"StatusGroup">;
   readonly lines: readonly IssueLine[];
 }
 
 /** The groups in the order a list shows them. */
-const groupsInOrder: readonly StatusGroup[] = statusGroupWords.toSorted(
+const groupsInOrder: readonly Schema<"StatusGroup">[] = statusGroupWords.toSorted(
   (first, second) => place[first] - place[second],
 );
 

@@ -1900,6 +1900,9 @@ pub const ISSUES_BAR: MessageKey = MessageKey::new("issues.bar");
 /// The message `issues.change`.
 pub const ISSUES_CHANGE: MessageKey = MessageKey::new("issues.change");
 
+/// The message `issues.change-status`.
+pub const ISSUES_CHANGE_STATUS: MessageKey = MessageKey::new("issues.change-status");
+
 /// The message `issues.changed-after-you`.
 pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed-after-you");
 
@@ -2022,6 +2025,9 @@ pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes
 
 /// The message `issues.side-panel-view`.
 pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-panel-view");
+
+/// The message `issues.summary-separator`.
+pub const ISSUES_SUMMARY_SEPARATOR: MessageKey = MessageKey::new("issues.summary-separator");
 
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
@@ -2932,6 +2938,10 @@ pub const RELATED_ISSUES_NONE: MessageKey = MessageKey::new("related-issues.none
 /// The message `related-issues.nothing-to-pick`.
 pub const RELATED_ISSUES_NOTHING_TO_PICK: MessageKey =
     MessageKey::new("related-issues.nothing-to-pick");
+
+/// The message `related-issues.take-away-short`.
+pub const RELATED_ISSUES_TAKE_AWAY_SHORT: MessageKey =
+    MessageKey::new("related-issues.take-away-short");
 
 /// The message `related-issues.title`.
 pub const RELATED_ISSUES_TITLE: MessageKey = MessageKey::new("related-issues.title");
@@ -7478,6 +7488,15 @@ pub fn sub_issues_take_out(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `sub-issues.take-out-short`.
+#[must_use]
+pub fn sub_issues_take_out_short(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sub-issues.take-out-short"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `theme.device-resolved`.
 #[must_use]
 pub fn theme_device_resolved(
@@ -9065,6 +9084,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.bar", "Actions for this issue"),
     ("issues.change", "Change"),
     ("issues.change-field", "Change {field}"),
+    ("issues.change-status", "Change the status"),
     ("issues.change-title-of", "Change the title: {title}"),
     ("issues.changed", "{field} changed to {value}."),
     (
@@ -9164,6 +9184,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
+    ("issues.summary-separator", " · "),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.type", "Type"),
@@ -9873,6 +9894,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "related-issues.take-away",
         "Take away the relation: {name} {other}",
     ),
+    ("related-issues.take-away-short", "Take away"),
     ("related-issues.title", "Related issues"),
     ("relation-kind.blocks", "blocks"),
     ("relation-kind.causes", "causes"),
@@ -10863,6 +10885,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sub-issues.progress", "{done} of {total} done"),
     ("sub-issues.progress-label", "How far the sub-issues are"),
     ("sub-issues.take-out", "Take {key} out of the sub-issues"),
+    ("sub-issues.take-out-short", "Take {key} out"),
     ("sub-issues.title", "Sub-issues"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),

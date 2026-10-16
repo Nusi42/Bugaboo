@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, ListGrid, partOf, part } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -51,11 +51,11 @@ export function RelatedIssuesBlock({ issueKey }: BlockProps) {
       {related.length === 0 ? (
         <p {...partOf(part.muted)}>{t("related-issues.none")}</p>
       ) : (
-        <ul {...partOf(part.list)}>
+        <ListGrid label={t("related-issues.title")}>
           {related.map((each) => (
             <RelatedLine key={each.id} each={each} mayChange={mayChange} />
           ))}
-        </ul>
+        </ListGrid>
       )}
       {list.hasNextPage ? (
         <Button
