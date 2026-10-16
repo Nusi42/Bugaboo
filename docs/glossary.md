@@ -79,7 +79,10 @@ Rules:
 | **Only if …**            | Rule: something that must be true first                            | condition                          |
 | **Must be filled in**    | Rule: fields that need a value first. The box is named *Customer (required)*, and a refusal says *Must be filled in* at that box | validator                          |
 | **Ask for**              | Fields shown in a small form during the status change              | transition screen                  |
-| **Starting workflow**    | The workflow every issue type uses until an organization makes its own (M4): *Open*, *In progress*, *Done*, and any status can follow any other | default workflow (in UI) |
+| **Starting workflow**    | The workflow every issue type used before M4: *Open*, *In progress*, *Done*, and any status can follow any other. Since M4 it is the starter workflow *Simple* | default workflow (in UI) |
+| **Starter workflows**    | The workflows a new organization starts with, as copies it may change: *Simple*, *Bug* (with *Testing* and *Won't fix*) and *Development* (with *In review* and *Testing*) | template, scheme (in UI) |
+| **Publish** (a workflow) | Make the changed workflow count; until then the changes are a draft only the editor sees | deploy, activate (in UI) |
+| **Try it** (a workflow)  | Pick an issue and a person and see which status changes they would get, and why | simulate, dry run (in UI) |
 | **Then automatically …** | Actions that run after the change (assign, notify, fill a field)   | post-function                      |
 | **Automations** (later)  | Rules that run on a schedule or event                              | —                                  |
 
@@ -135,6 +138,10 @@ Rules:
 | **Documents**            | A project's pages and files                                        | space, wiki, library               |
 | **Page**                 | A document written in Bugaboo                                      | article                            |
 | **File**                 | An uploaded document (PDF, image …)                                | asset, blob (in UI)                |
+| **Upload**               | Put a file into Bugaboo: drag it in, paste it or choose it; an interrupted upload goes on where it stopped | — |
+| **Files** (on an issue)  | The block of an issue's attachments, with a preview of each image and PDF | attachments panel (in UI) |
+| **Preview** (of a file)  | The small picture Bugaboo makes of an image or the first page of a PDF; other files have none and are only downloaded | thumbnail (in UI) |
+| **Download**             | Save a copy of a file on your device; Bugaboo never opens other files inside the page | — |
 | **Attachment**           | A file added to an issue or comment                                | —                                  |
 | **Version**              | A saved state of a page or file                                    | revision                           |
 | **Lock for editing**     | Stop others from changing a file while you work on it              | check out / check in               |
@@ -254,6 +261,12 @@ Rules:
 | **Self-hosted**          | Bugaboo running on the customer's own server                       | on-prem, on-premises, enterprise edition |
 | **Hosted by Bugaboo**    | Bugaboo running for the customer on our servers in the EU          | SaaS, cloud edition                |
 | **Notifications**        | Messages about things you follow or that involve you               | inbox, alerts                      |
+| **Mark as read**         | Take a notification off the unread ones                            | dismiss, acknowledge (in UI)       |
+| **Customize** (notifications) | Choose for each kind of event whether you hear of it in the app, by e-mail or not at all | subscription settings (in UI) |
+| **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
+| **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
+| **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
+| **Confirm your e-mail address** | The link a person gets after signing up on their own, valid for 24 hours; the account works only after it | verify email (in UI) |
 
 ## Internal terms (docs and code only, never in the UI)
 
@@ -266,6 +279,8 @@ Rules:
 | `PersonRef`         | How every person in an answer is shown, worked out for the viewer: name, role label, *Someone* or *Former user* |
 | Readable ID         | The code name (`ReadableId`) of the *Issue ID* people see (`WEB-142`); `IssueId` is the stored key that never changes |
 | Edit notice         | The code name (`EditNotice`, `EditNotices`) of the note a person gets about their text: *Ask … to finish*, *Edit anyway*, given back |
+| Signed link         | A download link good for 5 minutes and one person; every download checks access again (ADR-0032) |
+| Notifications reader | The outbox reader that turns events into notifications for each person (ADR-0033) |
 | Instance            | One installed Bugaboo server                                          |
 | AST                 | The parsed form of a search, shared by Simple and Advanced search     |
 | Design tokens       | Named theme values (`bg.surface`), the only way code uses colors and sizes |
