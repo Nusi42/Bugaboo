@@ -3,7 +3,7 @@
 use bb_app::auth::SecondStepStore;
 use bb_core::id::{PasskeyId, RoleId, UserId};
 use bb_core::security_log::Digest;
-use bb_core::sign_in::{StoredPasskey, TwoStep};
+use bb_core::sign_in::{StoredPasskey, TotpStep, TwoStep};
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 use zeroize::Zeroizing;
@@ -75,7 +75,7 @@ impl SecondStepStore for AuthStorage {
         Ok(Some(TwoStep {
             person,
             confirmed: row.get(TwoStepColumns::Confirmed)?,
-            last_step: row.get(TwoStepColumns::LastStep)?,
+            last_step: TotpStep::new(row.get(TwoStepColumns::LastStep)?),
             created_at: row.time(TwoStepColumns::CreatedAt)?,
         }))
     }
@@ -169,7 +169,7 @@ impl SecondStepStore for AuthStorage {
             .values([
                 Expr::val(step.person.stored()),
                 Expr::val(step.confirmed),
-                Expr::val(step.last_step),
+                Expr::val(step.last_step.get()),
                 Expr::val(to_micros(step.created_at)),
             ])
             .map_err(|_| StoreError::Corrupt("a second step"))?;
@@ -207,15 +207,15 @@ impl SecondStepStore for AuthStorage {
     async fn accept_totp_step(
         transaction: &mut Transaction,
         person: UserId,
-        step: i64,
+        step: TotpStep,
     ) -> Result<bool, StoreError> {
         // One statement checks and writes, so two requests with the same code cannot both pass.
         let mut update = Query::update();
         update
             .table(TwoStepColumns::Table)
-            .value(TwoStepColumns::LastStep, step)
+            .value(TwoStepColumns::LastStep, step.get())
             .and_where(Expr::col(TwoStepColumns::Person).eq(person.stored()))
-            .and_where(Expr::col(TwoStepColumns::LastStep).lt(step));
+            .and_where(Expr::col(TwoStepColumns::LastStep).lt(step.get()));
         Ok(transaction.execute(&update).await? > 0)
     }
 

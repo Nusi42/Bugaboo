@@ -12,7 +12,7 @@ use bb_core::access::{AppliesTo, Assignment, Group, GroupMember, Role};
 use bb_core::id::{AssignmentId, GroupId, IdSource, RoleId};
 use bb_core::person::Person;
 use bb_core::settings::{AUTH_ACCESS_KEY_LONGEST_DAYS, SECURITY_TWO_STEP_REQUIRED, SettingValue};
-use bb_core::sign_in::{StoredPasskey, TwoStep};
+use bb_core::sign_in::{StoredPasskey, TotpStep, TwoStep};
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{Failure, TestResult, each_database};
 
@@ -373,7 +373,7 @@ async fn auth_03_a_confirmed_code_app_or_a_passkey_is_a_second_step_and_nothing_
                     &TwoStep {
                         person: ada,
                         confirmed: false,
-                        last_step: 0,
+                        last_step: TotpStep::NONE,
                         created_at: at(2),
                     },
                 )

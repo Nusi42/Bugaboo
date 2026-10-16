@@ -5,7 +5,7 @@ use bb_auth::{ChallengeId, HumanCode, Purpose, TotpSecret};
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::PasskeyId;
-use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TwoStep};
+use bb_core::sign_in::{SecurityAction, SessionStage, StoredPasskey, TotpStep, TwoStep};
 use bb_core::text::LABEL_MAX;
 use serde_json::json;
 
@@ -252,7 +252,7 @@ pub async fn start_code_app<S: AuthStore>(
     let step = TwoStep {
         person: person.id,
         confirmed: false,
-        last_step: 0,
+        last_step: TotpStep::NONE,
         created_at: now,
     };
     let event = ctx.event(

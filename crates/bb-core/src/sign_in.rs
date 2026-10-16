@@ -177,6 +177,27 @@ pub struct SignInSession {
     pub device: String,
 }
 
+/// A 30-second step of the clock, which a code of the app belongs to (RFC 6238).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TotpStep(i64);
+
+impl TotpStep {
+    /// The step before any code was accepted.
+    pub const NONE: Self = Self(0);
+
+    /// The step with this number.
+    #[must_use]
+    pub const fn new(number: i64) -> Self {
+        Self(number)
+    }
+
+    /// The number of the step, as the database stores it.
+    #[must_use]
+    pub const fn get(self) -> i64 {
+        self.0
+    }
+}
+
 /// The two-step sign-in with a code app (TOTP) of a person. The shared secret is a stored secret
 /// (envelope encrypted), not a column here.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
@@ -189,7 +210,7 @@ pub struct TwoStep {
     pub confirmed: bool,
     /// The newest 30-second step a code was accepted for, so a code cannot be used twice.
     #[personal(category = "credentials", basis = "contract")]
-    pub last_step: i64,
+    pub last_step: TotpStep,
     /// When the person started setting it up.
     #[personal(category = "activity", basis = "contract")]
     pub created_at: Timestamp,

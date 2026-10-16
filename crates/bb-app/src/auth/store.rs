@@ -16,7 +16,7 @@ use bb_core::person::Person;
 use bb_core::security_log::Digest;
 use bb_core::settings::SettingValue;
 use bb_core::sign_in::{
-    Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TwoStep,
+    Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
 use bb_policy::Permission;
 use jiff::Timestamp;
@@ -231,7 +231,7 @@ pub trait SecondStepStore: ChangeStore + 'static {
         fn delete_two_step(person: UserId) -> ();
         /// Remembers that a code for `step` was used, if that is newer than the newest step used
         /// before. `false` means the code was used already (or the code app is not set up).
-        fn accept_totp_step(person: UserId, step: i64) -> bool;
+        fn accept_totp_step(person: UserId, step: TotpStep) -> bool;
         /// Replaces the backup codes of a person with new ones.
         fn replace_backup_codes(person: UserId, hashes: &[Digest]) -> ();
         /// Uses up a backup code; `false` if there is no such unused code.

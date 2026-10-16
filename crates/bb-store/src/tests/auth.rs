@@ -4,7 +4,7 @@
 
 use bb_app::auth::{AccountStore, InvitationStore, SecondStepStore, SessionStore};
 use bb_core::id::IdSource;
-use bb_core::sign_in::{SetupCode, TwoStep};
+use bb_core::sign_in::{SetupCode, TotpStep, TwoStep};
 use bb_testing::{TestResult, each_database};
 
 use super::*;
@@ -179,7 +179,7 @@ async fn auth_03_a_code_step_is_accepted_once_even_when_requests_race() -> TestR
         let step = TwoStep {
             person: id,
             confirmed: true,
-            last_step: 0,
+            last_step: TotpStep::NONE,
             created_at: at(0),
         };
         change(&storage, &mut source, move |tx| {
@@ -195,7 +195,9 @@ async fn auth_03_a_code_step_is_accepted_once_even_when_requests_race() -> TestR
             let event = event(&mut source, 10 + number);
             tasks.push(tokio::spawn(async move {
                 ChangeStore::record_change(&storage, &event, move |tx| {
-                    Box::pin(async move { AuthStorage::accept_totp_step(tx, id, 7).await })
+                    Box::pin(async move {
+                        AuthStorage::accept_totp_step(tx, id, TotpStep::new(7)).await
+                    })
                 })
                 .await
             }));
@@ -207,11 +209,11 @@ async fn auth_03_a_code_step_is_accepted_once_even_when_requests_race() -> TestR
         assert_eq!(accepted, 1, "the same step is accepted by one request only");
         // An older step is never accepted, a newer one is.
         let older = change(&storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::accept_totp_step(tx, id, 6).await })
+            Box::pin(async move { AuthStorage::accept_totp_step(tx, id, TotpStep::new(6)).await })
         })
         .await?;
         let newer = change(&storage, &mut source, move |tx| {
-            Box::pin(async move { AuthStorage::accept_totp_step(tx, id, 8).await })
+            Box::pin(async move { AuthStorage::accept_totp_step(tx, id, TotpStep::new(8)).await })
         })
         .await?;
         assert!(!older && newer);
