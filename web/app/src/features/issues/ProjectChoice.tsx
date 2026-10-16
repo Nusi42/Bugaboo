@@ -1,12 +1,5 @@
 import { t } from "@bugaboo/messages";
-import {
-  Button,
-  buttonLook,
-  NameValueList,
-  NameValueRow,
-  PickerOption,
-  SearchPicker,
-} from "@bugaboo/ui";
+import { Button, buttonLook, partOf, part, PickerOption, SearchPicker } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { pageSize } from "../../shared/paged.ts";
@@ -63,9 +56,10 @@ export function ProjectChoice({ name, shortName, onPick }: ProjectChoiceProps) {
   const [changing, setChanging] = useState(false);
   if (name !== undefined && !changing) {
     return (
-      <NameValueList>
-        <NameValueRow name={t("issues.project")}>
-          {name}
+      <div>
+        <p {...partOf(part.fieldLabel)}>{t("issues.project")}</p>
+        <span {...partOf(part.row)}>
+          <strong {...partOf(part.strong)}>{name}</strong>
           <Button
             look={buttonLook.quiet}
             onPress={() => {
@@ -74,8 +68,8 @@ export function ProjectChoice({ name, shortName, onPick }: ProjectChoiceProps) {
           >
             {t("issues.change")}
           </Button>
-        </NameValueRow>
-      </NameValueList>
+        </span>
+      </div>
     );
   }
   return (
