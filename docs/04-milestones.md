@@ -63,7 +63,7 @@ flowchart LR
 - No second definition, copied logic or hand-kept duplicate knowledge (SSOT, DRY, ODR review gate, coding-standards §1); LINT-DRY green.
 - Reviewed by a reviewer agent; findings fixed.
 - Screenshots in four themes on computer and phone for every changed screen.
-- Screens follow the ten rules of UX design §1; the reviewer checks alignment, padding and state colors on every screenshot.
+- Screens follow the ten rules of UX design §1.1; the reviewer checks alignment, padding and state colors on every screenshot.
 
 ### Testing in every milestone
 

@@ -215,6 +215,11 @@ Rules:
 | **Spacing**              | How close together things are on screen: *Comfortable* or *Compact* | density (in UI) |
 | **Less motion**          | Fewer moving effects on screen                                     | reduced motion (in UI)             |
 | **Larger text**          | All text a step bigger                                             | zoom, font scale (in UI)           |
+| **Window**               | Where a form opens on a computer: it can be minimized, maximized, resized and moved; on a phone it is a full screen | modal, popup (in UI) |
+| **Minimize**             | Park a window as a bar at the bottom of the page; its draft waits there | — |
+| **Maximize**             | Let a window fill the whole page, the menu included                | full screen (for a window)         |
+| **Restore down**         | Give a maximized window its earlier size again                     | — |
+| **Not scheduled yet**    | The tray beside the timeline with the issues that have no dates yet | backlog (on the timeline)          |
 | **Appearance**           | The choices about how Bugaboo looks: theme, *Spacing* (*Comfortable* or *Compact*), *Larger text* and *Less motion* | display settings |
 | **Keyboard shortcuts**   | Keys that do something faster; every shortcut also has a button, and a person can choose their own keys | hotkeys, keybindings |
 | **Region**               | The choices about where you are: time zone, date format, number format and first day of the week | locale, localization, i18n (in UI) |

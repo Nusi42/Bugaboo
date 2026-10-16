@@ -19,8 +19,10 @@
     <details class="toc-phone"><summary>Contents</summary><nav id="toc-phone" class="toc u-display-block--position-static--max-height-none--padding-0" aria-label="Page contents"></nav></details>
 
     <h1>Bugaboo UX design</h1>
-    <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-05</span></div>
-    <p class="lede">How Bugaboo looks, feels and behaves. Feature IDs (like ISS-04) refer to the feature list. All names follow the glossary. The <a href="mockups/bugaboo-mockup.html">clickable mockup</a> shows the same design in action; this page is the source of truth.</p>
+    <div class="status-line"><span class="pill st-done">Accepted</span><span>Phase 2 of 5</span><span>·</span><span>2026-10-05, the look updated 2026-10-16</span></div>
+    <p class="lede">How Bugaboo looks, feels and behaves. Feature IDs (like ISS-04) refer to the feature list. All names follow the glossary. The <a href="mockups/bugaboo-mockup.html">clickable mockup</a> shows an earlier state of the design; this page is the source of truth.</p>
+
+    <div class="note"><b>The look, approved 2026-10-15</b>The maintainer approved one UX concept for the whole app (ten rules, colors per status group and priority, one spacing scale, forms as windows, the timeline, the relation map, roles and permissions). Its rules and numbers are written into §1.1, §3, §4, §5.2, §6.3, §7 and §8. Some pictures on this page are still the older sketches: where a picture and the text differ, <b>the text wins</b>. The pictures are redrawn from the new parts once they exist (M3 WP-16).</div>
 
     <div class="note feedback"><b>How to give feedback</b>Use this page's comment button. Mention the section number shown next to each heading (for example <span class="sec u-vertical-align-0">§4.4</span>), or select text and comment on it. Tapping a section number copies it, ready to paste into your comment.</div>
 
@@ -42,6 +44,21 @@
       <li><b>Hidden stays hidden; read-only is explained.</b> Things you may not see are not shown at all: no empty slots, no greyed-out placeholders, no counts. Things you may see but not change look normal, and hovering or tapping says why: <i>"Only team members can change Priority."</i></li>
       <li><b>The assistant suggests, people decide.</b> AI output is always labelled, and every change it proposes is shown before anything is saved.</li>
       <li><b>Feels instant, sends little.</b> Changes show immediately and save in the background. Each screen asks the server only for what it shows (PERF-02).</li>
+    </ol>
+
+    <h3 id="s1-1"><button type="button" class="sec" data-sec>§1.1</button>Ten rules for the look</h3>
+    <p>Every screen follows these rules. Reviews check them on every screenshot: alignment, padding and state colors (definition of done). Other sections refer to them as R1 … R10.</p>
+    <ol>
+      <li><b>R1 · One left edge.</b> Text, lists, forms and buttons line up on the left edge of their container. Only an empty state is centered.</li>
+      <li><b>R2 · One spacing scale.</b> 4, 8, 12, 16, 24, 32, 48 (§7.4). Inside a control 12, inside a box 16, inside a dialog or a page 24, between sections 24 to 32.</li>
+      <li><b>R3 · No text touches a line.</b> Every box with a border or a fill has inner padding of at least 12. Lists inside a box keep 16 on the left.</li>
+      <li><b>R4 · Color means state.</b> Color is kept for the status group, the priority, notes and the one main button. A row is tinted by its status group and edged by its priority. Issue types and people stay neutral; a label shows its own color as a small square.</li>
+      <li><b>R5 · Never color alone.</b> A status always has its icon and its word. A priority always has its icon, and its word where there is room. Colors also differ in lightness.</li>
+      <li><b>R6 · One main action per area.</b> One filled button per screen part, at the right end of its header or footer. Others are outlined or quiet. A button says what it does: <i>"Change 12 issues"</i>, not <i>"Apply"</i>.</li>
+      <li><b>R7 · Change in place.</b> Short values save as soon as they change and say <i>Saved</i>, with <i>Undo</i>. Descriptions and comments keep <i>Edit</i> and <i>Save</i>, because two people may want them at once (edit lock, §4.4).</li>
+      <li><b>R8 · Two text colors, few links.</b> Normal and muted. Accent-colored links only lead somewhere. A whole row is clickable and is not underlined.</li>
+      <li><b>R9 · Same thing, same place.</b> Status, ID, title, priority, assigned person: always in this order, in the list, the issue page, sub-issues, related issues and on the phone.</li>
+      <li><b>R10 · Forms open as windows.</b> A question is a small, fixed dialog (440 wide). A form is a window: minimize, maximize and close at the top right, resize at any edge, maximize fills the page; title and buttons always visible (§6.3).</li>
     </ol>
 
     <!-- ================= 2 ================= -->
@@ -123,12 +140,13 @@
       <li><b>Top bar:</b> where you are (<i>ACME › Website › Issues</i>), the <b>Show as</b> switch (<i>List · Board · Timeline · Calendar · Map</i>), and buttons for <i>Customize</i>, <i>Share</i>, <i>Export</i> and <i>Save search</i>.</li>
       <li><b>Opening an issue:</b> in the <b>focus view</b> by default (§3.4), which gives the issue most of the screen. People who prefer to keep the list in view can choose the <b>side panel view</b> instead (My settings › Appearance, or the button in the issue header).</li>
       <li><b>Assistant:</b> an <i>Assistant</i> button in the top bar opens a panel on the right. If the side panel is also open, the two share the space as tabs.</li>
+      <li><b>Widths</b> (four columns, fixed): the menu 64 (icons) or 240; the issue list 320, which can be hidden; the issue's text column at most 780, so lines stay readable on a wide screen and extra width goes to the space around it; Details 300 to 340, which stay in view while the text scrolls. The menu narrows to icons while an issue is open in the focus view.</li>
     </ul>
 
     <h3 id="s3-2"><button type="button" class="sec" data-sec>§3.2</button>Tablet (768–1279 px)</h3>
     <ul>
       <li>The sidebar slides in from a <i>Menu</i> button.</li>
-      <li>Turned sideways, list and side panel sit next to each other. Upright, the issue opens over the list as a full-height sheet with a clear <i>Back</i> button.</li>
+      <li>Turned sideways, list and issue sit next to each other, with Details below the text. Upright, the issue opens over the list as a full-height sheet with a clear <i>Back</i> button.</li>
     </ul>
 
     <h3 id="s3-3"><button type="button" class="sec" data-sec>§3.3</button>Phone (narrower than 768 px)</h3>
@@ -221,12 +239,16 @@
       <div class="preview-msg"><b>Send 2 issues to Testing?</b><br>1 will move to Testing. 1 will be skipped, because its workflow doesn't allow it from <i>Open</i>. <span class="btn sm primary u-margin-left-6px">Move 1</span></div>
     </div></div></div></div>
     <ul>
+      <li><b>One grid with fixed columns</b> (R1, R9): tick box, status icon, ID (mono), type icon, title (normal text, not bold, not a link color), labels, priority, assigned person, changed. Everything is left-aligned; the status icon, the ID and the priority sit in fixed columns, so the eye can run down them. A whole row is clickable (R8).</li>
+      <li><b>Rows carry their state</b> (R4): the row is tinted by its status group (<i>In progress</i> blue, <i>Done</i> green, <i>Not started</i> plain) and edged on the left by its priority (4 px, <i>Critical</i> red, <i>High</i> orange, none for Normal and Low). A done issue's title turns muted. The tint mixes the group's soft color into the raised surface; hover and selected stay distinguishable from every tint (STY-CONTRAST).</li>
+      <li><b>Priority in the list:</b> only <i>Critical</i> shows its word; the others show their icon, with the word as its accessible name (R5).</li>
+      <li><b>Groups:</b> <i>Group by status</i> is the default; each group header shows the group's icon and color and the number of issues. <i>Group by</i> works for any field you can see.</li>
+      <li><b>Legend:</b> a small key beside the toolbar says what the row color and the left edge mean.</li>
+      <li><b>Above the list:</b> the title <i>Issues</i>, how many there are and how many are shown (<i>"302 in Website · 13 shown"</i>), the filter chips, <i>Group by</i> and <i>Spacing</i>: <i>Comfortable</i> (rows 44 with a mouse, 64 with touch) or <i>Compact</i>.</li>
       <li>Columns are chosen with <i>Customize → Columns</i> (a checklist with drag to reorder). Resize columns by dragging their edges, and sort by clicking the column name.</li>
-      <li><i>Group by</i> any field you can see; each group shows its number of issues.</li>
-      <li><b>Change in place:</b> click a status, person, priority or date to change it right there.</li>
-      <li><b>Select several:</b> each row has a checkbox. A bar appears at the bottom: <i>Change fields · Change status · Move to project · Add label · Delete</i>. Before applying, it says what will happen and which issues will be skipped (principle 6).</li>
+      <li><b>Change in place:</b> click a status, person, priority or date to change it right there; it says <i>Saved</i> with <i>Undo</i> (R7).</li>
+      <li><b>Ticked issues:</b> a bar at the bottom says <i>"2 issues ticked"</i> and offers <i>Change 2 issues</i>, <i>Move</i> and <i>Delete 2 issues</i>. Before applying, it says what will happen and which issues will be skipped (principle 6).</li>
       <li>The list loads more while you scroll. Very long lists stay fast because only the visible rows are drawn.</li>
-      <li><b>Spacing:</b> <i>Comfortable</i> (default, two lines per issue) or <i>Compact</i> (one line).</li>
     </ul>
 
     <h3 id="s4-3"><button type="button" class="sec" data-sec>§4.3</button>Search bar: Simple and Advanced <span class="ids">QRY</span></h3>
@@ -313,8 +335,10 @@ sort by priority, highest first</div>
       <div class="actbar"><span><span class="pill st-ip u-padding-0-6px">Status</span></span><span>Comment</span><span><svg class="ico"><use href="#i-play"/></svg>Timer</span><span>More</span></div>
     </div></div></div></div>
     <ul>
+      <li><b>The look</b> (focus view): the menu narrowed to icons, a slim issue list (320, can be hidden), the text column at most 780 with the title at 24, and Details at the side (300 to 340) that stay in view while you scroll. Sub-issues and related issues are rows in the same order as the list (R9) and carry the same tint and edge.</li>
+      <li><b>Details are name-and-value rows:</b> the field's name on the left (13, muted, 112 wide on a computer and 120 on a phone), the value on the right. Click the value to change it; it saves at once and shows <i>Saved</i> with <i>Undo</i> where it happened (R7). There is no Save button per field. Descriptions and comments keep <i>Edit</i> and <i>Save</i> because of the edit lock.</li>
       <li><b>Header:</b> type and issue ID (click to copy a link), the title (click to change it), a <i>More</i> menu, <i>Open full page</i> and <i>Close</i>.</li>
-      <li><b>Status button:</b> shows the current status in its group's color. Clicking it lists only the status changes you can make right now, in words: <i>"Start working"</i>, <i>"Send to testing"</i>. If the workflow needs information first, a small form asks only for that (<i>Ask for</i>, WF-04).</li>
+      <li><b>Status button:</b> the big button shows the current status with its group's icon and color, and an arrow that says you can change it. Clicking it lists only the status changes you can make right now, in words: <i>"Start working"</i>, <i>"Send to testing"</i>. If the workflow needs information first, a small form asks only for that (<i>Ask for</i>, WF-04).</li>
       <li><b>Main column:</b> description, then sections from the layout (CFG-01), then sub-issues, related issues, files and documents, then activity.</li>
       <li><b>Fields panel:</b> the fields from the layout. Empty fields you may change show as a quiet <i>"Add due date"</i>. Empty fields you can't change are left out. Read-only fields show a lock and say why.</li>
       <li><b>History:</b> comments, changes and (from M6) time entries in time order. Changes to fields you can't see are not listed.</li>
@@ -368,7 +392,7 @@ sort by priority, highest first</div>
         <div class="df"><span class="btn sm">Cancel</span><span class="btn sm">Create and start another</span><span class="btn sm primary">Create</span></div></div>
     </div></div></div></div>
     <ul>
-      <li>A dialog on computers, a full screen on phones. Opened with <i>+ New</i> (sidebar, bottom bar) or the <kbd>c</kbd> key.</li>
+      <li>A <b>window</b> on computers (§6.3), a full screen on phones. Opened with <i>New issue</i> (menu, bottom bar) or the <kbd>c</kbd> key. The text sits on the left, the fields at the side once the window is 880 wide or more. Below the buttons: <i>"Draft kept · if you close this, it waits for you"</i>. A field's name sits above it, its help or problem below it, both left-aligned with the field; a problem says how to fix it (<i>"Pick a severity to create the issue."</i>).</li>
       <li>Asks in this order: <b>project → type → (optional) template → fields from the new-issue form</b>. Required fields say <i>required</i> in words, not only with a star.</li>
       <li><b>The form is editable</b> (§5.5): admins choose its fields, order and which <b>roles</b> see each field, per project and issue type. A Guest might only get <i>Title</i>, <i>Description</i> and <i>Where did it happen?</i>; a Team member also gets priority, assignment, due date and cost center. Field permissions always win. Admins open the editor right from the dialog with <i>Customize this form</i>.</li>
       <li><b>"Write it up for me"</b> (AI-13): paste an error message or rough notes; the assistant fills title, steps, expected and actual result for you to check before creating.</li>
@@ -407,14 +431,24 @@ sort by priority, highest first</div>
       <div class="nm"><span class="key">WEB-147</span>Release notes</div><div class="ln"><div class="today u-left-17pc"></div><div class="bar ns u-left-60pc--width-11pc">WEB-147</div></div>
     </div></div></div></div></div>
     <ul>
-      <li>Left: rows that can be folded (grouped by goal, project, person, release or field). Right: the dates. The red line is today.</li>
-      <li>Drag a bar to move it, drag its ends to make it longer or shorter, and drag from a bar's end to another bar to say <i>"must finish first"</i>. <i>Undo</i> is always offered.</li>
-      <li>Dependencies are kinds of relation that also affect dates, so the timeline, the issue page and the relation map all show the same relations.</li>
-      <li>Zoom with <i>Days · Weeks · Months · Quarters</i>. <i>Today</i> jumps to today.</li>
-      <li><b>Deadline drivers</b> (1.0): a switch that highlights the issues whose delay would move the end date.</li>
-      <li>Issues without dates wait in a <i>Not scheduled yet</i> tray. Drag one onto the chart to give it dates.</li>
-      <li>Every drag has a typed alternative: <i>Set dates …</i> and <i>Add dependency …</i> in the bar's menu.</li>
+      <li><b>Rows:</b> on the left, rows grouped by goal (foldable; also by project, person, release or a field), each with its status icon, ID and title. On the right, the dates on a week scale with weekends shaded (16 per day at the week zoom); zoom with <i>Days · Weeks · Months · Quarters</i>; <i>Today</i> jumps to today.</li>
+      <li><b>Bars</b> use the same status colors and priority edges as the list (R4); their darker part shows how much is done. A goal shows its span as a bracket above its issues, a release as a diamond with its date.</li>
+      <li><b>Today</b> is an accent line with a label (<i>Today</i>). It is no longer red, because red means <i>Critical</i>.</li>
+      <li><b>Dependencies</b> are arrows from the issue that must finish first to the one that waits. They are relations that also affect dates, so the timeline, the issue page and the relation map all show the same relations.</li>
+      <li><b>Deadline drivers</b> (switch): the chain that sets the end date is outlined in the accent color; any delay on it moves the end.</li>
+      <li><b>A selected bar</b> gets handles at both ends to make it longer or shorter, a dot at its end to drag a dependency to another bar, and a small card with the issue's dates, person and effort, <i>Set dates…</i>, <i>Add dependency…</i> and <i>Open</i>. Drag a bar to move it. Every drag has this typed alternative, and every drag offers <i>Undo</i> (<i>"WEB-280 moved 1 week later · Undo"</i>).</li>
+      <li><b>Not scheduled yet:</b> issues without dates wait in a tray at the side. Drag one onto the chart to give it dates.</li>
+      <li><b>Legend</b> below the toolbar: the status colors, the priority edge, goal, release, <i>Away</i> and <i>Plan warning</i>.</li>
       <li>Restricted issues are left out completely: no empty bars and no arrows to something you can't see (PLAN-08).</li>
+      <li><b>On the phone:</b> a list by goal; each issue shows a small span on a seven-week scale with today marked, and the same status icon and priority edge.</li>
+    </ul>
+    <h4>People on the timeline <span class="ids">PLAN-10…15, ADR-0030</span></h4>
+    <ul>
+      <li><b>The person on the bar:</b> each bar shows the picture and first name of the person it is assigned to, at its end. <i>Group by Person</i> gives one row per person, so overlapping work is visible. Both follow <i>Who sees people</i>: <i>Role only</i> shows <i>"a Team member"</i> and offers no grouping by person, <i>Hidden</i> shows nobody.</li>
+      <li><b>Away times</b> show as hatched days in the person's bars and rows, labelled <i>Away</i>. No reason is ever shown or stored.</li>
+      <li><b>Plan by effort</b> (switch): bars get as many of the person's work days as the estimate times the time factor needs, counting work hours and the share in the project, and grow around away days and public holidays, which show as hatched gaps. Fixed due dates never move by themselves.</li>
+      <li><b>The card of a bar</b> shows the effort: <i>"Estimate 8 days · ×1.25 = 10 work days · Lea's own estimate"</i> with <i>Change</i>, and the person's time: <i>"Mon–Fri, 8 hours a day · 100 % in Mobile app"</i>.</li>
+      <li><b>Plan warnings</b> (a list at the side with a count, and a warning sign at the bar's end): <i>Away</i>, <i>Not enough days</i>, <i>Delay</i>, <i>Too much at once</i>, each in one sentence with its ways out as buttons: <i>Move it after</i>, <i>Make it longer</i>, <i>Give it to someone else…</i> (the usual person picker, with no suggestion of whom) and <i>Keep and accept</i>. Accepted warnings stay in the list, faded. The list ends with <i>"Away times show only as Away. Bugaboo never suggests whom to give an issue."</i></li>
     </ul>
 
     <h3 id="s4-8"><button type="button" class="sec" data-sec>§4.8</button>Documents <span class="ids">DOC</span></h3>
@@ -627,11 +661,15 @@ sort by priority, highest first</div>
     <p class="cap-note">Try it: point at (or tap) WEB-148 to see how it connects back to WEB-142. The <i>Follow</i> chips switch kinds of relation on and off, and <i>Show as list</i> switches to sentences.</p>
     <ul>
       <li><b>Opening it:</b> <i>Show relation map</i> on any issue (§4.4), or <b>Show as → Map</b> for any search, which draws all results and the relations between them.</li>
-      <li><b>Steps away:</b> 1, 2, 3 or <i>Everything</i>. The starting issue sits in the middle with a highlighted border.</li>
+      <li><b>Steps away:</b> 1, 2, 3 or <i>Everything</i>. The starting issue sits in the middle with an accent border and a small <i>Start</i> tab.</li>
+      <li><b>Cards carry the row state</b> (R4, R9): each issue is a card tinted by its status group and edged by its priority, with its status icon, ID, type and title.</li>
+      <li><b>Picture or List</b> above the map, next to <i>Steps away</i> and <i>Follow</i>; zoom with a percentage and <i>Fit</i>; drag the background to move around. The note <i>"Only issues you may see are shown."</i> sits in the toolbar.</li>
+      <li><b>What the lines mean</b> is explained beside the map: <i>blocks</i> (must finish first, the arrow points to the waiting one), <i>causes</i> (the arrow points to the result), <i>part of</i> (the arrow points to the parent), <i>duplicate</i> (the arrow points to the one we keep), <i>related</i> (no direction), and the card tints and edges. Each kind's word sits in a label that never touches a line (R3).</li>
+      <li><b>Click an issue</b> to fade everything not on its chain back to the start. The side panel shows that chain as numbered sentences (<i>"WEB-142 blocks WEB-147, which is blocked by WEB-148"</i>) with <i>Put in the middle</i> and <i>Open issue</i>.</li>
       <li><b>Follow:</b> switch each kind of relation on or off. Each kind has its own line: <i>blocks</i> (orange, arrow), <i>causes</i> (red, arrow), <i>duplicate</i> (dashed grey), <i>related</i> (grey, no arrow, because it has no direction), <i>part of</i> (violet, towards the parent). Colors are never the only signal: every line also has its words.</li>
-      <li><b>Point at an issue</b> to highlight the chain that connects it back to the start; everything else fades. <b>Click an issue</b> to move it to the middle, so you can walk along a chain. Its details open in the side panel.</li>
+      <li><b>Pointing at an issue</b> highlights its chain for a moment; <i>Put in the middle</i> makes it the new start, so you can walk along a chain.</li>
       <li><b>Circles</b> in <i>blocks</i> chains (A blocks B blocks A) are flagged with a warning, because nothing in a circle can start.</li>
-      <li><b>List form:</b> the same chains as sentences, grouped by steps away. This is the default on phones and what screen readers get.</li>
+      <li><b>List form:</b> the same chains as sentences, grouped by steps away, each issue with its status icon and priority edge. This is what phones show and what screen readers get.</li>
       <li><b>Security:</b> only issues you may see appear. Chains never pass through hidden issues, so a map can't reveal that a hidden issue exists, not even as a gap.</li>
       <li><b>Speed and size:</b> the server walks the relations, with a step limit and at most 200 issues per map. It sends only number, title, status and the relations. If there are more, the map says so and suggests fewer steps or fewer kinds.</li>
     </ul>
@@ -651,6 +689,17 @@ sort by priority, highest first</div>
       <li><b>Today</b> is highlighted; the <i>Today</i> button jumps back to it.</li>
       <li>Uses the same search bar, so the calendar can show any search.</li>
       <li><b>Phones</b> show a day-by-day list instead of a grid.</li>
+    </ul>
+
+    <h3 id="s4-17"><button type="button" class="sec" data-sec>§4.17</button>Agents <span class="ids">AI-30…38, ADR-0029</span></h3>
+    <p>An agent is an account of its own that works on issues a person hands over. It has one responsible person and can never do more than that person. Bugaboo does not run agents; they connect from outside through MCP (§4.12).</p>
+    <ul>
+      <li><b>Hand over</b> (a window, §6.3): from one or several issues, pick the agent, check the brief (description, steps, <i>Done when</i>, a note; a missing <i>Done when</i> is asked for), tick what it may do, set a budget and whether its <i>Plan needs approval</i> (it then waits for <i>Approve plan</i>). A hand-over runs out after 14 days.</li>
+      <li><b>Agent work on the issue:</b> its own block under the description, apart from the comments: who handed it over, the brief, each attempt with what it changed, its questions (answered right there; the answer joins the brief) and its state: <i>Waiting for the agent</i>, <i>Agent working</i>, <i>Waiting for you</i>, <i>Ready for review</i>, <i>Agent gave up</i>, <i>Stopped</i>.</li>
+      <li><b>Review:</b> <i>Accept</i>, <i>Send back</i> (with a note, starts a new attempt) or <i>Throw away</i> (undoes everything that attempt changed, in one step).</li>
+      <li><b>Never assigned:</b> the issue stays <i>Assigned to</i> its person and shows <i>"worked on by Fixer"</i>. Text an agent wrote is marked <i>Written by an agent</i>.</li>
+      <li><b>My agents</b> (computer and phone): one person can drive several agents. What waits for you is at the top (questions, plans to approve, reviews), then each agent with its state, what it works on, and <i>Pause</i> or <i>Stop</i>. <i>Stop all my agents</i> stops every one at once.</li>
+      <li><b>Standing rules:</b> a saved search an agent watches; at the start it only proposes, or changes a few named fields; never people fields or the status. It runs out after 30 days unless renewed.</li>
     </ul>
 
     <!-- ================= 5 ================= -->
@@ -687,7 +736,13 @@ sort by priority, highest first</div>
       <table class="perm"><thead><tr><th>Field</th><th>Administrator</th><th>Team member</th><th>Contributor</th><th>Guest</th></tr></thead><tbody id="perm"></tbody></table>
       <div class="explain"><b>Check access: can Ana change Priority in Website?</b><br>Yes. Ana is in the group <b>Backend</b>, which has the role <b>Team member</b> in <b>ACME</b>. Website is inside ACME, so the role applies here too.</div>
     </div></div></div></div>
+    <p><b>One page, five tabs</b> (the concept of 2026-10-15): <i>Permissions</i>, <i>Field permissions</i>, <i>Who sees people</i>, <i>Who has which role</i> and <i>Check access</i>, with <i>See as …</i> from any of them.</p>
     <ul>
+      <li><b>Permissions:</b> one row per permission sentence, grouped by topic and foldable, one column per role, a tick box per cell. Permissions that count only for the whole organization are marked. Clicking a role's name selects its column and shows the role beside the grid: what it is for, how many permissions it has, <i>Used by</i>, the switch <i>Two-step sign-in for everyone with this role</i>, <i>See as …</i>, <i>Make a copy</i> and, for starting roles, <i>Reset to the starting permissions</i>. Every tick saves at once with <i>Saved</i> and <i>Undo</i> (R7).</li>
+      <li><b>Field permissions</b> and <b>Who sees people:</b> the same grid, each cell a choice of three words (<i>Hidden / Can see / Can change</i>, or <i>Names / Role only / Hidden</i>).</li>
+      <li><b>Who has which role:</b> rows of person or group, role and <i>Where it counts</i>; rows <i>from ACME</i> say where they come from; a <i>No access</i> row is tinted red and says what it wins over.</li>
+      <li><b>Check access:</b> pick a person and a project; the answer comes first as a sentence with its reason, then what they can and can't do, each with why, and which role could. On the phone, <i>Check access</i> is a list.</li>
+      <li><b>See as …</b> shows an issue as a role sees it, in a frame marked in the accent color where nothing can be changed: hidden fields are left out, fields they can only see have a lock, people show as <i>"a Project lead"</i> or <i>"Someone"</i>, and only the buttons the role may use appear.</li>
       <li><b>Role page:</b> permissions grouped by topic (<i>Projects, People, Settings</i> in M2; <i>Issues, Documents, Time</i> join later), each a checkbox with a plain sentence: <i>"Change issues other people created"</i>. A permission that counts only for the whole organization says so. The switch <i>Two-step sign-in for everyone with this role</i> sits here too. Starting roles have <i>Reset to the starting permissions</i>.</li>
       <li><b>Starting roles</b> (M2-Q5): <i>Administrator</i> (everything), <i>Project lead</i> (in their projects and sub-projects: settings, moving, who has which role, what roles see, check access), <i>Team member</i>, <i>Contributor</i>, <i>Viewer</i> and <i>Guest</i>. The full table is in the architecture (§7, <i>Authorization model</i>). Nobody can give a role, or add a permission to one, that they don't have themselves.</li>
       <li><b>Who has which role:</b> per project, people or groups and their role, with <i>Where it counts</i>: <i>Only this project</i> or <i>This project and its sub-projects</i> (rows in Organization settings count for the <i>Whole organization</i>). Rows that come from a parent project say so (<i>"from ACME"</i>) and can be changed for this project.</li>
@@ -805,13 +860,14 @@ sort by priority, highest first</div>
     <h2 id="s6"><button type="button" class="sec" data-sec>§6</button>Interaction rules</h2>
     <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Situation</th><th>What the screen does</th></tr></thead><tbody>
       <tr><td>Change one value</td><td>Change it in place. It saves when you press Enter or click elsewhere; Esc cancels.</td></tr>
-      <tr><td>Short task (under a minute)</td><td>Dialog (full screen on phones)</td></tr>
+      <tr><td>A question (rename, delete, leave)</td><td>A small fixed dialog, 440 wide, that never resizes (full screen on phones)</td></tr>
+      <tr><td>A form (new issue, a setting with several fields)</td><td>A window that can be minimized, maximized and resized (§6.3; full screen on phones)</td></tr>
       <tr><td>Settings with a preview</td><td>Side panel, or a full page for big editors</td></tr>
       <tr><td>Delete or archive something (reversible)</td><td>Done at once, with <i>Undo</i> for 10 seconds; deleted items go to the trash</td></tr>
       <tr><td>Something that cannot be undone</td><td>A dialog that says exactly what will happen. Very big impact: type the name to confirm</td></tr>
       <tr><td>Long job (import, changing 1,000+ issues)</td><td>Runs in the background with progress, and a notification when finished</td></tr>
       <tr><td>Choosing from a list</td><td>A list with a search box; recent choices first</td></tr>
-      <tr><td>Every change</td><td>Shown at once as <i>Saving…</i>, then <i>Saved</i> when the server confirms; if not, a plain explanation and the text is kept (§4.4)</td></tr>
+      <tr><td>Every change</td><td>Shown at once as <i>Saving…</i>, then <i>Saved</i> with <i>Undo</i> where it happened when the server confirms; changes to many issues get a message at the bottom with <i>Undo</i>; if not saved, a plain explanation and the text is kept (§4.4)</td></tr>
       <tr><td>Long text someone else is editing</td><td>Read-only with <i>"Ana is editing …"</i>; <i>Ask to finish</i> or, if allowed, <i>Edit anyway</i></td></tr>
     </tbody></table></div>
 
@@ -826,6 +882,7 @@ sort by priority, highest first</div>
       <li><b>Empty:</b> one sentence and a button.</li>
       <li><b>Error:</b> shown next to the cause, in plain words, with what to do. A short code for support sits at the end, never a technical dump.</li>
       <li><b>Offline:</b> a slim bar; recently opened issues stay readable.</li>
+      <li><b>Notes</b> come in three kinds: blue tells, orange asks you to act, red says something did not happen. The way on is always a button inside the note (<i>Compare and save</i>, <i>Keep their value</i>, <i>Use mine: High</i>).</li>
     </ul>
 
     <h3 id="s6-2"><button type="button" class="sec" data-sec>§6.2</button>Quick search and shortcuts <span class="ids">CFG-08, UX-05</span></h3>
@@ -840,6 +897,18 @@ sort by priority, highest first</div>
       <tr><td><kbd>Ctrl J</kbd></td><td>Assistant</td><td><kbd>m</kbd></td><td>Relation map of this issue</td></tr>
       <tr><td><kbd>?</kbd></td><td>Show all shortcuts</td><td></td><td></td></tr>
     </tbody></table></div>
+
+    <h3 id="s6-3"><button type="button" class="sec" data-sec>§6.3</button>Windows <span class="ids">R10</span></h3>
+    <ul>
+      <li><b>A form opens as a window</b> over the page. Its title bar has, at the top right and in this order: <i>Minimize</i>, <i>Maximize</i> (or <i>Restore down</i> when maximized) and <i>Close</i>.</li>
+      <li><b>Minimize</b> parks the window as a bar at the bottom of the page with its title and <i>Draft kept</i>; clicking the bar opens it again. <b>Maximize</b> fills the whole page, the menu included. <b>Close</b> keeps the draft (ISS-11).</li>
+      <li><b>Size:</b> it starts 760 wide; drag any edge or the corner to resize; the smallest size is 480 × 360. The size is remembered per person and form.</li>
+      <li><b>The form follows the window's own width</b>, not the screen's: one column below 880; the fields at the side from 880; the text centered with a readable width from 1200.</li>
+      <li><b>The title and the buttons stay in place</b> while the form scrolls. The main button sits at the right of the footer (R6).</li>
+      <li><b>Keyboard:</b> it behaves like a dialog: focus moves into it and stays inside while it is not minimized; <kbd>Esc</kbd> closes it and keeps the draft.</li>
+      <li><b>A question</b> stays a small fixed dialog (440 wide) and never becomes a window.</li>
+      <li><b>On a phone</b> a window is a full screen with <i>Back</i>.</li>
+    </ul>
 
     <!-- ================= 7 ================= -->
     <h2 id="s7"><button type="button" class="sec" data-sec>§7</button>Visual design</h2>
@@ -879,6 +948,18 @@ sort by priority, highest first</div>
       <li><b>Midnight:</b> pure black for phone screens and dark rooms, with slightly brighter text.</li>
     </ul>
     <p>Final values are tuned and contrast-checked during implementation; the samples fix the character of each theme.</p>
+    <h4>Status groups and priorities <span class="ids">R4, R5</span></h4>
+    <p>Every status belongs to one of three status groups. The group gives the color and the icon; the status gives the word. A project's own statuses, such as <i>Fixing</i> or <i>Testing</i>, take the color of their group. The same in all four themes.</p>
+    <div class="tbl-wrap"><table class="dtable"><thead><tr><th>Group or priority</th><th>Icon</th><th>Color</th><th>Where</th></tr></thead><tbody>
+      <tr><td><b>Not started</b></td><td>grey dashed ring</td><td>grey; rows stay plain</td><td>list rows and group headers, the status button, sub-issues, related issues, references in text, timeline bars, map cards, phone</td></tr>
+      <tr><td><b>In progress</b></td><td>blue half-filled ring</td><td>blue; in <i>Paper</i> teal (<code>#1d6b80</code>, soft <code>#dfeef1</code>, plus a <i>more contrast</i> value), so it no longer looks like Paper's ink-blue highlight</td><td>the same places; rows tinted blue</td></tr>
+      <tr><td><b>Done</b></td><td>green check</td><td>green</td><td>the same places; rows tinted green, the title muted in lists</td></tr>
+      <tr><td><b>Critical</b></td><td>red double arrow up</td><td>red, bold; a 4 px red left edge on rows and bars</td><td>the only priority whose word shows in the list</td></tr>
+      <tr><td><b>High</b></td><td>orange arrow up</td><td>orange, bold; a 4 px orange left edge</td><td>icon in the list, word elsewhere</td></tr>
+      <tr><td><b>Normal</b></td><td>grey line</td><td>grey; no edge</td><td>most issues, so it stays quiet</td></tr>
+      <tr><td><b>Low</b></td><td>light grey arrow down</td><td>light grey; no edge</td><td></td></tr>
+    </tbody></table></div>
+    <p>The row tints are a mix of the group's soft color and the raised surface. Hover and selected stay distinguishable on every tint, and every color pair is contrast-checked in all four themes (STY-CONTRAST). The small pill shows the status in lists and text, the big button on the issue page.</p>
 
     <h3 id="s7-3"><button type="button" class="sec" data-sec>§7.3</button>Text</h3>
     <div class="specimen">
@@ -889,7 +970,7 @@ sort by priority, highest first</div>
     </div>
     <ul>
       <li><b>Font:</b> <i>Atkinson Hyperlegible Next</i>, shipped with Bugaboo; no requests to outside font services. <b>Monospace:</b> <i>Atkinson Hyperlegible Mono</i>. Both use the SIL Open Font License. (This design page loads them from Google Fonts only because it is a preview.)</li>
-      <li><b>Sizes:</b> 12 / 13 / 14 (computer default) / 16 (phone default) / 20 / 24 / 30 px. <i>Larger text</i> in My settings scales everything.</li>
+      <li><b>Sizes</b> and what they are for: 24 the title of an issue; 20 the title of a page or dialog; 16 bold a section (<i>Sub-issues</i>, <i>History</i>); 16 reading text (descriptions and comments, at most 68 characters wide); 14 everything else on a computer (rows, fields, buttons); 13 field names, times, counts, hints; 12 group names in panels. IDs and times use the mono face. On a phone the default is 16. <i>Larger text</i> in My settings scales everything.</li>
       <li>Numbers line up in tables, time values and the timeline.</li>
     </ul>
 
@@ -898,7 +979,8 @@ sort by priority, highest first</div>
       <span><i class="u-width-4px--height-4px"></i>4</span><span><i class="u-width-8px--height-8px"></i>8</span><span><i class="u-width-12px--height-12px"></i>12</span><span><i class="u-width-16px--height-16px"></i>16</span><span><i class="u-width-24px--height-24px"></i>24</span><span><i class="u-width-32px--height-32px"></i>32</span><span><i class="u-width-48px--height-48px"></i>48</span>
     </div>
     <ul>
-      <li><b>Spacing:</b> steps of 4 px (4, 8, 12, 16, 24, 32, 48).</li>
+      <li><b>Spacing:</b> steps of 4 px (4, 8, 12, 16, 24, 32, 48), and only these (R2). Padding per container: inside a control 12 to 14, inside a box, a row or a panel 16, inside a dialog or a page 24; between fields 20, between sections 28.</li>
+      <li><b>Heights:</b> controls 36 with a mouse and 44 with touch (<code>pointer: coarse</code>, phones and tablets); small buttons 28 where space is tight; list rows 44 with a mouse and 64 with touch.</li>
       <li><b>Corners:</b> 6 px for buttons and inputs, 10 px for cards and dialogs, round for tags and avatars. This is a theme token.</li>
       <li><b>Layers:</b> three levels (raised, floating, dialog). Light themes use soft shadows; dark themes use lighter backgrounds.</li>
       <li><b>Motion:</b> short (0.12–0.2 s), only to show what changed (a panel sliding in, an item moving). Off with <i>Less motion</i> or the device setting.</li>
@@ -910,6 +992,7 @@ sort by priority, highest first</div>
     <ul>
       <li><b>Lucide</b> icons (ISC license); only the ones used are shipped.</li>
       <li>16 px in lists, 20 px in navigation, always with a text label (principle 2).</li>
+      <li>Status groups and priorities have their own icons (§7.2). Issue types keep neutral icons, and people are a round picture with initials; a person you may not see by name is <i>Someone</i> with a question mark. A label is a square in its own color, a tag a plain round word.</li>
     </ul>
 
     <!-- ================= 8 ================= -->
@@ -917,11 +1000,12 @@ sort by priority, highest first</div>
     <ul>
       <li><b>WCAG 2.2 AA</b> in every built-in theme, checked automatically on every build (axe) and by hand with screen readers (NVDA, VoiceOver) at each milestone.</li>
       <li>Everything works with the keyboard. The focus outline is always visible.</li>
-      <li><b>Color never stands alone:</b> statuses have words, priorities have icons, relation lines have words, timeline warnings have symbols.</li>
+      <li><b>Color never stands alone</b> (R5): statuses have an icon and a word, priorities an icon and a word or accessible name, row tints and left edges repeat what the status icon and priority icon already say, relation lines have words, away days are hatched and labelled, timeline warnings have a symbol and a sentence. Colors also differ in lightness.</li>
       <li>Every drag has a button alternative (<i>Move to …</i>, <i>Set dates …</i>, <i>Change due date …</i>, <i>Add relation</i>).</li>
       <li>The relation map has a list form with the same information as sentences.</li>
       <li>Screen readers announce results (<i>"12 issues changed"</i>, <i>"Saved"</i>).</li>
-      <li>Touch targets are at least 44 × 44 px.</li>
+      <li>Touch targets are at least 44 × 44 px with touch; with a mouse, controls are 36 high (above the 24 px minimum of WCAG 2.2).</li>
+      <li>A window keeps the focus inside while it is open and gives it back to what opened it when it closes or is minimized.</li>
     </ul>
 
     <!-- ================= 9 ================= -->
@@ -960,6 +1044,9 @@ sort by priority, highest first</div>
     <div class="decision"><span class="okmark">✓</span><div><b>Names in settings screens</b> for people who manage people or roles; member lists for everybody else by <i>Project members</i> (§5.2, M2-Q3).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Short names</b> can change, by those who may also make projects where the project sits; old addresses keep working (§2.1, M2-Q4).</div></div>
     <div class="decision"><span class="okmark">✓</span><div><b>Access keys</b>: <i>See only</i>, <i>See and change</i> or <i>Everything I can do</i>, optionally for some projects; every key runs out, after 90 days unless chosen otherwise, at most after a year (§4.13, M2-Q6).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>The look</b> (2026-10-15): one UX concept with ten rules, colors per status group and priority on whole rows, one spacing scale, controls 36 with a mouse and 44 with touch, Details saved in place, forms as windows, In progress in Paper as teal, and the timeline as drawn (§1.1, §6.3, §7).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>People on the timeline</b> (2026-10-16, ADR-0030): the person on the bar, away times without a reason, work hours and a share per project, plan by effort, plan warnings, and a time factor that is the assigned person's own estimate (§4.7).</div></div>
+    <div class="decision"><span class="okmark">✓</span><div><b>Agents</b> (2026-10-16, ADR-0029): agents work on issues a person hands over, with their own record on the issue and a review; one person can drive several (§4.17).</div></div>
     <h3 id="s10-1"><button type="button" class="sec" data-sec>§10.1</button>Open questions</h3>
     <p>None yet. Comment on this page.</p>
   </main>
