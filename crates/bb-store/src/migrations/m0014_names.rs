@@ -12,7 +12,9 @@
 //!   that goes on with an interrupted run that the change to an issue was made already;
 //! - the table of the runs (`bulk_run` is `change_run`), which keeps its rows;
 //! - the table of the people an issue is assigned to (`issue_assignee` is `assigned_person`), which
-//!   keeps its rows.
+//!   keeps its rows and its reference to the issue. PostgreSQL keeps the old names of the table's
+//!   key and constraint (`issue_assignee_pkey`, …) and of the indexes of the renamed tables; the
+//!   program never writes them, and they are unique inside their own table.
 //!
 //! Migrations run once (the recorded number says so). Every update of a value changes only the rows
 //! that still have the old word, so running the updates again changes nothing.
@@ -545,6 +547,21 @@ mod tests {
                 vec![4_u8; 16]
             );
             assert_eq!(rows[0].get::<i64>(AssignedPersonRow::AddedAt)?, 7);
+            // The reference to the issue is still there: an unknown issue is refused.
+            let mut unknown = Query::insert();
+            unknown
+                .into_table(AssignedPersonRow::Table)
+                .columns([
+                    AssignedPersonRow::Issue,
+                    AssignedPersonRow::Person,
+                    AssignedPersonRow::AddedAt,
+                ])
+                .values([
+                    Expr::val(vec![9_u8; 16]),
+                    Expr::val(vec![4_u8; 16]),
+                    Expr::val(8_i64),
+                ])?;
+            assert!(database.execute(&unknown).await.is_err());
             // Nothing is left under the old name, and migrating again changes nothing.
             let mut old = Query::select();
             old.column(Alias::new("person"))
