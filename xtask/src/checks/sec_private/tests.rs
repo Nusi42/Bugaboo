@@ -1,5 +1,6 @@
-//! The tests of sec_private.
+//! The tests of `sec_private`.
 
+use super::patterns::has_profile_path;
 use super::*;
 use crate::catalog::Catalog;
 use crate::testutil::TempDir;
@@ -26,8 +27,8 @@ fn fixture(kind: &str, name: &str) -> String {
     crate::source::normalize(&fs::read_to_string(path).unwrap())
 }
 
-fn rules(text: &str, in_message: bool) -> Vec<Rule> {
-    let mut found: Vec<Rule> = scan_text(text, &machine(), in_message, true)
+fn rules(text: &str, origin: Origin) -> Vec<Rule> {
+    let mut found: Vec<Rule> = scan_text(text, &machine(), origin, PrivateWordRule::Applies)
         .into_iter()
         .map(|(_, rule)| rule)
         .collect();
@@ -43,7 +44,7 @@ fn has_word(words: &PrivateWords, text: &str) -> bool {
 fn assert_every_line_breaks(name: &str, rule: Rule) {
     let text = fixture("bad", name);
     for (number, line) in text.lines().enumerate() {
-        let hits = rules(line, false);
+        let hits = rules(line, Origin::Content);
         assert_eq!(hits, [rule], "{name}, line {}", number + 1);
     }
 }
@@ -71,22 +72,30 @@ fn bad_example_private_words() {
 #[test]
 fn bad_example_a_commit_message_with_a_session_trailer() {
     let text = fixture("bad", "commit-message.txt");
-    assert_eq!(rules(&text, true), [Rule::SessionTrailer]);
+    assert_eq!(rules(&text, Origin::CommitMessage), [Rule::SessionTrailer]);
     // The trailer is a rule of messages: in a file it is only text.
-    assert!(rules(&text, false).is_empty());
+    assert!(rules(&text, Origin::Content).is_empty());
 }
 
 #[test]
 fn good_example_allowed_forms_and_made_up_names() {
     let text = fixture("good", "allowed.txt");
-    let hits = scan_text(&text, &machine(), false, true);
+    let hits = scan_text(&text, &machine(), Origin::Content, PrivateWordRule::Applies);
     assert!(hits.is_empty(), "{hits:?}");
 }
 
 #[test]
 fn good_example_a_commit_message_without_private_things() {
     let text = fixture("good", "commit-message.txt");
-    assert!(scan_text(&text, &machine(), true, true).is_empty());
+    assert!(
+        scan_text(
+            &text,
+            &machine(),
+            Origin::CommitMessage,
+            PrivateWordRule::Applies
+        )
+        .is_empty()
+    );
 }
 
 #[test]

@@ -1,6 +1,10 @@
 //! Finding the paths of profiles, the IDs of sessions and the links to pages in a text.
 
-use super::*;
+use super::{
+    COMMIT_TRAILER, GENERIC_ACCOUNTS, LONG_ID_LEN, MASK, MEMORY_SESSION_KEY, MIN_ID_LEN,
+    PAGE_LINKS, PROFILE_FOLDERS, PrivateWords, QUOTES, Rule, SEPARATORS, SESSION_LINK,
+    SESSION_PREFIX, Span, UUID_GROUPS, UUID_SESSION_KEYS, is_word_char,
+};
 
 /// The place of the name of an account when the text `rest` (after `Users` or `home`) is a
 /// separator run followed by an account that is not a placeholder.
@@ -190,13 +194,36 @@ pub(super) fn is_session_trailer(line: &str) -> bool {
         .is_some_and(|rest| rest.trim_start().starts_with(':'))
 }
 
-/// The rules one line breaks. `in_message` adds the rules of commit messages; `names` says
-/// whether the rule on private words applies.
+/// Where a text was read. A commit message adds the rules of commit messages.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Origin {
+    /// The name or the content of a file, a branch or a tag.
+    Content,
+    /// A commit message or a tag message.
+    CommitMessage,
+}
+
+/// Whether the rule on private words applies to a text. The files in
+/// `tools/checks/private-exemptions.toml` are exempt from it (and from it only).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum PrivateWordRule {
+    Applies,
+    Exempt,
+}
+
+impl PrivateWordRule {
+    /// The rule for a file that is, or is not, in the list of exemptions.
+    pub(super) fn of_file(exempt: bool) -> Self {
+        if exempt { Self::Exempt } else { Self::Applies }
+    }
+}
+
+/// The rules one line breaks.
 pub(super) fn rules_of(
     line: &str,
     words: &PrivateWords,
-    in_message: bool,
-    names: bool,
+    origin: Origin,
+    private_words: PrivateWordRule,
 ) -> Vec<Rule> {
     let mut rules = Vec::new();
     if has_profile_path(line, words) {
@@ -205,13 +232,13 @@ pub(super) fn rules_of(
     if !session_spans(line).is_empty() {
         rules.push(Rule::SessionId);
     }
-    if in_message && is_session_trailer(line) {
+    if origin == Origin::CommitMessage && is_session_trailer(line) {
         rules.push(Rule::SessionTrailer);
     }
     if !page_link_spans(line).is_empty() {
         rules.push(Rule::PageLink);
     }
-    if names && !words.word_spans(line).is_empty() {
+    if private_words == PrivateWordRule::Applies && !words.word_spans(line).is_empty() {
         rules.push(Rule::PrivateWord);
     }
     rules
@@ -221,13 +248,13 @@ pub(super) fn rules_of(
 pub(super) fn scan_text(
     text: &str,
     words: &PrivateWords,
-    in_message: bool,
-    names: bool,
+    origin: Origin,
+    private_words: PrivateWordRule,
 ) -> Vec<(usize, Rule)> {
     text.lines()
         .enumerate()
         .flat_map(|(index, line)| {
-            rules_of(line, words, in_message, names)
+            rules_of(line, words, origin, private_words)
                 .into_iter()
                 .map(move |rule| (index + 1, rule))
         })

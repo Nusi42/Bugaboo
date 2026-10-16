@@ -296,7 +296,7 @@ pub(crate) fn parts_of<'a>(
         }
         let here = feature_of(path).map_or(Users::Several, Users::Feature);
         let code = strip_comments(text);
-        for literal in string_literals(&code, false) {
+        for literal in string_literals(&code, Quotes::DoubleAndSingle) {
             if let Some(key) = known.get(literal.as_str()) {
                 name(key, here);
             }
@@ -351,13 +351,22 @@ pub(crate) fn template_prefixes(code: &str) -> Vec<String> {
     prefixes
 }
 
-/// Every `"…"` (and, for TypeScript, `'…'`) on a single line.
-pub(crate) fn string_literals(code: &str, double_only: bool) -> Vec<String> {
+/// Which quotes make a string literal.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Quotes {
+    /// `"…"` only: Rust.
+    Double,
+    /// `"…"` and `'…'`: TypeScript.
+    DoubleAndSingle,
+}
+
+/// Every string literal on a single line.
+pub(crate) fn string_literals(code: &str, quotes: Quotes) -> Vec<String> {
     let mut literals = Vec::new();
     for line in code.lines() {
         let mut chars = line.chars();
         while let Some(c) = chars.next() {
-            if c != '"' && (double_only || c != '\'') {
+            if c != '"' && (quotes == Quotes::Double || c != '\'') {
                 continue;
             }
             let mut text = String::new();

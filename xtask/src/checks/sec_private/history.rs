@@ -1,6 +1,9 @@
 //! Reading what the history of Git holds: commit messages, tags and what unpushed commits add.
 
-use super::*;
+use super::{
+    BTreeMap, BTreeSet, Exempt, Finding, Origin, PrivateWordRule, PrivateWords, Repo, finding,
+    is_exempt, masked, scan_content, scan_name, scan_text,
+};
 
 /// The records of a Git listing that ends each record with the separator `0x1e`.
 pub(super) fn records(listing: &[u8]) -> Vec<String> {
@@ -80,10 +83,15 @@ pub(super) fn scan_history(
 }
 
 pub(super) fn scan_message(place: &str, message: &str, words: &PrivateWords) -> Vec<Finding> {
-    scan_text(message, words, true, true)
-        .into_iter()
-        .map(|(line, rule)| finding(place, line, rule))
-        .collect()
+    scan_text(
+        message,
+        words,
+        Origin::CommitMessage,
+        PrivateWordRule::Applies,
+    )
+    .into_iter()
+    .map(|(line, rule)| finding(place, line, rule))
+    .collect()
 }
 
 /// How many characters of a commit hash a finding shows.
@@ -201,8 +209,8 @@ pub(super) fn scan_unpushed_changes(
             read.insert((&change.path, &change.blob)),
             contents.get(&change.blob),
         ) {
-            let words_apply = !is_exempt(exempt, &change.path);
-            findings.extend(scan_content(&place, bytes, words, words_apply));
+            let private_words = PrivateWordRule::of_file(is_exempt(exempt, &change.path));
+            findings.extend(scan_content(&place, bytes, words, private_words));
         }
     }
     Ok(findings)

@@ -29,21 +29,30 @@ fn lint(root: &Path, files: &[String]) -> anyhow::Result<Vec<Finding>> {
             .extension()
             .is_some_and(|e| e == "js" || e == "mjs")
     });
-    let mut findings = lint_group(root, &typed, true)?;
-    findings.extend(lint_group(root, &scripts, false)?);
+    let mut findings = lint_group(root, &typed, Rules::TypeAware)?;
+    findings.extend(lint_group(root, &scripts, Rules::Plain)?);
     Ok(findings)
 }
 
-fn lint_group(root: &Path, files: &[&String], type_aware: bool) -> anyhow::Result<Vec<Finding>> {
+/// Which rules a file gets.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Rules {
+    /// Every rule, with the ones that need the types.
+    TypeAware,
+    /// Every rule that does not need types.
+    Plain,
+}
+
+fn lint_group(root: &Path, files: &[&String], rules: Rules) -> anyhow::Result<Vec<Finding>> {
     let names: Vec<String> = files.iter().map(|file| (*file).clone()).collect();
     let mut findings = Vec::new();
     for batch in in_batches(&names) {
-        findings.extend(lint_batch(root, batch, type_aware)?);
+        findings.extend(lint_batch(root, batch, rules)?);
     }
     Ok(findings)
 }
 
-fn lint_batch(root: &Path, files: &[String], type_aware: bool) -> anyhow::Result<Vec<Finding>> {
+fn lint_batch(root: &Path, files: &[String], rules: Rules) -> anyhow::Result<Vec<Finding>> {
     if files.is_empty() {
         return Ok(Vec::new());
     }
@@ -54,7 +63,7 @@ fn lint_batch(root: &Path, files: &[String], type_aware: bool) -> anyhow::Result
         "--format",
         "unix",
     ];
-    if type_aware {
+    if rules == Rules::TypeAware {
         args.push("--type-aware");
     }
     args.extend(files.iter().map(String::as_str));

@@ -15,12 +15,25 @@ impl Check for SecSecrets {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        let staged = context.files.is_some();
-        scan(context.repo.real_root(), staged)
+        let what = if context.files.is_some() {
+            Scan::Staged
+        } else {
+            Scan::History
+        };
+        scan(context.repo.real_root(), what)
     }
 }
 
-fn scan(root: &Path, staged: bool) -> anyhow::Result<Vec<Finding>> {
+/// What gitleaks reads.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Scan {
+    /// The files being committed.
+    Staged,
+    /// Everything the repository ever held.
+    History,
+}
+
+fn scan(root: &Path, what: Scan) -> anyhow::Result<Vec<Finding>> {
     let mut args = vec![
         "git",
         "--no-banner",
@@ -31,7 +44,7 @@ fn scan(root: &Path, staged: bool) -> anyhow::Result<Vec<Finding>> {
         "--config",
         ".gitleaks.toml",
     ];
-    if staged {
+    if what == Scan::Staged {
         args.extend(["--staged", "--pre-commit"]);
     }
     args.push(".");
@@ -62,7 +75,7 @@ mod tests {
         // Built at run time so this source file does not contain a token itself.
         let token = format!("ghp_{}{}", "aB3dE5gH7jK9mN1pQ3rS", "5tU7vW9xY1zA3bC5dE7f");
         repo_with(&temp, &format!("token = \"{token}\"\n"));
-        crate::testutil::assert_real_findings(&scan(temp.path(), false).unwrap());
+        crate::testutil::assert_real_findings(&scan(temp.path(), Scan::History).unwrap());
     }
 
     /// A repository that holds the file of the fixture and the rules of Bugaboo's own
@@ -98,20 +111,20 @@ mod tests {
     fn bad_example_an_access_key_is_found_by_the_rule_of_bugaboo() {
         let temp = TempDir::new("secrets-key-bad");
         repo_with_the_rule_of_bugaboo(&temp, "bad/access-key.txt");
-        crate::testutil::assert_real_findings(&scan(temp.path(), false).unwrap());
+        crate::testutil::assert_real_findings(&scan(temp.path(), Scan::History).unwrap());
     }
 
     #[test]
     fn good_example_things_that_only_look_like_access_keys_are_not_found() {
         let temp = TempDir::new("secrets-key-good");
         repo_with_the_rule_of_bugaboo(&temp, "good/not-a-key.txt");
-        assert!(scan(temp.path(), false).unwrap().is_empty());
+        assert!(scan(temp.path(), Scan::History).unwrap().is_empty());
     }
 
     #[test]
     fn good_example() {
         let temp = TempDir::new("secrets-good");
         repo_with(&temp, "Nothing secret here.\n");
-        assert!(scan(temp.path(), false).unwrap().is_empty());
+        assert!(scan(temp.path(), Scan::History).unwrap().is_empty());
     }
 }

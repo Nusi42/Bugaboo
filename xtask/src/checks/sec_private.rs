@@ -53,8 +53,8 @@ use crate::source::{FIXTURES_FOLDER, decode_text, is_word_char, printable_runs};
 mod history;
 mod patterns;
 
-use history::*;
-use patterns::*;
+use history::scan_history;
+use patterns::{Origin, PrivateWordRule, masked, scan_text, value_starts};
 
 /// A part of a text: byte positions from and to.
 type Span = (usize, usize);
@@ -391,8 +391,8 @@ fn findings_without_line(place: &str, rules: BTreeSet<Rule>) -> impl Iterator<It
 }
 
 /// The rules a text breaks, without the lines.
-fn rules_in(text: &str, words: &PrivateWords, names: bool) -> BTreeSet<Rule> {
-    scan_text(text, words, false, names)
+fn rules_in(text: &str, words: &PrivateWords, private_words: PrivateWordRule) -> BTreeSet<Rule> {
+    scan_text(text, words, Origin::Content, private_words)
         .into_iter()
         .map(|(_, rule)| rule)
         .collect()
@@ -400,21 +400,30 @@ fn rules_in(text: &str, words: &PrivateWords, names: bool) -> BTreeSet<Rule> {
 
 /// The findings when the name of a file holds something private. `place` says which file it is.
 fn scan_name(place: &str, name: &str, words: &PrivateWords) -> Vec<Finding> {
-    findings_without_line(&format!("{place} (its name)"), rules_in(name, words, true)).collect()
+    findings_without_line(
+        &format!("{place} (its name)"),
+        rules_in(name, words, PrivateWordRule::Applies),
+    )
+    .collect()
 }
 
 /// The findings in the bytes of a file: its text, or the printable runs of a file that is no text
-/// (then without lines). `names` says whether the rule on private words applies.
-fn scan_content(place: &str, bytes: &[u8], words: &PrivateWords, names: bool) -> Vec<Finding> {
+/// (then without lines). `private_words` says whether the rule on private words applies.
+fn scan_content(
+    place: &str,
+    bytes: &[u8],
+    words: &PrivateWords,
+    private_words: PrivateWordRule,
+) -> Vec<Finding> {
     if let Some(text) = decode_text(bytes) {
-        scan_text(&text, words, false, names)
+        scan_text(&text, words, Origin::Content, private_words)
             .into_iter()
             .map(|(line, rule)| finding(place, line, rule))
             .collect()
     } else {
         findings_without_line(
             &format!("{place} (a file that is no text)"),
-            rules_in(&printable_runs(bytes), words, names),
+            rules_in(&printable_runs(bytes), words, private_words),
         )
         .collect()
     }
@@ -436,7 +445,7 @@ fn scan_files(
                 &shown,
                 &bytes,
                 words,
-                !is_exempt(exempt, file),
+                PrivateWordRule::of_file(is_exempt(exempt, file)),
             ));
         }
     }
@@ -452,9 +461,14 @@ pub(crate) fn message_problems(file: &Path) -> anyhow::Result<Vec<String>> {
     let message = git_commit_msg::before_scissors(&text);
     let mut problems: Vec<String> = list_problem.into_iter().collect();
     problems.extend(
-        scan_text(message, &words, true, true)
-            .into_iter()
-            .map(|(line, rule)| format!("The message, line {line}, {}", rule.message())),
+        scan_text(
+            message,
+            &words,
+            Origin::CommitMessage,
+            PrivateWordRule::Applies,
+        )
+        .into_iter()
+        .map(|(line, rule)| format!("The message, line {line}, {}", rule.message())),
     );
     Ok(problems)
 }
