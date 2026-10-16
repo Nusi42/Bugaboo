@@ -76,7 +76,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 
 ### 7. Runs: everything an app or an agent did, undone together
 
-- Every session of an AI app acting for a person, and every attempt of an agent, is **one run** (AI-38), built on the store of changes to many issues (`bulk_run`, its events and its *Stopped* state). A run is shown as the list of its changes and can be **undone in one step**; a change that somebody changed again afterwards is skipped and named, as in *Change many issues*. Enforced by: the test `ai_38_a_run_is_undone_in_one_step_and_skips_later_changes` (M8).
+- Every session of an AI app acting for a person, and every attempt of an agent, is **one run** (AI-38), built on the store of changes to many issues (`change_run`, its events and its *Stopped* state). A run is shown as the list of its changes and can be **undone in one step**; a change that somebody changed again afterwards is skipped and named, as in *Change many issues*. Enforced by: the test `ai_38_a_run_is_undone_in_one_step_and_skips_later_changes` (M8).
 - Text written through MCP is marked *Written by an AI app* or *Written by an agent*, stored with the text like *Written with the assistant* (COMP-08, COMP-09).
 
 ### 8. My agents: one person, several agents
@@ -99,7 +99,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 ## Consequences
 
 - One new kind of actor in `bb-policy` (*agent*), evaluated as the intersection of its person's rights, its work and its limits. The access-key narrowing of ADR-0025, decision 8, is reused for agent keys.
-- New records: agents, hand-overs, standing rules, agent work with attempts, questions and reviews. Runs reuse `bulk_run`.
+- New records: agents, hand-overs, standing rules, agent work with attempts, questions and reviews. Runs reuse `change_run`.
 - New words in the glossary (*Agent*, *Hand over*, *Brief*, *Done when*, *Standing rule*, *Agent work*, *Attempt*, the agent states, *Accept / Send back / Throw away*, *My agents*, *Agent key*, *Written by an AI app / an agent*); *Bot account* gives way to *Agent*, and the assistant's entry no longer forbids the word *agent*.
 - M8 grows by AI-30…AI-38 and the new permission; its demo shows a hand-over, a question, a review and *Throw away*.
 - The UX design gains the hand-over window, agent work on the issue page, *My agents* and its phone form (UX concept).

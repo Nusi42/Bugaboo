@@ -337,7 +337,7 @@ pub(crate) enum IssueLabelRow {
 /// Runs of changes to many issues that go on in the background (ISS-09).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum ManyChangeRunRow {
-    #[iden = "bulk_run"]
+    #[iden = "change_run"]
     Table,
     Id,
     Person,

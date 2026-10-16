@@ -8,12 +8,12 @@
 //! leaves a tombstone (PRIV-04). A run of a change to many issues keeps the issues, the versions
 //! the preview read and how far the work is, so a restart goes on where it stopped.
 
-use sea_query::{ColumnDef, ForeignKey, Index, Table};
+use sea_query::{Alias, ColumnDef, ForeignKey, Index, Table};
 
 use super::{Step, id_column};
 use crate::schema::{
-    IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, ManyChangeRunRow, ProjectRow,
-    TagProjectRow, TagRow,
+    IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, ProjectRow, TagProjectRow,
+    TagRow,
 };
 
 pub(super) fn steps() -> Vec<Step> {
@@ -203,25 +203,27 @@ fn labels() -> Vec<Step> {
     ]
 }
 
+/// The table of the runs as this migration made it. Migration 14 gives it its present name
+/// (`change_run`), the one the schema knows; this migration keeps the old name, because a changed
+/// migration is refused (its checksum is recorded).
+const RUN_TABLE: &str = "bulk_run";
+
 fn runs() -> Vec<Step> {
+    let column = |name: &str| ColumnDef::new(Alias::new(name));
     vec![Step::Table(
         Table::create()
-            .table(ManyChangeRunRow::Table)
-            .col(id_column(ManyChangeRunRow::Id).primary_key())
+            .table(Alias::new(RUN_TABLE))
+            .col(id_column(Alias::new("id")).primary_key())
             // No reference to the person: a removed person leaves a tombstone (PRIV-04).
-            .col(id_column(ManyChangeRunRow::Person))
-            .col(ColumnDef::new(ManyChangeRunRow::Action).text().not_null())
-            .col(ColumnDef::new(ManyChangeRunRow::Items).text().not_null())
-            .col(ColumnDef::new(ManyChangeRunRow::Status).text().not_null())
-            .col(ColumnDef::new(ManyChangeRunRow::Done).big_integer().not_null())
-            .col(ColumnDef::new(ManyChangeRunRow::Changed).big_integer().not_null())
-            .col(ColumnDef::new(ManyChangeRunRow::Skipped).text().not_null())
-            .col(
-                ColumnDef::new(ManyChangeRunRow::CreatedAt)
-                    .big_integer()
-                    .not_null(),
-            )
-            .col(ColumnDef::new(ManyChangeRunRow::FinishedAt).big_integer())
+            .col(id_column(Alias::new("person")))
+            .col(column("action").text().not_null())
+            .col(column("items").text().not_null())
+            .col(column("status").text().not_null())
+            .col(column("done").big_integer().not_null())
+            .col(column("changed").big_integer().not_null())
+            .col(column("skipped").text().not_null())
+            .col(column("created_at").big_integer().not_null())
+            .col(column("finished_at").big_integer())
             .to_owned(),
     )]
 }

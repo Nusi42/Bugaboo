@@ -152,6 +152,6 @@ impl ManyChangeRun {
     /// (ADR-0017).
     #[must_use]
     pub fn item_reason(&self, index: i64) -> String {
-        format!("bulk-run:{}:{index}", self.id)
+        format!("change-run:{}:{index}", self.id)
     }
 }

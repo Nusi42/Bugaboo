@@ -8,6 +8,9 @@
 //! - the kind of record of a run of a change to many issues in the events (`bulk_run` is
 //!   `change_run`), which the outbox points to, so it needs no rewrite of its own;
 //! - the kind of job that goes on with such a run (`bulk.step` is `many-changes.step`);
+//! - the reason that an event of a run carries (`bulk-run:` is `change-run:`), which tells a worker
+//!   that goes on with an interrupted run that the change to an issue was made already;
+//! - the table of the runs (`bulk_run` is `change_run`), which keeps its rows;
 //! - the table of the people an issue is assigned to (`issue_assignee` is `assigned_person`), which
 //!   keeps its rows.
 //!
@@ -17,7 +20,9 @@
 use sea_query::{Alias, Expr, ExprTrait as _, Query, Table};
 
 use super::Step;
-use crate::schema::{AccessKeyPermissionRow, AssignedPersonRow, Event, Job, RolePermissionRow};
+use crate::schema::{
+    AccessKeyPermissionRow, AssignedPersonRow, Event, Job, ManyChangeRunRow, RolePermissionRow,
+};
 
 /// The permissions whose word changed, old and new.
 const PERMISSIONS: [(&str, &str); 3] = [
@@ -39,6 +44,21 @@ pub(super) fn steps() -> Vec<Step> {
         Job::Kind,
         "bulk.step",
         "many-changes.step",
+    ));
+    steps.push(Step::Update(
+        Query::update()
+            .table(Event::Table)
+            .value(
+                Event::Reason,
+                Expr::cust("'change-run:' || SUBSTR(\"reason\", 10)"),
+            )
+            .and_where(Expr::col(Event::Reason).like("bulk-run:%"))
+            .to_owned(),
+    ));
+    steps.push(Step::Rename(
+        Table::rename()
+            .table(Alias::new("bulk_run"), ManyChangeRunRow::Table)
+            .to_owned(),
     ));
     steps.push(Step::Rename(
         Table::rename()
@@ -293,6 +313,91 @@ mod tests {
                 assert_eq!(kinds, ["change_run", "issue"]);
                 run_updates_again(&database).await?;
             }
+            assert!(database.migrate(at(2)).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0017_the_reason_of_an_event_of_a_run_names_the_run_by_its_new_word() -> TestResult
+    {
+        each_database("m0014_change_run_reason", async |db| {
+            let database = m3_database(db).await?;
+            let mut source = ids();
+            for (seconds, reason) in [(1, "bulk-run:one:7"), (2, "Reported")] {
+                let mut event = event(&mut source, seconds);
+                event.reason = Some(reason.to_owned());
+                database
+                    .record_change(&event, async |_transaction| Ok(()))
+                    .await?;
+            }
+            assert_eq!(database.migrate(at(1)).await?, [14]);
+            for _ in 0..2 {
+                let mut select = Query::select();
+                select
+                    .column(Event::Reason)
+                    .from(Event::Table)
+                    .order_by(Event::Reason, Order::Asc);
+                let reasons: Vec<String> = database
+                    .fetch_all(&select)
+                    .await?
+                    .iter()
+                    .map(|row| row.get::<String>(Event::Reason))
+                    .collect::<Result<_, _>>()?;
+                assert_eq!(reasons, ["Reported", "change-run:one:7"]);
+                run_updates_again(&database).await?;
+            }
+            assert!(database.migrate(at(2)).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0017_the_runs_keep_their_rows_under_the_new_table() -> TestResult {
+        each_database("m0014_change_run_table", async |db| {
+            let database = m3_database(db).await?;
+            let mut run = Query::insert();
+            run.into_table(Alias::new("bulk_run"))
+                .columns(
+                    [
+                        "id",
+                        "person",
+                        "action",
+                        "items",
+                        "status",
+                        "done",
+                        "changed",
+                        "skipped",
+                        "created_at",
+                    ]
+                    .map(Alias::new),
+                )
+                .values([
+                    Expr::val(vec![1_u8; 16]),
+                    Expr::val(vec![2_u8; 16]),
+                    Expr::val("{}"),
+                    Expr::val("[]"),
+                    Expr::val("done"),
+                    Expr::val(3_i64),
+                    Expr::val(2_i64),
+                    Expr::val("[]"),
+                    Expr::val(5_i64),
+                ])?;
+            database.execute(&run).await?;
+            assert_eq!(database.migrate(at(1)).await?, [14]);
+            let mut select = Query::select();
+            select
+                .columns([ManyChangeRunRow::Done, ManyChangeRunRow::Changed])
+                .from(ManyChangeRunRow::Table);
+            let rows = database.fetch_all(&select).await?;
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].get::<i64>(ManyChangeRunRow::Done)?, 3);
+            assert_eq!(rows[0].get::<i64>(ManyChangeRunRow::Changed)?, 2);
+            let mut old = Query::select();
+            old.column(Alias::new("done")).from(Alias::new("bulk_run"));
+            assert!(database.fetch_all(&old).await.is_err());
             assert!(database.migrate(at(2)).await?.is_empty());
             Ok(())
         })
