@@ -66,20 +66,20 @@ fn assert_stopped(run: &Value) {
 #[tokio::test]
 async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nobody_else()
 -> TestResult {
-    each_database("iss_09_cancel_run", async |db| {
+    each_database("iss_09_stop_run", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let targets = targets_for_a_job(&rig, &site).await?;
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
         let (mut cat, _) = site.person(StartingRole::Contributor, "cat").await?;
-        let cancel = |run: &str| format!("{RUNS}/{run}/stop");
+        let stop = |run: &str| format!("{RUNS}/{run}/stop");
         let first = start(&mut bob, &targets).await?;
         // Somebody else, who is no administrator, does not find the run.
-        let hidden = cat.send("POST", &cancel(&first), None).await?;
+        let hidden = cat.send("POST", &stop(&first), None).await?;
         assert_eq!(hidden.code(), "resource.not_found", "{}", hidden.body);
         assert_eq!(read(&mut bob, &first).await?["status"], "queued");
         // An administrator, who manages people, stops it.
-        let stopped = ada.send("POST", &cancel(&first), None).await?;
+        let stopped = ada.send("POST", &stop(&first), None).await?;
         assert_eq!(stopped.status, StatusCode::OK, "{}", stopped.body);
         assert_eq!(
             stopped.body,
@@ -90,7 +90,7 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         work(&rig).await?;
         assert_stopped(&read(&mut bob, &first).await?);
         // Stopping again changes nothing.
-        let again = bob.send("POST", &cancel(&first), None).await?;
+        let again = bob.send("POST", &stop(&first), None).await?;
         assert_eq!(again.status, StatusCode::OK, "{}", again.body);
         // Whoever manages people stops the run of another person, whoever only manages roles does
         // not find it.
@@ -111,14 +111,14 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         )
         .await?;
         let third = start(&mut bob, &targets).await?;
-        let no = ron.send("POST", &cancel(&third), None).await?;
+        let no = ron.send("POST", &stop(&third), None).await?;
         assert_eq!(no.code(), "resource.not_found", "{}", no.body);
-        let yes = ted.send("POST", &cancel(&third), None).await?;
+        let yes = ted.send("POST", &stop(&third), None).await?;
         assert_eq!(yes.status, StatusCode::OK, "{}", yes.body);
         assert_eq!(yes.body["status"], "stopped");
         // The person who asked stops their own.
         let second = start(&mut bob, &targets).await?;
-        let own = bob.send("POST", &cancel(&second), None).await?;
+        let own = bob.send("POST", &stop(&second), None).await?;
         assert_eq!(own.status, StatusCode::OK, "{}", own.body);
         work(&rig).await?;
         assert_stopped(&read(&mut bob, &second).await?);

@@ -4,6 +4,6 @@
     "/api/v1/auth/me": { "get": { "operationId": "getMe", "x-permission": "signed-in" } },
     "/api/v1/auth/sessions": { "get": { "operationId": "listSessions", "x-permission": "own-account" } },
     "/api/v1/projects": { "get": { "operationId": "listProjects", "x-permission": "see-projects" } },
-    "/api/v1/roles": { "post": { "operationId": "makeRole", "x-permission": "manage-roles" } }
+    "/api/v1/roles": { "post": { "operationId": "createRole", "x-permission": "manage-roles" } }
   }
 }
