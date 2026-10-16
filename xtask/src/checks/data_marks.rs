@@ -34,8 +34,10 @@ impl Check for DataMarks {
     }
 }
 
-/// Where the tables are named.
+/// Where the tables are named: the file with the list `stored_tables!`, and the files beside it
+/// that hold the enums of the tables by area.
 const SCHEMA_PATH: &str = "crates/bb-store/src/schema.rs";
+const SCHEMA_FOLDER: &str = "crates/bb-store/src/schema/";
 /// Where the tables are created.
 const MIGRATIONS_FOLDER: &str = "crates/bb-store/src/migrations";
 
@@ -200,10 +202,60 @@ fn renamed_tables(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// The tables the migrations create without the marks of an entity behind them.
+fn migration_findings(listed: &[ListedTable], sources: &[crate::source::Source]) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let renamed: Vec<String> = sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
+        .flat_map(|(_, text)| renamed_tables(text))
+        .collect();
+    for (path, text) in sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
+    {
+        for created in created_tables(text) {
+            match created {
+                Created::Schema(table) if !listed.iter().any(|entry| entry.table == table) => {
+                    findings.push(Finding::at(
+                        path,
+                        format!(
+                            "A migration creates the table `{table}`, which is not in \
+                             `stored_tables!` in {SCHEMA_PATH}, so its rows have no personal-data marks."
+                        ),
+                    ));
+                }
+                Created::Named(name) if !renamed.contains(&name) => {
+                    findings.push(Finding::at(
+                        path,
+                        format!(
+                            "A migration creates the table `{name}` by its name, so its rows have \
+                             no personal-data marks. Create it from the schema, or rename it in a \
+                             later migration to a table of `stored_tables!` in {SCHEMA_PATH}."
+                        ),
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+    findings
+}
+
 fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Finding> {
-    let Some((_, schema)) = sources.iter().find(|(path, _)| path == SCHEMA_PATH) else {
+    if !sources.iter().any(|(path, _)| path == SCHEMA_PATH) {
         return Vec::new();
-    };
+    }
+    let schema = sources
+        .iter()
+        .filter(|(path, _)| path == SCHEMA_PATH || path.starts_with(SCHEMA_FOLDER))
+        .map(|(_, text)| text.as_str())
+        .collect::<Vec<_>>()
+        .join(
+            "
+",
+        );
+    let schema = schema.as_str();
     let listed = listed_tables(schema);
     let entities: BTreeMap<&str, &Vec<privacy::Field>> = model
         .entities
@@ -279,40 +331,7 @@ fn evaluate_tables(model: &Model, sources: &[crate::source::Source]) -> Vec<Find
             ));
         }
     }
-    let renamed: Vec<String> = sources
-        .iter()
-        .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
-        .flat_map(|(_, text)| renamed_tables(text))
-        .collect();
-    for (path, text) in sources
-        .iter()
-        .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
-    {
-        for created in created_tables(text) {
-            match created {
-                Created::Schema(table) if !listed.iter().any(|entry| entry.table == table) => {
-                    findings.push(Finding::at(
-                        path,
-                        format!(
-                            "A migration creates the table `{table}`, which is not in \
-                             `stored_tables!` in {SCHEMA_PATH}, so its rows have no personal-data marks."
-                        ),
-                    ));
-                }
-                Created::Named(name) if !renamed.contains(&name) => {
-                    findings.push(Finding::at(
-                        path,
-                        format!(
-                            "A migration creates the table `{name}` by its name, so its rows have \
-                             no personal-data marks. Create it from the schema, or rename it in a \
-                             later migration to a table of `stored_tables!` in {SCHEMA_PATH}."
-                        ),
-                    ));
-                }
-                _ => {}
-            }
-        }
-    }
+    findings.extend(migration_findings(&listed, sources));
     findings
 }
 
@@ -485,6 +504,34 @@ words! { pub enum Basis { Contract => \"contract\", LegalObligation => \"legal_o
         let all = table_findings(&schema, &migration, LIST_GOOD);
         assert!(all.contains("The table `Orphan` has no entity"), "{all}");
         assert!(all.contains("creates the table `Orphan`"), "{all}");
+    }
+
+    #[test]
+    fn good_example_the_enums_of_the_tables_may_be_in_files_beside_the_list() {
+        let (enums, list) = SCHEMA_GOOD.split_at(SCHEMA_GOOD.find("macro_rules!").unwrap());
+        let entity = "#[derive(Entity)]
+pub struct DomainEvent {
+    #[not_personal]
+    pub id: u32,
+}
+";
+        let mut sources: Vec<Source> = vec![
+            (privacy::VOCABULARY_PATH.to_owned(), VOCABULARY.to_owned()),
+            (privacy::LIST_PATH.to_owned(), LIST_GOOD.to_owned()),
+            ("crates/bb-core/src/event.rs".to_owned(), entity.to_owned()),
+        ];
+        let model = privacy::read_model(&sources).unwrap();
+        sources.push((SCHEMA_PATH.to_owned(), list.to_owned()));
+        sources.push((format!("{SCHEMA_FOLDER}system.rs"), enums.to_owned()));
+        sources.push((
+            format!("{MIGRATIONS_FOLDER}/m0001.rs"),
+            MIGRATION_GOOD.to_owned(),
+        ));
+        let found: Vec<String> = evaluate_tables(&model, &sources)
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect();
+        assert!(found.is_empty(), "{found:?}");
     }
 
     #[test]
