@@ -20,7 +20,7 @@ export function afterApply(done: BulkApplied, clearTicks: () => void): void {
     offerUndo(
       done.action,
       done.result,
-      t("bulk.result-done", { changed, skipped: done.result.outcomes.length - changed }),
+      t("many-changes.result-done", { changed, skipped: done.result.outcomes.length - changed }),
     );
   }
 }

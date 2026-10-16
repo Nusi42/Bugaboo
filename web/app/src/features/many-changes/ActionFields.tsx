@@ -17,7 +17,7 @@ export interface ActionFieldsProps {
 }
 
 /** What a pick of status or priority starts with: leave the field as it is. */
-const keep = { value: NONE, label: t("bulk.keep") };
+const keep = { value: NONE, label: t("many-changes.keep") };
 const statusOrKeep = [keep, ...statusChoices];
 const priorityOrKeep = [keep, ...priorityChoices];
 
@@ -50,16 +50,18 @@ function MoveFields({ draft, onDraft }: ActionFieldsProps) {
   return (
     <>
       {draft.project === null ? null : (
-        <p {...partOf(part.text)}>{t("bulk.project-picked", { name: draft.project.name })}</p>
+        <p {...partOf(part.text)}>
+          {t("many-changes.project-picked", { name: draft.project.name })}
+        </p>
       )}
       <ProjectsToUse
         picked={draft.project === null ? [] : [draft.project.id]}
         words={{
-          legend: t("bulk.project-legend"),
-          search: t("bulk.project-search"),
-          list: t("bulk.project-list"),
-          nothing: t("bulk.project-nothing"),
-          more: t("bulk.project-more"),
+          legend: t("many-changes.project-legend"),
+          search: t("many-changes.project-search"),
+          list: t("many-changes.project-list"),
+          nothing: t("many-changes.project-nothing"),
+          more: t("many-changes.project-more"),
         }}
         onPick={(project) => {
           onDraft({ ...draft, project });
@@ -75,7 +77,7 @@ function LabelFields({ draft, onDraft }: ActionFieldsProps) {
   const offered = (labels.data?.labels ?? []).filter((label) => !label.retired);
   return (
     <SelectField
-      label={t("bulk.field-label")}
+      label={t("many-changes.field-label")}
       choices={[
         { value: NONE, label: t("labels.pick-label") },
         ...offered.map((label) => ({ value: label.id, label: label.name })),
@@ -128,5 +130,5 @@ export function ActionFields(props: ActionFieldsProps) {
   if (props.kind === bulkKind.relation) {
     return <RelationFields {...props} />;
   }
-  return <p {...partOf(part.text)}>{t("bulk.delete-text")}</p>;
+  return <p {...partOf(part.text)}>{t("many-changes.delete-text")}</p>;
 }

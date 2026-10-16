@@ -18,7 +18,7 @@ function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
   if (detail?.kind === "changes") {
     return detail.fields.map((change) => ({
       key: change.field,
-      content: t("bulk.line-changes", {
+      content: t("many-changes.line-changes", {
         field: fieldNameOf({ code: change.field, name: change.name }),
         after: changeValueText(change.field, change.after) ?? t("common.nothing"),
       }),
@@ -28,7 +28,7 @@ function changeLines(row: BulkRow, plain: string): LongPreviewGroup["lines"] {
     return [
       {
         key: "relation",
-        content: t("bulk.line-relation", { name: detail.name, issue: detail.issue.key }),
+        content: t("many-changes.line-relation", { name: detail.name, issue: detail.issue.key }),
       },
     ];
   }
@@ -40,7 +40,7 @@ function groupOf(row: BulkRow, plain: string): LongPreviewGroup {
   const skipped = row.skipped !== undefined && row.skipped !== null;
   return {
     key: row.address,
-    heading: <strong>{row.issue?.key ?? t("bulk.issue-unknown")}</strong>,
+    heading: <strong>{row.issue?.key ?? t("many-changes.issue-unknown")}</strong>,
     lines: skipped ? [{ key: "skipped", content: skipText(row.skipped) }] : changeLines(row, plain),
     skipped,
   };
@@ -63,7 +63,7 @@ export function BulkPreviewView({ preview, plain }: BulkPreviewViewProps) {
         groups={preview.rows.map((row) => groupOf(row, plain))}
       />
       {preview.runs_in_background ? (
-        <Alert tone={alertTone.info}>{t("bulk.background-note")}</Alert>
+        <Alert tone={alertTone.info}>{t("many-changes.background-note")}</Alert>
       ) : null}
     </div>
   );

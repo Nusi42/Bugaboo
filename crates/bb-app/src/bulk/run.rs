@@ -231,7 +231,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let now = self.now();
         let event = self.event(
             who,
-            entity(RecordKind::BulkRun, id),
+            entity(RecordKind::ChangeRun, id),
             vec![set_to("status", serde_json::json!(status.code()))],
         )?;
         self.store()

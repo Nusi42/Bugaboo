@@ -82,7 +82,7 @@ async function joinIssues(): Promise<void> {
     import("../features/history/index.ts"),
     import("../features/follow/index.ts"),
     import("../features/labels/index.ts"),
-    import("../features/bulk/index.ts"),
+    import("../features/many-changes/index.ts"),
   ]);
   if (!issuesJoined) {
     issuesJoined = true;

@@ -24,7 +24,7 @@ pub const JOB_ATTEMPTS_MAX: u32 = 5;
 /// The kinds of job, each with the name the queue stores.
 pub mod kind {
     /// One step of a change to many issues (`bulk`); the payload names the run.
-    pub const BULK_STEP: &str = "bulk.step";
+    pub const BULK_STEP: &str = "many-changes.step";
     /// One step of giving the issues of a project new IDs after its mode of IDs changed
     /// (`issues::ids`); the payload names the project and the person who changed the mode.
     pub const RENEW_IDS: &str = "issues.renew-ids";

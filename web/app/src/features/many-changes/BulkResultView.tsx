@@ -14,13 +14,13 @@ export function SkippedList({ skipped }: { readonly skipped: BulkRun["skipped"] 
   }
   const lines: readonly { readonly key: string; readonly text: string }[] = skipped.map((each) => ({
     key: [each.issue?.id ?? "", each.reason].join(":"),
-    text: t("bulk.skipped-line", {
-      issue: each.issue?.key ?? t("bulk.issue-unknown"),
+    text: t("many-changes.skipped-line", {
+      issue: each.issue?.key ?? t("many-changes.issue-unknown"),
       reason: skipText(each.reason),
     }),
   }));
   return (
-    <ul {...partOf(part.list)} aria-label={t("bulk.skipped-list")}>
+    <ul {...partOf(part.list)} aria-label={t("many-changes.skipped-list")}>
       {lines.map((line) => (
         <li key={line.key} {...partOf(part.itemText)}>
           {line.text}
@@ -47,23 +47,23 @@ export function RunProgress({ run }: { readonly run: string }) {
     return null;
   }
   if (data.status === "failed" || data.status === "stopped") {
-    return <Alert tone={alertTone.danger}>{t("bulk.stopped")}</Alert>;
+    return <Alert tone={alertTone.danger}>{t("many-changes.stopped")}</Alert>;
   }
   if (over) {
     return (
       <div {...partOf(part.bulkProgress)}>
         <Alert tone={alertTone.success}>
-          {t("bulk.result-done", { changed: data.changed, skipped: data.skipped_count })}
+          {t("many-changes.result-done", { changed: data.changed, skipped: data.skipped_count })}
         </Alert>
         <SkippedList skipped={data.skipped} />
       </div>
     );
   }
   return (
-    <output {...partOf(part.bulkProgress)} aria-label={t("bulk.progress-label")}>
+    <output {...partOf(part.bulkProgress)} aria-label={t("many-changes.progress-label")}>
       <FieldValue
         look={progressLook}
-        text={t("bulk.progress", { done: data.done, total: data.total })}
+        text={t("many-changes.progress", { done: data.done, total: data.total })}
         fraction={data.total === 0 ? 0 : data.done / data.total}
       />
     </output>

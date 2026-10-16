@@ -54,7 +54,7 @@ async fn iss_09_a_run_and_its_job_are_saved_together_and_the_progress_is_counted
         let mut source = ids();
         let run = a_run(&mut source, 3);
         let job = JobId::generate(&mut source).unwrap();
-        let kind = TechnicalName::new("bulk.step")?;
+        let kind = TechnicalName::new("many-changes.step")?;
         let (stored, payload) = (run.clone(), json!({"run": run.id.to_string()}));
         let (queued_kind, queued_payload) = (kind.clone(), payload.clone());
         changed(storage, &mut source, move |tx| {
@@ -114,7 +114,7 @@ async fn iss_09_a_job_queued_on_its_own_waits_for_its_time() -> TestResult {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
         let mut source = ids();
-        let kind = TechnicalName::new("bulk.step")?;
+        let kind = TechnicalName::new("many-changes.step")?;
         storage
             .queue_job(
                 JobId::generate(&mut source).unwrap(),

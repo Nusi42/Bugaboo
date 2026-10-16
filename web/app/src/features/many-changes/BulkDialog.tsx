@@ -34,8 +34,8 @@ export function BulkDialog({ kind, issues, isOpen, onOpenChange, onApplied }: Bu
         }
         onOpenChange(open);
       }}
-      title={t("bulk.title", { action: actionName(kind), count: issues.length })}
-      text={t("bulk.dialog-text")}
+      title={t("many-changes.title", { action: actionName(kind), count: issues.length })}
+      text={t("many-changes.dialog-text")}
       confirmLabel={applyName(kind, issues.length)}
       cancelLabel={t("common.cancel")}
       confirmDisabled={!dialog.canApply}
@@ -53,7 +53,7 @@ export function BulkDialog({ kind, issues, isOpen, onOpenChange, onApplied }: Bu
           isPending={preview.isPending}
           onPress={dialog.ask}
         >
-          {t("bulk.show-changes")}
+          {t("many-changes.show-changes")}
         </Button>
       </div>
       {preview.isError ? <Alert tone={alertTone.danger}>{messageOf(preview.error)}</Alert> : null}

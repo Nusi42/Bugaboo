@@ -28,7 +28,7 @@ export function BulkBar({ selection }: SelectionBarProps) {
   return (
     <div {...partOf(part.stack)}>
       {selection.ids.length === 0 ? null : (
-        <section {...partOf(part.bulkBar)} aria-label={t("bulk.bar")}>
+        <section {...partOf(part.bulkBar)} aria-label={t("many-changes.bar")}>
           {kinds.map((kind) => (
             <Button
               key={kind}

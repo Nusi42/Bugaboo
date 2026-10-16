@@ -55,7 +55,7 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
         actor: Actor::Person(run.person),
         channel: Channel::Ui,
         entity: EntityRef {
-            kind: EntityKind::from(RecordKind::BulkRun),
+            kind: EntityKind::from(RecordKind::ChangeRun),
             id: EntityId::from(run.id),
         },
         changes: Vec::new(),

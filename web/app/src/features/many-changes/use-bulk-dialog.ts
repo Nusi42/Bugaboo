@@ -23,7 +23,7 @@ function useBulkDraft(kind: BulkKind) {
     setDraft,
     relations,
     action: actionOf(kind, draft, relations),
-    plain: kind === bulkKind.delete ? t("bulk.line-delete") : "",
+    plain: kind === bulkKind.delete ? t("many-changes.line-delete") : "",
   };
 }
 

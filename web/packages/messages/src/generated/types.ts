@@ -3,7 +3,6 @@
 import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
-import type { messages as bulk } from "./bulk.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as follow } from "./follow.ts";
 import type { messages as history } from "./history.ts";
@@ -13,6 +12,7 @@ import type { messages as issueTypes } from "./issue-types.ts";
 import type { messages as issues } from "./issues.ts";
 import type { messages as labels } from "./labels.ts";
 import type { messages as layouts } from "./layouts.ts";
+import type { messages as manyChanges } from "./many-changes.ts";
 import type { messages as mentions } from "./mentions.ts";
 import type { messages as mySettings } from "./my-settings.ts";
 import type { messages as people } from "./people.ts";
@@ -31,7 +31,6 @@ export type MessageKey =
   | keyof typeof access
   | keyof typeof account
   | keyof typeof admin
-  | keyof typeof bulk
   | keyof typeof fields
   | keyof typeof follow
   | keyof typeof history
@@ -41,6 +40,7 @@ export type MessageKey =
   | keyof typeof issues
   | keyof typeof labels
   | keyof typeof layouts
+  | keyof typeof manyChanges
   | keyof typeof mentions
   | keyof typeof mySettings
   | keyof typeof people
@@ -77,15 +77,6 @@ export interface MessageArguments {
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
-  "bulk.apply": { count: number };
-  "bulk.apply-delete": { count: number };
-  "bulk.line-changes": { after: string | number; field: string | number };
-  "bulk.line-relation": { issue: string | number; name: string | number };
-  "bulk.progress": { done: string | number; total: string | number };
-  "bulk.project-picked": { name: string | number };
-  "bulk.result-done": { changed: number; skipped: number };
-  "bulk.skipped-line": { issue: string | number; reason: string | number };
-  "bulk.title": { action: string | number; count: number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
   "check-access.level.role-project": {
@@ -262,6 +253,15 @@ export interface MessageArguments {
   "layouts.section-named": { number: string | number; title: string | number };
   "layouts.section-remove": { number: string | number };
   "layouts.section-up": { number: string | number };
+  "many-changes.apply": { count: number };
+  "many-changes.apply-delete": { count: number };
+  "many-changes.line-changes": { after: string | number; field: string | number };
+  "many-changes.line-relation": { issue: string | number; name: string | number };
+  "many-changes.progress": { done: string | number; total: string | number };
+  "many-changes.project-picked": { name: string | number };
+  "many-changes.result-done": { changed: number; skipped: number };
+  "many-changes.skipped-line": { issue: string | number; reason: string | number };
+  "many-changes.title": { action: string | number; count: number };
   "mentions.in": { issue: string | number; who: string | number };
   "mentions.unread": { count: number };
   "own.ask-text": { lost: string | number };

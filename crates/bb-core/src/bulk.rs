@@ -52,7 +52,7 @@ words! {
         /// The change cannot be made to this issue, for a reason that has no word of its own.
         NotValid => "not-valid",
     }
-    messages name = "bulk-skip."
+    messages name = "many-changes-skip."
 }
 
 words_in_api!(SkipReason, "Why an issue of the selection is left alone.");
@@ -73,7 +73,7 @@ words! {
         /// changed stays.
         Stopped => "stopped",
     }
-    messages name = "bulk-status."
+    messages name = "many-changes-status."
 }
 
 words_in_api!(BulkStatus, "Where a run of a change to many issues is.");

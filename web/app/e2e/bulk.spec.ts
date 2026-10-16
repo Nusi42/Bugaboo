@@ -30,21 +30,25 @@ test("iss_09 a label is added to two ticked issues after a preview, and Undo tak
   await createLabel(admin, "release");
   await signIn(page, ada);
   await tickTwo(page);
-  const dialog = await openAction(page, t("bulk.action-label"));
+  const dialog = await openAction(page, t("many-changes.action-label"));
   await expect(
-    dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }),
+    dialog.getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true }),
   ).toBeDisabled();
   await dialog
-    .getByLabel(t("bulk.field-label"), { exact: true })
+    .getByLabel(t("many-changes.field-label"), { exact: true })
     .selectOption({ label: "release" });
-  await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
+  await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();
   await expect(dialog.getByText(t("preview.summary", { changed: 2, skipped: 0 }))).toBeVisible();
   await expect(
-    dialog.getByText(t("bulk.line-changes", { field: t("issue-field.labels"), after: "release" })),
+    dialog.getByText(
+      t("many-changes.line-changes", { field: t("issue-field.labels"), after: "release" }),
+    ),
   ).toHaveCount(2);
-  await dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }).click();
+  await dialog
+    .getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true })
+    .click();
   await expect(
-    page.getByText(t("bulk.result-done", { changed: 2, skipped: 0 })).first(),
+    page.getByText(t("many-changes.result-done", { changed: 2, skipped: 0 })).first(),
   ).toBeVisible();
   expect(await labelNamesOf(admin, "WEB-1")).toEqual(["release"]);
   await page.getByRole("button", { name: t("common.undo"), exact: true }).click();
@@ -58,18 +62,20 @@ test("iss_09 the status of two ticked issues is changed and the preview names ea
 }) => {
   await signIn(page, ada);
   await tickTwo(page);
-  const dialog = await openAction(page, t("bulk.action-change"));
+  const dialog = await openAction(page, t("many-changes.action-change"));
   await dialog.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
     label: t("status.done"),
   });
-  await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
+  await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();
   const list = dialog.getByRole("list", { name: t("preview.label"), exact: true });
   await expect(list.getByText("WEB-1", { exact: true })).toBeVisible();
   await expect(list.getByText("WEB-2", { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
-  await dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }).click();
+  await dialog
+    .getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true })
+    .click();
   await expect(
-    page.getByText(t("bulk.result-done", { changed: 2, skipped: 0 })).first(),
+    page.getByText(t("many-changes.result-done", { changed: 2, skipped: 0 })).first(),
   ).toBeVisible();
   const admin = await signedInAdmin(server);
   const issue = dataOf(
@@ -84,15 +90,15 @@ test("iss_09 an issue the person may not change is skipped with the reason and n
 }) => {
   await signIn(page, ana);
   await tickTwo(page);
-  const dialog = await openAction(page, t("bulk.action-change"));
+  const dialog = await openAction(page, t("many-changes.action-change"));
   await dialog.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });
-  await dialog.getByRole("button", { name: t("bulk.show-changes"), exact: true }).click();
+  await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();
   await expect(dialog.getByText(t("preview.summary", { changed: 0, skipped: 2 }))).toBeVisible();
-  await expect(dialog.getByText(t("bulk-skip.not-allowed"))).toHaveCount(2);
+  await expect(dialog.getByText(t("many-changes-skip.not-allowed"))).toHaveCount(2);
   await expect(
-    dialog.getByRole("button", { name: t("bulk.apply", { count: 2 }), exact: true }),
+    dialog.getByRole("button", { name: t("many-changes.apply", { count: 2 }), exact: true }),
   ).toBeDisabled();
 });
 
@@ -100,7 +106,7 @@ test("iss_09 the bar and its dialog are good in every theme", async ({ page }) =
   await signIn(page, ada);
   await tickTwo(page);
   await expectGoodInEveryLook(page);
-  const dialog = await openAction(page, t("bulk.action-move"));
+  const dialog = await openAction(page, t("many-changes.action-move"));
   await expect(dialog).toBeVisible();
   await expectGoodInEveryLook(page);
 });

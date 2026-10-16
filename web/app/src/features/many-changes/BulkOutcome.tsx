@@ -19,7 +19,7 @@ export function BulkOutcome({ applied }: { readonly applied: BulkApplied }) {
   return (
     <output {...partOf(part.bulkProgress)}>
       <Alert tone={alertTone.success}>
-        {t("bulk.result-done", { changed, skipped: outcomes.length - changed })}
+        {t("many-changes.result-done", { changed, skipped: outcomes.length - changed })}
       </Alert>
       <SkippedList
         skipped={outcomes.flatMap((outcome) =>

@@ -106,7 +106,7 @@ words! {
         /// An access key.
         AccessKey => "access_key",
         /// One run of a change to many issues (ISS-09).
-        BulkRun => "bulk_run",
+        ChangeRun => "change_run",
         /// An own field (CF-01).
         Field => "field",
         /// One row of *Who has which role*.

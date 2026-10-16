@@ -309,123 +309,6 @@ pub const BACKUP_SHOWN_ONCE: MessageKey = MessageKey::new("backup.shown-once");
 /// The message `backup.title`.
 pub const BACKUP_TITLE: MessageKey = MessageKey::new("backup.title");
 
-/// The message `bulk-skip.changed-since`.
-pub const BULK_SKIP_CHANGED_SINCE: MessageKey = MessageKey::new("bulk-skip.changed-since");
-
-/// The message `bulk-skip.field-missing`.
-pub const BULK_SKIP_FIELD_MISSING: MessageKey = MessageKey::new("bulk-skip.field-missing");
-
-/// The message `bulk-skip.field-rule`.
-pub const BULK_SKIP_FIELD_RULE: MessageKey = MessageKey::new("bulk-skip.field-rule");
-
-/// The message `bulk-skip.limit-reached`.
-pub const BULK_SKIP_LIMIT_REACHED: MessageKey = MessageKey::new("bulk-skip.limit-reached");
-
-/// The message `bulk-skip.not-allowed`.
-pub const BULK_SKIP_NOT_ALLOWED: MessageKey = MessageKey::new("bulk-skip.not-allowed");
-
-/// The message `bulk-skip.not-found`.
-pub const BULK_SKIP_NOT_FOUND: MessageKey = MessageKey::new("bulk-skip.not-found");
-
-/// The message `bulk-skip.not-valid`.
-pub const BULK_SKIP_NOT_VALID: MessageKey = MessageKey::new("bulk-skip.not-valid");
-
-/// The message `bulk-skip.nothing-to-change`.
-pub const BULK_SKIP_NOTHING_TO_CHANGE: MessageKey = MessageKey::new("bulk-skip.nothing-to-change");
-
-/// The message `bulk-skip.relation-exists`.
-pub const BULK_SKIP_RELATION_EXISTS: MessageKey = MessageKey::new("bulk-skip.relation-exists");
-
-/// The message `bulk-skip.same-issue`.
-pub const BULK_SKIP_SAME_ISSUE: MessageKey = MessageKey::new("bulk-skip.same-issue");
-
-/// The message `bulk-skip.tag-not-here`.
-pub const BULK_SKIP_TAG_NOT_HERE: MessageKey = MessageKey::new("bulk-skip.tag-not-here");
-
-/// The message `bulk-skip.type-missing`.
-pub const BULK_SKIP_TYPE_MISSING: MessageKey = MessageKey::new("bulk-skip.type-missing");
-
-/// The message `bulk-status.done`.
-pub const BULK_STATUS_DONE: MessageKey = MessageKey::new("bulk-status.done");
-
-/// The message `bulk-status.failed`.
-pub const BULK_STATUS_FAILED: MessageKey = MessageKey::new("bulk-status.failed");
-
-/// The message `bulk-status.queued`.
-pub const BULK_STATUS_QUEUED: MessageKey = MessageKey::new("bulk-status.queued");
-
-/// The message `bulk-status.running`.
-pub const BULK_STATUS_RUNNING: MessageKey = MessageKey::new("bulk-status.running");
-
-/// The message `bulk-status.stopped`.
-pub const BULK_STATUS_STOPPED: MessageKey = MessageKey::new("bulk-status.stopped");
-
-/// The message `bulk.action-change`.
-pub const BULK_ACTION_CHANGE: MessageKey = MessageKey::new("bulk.action-change");
-
-/// The message `bulk.action-delete`.
-pub const BULK_ACTION_DELETE: MessageKey = MessageKey::new("bulk.action-delete");
-
-/// The message `bulk.action-label`.
-pub const BULK_ACTION_LABEL: MessageKey = MessageKey::new("bulk.action-label");
-
-/// The message `bulk.action-move`.
-pub const BULK_ACTION_MOVE: MessageKey = MessageKey::new("bulk.action-move");
-
-/// The message `bulk.action-relation`.
-pub const BULK_ACTION_RELATION: MessageKey = MessageKey::new("bulk.action-relation");
-
-/// The message `bulk.background-note`.
-pub const BULK_BACKGROUND_NOTE: MessageKey = MessageKey::new("bulk.background-note");
-
-/// The message `bulk.bar`.
-pub const BULK_BAR: MessageKey = MessageKey::new("bulk.bar");
-
-/// The message `bulk.delete-text`.
-pub const BULK_DELETE_TEXT: MessageKey = MessageKey::new("bulk.delete-text");
-
-/// The message `bulk.dialog-text`.
-pub const BULK_DIALOG_TEXT: MessageKey = MessageKey::new("bulk.dialog-text");
-
-/// The message `bulk.field-label`.
-pub const BULK_FIELD_LABEL: MessageKey = MessageKey::new("bulk.field-label");
-
-/// The message `bulk.issue-unknown`.
-pub const BULK_ISSUE_UNKNOWN: MessageKey = MessageKey::new("bulk.issue-unknown");
-
-/// The message `bulk.keep`.
-pub const BULK_KEEP: MessageKey = MessageKey::new("bulk.keep");
-
-/// The message `bulk.line-delete`.
-pub const BULK_LINE_DELETE: MessageKey = MessageKey::new("bulk.line-delete");
-
-/// The message `bulk.progress-label`.
-pub const BULK_PROGRESS_LABEL: MessageKey = MessageKey::new("bulk.progress-label");
-
-/// The message `bulk.project-legend`.
-pub const BULK_PROJECT_LEGEND: MessageKey = MessageKey::new("bulk.project-legend");
-
-/// The message `bulk.project-list`.
-pub const BULK_PROJECT_LIST: MessageKey = MessageKey::new("bulk.project-list");
-
-/// The message `bulk.project-more`.
-pub const BULK_PROJECT_MORE: MessageKey = MessageKey::new("bulk.project-more");
-
-/// The message `bulk.project-nothing`.
-pub const BULK_PROJECT_NOTHING: MessageKey = MessageKey::new("bulk.project-nothing");
-
-/// The message `bulk.project-search`.
-pub const BULK_PROJECT_SEARCH: MessageKey = MessageKey::new("bulk.project-search");
-
-/// The message `bulk.show-changes`.
-pub const BULK_SHOW_CHANGES: MessageKey = MessageKey::new("bulk.show-changes");
-
-/// The message `bulk.skipped-list`.
-pub const BULK_SKIPPED_LIST: MessageKey = MessageKey::new("bulk.skipped-list");
-
-/// The message `bulk.stopped`.
-pub const BULK_STOPPED: MessageKey = MessageKey::new("bulk.stopped");
-
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
 
@@ -2338,6 +2221,136 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
+
+/// The message `many-changes-skip.changed-since`.
+pub const MANY_CHANGES_SKIP_CHANGED_SINCE: MessageKey =
+    MessageKey::new("many-changes-skip.changed-since");
+
+/// The message `many-changes-skip.field-missing`.
+pub const MANY_CHANGES_SKIP_FIELD_MISSING: MessageKey =
+    MessageKey::new("many-changes-skip.field-missing");
+
+/// The message `many-changes-skip.field-rule`.
+pub const MANY_CHANGES_SKIP_FIELD_RULE: MessageKey =
+    MessageKey::new("many-changes-skip.field-rule");
+
+/// The message `many-changes-skip.limit-reached`.
+pub const MANY_CHANGES_SKIP_LIMIT_REACHED: MessageKey =
+    MessageKey::new("many-changes-skip.limit-reached");
+
+/// The message `many-changes-skip.not-allowed`.
+pub const MANY_CHANGES_SKIP_NOT_ALLOWED: MessageKey =
+    MessageKey::new("many-changes-skip.not-allowed");
+
+/// The message `many-changes-skip.not-found`.
+pub const MANY_CHANGES_SKIP_NOT_FOUND: MessageKey = MessageKey::new("many-changes-skip.not-found");
+
+/// The message `many-changes-skip.not-valid`.
+pub const MANY_CHANGES_SKIP_NOT_VALID: MessageKey = MessageKey::new("many-changes-skip.not-valid");
+
+/// The message `many-changes-skip.nothing-to-change`.
+pub const MANY_CHANGES_SKIP_NOTHING_TO_CHANGE: MessageKey =
+    MessageKey::new("many-changes-skip.nothing-to-change");
+
+/// The message `many-changes-skip.relation-exists`.
+pub const MANY_CHANGES_SKIP_RELATION_EXISTS: MessageKey =
+    MessageKey::new("many-changes-skip.relation-exists");
+
+/// The message `many-changes-skip.same-issue`.
+pub const MANY_CHANGES_SKIP_SAME_ISSUE: MessageKey =
+    MessageKey::new("many-changes-skip.same-issue");
+
+/// The message `many-changes-skip.tag-not-here`.
+pub const MANY_CHANGES_SKIP_TAG_NOT_HERE: MessageKey =
+    MessageKey::new("many-changes-skip.tag-not-here");
+
+/// The message `many-changes-skip.type-missing`.
+pub const MANY_CHANGES_SKIP_TYPE_MISSING: MessageKey =
+    MessageKey::new("many-changes-skip.type-missing");
+
+/// The message `many-changes-status.done`.
+pub const MANY_CHANGES_STATUS_DONE: MessageKey = MessageKey::new("many-changes-status.done");
+
+/// The message `many-changes-status.failed`.
+pub const MANY_CHANGES_STATUS_FAILED: MessageKey = MessageKey::new("many-changes-status.failed");
+
+/// The message `many-changes-status.queued`.
+pub const MANY_CHANGES_STATUS_QUEUED: MessageKey = MessageKey::new("many-changes-status.queued");
+
+/// The message `many-changes-status.running`.
+pub const MANY_CHANGES_STATUS_RUNNING: MessageKey = MessageKey::new("many-changes-status.running");
+
+/// The message `many-changes-status.stopped`.
+pub const MANY_CHANGES_STATUS_STOPPED: MessageKey = MessageKey::new("many-changes-status.stopped");
+
+/// The message `many-changes.action-change`.
+pub const MANY_CHANGES_ACTION_CHANGE: MessageKey = MessageKey::new("many-changes.action-change");
+
+/// The message `many-changes.action-delete`.
+pub const MANY_CHANGES_ACTION_DELETE: MessageKey = MessageKey::new("many-changes.action-delete");
+
+/// The message `many-changes.action-label`.
+pub const MANY_CHANGES_ACTION_LABEL: MessageKey = MessageKey::new("many-changes.action-label");
+
+/// The message `many-changes.action-move`.
+pub const MANY_CHANGES_ACTION_MOVE: MessageKey = MessageKey::new("many-changes.action-move");
+
+/// The message `many-changes.action-relation`.
+pub const MANY_CHANGES_ACTION_RELATION: MessageKey =
+    MessageKey::new("many-changes.action-relation");
+
+/// The message `many-changes.background-note`.
+pub const MANY_CHANGES_BACKGROUND_NOTE: MessageKey =
+    MessageKey::new("many-changes.background-note");
+
+/// The message `many-changes.bar`.
+pub const MANY_CHANGES_BAR: MessageKey = MessageKey::new("many-changes.bar");
+
+/// The message `many-changes.delete-text`.
+pub const MANY_CHANGES_DELETE_TEXT: MessageKey = MessageKey::new("many-changes.delete-text");
+
+/// The message `many-changes.dialog-text`.
+pub const MANY_CHANGES_DIALOG_TEXT: MessageKey = MessageKey::new("many-changes.dialog-text");
+
+/// The message `many-changes.field-label`.
+pub const MANY_CHANGES_FIELD_LABEL: MessageKey = MessageKey::new("many-changes.field-label");
+
+/// The message `many-changes.issue-unknown`.
+pub const MANY_CHANGES_ISSUE_UNKNOWN: MessageKey = MessageKey::new("many-changes.issue-unknown");
+
+/// The message `many-changes.keep`.
+pub const MANY_CHANGES_KEEP: MessageKey = MessageKey::new("many-changes.keep");
+
+/// The message `many-changes.line-delete`.
+pub const MANY_CHANGES_LINE_DELETE: MessageKey = MessageKey::new("many-changes.line-delete");
+
+/// The message `many-changes.progress-label`.
+pub const MANY_CHANGES_PROGRESS_LABEL: MessageKey = MessageKey::new("many-changes.progress-label");
+
+/// The message `many-changes.project-legend`.
+pub const MANY_CHANGES_PROJECT_LEGEND: MessageKey = MessageKey::new("many-changes.project-legend");
+
+/// The message `many-changes.project-list`.
+pub const MANY_CHANGES_PROJECT_LIST: MessageKey = MessageKey::new("many-changes.project-list");
+
+/// The message `many-changes.project-more`.
+pub const MANY_CHANGES_PROJECT_MORE: MessageKey = MessageKey::new("many-changes.project-more");
+
+/// The message `many-changes.project-nothing`.
+pub const MANY_CHANGES_PROJECT_NOTHING: MessageKey =
+    MessageKey::new("many-changes.project-nothing");
+
+/// The message `many-changes.project-search`.
+pub const MANY_CHANGES_PROJECT_SEARCH: MessageKey = MessageKey::new("many-changes.project-search");
+
+/// The message `many-changes.show-changes`.
+pub const MANY_CHANGES_SHOW_CHANGES: MessageKey = MessageKey::new("many-changes.show-changes");
+
+/// The message `many-changes.skipped-list`.
+pub const MANY_CHANGES_SKIPPED_LIST: MessageKey = MessageKey::new("many-changes.skipped-list");
+
+/// The message `many-changes.stopped`.
+pub const MANY_CHANGES_STOPPED: MessageKey = MessageKey::new("many-changes.stopped");
 
 /// The message `markdown.bold`.
 pub const MARKDOWN_BOLD: MessageKey = MessageKey::new("markdown.bold");
@@ -4334,105 +4347,6 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
-/// The message `bulk.apply`.
-#[must_use]
-pub fn bulk_apply(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.apply"),
-        vec![("count", Value::Number(count))],
-    )
-}
-
-/// The message `bulk.apply-delete`.
-#[must_use]
-pub fn bulk_apply_delete(count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.apply-delete"),
-        vec![("count", Value::Number(count))],
-    )
-}
-
-/// The message `bulk.line-changes`.
-#[must_use]
-pub fn bulk_line_changes(after: impl std::fmt::Display, field: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.line-changes"),
-        vec![
-            ("after", Value::Text(after.to_string())),
-            ("field", Value::Text(field.to_string())),
-        ],
-    )
-}
-
-/// The message `bulk.line-relation`.
-#[must_use]
-pub fn bulk_line_relation(issue: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.line-relation"),
-        vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("name", Value::Text(name.to_string())),
-        ],
-    )
-}
-
-/// The message `bulk.progress`.
-#[must_use]
-pub fn bulk_progress(done: impl std::fmt::Display, total: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.progress"),
-        vec![
-            ("done", Value::Text(done.to_string())),
-            ("total", Value::Text(total.to_string())),
-        ],
-    )
-}
-
-/// The message `bulk.project-picked`.
-#[must_use]
-pub fn bulk_project_picked(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.project-picked"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `bulk.result-done`.
-#[must_use]
-pub fn bulk_result_done(changed: i64, skipped: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.result-done"),
-        vec![
-            ("changed", Value::Number(changed)),
-            ("skipped", Value::Number(skipped)),
-        ],
-    )
-}
-
-/// The message `bulk.skipped-line`.
-#[must_use]
-pub fn bulk_skipped_line(issue: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.skipped-line"),
-        vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("reason", Value::Text(reason.to_string())),
-        ],
-    )
-}
-
-/// The message `bulk.title`.
-#[must_use]
-pub fn bulk_title(action: impl std::fmt::Display, count: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("bulk.title"),
-        vec![
-            ("action", Value::Text(action.to_string())),
-            ("count", Value::Number(count)),
-        ],
-    )
-}
-
 /// The message `check-access.level.no-role`.
 #[must_use]
 pub fn check_access_level_no_role(person: impl std::fmt::Display) -> Message {
@@ -6222,6 +6136,117 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `many-changes.apply`.
+#[must_use]
+pub fn many_changes_apply(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.apply"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `many-changes.apply-delete`.
+#[must_use]
+pub fn many_changes_apply_delete(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.apply-delete"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `many-changes.line-changes`.
+#[must_use]
+pub fn many_changes_line_changes(
+    after: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.line-changes"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("field", Value::Text(field.to_string())),
+        ],
+    )
+}
+
+/// The message `many-changes.line-relation`.
+#[must_use]
+pub fn many_changes_line_relation(
+    issue: impl std::fmt::Display,
+    name: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.line-relation"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
+/// The message `many-changes.progress`.
+#[must_use]
+pub fn many_changes_progress(
+    done: impl std::fmt::Display,
+    total: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.progress"),
+        vec![
+            ("done", Value::Text(done.to_string())),
+            ("total", Value::Text(total.to_string())),
+        ],
+    )
+}
+
+/// The message `many-changes.project-picked`.
+#[must_use]
+pub fn many_changes_project_picked(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.project-picked"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `many-changes.result-done`.
+#[must_use]
+pub fn many_changes_result_done(changed: i64, skipped: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.result-done"),
+        vec![
+            ("changed", Value::Number(changed)),
+            ("skipped", Value::Number(skipped)),
+        ],
+    )
+}
+
+/// The message `many-changes.skipped-line`.
+#[must_use]
+pub fn many_changes_skipped_line(
+    issue: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.skipped-line"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `many-changes.title`.
+#[must_use]
+pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.title"),
+        vec![
+            ("action", Value::Text(action.to_string())),
+            ("count", Value::Number(count)),
+        ],
+    )
+}
+
 /// The message `mentions.in`.
 #[must_use]
 pub fn mentions_in(issue: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -7820,99 +7845,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These codes are shown only now. Save them before you leave this page.",
     ),
     ("backup.title", "Backup codes"),
-    ("bulk-skip.changed-since", "It changed after the preview"),
-    (
-        "bulk-skip.field-missing",
-        "It has a value in a field the other project does not use",
-    ),
-    (
-        "bulk-skip.field-rule",
-        "A value of the issue breaks the rule of its field",
-    ),
-    (
-        "bulk-skip.limit-reached",
-        "It already has as many of these as it can hold",
-    ),
-    ("bulk-skip.not-allowed", "You may not change it this way"),
-    (
-        "bulk-skip.not-found",
-        "It was deleted, or you can no longer see it",
-    ),
-    ("bulk-skip.not-valid", "This change cannot be made to it"),
-    ("bulk-skip.nothing-to-change", "It is like that already"),
-    ("bulk-skip.relation-exists", "The relation is there already"),
-    (
-        "bulk-skip.same-issue",
-        "An issue cannot be related to itself",
-    ),
-    (
-        "bulk-skip.tag-not-here",
-        "It has a tag that is not for the other project",
-    ),
-    (
-        "bulk-skip.type-missing",
-        "The other project does not offer its issue type",
-    ),
-    ("bulk-status.done", "Done"),
-    ("bulk-status.failed", "Stopped"),
-    ("bulk-status.queued", "Waiting"),
-    ("bulk-status.running", "Working"),
-    ("bulk-status.stopped", "Stopped on request"),
-    ("bulk.action-change", "Change status or priority"),
-    ("bulk.action-delete", "Delete"),
-    ("bulk.action-label", "Add a label"),
-    ("bulk.action-move", "Move to a project"),
-    ("bulk.action-relation", "Add a relation"),
-    (
-        "bulk.apply",
-        "{count, plural, one {Change # issue} other {Change # issues}}",
-    ),
-    (
-        "bulk.apply-delete",
-        "{count, plural, one {Delete # issue} other {Delete # issues}}",
-    ),
-    (
-        "bulk.background-note",
-        "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
-    ),
-    ("bulk.bar", "Change the issues you ticked"),
-    (
-        "bulk.delete-text",
-        "The issues go to the trash. You can undo this for a short while.",
-    ),
-    (
-        "bulk.dialog-text",
-        "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
-    ),
-    ("bulk.field-label", "Label"),
-    ("bulk.issue-unknown", "an issue you cannot see"),
-    ("bulk.keep", "Leave as it is"),
-    ("bulk.line-changes", "{field}: {after}"),
-    ("bulk.line-delete", "Is deleted"),
-    ("bulk.line-relation", "This issue · {name} · {issue}"),
-    ("bulk.progress", "{done} of {total} issues done"),
-    ("bulk.progress-label", "How far the change is"),
-    ("bulk.project-legend", "Move to"),
-    ("bulk.project-list", "Projects to move the issues to"),
-    ("bulk.project-more", "Show more projects"),
-    ("bulk.project-nothing", "No project has that name."),
-    ("bulk.project-picked", "Move to {name}"),
-    ("bulk.project-search", "Search projects"),
-    (
-        "bulk.result-done",
-        "{changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
-    ),
-    ("bulk.show-changes", "Show what changes"),
-    ("bulk.skipped-line", "{issue}: {reason}"),
-    ("bulk.skipped-list", "Issues that were skipped"),
-    (
-        "bulk.stopped",
-        "The change stopped. Some issues are changed and the rest are not.",
-    ),
-    (
-        "bulk.title",
-        "{action}: {count, plural, one {# issue} other {# issues}}",
-    ),
     ("check-access.all-fields", "All fields"),
     ("check-access.all-kinds", "All kinds of people information"),
     ("check-access.all-other-fields", "All other fields"),
@@ -9484,6 +9416,120 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    (
+        "many-changes-skip.changed-since",
+        "It changed after the preview",
+    ),
+    (
+        "many-changes-skip.field-missing",
+        "It has a value in a field the other project does not use",
+    ),
+    (
+        "many-changes-skip.field-rule",
+        "A value of the issue breaks the rule of its field",
+    ),
+    (
+        "many-changes-skip.limit-reached",
+        "It already has as many of these as it can hold",
+    ),
+    (
+        "many-changes-skip.not-allowed",
+        "You may not change it this way",
+    ),
+    (
+        "many-changes-skip.not-found",
+        "It was deleted, or you can no longer see it",
+    ),
+    (
+        "many-changes-skip.not-valid",
+        "This change cannot be made to it",
+    ),
+    (
+        "many-changes-skip.nothing-to-change",
+        "It is like that already",
+    ),
+    (
+        "many-changes-skip.relation-exists",
+        "The relation is there already",
+    ),
+    (
+        "many-changes-skip.same-issue",
+        "An issue cannot be related to itself",
+    ),
+    (
+        "many-changes-skip.tag-not-here",
+        "It has a tag that is not for the other project",
+    ),
+    (
+        "many-changes-skip.type-missing",
+        "The other project does not offer its issue type",
+    ),
+    ("many-changes-status.done", "Done"),
+    ("many-changes-status.failed", "Stopped"),
+    ("many-changes-status.queued", "Waiting"),
+    ("many-changes-status.running", "Working"),
+    ("many-changes-status.stopped", "Stopped on request"),
+    ("many-changes.action-change", "Change status or priority"),
+    ("many-changes.action-delete", "Delete"),
+    ("many-changes.action-label", "Add a label"),
+    ("many-changes.action-move", "Move to a project"),
+    ("many-changes.action-relation", "Add a relation"),
+    (
+        "many-changes.apply",
+        "{count, plural, one {Change # issue} other {Change # issues}}",
+    ),
+    (
+        "many-changes.apply-delete",
+        "{count, plural, one {Delete # issue} other {Delete # issues}}",
+    ),
+    (
+        "many-changes.background-note",
+        "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
+    ),
+    ("many-changes.bar", "Change the issues you ticked"),
+    (
+        "many-changes.delete-text",
+        "The issues go to the trash. You can undo this for a short while.",
+    ),
+    (
+        "many-changes.dialog-text",
+        "Check what changes first. An issue that changed since you looked is skipped, not overwritten.",
+    ),
+    ("many-changes.field-label", "Label"),
+    ("many-changes.issue-unknown", "an issue you cannot see"),
+    ("many-changes.keep", "Leave as it is"),
+    ("many-changes.line-changes", "{field}: {after}"),
+    ("many-changes.line-delete", "Is deleted"),
+    (
+        "many-changes.line-relation",
+        "This issue · {name} · {issue}",
+    ),
+    ("many-changes.progress", "{done} of {total} issues done"),
+    ("many-changes.progress-label", "How far the change is"),
+    ("many-changes.project-legend", "Move to"),
+    (
+        "many-changes.project-list",
+        "Projects to move the issues to",
+    ),
+    ("many-changes.project-more", "Show more projects"),
+    ("many-changes.project-nothing", "No project has that name."),
+    ("many-changes.project-picked", "Move to {name}"),
+    ("many-changes.project-search", "Search projects"),
+    (
+        "many-changes.result-done",
+        "{changed, plural, =0 {No issue was} one {# issue was} other {# issues were}} changed{skipped, plural, =0 {} one {, # was skipped} other {, # were skipped}}.",
+    ),
+    ("many-changes.show-changes", "Show what changes"),
+    ("many-changes.skipped-line", "{issue}: {reason}"),
+    ("many-changes.skipped-list", "Issues that were skipped"),
+    (
+        "many-changes.stopped",
+        "The change stopped. Some issues are changed and the rest are not.",
+    ),
+    (
+        "many-changes.title",
+        "{action}: {count, plural, one {# issue} other {# issues}}",
+    ),
     ("markdown.bold", "Bold"),
     ("markdown.code", "Code"),
     ("markdown.italic", "Italic"),

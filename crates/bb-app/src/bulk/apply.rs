@@ -190,7 +190,7 @@ pub async fn apply_bulk<S: AuthStore>(
     let payload = step_payload(run.id);
     let event = ctx.event(
         by(actor.person.id),
-        entity(RecordKind::BulkRun, run.id),
+        entity(RecordKind::ChangeRun, run.id),
         vec![
             set_to("action", json!(input.action.word())),
             set_to("issues", json!(run.items.len())),

@@ -90,6 +90,6 @@ export function targetsOf(preview: BulkPreview): { issue: string; version: numbe
 
 /** Why an issue is left alone, in words. */
 export function skipText(reason: Schema<"SkipReason">): string {
-  const key = `bulk-skip.${reason}`;
+  const key = `many-changes-skip.${reason}`;
   return isMessageKey(key) ? t(key) : reason;
 }

@@ -4,7 +4,10 @@
 //! new one, the way migration 13 did for a kind of job:
 //!
 //! - the permissions to create (`make-issues`, `make-projects`, `make-sub-projects`) in the rows of
-//!   roles and of access keys.
+//!   roles and of access keys;
+//! - the kind of record of a run of a change to many issues in the events (`bulk_run` is
+//!   `change_run`), which the outbox points to, so it needs no rewrite of its own;
+//! - the kind of job that goes on with such a run (`bulk.step` is `many-changes.step`).
 //!
 //! Every step is an update of a value that names something, so running the steps again changes
 //! nothing.
@@ -12,7 +15,7 @@
 use sea_query::{Expr, ExprTrait as _, Query};
 
 use super::Step;
-use crate::schema::{AccessKeyPermissionRow, RolePermissionRow};
+use crate::schema::{AccessKeyPermissionRow, Event, Job, RolePermissionRow};
 
 /// The permissions whose word changed, old and new.
 const PERMISSIONS: [(&str, &str); 3] = [
@@ -22,26 +25,53 @@ const PERMISSIONS: [(&str, &str); 3] = [
 ];
 
 pub(super) fn steps() -> Vec<Step> {
-    permission_words()
+    let mut steps = permission_words();
+    steps.push(rename_value(
+        Event::Table,
+        Event::EntityKind,
+        "bulk_run",
+        "change_run",
+    ));
+    steps.push(rename_value(
+        Job::Table,
+        Job::Kind,
+        "bulk.step",
+        "many-changes.step",
+    ));
+    steps
+}
+
+/// Writes `new` where `column` of `table` holds `old`.
+fn rename_value(
+    table: impl sea_query::Iden + 'static,
+    column: impl sea_query::Iden + Copy + 'static,
+    old: &str,
+    new: &str,
+) -> Step {
+    Step::Update(
+        Query::update()
+            .table(table)
+            .value(column, new)
+            .and_where(Expr::col(column).eq(old))
+            .to_owned(),
+    )
 }
 
 /// The permission words in the rows of roles and of access keys.
 fn permission_words() -> Vec<Step> {
     let mut steps = Vec::new();
     for (old, new) in PERMISSIONS {
-        steps.push(Step::Update(
-            Query::update()
-                .table(RolePermissionRow::Table)
-                .value(RolePermissionRow::Permission, new)
-                .and_where(Expr::col(RolePermissionRow::Permission).eq(old))
-                .to_owned(),
+        steps.push(rename_value(
+            RolePermissionRow::Table,
+            RolePermissionRow::Permission,
+            old,
+            new,
         ));
-        steps.push(Step::Update(
-            Query::update()
-                .table(AccessKeyPermissionRow::Table)
-                .value(AccessKeyPermissionRow::Permission, new)
-                .and_where(Expr::col(AccessKeyPermissionRow::Permission).eq(old))
-                .to_owned(),
+        steps.push(rename_value(
+            AccessKeyPermissionRow::Table,
+            AccessKeyPermissionRow::Permission,
+            old,
+            new,
         ));
     }
     steps
@@ -49,13 +79,18 @@ fn permission_words() -> Vec<Step> {
 
 #[cfg(test)]
 mod tests {
+    use bb_core::event::EntityKind;
+    use bb_core::id::JobId;
+    use bb_core::technical::TechnicalName;
     use bb_testing::{Failure, TestDatabase, TestResult, each_database};
     use sea_query::{Expr, Order, Query};
+    use serde_json::Value;
 
     use super::*;
     use crate::db::Database;
+    use crate::jobs::NewJob;
     use crate::schema::{AccessKeyRow, PersonRow, RoleRow};
-    use crate::test_support::at;
+    use crate::test_support::{at, event, ids};
 
     /// The database as M3 left it: migrations 1 to 13 applied, nothing newer.
     async fn m3_database(db: &TestDatabase) -> Result<Database, Failure> {
@@ -88,6 +123,69 @@ mod tests {
         rows.iter()
             .map(|row| row.get::<String>(column).map_err(Into::into))
             .collect()
+    }
+
+    #[tokio::test]
+    async fn adr_0008_an_event_of_a_run_of_a_change_to_many_issues_has_the_new_kind() -> TestResult
+    {
+        each_database("m0014_change_run_kind", async |db| {
+            let database = m3_database(db).await?;
+            let mut source = ids();
+            for (seconds, kind) in [(1, "bulk_run"), (2, "issue")] {
+                let mut event = event(&mut source, seconds);
+                event.entity.kind = EntityKind::new(kind)?;
+                database
+                    .record_change(&event, async |_transaction| Ok(()))
+                    .await?;
+            }
+            assert_eq!(database.migrate(at(1)).await?, [14]);
+            for _ in 0..2 {
+                let mut select = Query::select();
+                select
+                    .column(Event::EntityKind)
+                    .from(Event::Table)
+                    .order_by(Event::EntityKind, Order::Asc);
+                let kinds: Vec<String> = database
+                    .fetch_all(&select)
+                    .await?
+                    .iter()
+                    .map(|row| row.get::<String>(Event::EntityKind))
+                    .collect::<Result<_, _>>()?;
+                assert_eq!(kinds, ["change_run", "issue"]);
+                run_updates_again(&database).await?;
+            }
+            assert!(database.migrate(at(2)).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0017_a_job_that_goes_on_with_a_run_waits_under_the_new_kind() -> TestResult {
+        each_database("m0014_many_changes_job_kind", async |db| {
+            let database = m3_database(db).await?;
+            let mut source = ids();
+            let job = NewJob {
+                kind: TechnicalName::new("bulk.step")?,
+                payload: Value::Null,
+                run_at: at(0),
+                max_attempts: 5,
+            };
+            database
+                .enqueue_job(JobId::generate(&mut source)?, &job, at(0))
+                .await?;
+            assert_eq!(database.migrate(at(1)).await?, [14]);
+            run_updates_again(&database).await?;
+            let worker = TechnicalName::new("worker.one")?;
+            let taken = database
+                .lease_jobs(&worker, at(2), jiff::SignedDuration::from_secs(60), 5)
+                .await?;
+            assert_eq!(taken.len(), 1);
+            assert_eq!(taken[0].kind.as_str(), "many-changes.step");
+            assert!(database.migrate(at(3)).await?.is_empty());
+            Ok(())
+        })
+        .await
     }
 
     #[tokio::test]
