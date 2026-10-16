@@ -26,7 +26,9 @@
                 "package": "openapi-fetch",
                 "name": ["MiddlewareCallbackParams"]
               },
-              { "from": "package", "package": "playwright-core", "name": ["APIRequestContext"] }
+              { "from": "package", "package": "playwright-core", "name": ["APIRequestContext"] },
+              // The cookies of one session: a jar is filled by the answers it is handed to.
+              { "from": "file", "name": ["CookieJar"] }
             ]
           }
         ]
@@ -68,8 +70,9 @@
       }
     },
     {
-      // Vite, Vitest, Playwright, stylelint and html-validate read the default export of their config.
-      "files": ["**/*.config.ts", "**/*.config.mjs"],
+      // Vite, Vitest, Playwright, stylelint and html-validate read the default export of their config;
+      // Playwright reads the default export of a reporter the same way.
+      "files": ["**/*.config.ts", "**/*.config.mjs", "web/tooling/connection-guard.ts"],
       "rules": { "import/no-default-export": "off" }
     }
   ],
@@ -104,8 +107,18 @@
               "PlaywrightWorkerArgs",
               "PlaywrightWorkerOptions",
               "TestInfo",
-              "WorkerInfo"
+              "WorkerInfo",
+              // The reporter of the connection guard is handed these by Playwright.
+              "TestCase",
+              "TestResult"
             ]
+          },
+          // The answer of a server to the wait for its start (`ready.ts`) and the answer of the fake
+          // server of its test are Node's own objects.
+          {
+            "from": "package",
+            "package": "@types/node",
+            "name": ["IncomingMessage", "ServerResponse"]
           },
           {
             "from": "package",
