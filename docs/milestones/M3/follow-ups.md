@@ -1,6 +1,6 @@
 # M3 follow-ups
 
-Points found while building M3 that were accepted for later. Each names where it will be done. The IDs (`M3-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F30 and up, WP-05 F40 and up, WP-06 F50 and up, WP-07 F60 and up, WP-08 F120 and up (F70 to F79 were taken by WP-07), WP-09 F100 and up, WP-10 F90 and up, WP-11 F110 and up, WP-12 F130 and up, WP-13 F140 and up, WP-14 F150 and up.
+Points found while building M3 that were accepted for later. Each names where it will be done. The IDs (`M3-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F30 and up, WP-05 F40 and up, WP-06 F50 and up, WP-07 F60 and up, WP-08 F120 and up (F70 to F79 were taken by WP-07), WP-09 F100 and up, WP-10 F90 and up, WP-11 F110 and up, WP-12 F130 and up, WP-13 F140 and up, WP-14 F150 and up, WP-16 F160 and up, WP-17 F171 and up.
 
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
@@ -110,3 +110,33 @@ Points found while building M3 that were accepted for later. Each names where it
 | M3-F153 | Size and structure of files and functions: `bb-api/src/api/tags.rs` (about 1,100 lines; the plan had `labels.rs`), `api/editing.rs`, `api/fields.rs`, the relation kinds out of `api/relations.rs`, `bb-app/src/fields/values.rs` (reading apart from planning), `history/read.rs`, `bb-store/src/tags.rs`. Flags that select behaviour become enums: `plan_values(creating)`, `reference_may_be_named(access)` in `fields/values.rs`, `table(kind, in_project, typed)` in `bb-store/src/policy/levels.rs`. Store ports that take a value for each column take a domain type: `bb-store/src/tags.rs`, `relations.rs`, `issues.rs` (`update_issue` and `insert_issue`) | A split moves code and its tests without a change of behaviour and is best made in one package of its own, when the files are not being changed by others | M4, before the API freeze |
 | M3-F154 | Not every conflict answer lists the fields that changed: for a tag the answer names the version but no field or value (a tag name may come from a project the reader cannot see), and for a layout it names no sections | What a reader may be told about a tag or a layout is a decision of the security review, and the version is what *Use mine* needs | M4 (with the security review of tags and layouts) |
 | M3-F155 | The loop of `bb-jobs` has no test of its own (`run_due_jobs` is tested in `bb-app` and through the server); the test clock `1_800_000_000` is still typed in the tests of `bb-core` (they cannot see `bb-dev-words`); `LoadDatabase` in `web/tooling/load/options.ts` repeats the words of `DatabaseKind`; the crowd of ten in `e2e/support/crowd.ts` and the 50 people of `sample.spec.ts` are typed where the code has them | Each is a line of a test or a tool, and a new dependency or a new generated list for each would cost more than it saves now | M4 (with the next change of those files) |
+| M3-F160 | The new-issue form had no window and the window no browser test | No screen used the window in WP-16 | Done in WP-17 (`windowForms.newIssue`, `window.spec.ts`) |
+| M3-F161 | The list, the issue page and the sub-issue rows did not use the parts of WP-16 | WP-16 built the parts, WP-17 the screens | Done in WP-17 |
+| M3-F162 | Quick search keeps its width of 560 (`size-palette`); it is a dialog, not a window | A palette is not a form people resize | Done in WP-17 (checked in the screenshots) |
+| M3-F163 | The timeline bar part is only a base (tint and edge); its place and dragging are not built | The timeline comes with M7 | M7 |
+| M3-F164 | The mockup showed the old look | Done in WP-17 (`parts.css`) | Done in WP-17 |
+| M3-F165 | `fg-subtle` on tinted rows | Done in the WP-16 fix round (Midnight `fg-subtle` reaches 4.5 on every tint) | Done in WP-16 |
+| M3-F166 | The run-time allowance of THEME-ONLY and the list of types in `.oxlintrc.json` | Done in the WP-16 fix round (`RunTimeVariable` from tokens marked `run-time`; `HTMLElement` out of the list) | Done in WP-16 |
+| M3-F167 | The pictures of the UX design in four themes | Done in WP-17 (served over http) | Done in WP-17 |
+| M3-F168 | A way to change a window's size with one pointer (WCAG 2.5.7) | Done in WP-17: the *Window size* button (Wider, Narrower, Taller, Shorter) | Done in WP-17 |
+| M3-F169 | Browser tests for `useWindow` and `useWindowResize` | Done in WP-17 (`window.spec.ts`) | Done in WP-17 |
+| M3-F170 | `keyboardStep` (24 px) is a constant in TypeScript, not a token | The generator exports only breakpoints as numbers; a new kind of exported token is needed | The next package that exports token numbers to TypeScript |
+| M3-F171 | The issue list has no *Labels* column: an issue in a list carries no labels | The list answer must name the labels the reader may see | M5 (search and lists) |
+| M3-F172 | Ctrl+Alt+arrows to resize a window can clash with screen-reader keys (NVDA, JAWS, VoiceOver) | The *Window size* button is a way without these keys; a change needs tests with screen readers | M4: a resize mode from the title bar, or other keys, after a test with NVDA, JAWS and VoiceOver |
+| M3-F173 | Sub-issue and related rows have no priority edge: `IssueRef` has no priority | A change of the API answer | M4 |
+| M3-F174 | Own fields as name-and-value rows | Done in WP-17 | Done in WP-17 |
+| M3-F175 | The big status button lists status names, not changes in words such as *Start working* | Needs the workflow | M4 (WF-04) |
+| M3-F176 | After a refused save, the reason (who took over) is learned by one extra heartbeat | The server could answer `edit.taken_over` itself (see M3-F180) | M4 |
+| M3-F177 | The count line, filters, *Group by* and *Spacing* above the issue list (UX §4.2) are not built | They belong to search and saved filters | M5 |
+| M3-F178 | The Timer on the phone's Details row and bottom bar (UX §3.3) | Time entries come with M6 | M6 |
+| M3-F179 | *Labels and tags* in Details are still blocks, not name-and-value rows (*Followers* is a row since WP-17) | Adding a tag or a label in a row needs its own design | M4 |
+| M3-F180 | A refused save of a long text should answer `edit.taken_over` with who took over (`why_lost` inside `save_text`), so the browser needs no extra heartbeat | A change of the server answer and its tests | M4 |
+| M3-F181 | Same as M3-F175 | — | M4 (WF-04) |
+| M3-F182 | `aria-current` on the slim list's link and a name for the tick box | Done in WP-17 | Done in WP-17 |
+| M3-F183 | Widths in the browser tests read from the theme's tokens | Done in WP-17 (`support/tokens.ts`) | Done in WP-17 |
+| M3-F184 | On a phone, the Details button shows the priority word without its icon and a bare word when nobody is assigned; "Add Assigned to" reads badly | Wording and a summary part | M4 |
+| M3-F185 | A new issue's history lists empty values set at creation ("set Assigned to: nobody") | Which values a first entry shows is a decision of the history | M4 |
+| M3-F186 | The window footer has its note above the buttons; UX §4.5 says below | The concept and the code must agree on one place | M4 (the lead brings UX §4.5 and the code into line) |
+| M3-F187 | A label is hidden in three ways (`SelectField hideLabel`, `Checkbox hideLabel`, a theme rule) | One way is a change across several parts | M4 |
+| M3-F188 | Every own field has its own `<dl>`; the rows belong in the panel's one list. `SaveForm.tsx` uses an unnamed `<section>` | Markup only | M4 |
+| M3-F189 | Sub-issues always shows the whole add form; the concept says "Sub-issues (0) · None yet · Add sub-issue". Also *Stop following* is not hung back in its row, and the gap under *Project* in the new-issue form is a little large | Small visible points left after the WP-17 review | M4 |
