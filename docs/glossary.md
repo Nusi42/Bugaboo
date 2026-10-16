@@ -171,7 +171,7 @@ Rules:
 | **See as …**             | Look at Bugaboo as another person or role sees it                  | impersonate, preview as            |
 | **Agent**                | An account that works on its own and is not a person: an AI app or a script. It has one responsible person and can do at most what that person can. Shown as *"Fixer, agent of Ada Brandt"* | bot, bot account, service account, AI worker (in UI) |
 | **Agent key**            | The access key an agent signs in with; it belongs to the agent and always runs out | bot token, service token (in UI) |
-| **Make agents that work for you** | The permission to make agents of your own                 | — |
+| **Create agents that work for you** | The permission to create agents of your own                 | — |
 | **Agents of the organization** (later) | Agents whose responsible party is the organization, with a role; webhooks and imports run as one | system bot (in UI) |
 | **Access key**           | A secret for scripts and apps to sign in as you. It can do at most what you can, and it always runs out | personal access token, PAT |
 | **See only / See and change / Everything I can do** | The three choices of what an access key may do; single permissions sit under *More options* | read-only, read-write, full access (in UI) |
