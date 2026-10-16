@@ -101,7 +101,7 @@ export class EditLockSession {
     this.current += 1;
     const asked = this.current;
     this.asking = true;
-    this.letGo();
+    void this.release();
     try {
       if (this.releasing > 0) {
         await this.queue;
@@ -228,19 +228,26 @@ export class EditLockSession {
   };
 
   /**
-   * Why a save was refused for the lock's sake, as the server knows it. A refused save only says
-   * that the lock is gone (`edit.lock_lost`); when somebody used *Edit anyway* and has already
-   * saved, the lock is let go and nothing is left on the server to tell the two apart but the note
-   * that was left for this person. One heartbeat asks for it: the server answers *taken over, by
-   * whom* where the person did not simply run out of time. A failed ask leaves the reason as it was.
+   * Why a save was refused for the lock's sake: one heartbeat asks whether somebody took over. The
+   * lock is given up first (beats stop, an ask on its way is overtaken and its lock let go).
    */
   readonly explain = async (reason: LostReason): Promise<{ reason: LostReason; by?: Who }> => {
-    const token = this.held;
-    if (reason !== "ran-out" || token === undefined) {
+    if (reason !== "ran-out") {
       return { reason };
     }
+    this.current += 1;
+    this.asking = false;
+    const token = this.held;
+    this.forget();
     try {
+      if (token === undefined) {
+        return { reason };
+      }
       const answer = await this.deps.heartbeat(token);
+      const from = answer.notices.find((notice) => notice.kind === "finish_asked")?.from;
+      if (from !== undefined) {
+        this.options.onAsked?.(from);
+      }
       return answer.lock.status === "taken_over"
         ? { reason: "taken-over", by: answer.lock.by }
         : { reason };
@@ -270,10 +277,6 @@ export class EditLockSession {
     this.sweep();
     return done;
   };
-
-  private letGo(): void {
-    void this.release();
-  }
 
   /** Puts a release in the queue: one after another, and never a failure out of it. */
   private send(token: string): void {

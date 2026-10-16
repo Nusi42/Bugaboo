@@ -160,6 +160,10 @@ export class LongTextEditor extends WatchingEditor {
       return;
     }
     const found = await this.lock.explain(reason);
+    // Something else has already told the person why while the server was asked: that stands.
+    if (this.state.phase.kind === "lost") {
+      return;
+    }
     void this.lock.refused(found.reason);
     const by = found.by ?? conflictOf(error)?.changed_by;
     this.set({
