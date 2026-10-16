@@ -159,10 +159,15 @@ export class LongTextEditor extends WatchingEditor {
       this.set({ phase: { kind: "locked" }, problem: error });
       return;
     }
-    void this.lock.refused(reason);
-    const by = conflictOf(error)?.changed_by;
+    const found = await this.lock.explain(reason);
+    void this.lock.refused(found.reason);
+    const by = found.by ?? conflictOf(error)?.changed_by;
     this.set({
-      phase: { kind: "lost", reason, ...(by === null || by === undefined ? {} : { by }) },
+      phase: {
+        kind: "lost",
+        reason: found.reason,
+        ...(by === null || by === undefined ? {} : { by }),
+      },
       problem: null,
     });
     // Whatever the reason, the newer text and version are what Compare and save works with.

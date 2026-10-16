@@ -33,6 +33,23 @@ describe("iss_17 every refusal that keeps a draft has a reason", () => {
   });
 });
 
+describe("iss_17 a refused save tells why the lock is gone", () => {
+  it("says who took over when the server says so after a save was refused for a lost lock (M3 review)", async () => {
+    // Ben used *Edit anyway* and saved: the lock is gone, and only the note for this person is left.
+    const tookOver = { ...stillHeld, lock: { status: "taken_over", by: ben } } as const;
+    const w = world({
+      save: () => Promise.reject(refusal("edit.lock_lost")),
+      heartbeat: () => Promise.resolve(tookOver),
+    });
+    w.editor.open();
+    w.editor.type("My words");
+    await settle();
+    await w.editor.save();
+    expect(w.editor.snapshot().phase).toEqual({ kind: "lost", reason: "taken-over", by: ben });
+    expect(w.editor.snapshot().text).toBe("My words");
+  });
+});
+
 describe("iss_17 nothing is lost when the save is refused", () => {
   it("says the editing time ran out and keeps the text", async () => {
     const w = await refusedWith("edit.lock_lost");

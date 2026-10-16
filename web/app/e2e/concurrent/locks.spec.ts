@@ -87,6 +87,9 @@ test("iss_17_three_people_edit_one_description_and_the_first_text_is_kept", asyn
   // Ben's time is over, but his text is still in his box, and he keeps it by comparing.
   await saveButton(holder).click();
   await expect(lostNote(holder)).toBeVisible();
+  // After Edit anyway the note says who took over, not that Ben's time ran out (M3 review).
+  await expect(holder.getByText(t("editing.lost-taken-over", { name: ada.name }))).toBeVisible();
+  await expect(holder.getByText(t("editing.lost-ran-out"))).toHaveCount(0);
   await expect(descriptionBox(holder)).toHaveValue("Ben's text, written first");
   // The server has Ben's text too: it is his draft, whatever happens to his page.
   await expect

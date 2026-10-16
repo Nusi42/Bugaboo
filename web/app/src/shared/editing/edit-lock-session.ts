@@ -228,6 +228,28 @@ export class EditLockSession {
   };
 
   /**
+   * Why a save was refused for the lock's sake, as the server knows it. A refused save only says
+   * that the lock is gone (`edit.lock_lost`); when somebody used *Edit anyway* and has already
+   * saved, the lock is let go and nothing is left on the server to tell the two apart but the note
+   * that was left for this person. One heartbeat asks for it: the server answers *taken over, by
+   * whom* where the person did not simply run out of time. A failed ask leaves the reason as it was.
+   */
+  readonly explain = async (reason: LostReason): Promise<{ reason: LostReason; by?: Who }> => {
+    const token = this.held;
+    if (reason !== "ran-out" || token === undefined) {
+      return { reason };
+    }
+    try {
+      const answer = await this.deps.heartbeat(token);
+      return answer.lock.status === "taken_over"
+        ? { reason: "taken-over", by: answer.lock.by }
+        : { reason };
+    } catch {
+      return { reason };
+    }
+  };
+
+  /**
    * A save was refused for the lock's sake. A text that changed meanwhile leaves the lock the
    * person's, but nothing renews it: it is let go, so others do not read *… is editing* for a
    * minute about a person who has stopped. A lock that ran out or was taken over is not theirs.
