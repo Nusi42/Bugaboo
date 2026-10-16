@@ -108,8 +108,10 @@ export function copySampleInto(folder: string): void {
 export function sampleStartMs(): number {
   requireSample();
   const marker: unknown = JSON.parse(readFileSync(join(sampleFolder(), layout.markerFile), "utf8"));
-  const start =
-    typeof marker === "object" && marker !== null && "start" in marker ? marker.start : undefined;
+  const start: unknown =
+    typeof marker === "object" && marker !== null
+      ? Reflect.get(marker, layout.markerStartKey)
+      : undefined;
   if (typeof start !== "number") {
     throw new TypeError(`${layout.markerFile} of the sample has no start moment.`);
   }

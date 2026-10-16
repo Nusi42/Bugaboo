@@ -44,6 +44,10 @@ pub struct Layout {
     pub dump_file: String,
     /// The file that marks a folder as made by this tool.
     pub marker_file: String,
+    /// The key in the marker file that holds the seed.
+    pub marker_seed_key: String,
+    /// The key in the marker file that holds the moment the sample was made (seconds since 1970).
+    pub marker_start_key: String,
     /// The environment variable that holds the address of the empty PostgreSQL database of the
     /// program (an address with a password does not belong on a command line, M1-F62).
     pub database_url_variable: String,
