@@ -1212,6 +1212,8 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>ARCH-PERSON-REF</code></td><td>People are only shown through PersonRef, resolved for the viewer (names, role only or Someone)</td><td>ADR-0022, PRIV-12</td><td>xtask (reads the code of bb-api and bb-app, and the generated API description: no name or address outside PersonRef; exemptions with a reason in person-ref-exemptions.toml)</td><td>edit · commit · ci</td></tr>
 <tr><td><code>ARCH-NO-COUNTERS</code></td><td>No public identifier or label counts up (IDs, former-user labels); no totals that include hidden items</td><td>ADR-0021, PRIV-13</td><td>xtask (finds counting columns, sequences and count-plus-one numbers in product code, and count properties in the answers of the generated API description, unless tools/checks/counter-exemptions.toml names them with a reason)</td><td>commit · ci</td></tr>
 <tr><td><code>TEST-ISSUE-IDS</code></td><td>Counting and random IDs: unique, readable alphabet, old IDs redirect after moves and mode changes</td><td>ADR-0021</td><td>xtask (the unit, property and two-database tests of the rules about issue IDs exist by name; the two-database ones run through each_database)</td><td>ci</td></tr>
+<tr><td><code>TEST-WORKFLOWS</code></td><td>Every rule of a status change (Who can do it, Only if, Must be filled in, Ask for) is decided by one judge and tested on both databases</td><td>ADR-0031</td><td>xtask (the unit, property and two-database tests of the workflow rules exist by name; the two-database ones run through each_database)</td><td>ci</td></tr>
+<tr><td><code>TEST-UPLOADS</code></td><td>Uploads are checked from their content and limited; downloads re-check access; previews never take the server down</td><td>ADR-0032</td><td>xtask (the upload security tests exist by name: wrong type, SVG, HTML, too large, a decompression bomb, a broken PDF, a link after access ended)</td><td>ci</td></tr>
 <tr><td><code>SEC-SECRETS</code></td><td>No keys, tokens or passwords committed</td><td>SEC-16</td><td>gitleaks</td><td>commit · ci</td></tr>
 <tr><td><code>SEC-PRIVATE</code></td><td>Nothing private about the owner in Git: no profile paths with an account name, no session IDs or links, no links to published pages, no account or computer names</td><td>coding-standards §2</td><td>xtask (every file, name and text, the examples of other checks too; commit-msg hook: `check commit-msg &lt;file&gt;`; push and CI: also the messages of every branch, tag and HEAD, annotated tag messages, ref names, and what the commits not on a remote add; reads the optional list ~/.config/bugaboo/private-words.txt; exemptions in tools/checks/private-exemptions.toml)</td><td>commit · push · ci</td></tr>
 <tr><td><code>SEC-RICHTEXT</code></td><td>Text written by people is rendered only by bb-markdown: no second Markdown or HTML library, HTML is set from a string in one file only and only SafeHtml reaches it, the corpus tests exist, and the CSP allows exactly the one policy, whose name is written once</td><td>coding-standards §4, ADR-0011, SEC-13</td><td>xtask (reads Cargo manifests and the browser code) + the corpus tests `sec_13_the_sanitizer_corpus_renders_every_attack_as_text` and `sec_13_server_and_browser_render_the_same_html`</td><td>edit · commit · ci</td></tr>
@@ -1251,7 +1253,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <tr><td><code>META-SUPPRESS</code></td><td>Every suppression (allow, expect, eslint/oxlint/stylelint-disable, @ts-ignore, ast-grep ignore, the allow marker of the secret scan, accepted advisories) has a reason that names an issue or a doc section; the total is compared with tools/checks/suppressions.txt and may only change together with that file</td><td>architecture §10</td><td>xtask (counts and compares with tools/checks/suppressions.txt)</td><td>commit · ci</td></tr>
 <tr><td><code>META-SPEED</code></td><td>Checks stay fast: every edit-time check under 3 s on one file and all commit-time checks under 10 s on a sample of files on a quiet PC; on a busy PC the budgets grow with a reference workload timed alongside, and the best of 3 attempts counts</td><td>architecture §10</td><td>xtask (times the checks itself)</td><td>ci</td></tr>
 </tbody></table></div>
-<p>84 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
+<p>86 checks, generated from <code>tools/checks/catalog.toml</code>.</p>
 
 <!-- 11-testing.md -->
 <h2 id="s11"><button class="sec" data-sec>§11</button>Testing, sample data and local ports</h2>
@@ -2801,6 +2803,219 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <h4>Enforced by</h4>
 <p>ARCH-PERSON-REF (people on bars come as <code>PersonRef</code>), SEC-MATRIX (rows for away times), the tests named above (M7), and review against PRIV-09 and COMP-10.</p>
 <!-- COMP-10 checked: nothing ranks, evaluates or picks people; no factor is kept per person; Bugaboo never suggests whom to give an issue. -->
+
+<!-- 0031-workflows.md -->
+<h3 id="adr-0031"><button class="sec" data-sec>§13.31</button>ADR-0031: Workflows: statuses as data, one judge for a status change</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-16 · refines WF-01…WF-06 and <a href="#adr-0027">ADR-0027</a> decision 5; owner's answers M4-Q1, M4-Q2</p>
+<h4>Context</h4>
+<p>Until M4 every issue type uses the starting workflow, a fixed enum in <code>bb-core</code> (<code>Status</code>: <code>open</code>, <code>in-progress</code>, <code>done</code>) in which any status may follow any other. The browser knows the same three words from the generated client. M4 lets an organization and its projects make their own workflows (WF-01), with rules on each status change (WF-03, WF-04), an editor (WF-02) and starter workflows (WF-06). ADR-0027 promised that this happens without a migration of stored issues.</p>
+<h4>Decision</h4>
+<h5>1. A workflow is data</h5>
+<ul>
+<li>A <strong>workflow</strong> has statuses and status changes.
+<ul>
+<li><strong>Status:</strong> a name, a status group, a position and a stored key.</li>
+<li><strong>Status change:</strong> a from-status, a to-status, the button text in words (<em>Start working</em>), and its rules.</li>
+</ul>
+</li>
+<li>Workflows live in their own tables (migration of M4 WP-04). The key of a status is stable: renaming a status changes its name, never its key, so stored issues and history keep working.</li>
+<li>The three statuses of the starting workflow keep their keys <code>open</code>, <code>in-progress</code> and <code>done</code>. The starting workflow becomes the organization's <em>Simple</em> workflow, so no stored issue changes. Enforced by: a migration test on a database written by M3's code (M4 WP-04).</li>
+<li>The API sends a status as key, name and group. The browser keeps no list of statuses; it shows what the API sends. Enforced by: TXT-TERMS and review (no <code>statusWords</code> left in the client).</li>
+</ul>
+<h5>2. Which workflow counts</h5>
+<ul>
+<li>A project and an issue type find their workflow like a layout: the nearest place with a row wins (the project, then its parents, then the organization); at one place, a row for the issue type wins over a row for all types (<code>bb_core::lookup::nearest_row</code>, ADR-0027 decision 2). There is no second lookup.</li>
+<li>A project may change the workflow it inherited; its sub-projects inherit the change (M4-Q2).</li>
+</ul>
+<h5>3. One judge for a status change</h5>
+<ul>
+<li>One function in <code>bb-core</code> decides, for an issue, a person and a status change, whether the person may make it now and what it needs. Its answer is one of:
+<ul>
+<li><em>allowed</em>;</li>
+<li><em>needs these fields</em> (<em>Ask for</em>, <em>Must be filled in</em>; enforced by: TEST-WORKFLOWS);</li>
+<li><em>not allowed, because …</em>, with a sentence.</li>
+</ul>
+</li>
+<li>The issue page, the status button, <em>Change many issues</em> and its preview, the workflow editor's <em>Try it</em>, the API and later the assistant, apps and agents all use it. Enforced by: TEST-WORKFLOWS (M4 WP-04) and review (no second place that decides a status change).</li>
+<li>The rules:
+<ul>
+<li><strong>Who can do it:</strong> roles, groups, <em>the person assigned</em>, <em>the person who reported it</em>.</li>
+<li><strong>Only if …:</strong> conditions on fields, in the same words as <em>Must be filled in</em>. Enforced by: TEST-WORKFLOWS.</li>
+<li><strong>Must be filled in:</strong> fields that need a value before the change. Enforced by: TEST-WORKFLOWS.</li>
+<li><strong>Ask for:</strong> fields shown in a small form during the change.</li>
+</ul>
+</li>
+<li>The rules can only narrow what <em>Change issues</em> or <em>Change own issues</em> already allow; they never give a right. A field the person may not see is never asked for: then the change is <em>not allowed</em> with a sentence that names no hidden field. Enforced by: TEST-WORKFLOWS and SEC-MATRIX.</li>
+<li><em>Then automatically …</em> (WF-05) and versions of workflows (WF-07) are V1.</li>
+</ul>
+<h5>4. Changing a workflow</h5>
+<ul>
+<li>The editor works on a draft under the edit lock (ADR-0019). <em>Publish</em> makes it count.</li>
+<li>When a published workflow drops a status that issues still have, <em>Publish</em> asks where those issues go, and moves them as a run of many changes (ADR-0017), with history.</li>
+<li>The permission <em>Manage workflows</em> (organization or project; Admin everywhere, Project lead in their projects) is needed to change a workflow (M4-Q2). An access key may never hold it.</li>
+</ul>
+<h5>5. Starter workflows (M4-Q1)</h5>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Workflow</th><th>Statuses (status group)</th><th>Used by</th></tr></thead><tbody>
+<tr><td><em>Simple</em></td><td>Open (Not started), In progress (In progress), Done (Done)</td><td>Task, Goal, and every issue type that exists at the upgrade</td></tr>
+<tr><td><em>Bug</em></td><td>Open, In progress, Testing (In progress), Done, Won't fix (Done)</td><td>Bug, on a new organization</td></tr>
+<tr><td><em>Development</em></td><td>Open, In progress, In review (In progress), Testing (In progress), Done</td><td>Feature, on a new organization</td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>They are made once, from one definition in <code>bb-core</code>, as editable copies for the organization.</li>
+<li>An organization that ran M3 keeps <em>Simple</em> for every type until someone changes it, so nobody's issues move by themselves.</li>
+<li>The closed date still follows the <em>Done</em> group (ADR-0027 decision 5).</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>Every place that knew the three statuses (the <code>Status</code> enum, <code>closed_after</code>, the DTO enums, <code>statusChoices</code> in the browser) changes to the data and the judge. That is most of M4 WP-04 and WP-07.</li>
+<li><em>Change many issues</em> may now skip issues whose workflow does not allow the change, and its preview says so (UX §4.2).</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>A workflow as a column on the issue type:</strong> simpler, but projects could not change it, and it would be a second lookup next to layouts. Rejected.</li>
+<li><strong>Status IDs as numbers, names only in the browser:</strong> the history and the API would need a join for every word. Rejected; the key is short text, as today.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>TEST-WORKFLOWS (new in M4 WP-04: every rule, on both databases), ARCH-EVENTS (every change of a workflow), ARCH-VERSIONED (the editor saves with a version), SEC-MATRIX (rows for the workflow routes), and review (one judge, no second lookup).</p>
+
+<!-- 0032-files.md -->
+<h3 id="adr-0032"><button class="sec" data-sec>§13.32</button>ADR-0032: Files: stored by content, checked from their content, previews in a separate process</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-16 · refines ATT-01…ATT-04, ATT-07, SEC-13; owner's answers M4-Q3, M4-Q4</p>
+<h4>Context</h4>
+<p>M4 lets people add files to issues and comments (ATT-01). A file is the most dangerous thing a person can give the server. It may claim to be an image and be a script, it may be an SVG or HTML page that runs in the browser, it may be a small file that unpacks to gigabytes, and it may be built to crash the program that reads it. The data folder already has an empty <code>files/</code> folder (architecture §6), and <code>bb-files</code> is an empty crate.</p>
+<h4>Decision</h4>
+<h5>1. Storage</h5>
+<ul>
+<li>A file is stored once, by the SHA-256 of its content, under <code>files/</code> in the data folder, outside any web root (ATT-02). The server never serves that folder directly.</li>
+<li>An <strong>attachment</strong> points to a file and to its issue or comment. It records who added it, its name and its real type.</li>
+<li>A file is deleted when no attachment, document version or keep rule points to it any more. A daily job (ADR-0017) does it. Enforced by: a test of the job on both databases (M4 WP-05).</li>
+<li>A deleted attachment goes to the trash with <em>Undo</em>, like an issue (M4-Q3).</li>
+<li>Storage sits behind a port (<code>FileStore</code> in <code>bb-app</code>), so S3-compatible storage (ATT-06, V1) is a second adapter later. Enforced by: ARCH-DEPS (<code>bb-app</code> never imports <code>bb-files</code>).</li>
+</ul>
+<h5>2. Uploads</h5>
+<ul>
+<li><strong>Parts:</strong> an upload goes in parts. Bugaboo's own small protocol: start an upload (size, name), send parts with their offset, finish. An interrupted upload goes on from the last part the server has. An unfinished upload is deleted after a day. No extra library.</li>
+<li><strong>Body limit:</strong> each upload route sets its own body limit for a part. All other routes keep the 1 MiB limit (M1-F30).</li>
+<li><strong>Size (M4-Q4):</strong> at most 25 MB per file by default. A project may set less, and the organization up to 100 MB. A file over the limit is refused before its parts are stored.</li>
+<li><strong>Type:</strong> the real type is read from the content (<code>infer</code>), never trusted from the name or the browser (ATT-03). All types are accepted. The organization may list types it never accepts (for example <code>.exe</code>).</li>
+<li><strong>Who may add:</strong> a person who may change the issue (Guests on the issues they reported), or a person who may comment, for files on their own comment (M4-Q3).</li>
+<li><strong>Who may delete:</strong> the person who added the file, or a person with <em>Change issues</em>.</li>
+<li>Enforced by: TEST-UPLOADS (new in M4 WP-05) and SEC-MATRIX.</li>
+</ul>
+<h5>3. Downloads</h5>
+<ul>
+<li><strong>Signed links:</strong> a download goes through a signed link, valid for 5 minutes and for one person (ATT-07).</li>
+<li><strong>Checked every time:</strong> every download checks again that the person still sees the issue and the comment, so a link a person passes on, or keeps after losing access, stops working. Enforced by: TEST-UPLOADS and SEC-MATRIX.</li>
+<li><strong>Headers:</strong> every download is sent with <code>Content-Disposition: attachment</code>, <code>X-Content-Type-Options: nosniff</code>, and a content security policy that allows nothing. Enforced by: SEC-HEADERS.</li>
+<li><strong>No HTML or SVG in the page:</strong> SVG, HTML and every other type the browser could run are never shown inside Bugaboo, only downloaded.</li>
+</ul>
+<h5>4. Previews</h5>
+<ul>
+<li>Images and PDFs get a preview: a small image the server makes (ATT-04). Nothing else does.</li>
+<li><strong>In a separate process:</strong> a preview is made by <code>bugaboo preview</code>, a child process with limits on memory, time and pixels (a named constant each). It reads one file and writes one small image of a fixed safe type. A file that is too big, takes too long or crashes the child gets no preview, and the server goes on.</li>
+<li><strong>As a job:</strong> previews are made in a job (ADR-0017), at most a few at once (the worker pool of ADR-0017).</li>
+<li><strong>Libraries:</strong> <code>image</code> for images and <code>hayro</code> for PDFs, both pure Rust. <code>hayro</code>'s license is checked before it is added (DEP-LICENSES).</li>
+<li><strong>Served like files:</strong> a preview is shown in the page as an image from our own origin, through a signed link like the file itself.</li>
+<li>Enforced by: TEST-UPLOADS (a decompression bomb, a broken PDF and a huge image each end with no preview and a running server).</li>
+</ul>
+<h5>5. Personal data</h5>
+<ul>
+<li>An attachment records who added it, and a file's content is personal data like a comment.</li>
+<li>Files of a deleted issue go with the issue after the trash's 30 days.</li>
+<li>Enforced by: DATA-MARKS.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li>The issue page gets a <em>Files</em> block. Comments show their files. The many-issues bar does not add files.</li>
+<li>Virus scanning (ATT-05) stays V1: the port has room for a scan step before a file becomes visible.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>tus or another upload library:</strong> more than we need, and one more dependency in the browser and the server. Rejected for our own three routes.</li>
+<li><strong>Previews in the server process:</strong> a crafted file could take the server down. Rejected.</li>
+<li><strong>Files in the database:</strong> backups grow with every screenshot, and PostgreSQL large objects are awkward. Rejected; the database holds only the attachment rows.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>TEST-UPLOADS (new), SEC-MATRIX (attachment routes and downloads), SEC-HEADERS (download headers), ARCH-DEPS (the port), DATA-MARKS, DEP-LICENSES and DEP-REGISTER (<code>infer</code>, <code>image</code>, <code>hayro</code>), and review (no route serves <code>files/</code> directly).</p>
+
+<!-- 0033-notifications-and-e-mail.md -->
+<h3 id="adr-0033"><button class="sec" data-sec>§13.33</button>ADR-0033: Notifications and e-mail: an outbox reader that checks again before it tells anyone</h3>
+<p>Status: <strong>Accepted</strong> · 2026-10-16 · refines NTF-01, NTF-02, SEC-06, SEC-16, PRIV-05, PRIV-08, PRIV-12 and <a href="#adr-0007">ADR-0007</a>; decisions M4-Q5…Q7, M4-Q9, M4-Q10</p>
+<h4>Context</h4>
+<p>Since M3, Bugaboo stores who follows an issue, who is mentioned, and the notes of <em>Ask … to finish</em> and <em>Edit anyway</em>, but it tells nobody (M3-Q3, M3-F75). M4 adds notifications in the app (NTF-01) and by e-mail (NTF-02). A notification is a copy of information sent to one person, and an e-mail leaves the server, so both must show only what that person may see at the moment they see it (SEC-06, PRIV-12, ADR-0004). <code>bb-notify</code> is an empty crate, and the outbox has one reader, history (ADR-0007).</p>
+<h4>Decision</h4>
+<h5>1. An outbox reader builds notifications</h5>
+<ul>
+<li>
+<p>A second outbox reader, <code>notifications</code>, turns events into notification rows, one for each person who should hear about them. Like history, it is idempotent, keeps its place, and resumes after a restart (ADR-0007).</p>
+</li>
+<li>
+<p><strong>Who hears about what</strong> (the defaults of M4-Q5; each person changes them under <em>Customize</em>):</p>
+<div class="tbl-wrap"><table class="dtable"><thead><tr><th>Event</th><th>In the app</th><th>By e-mail</th></tr></thead><tbody>
+<tr><td>You are mentioned</td><td>on</td><td>on</td></tr>
+<tr><td>You are assigned</td><td>on</td><td>on</td></tr>
+<tr><td>A status change, a comment or a file on an issue you follow</td><td>on</td><td>off</td></tr>
+<tr><td>Other changes to fields of issues you follow</td><td>off</td><td>off</td></tr>
+<tr><td>Your run of many changes ended</td><td>on</td><td>off</td></tr>
+<tr><td><em>Ask … to finish</em> and <em>Edit anyway</em> on your text</td><td>on</td><td>off</td></tr>
+</tbody></table>
+</div>
+</li>
+<li>
+<p>A person is never told about their own changes.</p>
+</li>
+</ul>
+<h5>2. Checked when built and again when shown or sent</h5>
+<ul>
+<li>When the reader builds a row, it skips a person who may not see the issue, and it leaves out every field that person may not see (the reader's mask, ADR-0004). Enforced by: SEC-MATRIX.</li>
+<li>When the row is shown in the app or put into an e-mail, Bugaboo checks again: a person who lost access in between gets nothing, and a follower who lost access is dropped from the followers (M3-F132).</li>
+<li>People in a notification come as <code>PersonRef</code>, so <em>Who sees people</em> holds (ADR-0022).</li>
+<li>Enforced by: SEC-MATRIX (the e-mail and notifications column, M2-F65) and ARCH-PERSON-REF.</li>
+</ul>
+<h5>3. E-mail</h5>
+<ul>
+<li><strong>Off at the start:</strong> e-mail stays off until an administrator enters the organization's mail server and switches it on (PRIV-08). <em>Send me a test e-mail</em> tries the settings. The mail password is stored encrypted like other secrets (SEC-16).</li>
+<li><strong>Sending:</strong> each e-mail is a <code>mail.send</code> job (ADR-0017), sent with <code>lettre</code>.</li>
+<li><strong>Batching:</strong> changes to one issue within 5 minutes go into one e-mail. There is no daily summary in M4 (M4-Q6).</li>
+<li><strong>Contents:</strong> the issue ID and title, who changed what, and the comment text, all filtered as in 2, with a link into Bugaboo. Text is escaped for e-mail; no file is attached; no picture loads from outside.</li>
+<li><strong>Short e-mails:</strong> an organization setting leaves out all issue text (title and comments). It is for places where mail leaves the company.</li>
+<li><strong>Addresses in logs:</strong> e-mail addresses never appear in logs. Enforced by: DATA-LOGS.</li>
+<li><strong>Confirming an address (M1-F38, M4-Q10):</strong> once mail is on, signing up on one's own sends a confirmation link, valid for 24 hours, and the account works only after it.</li>
+</ul>
+<h5>4. In the app</h5>
+<ul>
+<li><em>Notifications</em> is a page and a menu entry with the number of unread ones (UX §4.11).
+<ul>
+<li>Entries are grouped by issue, newest first.</li>
+<li>Each entry has <em>Open</em>, which goes to the exact comment or change, and <em>Mark as read</em>.</li>
+</ul>
+</li>
+<li><em>Notifications</em> replaces the <em>Mentions</em> block on the start page. <em>Mentions</em> becomes a filter, and the start page shows the newest unread ones (M4-Q7).</li>
+</ul>
+<h5>5. Keeping and deleting</h5>
+<ul>
+<li>Notifications are deleted after 90 days (PRIV-05, UX §5.7). A sent e-mail's job and its payload go when it is sent, or when it dies, with the dead jobs' keep period (M1-F21).</li>
+<li>Enforced by: DATA-MARKS and the keep-and-delete job's test.</li>
+</ul>
+<h5>6. Handles for mentions (M3-F70, M4-Q9)</h5>
+<ul>
+<li>Every person gets a short <strong>handle</strong> (<code>@ana.brandt</code>), made from the name when the account is made, unique, and changeable in <em>My settings</em>.</li>
+<li>A mention stores the person, not the handle, so a changed handle never breaks an old comment.</li>
+<li>A handle is people information and follows <em>Who sees people</em>.</li>
+</ul>
+<h4>Consequences</h4>
+<ul>
+<li><code>bb-notify</code> holds the e-mail adapter behind a port (<code>Mailer</code> in <code>bb-app</code>). Tests use a fake mailer that keeps what it would have sent.</li>
+<li>Webhooks (NTF-03) and live updates later read the same outbox the same way.</li>
+</ul>
+<h4>Alternatives considered</h4>
+<ul>
+<li><strong>Sending from the use case that made the change:</strong> the change would wait for the mail server, and a failed mail could undo nothing. Rejected; ADR-0007 already gives the outbox.</li>
+<li><strong>Filtering only when the row is built:</strong> a person who loses access an hour later would still read yesterday's notifications. Rejected; checking again costs one permission lookup per row shown.</li>
+</ul>
+<h4>Enforced by</h4>
+<p>SEC-MATRIX (the e-mail and notifications column), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (<code>lettre</code>), the permission tests of M4 WP-06, and review (no other path sends mail).</p>
 
 
   </main>
