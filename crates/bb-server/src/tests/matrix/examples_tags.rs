@@ -217,7 +217,7 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
         }
         "previewBulkChange" => (
             "POST",
-            "/api/v1/bulk/preview".into(),
+            "/api/v1/many-changes/preview".into(),
             Some(json!({
                 "issues": [an_issue(fixture).await?],
                 "action": {"kind": "change", "change": {"status": "done"}},
@@ -228,17 +228,21 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
             let version = version_of(fixture, &issue).await?;
             (
                 "POST",
-                "/api/v1/bulk/changes".into(),
+                "/api/v1/many-changes".into(),
                 Some(json!({
                     "issues": [{"issue": issue, "version": version}],
                     "action": {"kind": "change", "change": {"status": "done"}},
                 })),
             )
         }
-        "getBulkRun" => ("GET", format!("/api/v1/bulk/runs/{NOBODYS_ID}"), None),
+        "getBulkRun" => (
+            "GET",
+            format!("/api/v1/many-changes/runs/{NOBODYS_ID}"),
+            None,
+        ),
         "cancelBulkRun" => (
             "POST",
-            format!("/api/v1/bulk/runs/{NOBODYS_ID}/cancel"),
+            format!("/api/v1/many-changes/runs/{NOBODYS_ID}/stop"),
             None,
         ),
         _ => return Ok(None),

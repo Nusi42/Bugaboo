@@ -1,6 +1,6 @@
-//! The routes of changing many issues at once (ISS-09): the preview below `/api/v1/bulk/preview`,
-//! the change below `/api/v1/bulk/changes`, and how far a change that goes on in the background is
-//! below `/api/v1/bulk/runs/{run}`.
+//! The routes of changing many issues at once (ISS-09): the preview below `/api/v1/many-changes/preview`,
+//! the change below `/api/v1/many-changes`, and how far a change that goes on in the background is
+//! below `/api/v1/many-changes/runs/{run}`.
 //!
 //! The preview says, for each issue of the selection, what will change or why it is left alone,
 //! and the version it read; the change takes those versions back. More than 1,000 issues run in
@@ -454,7 +454,7 @@ impl From<BulkResult> for BulkResultBody {
 /// and why, and the version of each issue, which the change takes back. Nothing is changed.
 #[utoipa::path(
     post,
-    path = "/api/v1/bulk/preview",
+    path = "/api/v1/many-changes/preview",
     operation_id = "previewBulkChange",
     tag = "bulk",
     request_body = PreviewBulkBody,
@@ -491,7 +491,7 @@ async fn preview_bulk_change(
 /// access key sends at most 1,000 issues at a time.
 #[utoipa::path(
     post,
-    path = "/api/v1/bulk/changes",
+    path = "/api/v1/many-changes",
     operation_id = "applyBulkChange",
     tag = "bulk",
     request_body = ApplyBulkBody,
@@ -535,7 +535,7 @@ async fn apply_bulk_change(
 /// for it reads it.
 #[utoipa::path(
     get,
-    path = "/api/v1/bulk/runs/{run}",
+    path = "/api/v1/many-changes/runs/{run}",
     operation_id = "getBulkRun",
     tag = "bulk",
     params(("run" = String, Path, description = "The ID of the run.")),
@@ -560,7 +560,7 @@ async fn get_bulk_run(
 /// *Manage people*. The answer holds the status only.
 #[utoipa::path(
     post,
-    path = "/api/v1/bulk/runs/{run}/cancel",
+    path = "/api/v1/many-changes/runs/{run}/stop",
     operation_id = "cancelBulkRun",
     tag = "bulk",
     params(("run" = String, Path, description = "The ID of the run.")),

@@ -14,8 +14,8 @@ use super::issues_site::Site;
 use super::issues_site::ok;
 use super::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
-const CHANGES: &str = "/api/v1/bulk/changes";
-const RUNS: &str = "/api/v1/bulk/runs";
+const CHANGES: &str = "/api/v1/many-changes";
+const RUNS: &str = "/api/v1/many-changes/runs";
 
 /// Starts a run in the background as `person`: the ID of the run.
 async fn start(person: &mut Browser, targets: &[Value]) -> Result<String, Failure> {
@@ -72,7 +72,7 @@ async fn iss_09_a_run_is_stopped_by_who_asked_and_by_an_administrator_and_by_nob
         let targets = targets_for_a_job(&rig, &site).await?;
         let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
         let (mut cat, _) = site.person(StartingRole::Contributor, "cat").await?;
-        let cancel = |run: &str| format!("{RUNS}/{run}/cancel");
+        let cancel = |run: &str| format!("{RUNS}/{run}/stop");
         let first = start(&mut bob, &targets).await?;
         // Somebody else, who is no administrator, does not find the run.
         let hidden = cat.send("POST", &cancel(&first), None).await?;

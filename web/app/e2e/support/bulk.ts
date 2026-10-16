@@ -39,7 +39,7 @@ export async function previewStatus(
   status: NewStatus,
 ): Promise<BulkPreview> {
   return dataOf(
-    await session.client.POST("/api/v1/bulk/preview", {
+    await session.client.POST("/api/v1/many-changes/preview", {
       body: { issues: [...keys], action: statusAction(status) },
     }),
   );
@@ -70,7 +70,7 @@ export async function changeMany(
   status: NewStatus,
 ): Promise<BulkResult> {
   return dataOf(
-    await session.client.POST("/api/v1/bulk/changes", { body: bulkBody(preview, status) }),
+    await session.client.POST("/api/v1/many-changes", { body: bulkBody(preview, status) }),
   );
 }
 

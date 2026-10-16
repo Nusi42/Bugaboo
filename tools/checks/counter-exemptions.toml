@@ -76,52 +76,52 @@ property = "project_count"
 reason = "Counts only the projects the viewer may see: every project is checked for the viewer before it is counted, and the answer needs Manage fields (CF-03, M3 WP-05)."
 
 [[exempt]]
-route = "POST /api/v1/bulk/preview"
+route = "POST /api/v1/many-changes/preview"
 property = "will_change"
 reason = "Counts the issues the person named themselves in the request; an issue they may not see counts as skipped, exactly as one that does not exist does, so it tells them nothing they did not send (PRIV-13)."
 
 [[exempt]]
-route = "POST /api/v1/bulk/preview"
+route = "POST /api/v1/many-changes/preview"
 property = "skipped"
 reason = "Counts the issues the person named themselves in the request; an issue they may not see counts as skipped, exactly as one that does not exist does, so it tells them nothing they did not send (PRIV-13)."
 
 [[exempt]]
-route = "POST /api/v1/bulk/changes"
+route = "POST /api/v1/many-changes"
 property = "changed"
 reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
 
 [[exempt]]
-route = "POST /api/v1/bulk/changes"
+route = "POST /api/v1/many-changes"
 property = "done"
 reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
 
 [[exempt]]
-route = "POST /api/v1/bulk/changes"
+route = "POST /api/v1/many-changes"
 property = "skipped_count"
 reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
 
 [[exempt]]
-route = "POST /api/v1/bulk/changes"
+route = "POST /api/v1/many-changes"
 property = "total"
 reason = "Counts the issues the person named themselves in the request, as the run takes them; an issue they may not see counts as skipped like one that does not exist, so it adds nothing about issues they did not name (PRIV-13)."
 
 [[exempt]]
-route = "GET /api/v1/bulk/runs/{run}"
+route = "GET /api/v1/many-changes/runs/{run}"
 property = "changed"
 reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
 
 [[exempt]]
-route = "GET /api/v1/bulk/runs/{run}"
+route = "GET /api/v1/many-changes/runs/{run}"
 property = "done"
 reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
 
 [[exempt]]
-route = "GET /api/v1/bulk/runs/{run}"
+route = "GET /api/v1/many-changes/runs/{run}"
 property = "skipped_count"
 reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
 
 [[exempt]]
-route = "GET /api/v1/bulk/runs/{run}"
+route = "GET /api/v1/many-changes/runs/{run}"
 property = "total"
 reason = "Counts the issues the person named in the request that started the run, which only they may see; an issue they may not see counts as skipped like one that does not exist (PRIV-13)."
 

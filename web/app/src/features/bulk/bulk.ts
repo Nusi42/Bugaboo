@@ -26,7 +26,7 @@ export const bulkKind = {
 
 /** What a change to many issues would do to each issue, without doing it. */
 export function usePreviewBulk() {
-  return api.query.useMutation("post", "/api/v1/bulk/preview");
+  return api.query.useMutation("post", "/api/v1/many-changes/preview");
 }
 
 /** What was sent when a change was applied: the thing that was done. */
@@ -44,7 +44,7 @@ export interface BulkApplied {
  * of it is reported to `onApplied` also when the dialog that asked is gone by then.
  */
 export function useApplyBulk(onApplied: (applied: BulkApplied) => void) {
-  return api.query.useMutation("post", "/api/v1/bulk/changes", {
+  return api.query.useMutation("post", "/api/v1/many-changes", {
     onSuccess: (result: BulkResult, sent: SentBulk) => {
       onApplied({ action: sent.body.action, result, failed: null });
     },
@@ -63,7 +63,7 @@ export function isRunning(run: BulkRun): boolean {
 export function useBulkRun(run: string | undefined) {
   return api.query.useQuery(
     "get",
-    "/api/v1/bulk/runs/{run}",
+    "/api/v1/many-changes/runs/{run}",
     { params: { path: { run: run ?? "" } } },
     {
       enabled: run !== undefined,

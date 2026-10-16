@@ -15,9 +15,9 @@ use super::http::rig_and_app;
 use super::issues_site::{ISSUES, PROJECTS, Site, key_of, ok};
 use super::rig::Rig;
 
-const PREVIEW: &str = "/api/v1/bulk/preview";
-const CHANGES: &str = "/api/v1/bulk/changes";
-const RUNS: &str = "/api/v1/bulk/runs";
+const PREVIEW: &str = "/api/v1/many-changes/preview";
+const CHANGES: &str = "/api/v1/many-changes";
+const RUNS: &str = "/api/v1/many-changes/runs";
 
 fn done() -> Value {
     json!({"kind": "change", "change": {"status": "done"}})
