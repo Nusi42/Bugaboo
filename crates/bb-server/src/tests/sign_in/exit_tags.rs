@@ -51,7 +51,7 @@ async fn sec_06_a_person_who_sees_only_their_own_issues_is_offered_only_their_ow
             "gus",
             &[
                 Permission::SeeProjects,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
                 Permission::ChangeOwnIssues,
             ],
             &[

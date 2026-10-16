@@ -48,7 +48,7 @@ function previewWithEverything() {
             project: documents,
             now: standing(true, false, ["Viewer"]),
             after: standing(true, false, ["Team member"]),
-            gains: ["make-sub-projects"],
+            gains: ["create-sub-projects"],
             loses: [],
             fields: [
               {
@@ -89,7 +89,7 @@ export function everySentence(): readonly string[] {
     t("projects.line-can-now", {
       person: someone,
       project: "Documents",
-      things: t("permission.make-sub-projects"),
+      things: t("permission.create-sub-projects"),
     }),
     t("projects.line-field", {
       person: someone,

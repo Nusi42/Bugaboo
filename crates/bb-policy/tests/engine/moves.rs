@@ -93,7 +93,7 @@ const LEAD: [Permission; 4] = [
     Permission::SeeProjects,
     Permission::MoveProjects,
     Permission::DecideRoles,
-    Permission::MakeSubProjects,
+    Permission::CreateSubProjects,
 ];
 const VIEW: [Permission; 1] = [Permission::SeeProjects];
 
@@ -514,7 +514,7 @@ fn may_move(
 const MOVER: [Permission; 3] = [
     Permission::SeeProjects,
     Permission::MoveProjects,
-    Permission::MakeProjects,
+    Permission::CreateProjects,
 ];
 
 #[test]
@@ -584,7 +584,7 @@ fn prj_03_a_move_is_asked_for_by_one_set_of_rules_and_each_refusal_has_its_word(
 }
 
 #[test]
-fn prj_03_a_move_to_the_top_level_takes_make_projects_for_the_whole_organization() {
+fn prj_03_a_move_to_the_top_level_takes_create_projects_for_the_whole_organization() {
     let mut world = World::new();
     let (bob, cleo) = (world.person(), world.person());
     let (acme, other) = (world.project(None), world.project(None));
@@ -595,7 +595,7 @@ fn prj_03_a_move_to_the_top_level_takes_make_projects_for_the_whole_organization
         &[Permission::SeeProjects, Permission::MoveProjects],
     );
     world.row(Ok(bob), Some(mover), None, AppliesTo::Organization);
-    // Cleo may move everywhere but is not allowed to make projects.
+    // Cleo may move everywhere but is not allowed to create projects.
     world.row(Ok(cleo), Some(moves_only), None, AppliesTo::Organization);
 
     assert_eq!(may_move(&world, bob, web, None), Ok(()));
@@ -607,7 +607,7 @@ fn prj_03_a_move_to_the_top_level_takes_make_projects_for_the_whole_organization
     assert_eq!(
         may_move(&world, cleo, web, Some(other)),
         Ok(()),
-        "into another project it takes no Make projects"
+        "into another project it takes no Create projects"
     );
 }
 

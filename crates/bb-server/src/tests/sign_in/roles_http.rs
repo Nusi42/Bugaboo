@@ -52,8 +52,8 @@ async fn sec_08_the_permission_catalogue_names_every_permission_and_where_it_cou
                 .cloned()
                 .unwrap_or_default()
         };
-        assert_eq!(of("make-projects")["scope"], "organization");
-        assert_eq!(of("make-projects")["topic"], "projects");
+        assert_eq!(of("create-projects")["scope"], "organization");
+        assert_eq!(of("create-projects")["topic"], "projects");
         assert_eq!(of("see-projects")["scope"], "project");
         assert_eq!(of("manage-roles")["topic"], "people");
         Ok(())
@@ -215,7 +215,7 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
                 Some(json!({
                     "version": 1,
                     "name": "Lookers",
-                    "permissions": ["see-projects", "make-projects", "see-status"],
+                    "permissions": ["see-projects", "create-projects", "see-status"],
                     "two_step": true
                 })),
             )

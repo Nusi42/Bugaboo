@@ -105,6 +105,6 @@ impl EditableRecords for TestNotes {
     }
 
     fn making(&self, kind: &EntityKind) -> Option<Permission> {
-        (*kind == self.kind).then_some(Permission::MakeIssues)
+        (*kind == self.kind).then_some(Permission::CreateIssues)
     }
 }

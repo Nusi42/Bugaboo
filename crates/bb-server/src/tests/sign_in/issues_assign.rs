@@ -127,7 +127,7 @@ async fn adr_0022_the_list_of_people_to_assign_follows_project_members_and_the_r
     .await
 }
 
-/// A person whose role may see and make issues and set *Assigned to*, but not change issues: the
+/// A person whose role may see and create issues and set *Assigned to*, but not change issues: the
 /// path of the new-issue form.
 async fn maker_who_assigns(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failure> {
     let email = "maya@example.test";
@@ -138,7 +138,7 @@ async fn maker_who_assigns(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failur
             &[
                 Permission::SeeProjects,
                 Permission::SeeIssues,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
             ],
         )
         .await?;
@@ -167,7 +167,7 @@ async fn maker_who_assigns(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failur
 }
 
 #[tokio::test]
-async fn m3_f28_who_may_make_issues_and_set_assigned_to_gets_the_list_for_the_new_issue_form()
+async fn m3_f28_who_may_create_issues_and_set_assigned_to_gets_the_list_for_the_new_issue_form()
 -> TestResult {
     each_database("m3_f28_new_issue_form", async |db| {
         let (rig, app) = rig_and_app(db).await?;

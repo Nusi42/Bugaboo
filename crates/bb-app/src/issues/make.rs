@@ -52,7 +52,7 @@ impl NewIssue {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// What the person asks for, when they may ask it: they may make issues in the project, the
+    /// What the person asks for, when they may ask it: they may create issues in the project, the
     /// fields they set are ones they may change (the title always), and the type is one that
     /// takes new issues.
     async fn plan_new_issue(
@@ -66,7 +66,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|found| found.project)
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         let access = self
-            .require(actor, Permission::MakeIssues, Place::Project(project.id))
+            .require(actor, Permission::CreateIssues, Place::Project(project.id))
             .await?;
         // A project the person does not see is not there for them, whatever they may make in it.
         if !access.sees_project() {
@@ -151,7 +151,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Makes an issue in a project. The person needs *Make issues* there; the fields they set must be
+/// Makes an issue in a project. The person needs *Create issues* there; the fields they set must be
 /// ones they may change (the title always).
 ///
 /// # Errors

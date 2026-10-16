@@ -208,7 +208,7 @@ async fn changer(
                 Permission::SeeProjects,
                 Permission::SeeIssues,
                 Permission::ChangeIssues,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
             ],
         )
         .await?;

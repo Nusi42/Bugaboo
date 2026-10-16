@@ -205,7 +205,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
             "max@example.test",
             &[
                 Permission::SeeProjects,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
                 Permission::ChangeOwnIssues,
             ],
             &[

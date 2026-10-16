@@ -366,7 +366,7 @@ pub(crate) struct PeopleFor {
 /// The people an issue of the project can be assigned to, a page at a time, by name: those who
 /// see the project and hold *See issues* there, and the person who asks. A person who cannot see
 /// names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
-/// set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
+/// set *Assigned to*: *Change issues*, *Change own issues* or *Create issues*, and a field mask that
 /// lets the person change that field. For an own field (`field`) the right to change that field
 /// takes the place of the right to set *Assigned to*.
 #[utoipa::path(
@@ -419,7 +419,7 @@ async fn list_assignable_people(
     )?))
 }
 
-/// Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones
+/// Makes an issue in a project. Needs the permission *Create issues*; the fields set must be ones
 /// the person may change (the title always).
 #[utoipa::path(
     post,

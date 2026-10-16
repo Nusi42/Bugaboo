@@ -74,12 +74,12 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | Key | Topic | Counts | Kind | Sentence on the role page |
 |-----|-------|--------|------|---------------------------|
 | `see-projects` | Projects | project | See | See the project and what is in it |
-| `make-projects` | Projects | organization | Change | Make projects at the top level |
-| `make-sub-projects` | Projects | project | Change | Make sub-projects inside the project |
+| `create-projects` | Projects | organization | Change | Create projects at the top level |
+| `create-sub-projects` | Projects | project | Change | Create sub-projects inside the project |
 | `move-projects` | Projects | project | Change | Move sub-projects into or out of the project |
 | `change-project-settings` | Projects | project | Manage | Change the project's name, short name and settings |
 | `see-issues` | Issues | project | See | See every issue of the project, not only the ones they reported |
-| `make-issues` | Issues | project | Change | Make issues |
+| `create-issues` | Issues | project | Change | Create issues |
 | `change-issues` | Issues | project | Change | Change anybody's issues, in the fields they may change |
 | `change-own-issues` | Issues | project | Change | Change the issues they reported, in the fields they may change |
 | `comment` | Issues | project | Change | Write comments on the issues they see |
@@ -87,15 +87,15 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `move-issues` | Issues | project | Change | Move issues into or out of the project |
 | `edit-anyway` | Issues | project | Manage | Take over text someone else is editing; their text is kept |
 | `manage-issue-types` | Work settings | project | Manage | Manage issue types, kinds of relation and layouts |
-| `manage-fields` | Work settings | organization | Manage | Make, change and retire fields |
+| `manage-fields` | Work settings | organization | Manage | Create, change and retire fields |
 | `manage-labels` | Work settings | project | Manage | Manage labels and tags, also rename and combine them |
 | `decide-roles` | People | project | Manage | Decide who has which role, including No access |
 | `decide-what-roles-see` | People | project | Manage | Decide which fields and which people information each role sees |
 | `check-access` | People | project | See | Check what other people can do, and why |
 | `manage-people` | People | organization | Manage | See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started |
 | `manage-invitations` | People | organization | Manage | Invite people and take invitations back |
-| `manage-groups` | People | organization | Manage | Make, rename and delete groups and change who is in them |
-| `manage-roles` | People | organization | Manage | Make, change and delete roles |
+| `manage-groups` | People | organization | Manage | Create, rename and delete groups and change who is in them |
+| `manage-roles` | People | organization | Manage | Create, change and delete roles |
 | `change-organization-settings` | Settings | organization | Manage | Change organization settings |
 | `see-status` | Settings | organization | See | See how the server is doing |
 
@@ -103,7 +103,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 
 - A *project* permission given for the whole organization counts in every project; given on a project, in the project (and its sub-projects when the row says so).
 - The rows for the whole organization, and a role's own field and people levels, are changed only with *Decide who has which role* or *Decide what roles see* from a row for the whole organization.
-- Moving a project takes *Move projects* at the old and at the new parent; a project at the top level counts as inside the organization, so moving to or from the top takes the permission for the whole organization. Making a top-level project takes *Make projects*; a sub-project takes *Make sub-projects* at its parent. Renaming a project takes *Change project settings*; changing its short name takes that and also the right to make projects where the project sits (*Make projects* at the top level, *Make sub-projects* at the parent), because a short name that is taken is told only to people who may make projects there (decision: keep). A move shows its *preview* first (who gains or loses access or changes role, which fields and kinds of people information change for whom: the difference of two evaluations, `bb_policy::preview_move`) and is refused when somebody could take away a *No access* that applies to them after it and could not before (ADR-0025, decision 6; M2-F23). Changing a project's short name takes *Change project settings* and the right to make projects where the project sits, because only those people may be told that a short name is taken.
+- Moving a project takes *Move projects* at the old and at the new parent; a project at the top level counts as inside the organization, so moving to or from the top takes the permission for the whole organization. Making a top-level project takes *Create projects*; a sub-project takes *Create sub-projects* at its parent. Renaming a project takes *Change project settings*; changing its short name takes that and also the right to create projects where the project sits (*Create projects* at the top level, *Create sub-projects* at the parent), because a short name that is taken is told only to people who may create projects there (decision: keep). A move shows its *preview* first (who gains or loses access or changes role, which fields and kinds of people information change for whom: the difference of two evaluations, `bb_policy::preview_move`) and is refused when somebody could take away a *No access* that applies to them after it and could not before (ADR-0025, decision 6; M2-F23). Changing a project's short name takes *Change project settings* and the right to create projects where the project sits, because only those people may be told that a short name is taken.
 - Later milestones add their permissions to the enum (issues M3, time M6, documents M11), each with its topic, sentence, kind and starting values. Enforced by: ARCH-PERMS (a permission without a route or a message fails).
 
 ### Assignments
@@ -143,12 +143,12 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Permission | Administrator | Project lead | Team member | Contributor | Viewer | Guest |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
 | See the project and what is in it | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Make projects at the top level | ✓ | – | – | – | – | – |
-| Make sub-projects inside the project | ✓ | ✓ | – | – | – | – |
+| Create projects at the top level | ✓ | – | – | – | – | – |
+| Create sub-projects inside the project | ✓ | ✓ | – | – | – | – |
 | Move sub-projects into or out of the project | ✓ | ✓ | – | – | – | – |
 | Change the project's name, short name and settings | ✓ | ✓ | – | – | – | – |
 | See every issue of the project, not only the ones they reported | ✓ | ✓ | ✓ | ✓ | ✓ | – |
-| Make issues | ✓ | ✓ | ✓ | ✓ | – | ✓ |
+| Create issues | ✓ | ✓ | ✓ | ✓ | – | ✓ |
 | Change anybody's issues, in the fields they may change | ✓ | ✓ | ✓ | – | – | – |
 | Change the issues they reported, in the fields they may change | ✓ | ✓ | ✓ | ✓ | – | ✓ |
 | Write comments on the issues they see | ✓ | ✓ | ✓ | ✓ | – | ✓ |
@@ -156,22 +156,22 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Move issues into or out of the project | ✓ | ✓ | ✓ | – | – | – |
 | Take over text someone else is editing; their text is kept | ✓ | ✓ | – | – | – | – |
 | Manage issue types, kinds of relation and layouts | ✓ | ✓ | – | – | – | – |
-| Make, change and retire fields | ✓ | – | – | – | – | – |
+| Create, change and retire fields | ✓ | – | – | – | – | – |
 | Manage labels and tags, also rename and combine them | ✓ | ✓ | – | – | – | – |
 | Decide who has which role, including No access | ✓ | ✓ | – | – | – | – |
 | Decide which fields and which people information each role sees | ✓ | ✓ | – | – | – | – |
 | Check what other people can do, and why | ✓ | ✓ | – | – | – | – |
 | See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started | ✓ | – | – | – | – | – |
 | Invite people and take invitations back | ✓ | – | – | – | – | – |
-| Make, rename and delete groups and change who is in them | ✓ | – | – | – | – | – |
-| Make, change and delete roles | ✓ | – | – | – | – | – |
+| Create, rename and delete groups and change who is in them | ✓ | – | – | – | – | – |
+| Create, change and delete roles | ✓ | – | – | – | – | – |
 | Change organization settings | ✓ | – | – | – | – | – |
 | See how the server is doing | ✓ | – | – | – | – | – |
 | Two-step sign-in for everyone with this role | off | off | off | off | off | off |
 
 <!-- END GENERATED starting-permissions -->
 
-A Project lead holds these where the role is given, normally on their projects and sub-projects. The intent for later permissions, as accepted in M2-Q5: Team members change issues; Contributors make issues and change their own; Viewers only look; Guests see only what they reported.
+A Project lead holds these where the role is given, normally on their projects and sub-projects. The intent for later permissions, as accepted in M2-Q5: Team members change issues; Contributors create issues and change their own; Viewers only look; Guests see only what they reported.
 
 **Starting field levels:**
 

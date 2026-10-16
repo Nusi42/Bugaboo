@@ -3,7 +3,7 @@
 //! `bb-api`. Every flow runs on SQLite and on PostgreSQL (`each_database`, ARCH-DB-PARITY).
 //!
 //! The test organization of `policy_rig` has the administrator Ada and people without a role;
-//! Bob gets the role *Checker*: *Check access* (a *See* permission), *Make projects* (*Change*)
+//! Bob gets the role *Checker*: *Check access* (a *See* permission), *Create projects* (*Change*)
 //! and *Invite people* (*Manage*), one of each kind a key can keep.
 
 use std::fmt::Write as _;
@@ -42,7 +42,7 @@ pub(super) fn later(moment: Timestamp, seconds: i64) -> Timestamp {
 const CHECKER: [Permission; 4] = [
     Permission::SeeProjects,
     Permission::CheckAccess,
-    Permission::MakeProjects,
+    Permission::CreateProjects,
     Permission::ManageInvitations,
 ];
 
@@ -128,7 +128,7 @@ pub(super) async fn probe(rig: &Rig, credential: &str) -> Result<(), AppError> {
     check(rig, credential, ada, None).await
 }
 
-/// *Make projects* at the top level, asked with `credential`.
+/// *Create projects* at the top level, asked with `credential`.
 async fn make_project(rig: &Rig, credential: &str, short_name: &str) -> Result<(), AppError> {
     rig.api()
         .make_project(
@@ -246,7 +246,7 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
         let org = Org::start(&rig).await?;
         let bob = bob(&org).await?;
         let judge = |result: Result<(), AppError>| refused(result);
-        // *See only*: *Check access* (See), not *Make projects* (Change) or *Invite people* (Manage).
+        // *See only*: *Check access* (See), not *Create projects* (Change) or *Invite people* (Manage).
         let see = make(&rig, &bob, KeyChoice::SeeOnly, &[], &[]).await?.secret;
         assert_eq!(judge(check(&rig, &see, bob.id, None).await), None);
         assert_eq!(
@@ -284,7 +284,7 @@ async fn auth_07_a_key_does_what_its_choice_allows_and_never_more_than_its_owner
             &rig,
             &bob,
             KeyChoice::Permissions,
-            &[Permission::MakeProjects],
+            &[Permission::CreateProjects],
             &[],
         )
         .await?

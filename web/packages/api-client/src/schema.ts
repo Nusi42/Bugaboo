@@ -2169,7 +2169,7 @@ export interface paths {
      */
     get: operations["listProjects"];
     put?: never;
-    /** Makes a project at the top level. Needs the permission *Make projects at the top level*. */
+    /** Makes a project at the top level. Needs the permission *Create projects at the top level*. */
     post: operations["makeProject"];
     delete?: never;
     options?: never;
@@ -2197,7 +2197,7 @@ export interface paths {
     /**
      * Changes the name or the short name of a project. A short name that is changed leaves the old
      *     one with the project, so its old addresses keep working. Needs the permission *Change the
-     *     project's name, short name and settings*; a short name also needs the right to make projects
+     *     project's name, short name and settings*; a short name also needs the right to create projects
      *     where the project sits.
      */
     patch: operations["changeProject"];
@@ -2214,7 +2214,7 @@ export interface paths {
      * The people an issue of the project can be assigned to, a page at a time, by name: those who
      *     see the project and hold *See issues* there, and the person who asks. A person who cannot see
      *     names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
-     *     set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
+     *     set *Assigned to*: *Change issues*, *Change own issues* or *Create issues*, and a field mask that
      *     lets the person change that field. For an own field (`field`) the right to change that field
      *     takes the place of the right to set *Assigned to*.
      */
@@ -2288,7 +2288,7 @@ export interface paths {
     get: operations["listIssues"];
     put?: never;
     /**
-     * Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones
+     * Makes an issue in a project. Needs the permission *Create issues*; the fields set must be ones
      *     the person may change (the title always).
      */
     post: operations["makeIssue"];
@@ -2396,7 +2396,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the
+     * Makes a sub-project. Needs the permission *Create sub-projects inside the project* in the
      *     project it goes into.
      */
     post: operations["makeSubProject"];
@@ -5679,12 +5679,12 @@ export interface components {
      */
     Permission:
       | "see-projects"
-      | "make-projects"
-      | "make-sub-projects"
+      | "create-projects"
+      | "create-sub-projects"
       | "move-projects"
       | "change-project-settings"
       | "see-issues"
-      | "make-issues"
+      | "create-issues"
       | "change-issues"
       | "change-own-issues"
       | "comment"

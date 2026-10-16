@@ -164,7 +164,7 @@ fn sec_02_nobody_gives_a_role_with_more_than_they_hold_there() {
         &[
             Permission::SeeProjects,
             Permission::DecideRoles,
-            Permission::MakeSubProjects,
+            Permission::CreateSubProjects,
         ],
     );
     world.give(lead, world.acme);

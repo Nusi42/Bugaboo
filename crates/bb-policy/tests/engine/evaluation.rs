@@ -55,13 +55,13 @@ fn sec_03_a_role_for_the_whole_organization_counts_in_every_project() {
     let mut world = World::new();
     let lead = world.role(
         "Lead",
-        &[Permission::SeeProjects, Permission::MakeSubProjects],
+        &[Permission::SeeProjects, Permission::CreateSubProjects],
     );
     world.give_everywhere(lead);
     for project in [world.acme, world.web, world.api, world.other] {
         assert_eq!(
             keys(&world.at(project)),
-            ["see-projects", "make-sub-projects"]
+            ["see-projects", "create-sub-projects"]
         );
     }
 }
@@ -88,7 +88,7 @@ fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() {
 fn sec_03_the_nearer_row_decides_a_role_given_lower_down_counts_again() {
     let mut world = World::new();
     let member = world.role("Team member", &VIEW);
-    let more = world.role("Contributor", &[Permission::MakeSubProjects]);
+    let more = world.role("Contributor", &[Permission::CreateSubProjects]);
     world.give(member, world.acme);
     world.no_access(world.web);
     world.give(more, world.api);
@@ -96,7 +96,7 @@ fn sec_03_the_nearer_row_decides_a_role_given_lower_down_counts_again() {
     // On API a row of its own is nearer than the No access on WEB: it still counts. The role
     // from ACME is removed, so only the role given on API itself remains.
     let api = world.at(world.api);
-    assert_eq!(keys(&api), ["make-sub-projects"]);
+    assert_eq!(keys(&api), ["create-sub-projects"]);
     assert!(!api.sees_project());
     // A No access given below a role removes it only there.
     let mut world = World::new();
@@ -126,13 +126,13 @@ fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() {
     let blocked = world.group();
     let other_group = world.group();
     let member = world.role("Team member", &VIEW);
-    let direct = world.role("Contributor", &[Permission::MakeSubProjects]);
+    let direct = world.role("Contributor", &[Permission::CreateSubProjects]);
     world.give_group(blocked, member, world.web);
     world.give_group(other_group, member, world.web);
     world.no_access_group(blocked, world.web);
     assert!(world.at(world.web).permissions().is_empty());
     world.give(direct, world.web);
-    assert_eq!(keys(&world.at(world.web)), ["make-sub-projects"]);
+    assert_eq!(keys(&world.at(world.web)), ["create-sub-projects"]);
 
     // A role from higher up is removed by a group's No access as well.
     let mut world = World::new();

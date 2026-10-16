@@ -989,7 +989,7 @@ async fn sec_02_only_rows_that_can_exist_are_made() -> TestResult {
 const SECTION_LEAD: [Permission; 3] = [
     Permission::SeeProjects,
     Permission::DecideRoles,
-    Permission::MakeSubProjects,
+    Permission::CreateSubProjects,
 ];
 
 #[tokio::test]

@@ -152,7 +152,7 @@ async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> Test
         let projects = tree(&org).await?;
         let bea = org.person().await?;
         let member = org.role("Looker", &VIEW).await?;
-        let other_role = org.role("Helper", &[Permission::MakeSubProjects]).await?;
+        let other_role = org.role("Helper", &[Permission::CreateSubProjects]).await?;
         let from_above = org.give(&bea, member.id, projects.acme).await?;
         let no_access = org.forbid(&bea, projects.web).await?;
         assert!(org.can(&bea, Permission::SeeProjects, Some(projects.acme)).await?);
@@ -171,7 +171,7 @@ async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> Test
         );
         // The nearer row decides: a role given lower down counts again.
         org.give(&bea, other_role.id, projects.api).await?;
-        assert!(org.can(&bea, Permission::MakeSubProjects, Some(projects.api)).await?);
+        assert!(org.can(&bea, Permission::CreateSubProjects, Some(projects.api)).await?);
         assert!(!org.can(&bea, Permission::SeeProjects, Some(projects.api)).await?);
         Ok(())
     })
@@ -185,7 +185,7 @@ async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> TestRes
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let member = org.role("Looker", &VIEW).await?;
-        let direct = org.role("Helper", &[Permission::MakeSubProjects]).await?;
+        let direct = org.role("Helper", &[Permission::CreateSubProjects]).await?;
         let on_web = |subject, given| {
             org.assign(
                 &org.admin,
@@ -225,7 +225,7 @@ async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> TestRes
         );
         org.give(&cy, direct.id, projects.web).await?;
         assert!(
-            org.can(&cy, Permission::MakeSubProjects, Some(projects.web))
+            org.can(&cy, Permission::CreateSubProjects, Some(projects.web))
                 .await?
         );
         assert!(

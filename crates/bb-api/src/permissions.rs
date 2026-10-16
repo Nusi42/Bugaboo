@@ -247,12 +247,12 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "makeProject",
-        Declared::Permission(Permission::MakeProjects),
+        Declared::Permission(Permission::CreateProjects),
         Answer::Ordinary,
     ),
     route(
         "makeSubProject",
-        Declared::Permission(Permission::MakeSubProjects),
+        Declared::Permission(Permission::CreateSubProjects),
         Answer::Ordinary,
     ),
     route(
@@ -278,7 +278,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "listAssignablePeople",
         // The matrix row declares the permission of the starting roles that set *Assigned to*. The
-        // use case accepts *Change issues*, *Change own issues* or *Make issues* (the new-issue
+        // use case accepts *Change issues*, *Change own issues* or *Create issues* (the new-issue
         // form) together with a field mask that lets the person change that field, and
         // *Project members* narrows the list (ADR-0022); the tests of `issues_assign` cover it.
         Declared::Permission(Permission::ChangeIssues),
@@ -286,7 +286,7 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "makeIssue",
-        Declared::Permission(Permission::MakeIssues),
+        Declared::Permission(Permission::CreateIssues),
         Answer::Ordinary,
     ),
     route(

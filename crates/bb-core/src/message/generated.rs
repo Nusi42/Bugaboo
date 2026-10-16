@@ -2659,6 +2659,16 @@ pub const PERMISSION_CHECK_ACCESS: MessageKey = MessageKey::new("permission.chec
 /// The message `permission.comment`.
 pub const PERMISSION_COMMENT: MessageKey = MessageKey::new("permission.comment");
 
+/// The message `permission.create-issues`.
+pub const PERMISSION_CREATE_ISSUES: MessageKey = MessageKey::new("permission.create-issues");
+
+/// The message `permission.create-projects`.
+pub const PERMISSION_CREATE_PROJECTS: MessageKey = MessageKey::new("permission.create-projects");
+
+/// The message `permission.create-sub-projects`.
+pub const PERMISSION_CREATE_SUB_PROJECTS: MessageKey =
+    MessageKey::new("permission.create-sub-projects");
+
 /// The message `permission.decide-roles`.
 pub const PERMISSION_DECIDE_ROLES: MessageKey = MessageKey::new("permission.decide-roles");
 
@@ -2671,16 +2681,6 @@ pub const PERMISSION_DELETE_ISSUES: MessageKey = MessageKey::new("permission.del
 
 /// The message `permission.edit-anyway`.
 pub const PERMISSION_EDIT_ANYWAY: MessageKey = MessageKey::new("permission.edit-anyway");
-
-/// The message `permission.make-issues`.
-pub const PERMISSION_MAKE_ISSUES: MessageKey = MessageKey::new("permission.make-issues");
-
-/// The message `permission.make-projects`.
-pub const PERMISSION_MAKE_PROJECTS: MessageKey = MessageKey::new("permission.make-projects");
-
-/// The message `permission.make-sub-projects`.
-pub const PERMISSION_MAKE_SUB_PROJECTS: MessageKey =
-    MessageKey::new("permission.make-sub-projects");
 
 /// The message `permission.manage-fields`.
 pub const PERMISSION_MANAGE_FIELDS: MessageKey = MessageKey::new("permission.manage-fields");
@@ -9678,6 +9678,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.comment",
         "Write comments on the issues they see",
     ),
+    ("permission.create-issues", "Create issues"),
+    (
+        "permission.create-projects",
+        "Create projects at the top level",
+    ),
+    (
+        "permission.create-sub-projects",
+        "Create sub-projects inside the project",
+    ),
     (
         "permission.decide-roles",
         "Decide who has which role, including No access",
@@ -9690,15 +9699,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "permission.edit-anyway",
         "Take over text someone else is editing; their text is kept",
-    ),
-    ("permission.make-issues", "Create issues"),
-    (
-        "permission.make-projects",
-        "Create projects at the top level",
-    ),
-    (
-        "permission.make-sub-projects",
-        "Create sub-projects inside the project",
     ),
     (
         "permission.manage-fields",

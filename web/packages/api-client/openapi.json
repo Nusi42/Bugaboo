@@ -14921,7 +14921,7 @@
       },
       "post": {
         "tags": ["projects"],
-        "summary": "Makes a project at the top level. Needs the permission *Make projects at the top level*.",
+        "summary": "Makes a project at the top level. Needs the permission *Create projects at the top level*.",
         "operationId": "makeProject",
         "requestBody": {
           "content": {
@@ -15023,7 +15023,7 @@
             }
           }
         },
-        "x-permission": "make-projects"
+        "x-permission": "create-projects"
       }
     },
     "/api/v1/projects/{project}": {
@@ -15136,7 +15136,7 @@
       },
       "patch": {
         "tags": ["projects"],
-        "summary": "Changes the name or the short name of a project. A short name that is changed leaves the old\none with the project, so its old addresses keep working. Needs the permission *Change the\nproject's name, short name and settings*; a short name also needs the right to make projects\nwhere the project sits.",
+        "summary": "Changes the name or the short name of a project. A short name that is changed leaves the old\none with the project, so its old addresses keep working. Needs the permission *Change the\nproject's name, short name and settings*; a short name also needs the right to create projects\nwhere the project sits.",
         "operationId": "changeProject",
         "parameters": [
           {
@@ -15265,7 +15265,7 @@
     "/api/v1/projects/{project}/assignable-people": {
       "get": {
         "tags": ["issues"],
-        "summary": "The people an issue of the project can be assigned to, a page at a time, by name: those who\nsee the project and hold *See issues* there, and the person who asks. A person who cannot see\nnames for *Assigned to* and *Project members* is offered only themselves. Needs the right to\nset *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that\nlets the person change that field. For an own field (`field`) the right to change that field\ntakes the place of the right to set *Assigned to*.",
+        "summary": "The people an issue of the project can be assigned to, a page at a time, by name: those who\nsee the project and hold *See issues* there, and the person who asks. A person who cannot see\nnames for *Assigned to* and *Project members* is offered only themselves. Needs the right to\nset *Assigned to*: *Change issues*, *Change own issues* or *Create issues*, and a field mask that\nlets the person change that field. For an own field (`field`) the right to change that field\ntakes the place of the right to set *Assigned to*.",
         "operationId": "listAssignablePeople",
         "parameters": [
           {
@@ -16028,7 +16028,7 @@
       },
       "post": {
         "tags": ["issues"],
-        "summary": "Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones\nthe person may change (the title always).",
+        "summary": "Makes an issue in a project. Needs the permission *Create issues*; the fields set must be ones\nthe person may change (the title always).",
         "operationId": "makeIssue",
         "parameters": [
           {
@@ -16151,7 +16151,7 @@
             }
           }
         },
-        "x-permission": "make-issues"
+        "x-permission": "create-issues"
       }
     },
     "/api/v1/projects/{project}/move": {
@@ -16797,7 +16797,7 @@
     "/api/v1/projects/{project}/sub-projects": {
       "post": {
         "tags": ["projects"],
-        "summary": "Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the\nproject it goes into.",
+        "summary": "Makes a sub-project. Needs the permission *Create sub-projects inside the project* in the\nproject it goes into.",
         "operationId": "makeSubProject",
         "parameters": [
           {
@@ -16920,7 +16920,7 @@
             }
           }
         },
-        "x-permission": "make-sub-projects"
+        "x-permission": "create-sub-projects"
       }
     },
     "/api/v1/projects/{project}/tag-suggestions": {
@@ -26129,12 +26129,12 @@
         "description": "One permission of the catalogue.",
         "enum": [
           "see-projects",
-          "make-projects",
-          "make-sub-projects",
+          "create-projects",
+          "create-sub-projects",
           "move-projects",
           "change-project-settings",
           "see-issues",
-          "make-issues",
+          "create-issues",
           "change-issues",
           "change-own-issues",
           "comment",

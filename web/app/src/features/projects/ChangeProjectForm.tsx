@@ -14,7 +14,7 @@ export interface ChangeProjectFormProps {
 
 /**
  * The name and the short name of a project (PRJ-01, M2-Q4). The short name can be changed by
- * people who may make projects where this one sits; the old one stays with the project.
+ * people who may create projects where this one sits; the old one stays with the project.
  */
 export function ChangeProjectForm({ project, onSaved }: ChangeProjectFormProps) {
   const { id, name: oldName, short_name: oldShortName, version } = project.project;

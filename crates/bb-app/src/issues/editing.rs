@@ -17,7 +17,7 @@ use crate::editing::RecordFacts;
 /// What a person needs to make an issue in a project (the form behind a draft of a new issue).
 #[must_use]
 pub(crate) fn making(kind: &EntityKind) -> Option<Permission> {
-    (*kind == EntityKind::from(RecordKind::Issue)).then_some(Permission::MakeIssues)
+    (*kind == EntityKind::from(RecordKind::Issue)).then_some(Permission::CreateIssues)
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

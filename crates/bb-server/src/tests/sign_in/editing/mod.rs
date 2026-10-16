@@ -48,13 +48,13 @@ use super::rig::{PASSWORD, Rig, refused};
 const EDITING: [Permission; 3] = [
     Permission::SeeProjects,
     Permission::ChangeIssues,
-    Permission::MakeIssues,
+    Permission::CreateIssues,
 ];
 /// What a person needs to take the editing over.
 const TAKING_OVER: [Permission; 5] = [
     Permission::SeeProjects,
     Permission::ChangeIssues,
-    Permission::MakeIssues,
+    Permission::CreateIssues,
     Permission::EditAnyway,
     Permission::ChangeProjectSettings,
 ];

@@ -207,7 +207,7 @@ fn narrowed_world() -> World {
         "Lead",
         &[
             Permission::SeeProjects,
-            Permission::MakeSubProjects,
+            Permission::CreateSubProjects,
             Permission::DecideRoles,
             Permission::CheckAccess,
             Permission::ManageRoles,
@@ -230,7 +230,7 @@ fn auth_07_a_key_with_see_only_keeps_only_permissions_of_the_kind_see_and_no_fie
     let key = owner.narrowed(&Narrowing::see_and_change());
     assert_eq!(
         keys(&key),
-        ["see-projects", "make-sub-projects", "check-access"]
+        ["see-projects", "create-sub-projects", "check-access"]
     );
     assert_eq!(key.field_level(Field::Title), FieldLevel::CanChange);
     // Everything I can do is the owner without what no key holds: inviting people and changing
@@ -255,7 +255,7 @@ fn auth_07_single_permissions_never_give_what_the_owner_does_not_hold() {
     let owner = world.at(world.web);
     let picked: BTreeSet<Permission> = [
         Permission::SeeProjects,
-        Permission::MakeProjects,
+        Permission::CreateProjects,
         Permission::ManagePeople,
     ]
     .into_iter()

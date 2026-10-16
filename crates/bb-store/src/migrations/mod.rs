@@ -37,6 +37,7 @@ mod m0010_relations;
 mod m0011_tags;
 mod m0012_layouts;
 mod m0013_job_kinds;
+mod m0014_names;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -181,6 +182,11 @@ const ALL: &[Definition] = &[
         version: 13,
         name: "job_kinds",
         steps: || Ok(m0013_job_kinds::steps()),
+    },
+    Definition {
+        version: 14,
+        name: "names",
+        steps: || Ok(m0014_names::steps()),
     },
 ];
 

@@ -200,7 +200,7 @@ pub struct ProjectDetail {
     /// What the person may do here.
     pub permissions: Vec<Permission>,
     /// Whether the person may change the short name: they change this project's settings and
-    /// may make projects where it sits, so a short name that is taken can be told to them
+    /// may create projects where it sits, so a short name that is taken can be told to them
     /// (ADR-0025, decision 13).
     pub may_change_short_name: bool,
     /// Where the person may move the project to.

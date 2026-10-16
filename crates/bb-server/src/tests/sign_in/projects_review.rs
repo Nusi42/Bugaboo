@@ -223,7 +223,7 @@ async fn prj_03_a_project_says_whether_the_person_may_move_it() -> TestResult {
 }
 
 #[tokio::test]
-async fn prj_03_moving_to_the_top_level_needs_make_projects_as_well() -> TestResult {
+async fn prj_03_moving_to_the_top_level_needs_create_projects_as_well() -> TestResult {
     each_database("prj_03_top_level_needs_make", async |db| {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
@@ -236,7 +236,7 @@ async fn prj_03_moving_to_the_top_level_needs_make_projects_as_well() -> TestRes
                 &[Permission::SeeProjects, Permission::MoveProjects],
             )
             .await?;
-        let maker = org.role("Maker", &[Permission::MakeProjects]).await?;
+        let maker = org.role("Maker", &[Permission::CreateProjects]).await?;
         let bob = org.person().await?;
         org.give_everywhere(&bob, mover.id).await?;
         assert_eq!(

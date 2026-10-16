@@ -21,7 +21,7 @@ use super::rig::{Rig, refused};
 /// What a lead of a project may do.
 pub(super) const LEAD: [Permission; 5] = [
     Permission::SeeProjects,
-    Permission::MakeSubProjects,
+    Permission::CreateSubProjects,
     Permission::MoveProjects,
     Permission::ChangeProjectSettings,
     Permission::DecideRoles,
@@ -297,7 +297,7 @@ async fn prj_01_an_old_short_name_redirects() -> TestResult {
 }
 
 #[tokio::test]
-async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects() -> TestResult {
+async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_create_projects() -> TestResult {
     each_database("prj_01_taken_short_name", async |db| {
         let rig = Rig::start(db).await?;
         let org = Org::start(&rig).await?;
@@ -307,8 +307,8 @@ async fn prj_01_a_taken_short_name_is_told_only_to_people_who_may_make_projects(
         assert_eq!(renamed.short_name.as_str(), "OPEN");
         let ours = make(&org, &admin, None, "OURS").await?;
 
-        // Maker may make projects at the top level and sees none of them.
-        let maker_role = org.role("Maker", &[Permission::MakeProjects]).await?;
+        // Maker may create projects at the top level and sees none of them.
+        let maker_role = org.role("Maker", &[Permission::CreateProjects]).await?;
         let maker = org.person().await?;
         org.give_everywhere(&maker, maker_role.id).await?;
         // The same answer for a hidden project's short name, for its old one, and for a short

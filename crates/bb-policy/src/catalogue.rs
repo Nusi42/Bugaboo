@@ -79,18 +79,18 @@ macro_rules! permissions {
 permissions! {
     /// See the project and what is in it.
     SeeProjects => ("see-projects", Projects, Project, See),
-    /// Make projects at the top level.
-    MakeProjects => ("make-projects", Projects, Organization, Change),
-    /// Make sub-projects inside the project.
-    MakeSubProjects => ("make-sub-projects", Projects, Project, Change),
+    /// Create projects at the top level.
+    CreateProjects => ("create-projects", Projects, Organization, Change),
+    /// Create sub-projects inside the project.
+    CreateSubProjects => ("create-sub-projects", Projects, Project, Change),
     /// Move sub-projects into or out of the project.
     MoveProjects => ("move-projects", Projects, Project, Change),
     /// Change the project's name, short name and settings.
     ChangeProjectSettings => ("change-project-settings", Projects, Project, Manage),
     /// See every issue of the project; without it, only the issues the person reported.
     SeeIssues => ("see-issues", Issues, Project, See),
-    /// Make issues in the project.
-    MakeIssues => ("make-issues", Issues, Project, Change),
+    /// Create issues in the project.
+    CreateIssues => ("create-issues", Issues, Project, Change),
     /// Change anybody's issues, in the fields the person may change.
     ChangeIssues => ("change-issues", Issues, Project, Change),
     /// Change the issues the person reported, in the fields they may change.

@@ -386,7 +386,7 @@ async fn iss_01a_makes_and_changes_at_the_moment_of_a_mode_change_finish_in_one_
             let made = site.make(&mut ada, &format!("Before {number}")).await?;
             paths.push(format!("{ISSUES}/{}", key_in(ok(&made)?)?));
         }
-        // Four people change an issue each, four make issues, and the mode changes, all at once.
+        // Four people change an issue each, four create issues, and the mode changes, all at once.
         let email = ADA_EMAIL;
         let (mut c0, mut c1, mut c2, mut c3) = (
             Browser::signed_in_as(&app, email).await?,

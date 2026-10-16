@@ -146,7 +146,7 @@ fn may_set_issues(held: &Evaluation) -> bool {
     held.allows(Permission::SeeIssues)
         && (held.allows(Permission::ChangeIssues)
             || held.allows(Permission::ChangeOwnIssues)
-            || held.allows(Permission::MakeIssues))
+            || held.allows(Permission::CreateIssues))
 }
 
 /// Whether the person may set *Assigned to* on an issue of this type: they set issues, and the mask

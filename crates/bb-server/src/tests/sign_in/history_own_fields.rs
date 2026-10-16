@@ -335,7 +335,7 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
             "max@example.test",
             &[
                 Permission::SeeProjects,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
                 Permission::ChangeOwnIssues,
             ],
             &levels,

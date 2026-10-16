@@ -49,7 +49,7 @@ const O: PeopleLevel = PeopleLevel::Hidden;
 const CONTRIBUTOR: [Permission; 5] = [
     Permission::SeeProjects,
     Permission::SeeIssues,
-    Permission::MakeIssues,
+    Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
 ];
@@ -63,7 +63,7 @@ const TEAM_MEMBER: [Permission; 3] = [
 
 /// What a Project lead has beyond a Team member.
 const PROJECT_LEAD: [Permission; 9] = [
-    Permission::MakeSubProjects,
+    Permission::CreateSubProjects,
     Permission::MoveProjects,
     Permission::ChangeProjectSettings,
     Permission::DecideRoles,
@@ -81,7 +81,7 @@ const VIEWER: [Permission; 2] = [Permission::SeeProjects, Permission::SeeIssues]
 /// and comments on them.
 const GUEST: [Permission; 4] = [
     Permission::SeeProjects,
-    Permission::MakeIssues,
+    Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
 ];

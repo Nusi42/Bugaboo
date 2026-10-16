@@ -61,7 +61,7 @@ async fn prj_01_a_hidden_project_and_a_missing_one_cost_the_same_reads() -> Outc
 }
 
 #[tokio::test]
-async fn prj_01_a_person_who_may_only_make_sub_projects_in_a_project_they_cannot_see_finds_it_not_there()
+async fn prj_01_a_person_who_may_only_create_sub_projects_in_a_project_they_cannot_see_finds_it_not_there()
 -> Outcome {
     use bb_core::access::AppliesTo;
     use bb_policy::Permission;
@@ -81,14 +81,14 @@ async fn prj_01_a_person_who_may_only_make_sub_projects_in_a_project_they_cannot
     )
     .await?
     .into_value();
-    // A role that only lets them make sub-projects, given in the project: it does not let them
+    // A role that only lets them create sub-projects, given in the project: it does not let them
     // see it, so the project is not there for them, as for anybody who does not see it.
     let only = make_role(
         &world.ctx(),
         MakeRole {
             session_token: admin.clone(),
             name: "Only sub-projects".to_owned(),
-            permissions: vec![Permission::MakeSubProjects],
+            permissions: vec![Permission::CreateSubProjects],
             two_step: false,
         },
     )

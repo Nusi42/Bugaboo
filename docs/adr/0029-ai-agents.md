@@ -51,7 +51,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 
   The hand-over ends at *Accept*, *Throw away*, *Stop*, or when it runs out (14 days unless set otherwise). The person handing over needs *Change issues* (or *Change the issues they reported*) on each issue. Enforced by: the tests `ai_31_a_handed_over_agent_sees_only_its_issues` and `ai_31_a_hand_over_ends_at_accept` (M8).
 - **Standing rule** (AI-32): a person lets one of their agents work on everything a saved search finds, for example *"every new bug in Website"*. Because anybody who changes an issue so that it matches gives the agent that issue, a standing rule is narrower than a hand-over:
-  - it may **propose** (default: nothing changes until a person clicks *Apply*, as with the assistant), or **change only the fields named in the rule** from a short list (*Labels, Tags, Type, Duplicate of, Found in release*); it may make issues in one named project when the rule says so (for an agent that reports failing tests);
+  - it may **propose** (default: nothing changes until a person clicks *Apply*, as with the assistant), or **change only the fields named in the rule** from a short list (*Labels, Tags, Type, Duplicate of, Found in release*); it may create issues in one named project when the rule says so (for an agent that reports failing tests);
   - it never changes a field that holds people (*Assigned to*, *Followers*, *Reported by*) and never the status; Enforced by: the test `ai_32_a_standing_rule_never_changes_people_fields` (M8), and COMP-10 in review;
   - it **runs out** after 30 days unless set otherwise (at most 90) and is renewed with one click;
   - every issue that newly comes under the rule is written down, so the person sees what the agent saw.

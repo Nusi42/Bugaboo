@@ -331,7 +331,7 @@ async fn get_project(
     answer_authorized(&detail.map(ProjectDetailBody::from))
 }
 
-/// Makes a project at the top level. Needs the permission *Make projects at the top level*.
+/// Makes a project at the top level. Needs the permission *Create projects at the top level*.
 #[utoipa::path(
     post,
     path = "/api/v1/projects",
@@ -367,7 +367,7 @@ async fn make_project(
     answer_authorized(&made.map(ProjectBody::from))
 }
 
-/// Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the
+/// Makes a sub-project. Needs the permission *Create sub-projects inside the project* in the
 /// project it goes into.
 #[utoipa::path(
     post,
@@ -410,7 +410,7 @@ async fn make_sub_project(
 
 /// Changes the name or the short name of a project. A short name that is changed leaves the old
 /// one with the project, so its old addresses keep working. Needs the permission *Change the
-/// project's name, short name and settings*; a short name also needs the right to make projects
+/// project's name, short name and settings*; a short name also needs the right to create projects
 /// where the project sits.
 #[utoipa::path(
     patch,

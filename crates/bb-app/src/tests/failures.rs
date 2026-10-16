@@ -303,7 +303,10 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
         ctx.project_label(&actor, nowhere).await?,
         ProjectLabel::Hidden
     );
-    assert!(!ctx.may_make_projects_beside(&actor, Some(nowhere)).await?);
+    assert!(
+        !ctx.may_create_projects_beside(&actor, Some(nowhere))
+            .await?
+    );
     assert!(matches!(
         ctx.project_label(&actor, made.id).await?,
         ProjectLabel::Visible { .. }
@@ -317,7 +320,7 @@ async fn sec_03_a_store_that_breaks_while_asking_who_may_do_what_is_not_taken_fo
         Err(AppError::Internal(_))
     ));
     assert!(matches!(
-        ctx.may_make_projects_beside(&actor, Some(made.id)).await,
+        ctx.may_create_projects_beside(&actor, Some(made.id)).await,
         Err(AppError::Internal(_))
     ));
     assert!(matches!(

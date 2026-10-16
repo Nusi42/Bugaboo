@@ -15,7 +15,7 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::input::clean_name;
 use crate::member;
 
-/// Makes a project. Top level takes *Make projects*; a sub-project takes *Make sub-projects* in
+/// Makes a project. Top level takes *Create projects*; a sub-project takes *Create sub-projects* in
 /// its parent.
 ///
 /// # Errors
@@ -23,7 +23,7 @@ use crate::member;
 /// not know about), `request.invalid` for a short name or a name that cannot be one,
 /// `project.too_deep` when the project would be nested deeper than a tree may go, `name.taken`
 /// when the short name is taken, or was used by a project once (only a person who
-/// may make projects there is told, with the same answer whether the project is hidden or not).
+/// may create projects there is told, with the same answer whether the project is hidden or not).
 pub async fn make_project<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: MakeProject,
@@ -31,12 +31,16 @@ pub async fn make_project<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let access = match input.parent {
         None => {
-            ctx.require(&actor, Permission::MakeProjects, Place::Organization)
+            ctx.require(&actor, Permission::CreateProjects, Place::Organization)
                 .await?
         }
         Some(parent) => {
             let access = ctx
-                .require(&actor, Permission::MakeSubProjects, Place::Project(parent))
+                .require(
+                    &actor,
+                    Permission::CreateSubProjects,
+                    Place::Project(parent),
+                )
                 .await?;
             // A project the person does not see is not there for them, whatever they may make in
             // it: otherwise making in it would tell them it exists.

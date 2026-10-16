@@ -97,7 +97,7 @@ pub fn check_move(
     }
     // The top level is the organization: a project that goes there is made there.
     if to.is_none()
-        && !held(Place::Organization).is_some_and(|whole| whole.allows(Permission::MakeProjects))
+        && !held(Place::Organization).is_some_and(|whole| whole.allows(Permission::CreateProjects))
     {
         return Err(MoveRefusal::Forbidden);
     }

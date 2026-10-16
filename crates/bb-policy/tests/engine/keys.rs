@@ -40,7 +40,7 @@ fn world() -> World {
         position: 0,
         permissions: BTreeSet::from([
             Permission::SeeProjects,
-            Permission::MakeSubProjects,
+            Permission::CreateSubProjects,
             Permission::DecideRoles,
         ]),
         two_step: false,

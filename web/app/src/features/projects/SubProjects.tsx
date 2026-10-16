@@ -42,7 +42,7 @@ export function SubProjects({ project }: { readonly project: OneProject }) {
   const { id } = project.project;
   const list = useProjectList({ inside: id });
   const [making, setMaking] = useState(false);
-  const mayMake = project.permissions.includes("make-sub-projects");
+  const mayMake = project.permissions.includes("create-sub-projects");
   const empty = list.isSuccess && linesOf(list.data.pages).length === 0;
   return (
     <Card heading={t("projects.sub-projects")}>

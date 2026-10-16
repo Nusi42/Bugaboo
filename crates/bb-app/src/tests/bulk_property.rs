@@ -190,7 +190,7 @@ async fn session_of(world: &World, who: usize, setup: &Setup) -> Result<String, 
             Permission::ChangeIssues,
             Permission::DeleteIssues,
             Permission::MoveIssues,
-            Permission::MakeIssues,
+            Permission::CreateIssues,
         ]);
     }
     let role = make_role(
