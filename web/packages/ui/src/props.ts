@@ -1,3 +1,5 @@
+import type { partWords } from "./tokens.ts";
+
 /**
  * The words of the props that pick one of several looks or behaviours of a component. A screen
  * writes `tone={alertTone.danger}`, not a flag per look: a component can then not be asked for two
@@ -69,6 +71,16 @@ export type IconSize = (typeof iconSize)[keyof typeof iconSize];
 /** How the choices of a picker look: a scrolling list of plain rows, or a column of bordered boxes. */
 export const pickerLook = { list: "list", boxed: "boxed" } as const;
 export type PickerLook = (typeof pickerLook)[keyof typeof pickerLook];
+
+/** The swatches of the key to the colors of a list, by what they mean (UX §4.2). */
+export const legendLook = {
+  inProgress: "in-progress",
+  done: "done",
+  critical: "critical",
+  high: "high",
+} as const satisfies Readonly<
+  Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
+>;
 
 /** How a row of the issue list is drawn besides the usual: the two lines of a phone. */
 export const listRowLook = { phone: "phone" } as const;

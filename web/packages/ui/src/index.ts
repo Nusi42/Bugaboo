@@ -119,6 +119,7 @@ export {
   buttonType,
   fieldKind,
   iconSize,
+  legendLook,
   listRowLook,
   overlayEdge,
   pickerLook,
@@ -131,7 +132,7 @@ export {
   type PickerLook,
 } from "./props.ts";
 export { SearchField, type SearchFieldProps } from "./SearchField.tsx";
-export { type PriorityWord, type StatusGroup } from "./status.ts";
+export { listShowsWord, type PriorityWord, type StatusGroup } from "./status.ts";
 export { StatusButton, type StatusButtonProps } from "./StatusButton.tsx";
 export { StatusIcon, type StatusIconProps } from "./StatusIcon.tsx";
 export { StatusPill, type StatusPillProps } from "./StatusPill.tsx";

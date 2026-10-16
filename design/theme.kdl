@@ -107,7 +107,7 @@ tokens {
     size "size-col-priority" "96px"
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
-    size "size-col-changed" "96px"
+    size "size-col-changed" "120px"
     // A window (UX §6.3): it starts 760 wide, the smallest is 480 x 360, and the form follows its own width.
     size "size-window" "760px"
     size "size-window-width-min" "480px"
@@ -1453,6 +1453,11 @@ part "list-row[state=selected]" {
     use "ring-inside"
 }
 
+// The issue that is open next to the list.
+part "list-row[state=current]" {
+    use "current-item"
+}
+
 // The column names above the rows.
 part "list-row[variant=head]" {
     min-height "$size-control"
@@ -1531,6 +1536,7 @@ part "list-row[state=group-done] list-row.cell[variant=title]" {
 // and the link reaches over the row.
 part "list-row.cell link" {
     color inherit
+    font-weight "$weight-regular"
     text-decoration none
 }
 
@@ -1547,6 +1553,7 @@ part "list-row.cell[variant=title] link[focus-visible]::after" {
 // The checkbox and the buttons in a row stay above the link that reaches over it.
 part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.cell[variant=priority]" "list-row.cell[variant=person]" {
     position relative
+    z-index "$z-raised"
 }
 
 // On a phone the row has two lines: status, ID and priority, then the title, then the person and
@@ -1722,6 +1729,18 @@ part "legend.swatch[variant=critical]" {
 
 part "legend.swatch[variant=high]" {
     border-inline-start "$size-edge solid $warning"
+}
+
+// The row above a list: its main button, what is ticked, and the key to the colors at the end.
+part "list-toolbar" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-3" "$space-5"
+}
+
+part "list-toolbar legend" {
+    margin-inline-start auto
 }
 
 // ───────────── Window (UX §6.3, R10) ─────────────

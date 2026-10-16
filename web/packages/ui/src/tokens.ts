@@ -320,6 +320,7 @@ export const part = {
   legend: "legend",
   legendItem: "legend.item",
   legendSwatch: "legend.swatch",
+  listToolbar: "list-toolbar",
   window: "window",
   windowContent: "window.content",
   windowTitleBar: "window.title-bar",
@@ -648,7 +649,14 @@ export const partWords = {
   },
   "list-row": {
     variant: ["head", "phone"],
-    state: ["group-in-progress", "selected", "group-done", "priority-critical", "priority-high"],
+    state: [
+      "group-in-progress",
+      "selected",
+      "group-done",
+      "priority-critical",
+      "priority-high",
+      "current",
+    ],
   },
   "list-grid": { variant: [], state: [] },
   "list-row.cell": {
@@ -675,6 +683,7 @@ export const partWords = {
   legend: { variant: [], state: [] },
   "legend.item": { variant: [], state: [] },
   "legend.swatch": { variant: ["in-progress", "done", "critical", "high"], state: [] },
+  "list-toolbar": { variant: [], state: [] },
   window: { variant: [], state: [] },
   "window.content": { variant: [], state: [] },
   "window.title-bar": { variant: [], state: [] },

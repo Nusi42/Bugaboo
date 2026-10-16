@@ -35,13 +35,15 @@ export function ListGrid({ label, children }: ListGridProps) {
 export interface ListHeadProps {
   /** The name of every column. The columns with only an icon are named for screen readers only. */
   readonly labels: Readonly<Record<ListColumn, string>>;
+  /** The columns the list has, in the order they stand; all of them without it. */
+  readonly columns?: readonly ListColumn[];
 }
 
 /** The names of the columns above the rows: the same cells, so they line up. */
-export function ListHead({ labels }: ListHeadProps) {
+export function ListHead({ labels, columns = listColumns }: ListHeadProps) {
   return (
     <div {...partOf(part.listRow, { variants: ["head"] })} role={role.row}>
-      {listColumns.map((column) => (
+      {columns.map((column) => (
         <div
           key={column}
           {...partOf(part.listRowCell, { variants: [column] })}
@@ -61,24 +63,37 @@ export function ListHead({ labels }: ListHeadProps) {
 export interface ListRowProps extends RowStateInput {
   /** What stands in each column. A column without content stays, so the others keep their place. */
   readonly cells: Readonly<Partial<Record<ListColumn, ReactNode>>>;
+  /** The columns the list has, in the order they stand; all of them without it. */
+  readonly columns?: readonly ListColumn[];
   /** The row is ticked. */
   readonly selected?: boolean;
+  /** The issue of this row is open next to the list. */
+  readonly current?: boolean;
   /** The row of a phone has two lines, in the same order (R9). */
   readonly variant?: typeof listRowLook.phone;
 }
 
 /** One issue: its cells in the fixed columns, tinted by its status group and edged by its priority (R4). */
-export function ListRow({ cells, group, priority, selected = false, variant }: ListRowProps) {
+export function ListRow({
+  cells,
+  columns = listColumns,
+  group,
+  priority,
+  selected = false,
+  current = false,
+  variant,
+}: ListRowProps) {
   return (
     <div
       {...partOf(part.listRow, {
         variants: [variant],
-        states: [...rowStates({ group, priority }), selected && "selected"],
+        states: [...rowStates({ group, priority }), selected && "selected", current && "current"],
       })}
       role={role.row}
       aria-selected={selected}
+      {...(current ? { "aria-current": true } : {})}
     >
-      {listColumns.map((column) => (
+      {columns.map((column) => (
         <div key={column} {...partOf(part.listRowCell, { variants: [column] })} role={role.cell}>
           {cells[column]}
         </div>
