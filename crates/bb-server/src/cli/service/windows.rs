@@ -27,7 +27,7 @@ use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 
 use super::{Found, NAME, refused, tell_about_setup_code};
 use crate::cli::{ConfigArgs, load_settings, serve};
-use crate::data_folder::{ADMINISTRATORS_SID, DataFolder, check_for_service};
+use crate::data_folder::{ADMINISTRATORS_SID, DataFolder, OwnFiles, check_for_service};
 use crate::{log, output};
 
 /// The Windows error numbers that are answered with a plain sentence.
@@ -107,11 +107,11 @@ fn grant(data_dir: &std::path::Path) -> anyhow::Result<()> {
 }
 
 /// `bugaboo service install`.
-pub(super) fn install(found: &Found, take_over: bool) -> anyhow::Result<()> {
+pub(super) fn install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     let manager =
         ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CREATE_SERVICE)
             .map_err(|error| explain(&error))?;
-    check_for_service(&found.settings.data_dir, take_over)?;
+    check_for_service(&found.settings.data_dir, own_files)?;
     DataFolder::prepare(&found.settings.data_dir)?;
     let service = manager
         .create_service(

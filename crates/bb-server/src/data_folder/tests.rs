@@ -309,15 +309,15 @@ fn sec_16_the_owner_of_a_folder_is_found_by_user_number() {
 fn sec_16_a_service_may_take_over_only_a_new_or_a_bugaboo_folder() {
     let temp = tempfile::tempdir().unwrap();
     // Not there yet, and empty: fine.
-    check_for_service(&temp.path().join("new"), false).unwrap();
+    check_for_service(&temp.path().join("new"), OwnFiles::Refuse).unwrap();
     let empty = temp.path().join("empty");
     std::fs::create_dir(&empty).unwrap();
-    check_for_service(&empty, false).unwrap();
+    check_for_service(&empty, OwnFiles::Refuse).unwrap();
     // A folder with somebody's own files is refused, and nothing in it changes.
     let mine = temp.path().join("documents");
     std::fs::create_dir(&mine).unwrap();
     std::fs::write(mine.join("tax.pdf"), "x").unwrap();
-    let error = check_for_service(&mine, false).unwrap_err();
+    let error = check_for_service(&mine, OwnFiles::Refuse).unwrap_err();
     assert!(error.message().contains("does not look like"), "{error}");
     // An unrelated folder named `keys` (or with all the names of a data folder but a file
     // in one of them) is no Bugaboo folder either.
@@ -326,7 +326,7 @@ fn sec_16_a_service_may_take_over_only_a_new_or_a_bugaboo_folder() {
     std::fs::write(other.join(KEYS).join("id_ed25519"), "x").unwrap();
     std::fs::write(other.join("notes.txt"), "x").unwrap();
     assert!(
-        check_for_service(&other, false).is_err(),
+        check_for_service(&other, OwnFiles::Refuse).is_err(),
         "a folder with a `keys` folder"
     );
     let layout = temp.path().join("layout");
@@ -334,24 +334,24 @@ fn sec_16_a_service_may_take_over_only_a_new_or_a_bugaboo_folder() {
     std::fs::write(layout.join(FILES).join("photo.jpg"), "x").unwrap();
     std::fs::write(layout.join("notes.txt"), "x").unwrap();
     assert!(
-        check_for_service(&layout, false).is_err(),
+        check_for_service(&layout, OwnFiles::Refuse).is_err(),
         "a layout with somebody's file in it"
     );
     // A data folder that Bugaboo made and has not filled yet: all of its folders, all empty.
     let fresh = temp.path().join("fresh");
     DataFolder::prepare(&fresh).unwrap();
-    check_for_service(&fresh, false).unwrap();
+    check_for_service(&fresh, OwnFiles::Refuse).unwrap();
     // One that has run holds the master key or the database, also with files added later.
     let used = temp.path().join("used");
     DataFolder::prepare(&used).unwrap();
     std::fs::write(used.join(KEYS).join(bb_store::MASTER_KEY_FILE), "x").unwrap();
     std::fs::write(used.join("notes.txt"), "x").unwrap();
-    check_for_service(&used, false).unwrap();
+    check_for_service(&used, OwnFiles::Refuse).unwrap();
     let with_database = temp.path().join("with-database");
     DataFolder::prepare(&with_database).unwrap();
     std::fs::write(with_database.join(DATABASE_FILE), "x").unwrap();
     std::fs::write(with_database.join("notes.txt"), "x").unwrap();
-    check_for_service(&with_database, false).unwrap();
+    check_for_service(&with_database, OwnFiles::Refuse).unwrap();
     // The known files are the database and its companions and the setup code.
     std::fs::write(with_database.join(format!("{DATABASE_FILE}-wal")), "x").unwrap();
     let known = DataFolder::existing(&with_database).unwrap().known_files();
@@ -380,7 +380,7 @@ fn sec_16_a_link_is_not_a_known_file_and_a_linked_sub_folder_is_refused() {
     std::fs::create_dir(&other).unwrap();
     std::fs::remove_dir(data.join(TLS)).unwrap();
     std::os::unix::fs::symlink(&other, data.join(TLS)).unwrap();
-    let error = check_for_service(&data, false).unwrap_err();
+    let error = check_for_service(&data, OwnFiles::Refuse).unwrap_err();
     assert!(error.message().contains("does not look like"), "{error}");
 }
 
@@ -409,14 +409,14 @@ fn ops_03_a_data_folder_with_own_certificates_is_taken_over_only_with_the_flag()
     std::fs::create_dir(mine.join(FILES)).unwrap();
 
     // Without the flag the folder is refused, and the message names the flag.
-    let error = check_for_service(&mine, false).unwrap_err();
+    let error = check_for_service(&mine, OwnFiles::Refuse).unwrap_err();
     assert!(
         error.message().contains("--take-over-data-folder"),
         "{error}"
     );
     assert!(error.message().contains("tls"), "{error}");
     // With the flag it is taken over; nothing in it is changed by the check.
-    check_for_service(&mine, true).unwrap();
+    check_for_service(&mine, OwnFiles::TakeOver).unwrap();
     assert!(mine.join(TLS).join("private-key.pem").is_file());
 
     // The flag takes over nothing else: any other content of the folder or of the
@@ -426,12 +426,15 @@ fn ops_03_a_data_folder_with_own_certificates_is_taken_over_only_with_the_flag()
         let folder = temp.path().join(name);
         with_own_certificate(&folder);
         put(&folder);
-        let error = check_for_service(&folder, true).unwrap_err();
+        let error = check_for_service(&folder, OwnFiles::TakeOver).unwrap_err();
         assert!(
             !error.message().contains("--take-over-data-folder"),
             "{name}: {error}"
         );
-        assert!(check_for_service(&folder, false).is_err(), "{name}");
+        assert!(
+            check_for_service(&folder, OwnFiles::Refuse).is_err(),
+            "{name}"
+        );
     };
     refused("with-notes", &|folder| {
         std::fs::write(folder.join("notes.txt"), "x").unwrap();
@@ -471,8 +474,8 @@ fn ops_03_a_data_folder_with_own_certificates_is_taken_over_only_with_the_flag()
     // A folder that has no files of its own in `tls` is as before, flag or not.
     let empty = temp.path().join("only-folders");
     DataFolder::prepare(&empty).unwrap();
-    check_for_service(&empty, false).unwrap();
-    check_for_service(&empty, true).unwrap();
+    check_for_service(&empty, OwnFiles::Refuse).unwrap();
+    check_for_service(&empty, OwnFiles::TakeOver).unwrap();
 }
 
 #[test]

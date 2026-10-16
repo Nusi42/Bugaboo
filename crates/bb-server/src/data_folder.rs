@@ -177,17 +177,33 @@ impl DataFolder {
     }
 }
 
+/// What to do with a data folder whose only content is files of the person's own.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum OwnFiles {
+    /// Refuse it and name the flag that would allow it.
+    Refuse,
+    /// Take it over: the person asked for it.
+    TakeOver,
+}
+
+impl From<bool> for OwnFiles {
+    /// The flag `--take-over-data-folder` as the command line reads it.
+    fn from(flag: bool) -> Self {
+        if flag { Self::TakeOver } else { Self::Refuse }
+    }
+}
+
 /// Whether a service may take over `root`: a folder that is not there yet or is empty, or one
 /// that only Bugaboo makes: it holds the master key or the built-in database, or it is a data
 /// folder that has not run yet (all of its sub-folders, all empty). A folder with other things
 /// in it, such as documents or a `keys` folder of something else, is refused, so that installing
 /// never changes the owner of somebody's files.
 ///
-/// One more folder is taken over, but only when the person asks for it (`take_over`, the flag
-/// `--take-over-data-folder`): a folder whose only content is files of their own in `tls/`, such
-/// as a certificate put there before Bugaboo ever ran (follow-up M1-F66). The refusal names the
-/// flag when it would help.
-pub(crate) fn check_for_service(root: &Path, take_over: bool) -> Result<(), DataFolderError> {
+/// One more folder is taken over, but only when the person asks for it ([`OwnFiles::TakeOver`],
+/// the flag `--take-over-data-folder`): a folder whose only content is files of their own in
+/// `tls/`, such as a certificate put there before Bugaboo ever ran (follow-up M1-F66). The refusal
+/// names the flag when it would help.
+pub(crate) fn check_for_service(root: &Path, own_files: OwnFiles) -> Result<(), DataFolderError> {
     let empty = std::fs::read_dir(root).is_ok_and(|mut entries| entries.next().is_none());
     // A link where a sub-folder belongs would send the changes of rights somewhere else.
     let linked = SUB_FOLDERS.iter().any(|name| {
@@ -202,12 +218,11 @@ pub(crate) fn check_for_service(root: &Path, take_over: bool) -> Result<(), Data
         return Ok(());
     }
     if holds_only_own_certificate(root) {
-        return if take_over {
-            Ok(())
-        } else {
-            Err(DataFolderError::OwnCertificate {
+        return match own_files {
+            OwnFiles::TakeOver => Ok(()),
+            OwnFiles::Refuse => Err(DataFolderError::OwnCertificate {
                 path: root.to_path_buf(),
-            })
+            }),
         };
     }
     Err(DataFolderError::NotADataFolder {

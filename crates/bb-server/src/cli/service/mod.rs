@@ -24,7 +24,7 @@ use super::{ConfigArgs, InstallArgs, load_settings, program_folder};
 use crate::config::{DEFAULT_FILE, Settings};
 use crate::data_folder::DataFolder;
 #[cfg(unix)]
-use crate::data_folder::check_for_service;
+use crate::data_folder::{OwnFiles, check_for_service};
 use crate::output;
 
 /// The name of the service, as the system lists it.
@@ -83,11 +83,11 @@ fn tell_about_setup_code(data_dir: &Path) {
 pub(super) fn install(args: &InstallArgs) -> anyhow::Result<()> {
     #[cfg(windows)]
     {
-        windows::install(&find(&args.config)?, args.take_over_data_folder)
+        windows::install(&find(&args.config)?, args.take_over_data_folder.into())
     }
     #[cfg(unix)]
     {
-        systemd_install(&find(&args.config)?, args.take_over_data_folder)
+        systemd_install(&find(&args.config)?, args.take_over_data_folder.into())
     }
     #[cfg(not(any(windows, unix)))]
     {
@@ -135,7 +135,7 @@ fn unsupported() -> anyhow::Result<()> {
 }
 
 #[cfg(unix)]
-fn systemd_install(found: &Found, take_over: bool) -> anyhow::Result<()> {
+fn systemd_install(found: &Found, own_files: OwnFiles) -> anyhow::Result<()> {
     use systemd::{Installation, Step, USER, plan};
 
     require_systemd()?;
@@ -151,7 +151,7 @@ fn systemd_install(found: &Found, take_over: bool) -> anyhow::Result<()> {
             .render(),
         );
     }
-    check_for_service(&data_dir, take_over)?;
+    check_for_service(&data_dir, own_files)?;
     systemd::check_settings_file(&found.config, &data_dir)
         .map_err(|problem| anyhow!(problem.render()))?;
     let known_files = DataFolder::existing(&data_dir)
