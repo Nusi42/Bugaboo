@@ -19,6 +19,15 @@ function ownClasses(markup: string): string[] {
   );
 }
 
+describe("ux_4_4 a switch in a row of the Details keeps its name for screen readers only", () => {
+  it("hides the label with the part for hidden text", () => {
+    const markup = renderToStaticMarkup(
+      <Switch hideLabel label={text.on} isSelected onChange={nothing} />,
+    );
+    expect(markup).toContain(`data-part="visually-hidden">${text.on}<`);
+  });
+});
+
 describe("thm_11 the controls of packages/ui carry no class names and no styles", () => {
   it("a button emits its part, its looks and its state", () => {
     const markup = renderToStaticMarkup(
