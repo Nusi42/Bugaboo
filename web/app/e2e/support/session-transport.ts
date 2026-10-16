@@ -9,6 +9,16 @@ import { Agent as SecureAgent, request as sendSecure } from "node:https";
  * keeps its own cookies in a [`CookieJar`], so two people never share a sign-in.
  */
 
+/**
+ * A connection that nobody used for this long is closed by the pool, a little before the server
+ * would close it (its header timeout, `DEFAULT_HEADER_TIMEOUT`, is 30 seconds), so that a request
+ * that changes something is not sent on a connection the server has already closed.
+ */
+const IDLE_LIMIT_MS = 20_000;
+
+/** The methods that change nothing: only these are sent again when a kept connection was closed. */
+const SAFE_METHODS = new Set(["GET", "HEAD"]);
+
 /** The time a request gets before the test gives up on it. */
 const REQUEST_LIMIT_MS = 30_000;
 
@@ -156,8 +166,8 @@ function poolFor(origin: string): PlainAgent | SecureAgent {
   }
   // Plain HTTP is for the unit test of the pool; the servers of the tests speak HTTPS.
   const made = origin.startsWith("http:")
-    ? new PlainAgent({ keepAlive: true })
-    : new SecureAgent({ keepAlive: true });
+    ? new PlainAgent({ keepAlive: true, timeout: IDLE_LIMIT_MS })
+    : new SecureAgent({ keepAlive: true, timeout: IDLE_LIMIT_MS });
   pools.set(origin, made);
   return made;
 }
@@ -225,9 +235,14 @@ function once(asked: Asked, origin: string): Promise<{ answered: Answered; reuse
   });
 }
 
-/** Whether the server had closed a connection that was kept, before the request reached it. */
-function wasClosedWhileIdle(error: unknown): boolean {
+/**
+ * Whether the server had closed a connection that was kept, before the request reached it. Only a
+ * request that changes nothing (`GET`, `HEAD`) may then be sent again: of a change that was sent
+ * nobody can tell whether the server took it.
+ */
+function wasClosedWhileIdle(error: unknown, method: string): boolean {
   return (
+    SAFE_METHODS.has(method.toUpperCase()) &&
     error instanceof Error &&
     "reused" in error &&
     error.reused === true &&
@@ -237,14 +252,15 @@ function wasClosedWhileIdle(error: unknown): boolean {
 }
 
 /**
- * Sends a request through the pool of the server at `origin`. A connection that the server closed
- * while it was idle (the pool cannot know in time) is replaced once; any other failure is a failure.
+ * Sends a request through the pool of the server at `origin`. A `GET` or `HEAD` on a connection that
+ * the server closed while it was idle (the pool cannot know in time) is sent once more; any other
+ * failure, and any failure of a request that changes something, is a failure.
  */
 export async function exchange(asked: Asked, origin: string): Promise<Answered> {
   try {
     return (await once(asked, origin)).answered;
   } catch (error) {
-    if (wasClosedWhileIdle(error)) {
+    if (wasClosedWhileIdle(error, asked.method)) {
       return (await once(asked, origin)).answered;
     }
     throw error;
