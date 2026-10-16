@@ -91,7 +91,6 @@ export function ListRow({
       })}
       role={role.row}
       aria-selected={selected}
-      {...(current ? { "aria-current": true } : {})}
     >
       {columns.map((column) => (
         <div key={column} {...partOf(part.listRowCell, { variants: [column] })} role={role.cell}>

@@ -231,6 +231,11 @@ export async function setStatusAndPriority(
   });
 }
 
+/** The tick box of an issue in the list, named as the list names it. */
+export function tickBox(page: Page, key: string) {
+  return page.getByRole("checkbox", { name: t("issues.select-issue", { key }), exact: true });
+}
+
 /** The big status button of the issue page: the current status with its group's icon and color. */
 export function statusButton(page: Page) {
   return page.locator('[data-part="status-button"]');

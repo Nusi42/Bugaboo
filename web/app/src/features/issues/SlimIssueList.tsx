@@ -38,6 +38,7 @@ export function SlimIssueList({ lines, open }: SlimIssueListProps) {
                 type: line.issueType,
               },
               issueAddress(line.key),
+              { current: line.key === open },
             ),
             priority: (
               <Priority

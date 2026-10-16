@@ -49,7 +49,14 @@ export function IssueRow({ line, href, selected, current, phone, now, onSelect }
           },
           href,
         ),
-        select: <Checkbox hideLabel label={line.key} isSelected={selected} onChange={onSelect} />,
+        select: (
+          <Checkbox
+            hideLabel
+            label={t("issues.select-issue", { key: line.key })}
+            isSelected={selected}
+            onChange={onSelect}
+          />
+        ),
         priority: (
           <Priority
             priority={line.priority}

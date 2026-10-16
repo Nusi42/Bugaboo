@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { issueAddress } from "../src/shared/paths.ts";
 import { expectNoSidewaysScroll } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { webIssues } from "./support/issues.ts";
+import { tickBox, webIssues } from "./support/issues.ts";
 import { layoutOf } from "./support/layout.ts";
 import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
@@ -156,7 +156,11 @@ test("ux_3_4 the slim list beside an issue is left-aligned, with the open issue 
   await page.goto(issueAddress("WEB-1"));
   const slim = page.getByRole("table", { name: t("issues.list"), exact: true });
   const row = partIn(slim, "list-row").filter({ hasText: webIssues.login });
-  await expect(row).toHaveAttribute("aria-current", "true");
+  await expect(row.getByRole("link", { name: webIssues.login })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(row).not.toHaveAttribute("aria-current", /./u);
   await expect(row).toHaveAttribute("data-state", /group-in-progress/u);
   const box = await boxOf(row);
   const title = await boxOf(row.getByRole("link", { name: webIssues.login }));
@@ -179,6 +183,7 @@ test("ux_4_2 pressing any cell opens the issue, and the tick box ticks without o
   await openList(page);
   const row = rowOf(page, webIssues.login);
   await row.locator("label").click();
+  await expect(tickBox(page, "WEB-1")).toBeChecked();
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: 1 }) }),
   ).toHaveCount(1);

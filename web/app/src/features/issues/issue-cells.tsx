@@ -14,6 +14,14 @@ export interface CellSource {
   readonly type: Pick<Schema<"IssueTypeRef">, "icon" | "name">;
 }
 
+/** What a row adds to its cells. */
+export interface CellOptions {
+  /** What stands before the title, in muted text: the meaning of a relation. */
+  readonly before?: ReactNode;
+  /** The issue is the one that is open: its link is the current page. */
+  readonly current?: boolean;
+}
+
 /**
  * The cells an issue has in every row that shows it (R9, same things, same places): the status icon,
  * the ID, the type, and the title that opens the issue, with what stands before the title (the
@@ -22,7 +30,7 @@ export interface CellSource {
 export function issueCells(
   source: CellSource,
   href: string,
-  before?: ReactNode,
+  { before, current = false }: CellOptions = {},
 ): Readonly<Pick<Record<ListColumn, ReactNode>, "status" | "key" | "type" | "title">> {
   const { key, title, group, statusWord, type } = source;
   return {
@@ -35,7 +43,9 @@ export function issueCells(
     title: (
       <>
         {before}
-        <Link href={href}>{title}</Link>
+        <Link href={href} current={current}>
+          {title}
+        </Link>
       </>
     ),
   };

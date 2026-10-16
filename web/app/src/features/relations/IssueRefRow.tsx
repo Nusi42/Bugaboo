@@ -47,7 +47,10 @@ export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
             type: issue.issue_type,
           },
           issueAddress(issue.key),
-          meaning === undefined ? undefined : <span {...partOf(part.muted)}>{meaning} </span>,
+          {
+            before:
+              meaning === undefined ? undefined : <span {...partOf(part.muted)}>{meaning} </span>,
+          },
         ),
         action,
       }}

@@ -227,6 +227,7 @@ export interface MessageArguments {
   "issues.page-title": { project: string | number };
   "issues.read-only": { field: string | number };
   "issues.refused-at-field": { field: string | number; reason: string | number };
+  "issues.select-issue": { key: string | number };
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };

@@ -5769,6 +5769,15 @@ pub fn issues_refused_at_field(
     )
 }
 
+/// The message `issues.select-issue`.
+#[must_use]
+pub fn issues_select_issue(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.select-issue"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `issues.selected`.
 #[must_use]
 pub fn issues_selected(count: i64) -> Message {
@@ -9203,6 +9212,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Nothing is missing: you can create the issue.",
     ),
     ("issues.refused-at-field", "{field}: {reason}"),
+    ("issues.select-issue", "Select {key}"),
     (
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
