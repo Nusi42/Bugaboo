@@ -589,7 +589,7 @@
   font-weight: var(--weight-bold);
 }
 
-.bulk {
+.many-change {
   display: flex;
   gap: var(--doc-space-6);
   flex-wrap: wrap;

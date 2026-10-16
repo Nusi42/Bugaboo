@@ -408,7 +408,7 @@ function renderList(list){
   return `<div data-part="list-toolbar">${legend}</div>
     <div data-part="list-grid">${head}${groups}</div>
     <p class="muted u-font-size-fs-sm--margin-top-12px">${list.length} issue${list.length===1?"":"s"} · Click a status to change it · Tick boxes to change several issues at once</p>
-    ${n ? `<div class="bulkbar" role="region" aria-label="Change selected issues"><b>${n} selected</b>
+    ${n ? `<div class="many-change-bar" role="region" aria-label="Change selected issues"><b>${n} selected</b>
       <button type="button" class="btn sm" data-act="bulk" data-what="status">Change status</button>
       <button type="button" class="btn sm" data-act="bulk" data-what="assign">Assign to me</button>
       <button type="button" class="btn sm" data-act="bulk" data-what="label">Add label</button>

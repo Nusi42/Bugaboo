@@ -6058,7 +6058,7 @@ docs "ux-design" description="The design page of the user experience: its readin
         font-weight "$weight-bold"
     }
 
-    rule ".bulk" {
+    rule ".many-change" {
         display flex
         gap "$doc-space-6"
         flex-wrap wrap
@@ -8357,7 +8357,7 @@ docs "mockup" description="The clickable mockup: the layout of the app, its scre
         display none
     }
 
-    rule ".bulkbar" {
+    rule ".many-change-bar" {
         position sticky
         bottom "$space-3"
         margin "$space-3 auto 0"
