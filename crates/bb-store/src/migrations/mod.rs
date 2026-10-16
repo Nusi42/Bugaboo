@@ -404,7 +404,7 @@ mod tests {
     /// old one, and name the old tables and columns it uses in the migration itself.
     #[test]
     fn the_checksum_of_an_applied_migration_never_changes() {
-        const APPLIED: [&str; 13] = [
+        const APPLIED: [&str; 14] = [
             "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
             "2f79f1fcf6ccadf282c92d37e1803b440c1759d098887112f96b5cbc24d2f30e",
             "559268007329af29e9b173a8e836d1e5e5d924a70eb5a509147de6d2f1a54d2a",
@@ -418,6 +418,7 @@ mod tests {
             "dcaa647639437b3e8751fee41009ecde93b5872c8064d39f2600bd992f7b559c",
             "fffa0b40e2a8b74a36236e5d54896ec8d4a5078c82dcde3215f9ff610a4b6d2e",
             "672ecd2ebb383bd7483263729b11f4f2f3e2695825b42b86bbaf22330b12a4bf",
+            "045061588034b6040764c6ba14cfd34631f165361100372b98f44a2812c6b790",
         ];
         for (definition, wanted) in ALL.iter().zip(APPLIED) {
             let checksum = definition.checksum().unwrap();
