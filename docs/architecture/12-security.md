@@ -4,11 +4,11 @@ Part of the security and data-flow documentation (COMP-07) for the CRA technical
 
 The method is STRIDE per trust boundary (boundaries from [Context](02-context.md)). Every threat names the mitigation and what proves it: a check from the catalogue (`tools/checks/catalog.toml`), a test, or *review* when a person decides.
 
-## Scope (status: M3 built)
+## Scope (status: M3 built, M4 planned)
 
 | In scope now | Comes later (own section then) |
 |--------------|-------------------------------|
-| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments and mail (M4), search language (M5), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
+| HTTPS and start-up config, security headers, sign-in (password, passkey, two-step codes), sessions, invitations, first-run setup code, rate limits, the security log, stored secrets, logs (M1); the permission engine (roles, groups, assignments, *No access*, field masks, *Who sees people*), projects and short names, access keys, two-step sign-in by role, settings in layers (M2); issues with their text, comments, tags and labels, own fields, layouts, edit locks and drafts, changing many issues and the background jobs that carry it (M3) | Attachments, mail and workflows (M4; threats below), search language (M5), MCP and the assistant (M8), *Remove a person* and exports (M9), webhooks (M12), the served model's control plane (M14) |
 
 ## Attack surface
 
@@ -129,6 +129,22 @@ M3 stores text that people write and shows it to others, and lets several people
 | Information disclosure | Restoring from the trash, a missing comment or relation, or a hidden parent tells the person that something exists | Somebody without the right to restore is told not found; a missing comment or relation costs the work of a hidden one; taking out a parent the person cannot see changes nothing | `sec_06_whoever_cannot_restore_a_comment_is_not_told_it_is_in_the_trash`, `sec_06_a_hidden_comment_or_relation_and_a_missing_one_cost_the_same_reads`, `sec_06_taking_out_a_parent_the_person_cannot_see_changes_nothing_and_says_nothing` (WP-12) |
 | Information disclosure | A description or a long text shows every `@name` and issue ID as a chip, hidden ones too | The description and the long texts of own fields are rendered with the same `Ctx::html_of` as comments | `sec_06_the_description_makes_a_chip_only_of_what_the_reader_may_see` (WP-12) |
 | Denial of service | A pattern rule of an own field or a huge text slows the server | Patterns run on a linear-time engine with a length cap; text length and nesting have named limits | `cf_03_a_required_field_and_a_rule_refuse_a_wrong_value_with_a_sentence` (WP-05), the corpus of WP-02 |
+
+### Workflows, files and notifications (M4)
+
+M4 takes files from people, sends mail out of the server for the first time, and lets workflows decide who may change a status. Each row names the check or test that proves it; the packages add the test names ([M4 plan](../milestones/M4/README.md)).
+
+| STRIDE | Threat | Mitigation | Proven by |
+|--------|--------|-----------|-----------|
+| Elevation of privilege | A status change bypasses *Who can do it* or *Must be filled in*, through the issue page, *Change many issues*, the API or a later app | One judge decides every status change (ADR-0031); its rules only narrow *Change issues* and never give a right | TEST-WORKFLOWS, SEC-MATRIX (the workflow rows) (WP-04) |
+| Information disclosure | *Ask for* or a refusal names a field the person may not see | A hidden field is never asked for; the change is then refused with a sentence that names no hidden field | TEST-WORKFLOWS (WP-04) |
+| Tampering, elevation of privilege | An uploaded file runs in someone's browser: HTML, SVG, a script that claims to be an image | The real type is read from the content; files are only downloaded (`Content-Disposition: attachment`, `nosniff`, a policy that allows nothing); only server-made previews are shown in the page (ADR-0032) | TEST-UPLOADS, SEC-HEADERS (WP-05) |
+| Denial of service | A huge upload, a decompression bomb or a crafted PDF fills the disk or takes the server down | Size limits before parts are stored; unfinished uploads go after a day; previews are made by a child process with limits on memory, time and pixels | TEST-UPLOADS (WP-05) |
+| Information disclosure | A download link is passed on, or kept after the person lost access to the issue | Signed links for one person and 5 minutes; every download checks access again | TEST-UPLOADS, SEC-MATRIX (WP-05) |
+| Information disclosure | A notification or an e-mail shows a hidden field, a hidden name, or an issue the person no longer sees | The notifications reader filters by the recipient's mask and *Who sees people* when it builds a row, and again when it is shown or sent; followers who lost access are dropped (ADR-0033) | SEC-MATRIX (the e-mail and notifications column) (WP-06) |
+| Information disclosure | E-mail carries issue text out of the company, or e-mail addresses end up in logs | E-mail is off until an administrator switches it on; *Short e-mails* leave out all issue text; addresses never appear in logs | DATA-LOGS; the tests of WP-06 |
+| Information disclosure | The mail password is read from the database or a backup | It is stored encrypted like other secrets (SEC-16) | the tests of WP-06 |
+| Spoofing | Somebody signs up with another person's address | Once mail is on, an account made by signing up works only after the link sent to the address (M1-F38) | the tests of WP-08 |
 
 ### Boundary 4 (operator ↔ data) and the host
 
