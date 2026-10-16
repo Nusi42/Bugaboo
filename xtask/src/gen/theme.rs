@@ -13,7 +13,7 @@ use anyhow::{Context as _, bail};
 
 use super::Generated;
 use super::theme_file::{
-    DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
+    AtRule, DOC_SHEETS, Declaration, DocSheet, Item, Keyframes, Rule, RuleKind, ThemeFile, Token,
     TokenKind, Variant, references, substitute,
 };
 use super::theme_selector;
@@ -213,13 +213,11 @@ fn variant_blocks(out: &mut String, file: &ThemeFile, variant: &Variant) {
         declarations(out, "    ");
         out.push_str("  }\n}\n");
     }
-    let _ = write!(
-        out,
-        "\n:root[{}=\"{}\"] {{\n",
-        variant.attribute, variant.value
-    );
-    declarations(out, "  ");
-    out.push_str("}\n");
+    if let Some((attribute, value)) = &variant.attribute {
+        let _ = write!(out, "\n:root[{attribute}=\"{value}\"] {{\n");
+        declarations(out, "  ");
+        out.push_str("}\n");
+    }
 }
 
 /// The colors that change for people whose device asks for more contrast, for every way a theme
@@ -430,9 +428,9 @@ fn rule_css(file: &ThemeFile, rule: &Rule) -> anyhow::Result<String> {
     if !plain.is_empty() {
         out.push_str(&block(&selector, &plain, ""));
     }
-    for (query, declarations) in media {
+    for (at, query, declarations) in media {
         let query = resolve_query(file, &query)?;
-        let _ = writeln!(out, "\n@media {query} {{");
+        let _ = writeln!(out, "\n{} {query} {{", at.css());
         out.push_str(&block(&selector, &declarations, "  "));
         out.push_str("}\n");
     }
@@ -461,7 +459,7 @@ fn block(selector: &str, declarations: &[&Declaration], indent: &str) -> String 
 /// How deep `use` may go before the mixins are taken to call each other in a circle.
 const MIXIN_DEPTH: usize = 8;
 
-type Blocks<'a> = Vec<(String, Vec<&'a Declaration>)>;
+type Blocks<'a> = Vec<(AtRule, String, Vec<&'a Declaration>)>;
 
 /// The lines of a rule with the mixins put in, and the lines under each media query apart.
 fn flatten<'a>(
@@ -485,14 +483,14 @@ fn flatten<'a>(
                     .with_context(|| format!("no mixin called `{mixin}`"))?;
                 flatten(file, &mixin.items, plain, media, depth + 1)?;
             }
-            Item::Media { query, items, .. } => {
+            Item::Media { at, query, items } => {
                 let mut inner = Vec::new();
                 let mut deeper = Vec::new();
                 flatten(file, items, &mut inner, &mut deeper, depth + 1)?;
                 if !deeper.is_empty() {
                     bail!("a media block inside another is not supported");
                 }
-                media.push((query.clone(), inner));
+                media.push((*at, query.clone(), inner));
             }
         }
     }
@@ -588,7 +586,11 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
     }
     out.push_str("} as const;\n");
     out.push_str("\n/** The choices that change token values: the attribute on <html> and its value. */\nexport const variants = {\n");
-    for variant in &file.variants {
+    for (variant, (attribute, value)) in file
+        .variants
+        .iter()
+        .filter_map(|variant| variant.attribute.as_ref().map(|pair| (variant, pair)))
+    {
         // The formatter writes a key without quotes when it is a plain name.
         let key = if variant.name.contains('-') {
             format!("\"{}\"", variant.name)
@@ -597,8 +599,7 @@ fn typescript(file: &ThemeFile) -> anyhow::Result<String> {
         };
         let _ = writeln!(
             out,
-            "  {key}: {{ attribute: \"{}\", value: \"{}\" }},",
-            variant.attribute, variant.value
+            "  {key}: {{ attribute: \"{attribute}\", value: \"{value}\" }},"
         );
     }
     out.push_str("} as const;\n");
@@ -817,6 +818,51 @@ mod tests {
             parts.contains("@media (forced-colors: active) {"),
             "{parts}"
         );
+    }
+
+    /// The theme file with a choice of the device and a rule under a container query added.
+    fn file_with_device_choice_and_container() -> ThemeFile {
+        let text =
+            std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+        let extra = "\nvariants {\n  variant \"zz-touch\" media=\"(pointer: coarse)\"\n}\ntokens {\n  size \"zz-height\" \"36px\" zz-touch=\"44px\"\n}\npart \"zz\" {\n  container \"(min-width: $bp-tablet)\" {\n    margin 0\n  }\n}\n";
+        ThemeFile::parse(&format!("{text}{extra}")).unwrap()
+    }
+
+    #[test]
+    fn a_choice_of_the_device_alone_is_a_media_block_and_has_no_attribute() {
+        let file = file_with_device_choice_and_container();
+        let css = css(&file).unwrap();
+        assert!(
+            css.contains("@media (pointer: coarse) {\n  :root {\n    --zz-height: 44px;"),
+            "{css}"
+        );
+        assert!(!css.contains("zz-touch\"]"), "{css}");
+        let ts = typescript(&file).unwrap();
+        assert!(!ts.contains("zz-touch"), "{ts}");
+    }
+
+    #[test]
+    fn a_container_block_is_written_under_container_with_the_token_resolved() {
+        let css = css(&file_with_device_choice_and_container()).unwrap();
+        assert!(
+            css.contains("@container (min-width: 768px) {\n  [data-part=\"zz\"] {\n    margin: 0;"),
+            "{css}"
+        );
+    }
+
+    #[test]
+    fn a_choice_needs_an_attribute_and_a_value_or_only_a_device_setting() {
+        let text =
+            std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+        for extra in [
+            "\nvariants {\n  variant \"zz\" attribute=\"data-zz\"\n}\n",
+            "\nvariants {\n  variant \"zz\"\n}\n",
+        ] {
+            assert!(
+                ThemeFile::parse(&format!("{text}{extra}")).is_err(),
+                "{extra}"
+            );
+        }
     }
 
     #[test]

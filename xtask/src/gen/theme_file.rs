@@ -72,9 +72,9 @@ pub(crate) struct Theme {
 /// A choice that changes token values without changing the theme: spacing, text size, motion.
 pub(crate) struct Variant {
     pub(crate) name: String,
-    /// The attribute on `<html>` that switches it on, and its value.
-    pub(crate) attribute: String,
-    pub(crate) value: String,
+    /// The attribute on `<html>` that switches it on, and its value. A choice that only the device
+    /// makes (a touch screen) has none and is switched on by its `media` alone.
+    pub(crate) attribute: Option<(String, String)>,
     /// A device setting that switches it on as well (`(prefers-reduced-motion: reduce)`).
     pub(crate) media: Option<String>,
 }
@@ -131,11 +131,30 @@ pub(crate) enum Item {
         mixin: String,
         line: usize,
     },
-    /// `forced { … }`, `more-contrast { … }` or `media "…" { … }`.
+    /// `forced { … }`, `more-contrast { … }`, `media "…" { … }` or `container "…" { … }`.
     Media {
+        at: AtRule,
         query: String,
         items: Vec<Item>,
     },
+}
+
+/// The at-rule that a block of lines is written under.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AtRule {
+    /// The device: its screen and its settings (`@media`).
+    Media,
+    /// The box the element is in (`@container`), so a window follows its own width.
+    Container,
+}
+
+impl AtRule {
+    pub(crate) const fn css(self) -> &'static str {
+        match self {
+            Self::Media => "@media",
+            Self::Container => "@container",
+        }
+    }
 }
 
 /// What a rule styles.
@@ -220,6 +239,7 @@ pub(crate) struct ThemeFile {
 const FORCED: &str = "forced";
 const MORE_CONTRAST: &str = "more-contrast";
 const MEDIA: &str = "media";
+const CONTAINER: &str = "container";
 const USE: &str = "use";
 /// The media queries of the two short names.
 pub(crate) const FORCED_QUERY: &str = "(forced-colors: active)";
@@ -371,12 +391,7 @@ impl Builder {
             }
             "variants" => {
                 for child in node.children() {
-                    self.variants.push(Variant {
-                        name: child.only_arg()?,
-                        attribute: child.required_prop("attribute")?,
-                        value: child.required_prop("value")?,
-                        media: child.prop("media")?,
-                    });
+                    self.variants.push(variant(child)?);
                 }
             }
             "tokens" => {
@@ -867,19 +882,44 @@ fn items(node: Node<'_>) -> anyhow::Result<Vec<Item>> {
                 mixin: child.only_arg()?,
                 line: child.line(),
             }),
-            FORCED => media(child, FORCED_QUERY.to_owned()),
-            MORE_CONTRAST => media(child, MORE_CONTRAST_QUERY.to_owned()),
-            MEDIA => media(child, child.only_arg()?),
+            FORCED => media(child, AtRule::Media, FORCED_QUERY.to_owned()),
+            MORE_CONTRAST => media(child, AtRule::Media, MORE_CONTRAST_QUERY.to_owned()),
+            MEDIA => media(child, AtRule::Media, child.only_arg()?),
+            CONTAINER => media(child, AtRule::Container, child.only_arg()?),
             _ => Ok(Item::Declaration(declaration(child)?)),
         })
         .collect()
 }
 
-fn media(node: Node<'_>, query: String) -> anyhow::Result<Item> {
+fn media(node: Node<'_>, at: AtRule, query: String) -> anyhow::Result<Item> {
     check_text(node, &query)?;
     Ok(Item::Media {
+        at,
         query,
         items: items(node)?,
+    })
+}
+
+/// `variant "touch" media="(pointer: coarse)"` or `variant "compact" attribute="data-spacing" value="compact"`.
+fn variant(node: Node<'_>) -> anyhow::Result<Variant> {
+    let (attribute, value, media) = (
+        node.prop("attribute")?,
+        node.prop("value")?,
+        node.prop("media")?,
+    );
+    let attribute = match (attribute, value) {
+        (Some(attribute), Some(value)) => Some((attribute, value)),
+        (None, None) if media.is_some() => None,
+        _ => {
+            return Err(node.problem(
+                "needs `attribute=` and `value=` (a choice of the person), or only `media=` (a choice of the device)",
+            ));
+        }
+    };
+    Ok(Variant {
+        name: node.only_arg()?,
+        attribute,
+        media,
     })
 }
 
