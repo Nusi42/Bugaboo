@@ -10,7 +10,7 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 |------|----|------|-----|-----------------|
 | 1 | WP-01 | Words, permissions, decision records, the name map and the maintainer's answers | Lead | `bugaboo.win1` / `WIN1` |
 | 1 | WP-02 | Names before the API freeze: *Create*, the code names, big files split | Builder | `bugaboo.win2` / `WIN2` |
-| 1 | WP-03 | Browser tests that never run out of connections | Builder | `bugaboo.win3` / `WIN3` |
+| 1 | [WP-03](WP-03-browser-tests-without-running-out-of-connections.md) | Browser tests that never run out of connections | Builder | `bugaboo.win3` / `WIN3` |
 | 2 | WP-04 | Workflows on the server: statuses as data, status changes and their rules, starter workflows | Builder | `bugaboo.win2` / `WIN2` |
 | 2 | WP-05 | Files on issues and comments: upload, safe storage, type checks, previews | Builder | `bugaboo.win3` / `WIN3` |
 | 2 | WP-06 | Notifications and e-mail on the server | Builder | `bugaboo.win4` / `WIN4` |
@@ -19,7 +19,7 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | 3 | WP-09 | The issue page after the new look (M3 follow-ups) | Builder | `bugaboo.win3` / `WIN3` |
 | 4 | WP-10 | Sample organization part 3, ten people with workflows, speed, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 
-Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written after the maintainer's answers (WP-01).
+Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files are written in WP-01, after the maintainer's answers.
 
 ## The packages in short
 
@@ -159,6 +159,8 @@ These are technical and recorded in the decision records; the maintainer may sti
 ## Questions for the maintainer
 
 Each question has a proposal. Accepting all of them takes every proposal as written.
+
+**Answered: every proposal was accepted.** WP-01 writes each answer where it belongs.
 
 - **M4-Q1: The starter workflows.**
 
