@@ -4,7 +4,7 @@ import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
-import { prepareWeb, savedNote } from "./support/issues.ts";
+import { detailRow, prepareWeb, savedNote } from "./support/issues.ts";
 import { addRelation } from "./support/relate.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
@@ -80,6 +80,10 @@ test("iss_07 following can be stopped and started again, and the server keeps it
 }) => {
   await signIn(page, ada);
   await openIssueWithDetails(page, "WEB-1");
+  // Followers are a row of the Details like the other fields.
+  await expect(
+    detailRow(page, t("followers.name")).getByRole("button", { name: t("followers.stop") }),
+  ).toBeVisible();
   const stop = () => page.getByRole("button", { name: t("followers.stop"), exact: true });
   const follow = () => page.getByRole("button", { name: t("followers.follow"), exact: true });
   const stopped = serverKeptFollow(page, "DELETE");

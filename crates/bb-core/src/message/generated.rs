@@ -1526,6 +1526,9 @@ pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following
 /// The message `followers.more`.
 pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
 
+/// The message `followers.name`.
+pub const FOLLOWERS_NAME: MessageKey = MessageKey::new("followers.name");
+
 /// The message `followers.reason-assigned`.
 pub const FOLLOWERS_REASON_ASSIGNED: MessageKey = MessageKey::new("followers.reason-assigned");
 
@@ -8875,10 +8878,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("focus.back", "Back to list"),
     ("focus.hide-list", "Hide list"),
     ("focus.show-list", "Show list"),
-    ("followers.count", "Followers {count}"),
+    ("followers.count", "{count} followers"),
     ("followers.follow", "Follow"),
     ("followers.following", "Following"),
     ("followers.more", "Show more followers"),
+    ("followers.name", "Followers"),
     ("followers.reason-assigned", "It is assigned to you"),
     ("followers.reason-chose", "You chose to follow it"),
     ("followers.reason-commented", "You commented on it"),
