@@ -37,7 +37,8 @@ const EXEMPTIONS_PATH: &str = "tools/checks/lean-exemptions.toml";
 const ETAG_HEADER: &str = "etag";
 const NOT_MODIFIED: &str = "304";
 /// A schema whose name ends like one of these is a reference to a thing, not the thing itself: its
-/// ID and the words to show for it (`LabelBody`: a project that may be shown or hidden).
+/// ID and the words to show for it. `LabelBody` is there for `ProjectLabelBody`, a project that may
+/// be shown or hidden (M4 WP-02, the map row `KeyProjectRef`).
 const REFERENCE_SUFFIXES: [&str; 2] = ["Ref", "LabelBody"];
 
 pub(crate) struct ArchLean;
