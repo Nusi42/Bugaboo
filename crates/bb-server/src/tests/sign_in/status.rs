@@ -7,7 +7,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use bb_api::tls::ServedCertificate;
 use bb_api::{LimitsConfig, ProbeHandle, router};
-use bb_app::status::{DatabaseKind, LogBreak, LogState, ServerProbe as _};
+use bb_app::status::{LogBreak, LogState, RunningDatabase, ServerProbe as _};
 use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
 use tower::ServiceExt as _;
@@ -39,7 +39,7 @@ pub(super) fn app_with_probe_and_limits(
         Probe::new(
             rig.database.clone(),
             rig.seal.clone(),
-            DatabaseKind::BuiltIn,
+            RunningDatabase::BuiltIn,
             certificate,
             rig.services.log_writes(),
             rig.folder.path().to_path_buf(),
@@ -186,7 +186,7 @@ fn probe_of(rig: &Rig, checking: LogChecking) -> Probe {
     Probe::new(
         rig.database.clone(),
         rig.seal.clone(),
-        DatabaseKind::BuiltIn,
+        RunningDatabase::BuiltIn,
         None,
         rig.services.log_writes(),
         rig.folder.path().to_path_buf(),
@@ -309,7 +309,7 @@ async fn sec_15_the_status_page_warns_when_the_anchor_is_ahead() -> TestResult {
         let probe = Probe::new(
             restored,
             rig.seal.clone(),
-            DatabaseKind::BuiltIn,
+            RunningDatabase::BuiltIn,
             None,
             rig.services.log_writes(),
             rig.folder.path().to_path_buf(),
@@ -368,7 +368,7 @@ async fn sec_16_the_status_page_shows_what_of_the_data_folder_is_too_open() -> T
             Probe::new(
                 rig.database.clone(),
                 rig.seal.clone(),
-                DatabaseKind::BuiltIn,
+                RunningDatabase::BuiltIn,
                 None,
                 rig.services.log_writes(),
                 data.root().to_path_buf(),
@@ -414,7 +414,7 @@ async fn sec_16_the_status_page_says_unknown_when_the_data_folder_cannot_be_look
         let probe = Probe::new(
             rig.database.clone(),
             rig.seal.clone(),
-            DatabaseKind::BuiltIn,
+            RunningDatabase::BuiltIn,
             None,
             rig.services.log_writes(),
             rig.folder.path().join("no-such-data-folder"),

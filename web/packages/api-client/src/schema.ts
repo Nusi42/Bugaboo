@@ -3406,15 +3406,10 @@ export interface components {
     /** @description The database. */
     DatabaseBody: {
       /** @description Which one it is. The address is never shown: it can hold a password. */
-      kind: components["schemas"]["DatabaseKindBody"];
+      kind: components["schemas"]["RunningDatabaseBody"];
       /** @description Whether it answered. */
       ok: boolean;
     };
-    /**
-     * @description Which database the server uses.
-     * @enum {string}
-     */
-    DatabaseKindBody: "built_in" | "sqlite" | "postgres";
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -6333,6 +6328,11 @@ export interface components {
       /** @description The value has to be there. */
       required?: boolean;
     };
+    /**
+     * @description Which database the server uses.
+     * @enum {string}
+     */
+    RunningDatabaseBody: "built_in" | "sqlite" | "postgres";
     /** @description The new text of a comment, saved under the lock the editor holds. */
     SaveCommentBody: {
       /** @description The token the lock on the text was taken with. */

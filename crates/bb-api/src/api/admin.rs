@@ -6,7 +6,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::auth::SeeServerStatusQuery;
 use bb_app::status::{
-    Access, DataFolderRights, DatabaseKind, LogBreak, LogState, ServerProbe, Snapshot,
+    Access, DataFolderRights, LogBreak, LogState, RunningDatabase, ServerProbe, Snapshot,
 };
 use bb_core::ErrorCode;
 use bb_policy::Masked;
@@ -55,7 +55,7 @@ impl ProbeHandle {
 /// Which database the server uses.
 #[derive(Serialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
-enum DatabaseKindBody {
+enum RunningDatabaseBody {
     /// The database inside the data folder.
     BuiltIn,
     /// A SQLite file.
@@ -64,12 +64,12 @@ enum DatabaseKindBody {
     Postgres,
 }
 
-impl From<DatabaseKind> for DatabaseKindBody {
-    fn from(kind: DatabaseKind) -> Self {
+impl From<RunningDatabase> for RunningDatabaseBody {
+    fn from(kind: RunningDatabase) -> Self {
         match kind {
-            DatabaseKind::BuiltIn => Self::BuiltIn,
-            DatabaseKind::Sqlite => Self::Sqlite,
-            DatabaseKind::Postgres => Self::Postgres,
+            RunningDatabase::BuiltIn => Self::BuiltIn,
+            RunningDatabase::Sqlite => Self::Sqlite,
+            RunningDatabase::Postgres => Self::Postgres,
         }
     }
 }
@@ -78,7 +78,7 @@ impl From<DatabaseKind> for DatabaseKindBody {
 #[derive(Serialize, ToSchema)]
 struct DatabaseBody {
     /// Which one it is. The address is never shown: it can hold a password.
-    kind: DatabaseKindBody,
+    kind: RunningDatabaseBody,
     /// Whether it answered.
     ok: bool,
 }

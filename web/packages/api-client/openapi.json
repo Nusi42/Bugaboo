@@ -21096,7 +21096,7 @@
         "required": ["kind", "ok"],
         "properties": {
           "kind": {
-            "$ref": "#/components/schemas/DatabaseKindBody",
+            "$ref": "#/components/schemas/RunningDatabaseBody",
             "description": "Which one it is. The address is never shown: it can hold a password."
           },
           "ok": {
@@ -21104,11 +21104,6 @@
             "description": "Whether it answered."
           }
         }
-      },
-      "DatabaseKindBody": {
-        "type": "string",
-        "description": "Which database the server uses.",
-        "enum": ["built_in", "sqlite", "postgres"]
       },
       "Direction": {
         "type": "string",
@@ -27383,6 +27378,11 @@
             "description": "The value has to be there."
           }
         }
+      },
+      "RunningDatabaseBody": {
+        "type": "string",
+        "description": "Which database the server uses.",
+        "enum": ["built_in", "sqlite", "postgres"]
       },
       "SaveCommentBody": {
         "type": "object",

@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 use bb_api::tls::ServedCertificate;
 use bb_app::ports::BoxFuture;
 use bb_app::status::{
-    CertificateState, DataFolderRights, DatabaseKind, LogBreak, LogState, LogWrites, ServerProbe,
-    Snapshot,
+    CertificateState, DataFolderRights, LogBreak, LogState, LogWrites, RunningDatabase,
+    ServerProbe, Snapshot,
 };
 use bb_core::security_log::Digest;
 use bb_store::{BreakReason, Database, LogSeal, Verification};
@@ -73,7 +73,7 @@ struct LogMemory {
 pub(crate) struct Probe {
     database: Database,
     seal: LogSeal,
-    kind: DatabaseKind,
+    kind: RunningDatabase,
     /// The certificate in use when the server speaks HTTPS itself: the status page shows the end
     /// of the one it serves now, also after a renewal (M1-F03).
     certificate: Option<Arc<ServedCertificate>>,
@@ -92,7 +92,7 @@ impl Probe {
     pub(crate) fn new(
         database: Database,
         seal: LogSeal,
-        kind: DatabaseKind,
+        kind: RunningDatabase,
         certificate: Option<Arc<ServedCertificate>>,
         log_writes: Arc<LogWrites>,
         data_folder: PathBuf,
@@ -184,11 +184,11 @@ impl Probe {
 }
 
 /// The kind of database for a database address from the start-up settings (`None`: built in).
-pub(crate) fn database_kind(url: Option<&str>) -> DatabaseKind {
+pub(crate) fn database_kind(url: Option<&str>) -> RunningDatabase {
     match url {
-        None => DatabaseKind::BuiltIn,
-        Some(url) if url.starts_with("sqlite:") => DatabaseKind::Sqlite,
-        Some(_) => DatabaseKind::Postgres,
+        None => RunningDatabase::BuiltIn,
+        Some(url) if url.starts_with("sqlite:") => RunningDatabase::Sqlite,
+        Some(_) => RunningDatabase::Postgres,
     }
 }
 
@@ -261,15 +261,15 @@ mod tests {
 
     #[test]
     fn ops_08_the_kind_of_database_never_depends_on_the_address_text_after_the_scheme() {
-        assert_eq!(database_kind(None), DatabaseKind::BuiltIn);
-        assert_eq!(database_kind(Some("sqlite:x.db")), DatabaseKind::Sqlite);
+        assert_eq!(database_kind(None), RunningDatabase::BuiltIn);
+        assert_eq!(database_kind(Some("sqlite:x.db")), RunningDatabase::Sqlite);
         assert_eq!(
             database_kind(Some("postgres://user:secret@host/db")),
-            DatabaseKind::Postgres
+            RunningDatabase::Postgres
         );
         assert_eq!(
             database_kind(Some("postgresql://host/db")),
-            DatabaseKind::Postgres
+            RunningDatabase::Postgres
         );
     }
 
