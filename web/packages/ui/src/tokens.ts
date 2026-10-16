@@ -718,7 +718,7 @@ export const partWords = {
   hint: { variant: [], state: [] },
   column: { variant: ["snug"], state: [] },
   wrap: { variant: [], state: [] },
-  card: { variant: [], state: [] },
+  card: { variant: ["open-on-phone"], state: [] },
   "card.heading": { variant: [], state: [] },
   icon: { variant: ["small"], state: [] },
   "or-divider": { variant: [], state: [] },

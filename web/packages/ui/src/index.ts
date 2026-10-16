@@ -116,6 +116,7 @@ export {
 export {
   alertTone,
   buttonLook,
+  cardLook,
   buttonType,
   fieldKind,
   iconSize,

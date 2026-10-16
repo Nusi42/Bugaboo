@@ -30,11 +30,6 @@ function ownKeys(detail: Schema<"IssueDetailBody">): readonly string[] {
   return Object.keys(detail.issue.own_fields ?? {}).toSorted();
 }
 
-/** The form that holds a box of the issue page, to press its *Save*. */
-function formOf(page: Page, label: string) {
-  return page.locator("form").filter({ has: page.getByLabel(label, { exact: true }) });
-}
-
 /**
  * Starts waiting for the server's answer to the next change of the issue; the returned promise is
  * done when it has answered and the page says it is saved. The value in an input only shows the
@@ -66,13 +61,20 @@ async function fillIn(page: Page, critical: string): Promise<void> {
   await page.getByText("Mac", { exact: true }).click();
   await kept;
   await expect(labelled("Mac")).toBeChecked();
+  // A typed value is a row of the Details with no Save button: Enter keeps it, and so does leaving the box.
+  const customer = page.locator('[data-part="name-value"]').filter({ has: labelled("Customer") });
+  await expect(customer.getByRole("button", { name: t("common.save") })).toHaveCount(0);
   await labelled("Customer").fill("Acme");
   kept = keptAfter(page);
-  await formOf(page, "Customer")
-    .getByRole("button", { name: t("common.save") })
-    .click();
+  await labelled("Customer").press("Enter");
   await kept;
   await expect(labelled("Customer")).toHaveValue("Acme");
+  await expect(customer.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();
+  await labelled("Customer").fill("Acme Ltd");
+  kept = keptAfter(page);
+  await page.getByRole("heading", { level: 2, name: t("issues.details") }).click();
+  await kept;
+  await expect(labelled("Customer")).toHaveValue("Acme Ltd");
 }
 
 test("cf_06 fields are filled on the issue page and Severity is hidden from a Guest", async ({
@@ -105,7 +107,7 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
   await signIn(other, bob);
   await openIssueWithDetails(other, made.key);
   // The history lists the changes in sentences too, so the values are looked for as a whole text.
-  await expect(other.getByText("Acme", { exact: true })).toBeVisible();
+  await expect(other.getByText("Acme Ltd", { exact: true })).toBeVisible();
   await expect(other.getByText("Windows", { exact: true })).toBeVisible();
   await expect(other.getByText("Severity")).toHaveCount(0);
   const asGuest = dataOf(await guest.client.GET("/api/v1/issues/{issue}", path));

@@ -558,6 +558,19 @@ mixin "quiet-column" {
     line-height "$lh-body"
 }
 
+// Text for screen readers only: out of sight, still read.
+mixin "hidden-text" {
+    position absolute
+    width "$border-width"
+    height "$border-width"
+    margin "calc($border-width * -1)"
+    padding 0
+    overflow hidden
+    border 0
+    clip-path "inset(50%)"
+    white-space nowrap
+}
+
 // ───────────── Animations ─────────────
 
 keyframes "fade" {
@@ -623,15 +636,7 @@ part "muted" {
 
 // Words for screen readers only: the name of a column that holds only an icon.
 part "visually-hidden" {
-    position absolute
-    width "$border-width"
-    height "$border-width"
-    margin "calc($border-width * -1)"
-    padding 0
-    overflow hidden
-    border 0
-    clip-path "inset(50%)"
-    white-space nowrap
+    use "hidden-text"
 }
 
 // ───────────── Button (packages/ui: Button, IconButton) ─────────────
@@ -1506,6 +1511,11 @@ part "list-row.cell[variant=title]" {
     flex 1
 }
 
+// Only the IDs are in the code font; the name of the column is in the font of the interface.
+part "list-row[variant=head] list-row.cell[variant=key]" {
+    font-family "$font"
+}
+
 part "list-row.cell[variant=labels]" {
     flex none
     width "$size-col-labels"
@@ -1691,6 +1701,11 @@ part "name-value.reason" {
     align-items center
     gap "$space-1"
     use "quiet-text"
+}
+
+// The row shows the name of the field, so the label of the box inside it is only read, not seen.
+part "name-value.value field.label" "name-value.value choice-group.legend" {
+    use "hidden-text"
 }
 
 // *Saved* and *Undo* where the change happened (R7).
@@ -2230,6 +2245,15 @@ part "card" {
     padding "$space-5"
     border-radius "$r-card"
     color "$fg"
+}
+
+// On a phone a list goes with one gutter: a card of this look has no frame and no padding there.
+part "app-layout[variant=phone] card[variant=open-on-phone]" {
+    padding 0
+    border-width 0
+    border-radius 0
+    background transparent
+    box-shadow none
 }
 
 part "card.heading" {
@@ -3533,6 +3557,11 @@ part "focus-view.bar" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+}
+
+// One start edge (R1): the arrow of the first button stands where the text below it starts.
+part "focus-view.bar button[variant=quiet]:first-child" {
+    margin-inline-start "calc(-1 * $pad-control)"
 }
 
 // ───────────── Issues (features/issues, packages/ui: InPlaceText, ActionMenu) ─────────────

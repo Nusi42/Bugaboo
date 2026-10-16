@@ -32,6 +32,11 @@ export interface ValueEditorProps {
    * and every change is handed on at once.
    */
   readonly live?: boolean;
+  /**
+   * The editor sits in a name-and-value row of the Details: the name is the row's, there is no
+   * *Save*, and what is typed is kept when the person leaves the box or presses Enter (R7).
+   */
+  readonly inRow?: boolean;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
@@ -82,10 +87,15 @@ function TextEditor({
   problem,
   isPending = false,
   live = false,
+  inRow = false,
 }: ValueEditorProps) {
   const [text, setText] = useState(textOf(field, value));
   const [local, setLocal] = useState<string | undefined>();
   const commit = (typed: string): void => {
+    // A box that is left without a change is not a change.
+    if (inRow && typed === textOf(field, value)) {
+      return;
+    }
     const sent = sentFrom(field, typed);
     setLocal("problem" in sent ? sent.problem : undefined);
     if ("value" in sent) {
@@ -96,6 +106,7 @@ function TextEditor({
     <SaveForm
       isPending={isPending}
       live={live}
+      inRow={inRow}
       onSubmit={() => {
         commit(text);
       }}

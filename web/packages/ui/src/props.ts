@@ -82,6 +82,10 @@ export const legendLook = {
   Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
 >;
 
+/** How a card looks besides the usual: without a frame on a phone, where a list gets one gutter and the width. */
+export const cardLook = { openOnPhone: "open-on-phone" } as const;
+export type CardLook = (typeof cardLook)[keyof typeof cardLook];
+
 /** How a row of the issue list is drawn besides the usual: the two lines of a phone, or of the slim list beside an open issue. */
 export const listRowLook = { phone: "phone", slim: "slim" } as const;
 export type ListRowLook = (typeof listRowLook)[keyof typeof listRowLook];

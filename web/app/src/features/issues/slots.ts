@@ -1,4 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
+import type { ChangeStatus } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { FormView } from "../layouts/index.ts";
@@ -76,6 +77,11 @@ export interface IssueBlockProps {
   readonly version: number;
   /** Changes values of the issue against the version; the page shows *Saving…* and *Saved*. */
   readonly onChange: (change: IssueChange) => Promise<void>;
+  /**
+   * What the row of a field in the Details says about the last change of that field: *Saving…*,
+   * *Saved* and *Undo*, where it happened (R7). The key is the ID of an own field.
+   */
+  readonly rowStatus: (field: string) => ChangeStatus | undefined;
   /** Where the block is drawn: the phone puts the blocks in one column. */
   readonly layout: "wide" | "narrow";
 }

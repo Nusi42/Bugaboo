@@ -1,4 +1,4 @@
-import { partOf, part } from "@bugaboo/ui";
+import { NameValueList, NameValueRow, type ChangeStatus } from "@bugaboo/ui";
 
 import type { OwnField } from "./fields.ts";
 import { ValueEditor, type Sent } from "./ValueEditor.tsx";
@@ -12,28 +12,43 @@ export interface FieldLineProps {
   readonly issue?: string | undefined;
   readonly value: unknown;
   readonly editable: boolean;
+  /** What the last change of this field came to: *Saved* and *Undo*, where it happened. */
+  readonly status?: ChangeStatus | undefined;
   readonly onCommit: (field: OwnField, value: Sent) => void;
 }
 
-/** One field: its name and value, or its editor where the person may change it. */
-export function FieldLine({ field, project, issue, value, editable, onCommit }: FieldLineProps) {
-  if (!editable) {
-    return (
-      <div {...partOf(part.stack)}>
-        <p {...partOf(part.fieldLabel)}>{field.name}</p>
-        <ValueView field={field} value={value} />
-      </div>
-    );
-  }
+/**
+ * One field of the Details as a name-and-value row (UX §4.4): the name at the left, the value or its
+ * editor at the right. The editor saves in place, with no *Save* button, and the row says *Saved*
+ * with *Undo*.
+ */
+export function FieldLine({
+  field,
+  project,
+  issue,
+  value,
+  editable,
+  status,
+  onCommit,
+}: FieldLineProps) {
   return (
-    <ValueEditor
-      field={field}
-      project={project}
-      issue={issue}
-      value={value}
-      onCommit={(sent) => {
-        onCommit(field, sent);
-      }}
-    />
+    <NameValueList>
+      <NameValueRow name={field.name} {...(editable && status !== undefined ? { status } : {})}>
+        {editable ? (
+          <ValueEditor
+            field={field}
+            project={project}
+            issue={issue}
+            value={value}
+            inRow
+            onCommit={(sent) => {
+              onCommit(field, sent);
+            }}
+          />
+        ) : (
+          <ValueView field={field} value={value} />
+        )}
+      </NameValueRow>
+    </NameValueList>
   );
 }

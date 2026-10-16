@@ -18,17 +18,23 @@ export interface IssueValues {
 }
 
 /**
- * The fields of the Details that save in place with *Saved* and *Undo* in their own row (R7):
- * the names of the rows. The title, the status and the own fields say it elsewhere.
+ * The name of a row of the Details that saves in place with *Saved* and *Undo* in its own row (R7):
+ * the word of a built-in field (`priority`, `assigned-to`) or the ID of an own field. The title and
+ * the status say it elsewhere.
  */
-export type RowField = "priority" | "assigned-to";
+export type RowField = string;
 
 /** The row of the Details a change belongs to, when it belongs to one. */
 export function rowFieldOf(values: IssueValues): RowField | undefined {
   if (values.assignedTo !== undefined) {
     return "assigned-to";
   }
-  return values.priority === undefined ? undefined : "priority";
+  if (values.priority !== undefined) {
+    return "priority";
+  }
+  // One own field changed: its row says it. Several at once have no one row.
+  const own = Object.keys(values.own ?? {});
+  return own.length === 1 ? own[0] : undefined;
 }
 
 /** One change on its way: the values, and the version on screen that it is made on. */

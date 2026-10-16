@@ -98,7 +98,11 @@ test("cf_01 an issue is chosen for Duplicate of by its readable ID, and a wrong 
   await key.fill(first.key);
   await dialog.getByRole("button", { name: t("fields.pick-issue-find"), exact: true }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText(first.key, { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("complementary", { name: t("issues.details") })
+      .getByText(first.key, { exact: true }),
+  ).toBeVisible();
   await admin.dispose();
 });
 

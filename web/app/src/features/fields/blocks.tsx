@@ -13,7 +13,7 @@ import { lineKey } from "./line-key.ts";
  * not in the issue and so not here. The page saves a change and shows what the server refuses.
  * Long texts have their own section under the description.
  */
-export function OwnFieldsPanel({ issue, mask, form, onChange }: IssueBlockProps) {
+export function OwnFieldsPanel({ issue, mask, form, rowStatus, onChange }: IssueBlockProps) {
   const project = issue.project?.short_name;
   const fields = useFields({ project });
   const values: FieldValues = issue.own_fields ?? {};
@@ -31,6 +31,7 @@ export function OwnFieldsPanel({ issue, mask, form, onChange }: IssueBlockProps)
       issue={issue.id ?? undefined}
       value={values[field.id]}
       editable={mask.changes(field.id)}
+      status={rowStatus(field.id)}
       onCommit={(each, value) => {
         void onChange({ fields: { [each.id]: value } });
       }}

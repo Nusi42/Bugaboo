@@ -17,6 +17,24 @@ function momentOf(withTime: boolean, day: string, time: string): Sent {
   return withTime ? `${day}T${time === "" ? "00:00" : time}:00Z` : day;
 }
 
+/** The day and the time of day of a value as the server sent it. */
+function partsOf(value: unknown, withTime: boolean): readonly [string, string] {
+  return typeof value === "string"
+    ? [value.slice(0, 10), withTime ? value.slice(11, 16) : ""]
+    : ["", ""];
+}
+
+/** The box of the time of day. */
+function TimeBox({
+  value,
+  onChange,
+}: {
+  readonly value: string;
+  readonly onChange: (time: string) => void;
+}) {
+  return <TextField label={t("fields.time-of-day")} value={value} onChange={onChange} />;
+}
+
 /** A day, and for a day and time also the time of day. */
 export function MomentEditor({
   field,
@@ -25,19 +43,21 @@ export function MomentEditor({
   problem,
   isPending = false,
   live = false,
+  inRow = false,
 }: ValueEditorProps) {
   const withTime = field.kind === "date-time";
-  const [day, setDay] = useState(typeof value === "string" ? value.slice(0, 10) : "");
-  const [time, setTime] = useState(
-    typeof value === "string" && withTime ? value.slice(11, 16) : "",
-  );
-  const sent = (at: string, clock: string): Sent => momentOf(withTime, at, clock);
+  const [savedDay, savedTime] = partsOf(value, withTime);
+  const [day, setDay] = useState(savedDay);
+  const [time, setTime] = useState(savedTime);
   return (
     <SaveForm
       isPending={isPending}
       live={live}
+      inRow={inRow}
       onSubmit={() => {
-        onCommit(sent(day, time));
+        if (!inRow || day !== savedDay || time !== savedTime) {
+          onCommit(momentOf(withTime, day, time));
+        }
       }}
     >
       <TextField
@@ -48,18 +68,17 @@ export function MomentEditor({
         onChange={(next) => {
           setDay(next);
           if (live) {
-            onCommit(sent(next, time));
+            onCommit(momentOf(withTime, next, time));
           }
         }}
       />
       {withTime ? (
-        <TextField
-          label={t("fields.time-of-day")}
+        <TimeBox
           value={time}
           onChange={(next) => {
             setTime(next);
             if (live) {
-              onCommit(sent(day, next));
+              onCommit(momentOf(withTime, day, next));
             }
           }}
         />
