@@ -1909,6 +1909,9 @@ pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed
 /// The message `issues.clear-selection`.
 pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
 
+/// The message `issues.column-action`.
+pub const ISSUES_COLUMN_ACTION: MessageKey = MessageKey::new("issues.column-action");
+
 /// The message `issues.column-key`.
 pub const ISSUES_COLUMN_KEY: MessageKey = MessageKey::new("issues.column-key");
 
@@ -9122,6 +9125,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
     ),
     ("issues.clear-selection", "Clear the ticks"),
+    ("issues.column-action", "Actions"),
     ("issues.column-key", "Issue ID"),
     ("issues.column-select", "Select"),
     ("issues.comment", "Comment"),

@@ -59,7 +59,7 @@ export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
             <Link href={issueAddress(issue.key)}>{issue.title ?? issue.key}</Link>
           </>
         ),
-        person: action,
+        action,
       }}
     />
   );

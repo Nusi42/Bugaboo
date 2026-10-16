@@ -27,5 +27,6 @@ export function listColumnLabels(): Readonly<Record<ListColumn, string>> {
     priority: t("issue-field.priority"),
     person: t("issue-field.assigned-to"),
     changed: t("issues.updated"),
+    action: t("issues.column-action"),
   };
 }

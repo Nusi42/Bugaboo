@@ -1538,6 +1538,14 @@ part "list-row.cell[variant=changed]" {
     font-size "$fs-sm"
 }
 
+// The buttons of a row: they take the room they need, at the end.
+part "list-row.cell[variant=action]" {
+    flex none
+    display flex
+    align-items center
+    justify-content flex-end
+}
+
 // A done issue's title turns muted in lists.
 part "list-row[state=group-done] list-row.cell[variant=title]" {
     color "$fg-muted"
@@ -1561,8 +1569,9 @@ part "list-row.cell[variant=title] link[focus-visible]::after" {
     use "ring-inside"
 }
 
-// The checkbox and the buttons in a row stay above the link that reaches over it.
-part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.cell[variant=priority]" "list-row.cell[variant=person]" {
+// The checkbox and the buttons of a row stay above the link that reaches over it; every other cell is
+// part of the row's target.
+part "list-row.cell[variant=select]" "list-row.cell[variant=action]" {
     position relative
     z-index "$z-raised"
 }
@@ -1579,7 +1588,7 @@ part "list-row[variant=phone]" "list-row[variant=slim]" {
     min-height "$size-row"
 }
 
-part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=slim] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" "list-row[variant=slim] list-row.cell[variant=labels]" "list-row[variant=slim] list-row.cell[variant=select]" "list-row[variant=slim] list-row.cell[variant=person]" "list-row[variant=slim] list-row.cell[variant=changed]" {
+part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
     display none
 }
 
@@ -1587,7 +1596,7 @@ part "list-row[variant=phone] list-row.cell" "list-row[variant=slim] list-row.ce
     width auto
 }
 
-part "list-row[variant=phone] list-row.cell[variant=select]" "list-row[variant=slim] list-row.cell[variant=select]" {
+part "list-row[variant=phone] list-row.cell[variant=select]" {
     grid-area select
 }
 
@@ -1610,11 +1619,16 @@ part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=sl
     overflow-wrap anywhere
 }
 
-part "list-row[variant=phone] list-row.cell[variant=person]" "list-row[variant=slim] list-row.cell[variant=person]" {
+part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
 }
 
-part "list-row[variant=phone] list-row.cell[variant=changed]" "list-row[variant=slim] list-row.cell[variant=changed]" {
+part "list-row[variant=phone] list-row.cell[variant=action]" {
+    grid-area changed
+    justify-self end
+}
+
+part "list-row[variant=phone] list-row.cell[variant=changed]" {
     grid-area changed
     justify-self end
 }

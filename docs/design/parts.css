@@ -1026,6 +1026,13 @@ body {
   font-size: var(--fs-sm);
 }
 
+[data-part="list-row.cell"][data-variant~="action"] {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 [data-part="list-row"][data-state~="group-done"]
   [data-part="list-row.cell"][data-variant~="title"] {
   color: var(--fg-muted);
@@ -1049,9 +1056,7 @@ body {
 }
 
 [data-part="list-row.cell"][data-variant~="select"],
-[data-part="list-row.cell"][data-variant~="labels"],
-[data-part="list-row.cell"][data-variant~="priority"],
-[data-part="list-row.cell"][data-variant~="person"] {
+[data-part="list-row.cell"][data-variant~="action"] {
   position: relative;
   z-index: var(--z-raised);
 }
@@ -1068,12 +1073,7 @@ body {
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="type"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="type"],
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="labels"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="select"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="person"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="changed"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"] {
   display: none;
 }
 
@@ -1082,8 +1082,7 @@ body {
   width: auto;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="select"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="select"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="select"] {
   grid-area: select;
 }
 
@@ -1110,13 +1109,16 @@ body {
   overflow-wrap: anywhere;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="person"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="person"] {
   grid-area: person;
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="changed"],
-[data-part="list-row"][data-variant~="slim"] [data-part="list-row.cell"][data-variant~="changed"] {
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="action"] {
+  grid-area: changed;
+  justify-self: end;
+}
+
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="changed"] {
   grid-area: changed;
   justify-self: end;
 }

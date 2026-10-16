@@ -669,6 +669,7 @@ export const partWords = {
       "priority",
       "person",
       "changed",
+      "action",
     ],
     state: [],
   },

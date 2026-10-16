@@ -5,7 +5,7 @@ export type ListColumn = (typeof partWords)["list-row.cell"]["variant"][number];
 
 /**
  * Where each column stands, from the start (UX §4.2, R9): tick box, status, ID, type, title,
- * labels, priority, assigned person, changed. A column the theme file knows and this list does not
+ * labels, priority, assigned person, changed, and the buttons of the row at the end. A column the theme file knows and this list does not
  * is a type error.
  */
 const position = {
@@ -18,6 +18,7 @@ const position = {
   priority: 6,
   person: 7,
   changed: 8,
+  action: 9,
 } as const satisfies Readonly<Record<ListColumn, number>>;
 
 /** The columns in the order they stand, for the header and for every row. */

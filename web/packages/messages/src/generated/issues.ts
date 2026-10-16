@@ -27,6 +27,7 @@ export const messages = {
   "issues.legend": "What the colors mean",
   "issues.column-select": "Select",
   "issues.column-key": "Issue ID",
+  "issues.column-action": "Actions",
   "issues.more-issues": "Show more issues",
   "issues.description.empty": "There is no description yet.",
   "issues.read-only": "Only people whose role allows it can change {field}.",
