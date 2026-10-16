@@ -181,22 +181,25 @@ test("ux_6_3 the form follows the width of its window: one column below 880, the
   page,
 }) => {
   await signIn(page, ada);
-  await page.setViewportSize({ width: 860, height: 800 });
   await page.goto(projectIssuesAddress("WEB"));
+  // The widths of the window that change the form are tokens of the theme file.
+  const side = await pixelsOf(page, "--bp-window-side");
+  const wide = await pixelsOf(page, "--bp-window-wide");
+  await page.setViewportSize({ width: side - 20, height: 800 });
   await openWindowReady(page);
   await windowButton(page, t("window.maximize")).click();
-  await expect.poll(() => windowSize(page)).toEqual({ width: 860, height: 800 });
+  await expect.poll(() => windowSize(page)).toEqual({ width: side - 20, height: 800 });
   const narrow = await columns(page);
   expect(narrow.fields.y).toBeGreaterThanOrEqual(narrow.text.y + narrow.text.height);
-  await page.setViewportSize({ width: 900, height: 800 });
+  await page.setViewportSize({ width: side + 20, height: 800 });
   await expect
     .poll(async () => (await columns(page)).fields.x)
     .toBeGreaterThan((await columns(page)).text.x + 300);
-  const wide = await columns(page);
-  expect(wide.fields.y).toBeLessThan(wide.text.y + wide.text.height);
-  // Below 1200 the text starts at the left edge of the form.
-  expect(wide.text.x - wide.modal.x).toBeLessThan(40);
-  await page.setViewportSize({ width: 1400, height: 800 });
+  const sideBySide = await columns(page);
+  expect(sideBySide.fields.y).toBeLessThan(sideBySide.text.y + sideBySide.text.height);
+  // Below the wide width the text starts at the left edge of the form.
+  expect(sideBySide.text.x - sideBySide.modal.x).toBeLessThan(40);
+  await page.setViewportSize({ width: wide + 200, height: 800 });
   await expect
     .poll(async () => (await columns(page)).text.x - (await columns(page)).modal.x)
     .toBeGreaterThan(100);
