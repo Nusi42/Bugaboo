@@ -54,5 +54,5 @@ The key files, the database and the security log belong to the account of the se
 
 - On Linux: `sudo -u bugaboo bugaboo keys export <folder> --config <settings file>`
 
-  The folder for `keys export` must be one that the user `bugaboo` can write to, for example a new folder that you made for it with `sudo install -d -o bugaboo -g bugaboo -m 700 <folder>`. The copies belong to `bugaboo` and only `bugaboo` can read them. Move them to your safe place as an administrator.
+  The folder for `keys export` must be one that the user `bugaboo` can write to, for example a new folder that you created for it with `sudo install -d -o bugaboo -g bugaboo -m 700 <folder>`. The copies belong to `bugaboo` and only `bugaboo` can read them. Move them to your safe place as an administrator.
 - On Windows the commands run when the account you use can open the key files, and refuse when it cannot. Which accounts can depends on how Bugaboo was installed, and has not been tried with a service yet. If a command refuses, it says so. The account of the service is `NT SERVICE\Bugaboo`. It has no password, so you cannot sign in as it.

@@ -15,7 +15,7 @@ export const messages = {
     "This form has not been customized yet. It shows the usual fields to every role.",
   "layouts.inherited-organization": "This form uses the layout of the whole organization.",
   "layouts.inherited-project": "This form uses the layout of {project}.",
-  "layouts.inherited-type": "It is made for {type} only.",
+  "layouts.inherited-type": "It is only for {type}.",
   "layouts.customize-project": "Customize for {project}",
   "layouts.customize-organization": "Customize for the whole organization",
   "layouts.use-inherited": "Reset to default",

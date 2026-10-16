@@ -32,7 +32,7 @@ export function CreateGroupForm() {
       />
       {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
-        <Alert tone={alertTone.success}>{t("groups.made", { name: made })}</Alert>
+        <Alert tone={alertTone.success}>{t("groups.created", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={create.isPending}>{t("groups.create")}</SubmitButton>

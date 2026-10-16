@@ -1,6 +1,6 @@
 # What you can write
 
-Every text box for a description, a comment or long text has two tabs, "Write" and "Preview", and a row of buttons above the text. The preview shows exactly what others will see: it is made by the same program that shows the text on the server.
+Every text box for a description, a comment or long text has two tabs, "Write" and "Preview", and a row of buttons above the text. The preview shows exactly what others will see: it is produced by the same program that shows the text on the server.
 
 ## The buttons
 
@@ -31,7 +31,7 @@ An issue ID such as `WEB-142` or `WEB-K7Q2X` and a mention such as `@ana` are re
 
 ## Web addresses and images
 
-- A web address starts with `https://`, `http://` or `mailto:`, or is a page of this server such as `/p/WEB`. It opens in a new tab. Other kinds of address, such as the ones that start with `javascript:` or `data:`, are not made into links; the words stay as text.
+- A web address starts with `https://`, `http://` or `mailto:`, or is a page of this server such as `/p/WEB`. It opens in a new tab. Other kinds of address, such as the ones that start with `javascript:` or `data:`, are not turned into links; the words stay as text.
 - An image shows when it is a picture of this server. Pictures from other hosts do not show yet: the list that an administrator keeps under *Organization settings › System › Security* is there, and showing them follows in a later version. For any other image, the words and the address stay, as a web address you can press.
 
 ## What does not work, on purpose

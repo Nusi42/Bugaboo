@@ -79,7 +79,7 @@ test("iss_02 a type is made, retired and offered again", async ({ page }) => {
     label: t("issue-icon.circle-help"),
   });
   await page.getByRole("button", { name: t("issue-types.create"), exact: true }).click();
-  await expect(page.getByText(t("issue-types.made", { name: "Question" }))).toBeVisible();
+  await expect(page.getByText(t("issue-types.created", { name: "Question" }))).toBeVisible();
   const list = typeList(page);
   await expect(list.getByRole("listitem")).toHaveCount(5);
   // The same name is taken, whatever the capitals.

@@ -22,7 +22,7 @@ You can only add a permission to a role that you hold yourself.
 
 ## Reset to the starting permissions
 
-A starting role has "Reset to the starting permissions": the permissions and the two-step switch it had at the start come back, and the name stays. A role you made yourself has no starting permissions, so it has no reset.
+A starting role has "Reset to the starting permissions": the permissions and the two-step switch it had at the start come back, and the name stays. A role you created yourself has no starting permissions, so it has no reset.
 
 ## Deleting a role
 

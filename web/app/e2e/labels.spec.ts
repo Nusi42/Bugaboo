@@ -29,10 +29,10 @@ test("tag_02 a group and a label are made on the page, and the label is put on a
   await expect(page.getByRole("heading", { level: 1, name: t("nav.labels") })).toBeVisible();
   await page.getByLabel(t("labels.field-group-name"), { exact: true }).fill("Area");
   await page.getByRole("button", { name: t("labels.create-label-group"), exact: true }).click();
-  await expect(page.getByText(t("labels.group-made", { name: "Area" }))).toBeVisible();
+  await expect(page.getByText(t("labels.group-created", { name: "Area" }))).toBeVisible();
   await page.getByLabel(t("labels.field-label-name"), { exact: true }).fill("frontend");
   await page.getByRole("button", { name: t("labels.create-label"), exact: true }).click();
-  await expect(page.getByText(t("labels.label-made", { name: "frontend" }))).toBeVisible();
+  await expect(page.getByText(t("labels.label-created", { name: "frontend" }))).toBeVisible();
   await expect(
     listNamed(page, t("labels.labels-search")).getByRole("button", { name: "frontend" }),
   ).toBeVisible();

@@ -2,7 +2,7 @@
 
 Tags and labels sort issues. Both show on the issue page, in the **Labels and tags** block of the details, as small colored words.
 
-- A **tag** is a free word. Anybody who may change an issue can add a tag to it, and a tag that does not exist yet is made by adding it. Type a few letters and Bugaboo offers the tags of the project that fit.
+- A **tag** is a free word. Anybody who may change an issue can add a tag to it, and a tag that does not exist yet is created by adding it. Type a few letters and Bugaboo offers the tags of the project that fit.
 - A **label** is a word from a list that the people who look after labels keep. Labels can be in a **label group**, for example *Area* with *invoices* and *billing*. A label group can be a **group to pick one from**: an issue then has at most one label of it.
 
 Whether you see tags and labels on an issue, and whether you can change them, follows your role: they are the fields *Tags* and *Labels*, with the levels you have for them (see [who sees a field](../fields/who-sees-a-field.md)). What you may not see is not shown, and nothing says that it is there.

@@ -21,7 +21,7 @@ export const messages = {
   "projects.create-intro":
     "A project at the top level. Sub-projects are created inside their project.",
   "projects.create": "Create the project",
-  "projects.made": "{name} was made.",
+  "projects.created": "Created the project {name}.",
   "projects.field-name": "Name",
   "projects.field-name-help": "What people call the project.",
   "projects.field-short-name": "Short name",

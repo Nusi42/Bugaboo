@@ -40,7 +40,7 @@ export function CreateRelationKindForm() {
       />
       {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
-        <Alert tone={alertTone.success}>{t("relation-kinds.made", { name: made })}</Alert>
+        <Alert tone={alertTone.success}>{t("relation-kinds.created", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={create.isPending}>{t("relation-kinds.create")}</SubmitButton>

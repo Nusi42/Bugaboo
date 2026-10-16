@@ -44,7 +44,7 @@ export function CreateIssueTypeForm() {
       <IconField value={icon} onChange={setIcon} />
       {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
-        <Alert tone={alertTone.success}>{t("issue-types.made", { name: made })}</Alert>
+        <Alert tone={alertTone.success}>{t("issue-types.created", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={create.isPending}>{t("issue-types.create")}</SubmitButton>

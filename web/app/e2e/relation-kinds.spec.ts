@@ -63,7 +63,7 @@ test("iss_04 a kind is made, its words are changed, and it is retired and offere
   await page.getByLabel(t("relation-kinds.field-forward"), { exact: true }).fill("precedes");
   await page.getByLabel(t("relation-kinds.field-backward"), { exact: true }).fill("follows");
   await page.getByRole("button", { name: t("relation-kinds.create"), exact: true }).click();
-  await expect(page.getByText(t("relation-kinds.made", { name: "precedes" }))).toBeVisible();
+  await expect(page.getByText(t("relation-kinds.created", { name: "precedes" }))).toBeVisible();
   // A name that another kind has, in either direction, is taken.
   await page.getByLabel(t("relation-kinds.field-forward"), { exact: true }).fill("Follows");
   await page.getByLabel(t("relation-kinds.field-backward"), { exact: true }).fill("comes before");

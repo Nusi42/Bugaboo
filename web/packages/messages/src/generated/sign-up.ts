@@ -6,7 +6,7 @@ export const messages = {
   "sign-up.title": "Create an account",
   "sign-up.submit": "Create my account",
   "sign-up.closed":
-    "Making your own account is switched off here. Ask an administrator to invite you.",
+    "Creating your own account is switched off here. Ask an administrator to invite you.",
   "sign-up.have-account": "I already have an account",
 } as const;
 

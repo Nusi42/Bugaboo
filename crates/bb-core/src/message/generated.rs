@@ -5225,6 +5225,15 @@ pub fn groups_added(group: impl std::fmt::Display, name: impl std::fmt::Display)
     )
 }
 
+/// The message `groups.created`.
+#[must_use]
+pub fn groups_created(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("groups.created"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `groups.delete-name`.
 #[must_use]
 pub fn groups_delete_name(name: impl std::fmt::Display) -> Message {
@@ -5248,15 +5257,6 @@ pub fn groups_delete_text(members: i64) -> Message {
 pub fn groups_delete_title(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("groups.delete-title"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `groups.made`.
-#[must_use]
-pub fn groups_made(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("groups.made"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -5453,20 +5453,20 @@ pub fn invitations_created(email: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `invitations.created-at`.
+#[must_use]
+pub fn invitations_created_at(when: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("invitations.created-at"),
+        vec![("when", Value::Text(when.to_string()))],
+    )
+}
+
 /// The message `invitations.expires`.
 #[must_use]
 pub fn invitations_expires(when: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("invitations.expires"),
-        vec![("when", Value::Text(when.to_string()))],
-    )
-}
-
-/// The message `invitations.made`.
-#[must_use]
-pub fn invitations_made(when: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("invitations.made"),
         vec![("when", Value::Text(when.to_string()))],
     )
 }
@@ -5489,11 +5489,11 @@ pub fn invitations_take_back_title(email: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issue-types.made`.
+/// The message `issue-types.created`.
 #[must_use]
-pub fn issue_types_made(name: impl std::fmt::Display) -> Message {
+pub fn issue_types_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("issue-types.made"),
+        MessageKey::new("issue-types.created"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -5862,20 +5862,20 @@ pub fn labels_field_color(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `labels.group-made`.
+/// The message `labels.group-created`.
 #[must_use]
-pub fn labels_group_made(name: impl std::fmt::Display) -> Message {
+pub fn labels_group_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("labels.group-made"),
+        MessageKey::new("labels.group-created"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
 
-/// The message `labels.label-made`.
+/// The message `labels.label-created`.
 #[must_use]
-pub fn labels_label_made(name: impl std::fmt::Display) -> Message {
+pub fn labels_label_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("labels.label-made"),
+        MessageKey::new("labels.label-created"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -6417,6 +6417,15 @@ pub fn preview_summary(changed: i64, skipped: i64) -> Message {
     )
 }
 
+/// The message `projects.created`.
+#[must_use]
+pub fn projects_created(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.created"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `projects.inside`.
 #[must_use]
 pub fn projects_inside(name: impl std::fmt::Display) -> Message {
@@ -6598,15 +6607,6 @@ pub fn projects_line_roles(
     )
 }
 
-/// The message `projects.made`.
-#[must_use]
-pub fn projects_made(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.made"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
 /// The message `projects.move-dialog-title`.
 #[must_use]
 pub fn projects_move_dialog_title(name: impl std::fmt::Display) -> Message {
@@ -6711,11 +6711,11 @@ pub fn related_issues_take_away(
     )
 }
 
-/// The message `relation-kinds.made`.
+/// The message `relation-kinds.created`.
 #[must_use]
-pub fn relation_kinds_made(name: impl std::fmt::Display) -> Message {
+pub fn relation_kinds_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("relation-kinds.made"),
+        MessageKey::new("relation-kinds.created"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -6965,11 +6965,11 @@ pub fn sample_error_not_a_sample_folder(path: impl std::fmt::Display) -> Message
     )
 }
 
-/// The message `sample.error.not-made`.
+/// The message `sample.error.not-created`.
 #[must_use]
-pub fn sample_error_not_made(name: impl std::fmt::Display) -> Message {
+pub fn sample_error_not_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("sample.error.not-made"),
+        MessageKey::new("sample.error.not-created"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -8037,7 +8037,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cli.help.keys-folder",
-        "The folder to copy the key files into. It is made if it does not exist",
+        "The folder to copy the key files into. It is created if it does not exist",
     ),
     (
         "cli.help.non-interactive",
@@ -8058,7 +8058,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cli.help.sample-issues",
-        "How many issues the sample is made with. Without it, the number of the plan in tools/dev/sample.json; the comments, relations and the rest are scaled to it",
+        "How many issues the sample is created with. Without it, the number of the plan in tools/dev/sample.json; the comments, relations and the rest are scaled to it",
     ),
     (
         "cli.help.sample-out",
@@ -8066,7 +8066,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "cli.help.sample-seed",
-        "The number the sample is made from. The same number makes the same organization",
+        "The number the sample is created from. The same number gives the same organization",
     ),
     (
         "cli.help.sample-start",
@@ -8275,7 +8275,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("data-folder.part.setup-code-file", "The setup code file"),
     (
         "data-folder.protect-failed",
-        "The data folder {path} could not be made private to its owner: {reason}",
+        "The data folder {path} could not be restricted to its owner: {reason}",
     ),
     (
         "data-folder.unknown",
@@ -8431,11 +8431,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.issue.type-retired",
-        "That issue type is retired, so no new issues can be made with it. Choose another type.",
+        "That issue type is retired, so no new issues can be created with it. Choose another type.",
     ),
     (
         "error.label.pick-one-conflict",
-        "Some issues have more than one label of this label group already, so it cannot be a group to pick one from. Take the extra labels off first.",
+        "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
     ),
     (
         "error.limit.reached",
@@ -8843,6 +8843,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A new group is empty. Put people into it afterwards.",
     ),
     ("groups.create-title", "Create a group"),
+    (
+        "groups.created",
+        "Created the group {name}. Open it in the list to put people into it.",
+    ),
     ("groups.delete", "Delete the group"),
     ("groups.delete-name", "Delete the group {name}"),
     (
@@ -8856,10 +8860,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "groups.intro",
         "A group is a set of people. Give a role to a group, and everybody in it has that role.",
-    ),
-    (
-        "groups.made",
-        "The group {name} is made. Open it in the list to put people into it.",
     ),
     ("groups.members", "People in the group"),
     ("groups.members-more", "Show more people"),
@@ -8935,6 +8935,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("invitations.copy", "Copy the link"),
     ("invitations.create", "Create an invitation"),
     ("invitations.created", "Invitation for {email}"),
+    ("invitations.created-at", "Created {when}"),
     ("invitations.expires", "Runs out {when}"),
     (
         "invitations.intro",
@@ -8945,7 +8946,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "invitations.link-help",
         "Bugaboo cannot send e-mail yet. Copy this link and send it to the person. It is shown only now.",
     ),
-    ("invitations.made", "Made {when}"),
     ("invitations.more", "Show more"),
     ("invitations.none", "There are no open invitations."),
     ("invitations.open", "Open invitations"),
@@ -9009,13 +9009,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A new type goes to the end of the list. Pick an icon so people find it quickly.",
     ),
     ("issue-types.create-title", "Create an issue type"),
+    ("issue-types.created", "Created the issue type {name}."),
     ("issue-types.field-icon", "Icon"),
     ("issue-types.field-name", "Name"),
     (
         "issue-types.intro",
         "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who creates an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
     ),
-    ("issue-types.made", "The issue type {name} is made."),
     ("issue-types.more", "Show more issue types"),
     ("issue-types.nothing", "No issue type has that name."),
     ("issue-types.offer-again", "Offer the issue type again"),
@@ -9195,7 +9195,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "keys.rotated",
-        "Made a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
+        "Created a new master key and used it for {secrets, plural, one {# stored secret} other {# stored secrets}}. Back up the key files again.",
     ),
     (
         "keys.settings-placeholder",
@@ -9226,7 +9226,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.create-label-group", "Create label group"),
     (
         "labels.create-label-group-intro",
-        "A label group keeps labels that belong together. Tick the box when an issue may have only one label of the group.",
+        "A label group keeps labels that belong together. Tick the box when an issue may have only one label of the label group.",
     ),
     ("labels.create-label-group-title", "Create a label group"),
     (
@@ -9243,7 +9243,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "labels.field-pick-one",
         "An issue gets at most one label of this label group",
     ),
-    ("labels.group-made", "Created the label group {name}."),
+    ("labels.group-created", "Created the label group {name}."),
     ("labels.group-pick-one", "Pick one"),
     ("labels.groups-nothing", "No label group has that name."),
     ("labels.groups-search", "Search label groups"),
@@ -9252,7 +9252,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "labels.intro",
         "Labels sort issues by label groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
     ),
-    ("labels.label-made", "Created the label {name}."),
+    ("labels.label-created", "Created the label {name}."),
     ("labels.labels-and-tags-title", "Labels and tags"),
     ("labels.labels-heading", "Labels"),
     ("labels.labels-nothing", "No label has that name."),
@@ -9351,7 +9351,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.inherited-project",
         "This form uses the layout of {project}.",
     ),
-    ("layouts.inherited-type", "It is made for {type} only."),
+    ("layouts.inherited-type", "It is only for {type}."),
     (
         "layouts.intro",
         "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
@@ -9444,7 +9444,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "many-changes-skip.not-valid",
-        "This change cannot be made to it",
+        "This change cannot be applied to it",
     ),
     (
         "many-changes-skip.nothing-to-change",
@@ -9804,7 +9804,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "person.roles-where",
         "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
     ),
-    ("person.since", "Account made"),
+    ("person.since", "Account created"),
     ("preview.label", "Issues in this change"),
     ("preview.nothing", "None of the issues would change."),
     (
@@ -9823,6 +9823,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("projects.create-sub-project", "Create a sub-project"),
     ("projects.create-title", "Create a project"),
+    ("projects.created", "Created the project {name}."),
     ("projects.edit-title", "Name and short name"),
     ("projects.field-name", "Name"),
     ("projects.field-name-help", "What people call the project."),
@@ -9875,7 +9876,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "projects.line-roles",
         "{person} in {project}: {before} becomes {after}.",
     ),
-    ("projects.made", "{name} was made."),
     ("projects.more", "Show more projects"),
     ("projects.move-button", "Move"),
     ("projects.move-confirm", "Move the project"),
@@ -9998,6 +9998,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("relation-kinds.create-title", "Create a kind of relation"),
     (
+        "relation-kinds.created",
+        "Created the kind of relation {name}.",
+    ),
+    (
         "relation-kinds.field-backward",
         "Words for the second issue",
     ),
@@ -10005,10 +10009,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "relation-kinds.intro",
         "A kind of relation says what a connection between two issues means, in words for both ends: blocks and is blocked by. Retire a kind to stop new relations of it; the relations that have it keep it.",
-    ),
-    (
-        "relation-kinds.made",
-        "The kind of relation {name} is made.",
     ),
     ("relation-kinds.more", "Show more kinds of relation"),
     (
@@ -10141,7 +10141,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("roles.used-whole", "for the whole organization"),
     (
         "sample.done",
-        "Made the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
+        "Created the sample organization with {people} people from seed {seed}. Data folder: {folder}. How to sign in as them: {file}",
     ),
     (
         "sample.error.database-url",
@@ -10185,11 +10185,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sample.error.not-a-sample-folder",
-        "The folder {path} has other things in it and was not made by this tool, so it is left alone. Choose another folder or empty this one.",
+        "The folder {path} has other things in it and was not created by this tool, so it is left alone. Choose another folder or empty this one.",
     ),
     (
-        "sample.error.not-made",
-        "{name} is not in the database although it was made just now.",
+        "sample.error.not-created",
+        "{name} is not in the database although it was created just now.",
     ),
     (
         "sample.error.person-missing",
@@ -10228,7 +10228,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.accepting-invitation",
         "accepting an invitation",
     ),
-    ("sample.step.access-key", "making an access key"),
+    ("sample.step.access-key", "creating an access key"),
     ("sample.step.assignment", "giving a role"),
     ("sample.step.change", "changing an issue"),
     ("sample.step.code-app", "setting up a code app"),
@@ -10238,34 +10238,40 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sample.step.editing",
         "editing a text under a lock, or keeping a draft",
     ),
-    ("sample.step.fields", "making an own field"),
+    ("sample.step.fields", "creating an own field"),
     (
         "sample.step.first-administrator",
-        "making the first administrator",
+        "creating the first administrator",
     ),
     ("sample.step.first-start", "getting the organization ready"),
-    ("sample.step.group", "making a group"),
+    ("sample.step.group", "creating a group"),
     ("sample.step.group-member", "putting a person into a group"),
     (
         "sample.step.history",
         "reading the history of the issues from the events",
     ),
     ("sample.step.invitation", "inviting a person"),
-    ("sample.step.issue", "making an issue"),
+    ("sample.step.issue", "creating an issue"),
     (
         "sample.step.issue-types",
-        "making the starting issue types and kinds of relation",
+        "creating the starting issue types and kinds of relation",
     ),
-    ("sample.step.labels", "making a group of labels or a label"),
+    (
+        "sample.step.labels",
+        "creating a group of labels or a label",
+    ),
     ("sample.step.levels", "setting what a role sees"),
-    ("sample.step.password-hasher", "making the password hasher"),
-    ("sample.step.project", "making a project"),
+    (
+        "sample.step.password-hasher",
+        "creating the password hasher",
+    ),
+    ("sample.step.project", "creating a project"),
     ("sample.step.region", "choosing the region of a person"),
     (
         "sample.step.relation",
-        "making a relation or putting an issue under a goal",
+        "creating a relation or putting an issue under a goal",
     ),
-    ("sample.step.role", "making a role"),
+    ("sample.step.role", "creating a role"),
     (
         "sample.step.settings",
         "choosing how a project gives out issue IDs",
@@ -10448,7 +10454,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "server.self-signed",
-        "HTTPS uses a certificate made by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
+        "HTTPS uses a certificate created by Bugaboo, so browsers warn until you trust it. The certificate is in {path}.",
     ),
     (
         "server.setup-code",
@@ -10526,7 +10532,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "service.setup-code",
-        "Nobody has made an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
+        "Nobody has created an administrator yet. The setup code for the first administrator is saved in {path}. Read it there, and enter it in your browser.",
     ),
     (
         "service.stop-timeout",
@@ -10951,7 +10957,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up.closed",
-        "Making your own account is switched off here. Ask an administrator to invite you.",
+        "Creating your own account is switched off here. Ask an administrator to invite you.",
     ),
     ("sign-up.have-account", "I already have an account"),
     ("sign-up.submit", "Create my account"),

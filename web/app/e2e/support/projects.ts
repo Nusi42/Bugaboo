@@ -27,7 +27,7 @@ export async function fillCreate(page: Page, name: string, shortName: string): P
   await page.getByLabel(t("projects.field-name"), { exact: true }).fill(name);
   await page.getByLabel(t("projects.field-short-name"), { exact: true }).fill(shortName);
   await page.getByRole("button", { name: t("projects.create"), exact: true }).click();
-  await expect(page.getByText(t("projects.made", { name }))).toBeVisible();
+  await expect(page.getByText(t("projects.created", { name }))).toBeVisible();
 }
 
 /** Makes a project through the API, at the top level or inside another, and returns its ID. */

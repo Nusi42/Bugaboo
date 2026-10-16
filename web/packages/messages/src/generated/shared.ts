@@ -127,7 +127,7 @@ export const messages = {
   "setting.auth.access-key-longest-days.name": "Longest an access key can last (days)",
   "data-folder.create-failed": "The data folder {path} could not be prepared: {reason}",
   "data-folder.protect-failed":
-    "The data folder {path} could not be made private to its owner: {reason}",
+    "The data folder {path} could not be restricted to its owner: {reason}",
   "data-folder.account-unknown": "the account that runs Bugaboo could not be identified",
   "setup.welcome":
     "Welcome to Bugaboo. A few questions, then your answers are saved in a settings file. Press Enter to accept the answer in brackets.",
@@ -409,7 +409,7 @@ export const messages = {
   "issue-id-mode.random": "Random IDs",
   "issue-id-mode.counting": "Counting IDs",
   "error.issue.type-retired":
-    "That issue type is retired, so no new issues can be made with it. Choose another type.",
+    "That issue type is retired, so no new issues can be created with it. Choose another type.",
   "setting.issues.id-mode.name": "Issue IDs",
   "setting.issues.id-mode.help":
     "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
@@ -543,7 +543,7 @@ export const messages = {
   "many-changes-skip.same-issue": "An issue cannot be related to itself",
   "many-changes-skip.limit-reached": "It already has as many of these as it can hold",
   "many-changes-skip.field-rule": "A value of the issue breaks the rule of its field",
-  "many-changes-skip.not-valid": "This change cannot be made to it",
+  "many-changes-skip.not-valid": "This change cannot be applied to it",
   "many-changes-status.queued": "Waiting",
   "many-changes-status.running": "Working",
   "many-changes-status.done": "Done",
@@ -552,7 +552,7 @@ export const messages = {
   "error.tag.not-here":
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
   "error.label.pick-one-conflict":
-    "Some issues have more than one label of this label group already, so it cannot be a group to pick one from. Take the extra labels off first.",
+    "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count}",
   "common.show-fewer": "Show fewer",
   "nav.labels": "Labels and tags",

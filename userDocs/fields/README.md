@@ -25,4 +25,4 @@ A field is used in the whole organization, or only in some projects (with their 
 
 ## Own fields on projects
 
-A field made for **projects** is shown on the overview of each project it is used in, and people who may change the project's settings fill it in there.
+A field created for **projects** is shown on the overview of each project it is used in, and people who may change the project's settings fill it in there.

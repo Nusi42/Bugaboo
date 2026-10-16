@@ -26,7 +26,7 @@ const GLOSSARY_TEXT: &str = "\
 | **Sub-issue** | An issue under another | sub-task, custom field (UI), attribute |
 | **Page** | A document | — |
 | **Assigned to** | Who works on it | assignee (in UI and code) |
-| **Create** | Bring something new | make, add new (in UI and code) |
+| **Create** | Bring something new | made (in UI), making (in UI), make, add new (in UI and code) |
 | **Change many issues** | Change several together | bulk, mass update (in UI and code) |
 
 | Term | Meaning |
@@ -81,6 +81,8 @@ fn txt_terms_reads_the_dont_say_column_of_every_table() {
             "custom field",
             "attribute",
             "assignee",
+            "made",
+            "making",
             "make",
             "add new",
             "bulk",
@@ -147,6 +149,15 @@ fn txt_terms_a_name_from_other_peoples_code_is_not_read() {
         .flat_map(|declared| code_hits(&declared.name))
         .collect();
     assert!(found.is_empty(), "{found:?}");
+}
+
+#[test]
+fn txt_terms_made_and_making_fail_in_texts_and_are_right_in_code_names() {
+    assert_eq!(hits("The group is made.").len(), 1);
+    assert_eq!(hits("Making your own account is off.").len(), 1);
+    assert!(hits("Created the group.").is_empty());
+    assert!(code_hits("made_at").is_empty());
+    assert_eq!(code_hits("make_group").len(), 1);
 }
 
 #[test]

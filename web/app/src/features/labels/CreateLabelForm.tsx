@@ -48,7 +48,7 @@ export function CreateLabelForm({ groups }: { readonly groups: readonly LabelGro
       />
       {create.isError ? <Alert tone={alertTone.danger}>{messageOf(create.error)}</Alert> : null}
       {made === null ? null : (
-        <Alert tone={alertTone.success}>{t("labels.label-made", { name: made })}</Alert>
+        <Alert tone={alertTone.success}>{t("labels.label-created", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={create.isPending}>{t("labels.create-label")}</SubmitButton>

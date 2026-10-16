@@ -166,10 +166,10 @@ export interface MessageArguments {
   "followers.count": { count: string | number };
   "groups.add-name": { name: string | number };
   "groups.added": { group: string | number; name: string | number };
+  "groups.created": { name: string | number };
   "groups.delete-name": { name: string | number };
   "groups.delete-text": { members: number };
   "groups.delete-title": { name: string | number };
-  "groups.made": { name: string | number };
   "groups.remove-name": { name: string | number };
   "groups.removed": { group: string | number; name: string | number };
   "groups.used": { places: string | number };
@@ -194,11 +194,11 @@ export interface MessageArguments {
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
+  "invitations.created-at": { when: string | number };
   "invitations.expires": { when: string | number };
-  "invitations.made": { when: string | number };
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
-  "issue-types.made": { name: string | number };
+  "issue-types.created": { name: string | number };
   "issues.add-field": { field: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
@@ -225,8 +225,8 @@ export interface MessageArguments {
   "labels.combine-dialog-text": { name: string | number; other: string | number };
   "labels.combine-dialog-title": { name: string | number; other: string | number };
   "labels.field-color": { name: string | number };
-  "labels.group-made": { name: string | number };
-  "labels.label-made": { name: string | number };
+  "labels.group-created": { name: string | number };
+  "labels.label-created": { name: string | number };
   "labels.preview-line": { after: string | number; before: string | number };
   "labels.tag-in-projects": { count: number };
   "labels.take-off": { name: string | number };
@@ -280,6 +280,7 @@ export interface MessageArguments {
   "person.groups-none": { name: string | number };
   "person.roles-none": { name: string | number };
   "preview.summary": { changed: number; skipped: number };
+  "projects.created": { name: string | number };
   "projects.inside": { name: string | number };
   "projects.line-can-no-more": {
     person: string | number;
@@ -320,7 +321,6 @@ export interface MessageArguments {
     person: string | number;
     project: string | number;
   };
-  "projects.made": { name: string | number };
   "projects.move-dialog-title": { name: string | number };
   "projects.move-text": { name: string | number };
   "projects.moved": { name: string | number };
@@ -331,7 +331,7 @@ export interface MessageArguments {
   "projects.toggle-name": { name: string | number };
   "related-issues.added": { key: string | number; name: string | number; other: string | number };
   "related-issues.take-away": { name: string | number; other: string | number };
-  "relation-kinds.made": { name: string | number };
+  "relation-kinds.created": { name: string | number };
   "relation-kinds.reads": { backward: string | number; forward: string | number };
   "roles.badge-used": { badge: string | number; used: string | number };
   "roles.copy-of": { name: string | number };

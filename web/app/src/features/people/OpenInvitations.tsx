@@ -34,7 +34,7 @@ function InvitationRow({ invitation, onTakenBack }: InvitationRowProps) {
         <span {...partOf(part.itemTitle)}>{email}</span>
         {made === null || made === undefined ? null : (
           <span {...partOf(part.muted)}>
-            {t("invitations.made", { when: formatDateTime(made) })}
+            {t("invitations.created-at", { when: formatDateTime(made) })}
           </span>
         )}
         {expires === null || expires === undefined ? null : (
