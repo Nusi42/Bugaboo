@@ -70,6 +70,30 @@
       }
     },
     {
+      // The answer of a server to the wait for its start and the answer of the fake server of its
+      // test are Node's own objects.
+      "files": [
+        "web/app/e2e/support/ready.ts",
+        "web/app/e2e/support/session-transport.ts",
+        "web/tooling/ready.test.ts",
+        "web/tooling/session-transport.test.ts"
+      ],
+      "rules": {
+        "typescript/prefer-readonly-parameter-types": [
+          "error",
+          {
+            "allow": [
+              {
+                "from": "package",
+                "package": "@types/node",
+                "name": ["IncomingMessage", "ServerResponse"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       // Vite, Vitest, Playwright, stylelint and html-validate read the default export of their config;
       // Playwright reads the default export of a reporter the same way.
       "files": ["**/*.config.ts", "**/*.config.mjs", "web/tooling/connection-guard.ts"],
@@ -109,16 +133,10 @@
               "TestInfo",
               "WorkerInfo",
               // The reporter of the connection guard is handed these by Playwright.
+              "FullConfig",
               "TestCase",
               "TestResult"
             ]
-          },
-          // The answer of a server to the wait for its start (`ready.ts`) and the answer of the fake
-          // server of its test are Node's own objects.
-          {
-            "from": "package",
-            "package": "@types/node",
-            "name": ["IncomingMessage", "ServerResponse"]
           },
           {
             "from": "package",
