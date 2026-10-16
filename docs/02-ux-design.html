@@ -1103,7 +1103,8 @@ function themeRule(name) {
     let rules;
     try { rules = sheet.cssRules; } catch (e) { continue; }
     for (const r of rules) {
-      if (r.selectorText && r.selectorText.replace(/\s/g, "") === ":root[" + bugabooFrame.look + '="' + name + '"]') return r.style;
+      const wanted = ":root[" + bugabooFrame.look + '="' + name + '"]';
+      if (r.selectorText && r.selectorText.split(",").some(sel => sel.replace(/\s/g, "") === wanted)) return r.style;
     }
   }
   return null;
