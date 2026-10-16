@@ -10,6 +10,8 @@ import type { NewIssue } from "./use-new-issue.ts";
 
 export interface NewIssueActionsProps {
   readonly form: NewIssue;
+  /** The form that *Create* sends: the buttons stand in the footer of the window, outside it. */
+  readonly formId: string;
   readonly onMade: (key: string, project: string) => void;
   readonly onClose: () => void;
 }
@@ -50,33 +52,39 @@ function missingForCreate(form: NewIssue) {
   return canCreate(form.values) ? undefined : "issues.missing-type";
 }
 
-/** The buttons under the form: cancel, *Create and start another*, *Create*, and *Customize this form*. */
-export function NewIssueActions({ form, onMade, onClose }: NewIssueActionsProps) {
+/**
+ * The footer of the new-issue window (UX §4.5, §6.3): what is missing and that the draft is kept,
+ * at the left, and the buttons at the right with the main one last (R6). The footer stays in place
+ * while the form scrolls, so the buttons never move while the fields of the layout load.
+ */
+export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActionsProps) {
   const why = useId();
   const missing = missingForCreate(form);
   return (
     <>
-      <div {...partOf(part.issueSectionActions)}>
-        <CustomizeThisForm form={form} />
-        <Button look={buttonLook.quiet} onPress={onClose}>
-          {t("common.cancel")}
-        </Button>
-        <Button
-          isDisabled={missing !== undefined}
-          {...(missing === undefined ? {} : { "aria-describedby": why })}
-          isPending={form.pending}
-          onPress={() => {
-            form.create(true, onMade);
-          }}
-        >
-          {t("issues.create-another")}
-        </Button>
-        <SubmitButton isPending={form.pending}>{t("issues.create")}</SubmitButton>
+      <div {...partOf(part.windowFooterNote)}>
+        <p id={why} {...partOf(part.muted)}>
+          {t(missing ?? "issues.ready-to-create")}
+        </p>
+        <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
       </div>
-      {/* Under the buttons, and always there, so it changing never moves the button a finger is aiming at. */}
-      <p id={why} {...partOf(part.muted)}>
-        {t(missing ?? "issues.ready-to-create")}
-      </p>
+      <CustomizeThisForm form={form} />
+      <Button look={buttonLook.quiet} onPress={onClose}>
+        {t("common.cancel")}
+      </Button>
+      <Button
+        isDisabled={missing !== undefined}
+        {...(missing === undefined ? {} : { "aria-describedby": why })}
+        isPending={form.pending}
+        onPress={() => {
+          form.create(true, onMade);
+        }}
+      >
+        {t("issues.create-another")}
+      </Button>
+      <SubmitButton form={formId} isPending={form.pending}>
+        {t("issues.create")}
+      </SubmitButton>
     </>
   );
 }
