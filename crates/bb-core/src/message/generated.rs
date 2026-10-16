@@ -4071,11 +4071,26 @@ pub const WINDOW_MAXIMIZE: MessageKey = MessageKey::new("window.maximize");
 /// The message `window.minimize`.
 pub const WINDOW_MINIMIZE: MessageKey = MessageKey::new("window.minimize");
 
+/// The message `window.narrower`.
+pub const WINDOW_NARROWER: MessageKey = MessageKey::new("window.narrower");
+
 /// The message `window.resize-keys`.
 pub const WINDOW_RESIZE_KEYS: MessageKey = MessageKey::new("window.resize-keys");
 
 /// The message `window.restore-down`.
 pub const WINDOW_RESTORE_DOWN: MessageKey = MessageKey::new("window.restore-down");
+
+/// The message `window.shorter`.
+pub const WINDOW_SHORTER: MessageKey = MessageKey::new("window.shorter");
+
+/// The message `window.size-menu`.
+pub const WINDOW_SIZE_MENU: MessageKey = MessageKey::new("window.size-menu");
+
+/// The message `window.taller`.
+pub const WINDOW_TALLER: MessageKey = MessageKey::new("window.taller");
+
+/// The message `window.wider`.
+pub const WINDOW_WIDER: MessageKey = MessageKey::new("window.wider");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -10876,9 +10891,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("window.draft-kept", "Draft kept"),
     ("window.maximize", "Maximize"),
     ("window.minimize", "Minimize"),
+    ("window.narrower", "Narrower"),
     (
         "window.resize-keys",
         "To change the size of this window, press Ctrl and Alt with the arrow keys.",
     ),
     ("window.restore-down", "Restore down"),
+    ("window.shorter", "Shorter"),
+    ("window.size-menu", "Window size"),
+    ("window.taller", "Taller"),
+    ("window.wider", "Wider"),
 ];

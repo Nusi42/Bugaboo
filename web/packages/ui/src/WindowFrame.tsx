@@ -1,12 +1,13 @@
 import { useId, type DOMAttributes, type KeyboardEventHandler, type ReactNode } from "react";
 import { Button, Dialog, Heading } from "react-aria-components";
 
+import { ActionMenu, type ActionMenuTriggerProps } from "./ActionMenu.tsx";
 import { Icon } from "./Icon.tsx";
 import { iconName } from "./icons.ts";
 import { partOf } from "./parts.ts";
 import { iconSize, windowState, type WindowState } from "./props.ts";
 import { part } from "./tokens.ts";
-import { windowEdges, type WindowEdge } from "./window-size.ts";
+import { windowEdges, windowSteps, type WindowEdge, type WindowStep } from "./window-size.ts";
 
 /** The words on the buttons of a window, in the person's language. */
 export interface WindowLabels {
@@ -20,6 +21,10 @@ export interface WindowLabels {
   readonly resizeKeys: string;
   /** What the bar of a minimized window says it keeps: *Draft kept*. */
   readonly draftKept: string;
+  /** The button and the menu that change the size without dragging (WCAG 2.5.7): *Window size*. */
+  readonly sizeMenu: string;
+  /** The item of the size menu for each step. */
+  readonly steps: Readonly<Record<WindowStep, string>>;
 }
 
 /** The pointer handlers of one place to drag. */
@@ -28,10 +33,12 @@ export type DragHandlers = Pick<
   "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel"
 >;
 
-/** How a window is resized: by the pointer at its edges and by the keys inside it. */
+/** How a window is resized: by the pointer at its edges, by the keys inside it and by the size menu. */
 export interface WindowResize {
   readonly handlers: (edge: WindowEdge) => DragHandlers;
   readonly onKeyDown: KeyboardEventHandler<HTMLElement>;
+  /** Changes the size by a step, for people who cannot drag. */
+  readonly step: (step: WindowStep) => void;
 }
 
 export interface WindowFrameProps {
@@ -45,6 +52,34 @@ export interface WindowFrameProps {
   readonly onClose: () => void;
   readonly resize: WindowResize;
   readonly children: ReactNode;
+}
+
+/** The button of the title bar that opens the size menu. */
+function SizeButton({ label, onOpen }: ActionMenuTriggerProps) {
+  return <Control name={label} icon={iconName.resize} onPress={onOpen} />;
+}
+
+/** The size menu: a button of the title bar that opens the four steps. */
+function SizeMenu({
+  labels,
+  onStep,
+}: {
+  readonly labels: WindowLabels;
+  readonly onStep: (step: WindowStep) => void;
+}) {
+  return (
+    <ActionMenu
+      label={labels.sizeMenu}
+      actions={windowSteps.map((step) => ({
+        id: step,
+        label: labels.steps[step],
+        onAction: () => {
+          onStep(step);
+        },
+      }))}
+      trigger={SizeButton}
+    />
+  );
 }
 
 /** Words of the ARIA standard, not text for people. */
@@ -78,10 +113,14 @@ function Control({
 function Controls({
   state,
   labels,
+  resize,
   onMinimize,
   onToggleMaximize,
   onClose,
-}: Pick<WindowFrameProps, "state" | "labels" | "onMinimize" | "onToggleMaximize" | "onClose">) {
+}: Pick<
+  WindowFrameProps,
+  "state" | "labels" | "resize" | "onMinimize" | "onToggleMaximize" | "onClose"
+>) {
   if (state === windowState.full) {
     return (
       <Button {...partOf(part.windowControl, { variants: ["back"] })} onPress={onClose}>
@@ -93,6 +132,7 @@ function Controls({
   const maximized = state === windowState.maximized;
   return (
     <>
+      {maximized ? null : <SizeMenu labels={labels} onStep={resize.step} />}
       <Control name={labels.minimize} icon={iconName.minimize} onPress={onMinimize} />
       <Control
         name={maximized ? labels.restoreDown : labels.maximize}

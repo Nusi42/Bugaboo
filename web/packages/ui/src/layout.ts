@@ -58,7 +58,12 @@ export function useUpright(): boolean {
   return useSyncExternalStore(subscribeUpright, readUpright);
 }
 
+/** The layout where there is no window to measure (a page drawn as text on the server, a test): a computer. */
+function serverLayout(): LayoutMode {
+  return "computer";
+}
+
 /** The layout of the window right now; it follows the window when it is resized or turned. */
 export function useLayout(): LayoutMode {
-  return useSyncExternalStore(subscribe, readLayout);
+  return useSyncExternalStore(subscribe, readLayout, serverLayout);
 }

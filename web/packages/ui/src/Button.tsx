@@ -36,6 +36,8 @@ export interface ButtonProps {
   /** The button of the item that is open now, in a list of items: marked for screen readers. */
   readonly current?: boolean;
   readonly isDisabled?: boolean;
+  /** The ID of the form a submit button sends when it stands outside that form, such as in a window's footer. */
+  readonly form?: string;
   readonly onPress?: () => void;
   /** The name for screen readers when the text alone is not enough, for example in a list. */
   readonly "aria-label"?: string;

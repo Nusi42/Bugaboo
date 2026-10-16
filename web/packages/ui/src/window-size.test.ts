@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   keyboardStep,
+  menuStep,
   parseWindowSizes,
   resizedBy,
   sizeAfterKey,
+  sizeAfterStep,
+  stepOfArrow,
   windowEdges,
+  windowSteps,
 } from "./window-size.ts";
 
 const start = { width: 760, height: 500 } as const;
@@ -50,6 +54,36 @@ describe("ux_04 a window is resized with the keyboard too", () => {
 
   it("any other key changes nothing", () => {
     expect(sizeAfterKey(start, "Enter")).toBeUndefined();
+  });
+});
+
+describe("ux_04 a window is resized without dragging too (WCAG 2.5.7)", () => {
+  it("has a step for every way the arrow keys change the size", () => {
+    const arrows = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"] as const;
+    expect(arrows.map((arrow) => stepOfArrow(arrow))).toEqual([
+      "wider",
+      "narrower",
+      "taller",
+      "shorter",
+    ]);
+    expect(windowSteps).toHaveLength(arrows.length);
+  });
+
+  it("a step of the size menu is a few keys long, in the same four directions", () => {
+    expect(menuStep).toBeGreaterThan(keyboardStep);
+    expect(sizeAfterStep(start, "wider", menuStep)).toEqual({ width: 760 + menuStep, height: 500 });
+    expect(sizeAfterStep(start, "narrower", menuStep)).toEqual({
+      width: 760 - menuStep,
+      height: 500,
+    });
+    expect(sizeAfterStep(start, "taller", menuStep)).toEqual({
+      width: 760,
+      height: 500 + menuStep,
+    });
+    expect(sizeAfterStep(start, "shorter", menuStep)).toEqual({
+      width: 760,
+      height: 500 - menuStep,
+    });
   });
 });
 

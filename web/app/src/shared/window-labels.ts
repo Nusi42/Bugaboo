@@ -11,5 +11,12 @@ export function windowLabels(): WindowLabels {
     back: t("shell.back"),
     resizeKeys: t("window.resize-keys"),
     draftKept: t("window.draft-kept"),
+    sizeMenu: t("window.size-menu"),
+    steps: {
+      wider: t("window.wider"),
+      narrower: t("window.narrower"),
+      taller: t("window.taller"),
+      shorter: t("window.shorter"),
+    },
   };
 }
