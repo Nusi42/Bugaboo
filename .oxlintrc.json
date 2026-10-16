@@ -91,7 +91,7 @@
           { "from": "package", "package": "react", "name": ["ReactNode", "FormEvent"] },
           // The keyboard event of the browser is its own object; the shortcuts read a few fields of it.
           // A window (UX §6.3) reads the size of its element and the keys and pointer of its edges.
-          { "from": "lib", "name": ["KeyboardEvent", "HTMLElement"] },
+          { "from": "lib", "name": ["KeyboardEvent"] },
           { "from": "package", "package": "react", "name": ["KeyboardEvent", "PointerEvent"] },
           {
             "from": "package",

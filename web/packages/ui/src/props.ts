@@ -69,3 +69,6 @@ export type IconSize = (typeof iconSize)[keyof typeof iconSize];
 /** How the choices of a picker look: a scrolling list of plain rows, or a column of bordered boxes. */
 export const pickerLook = { list: "list", boxed: "boxed" } as const;
 export type PickerLook = (typeof pickerLook)[keyof typeof pickerLook];
+
+/** How a row of the issue list is drawn besides the usual: the two lines of a phone. */
+export const listRowLook = { phone: "phone" } as const;

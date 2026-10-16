@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { listRowLook } from "./props.ts";
 import { listColumns, type ListColumn } from "./list-columns.ts";
 import { ListGrid, ListGroup, ListHead, ListRow } from "./ListGrid.tsx";
 
@@ -92,7 +93,12 @@ describe("ux_4_2 a row says what it is", () => {
 
   it("a phone row is its own variant", () => {
     const phone = renderToStaticMarkup(
-      <ListRow group={group.done} priority={priority.normal} phone cells={{}} />,
+      <ListRow
+        group={group.done}
+        priority={priority.normal}
+        variant={listRowLook.phone}
+        cells={{}}
+      />,
     );
     expect(phone).toContain('data-variant="phone"');
     expect(phone).toContain('data-state="group-done"');

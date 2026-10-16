@@ -119,6 +119,7 @@ export {
   buttonType,
   fieldKind,
   iconSize,
+  listRowLook,
   overlayEdge,
   pickerLook,
   type AlertTone,

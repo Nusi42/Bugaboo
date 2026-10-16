@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
-import { Modal, ModalOverlay } from "react-aria-components";
 
-import { partOf } from "./parts.ts";
+import { OverlayLayer } from "./OverlayLayer.tsx";
 import { overlayEdge, windowState } from "./props.ts";
-import { part } from "./tokens.ts";
 import { useWindow } from "./use-window.ts";
 import { WindowDock } from "./WindowDock.tsx";
 import { WindowFrame, type WindowLabels } from "./WindowFrame.tsx";
@@ -36,37 +34,34 @@ export interface WindowProps {
 export function Window(props: WindowProps) {
   const { isOpen, onOpenChange, title, labels, footer, size, onResized, children } = props;
   const { placed, ...shape } = useWindow(isOpen, size, onResized);
-  const choices = {
-    variants: [shape.state === windowState.full ? overlayEdge.full : overlayEdge.window],
-    states: [shape.state === windowState.maximized && "maximized"],
-  } as const;
   return (
     <>
       {isOpen && shape.minimized ? (
         <WindowDock title={title} note={labels.draftKept} onRestore={shape.restore} />
       ) : null}
-      <ModalOverlay
-        {...partOf(part.overlay, choices)}
+      <OverlayLayer
         isOpen={isOpen && !shape.minimized}
         onOpenChange={onOpenChange}
+        from={shape.state === windowState.full ? overlayEdge.full : overlayEdge.window}
+        maximized={shape.state === windowState.maximized}
+        isDismissable={false}
+        modalRef={placed}
       >
-        <Modal ref={placed} {...partOf(part.overlayModal, choices)}>
-          <WindowFrame
-            title={title}
-            labels={labels}
-            state={shape.state}
-            footer={footer}
-            resize={shape.resize}
-            onMinimize={shape.minimize}
-            onToggleMaximize={shape.toggleMaximize}
-            onClose={() => {
-              onOpenChange(false);
-            }}
-          >
-            {children}
-          </WindowFrame>
-        </Modal>
-      </ModalOverlay>
+        <WindowFrame
+          title={title}
+          labels={labels}
+          state={shape.state}
+          footer={footer}
+          resize={shape.resize}
+          onMinimize={shape.minimize}
+          onToggleMaximize={shape.toggleMaximize}
+          onClose={() => {
+            onOpenChange(false);
+          }}
+        >
+          {children}
+        </WindowFrame>
+      </OverlayLayer>
     </>
   );
 }

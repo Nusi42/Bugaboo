@@ -6,6 +6,12 @@ export interface WindowSize {
   readonly height: number;
 }
 
+/** What a window needs from its element: its size on the page, and a way to set its variables. */
+export interface WindowElement {
+  readonly getBoundingClientRect: () => Readonly<Pick<DOMRect, "width" | "height">>;
+  readonly style: Readonly<Pick<CSSStyleDeclaration, "setProperty">>;
+}
+
 /** A place to drag: the four edges and the four corners, as the theme file names them. */
 export type WindowEdge = (typeof partWords)["window.handle"]["variant"][number];
 

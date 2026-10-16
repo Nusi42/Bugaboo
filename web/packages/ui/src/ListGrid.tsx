@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { iconColumns, listColumns, type ListColumn } from "./list-columns.ts";
 import { partOf } from "./parts.ts";
-import { iconSize } from "./props.ts";
+import { iconSize, type listRowLook } from "./props.ts";
 import { rowStates, type RowStateInput } from "./row-state.ts";
 import type { StatusGroup } from "./status.ts";
 import { StatusIcon } from "./StatusIcon.tsx";
@@ -63,16 +63,16 @@ export interface ListRowProps extends RowStateInput {
   readonly cells: Readonly<Partial<Record<ListColumn, ReactNode>>>;
   /** The row is ticked. */
   readonly selected?: boolean;
-  /** The row of a phone: two lines, in the same order (R9). */
-  readonly phone?: boolean;
+  /** The row of a phone has two lines, in the same order (R9). */
+  readonly variant?: typeof listRowLook.phone;
 }
 
 /** One issue: its cells in the fixed columns, tinted by its status group and edged by its priority (R4). */
-export function ListRow({ cells, group, priority, selected = false, phone = false }: ListRowProps) {
+export function ListRow({ cells, group, priority, selected = false, variant }: ListRowProps) {
   return (
     <div
       {...partOf(part.listRow, {
-        variants: [phone && "phone"],
+        variants: [variant],
         states: [...rowStates({ group, priority }), selected && "selected"],
       })}
       role={role.row}

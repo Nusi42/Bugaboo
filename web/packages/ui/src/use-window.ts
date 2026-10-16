@@ -1,10 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useReducer, useState } from "react";
 
 import { useLayout } from "./layout.ts";
 import { windowState, type WindowState } from "./props.ts";
 import { applyWindowSize, useWindowResize } from "./use-window-resize.ts";
+import { firstShape, reduceShape, shapeAction } from "./window-shape.ts";
 import type { WindowResize } from "./WindowFrame.tsx";
-import type { WindowSize } from "./window-size.ts";
+import type { WindowElement, WindowSize } from "./window-size.ts";
 
 /** What the window is showing: on a phone a full screen, else normal or maximized. */
 function stateOf(full: boolean, maximized: boolean): WindowState {
@@ -22,7 +23,7 @@ export interface UseWindow {
   readonly toggleMaximize: () => void;
   readonly resize: WindowResize;
   /** The reference of the element that is the window: it gets its remembered size when it appears. */
-  readonly placed: (element: HTMLElement | null) => void;
+  readonly placed: (element: WindowElement | null) => void;
 }
 
 /**
@@ -35,18 +36,16 @@ export function useWindow(
   onResized: ((size: WindowSize) => void) | undefined,
 ): UseWindow {
   const full = useLayout() === "phone";
-  const [minimized, setMinimized] = useState(false);
-  const [maximized, setMaximized] = useState(false);
+  const [shape, act] = useReducer(reduceShape, firstShape);
   const [wasOpen, setWasOpen] = useState(isOpen);
   if (wasOpen !== isOpen) {
     setWasOpen(isOpen);
-    setMinimized(false);
-    setMaximized(false);
+    act(shapeAction.closed);
   }
-  const [element, setElement] = useState<HTMLElement | null>(null);
+  const [element, setElement] = useState<WindowElement | null>(null);
   const resize = useWindowResize(element, onResized);
   const placed = useCallback(
-    (modal: HTMLElement | null) => {
+    (modal: WindowElement | null) => {
       setElement(modal);
       if (modal !== null && size !== undefined) {
         applyWindowSize(modal, size);
@@ -55,16 +54,16 @@ export function useWindow(
     [size],
   );
   return {
-    state: stateOf(full, maximized),
-    minimized,
+    state: stateOf(full, shape.maximized),
+    minimized: shape.minimized,
     minimize: () => {
-      setMinimized(true);
+      act(shapeAction.minimize);
     },
     restore: () => {
-      setMinimized(false);
+      act(shapeAction.restore);
     },
     toggleMaximize: () => {
-      setMaximized(!maximized);
+      act(shapeAction.toggleMaximize);
     },
     resize,
     placed,

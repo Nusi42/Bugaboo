@@ -2,10 +2,16 @@ import { useState } from "react";
 
 import { variableOf } from "./variables.ts";
 import type { WindowResize } from "./WindowFrame.tsx";
-import { resizedBy, sizeAfterKey, type WindowEdge, type WindowSize } from "./window-size.ts";
+import {
+  resizedBy,
+  sizeAfterKey,
+  type WindowEdge,
+  type WindowElement,
+  type WindowSize,
+} from "./window-size.ts";
 
 /** The size of a window on the page right now. */
-function sizeOf(element: HTMLElement): WindowSize {
+function sizeOf(element: Pick<WindowElement, "getBoundingClientRect">): WindowSize {
   const { width, height } = element.getBoundingClientRect();
   return { width, height };
 }
@@ -15,9 +21,34 @@ function sizeOf(element: HTMLElement): WindowSize {
  * `window-height`); nothing else is set from code (THEME-ONLY). The smallest and the largest size
  * are the theme file's, so what is shown may differ from what is asked for.
  */
-export function applyWindowSize(element: HTMLElement, size: WindowSize): void {
+export function applyWindowSize(element: Pick<WindowElement, "style">, size: WindowSize): void {
   element.style.setProperty(variableOf("window-width"), `${size.width}px`);
   element.style.setProperty(variableOf("window-height"), `${size.height}px`);
+}
+
+/** The part of a keyboard event that resizing reads. */
+export interface ResizeKey {
+  readonly ctrlKey: boolean;
+  readonly altKey: boolean;
+  readonly key: string;
+  readonly preventDefault: () => void;
+}
+
+/** Ctrl and Alt with an arrow key change the size by a step; any other key is left alone. */
+export function resizeByKey(
+  frame: WindowElement | null,
+  event: ResizeKey,
+  onResized: ((size: WindowSize) => void) | undefined,
+): void {
+  if (!(event.ctrlKey && event.altKey) || frame === null) {
+    return;
+  }
+  const next = sizeAfterKey(sizeOf(frame), event.key);
+  if (next !== undefined) {
+    event.preventDefault();
+    applyWindowSize(frame, next);
+    onResized?.(sizeOf(frame));
+  }
 }
 
 /** Where a drag began: the edge, the size and the pointer. */
@@ -34,7 +65,7 @@ interface Drag {
  * size below the smallest is remembered as the smallest.
  */
 export function useWindowResize(
-  frame: HTMLElement | null,
+  frame: WindowElement | null,
   onResized: ((size: WindowSize) => void) | undefined,
 ): WindowResize {
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -70,15 +101,7 @@ export function useWindowResize(
       onPointerCancel: finish,
     }),
     onKeyDown: (event) => {
-      if (!(event.ctrlKey && event.altKey) || frame === null) {
-        return;
-      }
-      const next = sizeAfterKey(sizeOf(frame), event.key);
-      if (next !== undefined) {
-        event.preventDefault();
-        applyWindowSize(frame, next);
-        onResized?.(sizeOf(frame));
-      }
+      resizeByKey(frame, event, onResized);
     },
   };
 }
