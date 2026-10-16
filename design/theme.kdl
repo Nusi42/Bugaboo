@@ -145,7 +145,6 @@ tokens {
     size "size-details" "300px"
     size "size-reading" "75ch"
     size "size-main" "780px"
-    size "size-footer-note" "200px"
     size "size-sheet-share" "85%"
     size "size-matrix-cell" "calc($size-control * 3)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -1877,21 +1876,32 @@ part "window.body" {
     overflow-y auto
 }
 
+// Two rows: the hint (and what belongs to the form) on its own line, then the buttons in one row
+// at the right, the main one last (R6).
 part "window.footer" {
     display flex
     flex none
-    flex-wrap wrap
-    align-items center
-    justify-content flex-end
+    flex-direction column
     gap "$space-3"
     padding "$pad-box $pad-dialog"
     border-top "$border-width solid $border"
 }
 
 part "window.footer-note" {
-    flex "1 1 0"
-    min-width "$size-footer-note"
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
     use "quiet-text"
+}
+
+part "window.footer-actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-3"
 }
 
 // The places to drag: the four edges and the four corners.

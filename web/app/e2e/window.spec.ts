@@ -10,6 +10,8 @@ import { partIn } from "./support/parts.ts";
 import {
   boxOf,
   columns,
+  dragEastEdge,
+  footerButtons,
   keyboardStep,
   menuStep,
   openWindowReady,
@@ -18,6 +20,7 @@ import {
   pressSizeKey,
   scrollFormToEnd,
   titleBox,
+  windowBox,
   windowButton,
   windowDock,
   windowEdges,
@@ -196,6 +199,25 @@ test("ux_6_3 the form follows the width of its window: one column below 880, the
   await expect
     .poll(async () => (await columns(page)).text.x - (await columns(page)).modal.x)
     .toBeGreaterThan(100);
+});
+
+test("ux_6_3 the footer has two rows: the hint, then the buttons in one row with Create last, also at the smallest size", async ({
+  page,
+}) => {
+  await openIt(page);
+  const usual = await footerButtons(page);
+  expect(usual.create.y).toBeGreaterThan(usual.note.y);
+  expect(Math.abs(usual.create.y - usual.cancel.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(usual.create.y - usual.another.y)).toBeLessThanOrEqual(2);
+  expect(usual.create.x).toBeGreaterThan(usual.another.x);
+  expect(usual.another.x).toBeGreaterThan(usual.cancel.x);
+  // As small as it goes: Create is still not alone on a row, and the row ends at the right.
+  await dragEastEdge(page, -400);
+  await expect.poll(async () => (await windowSize(page)).width).toBeLessThanOrEqual(480);
+  const small = await footerButtons(page);
+  expect(Math.abs(small.create.y - small.cancel.y)).toBeLessThanOrEqual(2);
+  const window = await boxOf(windowBox(page));
+  expect(window.x + window.width - (small.create.x + small.create.width)).toBeLessThan(40);
 });
 
 test("ux_6_3 a minimized window stands after the menu: Sign out stays clickable", async ({

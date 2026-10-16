@@ -53,8 +53,9 @@ function missingForCreate(form: NewIssue) {
 }
 
 /**
- * The footer of the new-issue window (UX §4.5, §6.3): what is missing and that the draft is kept,
- * at the left, and the buttons at the right with the main one last (R6). The footer stays in place
+ * The footer of the new-issue window (UX §4.5, §6.3): in the first row what is missing, that the
+ * draft is kept and *Customize this form*; in the second the buttons at the right with the main one
+ * last (R6). The footer stays in place
  * while the form scrolls, so the buttons never move while the fields of the layout load.
  */
 export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActionsProps) {
@@ -63,28 +64,32 @@ export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActio
   return (
     <>
       <div {...partOf(part.windowFooterNote)}>
-        <p id={why} {...partOf(part.muted)}>
-          {t(missing ?? "issues.ready-to-create")}
-        </p>
-        <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
+        <div>
+          <p id={why} {...partOf(part.muted)}>
+            {t(missing ?? "issues.ready-to-create")}
+          </p>
+          <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
+        </div>
+        <CustomizeThisForm form={form} />
       </div>
-      <CustomizeThisForm form={form} />
-      <Button look={buttonLook.quiet} onPress={onClose}>
-        {t("common.cancel")}
-      </Button>
-      <Button
-        isDisabled={missing !== undefined}
-        {...(missing === undefined ? {} : { "aria-describedby": why })}
-        isPending={form.pending}
-        onPress={() => {
-          form.create(true, onMade);
-        }}
-      >
-        {t("issues.create-another")}
-      </Button>
-      <SubmitButton form={formId} isPending={form.pending}>
-        {t("issues.create")}
-      </SubmitButton>
+      <div {...partOf(part.windowFooterActions)}>
+        <Button look={buttonLook.quiet} onPress={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          isDisabled={missing !== undefined}
+          {...(missing === undefined ? {} : { "aria-describedby": why })}
+          isPending={form.pending}
+          onPress={() => {
+            form.create(true, onMade);
+          }}
+        >
+          {t("issues.create-another")}
+        </Button>
+        <SubmitButton form={formId} isPending={form.pending}>
+          {t("issues.create")}
+        </SubmitButton>
+      </div>
     </>
   );
 }

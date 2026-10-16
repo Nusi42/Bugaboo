@@ -88,3 +88,25 @@ export function pageSize(page: Page): { width: number; height: number } {
   }
   return size;
 }
+
+/** Drags the east edge of the window by `by` pixels with the mouse; the window grows twice as much, centered. */
+export async function dragEastEdge(page: Page, by: number): Promise<void> {
+  const box = await boxOf(partIn(page, "window.handle", "e"));
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + by, y, { steps: 6 });
+  await page.mouse.up();
+}
+
+/** The buttons of the footer of the new-issue window, as boxes: Cancel, Create and start another, Create. */
+export async function footerButtons(page: Page) {
+  const named = (name: string) =>
+    boxOf(newIssueDialog(page).getByRole("button", { name, exact: true }));
+  return {
+    note: await boxOf(partIn(page, "window.footer-note")),
+    cancel: await named(t("common.cancel")),
+    another: await named(t("issues.create-another")),
+    create: await named(t("issues.create")),
+  };
+}

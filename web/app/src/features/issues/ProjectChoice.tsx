@@ -2,11 +2,10 @@ import { t } from "@bugaboo/messages";
 import {
   Button,
   buttonLook,
-  PickerHint,
+  NameValueList,
+  NameValueRow,
   PickerOption,
   SearchPicker,
-  partOf,
-  part,
 } from "@bugaboo/ui";
 import { useState } from "react";
 
@@ -64,18 +63,19 @@ export function ProjectChoice({ name, shortName, onPick }: ProjectChoiceProps) {
   const [changing, setChanging] = useState(false);
   if (name !== undefined && !changing) {
     return (
-      <div {...partOf(part.row)}>
-        <PickerHint>{t("issues.project")}</PickerHint>
-        <strong>{name}</strong>
-        <Button
-          look={buttonLook.quiet}
-          onPress={() => {
-            setChanging(true);
-          }}
-        >
-          {t("issues.change")}
-        </Button>
-      </div>
+      <NameValueList>
+        <NameValueRow name={t("issues.project")}>
+          {name}
+          <Button
+            look={buttonLook.quiet}
+            onPress={() => {
+              setChanging(true);
+            }}
+          >
+            {t("issues.change")}
+          </Button>
+        </NameValueRow>
+      </NameValueList>
     );
   }
   return (
