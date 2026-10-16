@@ -230,3 +230,38 @@ export async function setStatusAndPriority(
     body: { version, ...change },
   });
 }
+
+/** The big status button of the issue page: the current status with its group's icon and color. */
+export function statusButton(page: Page) {
+  return page.locator('[data-part="status-button"]');
+}
+
+/** Changes the status the way a person does: opens the list of the big button and picks a word. */
+export async function chooseStatus(page: Page, word: string): Promise<void> {
+  await statusButton(page).click();
+  await page.getByRole("button", { name: word, exact: true }).click();
+}
+
+/** The big status button says this status. */
+export async function expectStatus(page: Page, word: string): Promise<void> {
+  await expect(statusButton(page)).toHaveText(word);
+}
+
+/** The row of a field in the Details of the issue page, found by the name of the field. */
+export function detailRow(page: Page, name: string) {
+  return page
+    .locator('[data-part="name-value"]')
+    .filter({ has: page.getByText(name, { exact: true }) });
+}
+
+/** The words of a status as people read it, from the word the server uses. */
+export function statusWordOf(status: string | null | undefined): string {
+  return t(`status.${status === "in-progress" || status === "done" ? status : "open"}`);
+}
+
+/** Changes a field of the issue page the way a person does: the status with the big button, any other with its list. */
+export async function changeField(page: Page, name: string, choice: string): Promise<void> {
+  await (name === t("issue-field.status")
+    ? chooseStatus(page, choice)
+    : page.getByLabel(name, { exact: true }).selectOption({ label: choice }));
+}

@@ -6,7 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { prepareWeb, savedNote } from "./support/issues.ts";
+import { chooseStatus, expectStatus, prepareWeb, savedNote } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
@@ -83,14 +83,10 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
     listNamed(page, t("labels.tags-heading")).getByText("quick", { exact: true }),
   ).toBeVisible();
   // The tag counted the version of the issue up; the change of status is made on that version.
-  await page.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
-    label: t("status.in-progress"),
-  });
+  await chooseStatus(page, t("status.in-progress"));
   await expect(savedNote(page)).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveValue(
-    "in-progress",
-  );
+  await expectStatus(page, t("status.in-progress"));
 });
 
 test("tag_03 renaming a label shows which issues change before it is saved", async ({

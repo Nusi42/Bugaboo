@@ -4,7 +4,7 @@ import { type Browser, type BrowserContext, expect, type Page } from "@playwrigh
 import { type Person, signInThroughApi } from "./accounts.ts";
 import { crowd, crowdSize, type Edit } from "./crowd.ts";
 import { openIssueWithDetails } from "./flows.ts";
-import { savedNote } from "./issues.ts";
+import { changeField, savedNote, statusButton } from "./issues.ts";
 import { type Instance } from "./server.ts";
 
 // The pages of ten people at the same time (architecture §11, M3 WP-10).
@@ -94,7 +94,7 @@ export function lostNote(page: Page) {
 /** Opens an issue with its details and waits until the page shows the status. */
 export async function openIssueAndWait(page: Page, key: string): Promise<void> {
   await openIssueWithDetails(page, key);
-  await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toBeVisible();
+  await expect(statusButton(page)).toBeVisible();
 }
 
 /** Who was told that somebody else was first: of two changes made together, one is kept and the other is not. */
@@ -123,7 +123,7 @@ export async function readyToChange(
   const page = await signedInPage(browser, server, edit.person, look);
   await openIssueAndWait(page, key);
   return async () => {
-    await page.getByLabel(edit.label, { exact: true }).selectOption({ label: edit.choice });
+    await changeField(page, edit.label, edit.choice);
     await untilKept(page);
   };
 }

@@ -5,9 +5,12 @@ import { ada, ownId } from "./support/accounts.ts";
 import { ana, lea, roleName, signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import {
   assignTo,
+  chooseStatus,
+  expectStatus,
+  statusButton,
   holdDescription,
   issueOf,
   openIssuesIn,
@@ -56,19 +59,16 @@ test("iss_01 status and priority change in place and say Saved", async ({ page }
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await expect(loginHeading(page)).toBeVisible();
-  await page.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
-    label: t("status.in-progress"),
-  });
+  await chooseStatus(page, t("status.in-progress"));
   await expect(savedNote(page)).toBeVisible();
+  await openIssueWithDetails(page, "WEB-1");
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });
   await expect(savedNote(page)).toBeVisible();
   // Kept: the page is read again from the server.
-  await page.reload();
-  await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveValue(
-    "in-progress",
-  );
+  await openIssueWithDetails(page, "WEB-1");
+  await expectStatus(page, t("status.in-progress"));
   await expect(page.getByLabel(t("issue-field.priority"), { exact: true })).toHaveValue("high");
 });
 
@@ -111,7 +111,7 @@ test("iss_01 a Viewer sees the fields with a lock and the reason, and cannot cha
   await expect(
     page.getByText(t("issues.read-only", { field: t("issue-field.status") })),
   ).toBeVisible();
-  await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toHaveCount(0);
+  await expect(statusButton(page)).toBeDisabled();
 });
 
 test("iss_01 a Guest sees a role or Someone where names are not for them", async ({
@@ -123,7 +123,7 @@ test("iss_01 a Guest sees a role or Someone where names are not for them", async
   await assignTo(admin, typo, await ownId(admin), 1);
   await holdDescription(admin, typo);
   await signIn(page, lea);
-  await page.goto(issueAddress("WEB-3"));
+  await openIssueWithDetails(page, "WEB-3");
   await expect(
     page.getByText(t("projects.person-role", { role: roleName.administrator }), { exact: true }),
   ).toBeVisible();
