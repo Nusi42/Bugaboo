@@ -145,6 +145,7 @@ tokens {
     size "size-details" "300px"
     size "size-reading" "75ch"
     size "size-main" "780px"
+    size "size-footer-note" "200px"
     size "size-sheet-share" "85%"
     size "size-matrix-cell" "calc($size-control * 3)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -1884,7 +1885,8 @@ part "window.footer" {
 }
 
 part "window.footer-note" {
-    margin-inline-end auto
+    flex "1 1 0"
+    min-width "$size-footer-note"
     use "quiet-text"
 }
 

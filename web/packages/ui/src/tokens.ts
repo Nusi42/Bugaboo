@@ -167,6 +167,7 @@ export const tokenNames = [
   "size-details",
   "size-reading",
   "size-main",
+  "size-footer-note",
   "size-sheet-share",
   "size-matrix-cell",
   "size-list-tall",

@@ -72,6 +72,7 @@
   --size-details: 300px;
   --size-reading: 75ch;
   --size-main: 780px;
+  --size-footer-note: 200px;
   --size-sheet-share: 85%;
   --size-matrix-cell: calc(var(--size-control) * 3);
   --size-list-tall: calc(var(--size-list) * 2);
@@ -2089,7 +2090,8 @@ body {
 }
 
 [data-part="window.footer-note"] {
-  margin-inline-end: auto;
+  flex: 1 1 0;
+  min-width: var(--size-footer-note);
   color: var(--fg-muted);
   font-size: var(--fs-base);
 }

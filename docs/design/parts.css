@@ -1363,7 +1363,8 @@ body {
 }
 
 [data-part="window.footer-note"] {
-  margin-inline-end: auto;
+  flex: 1 1 0;
+  min-width: var(--size-footer-note);
   color: var(--fg-muted);
   font-size: var(--fs-base);
 }
