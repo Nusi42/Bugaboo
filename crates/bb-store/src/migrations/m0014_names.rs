@@ -17,7 +17,7 @@
 //! Migrations run once (the recorded number says so). Every update of a value changes only the rows
 //! that still have the old word, so running the updates again changes nothing.
 
-use sea_query::{Alias, Expr, ExprTrait as _, Query, Table};
+use sea_query::{Alias, Expr, ExprTrait as _, Func, Query, Table};
 
 use super::Step;
 use crate::schema::{
@@ -33,6 +33,7 @@ const PERMISSIONS: [(&str, &str); 3] = [
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = permission_words();
+    steps.extend(permission_words_in_role_events());
     steps.push(rename_value(
         Event::Table,
         Event::EntityKind,
@@ -50,7 +51,11 @@ pub(super) fn steps() -> Vec<Step> {
             .table(Event::Table)
             .value(
                 Event::Reason,
-                Expr::cust("'change-run:' || SUBSTR(\"reason\", 10)"),
+                Func::cust("REPLACE").args([
+                    Expr::col(Event::Reason),
+                    Expr::val("bulk-run:"),
+                    Expr::val("change-run:"),
+                ]),
             )
             .and_where(Expr::col(Event::Reason).like("bulk-run:%"))
             .to_owned(),
@@ -84,6 +89,34 @@ fn rename_value(
     )
 }
 
+/// The permission words in the changes that the events of roles hold (the history of a role shows
+/// them, and the conflict page of a role reads them). They stand in the JSON text between quotes, so
+/// the quotes keep a longer word from being touched. The events of access keys, settings and layouts
+/// hold no permission word (they hold the choice of a key, values and IDs of roles).
+fn permission_words_in_role_events() -> Vec<Step> {
+    PERMISSIONS
+        .into_iter()
+        .map(|(old, new)| {
+            let quoted = |word: &str| format!("\"{word}\"");
+            Step::Update(
+                Query::update()
+                    .table(Event::Table)
+                    .value(
+                        Event::Changes,
+                        Func::cust("REPLACE").args([
+                            Expr::col(Event::Changes),
+                            Expr::val(quoted(old)),
+                            Expr::val(quoted(new)),
+                        ]),
+                    )
+                    .and_where(Expr::col(Event::EntityKind).eq("role"))
+                    .and_where(Expr::col(Event::Changes).like(format!("%{}%", quoted(old))))
+                    .to_owned(),
+            )
+        })
+        .collect()
+}
+
 /// The permission words in the rows of roles and of access keys.
 fn permission_words() -> Vec<Step> {
     let mut steps = Vec::new();
@@ -106,12 +139,12 @@ fn permission_words() -> Vec<Step> {
 
 #[cfg(test)]
 mod tests {
-    use bb_core::event::EntityKind;
+    use bb_core::event::{EntityKind, FieldChange};
     use bb_core::id::JobId;
     use bb_core::technical::TechnicalName;
     use bb_testing::{Failure, TestDatabase, TestResult, each_database};
     use sea_query::{Alias, Expr, Order, Query};
-    use serde_json::Value;
+    use serde_json::{Value, json};
 
     use super::*;
     use crate::db::Database;
@@ -311,6 +344,53 @@ mod tests {
                     .map(|row| row.get::<String>(Event::EntityKind))
                     .collect::<Result<_, _>>()?;
                 assert_eq!(kinds, ["change_run", "issue"]);
+                run_updates_again(&database).await?;
+            }
+            assert!(database.migrate(at(2)).await?.is_empty());
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn adr_0008_the_history_of_a_role_shows_the_new_permission_words() -> TestResult {
+        each_database("m0014_permission_words_in_events", async |db| {
+            let database = m3_database(db).await?;
+            let mut source = ids();
+            for (seconds, kind) in [(1, "role"), (2, "issue")] {
+                let mut event = event(&mut source, seconds);
+                event.entity.kind = EntityKind::new(kind)?;
+                event.changes = vec![FieldChange {
+                    field: "permissions".to_owned(),
+                    before: Some(json!(["make-issues", "see-issues"])),
+                    after: Some(json!(["make-projects", "make-sub-projects", "make-issues"])),
+                }];
+                database
+                    .record_change(&event, async |_transaction| Ok(()))
+                    .await?;
+            }
+            assert_eq!(database.migrate(at(1)).await?, [14]);
+            for _ in 0..2 {
+                let mut select = Query::select();
+                select
+                    .columns([Event::EntityKind, Event::Changes])
+                    .from(Event::Table)
+                    .order_by(Event::EntityKind, Order::Asc);
+                let rows = database.fetch_all(&select).await?;
+                let changes = |at: usize| -> Result<String, Failure> {
+                    Ok(rows[at].get::<String>(Event::Changes)?)
+                };
+                // The event of a role has the new words; another record keeps what it holds.
+                assert_eq!(rows[0].get::<String>(Event::EntityKind)?, "issue");
+                assert!(changes(0)?.contains("\"make-issues\""));
+                let role = changes(1)?;
+                assert!(role.contains("\"create-issues\""), "{role}");
+                assert!(role.contains("\"create-projects\""), "{role}");
+                assert!(role.contains("\"create-sub-projects\""), "{role}");
+                assert!(
+                    role.contains("\"see-issues\"") && !role.contains("make-"),
+                    "{role}"
+                );
                 run_updates_again(&database).await?;
             }
             assert!(database.migrate(at(2)).await?.is_empty());
