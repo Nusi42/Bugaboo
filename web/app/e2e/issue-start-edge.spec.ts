@@ -22,7 +22,7 @@ test("ux_4_4 R1 the title and the quiet buttons of the Details start where the t
   await page.goto(issueAddress("WEB-1"));
   // A button that holds text pulls itself back by its own padding, so its text stands on the edge.
   const title = partIn(page, "in-place.button").first();
-  await expect(title).toHaveCSS("margin-inline-start", "-8px");
+  await expect(title).toHaveCSS("margin-inline-start", "-12px");
   const change = detailRow(page, t("issue-field.assigned-to")).getByRole("button");
   await expect(change).toHaveCSS("margin-inline-start", "-12px");
 });

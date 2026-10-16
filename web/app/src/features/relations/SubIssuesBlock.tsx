@@ -173,7 +173,9 @@ export function SubIssuesBlock({ issueKey }: BlockProps) {
   const mayChange = header.data?.may_change === true;
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
-      <h3 id={heading}>{t("sub-issues.title")}</h3>
+      <h2 id={heading} {...partOf(part.issueSectionTitle)}>
+        {t("sub-issues.title")}
+      </h2>
       {header.isError ? <Alert tone={alertTone.danger}>{messageOf(header.error)}</Alert> : null}
       {above === undefined || above === null ? null : (
         <PartOf above={above} issueKey={issueKey} mayChange={mayChange} />

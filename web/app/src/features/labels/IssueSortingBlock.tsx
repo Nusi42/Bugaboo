@@ -27,7 +27,9 @@ export function IssueSortingBlock({ issue, issueKey, form }: IssueBlockProps) {
   }
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
-      <h3 id={heading}>{t("labels.sorting-title")}</h3>
+      <h3 id={heading} {...partOf(part.issueSectionTitle)}>
+        {t("labels.sorting-title")}
+      </h3>
       {showTags ? (
         <TagsPart body={body} issueKey={issueKey} project={issue.project?.short_name} />
       ) : null}

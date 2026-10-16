@@ -3155,6 +3155,10 @@ body {
   margin-inline-start: calc(-1 * var(--pad-control));
 }
 
+[data-part="name-value.value"] [data-part="button"][data-variant~="quiet"]:first-child {
+  margin-inline-start: calc(-1 * var(--pad-control));
+}
+
 [data-part="in-place.text"] {
   font-family: inherit;
   font-size: inherit;
@@ -3166,10 +3170,11 @@ body {
   background: transparent;
   font-family: var(--font);
   cursor: pointer;
+  margin-inline-start: calc(-1 * var(--pad-control));
   box-sizing: border-box;
   max-width: 100%;
   min-height: var(--size-control);
-  padding: 0 var(--space-2);
+  padding: 0 var(--pad-control);
   border-radius: var(--r-ctl);
   color: inherit;
   font-size: inherit;
@@ -3295,7 +3300,7 @@ body {
   box-sizing: border-box;
   width: var(--size-details);
   max-height: var(--size-viewport);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   overflow-y: auto;
 }
 

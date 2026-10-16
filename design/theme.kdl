@@ -558,6 +558,12 @@ mixin "quiet-column" {
     line-height "$lh-body"
 }
 
+// A button that holds text hangs back by its own padding, so its text stands on the start edge of
+// the text around it (R1). Every such button has the padding `pad-control`.
+mixin "hang-start" {
+    margin-inline-start "calc(-1 * $pad-control)"
+}
+
 // Text for screen readers only: out of sight, still read.
 mixin "hidden-text" {
     position absolute
@@ -3575,7 +3581,12 @@ part "focus-view.bar" {
 
 // One start edge (R1): the arrow of the first button stands where the text below it starts.
 part "focus-view.bar button[variant=quiet]:first-child" {
-    margin-inline-start "calc(-1 * $pad-control)"
+    use "hang-start"
+}
+
+// The same for a quiet button that begins the value of a row of the Details.
+part "name-value.value button[variant=quiet]:first-child" {
+    use "hang-start"
 }
 
 // ───────────── Issues (features/issues, packages/ui: InPlaceText, ActionMenu) ─────────────
@@ -3592,10 +3603,11 @@ part "in-place.text" {
 
 part "in-place.button" {
     use "bare-button"
+    use "hang-start"
     box-sizing border-box
     max-width "100%"
     min-height "$size-control"
-    padding 0 "$space-2"
+    padding 0 "$pad-control"
     border-radius "$r-ctl"
     color inherit
     font-size inherit
@@ -3710,7 +3722,8 @@ part "issue-details" {
     box-sizing border-box
     width "$size-details"
     max-height "$size-viewport"
-    padding "$space-3"
+    // Room at the sides for the focus ring of a button that hangs back (the box scrolls, so it clips).
+    padding "$space-3 $space-4"
     overflow-y auto
 }
 

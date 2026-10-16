@@ -54,7 +54,9 @@ export function HistoryBlock({ issueKey }: { readonly issueKey: string }) {
   const [tab, setTab] = useState<HistoryTabName>("everything");
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
-      <h3 id={heading}>{t("history.title")}</h3>
+      <h2 id={heading} {...partOf(part.issueSectionTitle)}>
+        {t("history.title")}
+      </h2>
       <CommentComposer issue={issueKey} />
       <Tabs
         selectedKey={tab}
