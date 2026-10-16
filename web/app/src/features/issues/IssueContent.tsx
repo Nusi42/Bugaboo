@@ -2,7 +2,7 @@ import { partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { DetailsToggle } from "./DetailsToggle.tsx";
-import { FieldsPanel } from "./FieldsPanel.tsx";
+import { DetailsPanel } from "./DetailsPanel.tsx";
 import { IssueMain } from "./IssueMain.tsx";
 import { IssueSaved } from "./IssueSaved.tsx";
 import { StatusChange } from "./StatusChange.tsx";
@@ -27,7 +27,7 @@ export interface IssueContentProps {
  */
 export function IssueContent({ detail, address, changes, blocks, split }: IssueContentProps) {
   const [open, setOpen] = useState(false);
-  const details = <FieldsPanel blocks={blocks} changes={changes} stacked={!split} />;
+  const details = <DetailsPanel blocks={blocks} changes={changes} stacked={!split} />;
   return (
     <>
       <StatusChange blocks={blocks} changes={changes} />

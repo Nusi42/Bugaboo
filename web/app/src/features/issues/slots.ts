@@ -30,8 +30,8 @@ export const issueSlots = {
   history: "history",
   /** Sections of own fields that the layout puts into the main column (WP-05). */
   ownFieldSections: "own-field-sections",
-  /** The own fields in the fields panel (*Details*), below the built-in ones (WP-05). */
-  fieldsPanel: "fields-panel",
+  /** The own fields in the Details (*Details*), below the built-in ones (WP-05). */
+  details: "details",
 } as const;
 
 /** The name of a slot. */

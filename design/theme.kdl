@@ -1737,7 +1737,7 @@ part "name-value.saved" {
 
 // ───────────── Legend ─────────────
 //
-// A small key beside the toolbar: what the row color and the edge mean (UX §4.2, §4.7).
+// The Legend, a small list beside the toolbar: what the row color and the edge mean (UX §4.2, §4.7).
 
 part "legend" {
     display flex
@@ -1785,7 +1785,7 @@ part "legend.swatch[variant=high]" {
     border-inline-start "$size-edge solid $warning"
 }
 
-// The row above a list: its main button, what is ticked, and the key to the colors at the end.
+// The row above a list: its main button, what is ticked, and the Legend at the end.
 part "list-toolbar" {
     display flex
     flex-wrap wrap

@@ -18,7 +18,7 @@ import {
 
 // The list of issues in the new look (UX §4.2, R1, R4, R5, R8, R9, M3 WP-17): one grid with fixed
 // columns, groups by status group, a row tinted by its status group and edged by its priority,
-// the status and the priority told by icon and name and not by color alone, a key to the colors,
+// the status and the priority told by icon and name and not by color alone, a Legend,
 // and a whole row that opens its issue.
 
 test.use({ preparation: { run: prepareLook } });

@@ -72,7 +72,7 @@ export type IconSize = (typeof iconSize)[keyof typeof iconSize];
 export const pickerLook = { list: "list", boxed: "boxed" } as const;
 export type PickerLook = (typeof pickerLook)[keyof typeof pickerLook];
 
-/** The swatches of the key to the colors of a list, by what they mean (UX §4.2). */
+/** The swatches of the Legend of a list, by what they mean (UX §4.2). */
 export const legendLook = {
   inProgress: "in-progress",
   done: "done",

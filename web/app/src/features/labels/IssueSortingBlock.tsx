@@ -8,7 +8,7 @@ import { useIssueSorting } from "./labels.ts";
 import { LabelsPart, TagsPart } from "./SortingParts.tsx";
 
 /**
- * *Labels and tags* in the fields panel of the issue page (TAG-01, TAG-02): the tags and labels the
+ * *Labels and tags* in the Details of the issue page (TAG-01, TAG-02): the tags and labels the
  * issue has, each with a button that takes it off, and the ways to add one where the person may
  * change them. Tags and labels are built-in fields of the issue page, so the layout decides which
  * of them show (`form.shows`, like *Reported by*), and a person who may not see a field gets

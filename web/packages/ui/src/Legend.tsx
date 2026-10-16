@@ -12,7 +12,7 @@ export interface LegendProps {
   readonly children: ReactNode;
 }
 
-/** A small key beside the toolbar: what the row color and the left edge mean (UX §4.2). */
+/** The Legend, a small list beside the toolbar: what the row color and the left edge mean (UX §4.2). */
 export function Legend({ label, children }: LegendProps) {
   return (
     <ul {...partOf(part.legend)} aria-label={label}>

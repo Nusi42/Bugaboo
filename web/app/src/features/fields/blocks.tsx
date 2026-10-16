@@ -7,12 +7,12 @@ import { issueFieldsOf, useFields, type OwnField, type FieldValues } from "./fie
 import { FieldLine } from "./FieldLine.tsx";
 
 /**
- * The own fields in the fields panel of the issue page (CF-06, UX §4.4): each field the person sees,
+ * The own fields in the Details of the issue page (CF-06, UX §4.4): each field the person sees,
  * in its look, and an editor where the field is theirs to change. A field the person may not see is
  * not in the issue and so not here. The page saves a change and shows what the server refuses.
  * Long texts have their own section under the description.
  */
-export function OwnFieldsPanel({ issue, mask, form, rowStatus, onChange }: IssueBlockProps) {
+export function OwnFieldRows({ issue, mask, form, rowStatus, onChange }: IssueBlockProps) {
   const project = issue.project?.short_name;
   const fields = useFields({ project });
   const values: FieldValues = issue.own_fields ?? {};

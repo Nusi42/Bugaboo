@@ -2,7 +2,7 @@
 
 ## The list of a project
 
-Open a project and press "Issues of this project". The list is a grid in groups: "In progress", "Not started" and "Done", each with its number. Inside a group the newest issues come first, a page at a time ("Show more issues" brings the next page). Each line has a box you can tick, the status icon, the issue ID, the type, the title, the priority, the people it is assigned to and when it changed. A line is tinted by its status group and has a colored strip at the left for a high or critical priority; the key beside the "New issue" button says what the colors mean, and the icons say the same in words for people who use a reader. A whole line opens its issue. On a phone each line has two lines, in the same order. Ticked issues are kept until you clear them; changing many issues at once comes later. With `j` and `k` you move from title to title.
+Open a project and press "Issues of this project". The list is a grid in groups: "In progress", "Not started" and "Done", each with its number. Inside a group the newest issues come first, a page at a time ("Show more issues" brings the next page). Each line has a box you can tick, the status icon, the issue ID, the type, the title, the priority, the people it is assigned to and when it changed. A line is tinted by its status group and has a colored strip at the left for a high or critical priority; the Legend beside the "New issue" button says what the colors mean, and the icons say the same in words for people who use a reader. A whole line opens its issue. On a phone each line has two lines, in the same order. Ticked issues are kept until you clear them; changing many issues at once comes later. With `j` and `k` you move from title to title.
 
 ## Opening an issue
 

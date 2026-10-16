@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Legend, legendLook, LegendItem } from "@bugaboo/ui";
 
 /**
- * The key beside the toolbar of the list (UX §4.2): what the tint of a row and its left edge mean.
+ * The Legend beside the toolbar of the list (UX §4.2): what the tint of a row and its left edge mean.
  * Each swatch is told in words, because a color is never alone (R5).
  */
 export function IssueLegend() {
