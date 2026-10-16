@@ -751,6 +751,15 @@ files = ["crates/**", "web/**", "xtask/src/ci.rs", "xtask/src/load/**", "tools/d
 status = "active"
 
 [[check]]
+id = "TEST-CONNECTIONS"
+title = "A run of the browser tests never leaves more connections in TIME_WAIT and CLOSE_WAIT than the limit, so the computer never runs out of ports"
+rule = "architecture §11"
+tool = "xtask (the Playwright reporter `web/tooling/connection-guard.ts` is in the config, fails the run, and its limit is one named number; tests are run again only in the speed project); the count itself: the reporter, during `cargo xtask ci`"
+when = ["ci", "nightly"]
+files = ["web/tooling/**", "web/app/e2e/**", "package.json", "xtask/src/ci.rs"]
+status = "active"
+
+[[check]]
 id = "PLAN-TRACE"
 title = "Every M and V1 feature is in exactly one milestone, MVP features only in MVP milestones, and every work package names its features"
 rule = "04-milestones.md"

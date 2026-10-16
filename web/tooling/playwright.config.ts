@@ -14,6 +14,9 @@ const portsForWorkers = ports.e2eWorkersTo - ports.e2eWorkersFrom + 1;
 /** The speed tests (PERF-01) run alone, after every other test, so no other test competes for the computer. */
 const speedFiles = "**/perf-issues.spec.ts";
 
+/** How many WebKit tests run at the same time (see the project). */
+const WEBKIT_WORKERS = 2;
+
 /** What runs in the WebKit phone project. */
 const webkitPhoneFiles = [
   "**/issues.spec.ts",
@@ -30,7 +33,9 @@ export default defineConfig({
   // The tests of a file go one after the other, on one server; files run side by side.
   fullyParallel: false,
   forbidOnly: true,
-  reporter: "list",
+  // The list, and the guard that counts the connections the servers of the tests are left with
+  // (TEST-CONNECTIONS); it fails the run when the computer is near its end of ports.
+  reporter: [["list"], ["./connection-guard.ts"]],
   workers: Math.min(portsForWorkers, Math.max(1, Math.floor(cpus().length / 2))),
   timeout: 90_000,
   expect: { timeout: 10_000 },
@@ -59,6 +64,11 @@ export default defineConfig({
     {
       name: "webkit-phone",
       testMatch: webkitPhoneFiles,
+      // WebKit on Windows opens a connection for about every request and closes it again, where
+      // Chromium keeps one (measured, M4 WP-03: about 70 connections left in TIME_WAIT for each
+      // test, against 3), so these four files alone made most of the connections of a run. Two at
+      // a time halves what the computer has to hold at once.
+      workers: WEBKIT_WORKERS,
       use: { browserName: "webkit", viewport: viewports.phone, hasTouch: true },
     },
     // The speed of the pages of an issue and the lists on the sample (PERF-01, M3 WP-11): after the

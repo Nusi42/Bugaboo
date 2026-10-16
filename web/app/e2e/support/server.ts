@@ -1,11 +1,12 @@
 import { execFile, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { repoRoot } from "../../../tooling/ports.ts";
+import { askLive, waitUntilReady } from "./ready.ts";
+import { closePool } from "./session-transport.ts";
 import { copySampleInto } from "./sample.ts";
 
 /** A Bugaboo server started for one group of tests, with a data folder of its own. */
@@ -26,9 +27,8 @@ export interface Instance {
 /** Start-up settings for one server, by their names in the environment (`BUGABOO_<NAME>`). */
 export type Settings = Readonly<Record<string, string>>;
 
-/** How long a server gets to start before the test gives up. */
-const START_LIMIT_MS = 30_000;
-const POLL_MS = 100;
+/** The pause between two tries to delete a data folder that Windows still keeps busy. */
+const REMOVE_PAUSE_MS = 100;
 const SETUP_CODE_FILE = "setup-code.txt";
 
 /** Limits that never get in the way of a test, unless a test sets its own. */
@@ -51,23 +51,6 @@ function program(): string {
 /** The browser app that `npm run build` made. */
 function appFolder(): string {
   return resolve(repoRoot, "web/app/dist");
-}
-
-/**
- * Whether the server accepts connections. It opens its port only after its database and keys are
- * ready (it starts to listen last), so an open port means a server that can answer.
- */
-function answers(port: number): Promise<boolean> {
-  return new Promise((done) => {
-    const probe = connect({ host: "localhost", port });
-    probe.once("connect", () => {
-      probe.destroy();
-      done(true);
-    });
-    probe.once("error", () => {
-      done(false);
-    });
-  });
 }
 
 /** A started program: whether it has ended, what it said, and a way to end it. */
@@ -105,20 +88,6 @@ function launch(executable: string, args: readonly string[], env: Settings): Lau
   };
 }
 
-/** Waits until the server answers; gives up when it ends, or when it takes too long. */
-async function waitUntilReady(port: number, server: Launched, started = Date.now()): Promise<void> {
-  if (server.exited()) {
-    throw new Error(`The server stopped while starting:\n${server.output()}`);
-  }
-  if (Date.now() - started > START_LIMIT_MS) {
-    throw new Error(`The server did not answer on port ${String(port)}:\n${server.output()}`);
-  }
-  if (!(await answers(port))) {
-    await sleep(POLL_MS);
-    await waitUntilReady(port, server, started);
-  }
-}
-
 /** Deletes a folder; Windows may keep a file busy for a moment after a program ended. */
 async function remove(folder: string, triesLeft = 20): Promise<void> {
   try {
@@ -127,7 +96,7 @@ async function remove(folder: string, triesLeft = 20): Promise<void> {
     if (triesLeft === 0) {
       throw error;
     }
-    await sleep(POLL_MS);
+    await sleep(REMOVE_PAUSE_MS);
     await remove(folder, triesLeft - 1);
   }
 }
@@ -181,18 +150,20 @@ export async function startServer(
     ["serve", "--port", String(port), "--data-dir", folder, "--web", appFolder()],
     { ...generousLimits, ...settings },
   );
+  const origin = `https://localhost:${String(port)}`;
   const stop = async (): Promise<void> => {
+    closePool(origin);
     await server.end();
     if (!given) {
       await remove(folder);
     }
   };
-  await waitUntilReady(port, server).catch(async (error: unknown) => {
+  await waitUntilReady(askLive(port), server).catch(async (error: unknown) => {
     await stop();
     throw error;
   });
   return {
-    url: `https://localhost:${String(port)}`,
+    url: origin,
     setupCode: () => readFileSync(join(folder, SETUP_CODE_FILE), "utf8").trim(),
     verifySecurityLog: () => verifySecurityLog(executable, folder),
     stop,

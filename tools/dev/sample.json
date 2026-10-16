@@ -8,6 +8,8 @@
   "signInFile": "sign-in.txt",
   "dumpFile": "dump.json",
   "markerFile": "sample.json",
+  "markerSeedKey": "seed",
+  "markerStartKey": "start",
   "databaseUrlVariable": "BB_SAMPLE_DATABASE_URL",
   "organization": {
     "$comment": "The code names a group, a project or a role by its key (groups and roles) or its short name (projects); this is what people read. The first four projects have their project lead, in the order of the people of the plan.",

@@ -5,6 +5,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
 import { pickTheme, type Theme, expectLook } from "./checks.ts";
+import { sampleStartMs } from "./sample.ts";
 import { type Instance } from "./server.ts";
 import { type ShowcaseIds, type Who } from "./showcase-sample.ts";
 import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
@@ -54,17 +55,21 @@ const INDEX = "index.json";
 const taken = new Map<string, Picture>();
 
 /** Opens a browser of its own for a window of the showcase: a phone has a touch screen. */
-export function openDevice(
+export async function openDevice(
   browser: Browser,
   server: Instance,
   device: Device,
 ): Promise<BrowserContext> {
-  return browser.newContext({
+  const context = await browser.newContext({
     baseURL: server.url,
     ignoreHTTPSErrors: true,
     viewport: devices[device],
     hasTouch: device === "phone",
   });
+  // The clock of the browser stands at the moment the sample was made: "3 days ago" is then the
+  // same on every run, and what the tour makes itself is "now" (M2C-F104).
+  await context.clock.setFixedTime(sampleStartMs());
+  return context;
 }
 
 /** The two digits in front of a file name, which keep the pictures in the order of the tour. */

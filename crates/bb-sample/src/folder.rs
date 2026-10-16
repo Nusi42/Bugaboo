@@ -76,7 +76,11 @@ impl Output {
     /// The errors of the file system.
     pub fn mark(&self, seed: u64, start: i64) -> Result<(), SampleError> {
         self.write(GIT_IGNORE_FILE, GIT_IGNORE_TEXT)?;
-        let text = json!({ "seed": seed, "start": start }).to_string();
+        let text = json!({
+            self.layout.marker_seed_key.as_str(): seed,
+            self.layout.marker_start_key.as_str(): start,
+        })
+        .to_string();
         self.write(&self.layout.marker_file, &text)
     }
 
