@@ -20,7 +20,7 @@ function rowOf(label: Label, props: LabelsSectionProps): ListRow {
     name: label.name,
     details: (
       <span {...partOf(part.muted)}>
-        {group?.name ?? t("labels.no-group")}
+        {group?.name ?? t("labels.no-label-group")}
         {label.retired ? ` ${t("labels.retired")}` : null}
       </span>
     ),

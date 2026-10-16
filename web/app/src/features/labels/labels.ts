@@ -127,7 +127,7 @@ export function groupChoices(
   groups: readonly LabelGroup[],
 ): readonly { readonly value: string; readonly label: string }[] {
   return [
-    { value: NO_GROUP, label: t("labels.no-group") },
+    { value: NO_GROUP, label: t("labels.no-label-group") },
     ...groups
       .filter((group) => !group.retired)
       .map((group) => ({ value: group.id, label: group.name })),

@@ -38,7 +38,7 @@ export function CreateLabelGroupForm() {
         <Alert tone={alertTone.success}>{t("labels.group-made", { name: made })}</Alert>
       )}
       <div {...partOf(part.row)}>
-        <SubmitButton isPending={create.isPending}>{t("labels.make-group")}</SubmitButton>
+        <SubmitButton isPending={create.isPending}>{t("labels.create-label-group")}</SubmitButton>
       </div>
     </Form>
   );

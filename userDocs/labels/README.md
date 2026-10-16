@@ -3,7 +3,7 @@
 Tags and labels sort issues. Both show on the issue page, in the **Labels and tags** block of the details, as small colored words.
 
 - A **tag** is a free word. Anybody who may change an issue can add a tag to it, and a tag that does not exist yet is made by adding it. Type a few letters and Bugaboo offers the tags of the project that fit.
-- A **label** is a word from a list that the people who look after labels keep. Labels can be in a **group**, for example *Area* with *invoices* and *billing*. A group can be a **group to pick one from**: an issue then has at most one label of it.
+- A **label** is a word from a list that the people who look after labels keep. Labels can be in a **label group**, for example *Area* with *invoices* and *billing*. A label group can be a **group to pick one from**: an issue then has at most one label of it.
 
 Whether you see tags and labels on an issue, and whether you can change them, follows your role: they are the fields *Tags* and *Labels*, with the levels you have for them (see [who sees a field](../fields/who-sees-a-field.md)). What you may not see is not shown, and nothing says that it is there.
 
@@ -21,8 +21,8 @@ A tag can be limited to some projects. In another project it is not offered whil
 
 *Organization settings › Labels and tags* is for people who hold the permission "Manage labels and tags". There are three lists:
 
-- **Groups of labels:** create a group, rename it, turn it into a group to pick one from, or **retire** it. A group cannot become a group to pick one from while an issue already has two of its labels: Bugaboo says so, and you take the extra labels off first.
-- **Labels:** create a label (name, color, group), change them, or retire it. A retired label is not offered for new issues, and the issues that have it keep it.
+- **Label groups:** create a label group, rename it, turn it into a group to pick one from, or **retire** it. A label group cannot become a group to pick one from while an issue already has two of its labels: Bugaboo says so, and you take the extra labels off first.
+- **Labels:** create a label (name, color, label group), change them, or retire it. A retired label is not offered for new issues, and the issues that have it keep it.
 - **Tags:** rename a tag, change its color, and choose the projects it is for, or *Use in all projects*.
 
 Colors are the twelve colors of the theme, so a label is readable in every theme.

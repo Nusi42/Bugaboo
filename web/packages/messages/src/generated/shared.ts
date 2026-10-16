@@ -552,7 +552,7 @@ export const messages = {
   "error.tag.not-here":
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
   "error.label.pick-one-conflict":
-    "Some issues have more than one label of this group already, so it cannot be a group to pick one from. Take the extra labels off first.",
+    "Some issues have more than one label of this label group already, so it cannot be a group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count}",
   "common.show-fewer": "Show fewer",
   "nav.labels": "Labels and tags",

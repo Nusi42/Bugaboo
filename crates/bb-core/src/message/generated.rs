@@ -1972,6 +1972,17 @@ pub const LABELS_COMBINED: MessageKey = MessageKey::new("labels.combined");
 /// The message `labels.create-label`.
 pub const LABELS_CREATE_LABEL: MessageKey = MessageKey::new("labels.create-label");
 
+/// The message `labels.create-label-group`.
+pub const LABELS_CREATE_LABEL_GROUP: MessageKey = MessageKey::new("labels.create-label-group");
+
+/// The message `labels.create-label-group-intro`.
+pub const LABELS_CREATE_LABEL_GROUP_INTRO: MessageKey =
+    MessageKey::new("labels.create-label-group-intro");
+
+/// The message `labels.create-label-group-title`.
+pub const LABELS_CREATE_LABEL_GROUP_TITLE: MessageKey =
+    MessageKey::new("labels.create-label-group-title");
+
 /// The message `labels.create-label-intro`.
 pub const LABELS_CREATE_LABEL_INTRO: MessageKey = MessageKey::new("labels.create-label-intro");
 
@@ -2024,17 +2035,8 @@ pub const LABELS_LABELS_SEARCH: MessageKey = MessageKey::new("labels.labels-sear
 /// The message `labels.labels-title`.
 pub const LABELS_LABELS_TITLE: MessageKey = MessageKey::new("labels.labels-title");
 
-/// The message `labels.make-group`.
-pub const LABELS_MAKE_GROUP: MessageKey = MessageKey::new("labels.make-group");
-
-/// The message `labels.make-group-intro`.
-pub const LABELS_MAKE_GROUP_INTRO: MessageKey = MessageKey::new("labels.make-group-intro");
-
-/// The message `labels.make-group-title`.
-pub const LABELS_MAKE_GROUP_TITLE: MessageKey = MessageKey::new("labels.make-group-title");
-
-/// The message `labels.no-group`.
-pub const LABELS_NO_GROUP: MessageKey = MessageKey::new("labels.no-group");
+/// The message `labels.no-label-group`.
+pub const LABELS_NO_LABEL_GROUP: MessageKey = MessageKey::new("labels.no-label-group");
 
 /// The message `labels.none-labels`.
 pub const LABELS_NONE_LABELS: MessageKey = MessageKey::new("labels.none-labels");
@@ -8433,7 +8435,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.label.pick-one-conflict",
-        "Some issues have more than one label of this group already, so it cannot be a group to pick one from. Take the extra labels off first.",
+        "Some issues have more than one label of this label group already, so it cannot be a group to pick one from. Take the extra labels off first.",
     ),
     (
         "error.limit.reached",
@@ -9221,42 +9223,42 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.combine-title", "Combine with another one"),
     ("labels.combined", "Combined."),
     ("labels.create-label", "Create label"),
+    ("labels.create-label-group", "Create label group"),
+    (
+        "labels.create-label-group-intro",
+        "A label group keeps labels that belong together. Tick the box when an issue may have only one label of the group.",
+    ),
+    ("labels.create-label-group-title", "Create a label group"),
     (
         "labels.create-label-intro",
-        "A label has a name, a color and, if you like, a group.",
+        "A label has a name, a color and, if you like, a label group.",
     ),
     ("labels.create-label-title", "Create a label"),
     ("labels.field-color", "Color of {name}"),
-    ("labels.field-group-name", "Name of the group"),
-    ("labels.field-label-group", "Group"),
+    ("labels.field-group-name", "Name of the label group"),
+    ("labels.field-label-group", "Label group"),
     ("labels.field-label-name", "Name of the label"),
     ("labels.field-name", "Name"),
     (
         "labels.field-pick-one",
-        "An issue gets at most one label of this group",
+        "An issue gets at most one label of this label group",
     ),
-    ("labels.group-made", "Made the group {name}."),
+    ("labels.group-made", "Created the label group {name}."),
     ("labels.group-pick-one", "Pick one"),
-    ("labels.groups-nothing", "No group has that name."),
-    ("labels.groups-search", "Search groups of labels"),
-    ("labels.groups-title", "Groups of labels"),
+    ("labels.groups-nothing", "No label group has that name."),
+    ("labels.groups-search", "Search label groups"),
+    ("labels.groups-title", "Label groups"),
     (
         "labels.intro",
-        "Labels sort issues by groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
+        "Labels sort issues by label groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
     ),
-    ("labels.label-made", "Made the label {name}."),
+    ("labels.label-made", "Created the label {name}."),
     ("labels.labels-and-tags-title", "Labels and tags"),
     ("labels.labels-heading", "Labels"),
     ("labels.labels-nothing", "No label has that name."),
     ("labels.labels-search", "Search labels"),
     ("labels.labels-title", "Labels"),
-    ("labels.make-group", "Create group"),
-    (
-        "labels.make-group-intro",
-        "A group keeps labels that belong together. Tick the box when an issue may have only one label of the group.",
-    ),
-    ("labels.make-group-title", "Create a group of labels"),
-    ("labels.no-group", "No group"),
+    ("labels.no-label-group", "No label group"),
     ("labels.none-labels", "No labels."),
     ("labels.none-tags", "No tags."),
     (

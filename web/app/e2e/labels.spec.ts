@@ -28,7 +28,7 @@ test("tag_02 a group and a label are made on the page, and the label is put on a
   await page.goto(paths.labels);
   await expect(page.getByRole("heading", { level: 1, name: t("nav.labels") })).toBeVisible();
   await page.getByLabel(t("labels.field-group-name"), { exact: true }).fill("Area");
-  await page.getByRole("button", { name: t("labels.make-group"), exact: true }).click();
+  await page.getByRole("button", { name: t("labels.create-label-group"), exact: true }).click();
   await expect(page.getByText(t("labels.group-made", { name: "Area" }))).toBeVisible();
   await page.getByLabel(t("labels.field-label-name"), { exact: true }).fill("frontend");
   await page.getByRole("button", { name: t("labels.create-label"), exact: true }).click();

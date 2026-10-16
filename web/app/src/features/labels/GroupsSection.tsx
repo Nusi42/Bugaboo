@@ -37,8 +37,8 @@ export function GroupsSection({
         onOpen={opening.onOpen}
         onClose={opening.onClose}
       />
-      <h3>{t("labels.make-group-title")}</h3>
-      <p {...partOf(part.text)}>{t("labels.make-group-intro")}</p>
+      <h3>{t("labels.create-label-group-title")}</h3>
+      <p {...partOf(part.text)}>{t("labels.create-label-group-intro")}</p>
       <CreateLabelGroupForm />
     </Card>
   );
