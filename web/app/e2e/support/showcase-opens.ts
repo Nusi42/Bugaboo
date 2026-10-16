@@ -4,16 +4,10 @@ import { expect, type Page } from "@playwright/test";
 import { check } from "./access.ts";
 import { addressWith, sendPassword } from "./flows.ts";
 import { openMove, tree } from "./projects.ts";
-import { openNewIssueDialog } from "./issues.ts";
 import { sampleWithCodeApp } from "./sample.ts";
 import { PROJECT, showcaseNames, SUB_PROJECT, type ShowcaseIds } from "./showcase-sample.ts";
 import { type Needs, type Screen } from "./showcase.ts";
-import {
-  addressInProject,
-  paths,
-  projectAddress,
-  projectIssuesAddress,
-} from "../../src/shared/paths.ts";
+import { addressInProject, paths, projectAddress } from "../../src/shared/paths.ts";
 
 /** The page of a screen has its heading. */
 export async function expectPage(page: Page): Promise<void> {
@@ -45,13 +39,6 @@ export async function openTree({ page }: Needs): Promise<void> {
     await region.getByRole("button", { name: /Mobile app/u }).click();
   }
   await expect(sub).toBeVisible();
-}
-
-/** Opens the new-issue form over the list of issues of the project. */
-export async function openNewIssue({ page }: Needs): Promise<void> {
-  await page.goto(projectIssuesAddress(PROJECT));
-  await expectPage(page);
-  await openNewIssueDialog(page);
 }
 
 /** Opens quick search with a word typed, and waits for what it found. */
