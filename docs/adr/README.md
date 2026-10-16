@@ -34,6 +34,9 @@ Each file records one decision: context, decision, consequences, alternatives. N
 | [0028](0028-message-parts.md) | The message catalog is split into parts; the first page loads one |
 | [0029](0029-ai-agents.md) | AI agents: apps that act for a person, and agents that work on their own |
 | [0030](0030-planning-with-people.md) | Planning with people: who works on a bar, away times, time factors and plan warnings |
+| [0031](0031-workflows.md) | Workflows: statuses as data, one judge for a status change |
+| [0032](0032-files.md) | Files: stored by content, checked from their content, previews in a separate process |
+| [0033](0033-notifications-and-e-mail.md) | Notifications and e-mail: an outbox reader that checks again before it tells anyone |
 
 ## Template
 

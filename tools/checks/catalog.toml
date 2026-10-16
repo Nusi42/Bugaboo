@@ -477,6 +477,24 @@ when = ["ci"]
 files = ["crates/**"]
 status = "active"
 
+[[check]]
+id = "TEST-WORKFLOWS"
+title = "Every rule of a status change (Who can do it, Only if, Must be filled in, Ask for) is decided by one judge and tested on both databases"
+rule = "ADR-0031"
+tool = "xtask (the unit, property and two-database tests of the workflow rules exist by name; the two-database ones run through each_database)"
+when = ["ci"]
+files = ["crates/**"]
+status = "planned"
+
+[[check]]
+id = "TEST-UPLOADS"
+title = "Uploads are checked from their content and limited; downloads re-check access; previews never take the server down"
+rule = "ADR-0032"
+tool = "xtask (the upload security tests exist by name: wrong type, SVG, HTML, too large, a decompression bomb, a broken PDF, a link after access ended)"
+when = ["ci"]
+files = ["crates/**"]
+status = "planned"
+
 # ───────────── Security ─────────────
 [[check]]
 id = "SEC-SECRETS"
