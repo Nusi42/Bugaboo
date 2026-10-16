@@ -10,8 +10,10 @@
 //! - the reporter exists and fails the run (it returns the status `failed`);
 //! - the limit is one named whole number, defined once, in `web/tooling/connections.ts`;
 //! - the tests of the guard (`connections.test.ts`) exist and none is skipped or alone;
-//! - no test of the browser is run again to make a failure go away: `retries` is set only for the
-//!   speed project, which competes with nothing (WP-03 task 7).
+//! - no test of the browser is run again to make a failure go away: `retries` is set once, in the
+//!   speed project, which competes with nothing (WP-03 task 7), and nowhere else: not in another
+//!   place of the config, in the browser tests and their helpers, in `package.json` or in
+//!   `cargo xtask ci`.
 
 use super::{Check, Context, Finding};
 use crate::rust_source::strip_comments;
@@ -21,14 +23,28 @@ const CONFIG_FILE: &str = "web/tooling/playwright.config.ts";
 const REPORTER_FILE: &str = "web/tooling/connection-guard.ts";
 const LIMIT_FILE: &str = "web/tooling/connections.ts";
 const TESTS_FILE: &str = "web/tooling/connections.test.ts";
-/// How the config names the reporter.
-const REPORTER_IN_CONFIG: &str = "\"./connection-guard.ts\"";
+/// The folder of the config, which names the reporter relative to itself.
+const TOOLING_FOLDER: &str = "web/tooling/";
 /// What makes the reporter fail the run.
 const FAILS_THE_RUN: &str = "status: \"failed\"";
 /// The name of the limit.
 const LIMIT_NAME: &str = "MOST_LEFTOVER_CONNECTIONS";
-/// The most places in the config that may say `retries`: the speed project.
-const MOST_RETRIES: usize = 1;
+/// What the speed project, the only one that may run tests again, is called in the config.
+const SPEED_PROJECT: &str = "name: \"speed\"";
+/// Where tests could be run again besides the config: the browser tests and their helpers, the
+/// scripts of `package.json` and the steps of `cargo xtask ci`.
+const E2E_FOLDER: &str = "web/app/e2e/";
+const OTHER_FILES: [&str; 2] = ["package.json", "xtask/src/ci.rs"];
+/// The words that run tests again.
+const RETRY_WORDS: [&str; 2] = ["retries", "--retries"];
+
+/// How the config names the reporter: its path from the folder of the config.
+fn reporter_in_config() -> String {
+    let file = REPORTER_FILE
+        .strip_prefix(TOOLING_FOLDER)
+        .unwrap_or(REPORTER_FILE);
+    format!("\"./{file}\"")
+}
 
 pub(crate) struct TestConnections;
 
@@ -41,6 +57,12 @@ impl Check for TestConnections {
         let repo = context.repo;
         let read = |path: &str| read_text(repo, path).ok().map(|text| strip_comments(&text));
         let mut findings = config(read(CONFIG_FILE).as_deref());
+        for path in repo.all_files()? {
+            let searched = path.starts_with(E2E_FOLDER) || OTHER_FILES.contains(&path.as_str());
+            if searched && let Some(text) = read(&path) {
+                findings.extend(retries_elsewhere(&path, &text));
+            }
+        }
         findings.extend(reporter(read(REPORTER_FILE).as_deref()));
         findings.extend(limit(read(LIMIT_FILE).as_deref()));
         findings.extend(tests(read(TESTS_FILE).as_deref()));
@@ -48,7 +70,7 @@ impl Check for TestConnections {
     }
 }
 
-/// The config names the reporter, and does not run tests again to hide a failure.
+/// The config names the reporter, and runs tests again only in the speed project.
 fn config(text: Option<&str>) -> Vec<Finding> {
     let Some(text) = text else {
         return vec![Finding::at(
@@ -57,20 +79,38 @@ fn config(text: Option<&str>) -> Vec<Finding> {
         )];
     };
     let mut findings = Vec::new();
-    if !text.contains(REPORTER_IN_CONFIG) {
+    if !text.contains(&reporter_in_config()) {
         findings.push(Finding::at(
             CONFIG_FILE,
-            "The config does not use the reporter `./connection-guard.ts`, so nothing counts the connections of the run.",
+            format!(
+                "The config does not use the reporter {}, so nothing counts the connections of the run.",
+                reporter_in_config()
+            ),
         ));
     }
-    let retries = text.matches("retries").count();
-    if retries > MOST_RETRIES {
+    // Every `retries` must come after the name of the speed project, and there is at most one.
+    let speed = text.find(SPEED_PROJECT);
+    let retries: Vec<usize> = text.match_indices("retries").map(|(at, _)| at).collect();
+    let all_in_speed = speed.is_some_and(|start| retries.iter().all(|at| *at > start));
+    if retries.len() > 1 || (!retries.is_empty() && !all_in_speed) {
         findings.push(Finding::at(
             CONFIG_FILE,
-            "Tests are run again in more than the speed project. A failure is found and fixed, not run again until it passes.",
+            "Tests are run again outside the speed project, or more than once there. A failure is found and fixed, not run again until it passes.",
         ));
     }
     findings
+}
+
+/// A file besides the config that runs tests again.
+fn retries_elsewhere(path: &str, text: &str) -> Vec<Finding> {
+    if RETRY_WORDS.iter().any(|word| text.contains(word)) {
+        vec![Finding::at(
+            path,
+            "Tests are run again here. Only the speed project of the Playwright config may do that; a failure is found and fixed, not run again until it passes.",
+        )]
+    } else {
+        Vec::new()
+    }
 }
 
 /// The reporter is there and fails the run.
@@ -142,8 +182,7 @@ fn tests(text: Option<&str>) -> Vec<Finding> {
 mod tests {
     use super::*;
 
-    const GOOD_CONFIG: &str =
-        "reporter: [[\"list\"], [\"./connection-guard.ts\"]], projects: [{ retries: 1 }]";
+    const GOOD_CONFIG: &str = "reporter: [[\"list\"], [\"./connection-guard.ts\"]], projects: [{ name: \"speed\", retries: 1 }]";
 
     #[test]
     fn good_example_the_config_uses_the_reporter_and_retries_only_the_speed_project() {
@@ -160,6 +199,44 @@ mod tests {
     fn bad_example_the_config_that_runs_tests_again() {
         let text = format!("{GOOD_CONFIG}, retries: 2");
         assert_eq!(config(Some(&text)).len(), 1);
+    }
+
+    #[test]
+    fn bad_example_the_retries_sit_in_another_project_than_the_speed_project() {
+        let text = "[\"./connection-guard.ts\"] projects: [{ name: \"desktop\", retries: 1 }, { name: \"speed\" }]";
+        assert_eq!(config(Some(text)).len(), 1);
+        let nowhere = "[\"./connection-guard.ts\"] projects: [{ retries: 1 }]";
+        assert_eq!(config(Some(nowhere)).len(), 1);
+    }
+
+    #[test]
+    fn good_example_a_config_without_any_retries() {
+        assert!(config(Some("[\"./connection-guard.ts\"] projects: []")).is_empty());
+    }
+
+    #[test]
+    fn bad_example_retries_in_the_browser_tests_the_scripts_or_the_ci_steps() {
+        for text in [
+            "test.describe.configure({ retries: 2 });",
+            "\"test:e2e\": \"playwright test --retries=2\"",
+            "&[\"run\", \"test:e2e\", \"--retries\", \"2\"]",
+        ] {
+            assert_eq!(
+                retries_elsewhere("web/app/e2e/a.spec.ts", text).len(),
+                1,
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn good_example_a_file_that_runs_every_test_once() {
+        assert!(retries_elsewhere("package.json", "\"test:e2e\": \"playwright test\"").is_empty());
+    }
+
+    #[test]
+    fn the_reporter_is_named_from_the_folder_of_the_config() {
+        assert_eq!(reporter_in_config(), "\"./connection-guard.ts\"");
     }
 
     #[test]
@@ -218,8 +295,20 @@ mod tests {
                 .ok()
                 .map(|text| strip_comments(&text))
         };
+        let elsewhere: Vec<_> = repo
+            .all_files()
+            .unwrap()
+            .into_iter()
+            .filter(|path| path.starts_with(E2E_FOLDER) || OTHER_FILES.contains(&path.as_str()))
+            .flat_map(|path| {
+                read(&path)
+                    .map(|text| retries_elsewhere(&path, &text))
+                    .unwrap_or_default()
+            })
+            .collect();
         let found: Vec<_> = config(read(CONFIG_FILE).as_deref())
             .into_iter()
+            .chain(elsewhere)
             .chain(reporter(read(REPORTER_FILE).as_deref()))
             .chain(limit(read(LIMIT_FILE).as_deref()))
             .chain(tests(read(TESTS_FILE).as_deref()))
