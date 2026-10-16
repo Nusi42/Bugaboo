@@ -191,13 +191,30 @@ fn created_tables(text: &str) -> Vec<Created> {
     tables
 }
 
-/// The names of the tables that migrations rename (`Table::rename().table(Alias::new("old"), …)`).
-fn renamed_tables(text: &str) -> Vec<String> {
+/// A table that a migration renames: its old name, and the enum of the schema it becomes.
+struct Renamed {
+    old: String,
+    new: Option<String>,
+}
+
+/// The tables that migrations rename (`Table::rename().table(Alias::new("old"), New::Table)`).
+fn renamed_tables(text: &str) -> Vec<Renamed> {
     text.match_indices("Table::rename()")
         .filter_map(|(at, _)| {
             let rest = &text[at..];
             let open = rest.find(".table(Alias::new")?;
-            alias_name(text, &rest[open + ".table(Alias::new".len()..])
+            let argument = &rest[open + ".table(Alias::new".len()..];
+            let old = alias_name(text, argument)?;
+            let new = argument.split_once("),").and_then(|(_, target)| {
+                let path: String = target
+                    .trim_start()
+                    .chars()
+                    .take_while(|c| c.is_alphanumeric() || matches!(c, '_' | ':'))
+                    .collect();
+                let table = path.strip_suffix("::Table")?;
+                table.rsplit("::").next().map(str::to_owned)
+            });
+            Some(Renamed { old, new })
         })
         .collect()
 }
@@ -205,11 +222,26 @@ fn renamed_tables(text: &str) -> Vec<String> {
 /// The tables the migrations create without the marks of an entity behind them.
 fn migration_findings(listed: &[ListedTable], sources: &[crate::source::Source]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    let renamed: Vec<String> = sources
+    let renamed: Vec<Renamed> = sources
         .iter()
         .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
         .flat_map(|(_, text)| renamed_tables(text))
         .collect();
+    for (path, text) in sources
+        .iter()
+        .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
+    {
+        for new in renamed_tables(text).iter().filter_map(|r| r.new.as_deref()) {
+            if !listed.iter().any(|entry| entry.table == new) {
+                findings.push(Finding::at(
+                    path,
+                    format!(
+                        "A migration renames a table to `{new}`, which is not in `stored_tables!` in {SCHEMA_PATH}, so its rows have no personal-data marks."
+                    ),
+                ));
+            }
+        }
+    }
     for (path, text) in sources
         .iter()
         .filter(|(path, _)| path.starts_with(MIGRATIONS_FOLDER))
@@ -225,7 +257,7 @@ fn migration_findings(listed: &[ListedTable], sources: &[crate::source::Source])
                         ),
                     ));
                 }
-                Created::Named(name) if !renamed.contains(&name) => {
+                Created::Named(name) if !renamed.iter().any(|r| r.old == name) => {
                     findings.push(Finding::at(
                         path,
                         format!(
@@ -540,6 +572,17 @@ pub struct DomainEvent {
             "{MIGRATION_GOOD}Table::create().table(Alias::new(OLD)).col(x)\nconst OLD: &str = \"old_event\";\nTable::rename().table(Alias::new(\"old_event\"), Event::Table)\n"
         );
         assert_eq!(table_findings(SCHEMA_GOOD, &migration, LIST_GOOD), "");
+    }
+
+    #[test]
+    fn bad_example_a_table_renamed_to_one_without_marks() {
+        let migration = format!(
+            "{MIGRATION_GOOD}Table::create().table(Alias::new(\"old_rows\")).col(x)
+Table::rename().table(Alias::new(\"old_rows\"), Hidden::Table)
+"
+        );
+        let all = table_findings(SCHEMA_GOOD, &migration, LIST_GOOD);
+        assert!(all.contains("renames a table to `Hidden`"), "{all}");
     }
 
     #[test]
