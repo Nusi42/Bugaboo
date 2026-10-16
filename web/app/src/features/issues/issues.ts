@@ -17,8 +17,10 @@ const LIST_FIELDS = fieldList<ListedIssue>([
   "issue_type",
   "title",
   "status",
+  "status_group",
   "priority",
   "assigned_to",
+  "updated_at",
 ]);
 
 /** An issue that has what a line of a list needs. */
@@ -28,17 +30,22 @@ export interface IssueLine {
   readonly key: string;
   readonly title: string;
   readonly status: Schema<"Status">;
+  /** The group of the status: it gives the tint of the row and the icon (UX §4.2). */
+  readonly group: Schema<"StatusGroup">;
   readonly priority: Schema<"Priority">;
   readonly issueType: Schema<"IssueTypeRef">;
   /** The people it is assigned to, as the reader may see them. */
   readonly assignedTo: readonly Schema<"PersonRef">[];
+  /** When it was last changed, if the reader may see it. */
+  readonly changedAt: string | undefined;
 }
 
 /** The line of an issue, or nothing for an item that came without what it needs. */
 export function lineOf(item: ListedIssue): IssueLine | undefined {
   const [id, key, title] = [known(item.id), known(item.key), known(item.title)];
-  const [status, priority, issueType] = [
+  const [status, group, priority, issueType] = [
     known(item.status),
+    known(item.status_group),
     known(item.priority),
     known(item.issue_type),
   ];
@@ -46,10 +53,21 @@ export function lineOf(item: ListedIssue): IssueLine | undefined {
     key === undefined ||
     title === undefined ||
     status === undefined ||
+    group === undefined ||
     priority === undefined ||
     issueType === undefined
     ? undefined
-    : { id, key, title, status, priority, issueType, assignedTo: item.assigned_to ?? [] };
+    : {
+        id,
+        key,
+        title,
+        status,
+        group,
+        priority,
+        issueType,
+        assignedTo: item.assigned_to ?? [],
+        changedAt: known(item.updated_at),
+      };
 }
 
 /** The issues of a project the person sees, a page at a time. */

@@ -182,6 +182,11 @@ export const messages = {
   "window.resize-keys":
     "To change the size of this window, press Ctrl and Alt with the arrow keys.",
   "window.draft-kept": "Draft kept",
+  "window.size-menu": "Window size",
+  "window.wider": "Wider",
+  "window.narrower": "Narrower",
+  "window.taller": "Taller",
+  "window.shorter": "Shorter",
   "common.nothing": "nothing",
   "common.issue-id": "Issue ID, for example WEB-142",
   "shell.search": "Search",

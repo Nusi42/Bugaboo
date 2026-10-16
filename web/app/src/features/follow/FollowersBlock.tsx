@@ -1,6 +1,15 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonLook, partOf, part } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  Button,
+  buttonLook,
+  NameValueList,
+  NameValueRow,
+  partOf,
+  part,
+} from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -45,7 +54,7 @@ function FollowButton({ issue }: { readonly issue: string }) {
   return (
     <>
       <Button
-        look={following ? buttonLook.quiet : buttonLook.primary}
+        look={buttonLook.quiet}
         isPending={follow.isPending || leave.isPending}
         onPress={() => {
           if (following) {
@@ -77,7 +86,7 @@ function countOf(loaded: number, more: boolean): string {
 }
 
 /**
- * *Followers 3 · Follow* in the fields panel (ISS-07): the number of followers, the button, and the
+ * The *Followers* row of the Details (ISS-07, *3 followers · Follow*): the number of followers, the button, and the
  * names when asked for. A reader who may not see followers gets neither names nor a number.
  * People who report, are assigned or comment follow by themselves.
  */
@@ -87,19 +96,21 @@ export function FollowersBlock({ issueKey }: { readonly issueKey: string }) {
   const people = itemsOf(list.data?.pages);
   return (
     <div {...partOf(part.stack)}>
-      <div {...partOf(part.row)}>
-        {people.length === 0 ? null : (
-          <Button
-            look={buttonLook.quiet}
-            onPress={() => {
-              setShown(!shown);
-            }}
-          >
-            {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
-          </Button>
-        )}
-        <FollowButton issue={issueKey} />
-      </div>
+      <NameValueList>
+        <NameValueRow name={t("followers.name")}>
+          {people.length === 0 ? null : (
+            <Button
+              look={buttonLook.quiet}
+              onPress={() => {
+                setShown(!shown);
+              }}
+            >
+              {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
+            </Button>
+          )}
+          <FollowButton issue={issueKey} />
+        </NameValueRow>
+      </NameValueList>
       {shown ? <FollowerNames people={people} /> : null}
       {shown && list.hasNextPage ? (
         <Button

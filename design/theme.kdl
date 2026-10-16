@@ -107,7 +107,7 @@ tokens {
     size "size-col-priority" "96px"
     size "size-col-person" "144px"
     size "size-col-labels" "160px"
-    size "size-col-changed" "96px"
+    size "size-col-changed" "120px"
     // A window (UX §6.3): it starts 760 wide, the smallest is 480 x 360, and the form follows its own width.
     size "size-window" "760px"
     size "size-window-width-min" "480px"
@@ -144,6 +144,7 @@ tokens {
     size "size-list" "300px"
     size "size-details" "300px"
     size "size-reading" "75ch"
+    size "size-main" "780px"
     size "size-sheet-share" "85%"
     size "size-matrix-cell" "calc($size-control * 3)"
     size "size-list-tall" "calc($size-list * 2)"
@@ -557,6 +558,25 @@ mixin "quiet-column" {
     line-height "$lh-body"
 }
 
+// A button that holds text hangs back by its own padding, so its text stands on the start edge of
+// the text around it (R1). Every such button has the padding `pad-control`.
+mixin "hang-start" {
+    margin-inline-start "calc(-1 * $pad-control)"
+}
+
+// Text for screen readers only: out of sight, still read.
+mixin "hidden-text" {
+    position absolute
+    width "$border-width"
+    height "$border-width"
+    margin "calc($border-width * -1)"
+    padding 0
+    overflow hidden
+    border 0
+    clip-path "inset(50%)"
+    white-space nowrap
+}
+
 // ───────────── Animations ─────────────
 
 keyframes "fade" {
@@ -622,15 +642,7 @@ part "muted" {
 
 // Words for screen readers only: the name of a column that holds only an icon.
 part "visually-hidden" {
-    position absolute
-    width "$border-width"
-    height "$border-width"
-    margin "calc($border-width * -1)"
-    padding 0
-    overflow hidden
-    border 0
-    clip-path "inset(50%)"
-    white-space nowrap
+    use "hidden-text"
 }
 
 // ───────────── Button (packages/ui: Button, IconButton) ─────────────
@@ -1453,6 +1465,11 @@ part "list-row[state=selected]" {
     use "ring-inside"
 }
 
+// The issue that is open next to the list.
+part "list-row[state=current]" {
+    use "current-item"
+}
+
 // The column names above the rows.
 part "list-row[variant=head]" {
     min-height "$size-control"
@@ -1500,6 +1517,11 @@ part "list-row.cell[variant=title]" {
     flex 1
 }
 
+// Only the IDs are in the code font; the name of the column is in the font of the interface.
+part "list-row[variant=head] list-row.cell[variant=key]" {
+    font-family "$font"
+}
+
 part "list-row.cell[variant=labels]" {
     flex none
     width "$size-col-labels"
@@ -1522,6 +1544,14 @@ part "list-row.cell[variant=changed]" {
     font-size "$fs-sm"
 }
 
+// The buttons of a row: they take the room they need, at the end.
+part "list-row.cell[variant=action]" {
+    flex none
+    display flex
+    align-items center
+    justify-content flex-end
+}
+
 // A done issue's title turns muted in lists.
 part "list-row[state=group-done] list-row.cell[variant=title]" {
     color "$fg-muted"
@@ -1531,6 +1561,7 @@ part "list-row[state=group-done] list-row.cell[variant=title]" {
 // and the link reaches over the row.
 part "list-row.cell link" {
     color inherit
+    font-weight "$weight-regular"
     text-decoration none
 }
 
@@ -1544,45 +1575,51 @@ part "list-row.cell[variant=title] link[focus-visible]::after" {
     use "ring-inside"
 }
 
-// The checkbox and the buttons in a row stay above the link that reaches over it.
-part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.cell[variant=priority]" "list-row.cell[variant=person]" {
+// The checkbox and the buttons of a row stay above the link that reaches over it; every other cell is
+// part of the row's target.
+part "list-row.cell[variant=select]" "list-row.cell[variant=action]" {
     position relative
+    z-index "$z-raised"
 }
 
 // On a phone the row has two lines: status, ID and priority, then the title, then the person and
 // the day (R9: the same order). The other columns are left out.
-part "list-row[variant=phone]" {
+part "list-row[variant=phone]" "list-row[variant=slim]" {
     display grid
-    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
-    grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
+    grid-template-columns "$size-control $size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-areas "\"select status key priority\" \"select title title title\" \"select person person changed\""
     align-items center
     gap "$space-1 $space-3"
     padding "$space-3 $pad-box"
     min-height "$size-row"
 }
 
-part "list-row[variant=phone] list-row.cell[variant=select]" "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
+part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
     display none
 }
 
-part "list-row[variant=phone] list-row.cell" {
+part "list-row[variant=phone] list-row.cell" "list-row[variant=slim] list-row.cell" {
     width auto
 }
 
-part "list-row[variant=phone] list-row.cell[variant=status]" {
+part "list-row[variant=phone] list-row.cell[variant=select]" {
+    grid-area select
+}
+
+part "list-row[variant=phone] list-row.cell[variant=status]" "list-row[variant=slim] list-row.cell[variant=status]" {
     grid-area status
 }
 
-part "list-row[variant=phone] list-row.cell[variant=key]" {
+part "list-row[variant=phone] list-row.cell[variant=key]" "list-row[variant=slim] list-row.cell[variant=key]" {
     grid-area key
 }
 
-part "list-row[variant=phone] list-row.cell[variant=priority]" {
+part "list-row[variant=phone] list-row.cell[variant=priority]" "list-row[variant=slim] list-row.cell[variant=priority]" {
     grid-area priority
     justify-self end
 }
 
-part "list-row[variant=phone] list-row.cell[variant=title]" {
+part "list-row[variant=phone] list-row.cell[variant=title]" "list-row[variant=slim] list-row.cell[variant=title]" {
     grid-area title
     white-space normal
     overflow-wrap anywhere
@@ -1592,9 +1629,20 @@ part "list-row[variant=phone] list-row.cell[variant=person]" {
     grid-area person
 }
 
+part "list-row[variant=phone] list-row.cell[variant=action]" {
+    grid-area changed
+    justify-self end
+}
+
 part "list-row[variant=phone] list-row.cell[variant=changed]" {
     grid-area changed
     justify-self end
+}
+
+// The slim list beside the open issue (UX §3.4): the two lines of a phone, without the tick box.
+part "list-row[variant=slim]" {
+    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-areas "\"status key priority\" \"title title title\""
 }
 
 // The header of a group of rows: the group's icon and color, its name and how many issues it holds.
@@ -1667,6 +1715,19 @@ part "name-value.value" {
     font-size "$fs-ui"
 }
 
+// Why a value cannot be changed, with its lock.
+part "name-value.reason" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    use "quiet-text"
+}
+
+// The row shows the name of the field, so the label of the box inside it is only read, not seen.
+part "name-value.value field.label" "name-value.value choice-group.legend" {
+    use "hidden-text"
+}
+
 // *Saved* and *Undo* where the change happened (R7).
 part "name-value.saved" {
     display inline-flex
@@ -1676,7 +1737,7 @@ part "name-value.saved" {
 
 // ───────────── Legend ─────────────
 //
-// A small key beside the toolbar: what the row color and the edge mean (UX §4.2, §4.7).
+// The Legend, a small list beside the toolbar: what the row color and the edge mean (UX §4.2, §4.7).
 
 part "legend" {
     display flex
@@ -1722,6 +1783,18 @@ part "legend.swatch[variant=critical]" {
 
 part "legend.swatch[variant=high]" {
     border-inline-start "$size-edge solid $warning"
+}
+
+// The row above a list: its main button, what is ticked, and the Legend at the end.
+part "list-toolbar" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-3" "$space-5"
+}
+
+part "list-toolbar legend" {
+    margin-inline-start auto
 }
 
 // ───────────── Window (UX §6.3, R10) ─────────────
@@ -1844,20 +1917,32 @@ part "window.body" {
     overflow-y auto
 }
 
+// Two rows: the hint (and what belongs to the form) on its own line, then the buttons in one row
+// at the right, the main one last (R6).
 part "window.footer" {
     display flex
     flex none
-    flex-wrap wrap
-    align-items center
-    justify-content flex-end
+    flex-direction column
     gap "$space-3"
     padding "$pad-box $pad-dialog"
     border-top "$border-width solid $border"
 }
 
 part "window.footer-note" {
-    margin-inline-end auto
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2" "$space-3"
     use "quiet-text"
+}
+
+part "window.footer-actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-3"
 }
 
 // The places to drag: the four edges and the four corners.
@@ -1979,6 +2064,17 @@ part "window-dock" {
     font-family "$font"
     font-size "$fs-ui"
     cursor pointer
+}
+
+// On a computer the dock stands in the main area, after the menu, so it never covers it.
+part "app-layout[variant=side] window-dock" {
+    inset-inline-start "calc($size-sidebar + $space-4)"
+    max-width "calc(100% - $size-sidebar - $space-4 * 2)"
+}
+
+part "app-layout[variant=side-narrow] window-dock" {
+    inset-inline-start "calc($size-sidebar-narrow + $space-4)"
+    max-width "calc(100% - $size-sidebar-narrow - $space-4 * 2)"
 }
 
 part "window-dock[hovered]" {
@@ -2169,6 +2265,15 @@ part "card" {
     padding "$space-5"
     border-radius "$r-card"
     color "$fg"
+}
+
+// On a phone a list goes with one gutter: a card of this look has no frame and no padding there.
+part "app-layout[variant=phone] card[variant=open-on-phone]" {
+    padding 0
+    border-width 0
+    border-radius 0
+    background transparent
+    box-shadow none
 }
 
 part "card.heading" {
@@ -3474,6 +3579,16 @@ part "focus-view.bar" {
     gap "$space-2"
 }
 
+// One start edge (R1): the arrow of the first button stands where the text below it starts.
+part "focus-view.bar button[variant=quiet]:first-child" {
+    use "hang-start"
+}
+
+// The same for a quiet button that begins the value of a row of the Details.
+part "name-value.value button[variant=quiet]:first-child" {
+    use "hang-start"
+}
+
 // ───────────── Issues (features/issues, packages/ui: InPlaceText, ActionMenu) ─────────────
 //
 // The issue page (UX §4.4) and the list of a project's issues (UX §4.2). The layout of the page
@@ -3488,10 +3603,11 @@ part "in-place.text" {
 
 part "in-place.button" {
     use "bare-button"
+    use "hang-start"
     box-sizing border-box
     max-width "100%"
     min-height "$size-control"
-    padding 0 "$space-2"
+    padding 0 "$pad-control"
     border-radius "$r-ctl"
     color inherit
     font-size inherit
@@ -3560,46 +3676,20 @@ part "issue-title" {
     line-height "$lh-snug"
 }
 
-// The most used fields under the title (UX §3.4): each says its name, its value or the way to
-// change it, and, when it cannot be changed, why.
-part "issue-facts" {
-    use "surface-box"
-    display flex
-    flex-wrap wrap
-    gap "$space-3" "$space-5"
-    padding "$space-3"
-}
-
-part "issue-fact" {
-    display flex
-    flex 1
-    flex-direction column
-    gap "$space-1"
-    min-width "$size-list"
-}
-
-part "issue-fact[variant=compact]" {
-    min-width 0
-}
-
-part "issue-fact.name" {
-    use "quiet-text"
-}
-
-part "issue-fact.value" {
+// The big status button under the title, and what stands beside it.
+part "issue-status-line" {
     display flex
     flex-wrap wrap
     align-items center
-    gap "$space-2"
-    min-height "$size-control"
-    font-size "$fs-md"
+    gap "$space-2" "$space-3"
 }
 
-part "issue-fact.reason" {
+// On a smaller screen the Details sit behind a button that still says the main values.
+part "issue-details-toggle" {
     display flex
+    flex-wrap wrap
     align-items center
-    gap "$space-1"
-    use "quiet-text"
+    gap "$space-2" "$space-3"
 }
 
 part "issue-body" {
@@ -3619,6 +3709,7 @@ part "issue-main" {
     flex-direction column
     gap "$space-5"
     min-width 0
+    max-width "$size-main"
 }
 
 // Details on wide screens keep their own scroll bar, so long details never push the description away.
@@ -3631,7 +3722,8 @@ part "issue-details" {
     box-sizing border-box
     width "$size-details"
     max-height "$size-viewport"
-    padding "$space-3"
+    // Room at the sides for the focus ring of a button that hangs back (the box scrolls, so it clips).
+    padding "$space-3 $space-4"
     overflow-y auto
 }
 
@@ -4134,29 +4226,6 @@ part "issue-ref" {
     align-items center
     gap "$space-2 $space-3"
     min-width 0
-}
-
-part "issue-ref.status" {
-    padding "0 $space-2"
-    border-radius "$r-ctl"
-    font-size "$fs-xs"
-    font-weight "$weight-bold"
-    white-space nowrap
-}
-
-part "issue-ref.status[variant=not-started]" {
-    background "$st-ns-soft"
-    color "$st-ns"
-}
-
-part "issue-ref.status[variant=in-progress]" {
-    background "$st-ip-soft"
-    color "$st-ip"
-}
-
-part "issue-ref.status[variant=done]" {
-    background "$st-done-soft"
-    color "$st-done"
 }
 
 // How far the sub-issues are: the browser's own bar, in the accent color.

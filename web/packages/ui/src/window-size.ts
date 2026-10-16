@@ -55,28 +55,38 @@ export function resizedBy(
 /** How far an arrow key changes the size, in pixels (UX §6.3, UX-04). */
 export const keyboardStep = 24;
 
-/** The keys of the keyboard (the standard's names), not text for people. */
-const arrow = {
-  left: "ArrowLeft",
-  right: "ArrowRight",
-  up: "ArrowUp",
-  down: "ArrowDown",
-} as const;
+/** How far a press on an item of the size menu changes the size: bigger than a key, so a few presses are enough. */
+export const menuStep = 4 * keyboardStep;
 
-/** How an arrow key changes the size: wider, narrower, taller or shorter. */
-const change: Readonly<Record<string, WindowSize>> = {
-  [arrow.right]: { width: keyboardStep, height: 0 },
-  [arrow.left]: { width: -keyboardStep, height: 0 },
-  [arrow.down]: { width: 0, height: keyboardStep },
-  [arrow.up]: { width: 0, height: -keyboardStep },
+/** The four ways to change a size by a step: with an arrow key, or with the size menu (WCAG 2.5.7). */
+export const windowSteps = ["wider", "narrower", "taller", "shorter"] as const;
+export type WindowStep = (typeof windowSteps)[number];
+
+/** The direction of each step: the width and the height change by a step in this direction. */
+const direction: Readonly<Record<WindowStep, WindowSize>> = {
+  wider: { width: 1, height: 0 },
+  narrower: { width: -1, height: 0 },
+  taller: { width: 0, height: 1 },
+  shorter: { width: 0, height: -1 },
 };
 
-/** The size after an arrow key; nothing for any other key. */
-export function sizeAfterKey(from: WindowSize, key: string): WindowSize | undefined {
-  const by = change[key];
-  return by === undefined
-    ? undefined
-    : { width: from.width + by.width, height: from.height + by.height };
+/** The keys of the keyboard (the standard's names), not text for people, and the step each one takes. */
+const stepOfKey: Readonly<Record<string, WindowStep>> = {
+  ArrowRight: "wider",
+  ArrowLeft: "narrower",
+  ArrowDown: "taller",
+  ArrowUp: "shorter",
+};
+
+/** The size after a step of `by` pixels. */
+export function sizeAfterStep(from: WindowSize, step: WindowStep, by: number): WindowSize {
+  const { width, height } = direction[step];
+  return { width: from.width + width * by, height: from.height + height * by };
+}
+
+/** The step an arrow key takes; nothing for any other key. */
+export function stepOfArrow(key: string): WindowStep | undefined {
+  return stepOfKey[key];
 }
 
 function isSize(value: unknown): value is WindowSize {

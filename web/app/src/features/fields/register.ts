@@ -1,5 +1,5 @@
 import { addIssueBlock, issueSlots } from "../issues/index.ts";
-import { OwnFieldsPanel } from "./blocks.tsx";
+import { OwnFieldRows } from "./blocks.tsx";
 import { OwnFieldSections } from "./long-texts.tsx";
 
 let registered = false;
@@ -13,10 +13,10 @@ export function registerFields(): void {
     return;
   }
   registered = true;
-  addIssueBlock(issueSlots.fieldsPanel, {
+  addIssueBlock(issueSlots.details, {
     id: "own-fields",
     order: 100,
-    component: OwnFieldsPanel,
+    component: OwnFieldRows,
   });
   addIssueBlock(issueSlots.ownFieldSections, {
     id: "own-field-sections",

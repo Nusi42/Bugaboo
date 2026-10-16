@@ -51,7 +51,11 @@ test("ux_04 on a phone the panel says Back to list, and the bar goes to the stat
     .getByRole("toolbar", { name: t("issues.bar"), exact: true })
     .getByRole("button", { name: t("issue-field.status"), exact: true })
     .click();
-  await expect(page.getByLabel(t("issue-field.status"), { exact: true })).toBeFocused();
+  // The list of the big status button opens, as it does for the key s.
+  await expect(
+    page.getByRole("dialog", { name: t("issues.change-status"), exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
   await page
     .getByRole("toolbar", { name: t("issues.bar"), exact: true })
     .getByRole("button", { name: t("issues.comment"), exact: true })

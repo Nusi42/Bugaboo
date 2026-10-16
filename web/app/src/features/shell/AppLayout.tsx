@@ -1,5 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { useAppearance, useLayout, partOf, part } from "@bugaboo/ui";
+import {
+  appLayoutLook,
+  useAppearance,
+  useLayout,
+  partOf,
+  part,
+  type LayoutMode,
+} from "@bugaboo/ui";
 
 import { CONTENT_HREF } from "./content-id.ts";
 import { ShellColumn } from "./ShellColumn.tsx";
@@ -7,6 +14,17 @@ import { ShellOverlays } from "./ShellOverlays.tsx";
 import { Sidebar } from "./Sidebar.tsx";
 import { useSidebarNarrow } from "./sidebar-state.ts";
 import { useShell } from "./use-shell.ts";
+
+/** What the frame says about itself: a phone, or a computer with its sidebar wide or narrow (a minimized window stands after it). */
+function variantOf(layout: LayoutMode, narrow: boolean) {
+  if (layout === "phone") {
+    return appLayoutLook.phone;
+  }
+  if (layout === "computer") {
+    return narrow ? appLayoutLook.sideNarrow : appLayoutLook.side;
+  }
+  return false;
+}
 
 /**
  * The frame around the pages of somebody who is signed in (UX §3): on a computer a sidebar and a
@@ -20,7 +38,7 @@ export function AppLayout() {
   useAppearance();
   const computer = layout === "computer";
   return (
-    <div {...partOf(part.appLayout, { variants: [layout === "phone" && "phone"] })}>
+    <div {...partOf(part.appLayout, { variants: [variantOf(layout, narrow)] })}>
       <a {...partOf(part.skip)} href={CONTENT_HREF}>
         {t("shell.skip")}
       </a>

@@ -8,9 +8,9 @@ const IssueSortingBlock = lazyRouteComponent(
   "IssueSortingBlock",
 );
 
-/** Puts the tags and labels of an issue into the fields panel of the issue page (WP-08). */
+/** Puts the tags and labels of an issue into the Details of the issue page (WP-08). */
 export function registerLabelBlocks(): void {
-  addIssueBlock(issueSlots.fieldsPanel, {
+  addIssueBlock(issueSlots.details, {
     id: "labels-and-tags",
     order: 200,
     component: IssueSortingBlock,

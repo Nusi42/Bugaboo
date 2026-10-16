@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
+import { Alert, alertTone, Button, ListGrid, partOf, part } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
@@ -46,16 +46,18 @@ export function RelatedIssuesBlock({ issueKey }: BlockProps) {
   const mayChange = header.data?.may_change === true;
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
-      <h3 id={heading}>{t("related-issues.title")}</h3>
+      <h2 id={heading} {...partOf(part.issueSectionTitle)}>
+        {t("related-issues.title")}
+      </h2>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {related.length === 0 ? (
         <p {...partOf(part.muted)}>{t("related-issues.none")}</p>
       ) : (
-        <ul {...partOf(part.list)}>
+        <ListGrid label={t("related-issues.title")}>
           {related.map((each) => (
             <RelatedLine key={each.id} each={each} mayChange={mayChange} />
           ))}
-        </ul>
+        </ListGrid>
       )}
       {list.hasNextPage ? (
         <Button

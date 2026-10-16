@@ -1,4 +1,4 @@
-import { Alert, alertTone, useLayout } from "@bugaboo/ui";
+import { Alert, alertTone, useLayout, partOf, part } from "@bugaboo/ui";
 
 import { SidePanel } from "../shell/index.ts";
 import { useMoreActions } from "./issue-actions.ts";
@@ -29,7 +29,7 @@ export function IssueFrame(props: IssueFrameProps) {
   const { issue } = detail;
   const { actions, refusal } = useMoreActions(issue, detail.may_delete, onClose);
   const inside = (
-    <>
+    <div {...partOf(part.issuePage)}>
       <IssueHeader
         issue={issue}
         show={show}
@@ -48,7 +48,7 @@ export function IssueFrame(props: IssueFrameProps) {
         blocks={blocks}
         split={layout === "computer" && show === "focus"}
       />
-    </>
+    </div>
   );
   return (
     <article>

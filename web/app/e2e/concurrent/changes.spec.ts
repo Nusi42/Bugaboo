@@ -10,7 +10,7 @@ import {
 } from "../support/crowd-pages.ts";
 import { areaNames, ben, cleo, crowdEdits, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import { expect, test } from "../support/fixtures.ts";
-import { issueOf, readIssue } from "../support/issues.ts";
+import { chooseStatus, issueOf, readIssue, statusButton, statusWordOf } from "../support/issues.ts";
 
 // Ten people at the same time, short values (architecture §11, M3 WP-10): a change that comes
 // second is told so in words and nothing is half saved; ten changes of ten fields all land.
@@ -29,24 +29,23 @@ test("iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_tol
   const issue = await issueOf(admin, crowdIssues.status);
   const first = await signedInPage(browser, server, ben, look);
   const second = await signedInPage(browser, server, cleo, look);
-  const status = (page: typeof first) => page.getByLabel(t("issue-field.status"), { exact: true });
   await Promise.all([first, second].map((page) => openIssueAndWait(page, crowdIssues.status)));
   // Both choose a different status at the same moment.
   await Promise.all([
-    status(first).selectOption({ label: t("status.in-progress") }),
-    status(second).selectOption({ label: t("status.done") }),
+    chooseStatus(first, t("status.in-progress")),
+    chooseStatus(second, t("status.done")),
   ]);
   // One of them won, the other reads who changed what.
   const { lost, won } = await whoWasTold(first, second);
   await expect(lost.getByText(/ changed Status to /u)).toBeVisible();
   // Nothing is half saved: the issue has the status of the winner, one version further.
   const read = await readIssue(admin, issue);
-  const winnerStatus = await status(won).inputValue();
-  expect(read.issue.status).toBe(winnerStatus);
+  const winnerStatus = statusWordOf(read.issue.status);
+  await expect(statusButton(won)).toHaveText(winnerStatus);
   expect(read.issue.version).toBe(2);
   // The other keeps the winner's value, and the page shows it after it is read again.
   await lost.getByRole("button", { name: /^Keep .+ change$/u }).click();
-  await expect(status(lost)).toHaveValue(winnerStatus);
+  await expect(statusButton(lost)).toHaveText(winnerStatus);
   await admin.dispose();
 });
 

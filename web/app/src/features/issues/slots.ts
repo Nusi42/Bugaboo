@@ -1,4 +1,5 @@
 import type { Schema } from "@bugaboo/api-client";
+import type { ChangeStatus } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { FormView } from "../layouts/index.ts";
@@ -29,8 +30,8 @@ export const issueSlots = {
   history: "history",
   /** Sections of own fields that the layout puts into the main column (WP-05). */
   ownFieldSections: "own-field-sections",
-  /** The own fields in the fields panel (*Details*), below the built-in ones (WP-05). */
-  fieldsPanel: "fields-panel",
+  /** The own fields in the Details (*Details*), below the built-in ones (WP-05). */
+  details: "details",
 } as const;
 
 /** The name of a slot. */
@@ -76,6 +77,11 @@ export interface IssueBlockProps {
   readonly version: number;
   /** Changes values of the issue against the version; the page shows *Saving…* and *Saved*. */
   readonly onChange: (change: IssueChange) => Promise<void>;
+  /**
+   * What the row of a field in the Details says about the last change of that field: *Saving…*,
+   * *Saved* and *Undo*, where it happened (R7). The key is the ID of an own field.
+   */
+  readonly rowStatus: (field: string) => ChangeStatus | undefined;
   /** Where the block is drawn: the phone puts the blocks in one column. */
   readonly layout: "wide" | "narrow";
 }

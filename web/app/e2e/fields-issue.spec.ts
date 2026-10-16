@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { giveRole, roleId, roleName, setFieldLevel, signedInAdmin } from "./support/access.ts";
+import { countRequests } from "./support/requests.ts";
 import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
@@ -28,11 +29,6 @@ function choiceNamed(field: Schema<"FieldBody">, name: string): string {
 /** The keys of the own fields an answer about an issue holds, in order. */
 function ownKeys(detail: Schema<"IssueDetailBody">): readonly string[] {
   return Object.keys(detail.issue.own_fields ?? {}).toSorted();
-}
-
-/** The form that holds a box of the issue page, to press its *Save*. */
-function formOf(page: Page, label: string) {
-  return page.locator("form").filter({ has: page.getByLabel(label, { exact: true }) });
 }
 
 /**
@@ -66,13 +62,28 @@ async function fillIn(page: Page, critical: string): Promise<void> {
   await page.getByText("Mac", { exact: true }).click();
   await kept;
   await expect(labelled("Mac")).toBeChecked();
+  // A typed value is a row of the Details with no Save button: Enter keeps it, and so does leaving the box.
+  const customer = page.locator('[data-part="name-value"]').filter({ has: labelled("Customer") });
+  await expect(customer.getByRole("button", { name: t("common.save") })).toHaveCount(0);
   await labelled("Customer").fill("Acme");
   kept = keptAfter(page);
-  await formOf(page, "Customer")
-    .getByRole("button", { name: t("common.save") })
-    .click();
+  await labelled("Customer").press("Enter");
   await kept;
+  // The box is the same box after it was kept: the person goes on typing in it.
+  await expect(labelled("Customer")).toBeFocused();
   await expect(labelled("Customer")).toHaveValue("Acme");
+  await expect(customer.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();
+  await labelled("Customer").fill("Acme Ltd");
+  kept = keptAfter(page);
+  await page.getByRole("heading", { level: 2, name: t("issues.details") }).click();
+  await kept;
+  await expect(labelled("Customer")).toHaveValue("Acme Ltd");
+  // Leaving a box that did not change sends nothing.
+  const changes = countRequests(page, "PATCH");
+  await labelled("Customer").focus();
+  await page.getByRole("heading", { level: 2, name: t("issues.details") }).click();
+  await page.waitForTimeout(500);
+  expect(changes()).toBe(0);
 }
 
 test("cf_06 fields are filled on the issue page and Severity is hidden from a Guest", async ({
@@ -105,7 +116,7 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
   await signIn(other, bob);
   await openIssueWithDetails(other, made.key);
   // The history lists the changes in sentences too, so the values are looked for as a whole text.
-  await expect(other.getByText("Acme", { exact: true })).toBeVisible();
+  await expect(other.getByText("Acme Ltd", { exact: true })).toBeVisible();
   await expect(other.getByText("Windows", { exact: true })).toBeVisible();
   await expect(other.getByText("Severity")).toHaveCount(0);
   const asGuest = dataOf(await guest.client.GET("/api/v1/issues/{issue}", path));

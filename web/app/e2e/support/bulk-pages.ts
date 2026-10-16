@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
+import { tickBox } from "./issues.ts";
 import { inOrder } from "./sequence.ts";
 
 // The screen of changing many issues (ISS-09, M3 WP-08) as a person uses it: tick issues in the
@@ -16,9 +17,9 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
       // A person clicks the box they see, with its key next to it, not the input behind it.
       await page
         .locator("label")
-        .filter({ hasText: new RegExp(`^${key}$`, "u") })
+        .filter({ hasText: new RegExp(`^${t("issues.select-issue", { key })}$`, "u") })
         .click();
-      await expect(page.getByRole("checkbox", { name: key, exact: true })).toBeChecked();
+      await expect(tickBox(page, key)).toBeChecked();
     }),
   );
   await expect(

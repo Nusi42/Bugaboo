@@ -6,8 +6,8 @@ import { useShortcuts } from "../../shared/use-shortcuts.ts";
  * `j` and `k` move the focus to the title of the next or the previous row of a list (UX §6.2). The
  * ref goes on the list; the titles are the links inside it.
  */
-export function useRowKeys(): RefObject<HTMLUListElement | null> {
-  const list = useRef<HTMLUListElement>(null);
+export function useRowKeys(): RefObject<HTMLDivElement | null> {
+  const list = useRef<HTMLDivElement>(null);
   const step = (direction: 1 | -1): void => {
     const titles = list.current?.querySelectorAll<HTMLElement>("a") ?? [];
     let at = -1;

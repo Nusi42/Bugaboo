@@ -3,9 +3,13 @@ import { useState } from "react";
 import { variableOf } from "./variables.ts";
 import type { WindowResize } from "./WindowFrame.tsx";
 import {
+  keyboardStep,
+  menuStep,
   resizedBy,
-  sizeAfterKey,
+  sizeAfterStep,
+  stepOfArrow,
   type WindowEdge,
+  type WindowStep,
   type WindowElement,
   type WindowSize,
 } from "./window-size.ts";
@@ -34,21 +38,32 @@ export interface ResizeKey {
   readonly preventDefault: () => void;
 }
 
+/** Changes the size of a window by a step of `by` pixels and tells what it ended with. */
+function stepBy(
+  frame: WindowElement | null,
+  step: WindowStep,
+  by: number,
+  onResized: ((size: WindowSize) => void) | undefined,
+): void {
+  if (frame === null) {
+    return;
+  }
+  applyWindowSize(frame, sizeAfterStep(sizeOf(frame), step, by));
+  onResized?.(sizeOf(frame));
+}
+
 /** Ctrl and Alt with an arrow key change the size by a step; any other key is left alone. */
 export function resizeByKey(
   frame: WindowElement | null,
   event: ResizeKey,
   onResized: ((size: WindowSize) => void) | undefined,
 ): void {
-  if (!(event.ctrlKey && event.altKey) || frame === null) {
+  const step = stepOfArrow(event.key);
+  if (!(event.ctrlKey && event.altKey) || frame === null || step === undefined) {
     return;
   }
-  const next = sizeAfterKey(sizeOf(frame), event.key);
-  if (next !== undefined) {
-    event.preventDefault();
-    applyWindowSize(frame, next);
-    onResized?.(sizeOf(frame));
-  }
+  event.preventDefault();
+  stepBy(frame, step, keyboardStep, onResized);
 }
 
 /** Where a drag began: the edge, the size and the pointer. */
@@ -60,8 +75,8 @@ interface Drag {
 }
 
 /**
- * Resizing of a window by the pointer at its edges and by the keys (Ctrl and Alt with an arrow key,
- * UX §6.3, UX-04). `onResized` is called with the size the window ended with, as it is shown, so a
+ * Resizing of a window by the pointer at its edges, by the keys (Ctrl and Alt with an arrow key,
+ * UX §6.3, UX-04) and by the size menu, which needs no dragging (WCAG 2.5.7). `onResized` is called with the size the window ended with, as it is shown, so a
  * size below the smallest is remembered as the smallest.
  */
 export function useWindowResize(
@@ -102,6 +117,9 @@ export function useWindowResize(
     }),
     onKeyDown: (event) => {
       resizeByKey(frame, event, onResized);
+    },
+    step: (step) => {
+      stepBy(frame, step, menuStep, onResized);
     },
   };
 }

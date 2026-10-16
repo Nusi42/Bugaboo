@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   keyboardStep,
+  menuStep,
   parseWindowSizes,
   resizedBy,
-  sizeAfterKey,
+  sizeAfterStep,
+  stepOfArrow,
   windowEdges,
+  windowSteps,
 } from "./window-size.ts";
 
 const start = { width: 760, height: 500 } as const;
@@ -41,15 +44,55 @@ describe("ux_6_3 a window is resized at every edge and corner", () => {
 });
 
 describe("ux_04 a window is resized with the keyboard too", () => {
-  it("the arrow keys make it wider, narrower, taller and shorter by a step", () => {
-    expect(sizeAfterKey(start, key.right)).toEqual({ width: 760 + keyboardStep, height: 500 });
-    expect(sizeAfterKey(start, key.left)).toEqual({ width: 760 - keyboardStep, height: 500 });
-    expect(sizeAfterKey(start, key.down)).toEqual({ width: 760, height: 500 + keyboardStep });
-    expect(sizeAfterKey(start, key.up)).toEqual({ width: 760, height: 500 - keyboardStep });
+  it("the arrow keys are the four steps, and a step of a key is keyboardStep long", () => {
+    expect([key.right, key.left, key.down, key.up].map((arrow) => stepOfArrow(arrow))).toEqual([
+      "wider",
+      "narrower",
+      "taller",
+      "shorter",
+    ]);
+    expect(sizeAfterStep(start, "wider", keyboardStep)).toEqual({
+      width: 760 + keyboardStep,
+      height: 500,
+    });
+    expect(sizeAfterStep(start, "shorter", keyboardStep)).toEqual({
+      width: 760,
+      height: 500 - keyboardStep,
+    });
   });
 
-  it("any other key changes nothing", () => {
-    expect(sizeAfterKey(start, "Enter")).toBeUndefined();
+  it("any other key is no step", () => {
+    expect(stepOfArrow("Enter")).toBeUndefined();
+  });
+});
+
+describe("ux_04 a window is resized without dragging too (WCAG 2.5.7)", () => {
+  it("has a step for every way the arrow keys change the size", () => {
+    const arrows = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"] as const;
+    expect(arrows.map((arrow) => stepOfArrow(arrow))).toEqual([
+      "wider",
+      "narrower",
+      "taller",
+      "shorter",
+    ]);
+    expect(windowSteps).toHaveLength(arrows.length);
+  });
+
+  it("a step of the size menu is a few keys long, in the same four directions", () => {
+    expect(menuStep).toBeGreaterThan(keyboardStep);
+    expect(sizeAfterStep(start, "wider", menuStep)).toEqual({ width: 760 + menuStep, height: 500 });
+    expect(sizeAfterStep(start, "narrower", menuStep)).toEqual({
+      width: 760 - menuStep,
+      height: 500,
+    });
+    expect(sizeAfterStep(start, "taller", menuStep)).toEqual({
+      width: 760,
+      height: 500 + menuStep,
+    });
+    expect(sizeAfterStep(start, "shorter", menuStep)).toEqual({
+      width: 760,
+      height: 500 - menuStep,
+    });
   });
 });
 

@@ -3,17 +3,23 @@ import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
 import { changedByName, conflictSentence } from "../../shared/editing/index.ts";
-import { undoStore } from "../../shared/optimistic-undo.ts";
+import { undoStore, type UndoOffer } from "../../shared/optimistic-undo.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
-import { useOptimisticMutation, type OptimisticMutation } from "../../shared/use-optimistic.ts";
+import {
+  useOptimisticMutation,
+  useUndoOffers,
+  type OptimisticMutation,
+} from "../../shared/use-optimistic.ts";
 import { readAgain, sendChange, versionNow } from "./issue-requests.ts";
 import {
   after,
   changeSentence,
   isDetail,
+  rowFieldOf,
   valuesBefore,
   type IssueEdit,
   type IssueValues,
+  type RowField,
 } from "./issue-values.ts";
 import type { IssueDetail } from "./slots.ts";
 
@@ -52,7 +58,10 @@ interface Notes {
 function sendAndNote(id: string, notes: Notes): (edit: IssueEdit) => Promise<void> {
   return async (edit) => {
     try {
-      await sendChange(id, edit);
+      const version = await sendChange(id, edit);
+      if (version !== undefined) {
+        edit.landed?.(version);
+      }
     } catch (error) {
       const conflict = conflictOf(error);
       if (conflict !== undefined) {
@@ -64,11 +73,63 @@ function sendAndNote(id: string, notes: Notes): (edit: IssueEdit) => Promise<voi
   };
 }
 
+/** The row of the Details that changed last, and the offer of *Undo* for that change, while there is one. */
+export interface LastRow {
+  readonly field: RowField;
+  readonly undo: UndoOffer | undefined;
+}
+
+/**
+ * The row of the Details that changed last, with the offer of *Undo* while it is still on offer
+ * (the store drops it after 10 seconds).
+ */
+function useLastRow(): {
+  readonly lastRow: LastRow | null;
+  readonly rowChanged: (field: RowField | undefined, offer: number) => void;
+} {
+  const [row, setRow] = useState<{ readonly field: RowField; readonly offer: number } | null>(null);
+  const offers = useUndoOffers();
+  return {
+    lastRow:
+      row === null
+        ? null
+        : { field: row.field, undo: offers.find((each) => each.id === row.offer) },
+    rowChanged: (field, offer) => {
+      setRow(field === undefined ? null : { field, offer });
+    },
+  };
+}
+
+/** What the answers to a change that came second do. */
+interface ConflictWays {
+  /** Takes the change back and reads the issue again. */
+  readonly drop: () => void;
+  /** Sends the values again, on this version when the server named one. */
+  readonly again: (values: IssueValues, version: number | null | undefined) => void;
+}
+
+/** The two answers to a change that somebody else made first: *Keep Ben's* and *Use mine*. */
+function conflictAnswers(held: Held, ways: ConflictWays): IssueConflict {
+  return {
+    sentence: held.sentence,
+    theirs: keepTheirsText(held.conflict),
+    keepTheirs: ways.drop,
+    useMine: () => {
+      ways.again(held.edit.values, held.conflict.version);
+    },
+  };
+}
+
 /** What the page of an issue gets for changing short values. */
 export interface IssueChanges {
   /** Shows the change at once and sends it; *Undo* is on offer for 10 seconds. */
   readonly change: (values: IssueValues) => void;
   readonly saveState: OptimisticMutation<IssueEdit>["saveState"];
+  /**
+   * The row of the Details that the last change was made in, with the offer to take it back while
+   * it lasts; nothing when the last change belongs to no row (the title, the status).
+   */
+  readonly lastRow: LastRow | null;
   /** When the last change was saved, as a moment in time. */
   readonly savedAt: string | null;
   /** The plain message when the server refused for another reason than a change made first. */
@@ -85,6 +146,7 @@ export interface IssueChanges {
 export function useIssueChanges(detail: IssueDetail, address: string): IssueChanges {
   const [held, setHeld] = useState<Held | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const { lastRow, rowChanged } = useLastRow();
   const id = detail.issue.id ?? address;
   const mutation = useOptimisticMutation<IssueEdit, IssueDetail, void>({
     queryKey: queryKeys.issues.one(address),
@@ -92,37 +154,42 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
     apply: after,
     send: sendAndNote(id, { held: setHeld, savedAt: setSavedAt }),
   });
-  const run = (values: IssueValues, version: number): void => {
+  const run = (values: IssueValues, version: number, landed?: (version: number) => void): void => {
     setHeld(null);
-    mutation.change({ values, version });
+    mutation.change({ values, version, ...(landed === undefined ? {} : { landed }) });
   };
   return {
     change: (values) => {
       const before = valuesBefore(detail, values);
-      run(values, versionNow(address, detail.issue));
-      undoStore.offer({
+      const made: { version?: number } = {};
+      run(values, versionNow(address, detail.issue), (version) => {
+        made.version = version;
+      });
+      const field = rowFieldOf(values);
+      const offer = undoStore.offer({
         message: changeSentence(values),
+        inline: field !== undefined,
         undo: () => {
-          run(before, versionNow(address, detail.issue));
+          run(before, made.version ?? versionNow(address, detail.issue));
         },
       });
+      rowChanged(field, offer);
     },
     saveState: mutation.saveState,
+    lastRow,
     savedAt,
     problem: held === null ? mutation.problem : null,
     conflict:
       held === null
         ? null
-        : {
-            sentence: held.sentence,
-            theirs: keepTheirsText(held.conflict),
-            keepTheirs: () => {
+        : conflictAnswers(held, {
+            drop: () => {
               setHeld(null);
               readAgain(address);
             },
-            useMine: () => {
-              run(held.edit.values, held.conflict.version ?? versionNow(address, detail.issue));
+            again: (values, version) => {
+              run(values, version ?? versionNow(address, detail.issue));
             },
-          },
+          }),
   };
 }

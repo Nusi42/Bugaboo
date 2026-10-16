@@ -92,7 +92,10 @@ export function changeSentence(entry: HistoryEntry): string {
     return t("history.changed", { who, field, before, after });
   }
   if (after !== undefined) {
-    return t("history.set", { who, field, after });
+    // People are told after a colon: a field such as *Assigned to* ends in the word that *set … to* needs.
+    return entry.after_people === undefined || entry.after_people === null
+      ? t("history.set", { who, field, after })
+      : t("history.set-people", { who, field, after });
   }
   return before === undefined
     ? t("history.changed-long-text", { who, field })

@@ -3,6 +3,7 @@ import {
   descriptionEditPart,
   firstVersion,
   settingKeys,
+  type Schema,
   type SettingChoice,
 } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
@@ -215,4 +216,57 @@ export async function openNewIssueDialogFromTheMenu(page: Page): Promise<void> {
     .getByRole("button", { name: t("issues.new"), exact: true })
     .click();
   await expect(newIssueDialog(page)).toBeVisible();
+}
+
+/** Changes the status and the priority of an issue as the session's person, on the version the test knows. */
+export async function setStatusAndPriority(
+  session: ApiSession,
+  issue: MadeIssue,
+  version: number,
+  change: { readonly status: Schema<"Status">; readonly priority: Schema<"Priority"> },
+): Promise<void> {
+  await session.client.PATCH("/api/v1/issues/{issue}", {
+    params: { path: { issue: issue.key } },
+    body: { version, ...change },
+  });
+}
+
+/** The tick box of an issue in the list, named as the list names it. */
+export function tickBox(page: Page, key: string) {
+  return page.getByRole("checkbox", { name: t("issues.select-issue", { key }), exact: true });
+}
+
+/** The big status button of the issue page: the current status with its group's icon and color. */
+export function statusButton(page: Page) {
+  return page.locator('[data-part="status-button"]');
+}
+
+/** Changes the status the way a person does: opens the list of the big button and picks a word. */
+export async function chooseStatus(page: Page, word: string): Promise<void> {
+  await statusButton(page).click();
+  await page.getByRole("button", { name: word, exact: true }).click();
+}
+
+/** The big status button says this status. */
+export async function expectStatus(page: Page, word: string): Promise<void> {
+  await expect(statusButton(page)).toHaveText(word);
+}
+
+/** The row of a field in the Details of the issue page, found by the name of the field. */
+export function detailRow(page: Page, name: string) {
+  return page
+    .locator('[data-part="name-value"]')
+    .filter({ has: page.getByText(name, { exact: true }) });
+}
+
+/** The words of a status as people read it, from the word the server uses. */
+export function statusWordOf(status: string | null | undefined): string {
+  return t(`status.${status === "in-progress" || status === "done" ? status : "open"}`);
+}
+
+/** Changes a field of the issue page the way a person does: the status with the big button, any other with its list. */
+export async function changeField(page: Page, name: string, choice: string): Promise<void> {
+  await (name === t("issue-field.status")
+    ? chooseStatus(page, choice)
+    : page.getByLabel(name, { exact: true }).selectOption({ label: choice }));
 }

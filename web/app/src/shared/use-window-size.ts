@@ -2,6 +2,7 @@ import type { WindowSize } from "@bugaboo/ui";
 
 import { changeMySettings } from "./change-my-settings.ts";
 import { useMySettings } from "./use-my-settings.ts";
+import type { WindowForm } from "./window-forms.ts";
 import { changeForSize, sizeOfForm } from "./window-sizes.ts";
 
 export interface WindowSizeOfForm {
@@ -16,7 +17,7 @@ export interface WindowSizeOfForm {
  * settings and not in the browser alone (UX §6.3, ADR-0018): the same size on every device, and
  * nothing left at a shared computer.
  */
-export function useWindowSize(form: string): WindowSizeOfForm {
+export function useWindowSize(form: WindowForm): WindowSizeOfForm {
   const settings = useMySettings();
   return {
     size: sizeOfForm(settings, form),

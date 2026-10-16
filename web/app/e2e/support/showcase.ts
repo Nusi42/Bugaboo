@@ -10,6 +10,13 @@ import { type ShowcaseIds, type Who } from "./showcase-sample.ts";
 import { screenshotFolder, shotWholeAs } from "./screenshots.ts";
 import { viewports } from "../../../tooling/viewports.ts";
 
+/**
+ * Only these screens are taken when `BB_SHOWCASE_ONLY` names them (slugs, separated by commas): a
+ * change to a few screens is looked at without taking the whole tour again.
+ */
+export const onlyScreens: readonly string[] | undefined =
+  process.env["BB_SHOWCASE_ONLY"]?.split(",");
+
 /** The folder of the showcase pictures inside the screenshot folder. */
 export const SHOWCASE = "showcase";
 

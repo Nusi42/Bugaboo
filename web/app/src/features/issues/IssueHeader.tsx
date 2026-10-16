@@ -6,6 +6,7 @@ import {
   InPlaceText,
   IssueTypeIcon,
   type MenuAction,
+  useLayout,
   partOf,
   part,
 } from "@bugaboo/ui";
@@ -36,6 +37,8 @@ export function IssueHeader(props: IssueHeaderProps) {
   const key = issue.key ?? "";
   const issueType = known(issue.issue_type);
   const Heading = show === "focus" ? "h1" : "h2";
+  // A phone always shows the issue on a screen of its own, so there is no other view to open it in.
+  const phone = useLayout() === "phone";
   return (
     <>
       <div {...partOf(part.issueHead)}>
@@ -55,9 +58,11 @@ export function IssueHeader(props: IssueHeaderProps) {
           copiedLabel={t("issues.link-copied")}
         />
         <div {...partOf(part.issueHeadActions)}>
-          <Button onPress={onSwitch}>
-            {show === "focus" ? t("issues.side-panel-view") : t("issues.open-full-page")}
-          </Button>
+          {phone ? null : (
+            <Button onPress={onSwitch}>
+              {show === "focus" ? t("issues.side-panel-view") : t("issues.open-full-page")}
+            </Button>
+          )}
           <ActionMenu label={t("issues.more")} actions={actions} />
         </div>
       </div>

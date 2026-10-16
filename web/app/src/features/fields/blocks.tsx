@@ -5,15 +5,14 @@ import type { IssueBlockProps } from "../issues/index.ts";
 import { FormSections, onlyFields } from "../layouts/index.ts";
 import { issueFieldsOf, useFields, type OwnField, type FieldValues } from "./fields.ts";
 import { FieldLine } from "./FieldLine.tsx";
-import { lineKey } from "./line-key.ts";
 
 /**
- * The own fields in the fields panel of the issue page (CF-06, UX §4.4): each field the person sees,
+ * The own fields in the Details of the issue page (CF-06, UX §4.4): each field the person sees,
  * in its look, and an editor where the field is theirs to change. A field the person may not see is
  * not in the issue and so not here. The page saves a change and shows what the server refuses.
  * Long texts have their own section under the description.
  */
-export function OwnFieldsPanel({ issue, mask, form, onChange }: IssueBlockProps) {
+export function OwnFieldRows({ issue, mask, form, rowStatus, onChange }: IssueBlockProps) {
   const project = issue.project?.short_name;
   const fields = useFields({ project });
   const values: FieldValues = issue.own_fields ?? {};
@@ -25,12 +24,13 @@ export function OwnFieldsPanel({ issue, mask, form, onChange }: IssueBlockProps)
   );
   const line = (field: OwnField) => (
     <FieldLine
-      key={lineKey(field, values[field.id])}
+      key={field.id}
       field={field}
       project={project}
       issue={issue.id ?? undefined}
       value={values[field.id]}
       editable={mask.changes(field.id)}
+      status={rowStatus(field.id)}
       onCommit={(each, value) => {
         void onChange({ fields: { [each.id]: value } });
       }}

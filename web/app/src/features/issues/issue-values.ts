@@ -17,10 +17,32 @@ export interface IssueValues {
   readonly own?: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * The name of a row of the Details that saves in place with *Saved* and *Undo* in its own row (R7):
+ * the word of a built-in field (`priority`, `assigned-to`) or the ID of an own field. The title and
+ * the status say it elsewhere.
+ */
+export type RowField = string;
+
+/** The row of the Details a change belongs to, when it belongs to one. */
+export function rowFieldOf(values: IssueValues): RowField | undefined {
+  if (values.assignedTo !== undefined) {
+    return "assigned-to";
+  }
+  if (values.priority !== undefined) {
+    return "priority";
+  }
+  // One own field changed: its row says it. Several at once have no one row.
+  const own = Object.keys(values.own ?? {});
+  return own.length === 1 ? own[0] : undefined;
+}
+
 /** One change on its way: the values, and the version on screen that it is made on. */
 export interface IssueEdit {
   readonly values: IssueValues;
   readonly version: number;
+  /** Called with the version the server made of it, once it did: what *Undo* of this change is sent on. */
+  readonly landed?: (version: number) => void;
 }
 
 /** Whether what the cache holds under the key is the page of an issue. */

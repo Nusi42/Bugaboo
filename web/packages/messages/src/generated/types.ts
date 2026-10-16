@@ -199,6 +199,7 @@ export interface MessageArguments {
     who: string | number;
   };
   "history.set": { after: string | number; field: string | number; who: string | number };
+  "history.set-people": { after: string | number; field: string | number; who: string | number };
   "home.title": { name: string | number };
   "invitation.intro": { email: string | number };
   "invitations.created": { email: string | number };
@@ -226,6 +227,7 @@ export interface MessageArguments {
   "issues.page-title": { project: string | number };
   "issues.read-only": { field: string | number };
   "issues.refused-at-field": { field: string | number; reason: string | number };
+  "issues.select-issue": { key: string | number };
   "issues.selected": { count: number };
   "issues.title-of": { key: string | number; title: string | number };
   "issues.unassign-name": { name: string | number };
@@ -377,5 +379,6 @@ export interface MessageArguments {
   "sub-issues.not-part-of": { key: string | number };
   "sub-issues.progress": { done: string | number; total: string | number };
   "sub-issues.take-out": { key: string | number };
+  "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
 }

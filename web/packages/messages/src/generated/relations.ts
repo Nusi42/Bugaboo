@@ -11,6 +11,7 @@ export const messages = {
   "sub-issues.progress-label": "How far the sub-issues are",
   "sub-issues.progress": "{done} of {total} done",
   "sub-issues.take-out": "Take {key} out of the sub-issues",
+  "sub-issues.take-out-short": "Take {key} out",
   "sub-issues.not-part-of": "Take this issue out of {key}",
   "related-issues.title": "Related issues",
   "related-issues.none": "No related issues yet.",
@@ -20,6 +21,7 @@ export const messages = {
   "related-issues.add-it": "Add the relation",
   "related-issues.added": "Relation added: {key} · {name} · {other}",
   "related-issues.take-away": "Take away the relation: {name} {other}",
+  "related-issues.take-away-short": "Take away",
   "related-issues.nothing-to-pick":
     "There is no kind of relation to pick. Someone who manages kinds of relation can make one.",
 } as const;

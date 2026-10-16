@@ -2,7 +2,7 @@
 
 ## The list of a project
 
-Open a project and press "Issues of this project". The list shows the newest issues first, a page at a time ("Show more issues" brings the next page). Each line has a box you can tick, the issue ID, the title, the status, the priority and the people it is assigned to. Ticked issues are kept until you clear them; changing many issues at once comes later. With `j` and `k` you move from title to title.
+Open a project and press "Issues of this project". The list is a grid in groups: "In progress", "Not started" and "Done", each with its number. Inside a group the newest issues come first, a page at a time ("Show more issues" brings the next page). Each line has a box you can tick, the status icon, the issue ID, the type, the title, the priority, the people it is assigned to and when it changed. A line is tinted by its status group and has a colored strip at the left for a high or critical priority; the Legend beside the "New issue" button says what the colors mean, and the icons say the same in words for people who use a reader. A whole line opens its issue. On a phone each line has two lines, in the same order. Ticked issues are kept until you clear them; changing many issues at once comes later. With `j` and `k` you move from title to title.
 
 ## Opening an issue
 
@@ -12,7 +12,7 @@ On a phone an issue always takes the whole page, and a bar at the bottom offers 
 
 ## Changing a value where it stands
 
-Click the title to change it. Pick another status or priority from its list. Choose who the issue is assigned to with "Change" (you can pick only people of the project). Each change shows at once, says "Saving…" and then "Saved · 10:42", and "Undo" stays on offer for ten seconds.
+Click the title to change it. The big button under the title shows the status with its icon and color; press it to see the changes you can make and pick one. The **Details** are rows with the name at the left and the value at the right: pick another priority from its list, and choose who the issue is assigned to with "Change" (you can pick only people of the project). Each change shows at once and says "Saving…" and then "Saved · 10:42" where you made it. For the priority and the people, "Undo" stands in the same row for ten seconds; for the status and the title it is in the message at the bottom. On a phone the Details are closed behind "All details", which still says who the issue is assigned to and its priority.
 
 A field you can see and may not change shows a lock and says so. A field you may not see is left out. Where Bugaboo may not tell you who somebody is, you see their role ("a Team member") or "Someone".
 

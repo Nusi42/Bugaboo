@@ -6,7 +6,14 @@ import { type Instance } from "./server.ts";
 import { inOrder } from "./sequence.ts";
 import { personOf, showcaseIds, type ShowcaseIds, type Who } from "./showcase-sample.ts";
 import { screens } from "./showcase-screens.ts";
-import { type Device, openDevice, type Screen, showTheme, takePicture } from "./showcase.ts";
+import {
+  type Device,
+  onlyScreens,
+  openDevice,
+  type Screen,
+  showTheme,
+  takePicture,
+} from "./showcase.ts";
 import { paths } from "../../src/shared/paths.ts";
 
 /** The people of the tour in the order it shows them, those who are not signed in first. */
@@ -22,7 +29,8 @@ interface Stop {
 function stopsOf(who: Who, device: Device): readonly Stop[] {
   return screens
     .map((screen, index): Stop => ({ screen, order: index + 1 }))
-    .filter((stop) => stop.screen.who === who && (stop.screen.only ?? device) === device);
+    .filter((stop) => stop.screen.who === who && (stop.screen.only ?? device) === device)
+    .filter((stop) => onlyScreens?.includes(stop.screen.slug) ?? true);
 }
 
 /** What it takes for a person to see a screen in a theme: how they get in, and how the theme shows. */

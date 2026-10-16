@@ -19,9 +19,11 @@ const labels = {
   back: "Back",
   resizeKeys: "Press Ctrl and Alt with the arrow keys to change the size.",
   draftKept: "Draft kept",
+  sizeMenu: "Window size",
+  steps: { wider: "Wider", narrower: "Narrower", taller: "Taller", shorter: "Shorter" },
 } as const satisfies WindowLabels;
 const text = { title: "New issue", body: "Fields", footer: "Create" } as const;
-const resize: WindowResize = { handlers: () => ({}), onKeyDown: nothing };
+const resize: WindowResize = { handlers: () => ({}), onKeyDown: nothing, step: nothing };
 
 /** A window in one of its states, as markup. */
 function frame(state: WindowState, footer?: ReactNode): string {
@@ -57,15 +59,20 @@ function buttonNames(markup: string): string[] {
 }
 
 describe("ux_6_3 a window has its title bar, its form and its footer", () => {
-  it("has Minimize, Maximize and Close at the top right, in the order of Windows", () => {
+  it("has Minimize, Maximize and Close at the top right, in the order of Windows, after the size menu", () => {
     const markup = frame(windowState.normal);
-    expect(buttonNames(markup)).toEqual([labels.minimize, labels.maximize, labels.close]);
+    expect(buttonNames(markup)).toEqual([
+      labels.sizeMenu,
+      labels.minimize,
+      labels.maximize,
+      labels.close,
+    ]);
     expect(markup).toContain('data-part="window.title-bar"');
     expect(markup).toContain(`>${text.title}</h2>`);
     expect(markup).toContain('data-variant="close"');
   });
 
-  it("offers Restore down instead of Maximize once it is maximized, and no place to drag", () => {
+  it("offers Restore down instead of Maximize once it is maximized, and no place to drag or size menu", () => {
     const markup = frame(windowState.maximized);
     expect(buttonNames(markup)).toEqual([labels.minimize, labels.restoreDown, labels.close]);
     expect(markup).not.toContain('data-part="window.handle"');

@@ -1,12 +1,11 @@
-import { t } from "@bugaboo/messages";
-import { Button, partOf, part } from "@bugaboo/ui";
+import { partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { ConflictNote } from "./ConflictNote.tsx";
-import { FactsBar } from "./FactsBar.tsx";
-import { FieldsPanel } from "./FieldsPanel.tsx";
+import { DetailsToggle } from "./DetailsToggle.tsx";
+import { DetailsPanel } from "./DetailsPanel.tsx";
 import { IssueMain } from "./IssueMain.tsx";
 import { IssueSaved } from "./IssueSaved.tsx";
+import { StatusChange } from "./StatusChange.tsx";
 import type { IssueBlockProps, IssueDetail } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
 
@@ -21,34 +20,31 @@ export interface IssueContentProps {
 }
 
 /**
- * Everything under the title of an issue: what was saved, a conflict, the facts bar, and the body
- * with the description and the details (UX §4.4). The details are a column of their own when the
- * screen has room, and sit behind *All details* otherwise.
+ * Everything under the title of an issue: the big status button, what was saved, a conflict, and
+ * the body with the description and the details (UX §4.4). The details are a column of their own
+ * when the screen has room; otherwise they sit under the status behind *All details*, which says
+ * who it is assigned to and the priority while it is closed (UX §3.3).
  */
 export function IssueContent({ detail, address, changes, blocks, split }: IssueContentProps) {
   const [open, setOpen] = useState(false);
+  const details = <DetailsPanel blocks={blocks} changes={changes} stacked={!split} />;
   return (
     <>
+      <StatusChange blocks={blocks} changes={changes} />
       <IssueSaved changes={changes} />
-      {changes.conflict === null ? null : <ConflictNote conflict={changes.conflict} />}
-      <FactsBar
-        issue={detail.issue}
-        mask={blocks.mask}
-        form={blocks.form}
-        onChange={changes.change}
-      />
       <div {...partOf(part.issueBody, { variants: [!split && "stacked"] })}>
-        <IssueMain detail={detail} address={address} blocks={blocks} />
-        {split || open ? <FieldsPanel blocks={blocks} stacked={!split} /> : null}
         {split ? null : (
-          <Button
-            onPress={() => {
+          <DetailsToggle
+            issue={detail.issue}
+            open={open}
+            onToggle={() => {
               setOpen(!open);
             }}
-          >
-            {open ? t("issues.hide-details") : t("issues.all-details")}
-          </Button>
+          />
         )}
+        {!split && open ? details : null}
+        <IssueMain detail={detail} address={address} blocks={blocks} />
+        {split ? details : null}
       </div>
     </>
   );

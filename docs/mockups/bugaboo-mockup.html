@@ -3,6 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="parts.css">
 <link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="mockup.css">
 
@@ -38,6 +39,15 @@
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+  <symbol id="i-st-ns" viewBox="0 0 24 24"><path d="M10.1 2.182a10 10 0 0 1 3.8 0"/><path d="M13.9 21.818a10 10 0 0 1-3.8 0"/><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7"/><path d="M2.182 13.9a10 10 0 0 1 0-3.8"/><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69"/><path d="M21.818 10.1a10 10 0 0 1 0 3.8"/><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"/><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7"/></symbol>
+  <symbol id="i-st-ip" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 18a6 6 0 0 0 0-12v12z" fill="currentColor"/></symbol>
+  <symbol id="i-st-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol>
+  <symbol id="i-p-critical" viewBox="0 0 24 24"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></symbol>
+  <symbol id="i-p-high" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
+  <symbol id="i-p-normal" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-p-low" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-square" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -154,7 +164,7 @@ const S = {
   screen:"issues", show:"list", open:null, panelMode:"issue", panelTab:"all",
   filters:[{f:"project",op:"within",v:"WEB"},{f:"status",op:"is not",v:"Done"}],
   sort:"priority, highest first", searchMode:"simple", advText:"", advErr:"",
-  ask:null, selected:new Set(), group:"none", boardCol:"Open",
+  ask:null, winMax:false, selected:new Set(), group:"none", boardCol:"Open",
   timer:{key:"WEB-142",start:Date.now()-42*60000-10000},
   workday:{start:Date.now()-(6*60+51)*60000, onBreak:false, brk:30},
   setTab:"perm", look:"system", prefLight:"daylight", prefDark:"dusk",
@@ -170,13 +180,21 @@ const narrow = () => matchMedia("(max-width:899px)").matches;
 const fmtMin = m => m ? `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}` : "";
 const fmtSpent = m => m ? (m>=60 ? `${Math.floor(m/60)} h ${m%60 ? (m%60)+" min" : ""}`.trim() : `${m} min`) : "None yet";
 function typeTag(i, withWord=true){ return `<span class="type ${i.type}">${ico("i-"+i.type)}${withWord?TYPES[i.type]:""}</span>`; }
+/* The status and the priority are drawn as the parts of the app (docs/design/parts.css). */
+const GROUP_PART = {ns:"not-started", ip:"in-progress", done:"done"};
+const GROUP_SPRITE = {ns:"i-st-ns", ip:"i-st-ip", done:"i-st-done"};
+const PRIO_PART = {Critical:"critical", High:"high", Medium:"normal", Low:"low"};
+const PRIO_SPRITE = {Critical:"i-p-critical", High:"i-p-high", Medium:"i-p-normal", Low:"i-p-low"};
+const SVG_LINE = `viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
+const stIcon = (g, small=true, label="") => `<svg data-part="status-icon" data-variant="${GROUP_PART[g]}${small?" small":""}" ${SVG_LINE} ${label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"'}><use href="#${GROUP_SPRITE[g]}"/></svg>`;
+const pill = st => `<span data-part="status-pill" data-variant="${GROUP_PART[STATUS_GROUP[st]]}">${stIcon(STATUS_GROUP[st])}${st}</span>`;
 function statusPill(i, clickable=true){
   const g = STATUS_GROUP[i.status];
   return clickable
-    ? `<button type="button" class="pill st-${g}" data-act="status-menu" data-key="${i.key}" aria-label="Status: ${i.status}. Change status">${i.status}</button>`
-    : `<span class="pill st-${g}">${i.status}</span>`;
+    ? `<button type="button" data-part="status-button" data-variant="${GROUP_PART[g]}" data-act="status-menu" data-key="${i.key}" aria-label="Status: ${i.status}. Change status">${stIcon(g, false)}${i.status}${ico("i-down")}</button>`
+    : pill(i.status);
 }
-const prioTag = p => `<span class="prio ${p}">${ico(PRIO_ICON[p])}${p}</span>`;
+const prioTag = (p, word=true) => `<span data-part="priority" data-variant="${PRIO_PART[p]}"${word ? "" : ` role="img" aria-label="${p}"`}><svg data-part="priority-icon" ${SVG_LINE} aria-hidden="true"><use href="#${PRIO_SPRITE[p]}"/></svg>${word ? p : ""}</span>`;
 const avatar = n => n ? `<span class="av ${PEOPLE[n]}">${n[0]}</span>` : "";
 const whoTag = (n, kind="assigned") => n ? `<span class="who">${personAvatar(n, kind)}${personLabel(n, kind)}</span>` : `<span class="subtle">Nobody yet</span>`;
 const labelTags = ls => ls.map(l => `<span class="tag ${LABEL_COLOR[l]||"c2"}">${l}</span>`).join("");
@@ -359,21 +377,36 @@ function renderSearchbar(){
   </div></div>`;
 }
 
+const GROUP_ORDER = ["ip","ns","done"];
+const GROUP_NAME = {ns:"Not started", ip:"In progress", done:"Done"};
+const GROUP_STATE = {ip:"group-in-progress", done:"group-done"};
+const PRIO_STATE = {Critical:"priority-critical", High:"priority-high"};
+const phoneRows = () => matchMedia("(max-width:767px)").matches;
+function listRow(i, phone){
+  const g = STATUS_GROUP[i.status];
+  const state = [GROUP_STATE[g], PRIO_STATE[i.prio], S.open === i.key || S.selected.has(i.key) ? "selected" : ""].filter(Boolean).join(" ");
+  const cell = (name, html) => `<div data-part="list-row.cell" data-variant="${name}">${html}</div>`;
+  return `<div data-part="list-row"${phone ? ' data-variant="phone"' : ""}${state ? ` data-state="${state}"` : ""} data-act="open" data-key="${i.key}">
+      ${cell("select", `<input type="checkbox" class="cb" data-act-change="select" data-key="${i.key}" ${S.selected.has(i.key)?"checked":""} aria-label="Select ${i.key}">`)}
+      ${cell("status", stIcon(g, true, i.status))}
+      ${cell("key", i.key)}
+      ${cell("type", typeTag(i,false))}
+      ${cell("title", esc(i.title))}
+      ${cell("labels", labelTags(i.labels))}
+      ${cell("priority", prioTag(i.prio, i.prio === "Critical"))}
+      ${cell("person", i.who ? whoTag(i.who) : "")}
+      ${cell("changed", i.due || "")}</div>`;
+}
 function renderList(list){
   if(!list.length) return `<div class="box u-padding-28px--text-align-center"><p class="u-margin-0-0-12px">No issues match these filters.</p><button type="button" class="btn" data-act="clear-filters">Clear filters</button> <button type="button" class="btn primary" data-act="new">Create an issue</button></div>`;
-  const rows = list.map(i => `<tr class="row ${S.open===i.key?"sel":""}" data-act="open" data-key="${i.key}">
-      <td><input type="checkbox" class="cb" data-act-change="select" data-key="${i.key}" ${S.selected.has(i.key)?"checked":""} aria-label="Select ${i.key}"></td>
-      <td>${typeTag(i,false)} <span class="key">${i.key}</span></td>
-      <td class="title">${esc(i.title)} ${labelTags(i.labels)}</td>
-      <td>${statusPill(i)}</td><td>${prioTag(i.prio)}</td><td>${whoTag(i.who)}</td>
-      <td class="num muted">${i.due||""}</td></tr>`).join("");
-  const cards = list.map(i => `<button type="button" class="lrow" data-act="open" data-key="${i.key}">
-      <span>${typeTag(i,false)}</span>
-      <span class="u-min-width-0--flex-1"><span class="key">${i.key}</span><span class="t">${esc(i.title)}</span>
-      <span class="m">${statusPill(i,false)}${prioTag(i.prio)}${i.who?whoTag(i.who):""}</span></span></button>`).join("");
+  const phone = phoneRows();
+  const head = phone ? "" : `<div data-part="list-row" data-variant="head">${[["select","Select"],["status","Status"],["key","Issue"],["type","Type"],["title","Title"],["labels","Labels"],["priority","Priority"],["person","Assigned to"],["changed","Due"]].map(([c,l]) => `<div data-part="list-row.cell" data-variant="${c}">${["select","status","type"].includes(c) ? `<span data-part="visually-hidden">${l}</span>` : l}</div>`).join("")}</div>`;
+  const groups = GROUP_ORDER.map(g => ({g, items:list.filter(i => STATUS_GROUP[i.status] === g)})).filter(x => x.items.length)
+    .map(({g, items}) => `<div data-part="list-group">${stIcon(g)}<span>${GROUP_NAME[g]}</span><span data-part="list-group.count">${items.length}</span></div>${items.map(i => listRow(i, phone)).join("")}`).join("");
   const n = S.selected.size;
-  return `<table class="tbl"><thead><tr><th class="u-width-36px"></th><th>Issue</th><th>Title</th><th>Status</th><th>Priority</th><th>Assigned to</th><th>Due</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="cards">${cards}</div>
+  const legend = `<ul data-part="legend" aria-label="What the colors mean">${[["in-progress","In progress"],["done","Done"],["critical","Critical"],["high","High"]].map(([l,w]) => `<li data-part="legend.item"><span data-part="legend.swatch" data-variant="${l}" aria-hidden="true"></span>${w}</li>`).join("")}</ul>`;
+  return `<div data-part="list-toolbar">${legend}</div>
+    <div data-part="list-grid">${head}${groups}</div>
     <p class="muted u-font-size-fs-sm--margin-top-12px">${list.length} issue${list.length===1?"":"s"} · Click a status to change it · Tick boxes to change several issues at once</p>
     ${n ? `<div class="bulkbar" role="region" aria-label="Change selected issues"><b>${n} selected</b>
       <button type="button" class="btn sm" data-act="bulk" data-what="status">Change status</button>
@@ -388,7 +421,7 @@ function renderBoard(list){
     const items = list.filter(i => i.status === st);
     const lim = limits[st];
     return `<section class="col ${S.boardCol===st?"show":""}" data-col="${st}" aria-label="${st}">
-      <div class="col-h"><span class="pill st-${STATUS_GROUP[st]}">${st}</span>
+      <div class="col-h">${pill(st)}
         ${lim ? `<span class="lim ${items.length>lim?"over":""}">${items.length} of ${lim}</span>` : `<span class="lim">${items.length}</span>`}</div>
       <div class="col-b">${items.map(i => `<article class="card" draggable="true" data-drag="${i.key}">
         <div class="meta">${typeTag(i,false)}<span class="key">${i.key}</span><button type="button" class="btn sm ghost move" data-act="status-menu" data-key="${i.key}" aria-label="Move ${i.key} to another column">Move to …</button></div>
@@ -563,7 +596,7 @@ function renderSettings(){
   }
   if(S.setTab === "wf"){
     body = `<p class="help">The workflow for <b>Bugs</b> in Website. Each status lists where an issue can go next, and what the button says.</p>
-      <div class="wf">${STATUSES.map(st => `<div class="wf-row"><span class="muted">From</span><span class="pill st-${STATUS_GROUP[st]}">${st}</span><span class="muted">you can go to:</span>
+      <div class="wf">${STATUSES.map(st => `<div class="wf-row"><span class="muted">From</span>${pill(st)}<span class="muted">you can go to:</span>
         ${MOVES[st].map(([to,lab])=>`<button type="button" class="btn sm" data-act="toast" data-msg="Rules for “${lab}”: Who can do it · Only if … · Must be filled in · Ask for · Then automatically …"><span class="pill st-${STATUS_GROUP[to]} u-padding-0-6px">${to}</span>“${lab}”</button>`).join("")}</div>`).join("")}</div>
       <p class="help u-margin-top-12px">“Mark as done” asks for <b>Planned for release</b> if it's empty. Try it on WEB-139 after moving it to Testing.</p>
       <div class="u-display-flex--gap-8px--flex-wrap-wrap"><button type="button" class="btn" data-act="toast" data-msg="The drawing view shows statuses as boxes and allowed changes as arrows.">Show as drawing</button><button type="button" class="btn" data-act="toast" data-msg="Try it: pick an issue and a person to see which status changes they'd get, and why.">Try it</button></div>`;
@@ -629,28 +662,23 @@ function issueParts(i){
   P.title = `<input type="text" class="issue-title" value="${esc(i.title)}" aria-label="Title" data-act-change="title" data-key="${i.key}">`;
   P.timer = `<button type="button" class="btn sm ${running?"primary":""}" data-act="${running?"timer-stop":"timer-start"}" data-key="${i.key}">${ico(running?"i-stop":"i-play")}${running?"Stop timer":"Start timer"}</button>`;
   P.status = `<div class="u-display-flex--gap-8px--align-items-center--flex-wrap-wrap">${statusPill(i)}${P.timer}</div>`;
-  P.fields = `<dl class="fields">
-        <dt>Assigned to</dt><dd><button type="button" class="fval" data-act="field-menu" data-field="who" data-key="${i.key}">${whoTag(i.who,"assigned")}</button></dd>
-        <dt>Priority</dt><dd><button type="button" class="fval" data-act="field-menu" data-field="prio" data-key="${i.key}">${prioTag(i.prio)}</button></dd>
-        ${i.sev ? `<dt>Severity</dt><dd><button type="button" class="fval" data-act="toast" data-msg="Opens the list of severities."><span class="tag ${i.sev==="S1"?"c1":i.sev==="S2"?"c4":"c2"}">${i.sev}</span></button></dd>` : ""}
-        <dt>Labels</dt><dd>${i.labels.length ? `<span class="fval">${labelTags(i.labels)}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens the label list.">Add a label</button>`}</dd>
-        <dt>Planned for</dt><dd>${i.release ? `<span class="fval">Release ${i.release}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens the release list.">Add a release</button>`}</dd>
-        <dt>Due date</dt><dd>${i.due ? `<span class="fval num">${i.due}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens a date picker.">Add a due date</button>`}</dd>
-        <dt>Estimated time</dt><dd><span class="fval num">${i.est}</span></dd>
-        <dt>Time spent</dt><dd><span class="fval num">${fmtSpent(i.spent + (running ? Math.floor((Date.now()-S.timer.start)/60000) : 0))}</span></dd>
-        <dt>Cost center</dt><dd><span class="ro" title="Only team members and administrators can change Cost center.">4100 ${ico("i-lock","lock")}</span></dd>
-        <dd class="ro-note">Only team members and administrators can change this.</dd>
-        <dt>Activity</dt><dd><span class="tag c2">Development</span></dd>
-        <dt>Reported by</dt><dd><span class="fval">${whoTag(i.by,"reported")}</span></dd>
-        <dt>Followers</dt><dd><button type="button" class="fval" data-act="toast" data-msg="You're now following ${i.key}.">3 · Follow</button></dd>
-        <dt></dt><dd><button type="button" class="fval add" data-act="add-field" data-key="${i.key}">${ico("i-plus")}Add a field</button></dd>
+  P.fields = `<dl data-part="name-values">
+        <div data-part="name-value"><dt data-part="name-value.name">Assigned to</dt><dd data-part="name-value.value"><button type="button" class="fval" data-act="field-menu" data-field="who" data-key="${i.key}">${whoTag(i.who,"assigned")}</button></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Priority</dt><dd data-part="name-value.value"><button type="button" class="fval" data-act="field-menu" data-field="prio" data-key="${i.key}">${prioTag(i.prio)}</button></dd></div>
+        ${i.sev ? `<div data-part="name-value"><dt data-part="name-value.name">Severity</dt><dd data-part="name-value.value"><button type="button" class="fval" data-act="toast" data-msg="Opens the list of severities."><span class="tag ${i.sev==="S1"?"c1":i.sev==="S2"?"c4":"c2"}">${i.sev}</span></button></dd></div>` : ""}
+        <div data-part="name-value"><dt data-part="name-value.name">Labels</dt><dd data-part="name-value.value">${i.labels.length ? `<span class="fval">${labelTags(i.labels)}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens the label list.">Add a label</button>`}</dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Planned for</dt><dd data-part="name-value.value">${i.release ? `<span class="fval">Release ${i.release}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens the release list.">Add a release</button>`}</dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Due date</dt><dd data-part="name-value.value">${i.due ? `<span class="fval num">${i.due}</span>` : `<button type="button" class="fval add" data-act="toast" data-msg="Opens a date picker.">Add a due date</button>`}</dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Estimated time</dt><dd data-part="name-value.value"><span class="fval num">${i.est}</span></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Time spent</dt><dd data-part="name-value.value"><span class="fval num">${fmtSpent(i.spent + (running ? Math.floor((Date.now()-S.timer.start)/60000) : 0))}</span></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Cost center</dt><dd data-part="name-value.value"><span class="ro" title="Only team members and administrators can change Cost center.">4100 ${ico("i-lock","lock")}</span></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name"></dt><dd data-part="name-value.value" class="ro-note">Only team members and administrators can change this.</dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Activity</dt><dd data-part="name-value.value"><span class="tag c2">Development</span></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Reported by</dt><dd data-part="name-value.value"><span class="fval">${whoTag(i.by,"reported")}</span></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name">Followers</dt><dd data-part="name-value.value"><button type="button" class="fval" data-act="toast" data-msg="You're now following ${i.key}.">3 · Follow</button></dd></div>
+        <div data-part="name-value"><dt data-part="name-value.name"></dt><dd data-part="name-value.value"><button type="button" class="fval add" data-act="add-field" data-key="${i.key}">${ico("i-plus")}Add a field</button></dd></div>
       </dl>`;
-  P.facts = `<div class="facts" role="group" aria-label="Main details">${statusPill(i)}
-      <button type="button" class="fact" data-act="field-menu" data-field="who" data-key="${i.key}"><span class="fl">Assigned to</span>${whoTag(i.who,"assigned")}</button>
-      <button type="button" class="fact" data-act="field-menu" data-field="prio" data-key="${i.key}"><span class="fl">Priority</span>${prioTag(i.prio)}</button>
-      ${i.due ? `<span class="fact"><span class="fl">Due</span><span class="num">${i.due}</span></span>` : ""}
-      ${i.release ? `<span class="fact"><span class="fl">Planned for</span>${i.release}</span>` : ""}
-      ${i.labels.length ? `<span class="fact"><span class="fl">Labels</span>${labelTags(i.labels)}</span>` : ""}
+  P.facts = `<div data-part="issue-status-line" role="group" aria-label="Status">${statusPill(i)}
       ${P.timer}
       <button type="button" class="btn sm ghost fx-details-btn" data-act="fx-details">${S.detailsOpen ? "Hide details" : "All details"}</button></div>`;
   P.desc = descSection(i);
@@ -802,6 +830,19 @@ function openPop(anchor, html){
 function closePop(){ $("#pop")?.remove(); popAnchor = null; }
 function openDialog(html){ $("#overlay").innerHTML = `<div class="scrim" data-act="scrim"><div class="dialog" role="dialog" aria-modal="true">${html}</div></div>`; $("#overlay").querySelector("input,textarea,select,button.primary")?.focus(); }
 function closeDialog(){ $("#overlay").innerHTML = ""; }
+/* A form opens as a window (UX 6.3): minimize, maximize and close at the top right, the buttons in a footer that stays. */
+const winButton = (act, label, icon, variant="") => `<button type="button" data-part="window.control"${variant ? ` data-variant="${variant}"` : ""} data-act="${act}" aria-label="${label}"><svg data-part="icon" data-variant="small" ${SVG_LINE} aria-hidden="true"><use href="#${icon}"/></svg></button>`;
+function openWindow(title, text, fields, footer){
+  $("#overlay").innerHTML = `<div class="scrim" data-act="scrim"><div data-part="overlay.modal" data-variant="window"${S.winMax ? ' data-state="maximized"' : ""} role="dialog" aria-modal="true" aria-label="${title}"><section data-part="window"><div data-part="window.content">
+    <div data-part="window.title-bar"><p data-part="window.title">${title}</p>${winButton("win-min","Minimize","i-minus")}${winButton("win-max", S.winMax ? "Restore down" : "Maximize","i-square")}${winButton("dialog-close","Close","i-x","close")}</div>
+    <div data-part="window.body"><div data-part="window-layout"><div data-part="window-layout.text">${text}</div><div data-part="window-layout.fields">${fields}</div></div></div>
+    <div data-part="window.footer">${footer}</div></div></section></div></div>`;
+  $("#overlay").querySelector("input,textarea,select")?.focus();
+}
+function dockWindow(title){
+  $("#overlay").innerHTML = `<button type="button" data-part="window-dock" data-act="win-restore"><span data-part="window-dock.title">${title}</span><span data-part="window-dock.note">Draft kept</span></button>`;
+  $("#overlay").querySelector("button")?.focus();
+}
 let toastTimer;
 function toast(msg, undo){
   $("#toast")?.remove(); clearTimeout(toastTimer);
@@ -816,7 +857,7 @@ function toast(msg, undo){
 function statusMenu(anchor, key){
   const i = byKey(key);
   openPop(anchor, `<div class="pop-h">${i.key} is ${i.status}</div>` +
-    MOVES[i.status].map(([to,lab]) => `<button type="button" class="pop-item" data-act="move" data-key="${key}" data-to="${to}"><span class="pill st-${STATUS_GROUP[to]}">${to}</span>${lab}</button>`).join("") +
+    MOVES[i.status].map(([to,lab]) => `<button type="button" class="pop-item" data-act="move" data-key="${key}" data-to="${to}">${pill(to)}${lab}</button>`).join("") +
     `<div class="pop-note">Only the changes you're allowed to make are listed.</div>`);
 }
 function moveIssue(key, to){
@@ -873,19 +914,15 @@ function newIssueFields(type){
 }
 function newIssue(){
   const type = "Bug";
-  openDialog(`<div class="dialog-h"><h2>New issue</h2><button type="button" class="btn ghost u-margin-left-auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
-    <div class="dialog-b">
-      <div class="u-10e6c9c8">
-        <div class="field"><label for="ni-p">Project</label><select id="ni-p"><option>Website</option><option>Mobile app</option></select></div>
-        <div class="field"><label for="ni-t">Type</label><select id="ni-t" data-act-change="ni-type"><option>Bug</option><option>Task</option><option>Feature</option><option>Goal</option></select></div></div>
-      <div class="field"><label for="ni-title">Title <span class="req">(required)</span></label>${NEW_FORM[0].html}</div>
+  openWindow("New issue",
+    `<div class="field"><label for="ni-title">Title <span class="req">(required)</span></label>${NEW_FORM[0].html}</div>
       <div class="field"><label for="ni-d">Description</label>${NEW_FORM[1].html}</div>
+      <button type="button" class="btn u-align-self-flex-start" data-act="writeup">${ico("i-spark")}Write it up for me</button>`,
+    `<div class="field"><label for="ni-p">Project</label><select id="ni-p"><option>Website</option><option>Mobile app</option></select></div>
+      <div class="field"><label for="ni-t">Type</label><select id="ni-t" data-act-change="ni-type"><option>Bug</option><option>Task</option><option>Feature</option><option>Goal</option></select></div>
       <div class="ni-grid" id="ni-fields">${newIssueFields(type)}</div>
-      <button type="button" class="btn u-align-self-flex-start" data-act="writeup">${ico("i-spark")}Write it up for me</button>
-      <p class="muted u-margin-0--font-size-fs-sm">The fields depend on the project, the type and your role (<b>${viewerRole()}</b>). ${S.viewAs==="guest" ? "" : `<button type="button" class="btn sm ghost" data-act="form-edit">Customize this form</button>`}</p>
-      <span class="subtle u-font-size-fs-xs">Your draft is kept if you close this window.</span>
-    </div>
-    <div class="dialog-f"><button type="button" class="btn" data-act="dialog-close">Cancel</button><button type="button" class="btn" data-act="create" data-more="1">Create and start another</button><button type="button" class="btn primary" data-act="create">Create</button></div>`);
+      <p class="muted u-margin-0--font-size-fs-sm">The fields depend on the project, the type and your role (<b>${viewerRole()}</b>). ${S.viewAs==="guest" ? "" : `<button type="button" class="btn sm ghost" data-act="form-edit">Customize this form</button>`}</p>`,
+    `<span data-part="window.footer-note">Draft kept · if you close this, it waits for you</span><button type="button" data-part="button" data-act="dialog-close">Cancel</button><button type="button" data-part="button" data-act="create" data-more="1">Create and start another</button><button type="button" data-part="button" data-variant="primary" data-act="create">Create</button>`);
 }
 function formEditor(){
   openDialog(`<div class="dialog-h"><h2>Customize the new-issue form</h2><span class="muted u-margin-left-8px--font-size-fs-sm">Website · Bug</span><button type="button" class="btn ghost u-margin-left-auto" data-act="dialog-close" aria-label="Close">${ico("i-x")}</button></div>
@@ -1205,7 +1242,7 @@ document.addEventListener("click", e => {
     case "quick": quickSearch(el.dataset.mode); break;
     case "qs-open": closeDialog(); if(S.qsMode === "timer"){ const prev = S.timer; S.timer = {key:el.dataset.key, start:Date.now()}; render(); toast(`Timer now running on ${el.dataset.key}.`, () => { S.timer = prev; }); break; } S.open = el.dataset.key; S.panelMode = "issue"; if(!["issues","home"].includes(S.screen)) S.screen = "issues"; render(); break;
     case "qs-act": { closeDialog(); const [x,scr,tab] = el.dataset.a.split(":"); if(x === "new"){ newIssue(); break; } if(x === "map"){ S.screen = "map"; S.mapCenter = scr; S.open = null; render(); break; } S.screen = scr; if(tab) S.setTab = tab; S.open = null; render(); break; }
-    case "new": closePop(); newIssue(); break;
+    case "new": closePop(); S.winMax = false; newIssue(); break;
     case "writeup": {
       $("#ni-title").value = "Save button does nothing on the profile page";
       $("#ni-d").value = "Steps to reproduce\n1. Open My settings › Profile.\n2. Change the display name.\n3. Click Save.\n\nExpected: the new name is saved.\nActually: nothing happens; the browser console shows “TypeError: form is null”.\n\nEnvironment: Firefox 141, Windows 11.";
@@ -1222,6 +1259,9 @@ document.addEventListener("click", e => {
     case "dialog-close": closeDialog(); break;
     case "dialog-ok": closeDialog(); toast(el.dataset.msg); break;
     case "scrim": if(e.target === el) closeDialog(); break;
+    case "win-min": dockWindow("New issue"); break;
+    case "win-restore": newIssue(); break;
+    case "win-max": S.winMax = !S.winMax; newIssue(); break;
     case "toast": toast(el.dataset.msg); break;
     case "notif-read": S.notifRead.add(el.dataset.id); render(); break;
     case "set-tab": S.setTab = el.dataset.tab; render(); break;
@@ -1370,7 +1410,7 @@ document.addEventListener("submit", e => {
 
 setInterval(() => { const wde = $("#wd-sidebar"); if(wde) wde.textContent = wdElapsed(); }, 15000);
 setInterval(() => { const t = elapsed(); ["#timer-sidebar","#timer-home"].forEach(s => { const el = $(s); if(el) el.textContent = t; }); }, 1000);
-addEventListener("resize", (() => { let w = narrow(); return () => { if(narrow() !== w){ w = narrow(); render(); } }; })());
+addEventListener("resize", (() => { let w = narrow(), p = phoneRows(); return () => { if(narrow() !== w || phoneRows() !== p){ w = narrow(); p = phoneRows(); render(); } }; })());
 
 applyLook();
 try{ const l = localStorage.getItem("bugaboo-issue-layout"); if(l) S.issueLayout = l; }catch(e){}

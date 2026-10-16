@@ -38,8 +38,7 @@ describe("ux_4_4 Details are name-and-value rows", () => {
         status={{
           state: "saved",
           labels: { saving: "Saving", saved: text.saved, "not-saved": "Not saved" },
-          undoLabel: text.undo,
-          onUndo: nothing,
+          undo: { label: text.undo, onUndo: nothing },
         }}
       >
         {text.value}
@@ -53,6 +52,24 @@ describe("ux_4_4 Details are name-and-value rows", () => {
   it("shows no Undo before anything changed", () => {
     const quiet = renderToStaticMarkup(<NameValueRow name={text.name}>{text.value}</NameValueRow>);
     expect(quiet).not.toContain(text.undo);
+  });
+});
+
+describe("ux_4_4 Undo is on offer only while it can be taken", () => {
+  it("says only Saved once Undo is no longer on offer", () => {
+    const later = renderToStaticMarkup(
+      <NameValueRow
+        name={text.name}
+        status={{
+          state: "saved",
+          labels: { saving: "Saving", saved: text.saved, "not-saved": "Not saved" },
+        }}
+      >
+        {text.value}
+      </NameValueRow>,
+    );
+    expect(later).toContain(text.saved);
+    expect(later).not.toContain(text.undo);
   });
 });
 

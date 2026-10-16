@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
 import { type ApiSession } from "./api.ts";
+import { tickBox } from "./issues.ts";
 import { layoutOf } from "./layout.ts";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 
@@ -40,8 +41,8 @@ export async function labelNamesOf(admin: ApiSession, issue: string): Promise<st
 /** Opens the list of the project WEB and ticks its first two issues. */
 export async function tickTwo(page: Page): Promise<void> {
   await page.goto(projectIssuesAddress("WEB"));
-  await page.getByRole("checkbox", { name: "WEB-1", exact: true }).check({ force: true });
-  await page.getByRole("checkbox", { name: "WEB-2", exact: true }).check({ force: true });
+  await tickBox(page, "WEB-1").check({ force: true });
+  await tickBox(page, "WEB-2").check({ force: true });
   await expect(
     page.getByRole("status").filter({ hasText: t("issues.selected", { count: 2 }) }),
   ).toBeVisible();

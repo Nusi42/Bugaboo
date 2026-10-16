@@ -27,6 +27,7 @@ const columnLabels = {
   priority: "Priority",
   person: "Assigned to",
   changed: "Changed",
+  action: "Actions",
 } as const satisfies Readonly<Record<ListColumn, string>>;
 
 /** The columns of the cells of a markup, in the order they stand. */
@@ -49,6 +50,7 @@ describe("ux_4_2 the issue list is one grid with fixed columns", () => {
       "priority",
       "person",
       "changed",
+      "action",
     ]);
   });
 

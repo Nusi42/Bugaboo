@@ -1526,6 +1526,9 @@ pub const FOLLOWERS_FOLLOWING: MessageKey = MessageKey::new("followers.following
 /// The message `followers.more`.
 pub const FOLLOWERS_MORE: MessageKey = MessageKey::new("followers.more");
 
+/// The message `followers.name`.
+pub const FOLLOWERS_NAME: MessageKey = MessageKey::new("followers.name");
+
 /// The message `followers.reason-assigned`.
 pub const FOLLOWERS_REASON_ASSIGNED: MessageKey = MessageKey::new("followers.reason-assigned");
 
@@ -1900,11 +1903,23 @@ pub const ISSUES_BAR: MessageKey = MessageKey::new("issues.bar");
 /// The message `issues.change`.
 pub const ISSUES_CHANGE: MessageKey = MessageKey::new("issues.change");
 
+/// The message `issues.change-status`.
+pub const ISSUES_CHANGE_STATUS: MessageKey = MessageKey::new("issues.change-status");
+
 /// The message `issues.changed-after-you`.
 pub const ISSUES_CHANGED_AFTER_YOU: MessageKey = MessageKey::new("issues.changed-after-you");
 
 /// The message `issues.clear-selection`.
 pub const ISSUES_CLEAR_SELECTION: MessageKey = MessageKey::new("issues.clear-selection");
+
+/// The message `issues.column-action`.
+pub const ISSUES_COLUMN_ACTION: MessageKey = MessageKey::new("issues.column-action");
+
+/// The message `issues.column-key`.
+pub const ISSUES_COLUMN_KEY: MessageKey = MessageKey::new("issues.column-key");
+
+/// The message `issues.column-select`.
+pub const ISSUES_COLUMN_SELECT: MessageKey = MessageKey::new("issues.column-select");
 
 /// The message `issues.comment`.
 pub const ISSUES_COMMENT: MessageKey = MessageKey::new("issues.comment");
@@ -1963,6 +1978,9 @@ pub const ISSUES_HIDE_DETAILS: MessageKey = MessageKey::new("issues.hide-details
 /// The message `issues.keep-theirs-unnamed`.
 pub const ISSUES_KEEP_THEIRS_UNNAMED: MessageKey = MessageKey::new("issues.keep-theirs-unnamed");
 
+/// The message `issues.legend`.
+pub const ISSUES_LEGEND: MessageKey = MessageKey::new("issues.legend");
+
 /// The message `issues.link-copied`.
 pub const ISSUES_LINK_COPIED: MessageKey = MessageKey::new("issues.link-copied");
 
@@ -2013,6 +2031,9 @@ pub const ISSUES_SHOW_CHANGES: MessageKey = MessageKey::new("issues.show-changes
 
 /// The message `issues.side-panel-view`.
 pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-panel-view");
+
+/// The message `issues.summary-separator`.
+pub const ISSUES_SUMMARY_SEPARATOR: MessageKey = MessageKey::new("issues.summary-separator");
 
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
@@ -2923,6 +2944,10 @@ pub const RELATED_ISSUES_NONE: MessageKey = MessageKey::new("related-issues.none
 /// The message `related-issues.nothing-to-pick`.
 pub const RELATED_ISSUES_NOTHING_TO_PICK: MessageKey =
     MessageKey::new("related-issues.nothing-to-pick");
+
+/// The message `related-issues.take-away-short`.
+pub const RELATED_ISSUES_TAKE_AWAY_SHORT: MessageKey =
+    MessageKey::new("related-issues.take-away-short");
 
 /// The message `related-issues.title`.
 pub const RELATED_ISSUES_TITLE: MessageKey = MessageKey::new("related-issues.title");
@@ -4071,11 +4096,26 @@ pub const WINDOW_MAXIMIZE: MessageKey = MessageKey::new("window.maximize");
 /// The message `window.minimize`.
 pub const WINDOW_MINIMIZE: MessageKey = MessageKey::new("window.minimize");
 
+/// The message `window.narrower`.
+pub const WINDOW_NARROWER: MessageKey = MessageKey::new("window.narrower");
+
 /// The message `window.resize-keys`.
 pub const WINDOW_RESIZE_KEYS: MessageKey = MessageKey::new("window.resize-keys");
 
 /// The message `window.restore-down`.
 pub const WINDOW_RESTORE_DOWN: MessageKey = MessageKey::new("window.restore-down");
+
+/// The message `window.shorter`.
+pub const WINDOW_SHORTER: MessageKey = MessageKey::new("window.shorter");
+
+/// The message `window.size-menu`.
+pub const WINDOW_SIZE_MENU: MessageKey = MessageKey::new("window.size-menu");
+
+/// The message `window.taller`.
+pub const WINDOW_TALLER: MessageKey = MessageKey::new("window.taller");
+
+/// The message `window.wider`.
+pub const WINDOW_WIDER: MessageKey = MessageKey::new("window.wider");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -5452,6 +5492,23 @@ pub fn history_set(
     )
 }
 
+/// The message `history.set-people`.
+#[must_use]
+pub fn history_set_people(
+    after: impl std::fmt::Display,
+    field: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.set-people"),
+        vec![
+            ("after", Value::Text(after.to_string())),
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
 /// The message `home.title`.
 #[must_use]
 pub fn home_title(name: impl std::fmt::Display) -> Message {
@@ -5709,6 +5766,15 @@ pub fn issues_refused_at_field(
             ("field", Value::Text(field.to_string())),
             ("reason", Value::Text(reason.to_string())),
         ],
+    )
+}
+
+/// The message `issues.select-issue`.
+#[must_use]
+pub fn issues_select_issue(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.select-issue"),
+        vec![("key", Value::Text(key.to_string()))],
     )
 }
 
@@ -7454,6 +7520,15 @@ pub fn sub_issues_take_out(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `sub-issues.take-out-short`.
+#[must_use]
+pub fn sub_issues_take_out_short(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sub-issues.take-out-short"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `theme.device-resolved`.
 #[must_use]
 pub fn theme_device_resolved(
@@ -8812,10 +8887,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("focus.back", "Back to list"),
     ("focus.hide-list", "Hide list"),
     ("focus.show-list", "Show list"),
-    ("followers.count", "Followers {count}"),
+    ("followers.count", "{count} followers"),
     ("followers.follow", "Follow"),
     ("followers.following", "Following"),
     ("followers.more", "Show more followers"),
+    ("followers.name", "Followers"),
     ("followers.reason-assigned", "It is assigned to you"),
     ("followers.reason-chose", "You chose to follow it"),
     ("followers.reason-commented", "You commented on it"),
@@ -8895,6 +8971,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} took away a relation: this issue · {name} · {issue}",
     ),
     ("history.set", "{who} set {field} to {after}"),
+    ("history.set-people", "{who} set {field}: {after}"),
     ("history.system", "Bugaboo"),
     ("history.tab-changes", "Changes"),
     ("history.tab-comments", "Comments"),
@@ -9041,6 +9118,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.bar", "Actions for this issue"),
     ("issues.change", "Change"),
     ("issues.change-field", "Change {field}"),
+    ("issues.change-status", "Change the status"),
     ("issues.change-title-of", "Change the title: {title}"),
     ("issues.changed", "{field} changed to {value}."),
     (
@@ -9060,6 +9138,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, =0 {{field} cleared.} other {{field} changed to {names}.}}",
     ),
     ("issues.clear-selection", "Clear the ticks"),
+    ("issues.column-action", "Actions"),
+    ("issues.column-key", "Issue ID"),
+    ("issues.column-select", "Select"),
     ("issues.comment", "Comment"),
     ("issues.compare-and-save", "Compare and save"),
     (
@@ -9098,6 +9179,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.hide-details", "Hide details"),
     ("issues.keep-theirs", "Keep {name}'s change"),
     ("issues.keep-theirs-unnamed", "Keep their change"),
+    ("issues.legend", "What the colors mean"),
     ("issues.link-copied", "Address copied"),
     ("issues.list", "Issues"),
     (
@@ -9130,6 +9212,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Nothing is missing: you can create the issue.",
     ),
     ("issues.refused-at-field", "{field}: {reason}"),
+    ("issues.select-issue", "Select {key}"),
     (
         "issues.selected",
         "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
@@ -9137,6 +9220,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.sheet", "Issue"),
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
+    ("issues.summary-separator", " · "),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.type", "Type"),
@@ -9846,6 +9930,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "related-issues.take-away",
         "Take away the relation: {name} {other}",
     ),
+    ("related-issues.take-away-short", "Take away"),
     ("related-issues.title", "Related issues"),
     ("relation-kind.blocks", "blocks"),
     ("relation-kind.causes", "causes"),
@@ -10836,6 +10921,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sub-issues.progress", "{done} of {total} done"),
     ("sub-issues.progress-label", "How far the sub-issues are"),
     ("sub-issues.take-out", "Take {key} out of the sub-issues"),
+    ("sub-issues.take-out-short", "Take {key} out"),
     ("sub-issues.title", "Sub-issues"),
     ("theme.daylight", "Daylight"),
     ("theme.device", "Match my device"),
@@ -10876,9 +10962,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("window.draft-kept", "Draft kept"),
     ("window.maximize", "Maximize"),
     ("window.minimize", "Minimize"),
+    ("window.narrower", "Narrower"),
     (
         "window.resize-keys",
         "To change the size of this window, press Ctrl and Alt with the arrow keys.",
     ),
     ("window.restore-down", "Restore down"),
+    ("window.shorter", "Shorter"),
+    ("window.size-menu", "Window size"),
+    ("window.taller", "Taller"),
+    ("window.wider", "Wider"),
 ];

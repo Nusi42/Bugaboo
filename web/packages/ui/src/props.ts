@@ -1,3 +1,5 @@
+import type { partWords } from "./tokens.ts";
+
 /**
  * The words of the props that pick one of several looks or behaviours of a component. A screen
  * writes `tone={alertTone.danger}`, not a flag per look: a component can then not be asked for two
@@ -70,5 +72,23 @@ export type IconSize = (typeof iconSize)[keyof typeof iconSize];
 export const pickerLook = { list: "list", boxed: "boxed" } as const;
 export type PickerLook = (typeof pickerLook)[keyof typeof pickerLook];
 
-/** How a row of the issue list is drawn besides the usual: the two lines of a phone. */
-export const listRowLook = { phone: "phone" } as const;
+/** The swatches of the Legend of a list, by what they mean (UX §4.2). */
+export const legendLook = {
+  inProgress: "in-progress",
+  done: "done",
+  critical: "critical",
+  high: "high",
+} as const satisfies Readonly<
+  Record<string, (typeof partWords)["legend.swatch"]["variant"][number]>
+>;
+
+/** What the frame of the app says about itself: a phone, or a computer with its sidebar wide or narrow (UX §3). */
+export const appLayoutLook = { phone: "phone", side: "side", sideNarrow: "side-narrow" } as const;
+
+/** How a card looks besides the usual: without a frame on a phone, where a list gets one gutter and the width. */
+export const cardLook = { openOnPhone: "open-on-phone" } as const;
+export type CardLook = (typeof cardLook)[keyof typeof cardLook];
+
+/** How a row of the issue list is drawn besides the usual: the two lines of a phone, or of the slim list beside an open issue. */
+export const listRowLook = { phone: "phone", slim: "slim" } as const;
+export type ListRowLook = (typeof listRowLook)[keyof typeof listRowLook];

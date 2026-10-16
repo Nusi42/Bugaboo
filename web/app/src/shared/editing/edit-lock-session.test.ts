@@ -1,69 +1,9 @@
-import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { EditLockSession, type SessionDeps, type SessionOptions } from "./edit-lock-session.ts";
+import { EditLockSession, type SessionDeps } from "./edit-lock-session.ts";
+import { nothing, rig } from "./edit-lock-testing.ts";
 import { LockServer } from "./lock-server-testing.ts";
 import { heldBy, settle, stillHeld, taken } from "./long-text-testing.ts";
-
-/** Neither a heartbeat nor a loss is of interest to the test. */
-function nothing(): void {
-  // Nothing to do.
-}
-
-/** A heartbeat that nobody started. */
-function idle(): Promise<unknown> {
-  return Promise.resolve();
-}
-
-/** A session whose asks are answered when the test says so. */
-function rig(options: Partial<SessionOptions> = {}) {
-  const released: string[] = [];
-  const answers: ((outcome: LockOutcome) => void)[] = [];
-  const lost: [string, string | undefined][] = [];
-  let beating = 0;
-  let beat: () => Promise<unknown> = idle;
-  let heartbeat: Heartbeat = stillHeld;
-  const asked = (): Promise<LockOutcome> =>
-    new Promise<LockOutcome>((answer) => {
-      answers.push(answer);
-    });
-  const deps: SessionDeps = {
-    take: asked,
-    editAnyway: asked,
-    askToFinish: () => Promise.resolve(),
-    heartbeat: () => Promise.resolve(heartbeat),
-    release: (token) => {
-      released.push(token);
-      return Promise.resolve();
-    },
-    startHeartbeats: (run) => {
-      beating += 1;
-      beat = run;
-      return () => {
-        beating -= 1;
-      };
-    },
-    newEditorId: () => "editor-1",
-  };
-  const session = new EditLockSession(deps, {
-    onRanOut: "lost",
-    onLost: (reason, by) => {
-      lost.push([reason, by?.shown === "name" ? by.id : undefined]);
-    },
-    ...options,
-  });
-  return {
-    session,
-    released,
-    answers,
-    lost,
-    beating: () => beating,
-    beat: () => beat(),
-    answerWith: (next: Heartbeat) => {
-      heartbeat = next;
-    },
-  };
-}
 
 describe("iss_17 one session of an edit lock", () => {
   it("does_not_let_go_of_a_token_that_the_latest_ask_holds", async () => {

@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone } from "@bugaboo/ui";
+import { Alert, alertTone, partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
@@ -28,7 +28,7 @@ export function TagsPart({
   });
   return (
     <>
-      <h4>{t("labels.tags-heading")}</h4>
+      <h4 {...partOf(part.fieldLabel)}>{t("labels.tags-heading")}</h4>
       <Chips
         label={t("labels.tags-heading")}
         chips={body.tags ?? []}
@@ -58,7 +58,7 @@ export function LabelsPart({ body, issueKey }: SortingPartProps) {
   });
   return (
     <>
-      <h4>{t("labels.labels-heading")}</h4>
+      <h4 {...partOf(part.fieldLabel)}>{t("labels.labels-heading")}</h4>
       <Chips
         label={t("labels.labels-heading")}
         chips={body.labels ?? []}

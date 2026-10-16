@@ -3,13 +3,18 @@ import {
   openCheckAccess,
   openInvitation,
   openMovePreview,
-  openNewIssue,
   openQuickSearch,
   openTree,
   secondStep,
 } from "./showcase-opens.ts";
+import {
+  openIssueDetails,
+  openNewIssue,
+  openNewIssueMinimized,
+  openNewIssueWide,
+} from "./showcase-issue-opens.ts";
 import { ISSUE, ISSUE_PROJECT, PROJECT, type Who } from "./showcase-sample.ts";
-import { type Screen } from "./showcase.ts";
+import { type Device, type Screen } from "./showcase.ts";
 import {
   addressInProject,
   groupAddress,
@@ -23,8 +28,14 @@ import {
 } from "../../src/shared/paths.ts";
 
 /** One screen of the tour: its name in the file names, one plain sentence, who sees it, how to open it. */
-function screen(slug: string, who: Who, title: string, open: Screen["open"]): Screen {
-  return { slug, who, title, open };
+function screen(
+  slug: string,
+  who: Who,
+  title: string,
+  open: Screen["open"],
+  only?: Device,
+): Screen {
+  return only === undefined ? { slug, who, title, open } : { slug, who, title, only, open };
 }
 
 /** The screens of *My settings*, which an administrator opens like everybody else. */
@@ -188,6 +199,27 @@ export const screens: readonly Screen[] = [
   organization("relation-kinds", "the kinds of relation between issues", at(paths.relationKinds)),
   organization("labels", "the labels and tags of issues", at(paths.labels)),
   organization("layouts", "which fields the forms of issues show, and to whom", at(paths.layouts)),
+  screen(
+    "new-issue-wide",
+    "administrator",
+    "The new-issue window made wide: the title and the description in the middle, the fields at the side",
+    openNewIssueWide,
+    "computer",
+  ),
+  screen(
+    "new-issue-minimized",
+    "administrator",
+    "The new-issue window parked as a bar at the bottom of the page, with its draft kept",
+    openNewIssueMinimized,
+    "computer",
+  ),
+  screen(
+    "issue-details",
+    "administrator",
+    "The details of one issue opened under its status, as a phone shows them",
+    openIssueDetails,
+    "phone",
+  ),
   screen(
     "issue-team-member",
     "teamMember",

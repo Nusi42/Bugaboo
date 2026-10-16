@@ -7,8 +7,8 @@ import type { OwnField, KindWord, Sent } from "./fields.ts";
 import { MomentEditor } from "./MomentEditor.tsx";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
 import { SaveForm } from "./SaveForm.tsx";
-import { durationText } from "../../shared/own-value-text.ts";
-import { durationSeconds, isDecimalText, isWholeNumberText } from "./value-text.ts";
+import { useSynced } from "./use-synced.ts";
+import { durationSeconds, isDecimalText, isWholeNumberText, textOf } from "./value-text.ts";
 
 export type { Sent } from "./fields.ts";
 
@@ -32,22 +32,16 @@ export interface ValueEditorProps {
    * and every change is handed on at once.
    */
   readonly live?: boolean;
+  /**
+   * The editor sits in a name-and-value row of the Details: the name is the row's, there is no
+   * *Save*, and what is typed is kept when the person leaves the box or presses Enter (R7).
+   */
+  readonly inRow?: boolean;
 }
 
 /** The choices a person can pick: those not retired, and the ones the value has now. */
 function pickable(field: OwnField, current: readonly string[]) {
   return field.choices.filter((choice) => !choice.retired || current.includes(choice.id));
-}
-
-/** The text a value has in a box: what a person edits. */
-function textOf(field: OwnField, value: unknown): string {
-  if (value === undefined || value === null) {
-    return "";
-  }
-  if (field.kind === "duration" && typeof value === "number") {
-    return durationText(value);
-  }
-  return typeof value === "string" || typeof value === "number" ? String(value) : "";
 }
 
 /** What the text of a box means for the API, or a sentence that says why it cannot be sent. */
@@ -82,10 +76,15 @@ function TextEditor({
   problem,
   isPending = false,
   live = false,
+  inRow = false,
 }: ValueEditorProps) {
-  const [text, setText] = useState(textOf(field, value));
+  const [text, setText] = useSynced(textOf(field, value));
   const [local, setLocal] = useState<string | undefined>();
   const commit = (typed: string): void => {
+    // A box that is left without a change is not a change.
+    if (inRow && typed === textOf(field, value)) {
+      return;
+    }
     const sent = sentFrom(field, typed);
     setLocal("problem" in sent ? sent.problem : undefined);
     if ("value" in sent) {
@@ -96,6 +95,7 @@ function TextEditor({
     <SaveForm
       isPending={isPending}
       live={live}
+      inRow={inRow}
       onSubmit={() => {
         commit(text);
       }}
@@ -115,10 +115,15 @@ function TextEditor({
   );
 }
 
-function YesNoEditor({ field, value, onCommit }: ValueEditorProps) {
+function YesNoEditor({ field, value, onCommit, inRow = false }: ValueEditorProps) {
   return (
     <div {...partOf(part.stack)}>
-      <Switch label={field.name} isSelected={value === true} onChange={onCommit} />
+      <Switch
+        hideLabel={inRow}
+        label={field.name}
+        isSelected={value === true}
+        onChange={onCommit}
+      />
     </div>
   );
 }

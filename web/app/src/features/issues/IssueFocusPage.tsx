@@ -33,7 +33,7 @@ function Focused({ address, project, lines, onFocus, onBack, onPanel }: InnerPro
   };
   return (
     <FocusView
-      list={<SlimIssueList lines={lines} open={here} onOpen={onFocus} />}
+      list={<SlimIssueList lines={lines} open={here} />}
       onBack={() => {
         onBack(project);
       }}

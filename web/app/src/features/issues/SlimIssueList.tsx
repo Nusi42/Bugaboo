@@ -1,32 +1,55 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
+import { listRowLook, listShowsWord, ListGrid, ListRow, Priority } from "@bugaboo/ui";
 
+import { issueAddress } from "../../shared/paths.ts";
+import { issueCells } from "./issue-cells.tsx";
 import type { IssueLine } from "./issues.ts";
+import { slimColumns } from "./list-labels.ts";
 
 export interface SlimIssueListProps {
   readonly lines: readonly IssueLine[];
   /** The issue that is open, by its issue ID. */
   readonly open: string;
-  readonly onOpen: (key: string) => void;
 }
 
-/** The slim list on the left of the focus view (UX §3.4): the issue ID and title of each issue of the project. */
-export function SlimIssueList({ lines, open, onOpen }: SlimIssueListProps) {
+/**
+ * The slim list on the left of the focus view (UX §3.4): the rows of the issue list in two lines,
+ * the status icon, the issue ID and the priority above the title, left-aligned, with the tint and
+ * the edge of the row. The issue that is open is marked, and a whole row opens its issue.
+ */
+export function SlimIssueList({ lines, open }: SlimIssueListProps) {
   return (
-    <ul {...partOf(part.list, { variants: ["tight"] })} aria-label={t("issues.list")}>
+    <ListGrid label={t("issues.list")}>
       {lines.map((line) => (
-        <li key={line.id}>
-          <Button
-            look={line.key === open ? buttonLook.plain : buttonLook.quiet}
-            current={line.key === open}
-            onPress={() => {
-              onOpen(line.key);
-            }}
-          >
-            {t("issues.title-of", { key: line.key, title: line.title })}
-          </Button>
-        </li>
+        <ListRow
+          key={line.id}
+          variant={listRowLook.slim}
+          columns={slimColumns}
+          group={line.group}
+          priority={line.priority}
+          current={line.key === open}
+          cells={{
+            ...issueCells(
+              {
+                key: line.key,
+                title: line.title,
+                group: line.group,
+                statusWord: t(`status.${line.status}`),
+                type: line.issueType,
+              },
+              issueAddress(line.key),
+              { current: line.key === open },
+            ),
+            priority: (
+              <Priority
+                priority={line.priority}
+                label={t(`priority.${line.priority}`)}
+                showWord={listShowsWord(line.priority)}
+              />
+            ),
+          }}
+        />
       ))}
-    </ul>
+    </ListGrid>
   );
 }

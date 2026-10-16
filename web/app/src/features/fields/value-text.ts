@@ -6,7 +6,8 @@
 import { decimalDigits, decimalParts } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "../../shared/own-value-text.ts";
+import { durationText, SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "../../shared/own-value-text.ts";
+import type { OwnField } from "./fields.ts";
 
 /** A unit as it is written in a pattern. */
 function escaped(unit: string): string {
@@ -78,4 +79,15 @@ export function millionthsToDecimal(millionths: number): string {
     .padStart(decimalDigits, "0")
     .replace(/0+$/u, "");
   return fraction === "" ? `${sign}${whole}` : `${sign}${whole}.${fraction}`;
+}
+
+/** The text a value has in a box: what a person edits. */
+export function textOf(field: OwnField, value: unknown): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  if (field.kind === "duration" && typeof value === "number") {
+    return durationText(value);
+  }
+  return typeof value === "string" || typeof value === "number" ? String(value) : "";
 }

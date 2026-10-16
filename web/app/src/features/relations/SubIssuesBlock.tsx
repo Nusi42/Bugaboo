@@ -6,6 +6,7 @@ import {
   Button,
   buttonLook,
   Form,
+  ListGrid,
   SubmitButton,
   TextField,
   partOf,
@@ -15,7 +16,9 @@ import { useId, useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { itemsOf } from "../../shared/paged.ts";
-import { IssueRefLine, type ShownIssue } from "./IssueRefLine.tsx";
+import { IssueRefLine } from "./IssueRefLine.tsx";
+import type { ShownIssue } from "./shown-issue.ts";
+import { IssueRefRow } from "./IssueRefRow.tsx";
 import { setParentOf, useIssueRelations, useSubIssues, type BlockProps } from "./relations.ts";
 
 /** What adding or taking out a sub-issue did: the issue just added, and what went wrong. */
@@ -82,11 +85,12 @@ function TakeOut({ child, label }: { readonly child: string; readonly label: str
   return (
     <Button
       look={buttonLook.quiet}
+      aria-label={label}
       onPress={() => {
         void setParentOf(child, null);
       }}
     >
-      {label}
+      {t("sub-issues.take-out-short", { key: child })}
     </Button>
   );
 }
@@ -140,17 +144,19 @@ function Parts({
     return <p {...partOf(part.muted)}>{t("sub-issues.none")}</p>;
   }
   return (
-    <ul {...partOf(part.list)}>
+    <ListGrid label={t("sub-issues.title")}>
       {parts.map((sub) => (
-        <li key={sub.key} {...partOf(part.item)}>
-          <IssueRefLine issue={sub}>
-            {mayChange ? (
+        <IssueRefRow
+          key={sub.key}
+          issue={sub}
+          action={
+            mayChange ? (
               <TakeOut child={sub.key} label={t("sub-issues.take-out", { key: sub.key })} />
-            ) : null}
-          </IssueRefLine>
-        </li>
+            ) : undefined
+          }
+        />
       ))}
-    </ul>
+    </ListGrid>
   );
 }
 
@@ -167,7 +173,9 @@ export function SubIssuesBlock({ issueKey }: BlockProps) {
   const mayChange = header.data?.may_change === true;
   return (
     <section {...partOf(part.stack)} aria-labelledby={heading}>
-      <h3 id={heading}>{t("sub-issues.title")}</h3>
+      <h2 id={heading} {...partOf(part.issueSectionTitle)}>
+        {t("sub-issues.title")}
+      </h2>
       {header.isError ? <Alert tone={alertTone.danger}>{messageOf(header.error)}</Alert> : null}
       {above === undefined || above === null ? null : (
         <PartOf above={above} issueKey={issueKey} mayChange={mayChange} />

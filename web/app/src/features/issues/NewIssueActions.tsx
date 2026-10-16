@@ -10,6 +10,8 @@ import type { NewIssue } from "./use-new-issue.ts";
 
 export interface NewIssueActionsProps {
   readonly form: NewIssue;
+  /** The form that *Create* sends: the buttons stand in the footer of the window, outside it. */
+  readonly formId: string;
   readonly onMade: (key: string, project: string) => void;
   readonly onClose: () => void;
 }
@@ -50,14 +52,27 @@ function missingForCreate(form: NewIssue) {
   return canCreate(form.values) ? undefined : "issues.missing-type";
 }
 
-/** The buttons under the form: cancel, *Create and start another*, *Create*, and *Customize this form*. */
-export function NewIssueActions({ form, onMade, onClose }: NewIssueActionsProps) {
+/**
+ * The footer of the new-issue window (UX §4.5, §6.3): in the first row what is missing, that the
+ * draft is kept and *Customize this form*; in the second the buttons at the right with the main one
+ * last (R6). The footer stays in place
+ * while the form scrolls, so the buttons never move while the fields of the layout load.
+ */
+export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActionsProps) {
   const why = useId();
   const missing = missingForCreate(form);
   return (
     <>
-      <div {...partOf(part.issueSectionActions)}>
+      <div {...partOf(part.windowFooterNote)}>
+        <div>
+          <p id={why} {...partOf(part.muted)}>
+            {t(missing ?? "issues.ready-to-create")}
+          </p>
+          <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
+        </div>
         <CustomizeThisForm form={form} />
+      </div>
+      <div {...partOf(part.windowFooterActions)}>
         <Button look={buttonLook.quiet} onPress={onClose}>
           {t("common.cancel")}
         </Button>
@@ -71,12 +86,10 @@ export function NewIssueActions({ form, onMade, onClose }: NewIssueActionsProps)
         >
           {t("issues.create-another")}
         </Button>
-        <SubmitButton isPending={form.pending}>{t("issues.create")}</SubmitButton>
+        <SubmitButton form={formId} isPending={form.pending}>
+          {t("issues.create")}
+        </SubmitButton>
       </div>
-      {/* Under the buttons, and always there, so it changing never moves the button a finger is aiming at. */}
-      <p id={why} {...partOf(part.muted)}>
-        {t(missing ?? "issues.ready-to-create")}
-      </p>
     </>
   );
 }
