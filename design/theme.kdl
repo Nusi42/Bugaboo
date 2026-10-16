@@ -1562,20 +1562,24 @@ part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.c
 // the day (R9: the same order). The other columns are left out.
 part "list-row[variant=phone]" {
     display grid
-    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
-    grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
+    grid-template-columns "$size-control $size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-areas "\"select status key priority\" \"select title title title\" \"select person person changed\""
     align-items center
     gap "$space-1 $space-3"
     padding "$space-3 $pad-box"
     min-height "$size-row"
 }
 
-part "list-row[variant=phone] list-row.cell[variant=select]" "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
+part "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
     display none
 }
 
 part "list-row[variant=phone] list-row.cell" {
     width auto
+}
+
+part "list-row[variant=phone] list-row.cell[variant=select]" {
+    grid-area select
 }
 
 part "list-row[variant=phone] list-row.cell[variant=status]" {

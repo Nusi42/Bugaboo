@@ -66,7 +66,7 @@ test("iss_05 a comment is written, listed under Comments and kept", async ({ pag
 
 test("iss_06 a change shows in the history under Changes", async ({ page }) => {
   await signIn(page, ada);
-  await page.goto(issueAddress("WEB-1"));
+  await openIssueWithDetails(page, "WEB-1");
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });

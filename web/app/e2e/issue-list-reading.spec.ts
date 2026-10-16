@@ -5,7 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb, webIssues } from "./support/issues.ts";
-import { layoutOf } from "./support/layout.ts";
+import { layoutOf, onThisLayout } from "./support/layout.ts";
 import { rowOf } from "./support/list-look.ts";
 
 // The list of issues for a screen reader and a finger (UX §4.2, §8, M3 WP-13): the type of an
@@ -17,8 +17,12 @@ test("ux_08 a row names the type of its issue, and a tick is told", async ({ pag
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const row = rowOf(page, webIssues.passkey);
-  // The type is named, not only drawn (the first type of a project is a Bug).
-  await expect(row.getByRole("img", { name: "Bug", exact: true })).toBeVisible();
+  // The type is named, not only drawn (the first type of a project is a Bug); a phone row has no type.
+  const bug = row.getByRole("img", { name: "Bug", exact: true });
+  const typeIs = (count: number) => async () => {
+    await expect(bug).toHaveCount(count);
+  };
+  await onThisLayout(page, { computer: typeIs(1), tablet: typeIs(1), phone: typeIs(0) });
   // A person presses the box they see, not the input behind it.
   await row.locator("label").click();
   await expect(
@@ -30,7 +34,7 @@ test("ux_08 on a phone the title of an issue is as high as a finger", async ({ p
   test.skip(layoutOf(page) !== "phone", "only a phone has to be pressed with a finger");
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
-  const link = page.getByRole("link", { name: webIssues.passkey });
-  const box = await link.boundingBox();
+  // The title link reaches over the whole row (R8): the row is the target a finger hits.
+  const box = await rowOf(page, webIssues.passkey).boundingBox();
   expect(box?.height).toBeGreaterThanOrEqual(44);
 });

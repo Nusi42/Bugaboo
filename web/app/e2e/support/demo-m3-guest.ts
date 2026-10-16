@@ -5,7 +5,7 @@ import { issueAddress } from "../../src/shared/paths.ts";
 import { goodInFourThemes } from "./demo.ts";
 import { takeTheGuestsBug } from "./demo-m3-prepare.ts";
 import { COST_CENTER, costCenter, GUEST_BUG, made, theTwo } from "./demo-m3-state.ts";
-import { signIn } from "./flows.ts";
+import { openIssueWithDetails, signIn } from "./flows.ts";
 import { sampleGuestIn } from "./sample.ts";
 import { type Instance } from "./server.ts";
 
@@ -25,7 +25,7 @@ export async function theGuestSeesSomeone(page: Page, server: Instance): Promise
   await expect(
     page.getByRole("heading", { level: 1, name: t("page.not-found.title") }),
   ).toBeVisible();
-  await page.goto(issueAddress(made.guestKey));
+  await openIssueWithDetails(page, made.guestKey);
   await expect(page.getByRole("heading", { name: GUEST_BUG })).toBeVisible();
   await expect(page.getByText(t("projects.person-someone"), { exact: true }).first()).toBeVisible();
   await Promise.all(

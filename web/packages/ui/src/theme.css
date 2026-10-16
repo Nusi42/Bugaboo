@@ -1781,15 +1781,14 @@ body {
 
 [data-part="list-row"][data-variant~="phone"] {
   display: grid;
-  grid-template-columns: var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
-  grid-template-areas: "status key priority" "title title title" "person person changed";
+  grid-template-columns: var(--size-control) var(--size-col-icon) var(--size-col-key) minmax(0, 1fr);
+  grid-template-areas: "select status key priority" "select title title title" "select person person changed";
   align-items: center;
   gap: var(--space-1) var(--space-3);
   padding: var(--space-3) var(--pad-box);
   min-height: var(--size-row);
 }
 
-[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="select"],
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="type"],
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="labels"] {
   display: none;
@@ -1797,6 +1796,10 @@ body {
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"] {
   width: auto;
+}
+
+[data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="select"] {
+  grid-area: select;
 }
 
 [data-part="list-row"][data-variant~="phone"] [data-part="list-row.cell"][data-variant~="status"] {

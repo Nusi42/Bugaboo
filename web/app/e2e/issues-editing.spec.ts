@@ -4,7 +4,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { descriptionBox, openEditing, startEditing } from "./support/description.ts";
-import { anotherBrowser, signIn } from "./support/flows.ts";
+import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
 import { issueOf, prepareWeb, versionOf, savedNote } from "./support/issues.ts";
 import { holdBackLocks } from "./support/slow.ts";
 import { issueAddress } from "../src/shared/paths.ts";
@@ -118,7 +118,7 @@ test("adr_0019 a short value that somebody changed first shows Keep their value 
   const admin = await signedInAdmin(server);
   const login = await issueOf(admin, "WEB-1");
   await signIn(page, ada);
-  await page.goto(issueAddress("WEB-1"));
+  await openIssueWithDetails(page, "WEB-1");
   await expect(page.getByLabel(t("issue-field.priority"), { exact: true })).toBeVisible();
   // Somebody else changes the priority while the page is open.
   await admin.client.PATCH("/api/v1/issues/{issue}", {
@@ -133,6 +133,6 @@ test("adr_0019 a short value that somebody changed first shows Keep their value 
   await expectGoodInEveryLook(page);
   await page.getByRole("button", { name: t("issues.use-mine"), exact: true }).click();
   await expect(savedNote(page)).toBeVisible();
-  await page.reload();
+  await openIssueWithDetails(page, "WEB-1");
   await expect(page.getByLabel(t("issue-field.priority"), { exact: true })).toHaveValue("low");
 });
