@@ -33,7 +33,7 @@ export const cleo: Person = {
 
 /** Makes the first administrator through the API, with the setup code the server saved. */
 export async function makeAdmin(server: Instance, person: Person = ada): Promise<ApiSession> {
-  const session = await openSession(server.url);
+  const session = openSession(server.url);
   await session.client.POST("/api/v1/auth/setup", {
     body: {
       code: server.setupCode(),
@@ -47,7 +47,7 @@ export async function makeAdmin(server: Instance, person: Person = ada): Promise
 
 /** Signs the person in with their password, through the API (a person who has no second step). */
 export async function signInThroughApi(server: Instance, person: Person): Promise<ApiSession> {
-  const session = await openSession(server.url);
+  const session = openSession(server.url);
   await session.client.POST("/api/v1/auth/sign-in", {
     body: { email: person.email, password: person.password },
   });
@@ -107,7 +107,7 @@ export async function makePerson(
   person: Person,
 ): Promise<ApiSession> {
   const link = await invite(admin, person.email);
-  const session = await openSession(server.url);
+  const session = openSession(server.url);
   await session.client.POST("/api/v1/auth/invitation/accept", {
     body: { secret: secretOf(link), display_name: person.name, password: person.password },
   });

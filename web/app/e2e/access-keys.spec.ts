@@ -134,14 +134,13 @@ test("auth_07 a person makes a key, copies it, uses it from a script, deletes it
   await expectGoodInEveryTheme(page);
   const key = await makeAndCopy(page);
   // A script that has the key works as the person.
-  const script = await useKey(server.url, key);
+  const script = useKey(server.url, key);
   expect(await script.get(STATUS)).toEqual({ status: 200, code: undefined });
   // Not even the key that may do everything changes the settings of the organization.
   expect(await script.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
   await expectNotShownAgain(page, key);
   await deleteTheKey(page);
   expect(await script.get(STATUS)).toEqual({ status: 401, code: "auth.not_signed_in" });
-  await script.dispose();
   await signOut(page);
 });
 
@@ -154,7 +153,7 @@ test("auth_07 a key that may only see is refused what needs more, and single per
 
   // The first choice is *See only*: it looks at the status and changes nothing.
   const seeOnly = await makeKey(page, await startKey(page, "Only looking"));
-  const lookingScript = await useKey(server.url, seeOnly);
+  const lookingScript = useKey(server.url, seeOnly);
   expect(await lookingScript.get(STATUS)).toEqual({ status: 200, code: undefined });
   expect(await lookingScript.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
 
@@ -165,7 +164,7 @@ test("auth_07 a key that may only see is refused what needs more, and single per
   await tick(form, t("permission.see-status"));
   await expectGoodInEveryTheme(page);
   const status = await makeKey(page, form);
-  const statusScript = await useKey(server.url, status);
+  const statusScript = useKey(server.url, status);
   expect(await statusScript.get(STATUS)).toEqual({ status: 200, code: undefined });
   expect(await statusScript.get(SETTINGS)).toEqual({ status: 403, code: "access.forbidden" });
 
@@ -180,8 +179,6 @@ test("auth_07 a key that may only see is refused what needs more, and single per
   // A key can do nothing about the way its owner signs in.
   const own = await lookingScript.get("/api/v1/auth/sessions");
   expect(own).toEqual({ status: 403, code: "auth.access_key_not_allowed" });
-  await lookingScript.dispose();
-  await statusScript.dispose();
   await signOut(page);
 });
 

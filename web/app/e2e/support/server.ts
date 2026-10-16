@@ -6,6 +6,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { repoRoot } from "../../../tooling/ports.ts";
 import { askLive, waitUntilReady } from "./ready.ts";
+import { closePool } from "./session-transport.ts";
 import { copySampleInto } from "./sample.ts";
 
 /** A Bugaboo server started for one group of tests, with a data folder of its own. */
@@ -151,6 +152,7 @@ export async function startServer(
   );
   const origin = `https://localhost:${String(port)}`;
   const stop = async (): Promise<void> => {
+    closePool(origin);
     await server.end();
     if (!given) {
       await remove(folder);
