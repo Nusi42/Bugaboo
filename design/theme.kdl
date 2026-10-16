@@ -613,6 +613,19 @@ part "muted" {
     line-height "$lh-body"
 }
 
+// Words for screen readers only: the name of a column that holds only an icon.
+part "visually-hidden" {
+    position absolute
+    width "$border-width"
+    height "$border-width"
+    margin "calc($border-width * -1)"
+    padding 0
+    overflow hidden
+    border 0
+    clip-path "inset(50%)"
+    white-space nowrap
+}
+
 // ───────────── Button (packages/ui: Button, IconButton) ─────────────
 //
 // The variants come before the states, so that a hovered quiet button is hovered.
@@ -1216,6 +1229,393 @@ part "picker.name[variant=boxed]" {
 
 part "picker.hint" {
     color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// ───────────── Status and priority (R4, R5, UX §7.2) ─────────────
+//
+// A status belongs to a status group. The group gives the color and the icon, the status gives
+// the word. A priority has its own icon. Color is never alone: the icon and the word, or the
+// word as the accessible name, are always there.
+
+part "status-icon" {
+    flex none
+    width "$size-icon"
+    height "$size-icon"
+}
+
+part "status-icon[variant=small]" {
+    width "$size-icon-small"
+    height "$size-icon-small"
+}
+
+part "status-icon[variant=not-started]" {
+    color "$st-ns"
+}
+
+part "status-icon[variant=in-progress]" {
+    color "$st-ip"
+}
+
+part "status-icon[variant=done]" {
+    color "$st-done"
+}
+
+// The small pill that shows a status in lists and in text.
+part "status-pill" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    padding "$space-1 $pad-control"
+    border-radius "$r-pill"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+    line-height "$lh-tight"
+    white-space nowrap
+}
+
+part "status-pill[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "status-pill[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "status-pill[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+// The big button of the issue page: the status with its group's icon and color, and an arrow that
+// says it can be changed.
+part "status-button" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    use "control-box"
+    padding 0 "$pad-control"
+    border-color currentColor
+    font-family "$font"
+    font-size "$fs-ui"
+    font-weight "$weight-bold"
+    line-height "$lh-tight"
+    cursor pointer
+}
+
+part "status-button[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "status-button[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "status-button[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+part "status-button[hovered]" {
+    filter "brightness($hover-brightness)"
+}
+
+part "status-button[disabled]" {
+    opacity "$opacity-disabled"
+    cursor default
+}
+
+part "status-button[focus-visible]" {
+    use "ring"
+}
+
+part "priority" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+    font-size "$fs-ui"
+    white-space nowrap
+}
+
+part "priority[variant=critical]" {
+    color "$danger"
+    font-weight "$weight-bold"
+}
+
+part "priority[variant=high]" {
+    color "$warning"
+    font-weight "$weight-bold"
+}
+
+part "priority[variant=normal]" {
+    color "$fg-muted"
+}
+
+part "priority[variant=low]" {
+    color "$fg-subtle"
+}
+
+part "priority-icon" {
+    flex none
+    width "$size-icon-small"
+    height "$size-icon-small"
+}
+
+// ───────────── Rows that carry their state (R4) ─────────────
+//
+// Any row can carry the state of its status group (a tint) and of its priority (an edge of 4 px at
+// its start), by the words of `rowStates`. A row of the list, an issue row and a bar of the
+// timeline are the rows that do. Hovered and selected rows keep the hue of their tint and stay
+// distinct from it (`distinct` above). The rules come after the rows' own, so they win.
+
+part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "timeline-bar[state=group-in-progress]" {
+    background "$tint-ip"
+}
+
+part "list-row[state=group-in-progress]:hover" "issue-row[state=group-in-progress]:hover" "timeline-bar[state=group-in-progress]:hover" {
+    background "$tint-ip-hover"
+}
+
+part "list-row[state=group-in-progress][state=selected]" "issue-row[state=group-in-progress][state=selected]" "timeline-bar[state=group-in-progress][state=selected]" {
+    background "$tint-ip-selected"
+}
+
+part "list-row[state=group-done]" "issue-row[state=group-done]" "timeline-bar[state=group-done]" {
+    background "$tint-done"
+}
+
+part "list-row[state=group-done]:hover" "issue-row[state=group-done]:hover" "timeline-bar[state=group-done]:hover" {
+    background "$tint-done-hover"
+}
+
+part "list-row[state=group-done][state=selected]" "issue-row[state=group-done][state=selected]" "timeline-bar[state=group-done][state=selected]" {
+    background "$tint-done-selected"
+}
+
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "timeline-bar[state=priority-critical]" {
+    border-inline-start "$size-edge solid $danger"
+}
+
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "timeline-bar[state=priority-high]" {
+    border-inline-start "$size-edge solid $warning"
+}
+
+// ───────────── The grid of the issue list (UX §4.2) ─────────────
+//
+// One grid with fixed columns (R1, R9): tick box, status icon, ID, type icon, title, labels,
+// priority, assigned person, changed. The header, the rows and the phone's rows are the same part,
+// so the columns line up. A column is named by the variant of its cell.
+
+part "list-grid" {
+    display flex
+    flex-direction column
+    min-width 0
+}
+
+part "list-row" {
+    position relative
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-3"
+    min-height "$size-row"
+    padding 0 "$pad-box"
+    border-inline-start "$size-edge solid transparent"
+    border-bottom "$border-width solid $border-subtle"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-ui"
+}
+
+part "list-row:hover" {
+    background "$bg-hover"
+}
+
+part "list-row[state=selected]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
+// The column names above the rows.
+part "list-row[variant=head]" {
+    min-height "$size-control"
+    background "$bg-surface"
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+}
+
+part "list-row[variant=head]:hover" {
+    background "$bg-surface"
+}
+
+part "list-row.cell" {
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+part "list-row.cell[variant=select]" {
+    flex none
+    display flex
+    align-items center
+    justify-content center
+    width "$size-control"
+}
+
+part "list-row.cell[variant=status]" "list-row.cell[variant=type]" {
+    flex none
+    display flex
+    align-items center
+    justify-content center
+    width "$size-col-icon"
+}
+
+part "list-row.cell[variant=key]" {
+    flex none
+    width "$size-col-key"
+    color "$fg-muted"
+    font-family "$mono"
+}
+
+part "list-row.cell[variant=title]" {
+    flex 1
+}
+
+part "list-row.cell[variant=labels]" {
+    flex none
+    width "$size-col-labels"
+}
+
+part "list-row.cell[variant=priority]" {
+    flex none
+    width "$size-col-priority"
+}
+
+part "list-row.cell[variant=person]" {
+    flex none
+    width "$size-col-person"
+}
+
+part "list-row.cell[variant=changed]" {
+    flex none
+    width "$size-col-changed"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// A done issue's title turns muted in lists.
+part "list-row[state=group-done] list-row.cell[variant=title]" {
+    color "$fg-muted"
+}
+
+// The whole row is the target of its title (R8): the title is not underlined and not a link color,
+// and the link reaches over the row.
+part "list-row.cell link" {
+    color inherit
+    text-decoration none
+}
+
+part "list-row.cell[variant=title] link::after" {
+    content "\"\""
+    position absolute
+    inset 0
+}
+
+part "list-row.cell[variant=title] link[focus-visible]::after" {
+    use "ring-inside"
+}
+
+// The checkbox and the buttons in a row stay above the link that reaches over it.
+part "list-row.cell[variant=select]" "list-row.cell[variant=labels]" "list-row.cell[variant=priority]" "list-row.cell[variant=person]" {
+    position relative
+}
+
+// On a phone the row has two lines: status, ID and priority, then the title, then the person and
+// the day (R9: the same order). The other columns are left out.
+part "list-row[variant=phone]" {
+    display grid
+    grid-template-columns "$size-col-icon $size-col-key minmax(0, 1fr)"
+    grid-template-areas "\"status key priority\" \"title title title\" \"person person changed\""
+    align-items center
+    gap "$space-1 $space-3"
+    padding "$space-3 $pad-box"
+    min-height "$size-row"
+}
+
+part "list-row[variant=phone] list-row.cell[variant=select]" "list-row[variant=phone] list-row.cell[variant=type]" "list-row[variant=phone] list-row.cell[variant=labels]" {
+    display none
+}
+
+part "list-row[variant=phone] list-row.cell" {
+    width auto
+}
+
+part "list-row[variant=phone] list-row.cell[variant=status]" {
+    grid-area status
+}
+
+part "list-row[variant=phone] list-row.cell[variant=key]" {
+    grid-area key
+}
+
+part "list-row[variant=phone] list-row.cell[variant=priority]" {
+    grid-area priority
+    justify-self end
+}
+
+part "list-row[variant=phone] list-row.cell[variant=title]" {
+    grid-area title
+    white-space normal
+    overflow-wrap anywhere
+}
+
+part "list-row[variant=phone] list-row.cell[variant=person]" {
+    grid-area person
+}
+
+part "list-row[variant=phone] list-row.cell[variant=changed]" {
+    grid-area changed
+    justify-self end
+}
+
+// The header of a group of rows: the group's icon and color, its name and how many issues it holds.
+part "list-group" {
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+    padding 0 "$pad-box"
+    border-bottom "$border-width solid $border-subtle"
+    background "$bg-surface"
+    font-size "$fs-ui"
+    font-weight "$weight-bold"
+}
+
+part "list-group.count" {
+    color "$fg-muted"
+    font-weight "$weight-regular"
+}
+
+// A bar of the timeline (UX §4.7): the same tint and edge as the row of the list.
+part "timeline-bar" {
+    box-sizing border-box
+    display flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control-small"
+    padding 0 "$pad-control"
+    border "$border-width solid $border"
+    border-inline-start "$size-edge solid transparent"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
     font-size "$fs-sm"
 }
 
