@@ -175,6 +175,13 @@ function subscribeToAll(
   };
 }
 
+/**
+ * No keys chosen. One object for every read: a screen that reads the keys with
+ * `useSyncExternalStore` takes a read that gives another object each time for a change, and draws
+ * again without end (React error 185).
+ */
+const noKeys: ShortcutOverrides = {};
+
 /** The keys the person chose: from the server when signed in, else this device's (nobody's). */
 function personalKeys(device: ShortcutKeysSource): ShortcutKeysSource {
   const ofSettings = remember((settings: MySettings) => shortcutKeysOf(settings));
@@ -184,7 +191,7 @@ function personalKeys(device: ShortcutKeysSource): ShortcutKeysSource {
       if (settings !== undefined) {
         return ofSettings(settings);
       }
-      return signedInWithoutSettings() ? (unsent.keys ?? {}) : device.read();
+      return signedInWithoutSettings() ? (unsent.keys ?? noKeys) : device.read();
     },
     write: (next) => {
       if (currentMySettings() === undefined) {
