@@ -388,6 +388,7 @@ stored_tables! {
         AddedBy => added_by,
         AddedAt => added_at,
         DeletedAt => deleted_at,
+        Preview => preview,
         Version => version,
     },
     UploadRow => bb_core::files::Upload {
