@@ -9,7 +9,7 @@
 use std::future::Future;
 
 use bb_core::files::{Attachment, PreviewState, StoredFile, Upload};
-use bb_core::id::{AttachmentId, IssueId, UploadId, UserId};
+use bb_core::id::{AttachmentId, IssueId, UploadId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
 
@@ -31,13 +31,17 @@ pub trait AttachmentStore: CommentStore + 'static {
         /// The attachments of an issue that are not in the trash, oldest first. Whether the
         /// comment of one is in the trash is for the use case to ask.
         fn attachments_of_issue(issue: IssueId) -> Vec<Attachment>;
+        /// How many attachments an issue has, the ones in the trash too: they come back with
+        /// *Undo* until the daily clean-up removes them, so they count toward the limit.
+        fn attachment_count_of_issue(issue: IssueId) -> u64;
         /// The files with these hashes that exist.
         fn stored_files(hashes: &[Digest]) -> Vec<StoredFile>;
-        /// Starts an upload. An upload is a file on its way, no record of the issue yet, so
-        /// starting one is no change with an event.
-        fn insert_upload(upload: &Upload) -> ();
-        /// How many uploads a person has open.
-        fn open_uploads_of(person: UserId) -> u64;
+        /// Starts an upload, unless the person has `open_max` open uploads already or the sizes
+        /// they declared, with this one, would be more than `bytes_max`; says whether it was
+        /// started. The count, the sum and the insert are one step, so two uploads started at the
+        /// same moment cannot both pass. An upload is a file on its way, no record of the issue
+        /// yet, so starting one is no change with an event.
+        fn try_insert_upload(upload: &Upload, open_max: u64, bytes_max: u64) -> bool;
         /// The uploads whose last part (or start) was before `before`, at most `limit`.
         fn uploads_untouched_since(before: Timestamp, limit: u64) -> Vec<Upload>;
         /// Notes that a part of an upload came, so the day it is kept for starts again.

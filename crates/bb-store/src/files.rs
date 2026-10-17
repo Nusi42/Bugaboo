@@ -14,7 +14,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction, to_micros};
+use crate::db::{LockClass, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{AttachmentRow, StoredFileRow, UploadRow};
 
@@ -199,7 +199,49 @@ impl AttachmentStore for AuthStorage {
             .collect()
     }
 
-    async fn insert_upload(&self, upload: &Upload) -> Result<(), StoreError> {
+    async fn attachment_count_of_issue(&self, issue: IssueId) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(AttachmentRow::Id).count(),
+                crate::schema::Computed::Total,
+            )
+            .from(AttachmentRow::Table)
+            .and_where(Expr::col(AttachmentRow::Issue).eq(issue.stored()));
+        match self.database().fetch_optional(&select).await? {
+            Some(row) => u64::try_from(row.get::<i64>(crate::schema::Computed::Total)?)
+                .map_err(|_| StoreError::Corrupt("a count")),
+            None => Ok(0),
+        }
+    }
+
+    async fn try_insert_upload(
+        &self,
+        upload: &Upload,
+        open_max: u64,
+        bytes_max: u64,
+    ) -> Result<bool, StoreError> {
+        let mut transaction = self.database().begin().await?;
+        // The lock is named by the person: four random bytes of their ID.
+        let mut tail = [0_u8; 4];
+        tail.copy_from_slice(&upload.person.to_bytes()[12..]);
+        transaction
+            .advisory_lock(LockClass::Uploads, i32::from_be_bytes(tail))
+            .await?;
+        let mut select = Query::select();
+        select
+            .column(UploadRow::Size)
+            .from(UploadRow::Table)
+            .and_where(Expr::col(UploadRow::Person).eq(upload.person.stored()));
+        let open = transaction.fetch_all(&select).await?;
+        let mut declared = u64::try_from(upload.size).unwrap_or(u64::MAX);
+        for row in &open {
+            declared = declared
+                .saturating_add(u64::try_from(row.get::<i64>(UploadRow::Size)?).unwrap_or(0));
+        }
+        if u64::try_from(open.len()).unwrap_or(u64::MAX) >= open_max || declared > bytes_max {
+            return Ok(false);
+        }
         let mut insert = Query::insert();
         insert
             .into_table(UploadRow::Table)
@@ -224,23 +266,9 @@ impl AttachmentStore for AuthStorage {
                 Expr::val(to_micros(upload.updated_at)),
             ])
             .map_err(|_| StoreError::Corrupt("an upload"))?;
-        self.database().execute(&insert).await.map(|_| ())
-    }
-
-    async fn open_uploads_of(&self, person: UserId) -> Result<u64, StoreError> {
-        let mut select = Query::select();
-        select
-            .expr_as(
-                Expr::col(UploadRow::Id).count(),
-                crate::schema::Computed::Total,
-            )
-            .from(UploadRow::Table)
-            .and_where(Expr::col(UploadRow::Person).eq(person.stored()));
-        match self.database().fetch_optional(&select).await? {
-            Some(row) => u64::try_from(row.get::<i64>(crate::schema::Computed::Total)?)
-                .map_err(|_| StoreError::Corrupt("a count")),
-            None => Ok(0),
-        }
+        transaction.execute(&insert).await?;
+        transaction.commit().await?;
+        Ok(true)
     }
 
     async fn uploads_untouched_since(

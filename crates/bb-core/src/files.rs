@@ -35,6 +35,11 @@ pub const NAME_MAX_CHARS: usize = 255;
 /// somebody who starts uploads and never ends them, which would fill the disk.
 pub const OPEN_UPLOADS_MAX: usize = 20;
 
+/// How many bytes the open uploads of one person may declare together (the sizes they started
+/// with): four of the biggest file the settings allow. Together with [`OPEN_UPLOADS_MAX`] it stops
+/// a few uploads that are never finished from filling the disk before the daily clean-up.
+pub const OPEN_UPLOADS_BYTES_MAX: u64 = 4 * BIGGEST_FILE_BYTES;
+
 /// How long an unfinished upload is kept after its last part (ADR-0032): then it is deleted.
 pub const UNFINISHED_KEPT: SignedDuration = SignedDuration::from_hours(24);
 

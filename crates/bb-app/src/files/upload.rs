@@ -10,8 +10,8 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::files::{
-    ATTACHMENTS_PER_ISSUE_MAX, Attachment, OPEN_UPLOADS_MAX, PART_BYTES, PreviewKind, PreviewState,
-    StoredFile, Upload, clean_file_name,
+    ATTACHMENTS_PER_ISSUE_MAX, Attachment, OPEN_UPLOADS_BYTES_MAX, OPEN_UPLOADS_MAX, PART_BYTES,
+    PreviewKind, PreviewState, StoredFile, Upload, clean_file_name,
 };
 use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId};
 use bb_core::version::FIRST_VERSION;
@@ -64,6 +64,20 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         Ok((issue, held))
+    }
+
+    /// Refuses (`limit.reached`) when the issue holds as many files as it may, the ones in the
+    /// trash included. Asked when an upload starts and again when it is finished.
+    async fn room_for_one_more_file(&self, issue: bb_core::id::IssueId) -> Result<(), AppError> {
+        let held = self
+            .store()
+            .attachment_count_of_issue(issue)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if held >= ATTACHMENTS_PER_ISSUE_MAX as u64 {
+            return Err(ErrorCode::LimitReached.into());
+        }
+        Ok(())
     }
 
     /// The upload of the actor. Somebody else's upload does not exist for them.
@@ -134,20 +148,7 @@ pub async fn start_upload<S: AuthStore>(
     if limits.blocks(&name, None) {
         return Err(ErrorCode::FileTypeBlocked.into());
     }
-    let open = ctx
-        .store()
-        .open_uploads_of(actor.person.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?;
-    let held_files = ctx
-        .store()
-        .attachments_of_issue(issue.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .len();
-    if open >= OPEN_UPLOADS_MAX as u64 || held_files >= ATTACHMENTS_PER_ISSUE_MAX {
-        return Err(ErrorCode::LimitReached.into());
-    }
+    ctx.room_for_one_more_file(issue.id).await?;
     let now = ctx.now();
     let upload = Upload {
         id: UploadId::generate(&mut ctx.ids())
@@ -160,10 +161,14 @@ pub async fn start_upload<S: AuthStore>(
         created_at: now,
         updated_at: now,
     };
-    ctx.store()
-        .insert_upload(&upload)
+    let started = ctx
+        .store()
+        .try_insert_upload(&upload, OPEN_UPLOADS_MAX as u64, OPEN_UPLOADS_BYTES_MAX)
         .await
         .map_err(|error| internal::<S>(&error))?;
+    if !started {
+        return Err(ErrorCode::LimitReached.into());
+    }
     if let Err(error) = ctx.files().begin_upload(upload.id).await {
         ctx.drop_upload(upload.id).await;
         return Err(AppError::Internal(error.to_string()));
@@ -325,6 +330,7 @@ pub async fn finish_upload<S: AuthStore>(
     let (issue, held) = ctx
         .upload_target(&actor, &upload.issue.to_string(), upload.comment)
         .await?;
+    ctx.room_for_one_more_file(issue.id).await?;
     let inspected = ctx.inspect_to_finish(&upload, issue.project).await?;
     // The bytes go into the store first: an attachment always has its file.
     ctx.files()

@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use bb_core::files::{
     Attachment, LinkTarget, MediaType, PreviewKind, PreviewState, StoredFile, Upload,
 };
-use bb_core::id::{AttachmentId, IssueId, UploadId, UserId};
+use bb_core::id::{AttachmentId, IssueId, UploadId};
 use bb_core::security_log::Digest;
 use jiff::Timestamp;
 use sha2::{Digest as _, Sha256};
@@ -76,19 +76,36 @@ impl AttachmentStore for FakeStore {
         }))
     }
 
-    async fn insert_upload(&self, upload: &Upload) -> Result<(), FakeError> {
-        self.lock().state.uploads.push(upload.clone());
-        Ok(())
-    }
-
-    async fn open_uploads_of(&self, person: UserId) -> Result<u64, FakeError> {
+    async fn attachment_count_of_issue(&self, issue: IssueId) -> Result<u64, FakeError> {
         Ok(self.read(|state| {
             state
-                .uploads
+                .attachments
                 .iter()
-                .filter(|upload| upload.person == person)
+                .filter(|attachment| attachment.issue == issue)
                 .count() as u64
         }))
+    }
+
+    async fn try_insert_upload(
+        &self,
+        upload: &Upload,
+        open_max: u64,
+        bytes_max: u64,
+    ) -> Result<bool, FakeError> {
+        let mut shared = self.lock();
+        let (open, declared) = shared
+            .state
+            .uploads
+            .iter()
+            .filter(|known| known.person == upload.person)
+            .fold((0_u64, 0_u64), |(open, declared), known| {
+                (open + 1, declared + u64::try_from(known.size).unwrap_or(0))
+            });
+        if open >= open_max || declared + u64::try_from(upload.size).unwrap_or(0) > bytes_max {
+            return Ok(false);
+        }
+        shared.state.uploads.push(upload.clone());
+        Ok(true)
     }
 
     async fn uploads_untouched_since(

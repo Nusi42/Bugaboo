@@ -417,6 +417,9 @@ pub(crate) enum LockClass {
     /// Changes of the names of tags, labels and groups of labels (key 0): two changes at the same
     /// moment cannot both take a name, and a *Pick one* group is judged on what is stored.
     TagsAndLabels = 6,
+    /// Starting uploads (key: four bytes of the person's ID): two uploads of one person started at
+    /// the same moment cannot both pass the limits of what a person may have open.
+    Uploads = 7,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through

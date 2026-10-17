@@ -3,8 +3,12 @@
 //! anything is stored, and a link works for five minutes.
 
 use bb_core::ErrorCode;
-use bb_core::files::{MEGABYTE, TRASH_KEPT};
+use bb_core::files::{
+    ATTACHMENTS_PER_ISSUE_MAX, Attachment, BIGGEST_FILE_BYTES, MEGABYTE, OPEN_UPLOADS_BYTES_MAX,
+    OPEN_UPLOADS_MAX, TRASH_KEPT,
+};
 use bb_core::id::{AttachmentId, IssueId};
+use bb_core::security_log::Digest;
 use bb_core::settings::{FILES_BLOCKED_TYPES, FILES_MAX_MEGABYTES, SettingValue};
 
 use super::scenarios::{a_project, text, token};
@@ -13,9 +17,9 @@ use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::files::{
-    DeleteAttachment, DownloadQuery, FileDownload, FinishUpload, IssueFiles, IssueFilesQuery,
-    SendPartQuery, StartUploadQuery, UploadStateQuery, delete_attachment, download, finish_upload,
-    issue_files, send_part, start_upload, upload_state,
+    CancelUploadQuery, DeleteAttachment, DownloadQuery, FileDownload, FileStore as _, FinishUpload,
+    IssueFiles, IssueFilesQuery, SendPartQuery, StartUploadQuery, UploadStateQuery, cancel_upload,
+    delete_attachment, download, finish_upload, issue_files, send_part, start_upload, upload_state,
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -355,5 +359,103 @@ async fn att_07_a_link_works_for_five_minutes_and_a_trashed_file_opens_nothing()
     remove(&world, attachment).await?;
     refused(open(&world, fresh).await, ErrorCode::NotFound);
     assert!(list(&world, issue).await?.items.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn att_03_open_uploads_are_limited_in_number_and_in_bytes() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?.to_string();
+    // The number: no more than a person may have open at a time.
+    for at in 0..OPEN_UPLOADS_MAX {
+        start(&world, &issue, &format!("{at}.txt"), 10).await?;
+    }
+    refused(
+        start(&world, &issue, "one-too-many.txt", 10).await,
+        ErrorCode::LimitReached,
+    );
+    // Ending an upload makes room again.
+    let first = world.store.lock().state.uploads[0].id;
+    cancel_upload(
+        &world.ctx(),
+        CancelUploadQuery {
+            session_token: token(&world),
+            upload: first,
+        },
+    )
+    .await?;
+    start(&world, &issue, "again.txt", 10).await?;
+    let open: Vec<_> = world.store.lock().state.uploads.drain(..).collect();
+    for upload in open {
+        world.files.discard_upload(upload.id).await?;
+    }
+
+    // The bytes: what the open uploads say they will have is added up, so a few big ones cannot
+    // fill the disk before one of them is finished.
+    set(
+        &world,
+        SettingsScope::Organization,
+        "files.max-megabytes",
+        SettingValue::Integer(100),
+    )
+    .await?;
+    let biggest = BIGGEST_FILE_BYTES;
+    let fits = usize::try_from(OPEN_UPLOADS_BYTES_MAX / biggest).unwrap_or(0);
+    for at in 0..fits {
+        start(&world, &issue, &format!("{at}.bin"), biggest).await?;
+    }
+    refused(
+        start(&world, &issue, "too-much.bin", 1).await,
+        ErrorCode::LimitReached,
+    );
+    Ok(())
+}
+
+/// Puts `count` files on the issue as the store has them, `trashed` of them in the trash.
+fn fill_with_files(world: &World, issue: IssueId, count: usize, trashed: usize) -> Outcome {
+    let ctx = world.ctx();
+    let (person, now) = (world.admin.person.id, ctx.now());
+    for at in 0..count {
+        world.store.lock().state.attachments.push(Attachment {
+            id: AttachmentId::generate(&mut ctx.ids())?,
+            issue,
+            comment: None,
+            file: Digest::new([7; Digest::LENGTH]),
+            name: format!("{at}.txt"),
+            added_by: person,
+            added_at: now,
+            deleted_at: (at < trashed).then_some(now),
+            version: 1,
+        });
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn att_03_files_in_the_trash_count_toward_the_limit_of_an_issue() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    // One upload is on its way while the issue fills up.
+    let waiting = an_upload(&world, issue, "late.txt", A_FILE).await?;
+    fill_with_files(&world, issue, ATTACHMENTS_PER_ISSUE_MAX, 50)?;
+    // Deleting files does not make room: they come back with *Undo* until the trash is emptied.
+    refused(
+        start(&world, &issue.to_string(), "more.txt", 10).await,
+        ErrorCode::LimitReached,
+    );
+    // The upload that was started before is judged again when it is finished.
+    refused(
+        finish_upload(
+            &world.ctx(),
+            FinishUpload {
+                session_token: token(&world),
+                upload: waiting,
+            },
+        )
+        .await,
+        ErrorCode::LimitReached,
+    );
     Ok(())
 }

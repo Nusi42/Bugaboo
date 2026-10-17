@@ -116,6 +116,13 @@ async fn att_02_the_store_keeps_one_row_for_a_file_and_deletes_it_only_when_noth
             storage.attachments_of_issue(world.issues[0].id).await?,
             vec![]
         );
+        // It counts toward the files of the issue until it is purged.
+        assert_eq!(
+            storage
+                .attachment_count_of_issue(world.issues[0].id)
+                .await?,
+            1
+        );
         assert!(storage.unreferenced_files(10).await?.is_empty());
         // *Undo* puts it back, with the version counted up twice.
         assert!(trash(storage, &mut source, first.id, None).await?);
@@ -190,9 +197,14 @@ async fn att_01_open_uploads_are_counted_and_old_ones_are_found_by_their_last_pa
             updated_at: at(0),
         };
         let (old, fresh) = (upload(), upload());
-        storage.insert_upload(&old).await?;
-        storage.insert_upload(&fresh).await?;
-        assert_eq!(storage.open_uploads_of(world.person).await?, 2);
+        assert!(storage.try_insert_upload(&old, 2, 20_000).await?);
+        assert!(storage.try_insert_upload(&fresh, 2, 20_000).await?);
+        // The third is refused by the number, and a fourth that is small by the sum of the sizes.
+        let third = upload();
+        assert!(!storage.try_insert_upload(&third, 2, 20_000).await?);
+        assert!(!storage.try_insert_upload(&third, 3, 14_999).await?);
+        assert!(storage.try_insert_upload(&third, 3, 15_000).await?);
+        assert!(storage.delete_upload_row(third.id).await?);
         let day_later = at(0)
             .checked_add(UNFINISHED_KEPT)?
             .checked_add(jiff::SignedDuration::from_secs(1))?;
@@ -205,7 +217,9 @@ async fn att_01_open_uploads_are_counted_and_old_ones_are_found_by_their_last_pa
         );
         assert!(storage.delete_upload_row(old.id).await?);
         assert!(!storage.delete_upload_row(old.id).await?);
-        assert_eq!(storage.open_uploads_of(world.person).await?, 1);
+        let left = storage.uploads_untouched_since(day_later, 10).await?;
+        assert!(left.is_empty());
+        assert!(storage.try_insert_upload(&upload(), 2, 20_000).await?);
         Ok(())
     })
     .await
