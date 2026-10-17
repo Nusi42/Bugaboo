@@ -10,16 +10,21 @@
 use bb_core::ErrorCode;
 use bb_core::id::{InvitationId, IssueId, UserId};
 use bb_core::mail::MailSecurity;
+use bb_core::notification::Notification;
 use bb_core::notification::{MAIL_ENTRIES_MAX, MailState, Via};
+use bb_core::person::Person;
 use bb_core::settings::{
     Layers, MAIL_ENABLED, MAIL_FROM, MAIL_HOST, MAIL_PORT, MAIL_SECURITY, MAIL_SHORT, MAIL_USERNAME,
 };
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use zeroize::Zeroizing;
 
 use super::compose::compose;
 use super::prefs::wants;
+use super::read::Reading;
+use super::types::NotificationItem;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::mailer::{MailFailure, MailMessage, MailServer};
@@ -154,7 +159,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) async fn mail_job_gave_up(&self, payload: &Value) -> Result<(), AppError> {
         if let Some(MailJob::Changes { recipient, issue }) = MailJob::of_value(payload) {
             self.store()
-                .give_up_mail(recipient, issue)
+                .finish_mail(recipient, issue, self.now(), MailState::Never)
                 .await
                 .map_err(|error| internal::<S>(&error))?;
         }
@@ -162,65 +167,103 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(())
     }
 
-    /// Sends the e-mail with the notifications of a person about one issue that wait.
+    /// The items of the e-mail of a person about an issue (or no issue): what waits, checked again
+    /// for what the person may see and may want now (§2), and whether more waits than the e-mail
+    /// holds. A notification the person does not want or may not see any more is done with: its
+    /// e-mail never goes.
+    async fn mail_items(
+        &self,
+        person: &Person,
+        issue: Option<IssueId>,
+        until: Timestamp,
+    ) -> Result<(Vec<NotificationItem>, bool), AppError> {
+        let failed = |error| internal::<S>(&error);
+        let person_layers = self.setting_layers_of(Some(person.id)).await?;
+        let actor = Actor {
+            person: person.clone(),
+            key: None,
+        };
+        let mut reading = self.reading_for(&actor).await?;
+        loop {
+            let waiting = self
+                .store()
+                .waiting_mail(
+                    person.id,
+                    issue,
+                    until,
+                    u64::try_from(MAIL_ENTRIES_MAX + 1).unwrap_or(u64::MAX),
+                )
+                .await
+                .map_err(failed)?;
+            let mut items = Vec::new();
+            let mut unwanted = Vec::new();
+            for row in waiting.iter().take(MAIL_ENTRIES_MAX) {
+                match self.mail_item(&person_layers, &mut reading, row).await? {
+                    Some(item) => items.push(item),
+                    None => unwanted.push(row.id),
+                }
+            }
+            self.store()
+                .set_mail_state(&unwanted, MailState::Never)
+                .await
+                .map_err(failed)?;
+            let more = waiting.len() > MAIL_ENTRIES_MAX;
+            // Only unwanted ones in this round: the next ones may be wanted.
+            if !items.is_empty() || !more {
+                return Ok((items, more));
+            }
+        }
+    }
+
+    /// The item of one waiting notification, or none when the person does not want it by e-mail or
+    /// may not see it now.
+    async fn mail_item(
+        &self,
+        layers: &Layers,
+        reading: &mut Reading<'_>,
+        row: &Notification,
+    ) -> Result<Option<NotificationItem>, AppError> {
+        if wants(layers, row.kind, Via::Mail) {
+            self.notification_item(reading, row).await
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Sends the e-mail with the notifications of a person about one issue that wait. What does
+    /// not fit in it is in the app: the e-mail says so, and every notification that waited up to
+    /// now is done with, so a second e-mail does not repeat the first.
     async fn send_changes(
         &self,
         recipient: UserId,
         issue: Option<IssueId>,
     ) -> Result<(), AppError> {
         let failed = |error| internal::<S>(&error);
+        let until = self.now();
+        let finish = |state| async move {
+            self.store()
+                .finish_mail(recipient, issue, until, state)
+                .await
+                .map(|_| ())
+                .map_err(failed)
+        };
         let layers = self.setting_layers_of(None).await?;
         let Some(server) = self.mail_server_if_on(&layers).await? else {
             // E-mail is off, or the mail server is not entered: nothing goes (PRIV-08).
-            self.store()
-                .give_up_mail(recipient, issue)
-                .await
-                .map_err(failed)?;
-            return Ok(());
+            return finish(MailState::Never).await;
         };
-        let waiting = self
-            .store()
-            .waiting_mail(
-                recipient,
-                issue,
-                self.now(),
-                u64::try_from(MAIL_ENTRIES_MAX + 1).unwrap_or(u64::MAX),
-            )
-            .await
-            .map_err(failed)?;
-        if waiting.is_empty() {
-            // Another job of the same batch sent them.
-            return Ok(());
-        }
-        let ids: Vec<_> = waiting.iter().map(|row| row.id).collect();
         let Some(person) = self.store().person(recipient).await.map_err(failed)? else {
-            self.store()
-                .set_mail_state(&ids, MailState::Never)
-                .await
-                .map_err(failed)?;
-            return Ok(());
+            return finish(MailState::Never).await;
         };
-        // Checked again: what the person may see and may want now (§2).
-        let person_layers = self.setting_layers_of(Some(recipient)).await?;
-        let actor = Actor {
-            person: person.clone(),
-            key: None,
-        };
-        let mut reading = self.reading_for(&actor).await?;
-        let mut items = Vec::new();
-        for row in waiting.iter().take(MAIL_ENTRIES_MAX) {
-            if wants(&person_layers, row.kind, Via::Mail)
-                && let Some(item) = self.notification_item(&mut reading, row).await?
-            {
-                items.push(item);
-            }
-        }
-        let composed = compose(&items, layers.yes(&MAIL_SHORT), &self.services.public_url);
+        let (items, more) = self.mail_items(&person, issue, until).await?;
+        let composed = compose(
+            &items,
+            more,
+            layers.yes(&MAIL_SHORT),
+            &self.services.public_url,
+        );
         let Some(composed) = composed else {
-            self.store()
-                .set_mail_state(&ids, MailState::Never)
-                .await
-                .map_err(failed)?;
+            // Nothing is left to say (another job of the same batch sent it, or none is wanted).
             return Ok(());
         };
         let message = MailMessage {
@@ -229,18 +272,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             text: composed.text,
         };
         match self.services.mailer.send(&server, &message).await {
-            Ok(()) => {
-                self.store()
-                    .set_mail_state(&ids, MailState::Sent)
-                    .await
-                    .map_err(failed)?;
-                Ok(())
-            }
+            Ok(()) => finish(MailState::Sent).await,
             Err(MailFailure::Rejected) => {
-                self.store()
-                    .set_mail_state(&ids, MailState::Never)
-                    .await
-                    .map_err(failed)?;
+                finish(MailState::Never).await?;
                 Err(send_failure_for_job(MailFailure::Rejected))
             }
             // Another try may work: the notifications keep waiting, and the job runs again.

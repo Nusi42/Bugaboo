@@ -5,6 +5,7 @@ use std::time::Duration;
 use bb_app::mailer::{MailFailure, MailMessage, MailServer, Mailer};
 use bb_app::ports::BoxFuture;
 use bb_core::mail::MailSecurity;
+use bb_core::text::{MAIL_SUBJECT_MAX, plain_line};
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
@@ -45,16 +46,6 @@ impl Mailer for SmtpMailer {
     }
 }
 
-/// The subject on one line: every control character, line breaks included, becomes a space, so a
-/// subject made of an issue title cannot add a header.
-fn one_line(text: &str) -> String {
-    text.chars()
-        .map(|c| if c.is_control() { ' ' } else { c })
-        .collect::<String>()
-        .trim()
-        .to_owned()
-}
-
 /// Whatever went wrong while the e-mail is put together (an address that is none), trying again
 /// cannot help.
 fn rejected<E>(_: E) -> MailFailure {
@@ -67,7 +58,7 @@ fn email_of(server: &MailServer, message: &MailMessage) -> Result<Message, MailF
     Message::builder()
         .from(from)
         .to(to)
-        .subject(one_line(&message.subject))
+        .subject(plain_line(&message.subject, MAIL_SUBJECT_MAX))
         .header(ContentType::TEXT_PLAIN)
         .body(message.text.clone())
         .map_err(rejected)

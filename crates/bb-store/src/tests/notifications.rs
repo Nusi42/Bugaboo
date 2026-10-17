@@ -239,7 +239,12 @@ async fn ntf_02_the_e_mail_that_waits_is_found_by_person_issue_and_time_and_can_
             storage.waiting_mail(ana, Some(issue), at(30), 10).await?,
             std::slice::from_ref(&b)
         );
-        assert_eq!(storage.give_up_mail(ana, Some(issue)).await?, 1);
+        assert_eq!(
+            storage
+                .finish_mail(ana, Some(issue), at(30), MailState::Never)
+                .await?,
+            1
+        );
         assert!(
             storage
                 .waiting_mail(ana, Some(issue), at(30), 10)

@@ -254,17 +254,20 @@ impl NotificationStore for AuthStorage {
         Ok(())
     }
 
-    async fn give_up_mail(
+    async fn finish_mail(
         &self,
         recipient: UserId,
         issue: Option<IssueId>,
+        until: Timestamp,
+        state: MailState,
     ) -> Result<u64, StoreError> {
         let mut update = Query::update();
         update
             .table(NotificationRow::Table)
-            .value(NotificationRow::Mail, MailState::Never.code())
+            .value(NotificationRow::Mail, state.code())
             .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
-            .and_where(Expr::col(NotificationRow::Mail).eq(MailState::Waiting.code()));
+            .and_where(Expr::col(NotificationRow::Mail).eq(MailState::Waiting.code()))
+            .and_where(Expr::col(NotificationRow::At).lte(to_micros(until)));
         match issue {
             Some(issue) => update.and_where(Expr::col(NotificationRow::Issue).eq(issue.stored())),
             None => update.and_where(Expr::col(NotificationRow::Issue).is_null()),

@@ -11,6 +11,7 @@ use bb_core::edit::NoticeKind;
 use bb_core::fields::Field;
 use bb_core::message::{self, Message};
 use bb_core::notification::{MAIL_ENTRIES_MAX, MAIL_TEXT_MAX, NotificationKind};
+use bb_core::text::{plain_line, plain_text};
 use bb_policy::PersonRef;
 
 use super::types::{NotificationItem, NotificationWhat};
@@ -23,18 +24,22 @@ pub(crate) struct Composed {
     pub(crate) text: String,
 }
 
-/// The text without what has no place in a mail: control characters other than a line break, and
-/// all but the first `MAIL_TEXT_MAX` characters.
+/// What starts each line of a person's text in an e-mail, so a line they wrote cannot pass for the
+/// text of Bugaboo: a link or a footer of their making is a quoted line.
+const QUOTE: &str = "> ";
+
+/// Text of a person for the middle of a line.
 fn clean(text: &str) -> String {
-    let mut cleaned: String = text
-        .chars()
-        .filter(|c| !c.is_control() || matches!(c, '\n'))
-        .take(MAIL_TEXT_MAX)
-        .collect();
-    if text.chars().count() > MAIL_TEXT_MAX {
-        cleaned.push('…');
-    }
-    cleaned
+    plain_line(text, MAIL_TEXT_MAX)
+}
+
+/// A text of a person that stands on lines of its own, every line quoted.
+fn quoted(text: &str) -> String {
+    plain_text(text, MAIL_TEXT_MAX)
+        .lines()
+        .map(|line| format!("{QUOTE}{line}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn who(person: Option<&PersonRef>) -> String {
@@ -94,11 +99,11 @@ fn lines_of(item: &NotificationItem, short: bool) -> Vec<String> {
     match (&item.what, item.kind) {
         (NotificationWhat::Comment { comment }, NotificationKind::Mentioned) => vec![
             message::mail_line_mentioned(who(by)).render(),
-            clean(&comment.text),
+            quoted(&comment.text),
         ],
         (NotificationWhat::Comment { comment }, _) => vec![
             message::mail_line_commented(who(by)).render(),
-            clean(&comment.text),
+            quoted(&comment.text),
         ],
         (NotificationWhat::Changes { fields }, _) => fields
             .iter()
@@ -126,11 +131,13 @@ fn lines_of(item: &NotificationItem, short: bool) -> Vec<String> {
 }
 
 /// The e-mail for the notifications of one person about one issue (or about no issue), oldest
-/// first. `address` is where the issue is in Bugaboo, from the public address of the server.
+/// first. `more` says that more waited than the e-mail holds. `address` is where the issue is in
+/// Bugaboo, from the public address of the server.
 /// `None` when there is nothing to say.
 #[must_use]
 pub(crate) fn compose(
     items: &[NotificationItem],
+    more: bool,
     short: bool,
     public_url: &str,
 ) -> Option<Composed> {
@@ -147,7 +154,12 @@ pub(crate) fn compose(
         ),
         None => (Message::from(message::MAIL_SUBJECT_RUN).render(), None),
     };
+    // The link of Bugaboo comes first, before any text of a person.
     let mut text = String::new();
+    if let Some(address) = address {
+        text.push_str(&message::mail_open(address).render());
+        text.push_str("\n\n");
+    }
     for item in items.iter().take(MAIL_ENTRIES_MAX) {
         for line in lines_of(item, short) {
             text.push_str(&line);
@@ -155,8 +167,8 @@ pub(crate) fn compose(
         }
         text.push('\n');
     }
-    if let Some(address) = address {
-        text.push_str(&message::mail_open(address).render());
+    if more {
+        text.push_str(&Message::from(message::MAIL_LINE_MORE).render());
         text.push_str("\n\n");
     }
     text.push_str(&Message::from(message::MAIL_FOOTER).render());

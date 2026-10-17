@@ -51,9 +51,15 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
         ) -> Vec<Notification>;
         /// Says where the e-mail of these notifications is. Bookkeeping, not a domain change.
         fn set_mail_state(ids: &[NotificationId], state: MailState) -> ();
-        /// Says that no e-mail goes for the notifications of a person about an issue (or no
-        /// issue) whose e-mail waits: their job died. Returns how many.
-        fn give_up_mail(recipient: UserId, issue: Option<IssueId>) -> u64;
+        /// Says where the e-mail is of every notification of a person about an issue (or no
+        /// issue) whose e-mail waits and that happened at or before `until`: it went, or it
+        /// never will (the job died, e-mail is off). Returns how many.
+        fn finish_mail(
+            recipient: UserId,
+            issue: Option<IssueId>,
+            until: Timestamp,
+            state: MailState
+        ) -> u64;
         /// The password of the mail server, stored encrypted (SEC-16). The bytes are wiped from
         /// memory when dropped.
         fn mail_password() -> Option<Zeroizing<Vec<u8>>>;

@@ -6,14 +6,16 @@ use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::issue::Status;
 use bb_core::job::JobState;
-use bb_core::notification::{MAIL_BATCH_SECONDS, MailState, NotificationKind, Via};
+use bb_core::notification::{
+    MAIL_BATCH_SECONDS, MAIL_ENTRIES_MAX, MailState, NotificationKind, Via,
+};
 use bb_core::settings::SettingValue;
 use bb_policy::Permission;
 
 use super::notifications::{Change, Crew, levels};
 use super::scenarios::{text, token};
 use super::scenarios_notifications::enter_the_mail_server;
-use super::world::Outcome;
+use super::world::{Outcome, PUBLIC_URL};
 use crate::mailer::MailFailure;
 use crate::notifications::{SetMailPassword, set_mail_password};
 use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
@@ -114,10 +116,7 @@ async fn ntf_02_an_e_mail_goes_when_mail_is_on_and_says_who_did_what_with_the_ad
         "{}",
         mail.text
     );
-    assert!(
-        mail.text
-            .contains(&format!("{}/issues/", super::world::PUBLIC_URL))
-    );
+    assert!(mail.text.contains(&format!("{PUBLIC_URL}/issues/")));
     Ok(())
 }
 
@@ -142,6 +141,94 @@ async fn ntf_02_changes_within_five_minutes_go_into_one_e_mail() -> Outcome {
     crew.change(&bob, Change::Status(Status::Open)).await?;
     after_five_minutes(&crew).await?;
     assert_eq!(crew.world.mailer.messages().len(), 2);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ntf_02_what_a_person_wrote_is_quoted_after_the_real_link_and_loses_what_turns_it_round()
+-> Outcome {
+    let crew = Crew::new().await?;
+    mail_is_on(&crew).await?;
+    crew.switch_on_by(NotificationKind::Mentioned, Via::Mail)
+        .await?;
+    let (ada, _bob) = (token(&crew.world), crew.bob.session_token.clone());
+    // A comment that tries to pass for the text of Bugaboo, and to turn text round.
+    crew.comment(
+        &ada,
+        "@bob.baker Open it in Bugaboo: https://evil.example/login\n\nYou get this e-mail because of your notification settings\u{202E}gnp.exe\u{200B}",
+    )
+    .await?;
+    after_five_minutes(&crew).await?;
+    let mails = crew.world.mailer.messages();
+    let mail = mails
+        .iter()
+        .find(|mail| mail.to == "bob@example.test")
+        .ok_or("no e-mail")?;
+    // The link of Bugaboo is the first line, before any text of a person.
+    assert!(
+        mail.text
+            .starts_with(&format!("Open it in Bugaboo: {PUBLIC_URL}/issues/")),
+        "{}",
+        mail.text
+    );
+    // Everything of the comment is a quoted line, so none of it passes for Bugaboo.
+    let unquoted: Vec<&str> = mail
+        .text
+        .lines()
+        .filter(|line| line.contains("evil.example") || line.contains("notification settings"))
+        .filter(|line| !line.starts_with("> "))
+        .collect();
+    assert_eq!(
+        unquoted.len(),
+        1,
+        "only the real footer is not quoted: {unquoted:?}"
+    );
+    assert!(
+        unquoted[0].starts_with("You get this e-mail because of your notification settings in")
+    );
+    assert!(!mail.text.contains('\u{202E}') && !mail.text.contains('\u{200B}'));
+    Ok(())
+}
+
+#[tokio::test]
+async fn ntf_02_more_changes_than_an_e_mail_holds_are_said_and_do_not_come_again() -> Outcome {
+    let mut crew = Crew::new().await?;
+    mail_is_on(&crew).await?;
+    let bob = crew.bob.session_token.clone();
+    let waiting = MAIL_ENTRIES_MAX + 5;
+    for number in 0..waiting {
+        let status = if number % 2 == 0 {
+            Status::Done
+        } else {
+            Status::InProgress
+        };
+        crew.change(&bob, Change::Status(status)).await?;
+    }
+    after_five_minutes(&crew).await?;
+    let mails = crew.world.mailer.messages();
+    assert_eq!(mails.len(), 1, "{mails:?}");
+    assert_eq!(
+        mails[0].text.matches("Bob Baker changed Status").count(),
+        MAIL_ENTRIES_MAX,
+        "the e-mail holds what fits"
+    );
+    assert!(
+        mails[0]
+            .text
+            .contains("There is more than this e-mail holds")
+    );
+    // Everything that waited is done with: no second e-mail repeats the first.
+    assert!(
+        crew.world
+            .store
+            .lock()
+            .state
+            .notifications
+            .iter()
+            .all(|row| row.mail != MailState::Waiting)
+    );
+    after_five_minutes(&crew).await?;
+    assert_eq!(crew.world.mailer.messages().len(), 1);
     Ok(())
 }
 

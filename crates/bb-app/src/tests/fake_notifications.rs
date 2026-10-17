@@ -143,19 +143,25 @@ impl NotificationStore for FakeStore {
         Ok(())
     }
 
-    async fn give_up_mail(
+    async fn finish_mail(
         &self,
         recipient: UserId,
         issue: Option<IssueId>,
+        until: Timestamp,
+        state: MailState,
     ) -> Result<u64, FakeError> {
-        let mut gave_up = 0;
+        let mut finished = 0;
         for row in &mut self.lock().state.notifications {
-            if row.recipient == recipient && row.issue == issue && row.mail == MailState::Waiting {
-                row.mail = MailState::Never;
-                gave_up += 1;
+            if row.recipient == recipient
+                && row.issue == issue
+                && row.mail == MailState::Waiting
+                && row.at <= until
+            {
+                row.mail = state;
+                finished += 1;
             }
         }
-        Ok(gave_up)
+        Ok(finished)
     }
 
     async fn mail_password(&self) -> Result<Option<Zeroizing<Vec<u8>>>, FakeError> {

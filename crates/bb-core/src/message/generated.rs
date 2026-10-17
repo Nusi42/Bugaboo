@@ -2235,6 +2235,9 @@ pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
 /// The message `mail.footer`.
 pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
 
+/// The message `mail.line-more`.
+pub const MAIL_LINE_MORE: MessageKey = MessageKey::new("mail.line-more");
+
 /// The message `mail.line-news`.
 pub const MAIL_LINE_NEWS: MessageKey = MessageKey::new("mail.line-news");
 
@@ -9806,6 +9809,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} asks you to finish editing.",
     ),
     ("mail.line-mentioned", "{who} mentioned you in a comment:"),
+    (
+        "mail.line-more",
+        "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
+    ),
     ("mail.line-news", "There is news on this issue."),
     ("mail.line-run-done", "Your change to many issues is done."),
     (
