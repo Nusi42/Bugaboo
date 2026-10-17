@@ -30,6 +30,8 @@ pub use store::{DirectoryRows, StatusFilter, WorkflowStore};
 pub use try_it::try_workflow;
 pub use types::*;
 pub use write::{create_workflow, delete_workflow, use_workflow};
+#[cfg(test)]
+pub(crate) use {preview::preview_within, publish::MOVES_CAP};
 
 pub(crate) use resolve::WorkflowDirectory;
 pub(crate) use status::StatusCheck;

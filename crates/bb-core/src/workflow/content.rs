@@ -274,19 +274,10 @@ impl WorkflowContent {
                 group: draft.group,
             });
         }
-        let named = |text: &str| -> Option<StatusKey> {
-            let by_key = made.iter().find(|status| status.key.as_str() == text);
-            let by_name = || {
-                let wanted = text.trim().to_lowercase();
-                statuses
-                    .iter()
-                    .zip(&made)
-                    .find(|(draft, status)| {
-                        draft.key.is_none() && status.name.to_lowercase() == wanted
-                    })
-                    .map(|(_, status)| status)
-            };
-            by_key.or_else(by_name).map(|status| status.key.clone())
+        let given: Vec<&StatusKey> = statuses.iter().filter_map(|d| d.key.as_ref()).collect();
+        let named = |text: &str| {
+            status_named(&made, text, |status| !given.contains(&&status.key))
+                .map(|status| status.key.clone())
         };
         let mut made_changes = Vec::with_capacity(changes.len());
         for draft in changes {
@@ -337,4 +328,24 @@ impl StatusRules {
         }
         Ok(())
     }
+}
+
+/// The status that a text names among `statuses`: the one with that key, else (only among the ones
+/// `is_new` accepts) the one with that name, ignoring capitals and spaces at the ends. The editor
+/// writes a status that is new by its name because it has no key yet; publishing reads the same
+/// words the same way (ADR-0031 amendment 2).
+pub fn status_named<'a>(
+    statuses: &'a [WorkflowStatus],
+    text: &str,
+    is_new: impl Fn(&WorkflowStatus) -> bool,
+) -> Option<&'a WorkflowStatus> {
+    let wanted = text.trim().to_lowercase();
+    statuses
+        .iter()
+        .find(|status| status.key.as_str() == text)
+        .or_else(|| {
+            statuses
+                .iter()
+                .find(|status| is_new(status) && status.name.trim().to_lowercase() == wanted)
+        })
 }

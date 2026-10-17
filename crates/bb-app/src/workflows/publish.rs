@@ -23,7 +23,7 @@ use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
 use bb_core::own_fields::FieldFor;
 use bb_core::version::counted_up;
 use bb_core::workflow::{
-    ChangeDraft, StatusDraft, StatusKey, StoredWorkflow, WorkflowContent, check_name,
+    ChangeDraft, StatusDraft, StatusKey, StoredWorkflow, WorkflowContent, check_name, status_named,
 };
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -75,12 +75,14 @@ pub(super) struct Dropping {
     /// The issues in them: at most one change to many issues takes, and one more when there are
     /// more of them than that.
     pub(super) issues: Vec<Issue>,
+    /// The most issues one publish moves.
+    pub(super) cap: usize,
 }
 
 impl Dropping {
     /// Whether there are more issues than one change to many issues takes, so nothing is judged.
     pub(super) fn too_many(&self) -> bool {
-        self.issues.len() > MANY_CHANGES_ISSUES_MAX
+        self.issues.len() > self.cap
     }
 }
 
@@ -159,29 +161,31 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The live issues in the statuses that `content` drops, found from the places the stored
-    /// workflow is used at. The one walk that *Publish* and its preview share.
+    /// workflow is used at, up to one more than `cap`. The one walk that *Publish* and its preview
+    /// share.
     pub(super) async fn dropping(
         &self,
         stored: &StoredWorkflow,
         content: &WorkflowContent,
+        cap: usize,
     ) -> Result<Dropping, AppError> {
         let statuses = stored.content.dropped_by(content);
         if statuses.is_empty() {
             return Ok(Dropping {
                 statuses,
                 issues: Vec::new(),
+                cap,
             });
         }
         let directory = self.workflow_directory().await?;
         let issues = self
-            .governed_issues(
-                &directory,
-                stored.workflow.id,
-                &statuses,
-                MANY_CHANGES_ISSUES_MAX,
-            )
+            .governed_issues(&directory, stored.workflow.id, &statuses, cap)
             .await?;
-        Ok(Dropping { statuses, issues })
+        Ok(Dropping {
+            statuses,
+            issues,
+            cap,
+        })
     }
 
     /// Whether the person who publishes may move an issue: they see it and may change its status
@@ -205,8 +209,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         stored: &StoredWorkflow,
         content: &WorkflowContent,
         asked: &[StatusMoveInput],
+        cap: usize,
     ) -> Result<Vec<Moving>, AppError> {
-        let dropping = self.dropping(stored, content).await?;
+        let dropping = self.dropping(stored, content, cap).await?;
         // A move goes to a status the new workflow has, named by its key or, when it is new, by
         // its name, from a status it drops.
         let mut targets: Vec<(StatusKey, StatusKey)> = Vec::new();
@@ -248,18 +253,12 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// The status of the new workflow that a move names: by its key, or, for a status that is new in
-/// the draft, by its name (ADR-0031 amendment 2).
+/// the draft, by its name read as the editor reads it (ADR-0031 amendment 2).
 fn target_of(stored: &StoredWorkflow, content: &WorkflowContent, named: &str) -> Option<StatusKey> {
-    if let Ok(key) = StatusKey::new(named)
-        && content.status(&key).is_some()
-    {
-        return Some(key);
-    }
-    content
-        .statuses
-        .iter()
-        .find(|each| stored.content.status(&each.key).is_none() && each.name == named)
-        .map(|each| each.key.clone())
+    status_named(&content.statuses, named, |each| {
+        stored.content.status(&each.key).is_none()
+    })
+    .map(|each| each.key.clone())
 }
 
 /// Carries out the moves of the issues of the dropped statuses inside the change, each with its history.
@@ -304,6 +303,21 @@ async fn carry_out_moves<S: AuthStore>(
     Ok(None)
 }
 
+#[cfg(test)]
+thread_local! {
+    /// A smaller limit for one test, so that going over it needs few issues.
+    pub(crate) static MOVES_CAP: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
+}
+
+/// The most issues one publish moves: what one change to many issues takes.
+fn moves_cap() -> usize {
+    #[cfg(test)]
+    if let Some(small) = MOVES_CAP.get() {
+        return small;
+    }
+    MANY_CHANGES_ISSUES_MAX
+}
+
 /// Publishes a workflow under the edit lock the person holds: the statuses, the status changes and
 /// their rules are replaced by what was sent, and the issues of the statuses that are dropped go
 /// where the person said, in the same change.
@@ -311,8 +325,8 @@ async fn carry_out_moves<S: AuthStore>(
 /// # Errors
 /// `resource.not_found` for a workflow that is not there, `access.forbidden` without *Manage
 /// workflows* where it is used, `workflow.invalid` for a workflow that breaks a rule or a rule that
-/// names a field or a group the person may not know, `field.not_here` for a rule that names an own
-/// field that issues do not have, `workflow.status_in_use` while an issue would be left in a
+/// names a field or a group the person may not know (an own field that issues do not have is
+/// refused in the same words), `workflow.status_in_use` while an issue would be left in a
 /// status the workflow no longer has or could not be moved by this person, `request.invalid` for a
 /// move that makes no sense; `edit.lock_lost`, `edit.taken_over` and `edit.version_changed` for a
 /// lock that is gone, was taken over, or a workflow that changed since (the workflow is kept as the
@@ -327,7 +341,7 @@ pub async fn publish_workflow<S: AuthStore>(
         .publishable(&actor, &held, &stored, Drafts::from(&input))
         .await?;
     let moving = ctx
-        .plan_moves(&actor, &stored, &content, &input.moves)
+        .plan_moves(&actor, &stored, &content, &input.moves, moves_cap())
         .await?;
     let id: WorkflowId = input.workflow;
     let record = entity(RecordKind::Workflow, id);

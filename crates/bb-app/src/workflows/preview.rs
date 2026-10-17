@@ -26,6 +26,15 @@ pub async fn publish_preview<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PublishPreviewQuery,
 ) -> Result<Authorized<PublishPreview>, AppError> {
+    preview_within(ctx, input, MANY_CHANGES_ISSUES_MAX).await
+}
+
+/// [`publish_preview`] for a publish that moves at most `cap` issues (a test makes it small).
+pub(crate) async fn preview_within<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: PublishPreviewQuery,
+    cap: usize,
+) -> Result<Authorized<PublishPreview>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let (stored, held, _) = ctx.workflow_to_manage(&actor, input.workflow).await?;
     let drafts = Drafts {
@@ -34,11 +43,13 @@ pub async fn publish_preview<S: AuthStore>(
         changes: &input.changes,
     };
     let content = ctx.publishable(&actor, &held, &stored, drafts).await?;
-    let dropping = ctx.dropping(&stored, &content).await?;
+    let dropping = ctx.dropping(&stored, &content, cap).await?;
     // More issues than one publish moves: they are not judged or named, which would cost as much
     // as the issues are many; the answer says so and the editor refuses the publish.
     let too_many = dropping.too_many();
-    let Dropping { statuses, issues } = dropping;
+    let Dropping {
+        statuses, issues, ..
+    } = dropping;
     let mut maker = ctx.line_maker().await?;
     let mut dropped = Vec::with_capacity(statuses.len());
     for key in statuses {
@@ -75,7 +86,7 @@ pub async fn publish_preview<S: AuthStore>(
     }
     Ok(held.authorize(PublishPreview {
         dropped,
-        limit: MANY_CHANGES_ISSUES_MAX,
+        limit: cap,
         too_many,
     }))
 }

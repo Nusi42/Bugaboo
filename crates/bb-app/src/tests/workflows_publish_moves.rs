@@ -15,7 +15,9 @@ use bb_policy::StartingRole;
 
 use super::scenarios::a_project;
 use super::scenarios_issues::an_issue;
-use super::scenarios_workflows::{a_workflow, publish_of, published_by, published_with};
+use super::scenarios_workflows::{
+    a_workflow, lock_the_workflow_for, publish_of, published_by, published_with,
+};
 use super::workflows::change;
 use super::workflows_rules::{issue_in_progress, key, starting_role, status_of, with_rules};
 use super::world::{Outcome, World};
@@ -26,8 +28,9 @@ use crate::roles::{
     AssignRole, CopyRole, Given, SetFieldLevel, Subject, assign_role, copy_role, set_level,
 };
 use crate::workflows::{
-    PublishPreview, PublishPreviewQuery, PublishWorkflow, StatusMoveInput, WorkflowEditor,
-    WorkflowEditorQuery, publish_preview, workflow_editor,
+    MOVES_CAP, PublishPreview, PublishPreviewQuery, PublishWorkflow, StatusMoveInput,
+    WorkflowEditor, WorkflowEditorQuery, preview_within, publish_preview, publish_workflow,
+    workflow_editor,
 };
 
 /// What drops *In progress*, with the way to and from it.
@@ -440,6 +443,31 @@ async fn wf_02_a_move_may_go_to_a_status_that_is_new_in_the_draft() -> Outcome {
 }
 
 #[tokio::test]
+async fn wf_02_a_move_names_a_new_status_the_way_the_editor_does_with_other_capitals_and_spaces()
+-> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let admin = world.admin.session_token.clone();
+    let id = issue_in_progress(&world, project).await?;
+    let editor = a_workflow(&world, "ACME").await?;
+    published_with(&world, &editor, |sent| {
+        without_progress(sent);
+        sent.statuses.push(StatusDraft {
+            key: None,
+            name: " Review ".to_owned(),
+            group: StatusGroup::InProgress,
+        });
+        sent.moves = vec![StatusMoveInput {
+            from: key(IN_PROGRESS),
+            to: "  REVIEW".to_owned(),
+        }];
+    })
+    .await?;
+    assert_eq!(status_of(&world, &admin, id).await?, "review");
+    Ok(())
+}
+
+#[tokio::test]
 async fn wf_02_the_issues_of_a_dropped_status_are_read_only_as_far_as_the_limit() -> Outcome {
     let world = World::new().await?;
     let project = a_project(&world, "ACME").await?;
@@ -494,5 +522,70 @@ async fn wf_04_a_rule_that_names_no_such_field_is_refused_like_one_that_names_a_
     .await
     .err();
     assert_eq!(refused, Some(AppError::Refused(ErrorCode::WorkflowInvalid)));
+    Ok(())
+}
+
+/// Three issues in *In progress*, and the workflow of the project with that status dropped.
+async fn three_in_progress_to_drop()
+-> Result<(World, PublishWorkflow), Box<dyn std::error::Error + Send + Sync>> {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    for _ in 0..3 {
+        issue_in_progress(&world, project).await?;
+    }
+    let editor = a_workflow(&world, "ACME").await?;
+    let slot = editor.workflow.ok_or("no workflow of its own")?;
+    let lock = lock_the_workflow_for(&world, slot, world.admin.person.id);
+    let mut sent = publish_of(&world, &editor, lock)?;
+    without_progress(&mut sent);
+    sent.moves = vec![StatusMoveInput {
+        from: key(IN_PROGRESS),
+        to: OPEN.to_owned(),
+    }];
+    Ok((world, sent))
+}
+
+#[tokio::test]
+async fn wf_02_a_publish_that_would_move_more_issues_than_the_limit_publishes_nothing() -> Outcome {
+    let (world, sent) = three_in_progress_to_drop().await?;
+    MOVES_CAP.set(Some(2));
+    let refused = publish_workflow(&world.ctx(), sent).await.err();
+    MOVES_CAP.set(None);
+    assert_eq!(
+        refused,
+        Some(AppError::Refused(ErrorCode::WorkflowStatusInUse))
+    );
+    // At the limit it goes through.
+    let (world, sent) = three_in_progress_to_drop().await?;
+    MOVES_CAP.set(Some(3));
+    let done = publish_workflow(&world.ctx(), sent).await;
+    MOVES_CAP.set(None);
+    done?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn wf_02_the_preview_over_the_limit_says_so_and_counts_without_judging() -> Outcome {
+    let (world, sent) = three_in_progress_to_drop().await?;
+    let admin = world.admin.session_token.clone();
+    let over = preview_within(&world.ctx(), preview_of(&admin, sent), 2)
+        .await?
+        .into_value();
+    assert!(over.too_many);
+    assert_eq!(over.limit, 2);
+    let [dropped] = over.dropped.as_slice() else {
+        return Err("exactly one status is dropped".into());
+    };
+    // One more than the limit is read, and counted; nobody is named or judged.
+    assert_eq!(dropped.issues, 3);
+    assert!(dropped.named.is_empty());
+    assert_eq!((dropped.unseen, dropped.blocked), (0, 0));
+    let (world, sent) = three_in_progress_to_drop().await?;
+    let admin = world.admin.session_token.clone();
+    let within = preview_within(&world.ctx(), preview_of(&admin, sent), 3)
+        .await?
+        .into_value();
+    assert!(!within.too_many);
+    assert_eq!(within.dropped[0].issues, 3);
     Ok(())
 }
