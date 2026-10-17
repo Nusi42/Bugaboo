@@ -6,6 +6,7 @@
 //! escaped because nothing is markup, and nothing loads from outside. *Short e-mails* say only that
 //! there is news and where: no title, no comment, no value of a field.
 
+use bb_core::app_paths;
 use bb_core::edit::NoticeKind;
 use bb_core::fields::Field;
 use bb_core::message::{self, Message};
@@ -14,9 +15,6 @@ use bb_policy::PersonRef;
 
 use super::types::{NotificationItem, NotificationWhat};
 use crate::history::{ChangeValue, FieldChangeView};
-
-/// The path of the issue page in the browser app (`web/app/src/shared/paths.ts`, `issue`).
-const ISSUE_PATH: &str = "/issues";
 
 /// One e-mail: the subject on one line, and the text.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -145,7 +143,7 @@ pub(crate) fn compose(
                 }
                 _ => message::mail_subject_short(issue.key.clone()).render(),
             },
-            Some(format!("{public_url}{ISSUE_PATH}/{}", issue.key)),
+            Some(format!("{public_url}{}", app_paths::issue(&issue.key))),
         ),
         None => (Message::from(message::MAIL_SUBJECT_RUN).render(), None),
     };

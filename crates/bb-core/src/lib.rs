@@ -10,6 +10,7 @@ pub mod words;
 
 pub mod access;
 pub mod access_key;
+pub mod app_paths;
 pub mod comment;
 pub mod confirmation;
 pub mod edit;

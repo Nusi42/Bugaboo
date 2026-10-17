@@ -3,6 +3,7 @@
 
 use bb_auth::{EmailAddress, Purpose, SecretToken, listed_domains};
 use bb_core::ErrorCode;
+use bb_core::app_paths;
 use bb_core::event::RecordKind;
 use bb_core::id::InvitationId;
 use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
@@ -92,7 +93,7 @@ pub async fn create_invitation<S: AuthStore>(
     .await;
     Ok(access.authorize(CreatedInvitation {
         invitation: view(&invitation),
-        link_path: format!("/invitation#{}", secret.encode()),
+        link_path: format!("{}#{}", app_paths::INVITATION, secret.encode()),
     }))
 }
 

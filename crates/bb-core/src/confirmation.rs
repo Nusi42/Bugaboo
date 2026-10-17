@@ -10,10 +10,6 @@ use crate::security_log::Digest;
 /// How long the link of a confirmation works, in hours.
 pub const HOURS: i64 = 24;
 
-/// The path of the screen that takes the link (the secret follows the `#`, so it never reaches a
-/// log).
-pub const PATH: &str = "/confirm-address";
-
 /// How long the link works.
 #[must_use]
 pub const fn lasts() -> SignedDuration {

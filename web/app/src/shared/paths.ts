@@ -1,3 +1,5 @@
+import { appPaths } from "@bugaboo/api-client";
+
 /**
  * The addresses of the pages of the app, written once. Routes, links and redirects all use these,
  * so an address cannot differ between the page and the link to it (ODR). They are the addresses of
@@ -6,11 +8,11 @@
 export const paths = {
   home: "/",
   setup: "/setup",
-  signIn: "/sign-in",
+  signIn: appPaths.signIn,
   secondStep: "/sign-in/second-step",
   setUpSecondStep: "/sign-in/set-up-second-step",
   signUp: "/sign-up",
-  invitation: "/invitation",
+  invitation: appPaths.invitation,
   mySettings: "/me",
   appearance: "/me/appearance",
   region: "/me/region",
@@ -47,7 +49,7 @@ export const paths = {
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
-  issue: "/issues/$issue",
+  issue: appPaths.issue,
 } as const;
 
 /** An address of the app, as the routes know it. */

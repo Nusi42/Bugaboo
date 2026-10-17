@@ -11,7 +11,8 @@
 
 use bb_auth::{Purpose, SecretToken};
 use bb_core::ErrorCode;
-use bb_core::confirmation::{AddressConfirmation, PATH, lasts};
+use bb_core::app_paths;
+use bb_core::confirmation::{AddressConfirmation, lasts};
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::UserId;
 use bb_core::message::{self, Message};
@@ -155,7 +156,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !renewed {
             return Ok(());
         }
-        let address = format!("{}{PATH}#{}", self.services.public_url, secret.encode());
+        let address = format!(
+            "{}{}#{}",
+            self.services.public_url,
+            app_paths::CONFIRM_ADDRESS,
+            secret.encode()
+        );
         let message = MailMessage {
             to: account.email,
             subject: Message::from(message::MAIL_CONFIRM_SUBJECT).render(),
