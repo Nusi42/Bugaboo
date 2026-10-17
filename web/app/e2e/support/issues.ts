@@ -33,6 +33,19 @@ export async function firstIssueType(session: ApiSession): Promise<string> {
   return first;
 }
 
+/**
+ * The ID of the issue type the scenarios make issues of: *Task*, which uses the starter workflow
+ * *Simple*, where any status can follow any other (a *Bug* has to pass *Testing*).
+ */
+export async function taskIssueType(session: ApiSession): Promise<string> {
+  const types = dataOf(await session.client.GET("/api/v1/issue-types"));
+  const task = types.items.find((each) => each.name === "Task")?.id;
+  if (task === undefined || task === null) {
+    throw new TypeError("The server has no issue type Task.");
+  }
+  return task;
+}
+
 /** Makes an issue in a project (given by its short name) as the person of the session. */
 export async function createIssue(
   session: ApiSession,
@@ -45,7 +58,7 @@ export async function createIssue(
     await session.client.POST("/api/v1/projects/{project}/issues", {
       params: { path: { project } },
       body: {
-        issue_type: await firstIssueType(session),
+        issue_type: await taskIssueType(session),
         title,
         ...(description === undefined ? {} : { description }),
         ...(fields === undefined ? {} : { fields }),
