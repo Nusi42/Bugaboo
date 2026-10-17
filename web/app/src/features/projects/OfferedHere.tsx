@@ -34,25 +34,27 @@ export function OfferedHere({
 }: OfferedHereProps) {
   return (
     <li {...partOf(part.item)}>
-      {mayChange ? (
-        <Switch
-          label={name}
-          isSelected={offered}
-          onChange={(next) => {
-            if (!isPending) {
-              onChange(next);
-            }
-          }}
-        />
-      ) : (
-        <span>
-          {t("projects.offer-line", {
-            name,
-            state: offered ? t("projects.offer-state-offered") : t("projects.offer-state-not"),
-          })}
-        </span>
-      )}
-      {beside}
+      <div {...partOf(part.row)}>
+        {mayChange ? (
+          <Switch
+            label={name}
+            isSelected={offered}
+            onChange={(next) => {
+              if (!isPending) {
+                onChange(next);
+              }
+            }}
+          />
+        ) : (
+          <span>
+            {t("projects.offer-line", {
+              name,
+              state: offered ? t("projects.offer-state-offered") : t("projects.offer-state-not"),
+            })}
+          </span>
+        )}
+        {beside}
+      </div>
       {own === undefined ? (
         <span {...partOf(part.muted)}>{t("projects.offer-follows")}</span>
       ) : mayChange ? (
