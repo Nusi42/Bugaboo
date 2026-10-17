@@ -256,6 +256,7 @@ export const messages = {
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
+  "files.drop": "Drop files here, paste a screenshot, or use Upload.",
   "error.file.too-big": "That file is bigger than this project allows.",
   "error.file.type-blocked": "Your organization does not accept this type of file.",
   "error.file.wrong-part":

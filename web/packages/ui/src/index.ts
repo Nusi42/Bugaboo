@@ -36,6 +36,8 @@ export {
   type FieldLook,
   type FieldValueProps,
 } from "./FieldValue.tsx";
+export { FileDrop, type FileDropProps } from "./FileDrop.tsx";
+export { FilePicker, type FilePickerProps } from "./FilePicker.tsx";
 export { Form, type FormProps } from "./Form.tsx";
 export { Icon, type IconProps } from "./Icon.tsx";
 export { iconName, type IconName } from "./icons.ts";

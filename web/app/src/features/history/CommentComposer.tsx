@@ -12,6 +12,7 @@ import {
 } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { ChosenFilesPicker, useChosenFiles } from "../files/index.ts";
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
@@ -36,7 +37,10 @@ function MentionChoices({
   readonly onChoose: (handle: string) => void;
 }) {
   const choices = api.query.useQuery("get", "/api/v1/issues/{issue}/mention-choices", {
-    params: { path: { issue }, query: { search: typed, limit: pageSize.short } },
+    params: {
+      path: { issue },
+      query: { search: typed, limit: pageSize.short },
+    },
   });
   const items = choices.data?.items ?? [];
   if (items.length === 0) {
@@ -63,8 +67,10 @@ function MentionChoices({
 /** *Write a comment*: the Markdown editor with its preview, and the `@` choices below it. */
 export function CommentComposer({ issue }: { readonly issue: string }) {
   const [text, setText] = useState("");
+  const chosen = useChosenFiles(issue);
   const add = api.query.useMutation("post", "/api/v1/issues/{issue}/comments", {
-    onSuccess: () => {
+    onSuccess: (posted) => {
+      chosen.sendTo(posted.id);
       refreshHistory();
       setText("");
     },
@@ -93,6 +99,7 @@ export function CommentComposer({ issue }: { readonly issue: string }) {
           }}
         />
       )}
+      <ChosenFilesPicker chosen={chosen} />
       {add.isError ? <Alert tone={alertTone.danger}>{messageOf(add.error)}</Alert> : null}
       <div {...partOf(part.row)}>
         <SubmitButton isPending={add.isPending}>{t("comments.add")}</SubmitButton>

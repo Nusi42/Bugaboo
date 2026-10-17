@@ -119,6 +119,16 @@
           // The keyboard event of the browser is its own object; the shortcuts read a few fields of it.
           // A window (UX §6.3) reads the size of its element and the keys and pointer of its edges.
           { "from": "lib", "name": ["KeyboardEvent"] },
+          // A file the person chose or dropped is the browser's own object; the files of an issue
+          // are read from it piece by piece (`Blob.slice`) and nothing changes it.
+          { "from": "lib", "name": ["Blob", "File", "FileList", "ClipboardEvent"] },
+          // What React Aria hands the place that takes dropped files: the event, and the files,
+          // folders and texts in it (`FileDrop`).
+          {
+            "from": "package",
+            "package": "@react-types/shared",
+            "name": ["DropEvent", "FileDropItem", "TextDropItem", "DirectoryDropItem"]
+          },
           { "from": "package", "package": "react", "name": ["KeyboardEvent", "PointerEvent"] },
           {
             "from": "package",
