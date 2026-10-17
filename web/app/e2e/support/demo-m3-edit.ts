@@ -1,6 +1,5 @@
 import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
-import { savedNote } from "./issues.ts";
 
 import { lostEditNotice, signedInPage, type ScreenLook } from "./crowd-pages.ts";
 import { goodInFourThemes } from "./demo.ts";
@@ -13,6 +12,7 @@ import {
   startEditing,
   typeUnderLock,
 } from "./description.ts";
+import { savedNote } from "./issues.ts";
 import { sampleAdministrator } from "./sample.ts";
 import { type Instance } from "./server.ts";
 

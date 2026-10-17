@@ -15,10 +15,10 @@ test.describe.configure({ mode: "serial" });
 /** The text of the script that a person might paste into a description. */
 const pasted = "<script>window.attacked = true</script>";
 
-/** Opens the description of an issue for editing, and returns the text box. */
 /** The issue the tests of the editor write the description of. */
 const ISSUE = "WEB-2";
 
+/** Opens the description of an issue for editing, and returns the text box. */
 async function openEditor(page: Page) {
   await signIn(page, ada);
   await page.goto(issueAddress(ISSUE));
