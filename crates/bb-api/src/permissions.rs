@@ -548,7 +548,7 @@ pub const ROUTES: &[Route] = &[
     route(
         "previewPublishWorkflow",
         Declared::Permission(Permission::ManageWorkflows),
-        Answer::NeverStored,
+        Answer::Ordinary,
     ),
     route(
         "deleteWorkflow",
