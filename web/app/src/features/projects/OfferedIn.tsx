@@ -218,16 +218,18 @@ function Lines({
               {t("projects.offer-line", { name, state: offerStateName(row.offered) })}
             </span>
             {row.may_change === true && project !== undefined ? (
-              <Button
-                look={buttonLook.quiet}
-                aria-label={t("projects.offered-in-take-away-for", { place: name })}
-                isPending={isPending}
-                onPress={() => {
-                  onChange({ project, offered: null });
-                }}
-              >
-                {t("projects.offered-in-take-away")}
-              </Button>
+              <span {...partOf(part.itemActions)}>
+                <Button
+                  look={buttonLook.quiet}
+                  aria-label={t("projects.offered-in-take-away-for", { place: name })}
+                  isPending={isPending}
+                  onPress={() => {
+                    onChange({ project, offered: null });
+                  }}
+                >
+                  {t("projects.offered-in-take-away")}
+                </Button>
+              </span>
             ) : null}
           </li>
         );
