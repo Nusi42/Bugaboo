@@ -13,9 +13,8 @@
 
 use std::collections::BTreeMap;
 
-use bb_core::issue::{IssueIcon, Priority, STARTING_ISSUE_TYPES};
+use bb_core::issue::{IssueIcon, Priority, STARTING_ISSUE_TYPES, StatusGroup};
 use bb_core::message::Message;
-use bb_core::workflow::{StatusKey, starter};
 use bb_dev_words::sample::{IssuePlan, TypeShare};
 
 use crate::comments::{PlannedComment, plan_comments};
@@ -75,9 +74,8 @@ pub(crate) struct PlannedIssue {
     pub(crate) labels: Vec<usize>,
 }
 
-/// What happens at a step.
-/// How far an issue got: the statuses of the starting workflow *Simple* that the sample moves
-/// issues to.
+/// How far an issue got, as a status group: the sample walks the status changes of the workflow of
+/// the issue until it stands in the group.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Reached {
     InProgress,
@@ -85,15 +83,16 @@ pub(crate) enum Reached {
 }
 
 impl Reached {
-    /// The status of the starting workflow it stands for.
-    pub(crate) fn status(self) -> StatusKey {
+    /// The status group it stands for.
+    pub(crate) const fn group(self) -> StatusGroup {
         match self {
-            Self::InProgress => starter::in_progress(),
-            Self::Done => starter::done(),
+            Self::InProgress => StatusGroup::InProgress,
+            Self::Done => StatusGroup::Done,
         }
     }
 }
 
+/// What happens at a step.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Action {
     Create(usize),

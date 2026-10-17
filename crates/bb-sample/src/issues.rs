@@ -26,9 +26,11 @@ use bb_core::comment::{TEXT_PART, handle_of};
 use bb_core::edit::EditWhat;
 use bb_core::event::{EntityRef, RecordKind};
 use bb_core::id::{CommentId, EditorId, IssueId, LockToken, UserId};
+use bb_core::issue::StatusGroup;
 use bb_core::relation::Direction;
 use bb_core::technical::TechnicalName;
 use bb_core::time::SECONDS_PER_DAY;
+use bb_core::workflow::StatusKey;
 use bb_dev_words::sample::{IssuePlan, Layout};
 use serde_json::{Value, json};
 
@@ -149,10 +151,59 @@ pub(crate) struct Maker<'a, 'w> {
     pub(crate) comments: Vec<Option<MadeComment>>,
 }
 
+/// The most status changes it takes to get an issue into a status group: no starter workflow needs
+/// more.
+const STEPS_TO_A_GROUP_MAX: usize = 4;
+
 #[derive(Clone, Debug)]
 pub(crate) struct MadeIssue {
     pub(crate) id: IssueId,
     pub(crate) version: i64,
+    /// The status group the issue is in.
+    group: String,
+    /// The status changes the person who made it may make now: the key and the group of the status
+    /// each ends in.
+    changes: Vec<(String, String)>,
+}
+
+impl MadeIssue {
+    /// The issue as an answer of the use cases shows it.
+    fn of(answer: &Value) -> Result<Self, SampleError> {
+        let text = |value: &Value| value.as_str().unwrap_or_default().to_owned();
+        Ok(Self {
+            id: id_in(answer, "id")?,
+            version: answer["version"].as_i64().unwrap_or(1),
+            group: text(&answer["status"]["group"]),
+            changes: answer["status_changes"]
+                .as_array()
+                .map(|changes| {
+                    changes
+                        .iter()
+                        .map(|each| (text(&each["to"]["key"]), text(&each["to"]["group"])))
+                        .collect()
+                })
+                .unwrap_or_default(),
+        })
+    }
+
+    /// The status change that goes toward the group, if there is one: one that ends in it, else
+    /// one that ends in work going on while the issue has not started.
+    fn toward(&self, reached: StatusGroup) -> Option<&str> {
+        let ends_in = |group: StatusGroup| {
+            self.changes
+                .iter()
+                .find(|(_, each)| each == group.code())
+                .map(|(key, _)| key.as_str())
+        };
+        if self.group == reached.code() {
+            return None;
+        }
+        ends_in(reached).or_else(|| {
+            (self.group == StatusGroup::NotStarted.code())
+                .then(|| ends_in(StatusGroup::InProgress))
+                .flatten()
+        })
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -282,10 +333,7 @@ impl Maker<'_, '_> {
             .await,
             Step::Issue,
         )?;
-        self.issues[at] = Some(MadeIssue {
-            id: id_in(&made, "id")?,
-            version: made["version"].as_i64().unwrap_or(1),
-        });
+        self.issues[at] = Some(MadeIssue::of(&made)?);
         Ok(())
     }
 
@@ -358,28 +406,35 @@ impl Maker<'_, '_> {
         reached: Reached,
         person: usize,
     ) -> Result<(), SampleError> {
-        let made = self.issue(at)?.clone();
         let token = self.hands.token(person).await?;
-        let changed = json(
-            change_issue(
-                &self.world.services.ctx(self.world.request()),
-                ChangeIssue {
-                    session_token: token,
-                    issue: made.id.to_string(),
-                    version: made.version,
-                    issue_type: None,
-                    title: None,
-                    status: Some(reached.status()),
-                    priority: None,
-                    assigned_to: None,
-                    fields: BTreeMap::new(),
-                },
-            )
-            .await,
-            Step::Change,
-        )?;
-        if let Some(Some(stored)) = self.issues.get_mut(at) {
-            stored.version = changed["version"].as_i64().unwrap_or(made.version + 1);
+        // The workflow of the issue says which status changes there are: walk them toward the group.
+        for _ in 0..STEPS_TO_A_GROUP_MAX {
+            let made = self.issue(at)?.clone();
+            let Some(next) = made.toward(reached.group()) else {
+                break;
+            };
+            let changed = json(
+                change_issue(
+                    &self.world.services.ctx(self.world.request()),
+                    ChangeIssue {
+                        session_token: token.clone(),
+                        issue: made.id.to_string(),
+                        version: made.version,
+                        issue_type: None,
+                        title: None,
+                        status: Some(
+                            StatusKey::new(next)
+                                .map_err(|error| SampleError::NotMade(error.to_string()))?,
+                        ),
+                        priority: None,
+                        assigned_to: None,
+                        fields: BTreeMap::new(),
+                    },
+                )
+                .await,
+                Step::Change,
+            )?;
+            self.issues[at] = Some(MadeIssue::of(&changed)?);
         }
         Ok(())
     }
