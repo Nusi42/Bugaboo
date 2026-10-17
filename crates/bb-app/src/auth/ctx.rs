@@ -36,6 +36,9 @@ pub struct RequestInfo {
     pub network: Option<NetworkPrefix>,
     /// The browser and the system.
     pub device: Device,
+    /// A read nobody asked for, such as a count that refreshes itself: it does not keep a
+    /// session alive (SEC-12).
+    pub background: bool,
 }
 
 /// Everything the sign-in use cases share. Built once at start-up (`bb-server`).

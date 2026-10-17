@@ -242,6 +242,8 @@ pub(crate) struct CookieTable {
     pub(crate) cookies: Vec<CookieDef>,
     /// The value of `CSRF_HEADER`.
     pub(crate) csrf_header: String,
+    /// The value of `BACKGROUND_HEADER`.
+    pub(crate) background_header: String,
 }
 
 /// One cookie of the table.
@@ -295,7 +297,8 @@ pub(crate) fn read_cookies(sources: &[Source]) -> anyhow::Result<CookieTable> {
 
 pub(crate) fn parse_cookies(text: &str) -> anyhow::Result<CookieTable> {
     let file = syn::parse_file(text).with_context(|| format!("{COOKIES_SOURCE} is not Rust"))?;
-    let csrf_header = csrf_header(&file)?;
+    let csrf_header = header_const(&file, "CSRF_HEADER")?;
+    let background_header = header_const(&file, "BACKGROUND_HEADER")?;
     for item in &file.items {
         let syn::Item::Macro(item) = item else {
             continue;
@@ -320,17 +323,18 @@ pub(crate) fn parse_cookies(text: &str) -> anyhow::Result<CookieTable> {
         return Ok(CookieTable {
             cookies: rows.into_iter().map(|row| row.0).collect(),
             csrf_header,
+            background_header,
         });
     }
     bail!("{COOKIES_SOURCE} has no `cookies! {{ … }}` table")
 }
 
-/// The text of `pub const CSRF_HEADER: &str = "…";`.
-fn csrf_header(file: &syn::File) -> anyhow::Result<String> {
+/// The text of `pub const NAME: &str = "…";`.
+fn header_const(file: &syn::File, name: &str) -> anyhow::Result<String> {
     file.items
         .iter()
         .find_map(|item| match item {
-            syn::Item::Const(item) if item.ident == "CSRF_HEADER" => match &*item.expr {
+            syn::Item::Const(item) if item.ident == name => match &*item.expr {
                 syn::Expr::Lit(syn::ExprLit {
                     lit: syn::Lit::Str(text),
                     ..
@@ -339,7 +343,7 @@ fn csrf_header(file: &syn::File) -> anyhow::Result<String> {
             },
             _ => None,
         })
-        .with_context(|| format!("{COOKIES_SOURCE} has no `const CSRF_HEADER: &str = \"…\"`"))
+        .with_context(|| format!("{COOKIES_SOURCE} has no `const {name}: &str = \"…\"`"))
 }
 
 /// The English purpose texts by constant name.
@@ -362,8 +366,11 @@ export const CSRF_COOKIE = \"{}\";
 
 /** The request header that carries the CSRF token on every change request. */
 export const CSRF_HEADER = \"{}\";
+
+/** The request header that marks a read nobody asked for (a count that refreshes itself): it does not keep a session alive. */
+export const BACKGROUND_HEADER = \"{}\";
 ",
-        csrf.name, table.csrf_header
+        csrf.name, table.csrf_header, table.background_header
     ))
 }
 
@@ -419,6 +426,7 @@ mod tests {
     use super::*;
 
     const TABLE: &str = "pub const CSRF_HEADER: &str = \"x-csrf-token\";
+pub const BACKGROUND_HEADER: &str = \"x-background-read\";
 cookies! {\n    /// One.\n    Session => (\"__Host-bb_session\", true, Lax, message::COOKIE_SESSION_PURPOSE),\n    Csrf => (\"__Host-bb_csrf\", false, Strict, message::COOKIE_CSRF_PURPOSE),\n}\n";
 
     #[test]

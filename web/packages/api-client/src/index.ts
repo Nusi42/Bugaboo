@@ -3,7 +3,7 @@ export { createApi, readCookie } from "./client.ts";
 export type { Api, ClientOptions } from "./client.ts";
 export { ApiError, conflictOf, isProblem, messageKeyOf, PROBLEM_CONTENT_TYPE } from "./problem.ts";
 export type { Conflict, ErrorCode, Problem } from "./problem.ts";
-export { CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
+export { BACKGROUND_HEADER, CSRF_COOKIE, CSRF_HEADER } from "./protocol.ts";
 export type { ReadonlyDeep, Schema } from "./readonly.ts";
 export {
   draftKeepDays,

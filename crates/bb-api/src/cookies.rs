@@ -20,6 +20,11 @@ use bb_core::message::{self, MessageKey};
 /// The request header that carries the CSRF token on every change request (architecture §7).
 pub const CSRF_HEADER: &str = "x-csrf-token";
 
+/// The request header that marks a read nobody asked for, such as a count that refreshes itself:
+/// the session check does not count such a request as use, so it cannot keep a session alive
+/// (`sec_12_a_background_count_does_not_keep_a_session_alive`). Only a read can carry it.
+pub const BACKGROUND_HEADER: &str = "x-background-read";
+
 /// How far a browser may send a cookie along with requests from other websites.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SameSite {

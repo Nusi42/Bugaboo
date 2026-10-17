@@ -446,6 +446,7 @@ async fn auth_09_wrong_setup_codes_are_counted_per_network_not_for_everybody() -
                     network.parse()?,
                 )),
                 device: bb_auth::Device::default(),
+                ..RequestInfo::default()
             })
         };
         let setup = |code: String| CompleteSetup {
