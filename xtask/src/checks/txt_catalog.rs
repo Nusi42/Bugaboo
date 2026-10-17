@@ -267,6 +267,11 @@ fn check_usage(
             )),
         }
     }
+    // The names a key has in Rust, made once and not for every file.
+    let names_of_keys: Vec<(&str, String, String)> = source
+        .keys()
+        .map(|key| (key.as_str(), constant_name(key), function_name(key)))
+        .collect();
     for file in sources {
         let is_test = is_test_or_generated(&file.path);
         let text = if is_rust(&file.path) {
@@ -288,11 +293,9 @@ fn check_usage(
         }
         if is_rust(&file.path) && !is_test {
             let names = identifiers(&text);
-            for key in source.keys() {
-                if names.contains(constant_name(key).as_str())
-                    || names.contains(function_name(key).as_str())
-                {
-                    used.insert(key.as_str());
+            for (key, constant, function) in &names_of_keys {
+                if names.contains(constant.as_str()) || names.contains(function.as_str()) {
+                    used.insert(key);
                 }
             }
         }

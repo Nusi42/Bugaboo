@@ -290,6 +290,8 @@ export const messages = {
   "permission.move-issues": "Move issues into or out of the project",
   "permission.edit-anyway": "Take over text someone else is editing; their text is kept",
   "permission.manage-issue-types": "Manage issue types, kinds of relation and layouts",
+  "permission.manage-workflows":
+    "Manage workflows: change statuses and status changes, and publish them",
   "permission.manage-fields": "Create, change and retire fields",
   "permission.manage-labels": "Manage labels and tags, also rename and combine them",
   "permission.create-projects": "Create projects at the top level",
@@ -410,6 +412,18 @@ export const messages = {
   "status-group.not-started": "Not started",
   "status-group.in-progress": "In progress",
   "status-group.done": "Done",
+  "status.testing": "Testing",
+  "status.in-review": "In review",
+  "status.wont-fix": "Won't fix",
+  "error.workflow.no-such-change": "The workflow of this issue has no such status change.",
+  "error.workflow.not-for-you": "You may not change the status this way.",
+  "error.workflow.only-if":
+    "This status change is possible only when something else is true first.",
+  "error.workflow.cannot-fill": "This status change needs a field that you cannot fill in.",
+  "error.workflow.status-in-use":
+    "Some issues are still in a status that the workflow would no longer have. Choose where they go.",
+  "error.workflow.invalid":
+    "The workflow breaks a rule: check the statuses, the status changes and their names.",
   "priority.low": "Low",
   "priority.normal": "Normal",
   "priority.high": "High",
@@ -558,6 +572,7 @@ export const messages = {
   "many-changes-skip.limit-reached": "It already has as many of these as it can hold",
   "many-changes-skip.field-rule": "A value of the issue breaks the rule of its field",
   "many-changes-skip.not-valid": "This change cannot be applied to it",
+  "many-changes-skip.workflow": "Its workflow does not allow this status change",
   "many-changes-status.queued": "Waiting",
   "many-changes-status.running": "Working",
   "many-changes-status.done": "Done",

@@ -7,12 +7,12 @@ use std::collections::BTreeMap;
 
 use bb_core::access::AppliesTo;
 use bb_core::id::IssueId;
-use bb_core::issue::Status;
 use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, ManyChangeStatus, SkipReason};
+use bb_core::workflow::starter;
 use bb_policy::Permission;
 
 use super::scenarios::{a_project, token};
-use super::scenarios_issues::an_issue;
+use super::scenarios_issues::{a_type, an_issue};
 use super::scenarios_tags::{a_label, a_label_group, labelled, tagged};
 use super::world::{Outcome, World};
 use crate::issues::{
@@ -28,7 +28,7 @@ use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_r
 pub(super) fn done() -> ManyChangeAction {
     ManyChangeAction::Change {
         change: ManyChange {
-            status: Some(Status::Done),
+            status: Some(starter::done()),
             ..ManyChange::default()
         },
     }
@@ -184,10 +184,17 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
     assert_eq!(skipped, vec![Some(SkipReason::ChangedSince), None]);
     // The named issue is left as the other person made it.
     let left = result.outcomes[0].issue.as_ref().ok_or("no line")?;
-    assert_eq!(left.status, Some(Status::Open));
     assert_eq!(
-        result.outcomes[1].issue.as_ref().map(|line| line.status),
-        Some(Some(Status::Open))
+        left.status.as_ref().map(|status| status.key.clone()),
+        Some(starter::open())
+    );
+    assert_eq!(
+        result.outcomes[1]
+            .issue
+            .as_ref()
+            .and_then(|line| line.status.as_ref())
+            .map(|status| status.key.clone()),
+        Some(starter::open())
     );
     Ok(())
 }
@@ -348,7 +355,7 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
     let project = a_project(&world, "ACME").await?;
-    let kind = types_first(&world).await?;
+    let kind = a_type(&world).await?;
     let mut issues = Vec::new();
     for number in 0..=MANY_CHANGES_JOB_ABOVE {
         issues.push(
@@ -475,31 +482,12 @@ async fn adr_0017_a_step_that_stopped_before_it_counted_an_issue_counts_it_when_
     Ok(())
 }
 
-async fn types_first(world: &World) -> Result<bb_core::id::IssueTypeId, String> {
-    let types = issue_types(
-        &world.ctx(),
-        IssueTypesQuery {
-            session_token: token(world),
-            cursor: None,
-            limit: 50,
-        },
-    )
-    .await
-    .map_err(|error| error.to_string())?
-    .into_value();
-    types
-        .items
-        .first()
-        .map(|found| found.id)
-        .ok_or_else(|| "no issue type".to_owned())
-}
-
 #[tokio::test]
 async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
     let project = a_project(&world, "ACME").await?;
-    let kind = types_first(&world).await?;
+    let kind = a_type(&world).await?;
     let mut targets = Vec::new();
     for number in 0..=MANY_CHANGES_JOB_ABOVE {
         let made = create_issue(

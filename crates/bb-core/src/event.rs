@@ -141,6 +141,8 @@ words! {
         Layout => "layout",
         /// A kind of relation.
         RelationKind => "relation_kind",
+        /// A workflow: the statuses and the status changes of issue types (WF-01).
+        Workflow => "workflow",
         /// A role.
         Role => "role",
         /// A sign-in session.

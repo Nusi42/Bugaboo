@@ -11732,6 +11732,144 @@
         "x-permission": "delete-issues"
       }
     },
+    "/api/v1/issues/{issue}/status-changes": {
+      "get": {
+        "tags": ["workflows"],
+        "summary": "*Try it*: the status changes a person would get on an issue, and why not the others. Needs the\npermission *Manage workflows* in the project of the issue.",
+        "operationId": "tryWorkflow",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "person",
+            "in": "query",
+            "description": "The ID of the person.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The status changes and the answer for each.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriedBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "manage-workflows"
+      }
+    },
     "/api/v1/issues/{issue}/sub-issues": {
       "get": {
         "tags": ["relations"],
@@ -18109,6 +18247,114 @@
         "x-permission": "change-project-settings"
       }
     },
+    "/api/v1/projects/{project}/statuses": {
+      "get": {
+        "tags": ["workflows"],
+        "summary": "The statuses the issues of a project can have, for choosing one for many issues at once. Each\nissue is still judged by its own workflow. Needs the permission *See the project*.",
+        "operationId": "getProjectStatuses",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The statuses.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStatusesBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "see-projects"
+      }
+    },
     "/api/v1/projects/{project}/sub-projects": {
       "post": {
         "tags": ["projects"],
@@ -18363,6 +18609,132 @@
         },
         "x-never-stored": true,
         "x-permission": "see-projects"
+      }
+    },
+    "/api/v1/projects/{project}/who-may-change/{field}": {
+      "get": {
+        "tags": ["workflows"],
+        "summary": "Which roles may change a field in the issues of a project, as the reader may know them: only\nroles somebody holds there are named, and a reader who is not shown the people of the project\nby role is named none. Needs the permission *See issues*.",
+        "operationId": "getWhoMayChange",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID of the project, or its short name.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "description": "The key of the field: its word, or the ID of an own field.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FieldKey"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of the issue type; leave it out for all types.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The roles.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoMayChangeBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "see-issues"
       }
     },
     "/api/v1/relation-kinds": {
@@ -21533,6 +21905,726 @@
         },
         "x-permission": "by-record"
       }
+    },
+    "/api/v1/workflows": {
+      "get": {
+        "tags": ["workflows"],
+        "summary": "The workflows there are, by name, for choosing one for a place. Needs the permission *Manage\nworkflows* at the place.",
+        "operationId": "listWorkflows",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The project, by its ID or its short name; leave it out for the whole organization.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The workflows.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowListBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "manage-workflows"
+      },
+      "post": {
+        "tags": ["workflows"],
+        "summary": "Creates the workflow of a place as a copy of the one that counts there (*Customize*). Needs the\npermission *Manage workflows* at the place.",
+        "operationId": "createWorkflow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewWorkflowBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The workflow of the place.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowEditorBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-workflows"
+      }
+    },
+    "/api/v1/workflows/editor": {
+      "get": {
+        "tags": ["workflows"],
+        "summary": "The workflow that counts at a place, for somebody who may change it: its statuses, status\nchanges and rules, with the roles, groups and fields the rules can name. Needs the permission\n*Manage workflows* at the place.",
+        "operationId": "getWorkflowEditor",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The project, by its ID or its short name; leave it out for the whole organization.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The issue type; leave it out for all types.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The workflow with what its rules can name.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowEditorBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "manage-workflows"
+      }
+    },
+    "/api/v1/workflows/uses": {
+      "put": {
+        "tags": ["workflows"],
+        "summary": "Says which workflow a place uses, or that it follows its parent again. Needs the permission\n*Manage workflows* at the place.",
+        "operationId": "useWorkflow",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UseWorkflowBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The workflow that counts at the place now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowEditorBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-workflows"
+      }
+    },
+    "/api/v1/workflows/{workflow}": {
+      "put": {
+        "tags": ["workflows"],
+        "summary": "Publishes a workflow under the edit lock the person holds: the statuses, the status changes and\ntheir rules are replaced by what is sent, on the version the person looked at. A status that is\ndropped while issues are in it needs a place to move them to, and they are moved by a change to\nmany issues, with history. Needs the permission *Manage workflows* wherever the workflow is\nused.",
+        "operationId": "publishWorkflow",
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishWorkflowBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The workflow with its new version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-workflows"
+      },
+      "delete": {
+        "tags": ["workflows"],
+        "summary": "Takes a workflow away together with the places it was used at: those places follow their\nparent again. Needs the permission *Manage workflows* wherever the workflow is used.",
+        "operationId": "deleteWorkflow",
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "The version the person looked at.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The workflow is gone."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-workflows"
+      }
     }
   },
   "components": {
@@ -22052,6 +23144,29 @@
           }
         }
       },
+      "ChangeDraftBody": {
+        "type": "object",
+        "description": "A status change as the editor sends it.",
+        "required": ["from", "to", "button"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "from": {
+            "type": "string",
+            "description": "The status it starts from: a key, or the name of a new status."
+          },
+          "rules": {
+            "$ref": "#/components/schemas/StatusRulesBody",
+            "description": "Its rules."
+          },
+          "to": {
+            "type": "string",
+            "description": "The status it ends in: a key, or the name of a new status."
+          }
+        }
+      },
       "ChangeFieldBody": {
         "type": "object",
         "description": "What to change about an own field: what is left out stays as it is.",
@@ -22153,15 +23268,8 @@
             ]
           },
           "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "A new status. Entering the group *Done* sets the closed date; leaving it clears it."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"],
+            "description": "The key of a new status: judged by the workflow of the issue. Entering the group *Done* sets\nthe closed date; leaving it clears it."
           },
           "title": {
             "type": ["string", "null"],
@@ -22526,6 +23634,25 @@
           "issue": {
             "$ref": "#/components/schemas/IssueRef",
             "description": "The issue, as the person sees it."
+          }
+        }
+      },
+      "ChangingRoleBody": {
+        "type": "object",
+        "description": "A role that may change the field.",
+        "required": ["id", "name", "own_only"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the role."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "own_only": {
+            "type": "boolean",
+            "description": "Whether it may change the field only in the issues its holders reported."
           }
         }
       },
@@ -23112,6 +24239,29 @@
           }
         }
       },
+      "EditorChangeBody": {
+        "type": "object",
+        "description": "A status change in the editor.",
+        "required": ["from", "to", "button", "rules"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "from": {
+            "type": "string",
+            "description": "The key of the status it starts from."
+          },
+          "rules": {
+            "$ref": "#/components/schemas/StatusRulesBody",
+            "description": "Its rules."
+          },
+          "to": {
+            "type": "string",
+            "description": "The key of the status it ends in."
+          }
+        }
+      },
       "EditorFieldBody": {
         "type": "object",
         "description": "A field of a layout in the editor.",
@@ -23210,6 +24360,12 @@
           "project.too_deep",
           "project.preview_changed",
           "issue.type_retired",
+          "workflow.no_such_change",
+          "workflow.not_for_you",
+          "workflow.only_if",
+          "workflow.cannot_fill",
+          "workflow.status_in_use",
+          "workflow.invalid",
           "issue.parent_circle",
           "relation.exists",
           "limit.reached",
@@ -24390,24 +25546,20 @@
           "status": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/Status",
-                "description": "Where it stands in the workflow."
+                "$ref": "#/components/schemas/StatusRef",
+                "description": "Where it stands in its workflow: the key, the name and the status group."
               },
               {
                 "type": "null"
               }
             ]
           },
-          "status_group": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/StatusGroup",
-                "description": "The group of its status."
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "status_changes": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/StatusChangeRef"
+            },
+            "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
           },
           "title": {
             "type": ["string", "null"],
@@ -24490,19 +25642,8 @@
           "status": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/Status",
-                "description": "Where it stands in the workflow."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "status_group": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/StatusGroup",
-                "description": "The group of its status."
+                "$ref": "#/components/schemas/StatusRef",
+                "description": "Where it stands in its workflow: the key, the name and the status group."
               },
               {
                 "type": "null"
@@ -25521,15 +26662,8 @@
             ]
           },
           "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "A new status."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"],
+            "description": "The key of a new status. Each issue is judged by its own workflow, and an issue whose\nworkflow does not allow the change is skipped."
           }
         }
       },
@@ -26033,6 +27167,21 @@
         "description": "Where a person may move a project to.",
         "enum": ["nowhere", "into-projects", "into-projects-or-top"]
       },
+      "NamedBody": {
+        "type": "object",
+        "description": "A role or a group a rule can name.",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name."
+          }
+        }
+      },
       "NewCommentBody": {
         "type": "object",
         "description": "A comment to write.",
@@ -26216,15 +27365,8 @@
             ]
           },
           "status": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Status",
-                "description": "Where it starts. The first status of the starting workflow when left out."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": ["string", "null"],
+            "description": "The key of the status it starts in. The first status of its workflow when left out; another\none is judged as a status change from the first."
           },
           "title": {
             "type": "string",
@@ -26462,6 +27604,20 @@
           }
         }
       },
+      "NewWorkflowBody": {
+        "type": "object",
+        "description": "The workflow to create for a place.",
+        "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The issue type; leave it out for all types."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project, by its ID or its short name; leave it out for the whole organization."
+          }
+        }
+      },
       "NoticeBody": {
         "type": "object",
         "description": "A note for the person who is editing.",
@@ -26682,6 +27838,21 @@
           "run_ended",
           "edit_notice"
         ]
+      },
+      "OnlyIfRuleBody": {
+        "type": "object",
+        "description": "One condition of *Only if …*, in the same words as *Must be filled in*.",
+        "required": ["field", "test"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "test": {
+            "$ref": "#/components/schemas/Test",
+            "description": "What it must be like."
+          }
+        }
       },
       "OwnChangeBody": {
         "oneOf": [
@@ -27529,24 +28700,20 @@
                 "status": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/Status",
-                      "description": "Where it stands in the workflow."
+                      "$ref": "#/components/schemas/StatusRef",
+                      "description": "Where it stands in its workflow: the key, the name and the status group."
                     },
                     {
                       "type": "null"
                     }
                   ]
                 },
-                "status_group": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/StatusGroup",
-                      "description": "The group of its status."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                "status_changes": {
+                  "type": ["array", "null"],
+                  "items": {
+                    "$ref": "#/components/schemas/StatusChangeRef"
+                  },
+                  "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
                 },
                 "title": {
                   "type": ["string", "null"],
@@ -27602,19 +28769,8 @@
                 "status": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/Status",
-                      "description": "Where it stands in the workflow."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "status_group": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/StatusGroup",
-                      "description": "The group of its status."
+                      "$ref": "#/components/schemas/StatusRef",
+                      "description": "Where it stands in its workflow: the key, the name and the status group."
                     },
                     {
                       "type": "null"
@@ -28548,6 +29704,7 @@
           "move-issues",
           "edit-anyway",
           "manage-issue-types",
+          "manage-workflows",
           "manage-fields",
           "manage-labels",
           "decide-roles",
@@ -29211,6 +30368,72 @@
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
       },
+      "ProjectStatusesBody": {
+        "type": "object",
+        "description": "The statuses the issues of a project can have: one list for all issue types. A status with the\nsame key, name and group in several workflows is listed once; one with the same key and another\nname or group is listed for each.",
+        "required": ["statuses"],
+        "properties": {
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusRef"
+            },
+            "description": "The statuses, in the order the workflows list them."
+          }
+        }
+      },
+      "PublishWorkflowBody": {
+        "type": "object",
+        "description": "The workflow to publish.",
+        "required": ["version", "lock_token", "name", "statuses", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeDraftBody"
+            },
+            "description": "All the status changes. They replace the ones that are stored."
+          },
+          "lock_token": {
+            "type": "string",
+            "description": "The token the edit lock was taken with."
+          },
+          "moves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusMoveBody"
+            },
+            "description": "Where the issues of a dropped status go. Needed for each dropped status that issues are\nstill in; nothing is published without it."
+          },
+          "name": {
+            "type": "string",
+            "description": "What the workflow is called."
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusDraftBody"
+            },
+            "description": "All the statuses, in order. The first is where a new issue starts."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
+      "PublishedBody": {
+        "type": "object",
+        "description": "What *Publish* did.",
+        "required": ["workflow"],
+        "properties": {
+          "workflow": {
+            "$ref": "#/components/schemas/WorkflowSlotBody",
+            "description": "The workflow, with its new version."
+          }
+        }
+      },
       "ReadMentionsBody": {
         "type": "object",
         "description": "The mentions to mark as read.",
@@ -29796,6 +31019,21 @@
           "whole_organization": {
             "type": "boolean",
             "description": "Whether somebody has the role for the whole organization."
+          }
+        }
+      },
+      "RuleFieldBody": {
+        "type": "object",
+        "description": "A field a rule can name.",
+        "required": ["field"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name of an own field; a built-in field is named by its word."
           }
         }
       },
@@ -30431,6 +31669,7 @@
           "same-issue",
           "limit-reached",
           "field-rule",
+          "workflow",
           "not-valid"
         ]
       },
@@ -30504,15 +31743,116 @@
           }
         }
       },
-      "Status": {
-        "type": "string",
-        "description": "A status of the starting workflow.",
-        "enum": ["open", "in-progress", "done"]
+      "StatusChangeRef": {
+        "type": "object",
+        "description": "A status change the reader may make on an issue now.",
+        "required": ["to", "button", "needs"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldKey"
+            },
+            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), by their keys. Empty when it needs none."
+          },
+          "to": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status it ends in."
+          }
+        }
+      },
+      "StatusDraftBody": {
+        "type": "object",
+        "description": "A status as the editor sends it.",
+        "required": ["name", "group"],
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/StatusGroup",
+            "description": "The status group it belongs to."
+          },
+          "key": {
+            "type": ["string", "null"],
+            "description": "The key of a status the workflow has. Left out for a new status, which gets a key made from\nits name; a status change names a new status by its name."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          }
+        }
       },
       "StatusGroup": {
         "type": "string",
         "description": "The group of a status.",
         "enum": ["not-started", "in-progress", "done"]
+      },
+      "StatusMoveBody": {
+        "type": "object",
+        "description": "Where the issues of a dropped status go.",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The key of the status that is dropped."
+          },
+          "to": {
+            "type": "string",
+            "description": "The key of the status of the new workflow the issues go to."
+          }
+        }
+      },
+      "StatusRef": {
+        "type": "object",
+        "description": "A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.",
+        "required": ["key", "name", "group"],
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/StatusGroup",
+            "description": "The status group it belongs to."
+          },
+          "key": {
+            "type": "string",
+            "description": "The key, which never changes: it is what a request names a status by."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          }
+        }
+      },
+      "StatusRulesBody": {
+        "type": "object",
+        "description": "The rules of a status change.",
+        "properties": {
+          "ask_for": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "*Ask for*: the keys of the fields shown in a small form during the change."
+          },
+          "must_fill": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "*Must be filled in*: the keys of the fields that need a value first."
+          },
+          "only_if": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnlyIfRuleBody"
+            },
+            "description": "*Only if …*: every condition must hold."
+          },
+          "who": {
+            "$ref": "#/components/schemas/WhoCanBody",
+            "description": "*Who can do it*."
+          }
+        }
       },
       "StatusValue": {
         "type": "string",
@@ -30633,10 +31973,109 @@
           }
         }
       },
+      "Test": {
+        "type": "string",
+        "description": "What a condition of a status change asks of a field.",
+        "enum": ["filled", "empty"]
+      },
       "Topic": {
         "type": "string",
         "description": "What a group of permissions is about.",
         "enum": ["projects", "issues", "work-settings", "people", "settings"]
+      },
+      "TriedBody": {
+        "type": "object",
+        "description": "What *Try it* found.",
+        "required": ["status", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TriedChangeBody"
+            },
+            "description": "The status changes from there, each with the answer for the person."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status the issue is in."
+          }
+        }
+      },
+      "TriedChangeBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TriedVerdictBody",
+            "description": "What the judge says."
+          },
+          {
+            "type": "object",
+            "required": ["to", "button"],
+            "properties": {
+              "button": {
+                "type": "string",
+                "description": "The text of the button."
+              },
+              "to": {
+                "$ref": "#/components/schemas/StatusRef",
+                "description": "The status it ends in."
+              }
+            }
+          }
+        ],
+        "description": "One status change *Try it* looked at."
+      },
+      "TriedVerdictBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The person may make it.",
+            "required": ["verdict"],
+            "properties": {
+              "verdict": {
+                "type": "string",
+                "enum": ["allowed"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The person may make it once these fields have a value.",
+            "required": ["fields", "verdict"],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The keys of the fields."
+              },
+              "verdict": {
+                "type": "string",
+                "enum": ["needs"]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The person may not make it.",
+            "required": ["why", "verdict"],
+            "properties": {
+              "field": {
+                "type": ["string", "null"],
+                "description": "The key of the field it is about, when the person who tries may see it too."
+              },
+              "verdict": {
+                "type": "string",
+                "enum": ["not_allowed"]
+              },
+              "why": {
+                "$ref": "#/components/schemas/Why",
+                "description": "Why."
+              }
+            }
+          }
+        ],
+        "description": "What the judge says about one status change."
       },
       "TwoStepBody": {
         "type": "object",
@@ -30706,6 +32145,24 @@
           }
         }
       },
+      "UseWorkflowBody": {
+        "type": "object",
+        "description": "Which workflow a place uses.",
+        "properties": {
+          "issue_type": {
+            "type": ["string", "null"],
+            "description": "The issue type; leave it out for all types."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project, by its ID or its short name; leave it out for the whole organization."
+          },
+          "workflow": {
+            "type": ["string", "null"],
+            "description": "The ID of the workflow the place uses from now on. Leave it out (or `null`) for the place to\nfollow its parent again."
+          }
+        }
+      },
       "ValueBody": {
         "oneOf": [
           {
@@ -30762,6 +32219,57 @@
           }
         }
       },
+      "WhoCanBody": {
+        "type": "object",
+        "description": "*Who can do it*: the people who may make a status change. Naming nobody means everybody who may\nchange the issue; a rule never gives a right *Change anybody's issues* does not.",
+        "properties": {
+          "assigned": {
+            "type": "boolean",
+            "description": "The people the issue is assigned to."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the groups."
+          },
+          "reported_by": {
+            "type": "boolean",
+            "description": "The person who reported the issue."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the roles."
+          }
+        }
+      },
+      "WhoMayChangeBody": {
+        "type": "object",
+        "description": "The roles that may change a field.",
+        "required": ["roles", "roles_hidden"],
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangingRoleBody"
+            },
+            "description": "The roles somebody holds in the project that may change the field."
+          },
+          "roles_hidden": {
+            "type": "boolean",
+            "description": "The reader is not shown the people of the project, so no role is named."
+          }
+        }
+      },
+      "Why": {
+        "type": "string",
+        "description": "Why a status change is not allowed.",
+        "enum": ["no-such-change", "not-for-you", "only-if", "cannot-fill"]
+      },
       "WordBody": {
         "type": "object",
         "description": "A word of the vocabulary with the message that names it: a kind of people information\nor a level.",
@@ -30774,6 +32282,150 @@
           "message_key": {
             "type": "string",
             "description": "The key of the message that names it."
+          }
+        }
+      },
+      "WorkflowChoiceBody": {
+        "type": "object",
+        "description": "A workflow in the list.",
+        "required": ["id", "name", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the workflow."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change."
+          }
+        }
+      },
+      "WorkflowEditorBody": {
+        "type": "object",
+        "description": "What the editor shows for a place.",
+        "required": ["name", "statuses", "changes", "roles", "groups", "fields"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EditorChangeBody"
+            },
+            "description": "Its status changes."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleFieldBody"
+            },
+            "description": "The fields the rules can name."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedBody"
+            },
+            "description": "The groups *Who can do it* can name."
+          },
+          "inherited_from": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InheritedFromBody",
+                "description": "Where the workflow that counts is set, when it is another place."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueTypeRef",
+                "description": "The issue type of the place; none for all types."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "What the workflow is called."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project of the place; none for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedBody"
+            },
+            "description": "The roles *Who can do it* can name."
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusRef"
+            },
+            "description": "Its statuses, in order."
+          },
+          "workflow": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowSlotBody",
+                "description": "The workflow set at this place. Without it the place uses the workflow it inherits (or the\nstarting workflow), and *Create* makes one."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "WorkflowListBody": {
+        "type": "object",
+        "description": "The workflows there are.",
+        "required": ["workflows", "truncated"],
+        "properties": {
+          "truncated": {
+            "type": "boolean",
+            "description": "The list was cut off at its cap."
+          },
+          "workflows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkflowChoiceBody"
+            },
+            "description": "The workflows, by name."
+          }
+        }
+      },
+      "WorkflowSlotBody": {
+        "type": "object",
+        "description": "The workflow set at exactly the place that was asked about.",
+        "required": ["id", "version"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the workflow, which the edit lock is about."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
           }
         }
       }

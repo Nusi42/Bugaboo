@@ -11,7 +11,7 @@
 //!   may see on that item's issue type (`ItemValues::shown`), and the mask drops what is left by
 //!   mistake (`#[masked(own_fields)]`).
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
@@ -63,6 +63,14 @@ impl ItemValues {
                     .is_none_or(|definition| definition.scope.reaches(chain, Some(issue_type)))
             })
         })
+    }
+
+    /// The own fields the item has a value in.
+    pub(crate) fn filled_fields(&self, item: EntityId) -> BTreeSet<FieldId> {
+        self.values
+            .get(&item)
+            .map(|values| values.keys().copied().collect())
+            .unwrap_or_default()
     }
 
     /// The value the item holds for a field.
@@ -142,6 +150,18 @@ impl PlannedValues {
                 after: set.new.as_ref().and_then(|value| value.to_json(set.kind)),
             })
             .collect()
+    }
+
+    /// The own fields that have a value once this is written, given the ones that have one now.
+    pub(crate) fn filled_after(&self, mut filled: BTreeSet<FieldId>) -> BTreeSet<FieldId> {
+        for set in &self.sets {
+            if set.new.is_some() {
+                filled.insert(set.field);
+            } else {
+                filled.remove(&set.field);
+            }
+        }
+        filled
     }
 
     /// The rows to write for each field that differs: the field and its new cells.

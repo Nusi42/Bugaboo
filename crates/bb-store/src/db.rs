@@ -17,7 +17,7 @@ use bb_core::id::{
     AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
     FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
     LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
-    RelationKindId, RoleId, SessionId, TagId, UploadId, UserId,
+    RelationKindId, RoleId, SessionId, TagId, UploadId, UserId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -420,12 +420,16 @@ pub(crate) enum LockClass {
     /// Changes of the handles of one person (key: four bytes of the person's ID): two changes at
     /// the same moment cannot both pass the rule of how often a handle changes.
     Handles = 7,
+    /// The workflows that count (key 0): a change to workflows takes it alone, and an issue that is
+    /// written with a status takes it together with the others who do, so an issue is never
+    /// written into a status that a workflow being published drops.
+    Workflows = 8,
     /// Starting uploads (key: four bytes of the person's ID): two uploads of one person started at
     /// the same moment cannot both pass the limits of what a person may have open.
-    Uploads = 8,
+    Uploads = 9,
     /// Finishing an upload of an issue (key: four bytes of the issue's ID): two finishes at the same
     /// moment cannot both take the last place for a file of the issue.
-    IssueFiles = 9,
+    IssueFiles = 10,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -500,6 +504,25 @@ impl Transaction {
             let mut select = SelectStatement::new();
             select.expr(
                 sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock"))
+                    .arg(class as i32)
+                    .arg(key),
+            );
+            self.fetch_all(&select).await?;
+        }
+        Ok(())
+    }
+
+    /// Like [`Self::advisory_lock`], but shared: any number of transactions hold it together, and
+    /// one that takes it alone waits for them all.
+    pub(crate) async fn advisory_lock_shared(
+        &mut self,
+        class: LockClass,
+        key: i32,
+    ) -> Result<(), StoreError> {
+        if matches!(self.inner, TxInner::Postgres(_)) {
+            let mut select = SelectStatement::new();
+            select.expr(
+                sea_query::Func::cust(sea_query::Alias::new("pg_advisory_xact_lock_shared"))
                     .arg(class as i32)
                     .arg(key),
             );
@@ -699,6 +722,7 @@ stored_ids!(
     RoleId => "a role ID",
     SessionId => "a session ID",
     UserId => "a person ID",
+    WorkflowId => "a workflow ID",
 );
 
 /// A moment as it is stored: microseconds since 1970 (UTC), the same whole number in both databases.

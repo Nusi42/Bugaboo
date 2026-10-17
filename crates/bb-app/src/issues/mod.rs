@@ -42,7 +42,7 @@ pub use issue_types::{
 };
 pub use moving::move_issue;
 pub use read::{issue, issues};
-pub use store::{InTrash, IssueFound, IssueStore};
+pub use store::{InTrash, IssueFound, IssueStore, MovedStatus};
 pub use types::*;
 
 pub(crate) use fields::{ensure_may_change, member};

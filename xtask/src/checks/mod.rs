@@ -63,6 +63,7 @@ pub(crate) mod meta_wiring;
 mod node_tool;
 mod perf_bundle;
 mod plan_trace;
+mod required_tests;
 mod sec_cookies;
 mod sec_headers;
 mod sec_matrix;
@@ -79,6 +80,7 @@ mod test_edit_locks;
 mod test_issue_ids;
 pub(crate) mod test_sample_data;
 mod test_uploads;
+mod test_workflows;
 mod theme_only;
 mod txt_catalog;
 mod txt_literal;
@@ -236,6 +238,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_issue_ids::TestIssueIds),
         Box::new(test_sample_data::TestSampleData),
         Box::new(test_uploads::TestUploads),
+        Box::new(test_workflows::TestWorkflows),
         Box::new(txt_catalog::TxtCatalog),
         Box::new(txt_literal::TxtLiteral),
         Box::new(txt_terms::TxtTerms),

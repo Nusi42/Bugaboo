@@ -270,7 +270,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
                 "POST",
                 &format!("{PROJECTS}/ACME/issues"),
                 Some(json!({
-                    "issue_type": site.bug,
+                    "issue_type": site.kind,
                     "title": "Undo me",
                     "fields": { &key: &minor, &tester: vic.to_string() },
                 })),

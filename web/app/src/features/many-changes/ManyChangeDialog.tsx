@@ -10,6 +10,8 @@ import { useManyChangeDialog } from "./use-many-change-dialog.ts";
 
 export interface ManyChangeDialogProps {
   readonly kind: ManyChangeKind;
+  /** The project whose issues are ticked: its short name. */
+  readonly project: string;
   /** The IDs of the issues that are ticked. */
   readonly issues: readonly string[];
   readonly isOpen: boolean;
@@ -24,12 +26,13 @@ export interface ManyChangeDialogProps {
  */
 export function ManyChangeDialog({
   kind,
+  project,
   issues,
   isOpen,
   onOpenChange,
   onApplied,
 }: ManyChangeDialogProps) {
-  const dialog = useManyChangeDialog(kind, issues, onApplied);
+  const dialog = useManyChangeDialog(kind, project, issues, onApplied);
   const { preview } = dialog;
   return (
     <AskDialog
@@ -51,6 +54,7 @@ export function ManyChangeDialog({
         kind={kind}
         draft={dialog.draft}
         relations={dialog.relations}
+        statuses={dialog.statuses}
         onDraft={dialog.fill}
       />
       <div>

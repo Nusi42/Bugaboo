@@ -6,7 +6,7 @@
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
-use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
+use bb_core::issue::{IssueIcon, Priority, StatusGroup};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::message::MessageKey;
 use bb_core::notification::NotificationKind;
@@ -56,9 +56,6 @@ pub(crate) fn made_keys() -> Vec<Made> {
     }
     for field in Field::ALL {
         keys.push(made("the field", field.code(), field.name()));
-    }
-    for status in Status::ALL {
-        keys.push(made("the status", status.code(), status.name()));
     }
     for group in StatusGroup::ALL {
         keys.push(made("the status group", group.code(), group.name()));

@@ -22,7 +22,7 @@ const kinds: readonly ManyChangeKind[] = [
  * The bar under the list while issues are ticked (ISS-09): the five things that can be done to
  * them at once. Each opens a dialog that shows what would change before anything does.
  */
-export function ManyChangeBar({ selection }: SelectionBarProps) {
+export function ManyChangeBar({ selection, project }: SelectionBarProps) {
   const [open, setOpen] = useState<ManyChangeKind | null>(null);
   const [applied, setApplied] = useState<ManyChangeApplied | null>(null);
   return (
@@ -45,6 +45,7 @@ export function ManyChangeBar({ selection }: SelectionBarProps) {
       {open === null ? null : (
         <ManyChangeDialog
           kind={open}
+          project={project}
           issues={selection.ids}
           isOpen
           onOpenChange={(next) => {

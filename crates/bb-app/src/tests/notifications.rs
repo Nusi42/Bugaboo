@@ -6,7 +6,6 @@ use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::edit::{EditWhat, NoticeKind};
 use bb_core::fields::Field;
 use bb_core::id::{GroupId, IssueId, ProjectId, RoleId, UserId};
-use bb_core::issue::Status;
 use bb_core::notification::{NotificationFilter, NotificationKind, Via};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::settings::SettingValue;
@@ -143,7 +142,7 @@ impl Crew {
     /// A change of the issue by `who`, with the version the tests count.
     pub(super) async fn change(&mut self, who: &str, change: Change) -> Result<(), String> {
         let (status, title, priority, assigned_to) = match change {
-            Change::Status(status) => (Some(status), None, None, None),
+            Change::Status(status) => (Some(status.key()), None, None, None),
             Change::Title(title) => (None, Some(title.to_owned()), None, None),
             Change::Priority(priority) => (None, None, Some(priority), None),
             Change::Assign(people) => (None, None, None, Some(people)),
@@ -237,6 +236,25 @@ impl Crew {
 }
 
 /// What a test changes about the issue.
+/// The statuses of the workflow *Simple* that these tests change an issue to.
+#[derive(Clone, Copy)]
+pub(super) enum Status {
+    Open,
+    InProgress,
+    Done,
+}
+
+impl Status {
+    /// The key of the status.
+    fn key(self) -> bb_core::workflow::StatusKey {
+        match self {
+            Self::Open => bb_core::workflow::starter::open(),
+            Self::InProgress => bb_core::workflow::starter::in_progress(),
+            Self::Done => bb_core::workflow::starter::done(),
+        }
+    }
+}
+
 pub(super) enum Change {
     Status(Status),
     Title(&'static str),

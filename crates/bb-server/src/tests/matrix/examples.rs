@@ -329,6 +329,15 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("createLayout", &[Quirk::AtTheTargetProject]),
     Example::with("saveLayout", &[Quirk::AtTheTargetProject]),
     Example::with("deleteLayout", &[Quirk::AtTheTargetProject]),
+    Example::with("getProjectStatuses", &[Quirk::HidesUnseen]),
+    Example::with("getWhoMayChange", &[Quirk::HidesUnseen]),
+    Example::with("listWorkflows", &[Quirk::AtTheTargetProject]),
+    Example::with("getWorkflowEditor", &[Quirk::AtTheTargetProject]),
+    Example::with("createWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("useWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("publishWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("deleteWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("tryWorkflow", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("createIssue", &[Quirk::NeedsToSeeTheProject]),
@@ -509,6 +518,9 @@ pub(super) async fn request(
         return Ok(found);
     }
     if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_workflows::workflow_request(fixture, operation).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

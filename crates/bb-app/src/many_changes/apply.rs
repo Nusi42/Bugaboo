@@ -63,7 +63,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     version: target.version,
                     issue_type: None,
                     title: None,
-                    status: change.status,
+                    status: change.status.clone(),
                     priority: change.priority,
                     assigned_to: change.assigned_to.clone(),
                     fields: change.fields.clone(),

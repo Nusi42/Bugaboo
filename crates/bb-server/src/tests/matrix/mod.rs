@@ -22,5 +22,6 @@ mod examples_layouts;
 mod examples_people;
 mod examples_relations;
 mod examples_tags;
+mod examples_workflows;
 mod record;
 mod routes;

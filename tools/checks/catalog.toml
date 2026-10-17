@@ -486,7 +486,7 @@ rule = "ADR-0031"
 tool = "xtask (the unit, property and two-database tests of the workflow rules exist by name; the two-database ones run through each_database)"
 when = ["ci"]
 files = ["crates/**"]
-status = "planned"
+status = "active"
 
 [[check]]
 id = "TEST-UPLOADS"

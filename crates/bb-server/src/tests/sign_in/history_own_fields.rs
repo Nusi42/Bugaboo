@@ -38,7 +38,7 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
                 "POST",
                 &format!("{PROJECTS}/ACME/issues"),
                 Some(json!({
-                    "issue_type": site.bug,
+                    "issue_type": site.kind,
                     "title": "An issue",
                     "fields": { &severity_id: &minor, &salary_id: "B-7" },
                 })),
@@ -175,9 +175,9 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
             &[Permission::SeeProjects, Permission::SeeIssues],
             &[
                 (&centre, None, FieldLevel::CanSee),
-                (&centre, Some(&site.bug), FieldLevel::Hidden),
+                (&centre, Some(&site.kind), FieldLevel::Hidden),
                 (&approved, None, FieldLevel::CanSee),
-                (&approved, Some(&site.bug), FieldLevel::Hidden),
+                (&approved, Some(&site.kind), FieldLevel::Hidden),
                 ("title", None, FieldLevel::CanSee),
             ],
         )

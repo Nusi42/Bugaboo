@@ -31,6 +31,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, internal};
 use crate::member::edit_lock as member;
+use crate::projects::Why;
 
 /// When a lease that starts at `now` ends: an error only where time cannot be written.
 fn lease_ends(now: jiff::Timestamp) -> Result<jiff::Timestamp, AppError> {
@@ -455,7 +456,7 @@ pub async fn release_stuck_lock<S: AuthStore>(
     )?;
     let what = input.what.clone();
     let (me, now) = (actor.person.id, ctx.now());
-    let stopped = crate::projects::Why::default();
+    let stopped = Why::default();
     let stop = stopped.clone();
     // Whether somebody else's lease that was still running ended: only then an administrator
     // ended somebody's editing, which is what the security log is for.
@@ -493,4 +494,29 @@ pub async fn release_stuck_lock<S: AuthStore>(
         .await;
     }
     Ok(access.authorize(Done))
+}
+
+/// Inside the change that deletes a record with a long text: the lock on its text is let go of
+/// when it is the actor's or has expired, and the change stops when somebody else holds it.
+///
+/// # Errors
+/// Stops the change with *edit in progress* when somebody else holds the lock, and returns the
+/// error of the database.
+pub(crate) async fn let_go_for_delete<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    what: &EditWhat,
+    me: UserId,
+    now: jiff::Timestamp,
+    stopped: &Why,
+) -> Result<(), S::Error> {
+    match S::edit_lock_in(transaction, what.clone()).await? {
+        Some(lock) if lock.holder != me && !lock.has_expired(now) => {
+            return Err(stopped.stop::<S>(ErrorCode::EditInProgress));
+        }
+        Some(_) => {
+            S::remove_edit_lock(transaction, what).await?;
+        }
+        None => {}
+    }
+    Ok(())
 }

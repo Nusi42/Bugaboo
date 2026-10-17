@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { issueAddress } from "../../shared/paths.ts";
 import { issueCells } from "../issues/index.ts";
-import { statusWordsOf } from "./ref-status.ts";
+import { statusGroupOf, statusWordsOf } from "./ref-status.ts";
 import type { ShownIssue } from "./shown-issue.ts";
 import { refColumns } from "./ref-columns.ts";
 
@@ -29,7 +29,7 @@ export interface IssueRefRowProps {
  */
 export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
   const phone = useLayout() === "phone";
-  const group = issue.status_group;
+  const group = statusGroupOf(issue);
   const word = statusWordsOf(issue);
   return (
     <ListRow

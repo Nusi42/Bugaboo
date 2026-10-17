@@ -17,7 +17,6 @@ const LIST_FIELDS = fieldList<ListedIssue>([
   "issue_type",
   "title",
   "status",
-  "status_group",
   "priority",
   "assigned_to",
   "updated_at",
@@ -29,8 +28,9 @@ export interface IssueLine {
   /** The readable ID (`WEB-142`). */
   readonly key: string;
   readonly title: string;
-  readonly status: Schema<"Status">;
-  /** The group of the status: it gives the tint of the row and the icon (UX §4.2). */
+  /** The status with its name: the group in it gives the tint of the row and the icon (UX §4.2). */
+  readonly status: Schema<"StatusRef">;
+  /** The group of the status. */
   readonly group: Schema<"StatusGroup">;
   readonly priority: Schema<"Priority">;
   readonly issueType: Schema<"IssueTypeRef">;
@@ -43,9 +43,8 @@ export interface IssueLine {
 /** The line of an issue, or nothing for an item that came without what it needs. */
 export function lineOf(item: ListedIssue): IssueLine | undefined {
   const [id, key, title] = [known(item.id), known(item.key), known(item.title)];
-  const [status, group, priority, issueType] = [
+  const [status, priority, issueType] = [
     known(item.status),
-    known(item.status_group),
     known(item.priority),
     known(item.issue_type),
   ];
@@ -53,7 +52,6 @@ export function lineOf(item: ListedIssue): IssueLine | undefined {
     key === undefined ||
     title === undefined ||
     status === undefined ||
-    group === undefined ||
     priority === undefined ||
     issueType === undefined
     ? undefined
@@ -62,7 +60,7 @@ export function lineOf(item: ListedIssue): IssueLine | undefined {
         key,
         title,
         status,
-        group,
+        group: status.group,
         priority,
         issueType,
         assignedTo: item.assigned_to ?? [],

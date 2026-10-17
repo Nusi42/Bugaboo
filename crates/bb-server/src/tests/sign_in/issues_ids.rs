@@ -70,7 +70,7 @@ async fn iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers()
             let (session, project, issue_type) = (
                 site.org.admin.session.clone(),
                 site.acme.clone(),
-                site.bug.clone(),
+                site.kind.clone(),
             );
             writers.push(tokio::spawn(async move {
                 services
@@ -556,7 +556,7 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
                     CreateIssue {
                         session_token: site.org.admin.session.clone(),
                         project: site.acme.clone(),
-                        issue_type: site.bug.parse().map_err(|_| "no type")?,
+                        issue_type: site.kind.parse().map_err(|_| "no type")?,
                         title: format!("Issue {number}"),
                         description: None,
                         status: None,

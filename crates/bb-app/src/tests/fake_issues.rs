@@ -8,7 +8,7 @@ use bb_core::readable_id::IssueCode;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::issues::{InTrash, IssueFound, IssueStore};
+use crate::issues::{InTrash, IssueFound, IssueStore, MovedStatus};
 
 fn types_of(state: &State) -> Vec<IssueType> {
     let mut types = state.issue_types.clone();
@@ -197,7 +197,7 @@ impl IssueStore for FakeStore {
         found.issue_type = issue.issue_type;
         found.title.clone_from(&issue.title);
         found.description.clone_from(&issue.description);
-        found.status = issue.status;
+        found.status.clone_from(&issue.status);
         found.priority = issue.priority;
         found.updated_at = issue.updated_at;
         found.closed_at = issue.closed_at;
@@ -210,6 +210,7 @@ impl IssueStore for FakeStore {
         id: IssueId,
         project: ProjectId,
         code: &IssueCode,
+        moved: &MovedStatus,
         version: i64,
         now: Timestamp,
     ) -> Result<bool, FakeError> {
@@ -222,6 +223,8 @@ impl IssueStore for FakeStore {
         };
         found.project = project;
         found.code = code.clone();
+        found.status.clone_from(&moved.status);
+        found.closed_at = moved.closed_at;
         found.updated_at = now;
         found.version += 1;
         Ok(true)

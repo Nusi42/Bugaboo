@@ -167,6 +167,7 @@ fn with_query(template: &str, filled: String, project: &str, project_id: &str) -
         "/api/v1/layouts/form" | "/api/v1/layouts/editor" => {
             format!("{filled}?project={project}&kind=new-issue")
         }
+        "/api/v1/workflows" | "/api/v1/workflows/editor" => format!("{filled}?project={project}"),
         _ => filled,
     }
 }
@@ -230,6 +231,11 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{upload}", &upload_id)
                 .replace("{project}", project);
             let filled = with_query(template, filled, project, &project_id);
+            let filled = if template.ends_with("/status-changes") {
+                format!("{filled}?person={person_id}")
+            } else {
+                filled
+            };
             let path = &filled;
             assert!(
                 !path.contains('{'),

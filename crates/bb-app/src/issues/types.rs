@@ -11,14 +11,16 @@ use std::collections::BTreeMap;
 
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, IssueTypeId, LockToken, UserId};
-use bb_core::issue::{IssueIcon, IssueType, Priority, Status, StatusGroup};
+use bb_core::issue::{IssueIcon, IssueType, Priority};
 use bb_core::own_fields_value::OwnValues;
+use bb_core::workflow::StatusKey;
 use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::projects::ProjectRef;
+use crate::workflows::{StatusChangeView, StatusView};
 
 /// Make an issue in a project.
 pub struct CreateIssue {
@@ -32,8 +34,9 @@ pub struct CreateIssue {
     pub title: String,
     /// The long text in Markdown; empty when left out.
     pub description: Option<String>,
-    /// Where it starts; the first status of the starting workflow when left out.
-    pub status: Option<Status>,
+    /// Where it starts; the first status of its workflow when left out. Another status is judged as
+    /// a status change from the first.
+    pub status: Option<StatusKey>,
     /// How important it is; *Normal* when left out.
     pub priority: Option<Priority>,
     /// The people it is assigned to; nobody when left out.
@@ -54,8 +57,9 @@ pub struct ChangeIssue {
     pub issue_type: Option<IssueTypeId>,
     /// A new title, as typed.
     pub title: Option<String>,
-    /// A new status. Entering the group *Done* sets the closed date; leaving it clears it.
-    pub status: Option<Status>,
+    /// A new status: judged by the workflow of the issue. Entering the group *Done* sets the
+    /// closed date; leaving it clears it.
+    pub status: Option<StatusKey>,
     /// A new priority.
     pub priority: Option<Priority>,
     /// The people it is assigned to from now on (all of them, not the ones to add).
@@ -180,12 +184,13 @@ pub struct IssueView {
     /// The long text, in Markdown.
     #[masked(field = "description")]
     pub description: String,
-    /// Where it stands in the workflow.
+    /// Where it stands in its workflow: the key, the name and the status group.
     #[masked(field = "status")]
-    pub status: Status,
-    /// The group of its status.
+    pub status: StatusView,
+    /// The status changes the viewer may make now, with the text of each button and the fields
+    /// it still needs. Empty when they may not change the issue. Hidden with the status.
     #[masked(field = "status")]
-    pub status_group: StatusGroup,
+    pub status_changes: Vec<StatusChangeView>,
     /// How important it is.
     #[masked(field = "priority")]
     pub priority: Priority,

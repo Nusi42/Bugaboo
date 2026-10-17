@@ -92,6 +92,7 @@ at = [
   "api:property SaveFieldTextBody.lock_token",
   "api:property SaveDescriptionBody.lock_token",
   "api:property SaveLayoutBody.lock_token",
+  "api:property PublishWorkflowBody.lock_token",
 ]
 reason = "The lock token of ADR-0019 proves that a save or a heartbeat comes from the editor that holds an edit lock. It is not the token of a sign-in session, which the glossary entry Session rules out."
 

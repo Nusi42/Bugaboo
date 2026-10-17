@@ -234,6 +234,53 @@ pub(crate) enum LayoutFieldRoleRow {
     Role,
 }
 
+/// A workflow: its name and version; the statuses, the status changes and where it is used are
+/// rows of their own (WF-01, ADR-0031).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum WorkflowRow {
+    #[iden = "workflow"]
+    Table,
+    Id,
+    Name,
+    Version,
+}
+
+/// A status of a workflow.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum WorkflowStatusRow {
+    #[iden = "workflow_status"]
+    Table,
+    Workflow,
+    Key,
+    Name,
+    StatusGroup,
+    Position,
+}
+
+/// A status change of a workflow, with its rules as JSON text.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum WorkflowChangeRow {
+    #[iden = "workflow_change"]
+    Table,
+    Workflow,
+    FromStatus,
+    ToStatus,
+    Button,
+    Rules,
+    Position,
+}
+
+/// Where a workflow is used: a project (none for the whole organization) and an issue type (none
+/// for all types).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum WorkflowUseRow {
+    #[iden = "workflow_use"]
+    Table,
+    Project,
+    IssueType,
+    Workflow,
+}
+
 /// Relations between two issues, stored once from the issue that reads the forward name (ISS-04).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum RelationRow {

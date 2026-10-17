@@ -15,8 +15,10 @@ use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 
 /// The most statements any read of the issue page or the list may run, however much the issue has
-/// (a ceiling that a change to the code has to notice; the exact numbers are compared apart).
-const AT_MOST: usize = 45;
+/// (a ceiling that a change to the code has to notice; the exact numbers are compared apart). The
+/// workflows that count (ADR-0031) are two statements for a request, and one when no place uses a
+/// stored workflow; with them the ceiling went from 45 to 46.
+const AT_MOST: usize = 46;
 
 /// Counts the statements a database runs between one look and the next.
 struct Counter<'a> {

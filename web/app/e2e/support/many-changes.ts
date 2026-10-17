@@ -9,11 +9,11 @@ import { type MadeIssue, readIssue } from "./issues.ts";
 // issues, then the change, which takes back the versions the preview read. This file is the one
 // place that knows the shape of both; the scenarios use nothing else of it.
 
-/** The status an issue can have. */
-type NewStatus = components["schemas"]["Status"];
+/** The key of a status an issue can go to. */
+type NewStatus = string;
 
-/** The status the scenarios change to, written once: the API value, and `status.done` on the screen. */
-export const done = "done" satisfies NewStatus;
+/** The status the scenarios change to, written once: the key of it in the starting workflow. */
+export const done: NewStatus = "done";
 
 /** What is done to every issue of the selection (a body that is sent is not read-only). */
 type Action = components["schemas"]["ManyChangeActionBody"];
@@ -76,7 +76,7 @@ export async function changeMany(
 
 /** The status an issue has now. */
 export async function statusOf(session: ApiSession, issue: MadeIssue): Promise<string | undefined> {
-  return (await readIssue(session, issue)).issue.status ?? undefined;
+  return (await readIssue(session, issue)).issue.status?.key;
 }
 
 /** The changes of an issue before the scenario, to tell afterwards which events are new. */

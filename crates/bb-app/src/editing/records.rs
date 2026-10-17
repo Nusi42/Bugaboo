@@ -177,6 +177,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             self.issue_facts(actor, record).await?
         } else if record.kind == EntityKind::from(RecordKind::Layout) {
             self.layout_facts(actor, record).await?
+        } else if record.kind == EntityKind::from(RecordKind::Workflow) {
+            self.workflow_facts(actor, record).await?
         } else if record.kind == EntityKind::from(RecordKind::Comment) {
             self.comment_facts(actor.person.id, record).await?
         } else {

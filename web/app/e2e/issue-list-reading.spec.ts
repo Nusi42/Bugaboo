@@ -17,10 +17,10 @@ test("ux_08 a row names the type of its issue, and a tick is told", async ({ pag
   await signIn(page, ada);
   await page.goto(projectIssuesAddress("WEB"));
   const row = rowOf(page, webIssues.passkey);
-  // The type is named, not only drawn (the first type of a project is a Bug); a phone row has no type.
-  const bug = row.getByRole("img", { name: "Bug", exact: true });
+  // The type is named, not only drawn (the scenarios make their issues of the type Task); a phone row has no type.
+  const task = row.getByRole("img", { name: "Task", exact: true });
   const typeIs = (count: number) => async () => {
-    await expect(bug).toHaveCount(count);
+    await expect(task).toHaveCount(count);
   };
   await onThisLayout(page, { computer: typeIs(1), tablet: typeIs(1), phone: typeIs(0) });
   // A person presses the box they see, not the input behind it.

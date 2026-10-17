@@ -14,12 +14,15 @@ use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::Issue;
 use bb_core::project::Project;
 use bb_core::readable_id::ReadableId;
+use bb_core::workflow::WorkflowContent;
 
 use super::types::IssueLine;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::issues::{IssueTypeRef, Where};
 use crate::projects::ProjectRef;
+use crate::workflows::StatusView;
+use std::sync::Arc;
 
 /// What turns issues into lines for one viewer: the issue types and the projects are read once
 /// each.
@@ -27,6 +30,8 @@ use crate::projects::ProjectRef;
 pub(crate) struct LineMaker {
     types: BTreeMap<IssueTypeId, IssueTypeRef>,
     projects: HashMap<ProjectId, Option<Project>>,
+    /// The workflow that counts for each project and issue type of the lines so far.
+    workflows: HashMap<(ProjectId, IssueTypeId), Arc<WorkflowContent>>,
 }
 
 impl LineMaker {
@@ -50,6 +55,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(LineMaker {
             types,
             projects: HashMap::new(),
+            workflows: HashMap::new(),
         })
     }
 
@@ -71,9 +77,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| internal::<S>(&error))?;
             slot.insert(project);
         }
-        let Some(Some(project)) = maker.projects.get(&issue.project) else {
+        if !matches!(maker.projects.get(&issue.project), Some(Some(_))) {
             return Ok(None);
-        };
+        }
         let Some(issue_type) = maker.types.get(&issue.issue_type).cloned() else {
             return Err(AppError::Internal(
                 "an issue has an issue type that is gone".into(),
@@ -81,15 +87,42 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         let mask = held.field_mask_for(Some(issue.issue_type));
         let status_seen = mask.can_see(Field::Status);
+        let status = if status_seen {
+            let workflow = self.line_workflow(maker, issue, held.chain()).await?;
+            let directory = self.workflow_directory().await?;
+            Some(StatusView::of_issue(&workflow, issue, &directory))
+        } else {
+            None
+        };
+        let Some(Some(project)) = maker.projects.get(&issue.project) else {
+            return Ok(None);
+        };
         Ok(Some(IssueLine {
             id: issue.id,
             key: ReadableId::new(project.short_name.clone(), issue.code.clone()).to_string(),
             project: ProjectRef::from(project),
             issue_type,
             title: mask.can_see(Field::Title).then(|| issue.title.clone()),
-            status: status_seen.then_some(issue.status),
-            status_group: status_seen.then(|| issue.status.group()),
+            status,
         }))
+    }
+
+    /// The workflow that counts for the project and the issue type of an issue.
+    async fn line_workflow(
+        &self,
+        maker: &mut LineMaker,
+        issue: &Issue,
+        chain: &[ProjectId],
+    ) -> Result<Arc<WorkflowContent>, AppError> {
+        let place = (issue.project, issue.issue_type);
+        if let Some(found) = maker.workflows.get(&place) {
+            return Ok(Arc::clone(found));
+        }
+        let found = self
+            .workflow_in_force(chain, Some(issue.issue_type))
+            .await?;
+        maker.workflows.insert(place, Arc::clone(&found));
+        Ok(found)
     }
 
     /// The issues with these IDs, in the order of the IDs that exist.

@@ -10,6 +10,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Tags and labels](labels/README.md): free tags, labels in groups, renaming and combining with a preview
 - [Fields](fields/README.md): own fields, their kinds, choices, rules and who sees them
 - [Layouts](layouts/README.md): which fields a form shows, in which sections, and for which roles
+- [Workflows](workflows/README.md): statuses and status changes, the starter workflows, which workflow counts, and the rules of a status change
 - [People, groups and roles](people/README.md): the list of people and the invitations, groups, roles and permissions, and who has which role
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
 - [Files](files/README.md): adding files to issues and comments, previews, downloads, limits
@@ -23,6 +24,6 @@ Planned sections:
 
 - Using Bugaboo (searches, boards, Gantt, time tracking)
 - Search language reference
-- Administration (workflows, themes)
+- Administration (themes)
 - AI assistant and MCP integration
 - Security hardening, backup and upgrade

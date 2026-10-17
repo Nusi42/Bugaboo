@@ -4,7 +4,6 @@
 
 use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
-use bb_core::issue::Status;
 use bb_core::job::JobState;
 use bb_core::mail::TEST_EMAIL_EVERY_SECONDS;
 use bb_core::notification::{
@@ -13,7 +12,7 @@ use bb_core::notification::{
 use bb_core::settings::SettingValue;
 use bb_policy::Permission;
 
-use super::notifications::{Change, Crew, levels};
+use super::notifications::{Change, Crew, Status, levels};
 use super::scenarios::{text, token};
 use super::scenarios_notifications::enter_the_mail_server;
 use super::world::{Outcome, PUBLIC_URL};

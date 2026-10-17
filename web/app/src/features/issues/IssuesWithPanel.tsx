@@ -46,7 +46,7 @@ export function IssuesWithPanel({ shortName, name, open, onFocus, onClose }: Iss
             </Button>
             <IssueLegend />
           </div>
-          <Selected selection={selection} />
+          <Selected selection={selection} project={shortName} />
           <IssueList project={shortName} openIn={openIn} open={open} selection={selection} />
         </div>
         {open === undefined ? null : <OpenIssue open={open} onFocus={onFocus} onClose={onClose} />}
