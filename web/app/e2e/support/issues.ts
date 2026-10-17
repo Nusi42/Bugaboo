@@ -272,11 +272,6 @@ export function detailRow(page: Page, name: string) {
     .filter({ has: page.getByText(name, { exact: true }) });
 }
 
-/** The words of a status as people read it, from the word the server uses. */
-export function statusWordOf(status: string | null | undefined): string {
-  return t(`status.${status === "in-progress" || status === "done" ? status : "open"}`);
-}
-
 /** Changes a field of the issue page the way a person does: the status with the big button, any other with its list. */
 export async function changeField(page: Page, name: string, choice: string): Promise<void> {
   await (name === t("issue-field.status")
