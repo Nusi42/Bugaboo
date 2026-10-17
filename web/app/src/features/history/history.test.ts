@@ -1,7 +1,13 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { changeSentence, groupByEvent, relationSentence, type HistoryEntry } from "./history.ts";
+import {
+  changeSentence,
+  groupByEvent,
+  isTarget,
+  relationSentence,
+  type HistoryEntry,
+} from "./history.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
 
 const ben = { shown: "name", id: "b", name: "Ben" } as const;
@@ -164,5 +170,27 @@ describe("tag_01 tags, labels and a move in the history", () => {
         }),
       ),
     ).toBe("Ben changed Project from Website to Shop");
+  });
+});
+
+describe("ntf_01 Open of a notification finds the comment or the change in the history", () => {
+  const comment = change({ event: "e2", kind: "comment", comment: "c1" });
+  const edit = change({ event: "e3", at: "2027-01-15T09:30:00.123456Z", field: "priority" });
+
+  it("finds a comment by its ID", () => {
+    expect(isTarget([comment], { kind: "comment", comment: "c1" })).toBe(true);
+    expect(isTarget([comment], { kind: "comment", comment: "c2" })).toBe(false);
+    expect(isTarget([edit], { kind: "comment", comment: "c1" })).toBe(false);
+  });
+
+  it("finds a change by the moment it happened, however the moment is written", () => {
+    expect(isTarget([edit], { kind: "change", at: "2027-01-15T09:30:00.123456Z" })).toBe(true);
+    expect(isTarget([edit], { kind: "change", at: "2027-01-15T09:30:00.123Z" })).toBe(true);
+    expect(isTarget([edit], { kind: "change", at: "2027-01-15T09:31:00Z" })).toBe(false);
+    expect(isTarget([comment], { kind: "change", at: comment.at })).toBe(false);
+  });
+
+  it("finds nothing when there is no target", () => {
+    expect(isTarget([comment])).toBe(false);
   });
 });

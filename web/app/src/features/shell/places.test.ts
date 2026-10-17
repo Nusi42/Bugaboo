@@ -88,6 +88,8 @@ describe("ux_01 the topics of a settings screen", () => {
       paths.region,
       paths.startPage,
       paths.shortcuts,
+      paths.notificationSettings,
+      paths.handle,
       paths.security,
       paths.sessions,
       paths.accessKeys,

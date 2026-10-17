@@ -23,8 +23,8 @@ function mainMenu(page: Page): Locator {
   return page.getByRole("navigation", { name: t("shell.menu"), exact: true });
 }
 
-/** Screens that come with later versions (New with M3, Notifications with M4): no entry yet. */
-const later = /^(New|Notifications)$/u;
+/** Screens that come with later versions (a bare *New*): no entry yet. */
+const later = /^New$/u;
 
 /** Nothing in the menu is for a screen that does not exist yet. */
 async function expectNoLaterScreens(menu: Locator): Promise<void> {
@@ -38,6 +38,9 @@ async function computerFrame(page: Page): Promise<void> {
     0,
   );
   await expect(menu.getByRole("link", { name: t("nav.home"), exact: true })).toBeVisible();
+  await expect(
+    menu.getByRole("link", { name: new RegExp(`^${t("nav.notifications")}`, "u") }),
+  ).toBeVisible();
   await expect(menu.getByRole("link", { name: t("nav.my-settings"), exact: true })).toBeVisible();
   await expect(menu.getByRole("link", { name: t("nav.organization-settings") })).toBeVisible();
   await expect(menu.getByRole("button", { name: t("shortcut.title") })).toBeVisible();
@@ -73,8 +76,11 @@ async function tabletFrame(page: Page): Promise<void> {
 
 async function phoneFrame(page: Page): Promise<void> {
   const bar = mainMenu(page);
-  // The bar holds only screens that exist: Home, Search, New and More.
-  await expect(bar.getByRole("link")).toHaveCount(1);
+  // The bar holds only screens that exist: Home, Search, New, Notifications and More.
+  await expect(bar.getByRole("link")).toHaveCount(2);
+  await expect(
+    bar.getByRole("link", { name: new RegExp(`^${t("nav.notifications")}`, "u") }),
+  ).toBeVisible();
   await expect(bar.getByRole("button")).toHaveCount(3);
   await expect(bar.getByRole("button", { name: t("issues.new"), exact: true })).toBeVisible();
   await expect(bar.getByRole("link", { name: t("nav.home"), exact: true })).toBeVisible();
@@ -150,6 +156,8 @@ async function topicsOnLargeScreens(page: Page): Promise<void> {
     t("nav.region"),
     t("nav.start-page"),
     t("shortcut.title"),
+    t("nav.notification-settings"),
+    t("nav.handle"),
     t("nav.security"),
     t("nav.sessions"),
     t("nav.access-keys"),
@@ -170,6 +178,8 @@ async function topicsOnPhone(page: Page): Promise<void> {
     t("nav.region"),
     t("nav.start-page"),
     t("shortcut.title"),
+    t("nav.notification-settings"),
+    t("nav.handle"),
     t("nav.security"),
     t("nav.sessions"),
     t("nav.access-keys"),

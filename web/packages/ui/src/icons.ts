@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bell,
   Building2,
   ChevronDown,
   ChevronLeft,
@@ -52,6 +53,7 @@ import {
 export const iconName = {
   "access-keys": "access-keys",
   back: "back",
+  bell: "bell",
   "check-access": "check-access",
   close: "close",
   down: "down",
@@ -102,6 +104,7 @@ export type IconName = (typeof iconName)[keyof typeof iconName];
 export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   "access-keys": KeyRound,
   back: ChevronLeft,
+  bell: Bell,
   "check-access": UserSearch,
   close: X,
   down: ChevronDown,

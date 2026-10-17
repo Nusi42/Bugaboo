@@ -25,8 +25,6 @@ export const messages = {
   "setting.page.security-intro": "What the text that people write may show.",
   "setting.page.themes-intro":
     "The organization's choice of look. People can choose their own, unless you lock a setting.",
-  "common.on": "On",
-  "common.off": "Off",
 } as const;
 
 register(messages);

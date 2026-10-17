@@ -181,3 +181,40 @@ export const themesRoute = createRoute({
     );
   },
 });
+
+const NotificationsScreen = lazyRouteComponent(
+  () => import("../features/notifications/index.ts"),
+  "NotificationsPage",
+);
+const CustomizeScreen = lazyRouteComponent(
+  () => import("../features/notifications/index.ts"),
+  "CustomizePage",
+);
+const HandleScreen = lazyRouteComponent(
+  () => import("../features/my-settings/index.ts"),
+  "HandlePage",
+);
+
+/** *Notifications*: what happened on the issues the person follows and where they are named. */
+export const notificationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.notifications,
+  loader: loadsScreen(NotificationsScreen),
+  component: NotificationsScreen,
+});
+
+/** *My settings › Notification settings*: what the person hears of, in the app and by e-mail. */
+export const notificationSettingsRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.notificationSettings,
+  loader: loadsScreen(CustomizeScreen),
+  component: CustomizeScreen,
+});
+
+/** *My settings › Handle*: the short name people type after the @ to mention the person. */
+export const handleRoute = createRoute({
+  getParentRoute: () => mySettingsRoute,
+  path: paths.handle,
+  loader: loadsScreen(HandleScreen),
+  component: HandleScreen,
+});

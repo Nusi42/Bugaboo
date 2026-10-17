@@ -30,7 +30,10 @@ import {
 import {
   accessKeysRoute,
   appearanceRoute,
+  handleRoute,
   homeRoute,
+  notificationSettingsRoute,
+  notificationsRoute,
   mySettingsIndexRoute,
   organizationSecurityRoute,
   organizationSettingsIndexRoute,
@@ -62,6 +65,7 @@ const routeTree = rootRoute.addChildren([
   setUpRoute.addChildren([setUpSecondStepRoute]),
   appRoute.addChildren([
     homeRoute,
+    notificationsRoute,
     projectRoute,
     projectIssuesRoute,
     issueRoute,
@@ -76,6 +80,8 @@ const routeTree = rootRoute.addChildren([
       appearanceRoute,
       regionRoute,
       startPageRoute,
+      notificationSettingsRoute,
+      handleRoute,
       shortcutsRoute,
       securityRoute,
       sessionsRoute,

@@ -1530,6 +1530,33 @@ pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing
 /// The message `groups.used-whole`.
 pub const GROUPS_USED_WHOLE: MessageKey = MessageKey::new("groups.used-whole");
 
+/// The message `handle.intro`.
+pub const HANDLE_INTRO: MessageKey = MessageKey::new("handle.intro");
+
+/// The message `handle.invalid`.
+pub const HANDLE_INVALID: MessageKey = MessageKey::new("handle.invalid");
+
+/// The message `handle.label`.
+pub const HANDLE_LABEL: MessageKey = MessageKey::new("handle.label");
+
+/// The message `handle.rule-kept`.
+pub const HANDLE_RULE_KEPT: MessageKey = MessageKey::new("handle.rule-kept");
+
+/// The message `handle.rule-own`.
+pub const HANDLE_RULE_OWN: MessageKey = MessageKey::new("handle.rule-own");
+
+/// The message `handle.rules`.
+pub const HANDLE_RULES: MessageKey = MessageKey::new("handle.rules");
+
+/// The message `handle.save`.
+pub const HANDLE_SAVE: MessageKey = MessageKey::new("handle.save");
+
+/// The message `handle.taken`.
+pub const HANDLE_TAKEN: MessageKey = MessageKey::new("handle.taken");
+
+/// The message `handle.title`.
+pub const HANDLE_TITLE: MessageKey = MessageKey::new("handle.title");
+
 /// The message `history.more`.
 pub const HISTORY_MORE: MessageKey = MessageKey::new("history.more");
 
@@ -2454,18 +2481,6 @@ pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
 /// The message `markdown.write`.
 pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
 
-/// The message `mentions.mark-read`.
-pub const MENTIONS_MARK_READ: MessageKey = MessageKey::new("mentions.mark-read");
-
-/// The message `mentions.new`.
-pub const MENTIONS_NEW: MessageKey = MessageKey::new("mentions.new");
-
-/// The message `mentions.nothing`.
-pub const MENTIONS_NOTHING: MessageKey = MessageKey::new("mentions.nothing");
-
-/// The message `mentions.title`.
-pub const MENTIONS_TITLE: MessageKey = MessageKey::new("mentions.title");
-
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
@@ -2480,6 +2495,9 @@ pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permiss
 
 /// The message `nav.fields`.
 pub const NAV_FIELDS: MessageKey = MessageKey::new("nav.fields");
+
+/// The message `nav.group.hearing`.
+pub const NAV_GROUP_HEARING: MessageKey = MessageKey::new("nav.group.hearing");
 
 /// The message `nav.group.look`.
 pub const NAV_GROUP_LOOK: MessageKey = MessageKey::new("nav.group.look");
@@ -2502,6 +2520,9 @@ pub const NAV_GROUP_WORK: MessageKey = MessageKey::new("nav.group.work");
 /// The message `nav.groups`.
 pub const NAV_GROUPS: MessageKey = MessageKey::new("nav.groups");
 
+/// The message `nav.handle`.
+pub const NAV_HANDLE: MessageKey = MessageKey::new("nav.handle");
+
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
@@ -2513,6 +2534,12 @@ pub const NAV_LABELS: MessageKey = MessageKey::new("nav.labels");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
+
+/// The message `nav.notification-settings`.
+pub const NAV_NOTIFICATION_SETTINGS: MessageKey = MessageKey::new("nav.notification-settings");
+
+/// The message `nav.notifications`.
+pub const NAV_NOTIFICATIONS: MessageKey = MessageKey::new("nav.notifications");
 
 /// The message `nav.organization-security`.
 pub const NAV_ORGANIZATION_SECURITY: MessageKey = MessageKey::new("nav.organization-security");
@@ -2579,6 +2606,93 @@ pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notificatio
 
 /// The message `notification.kind.run-ended`.
 pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
+
+/// The message `notifications.by-mail`.
+pub const NOTIFICATIONS_BY_MAIL: MessageKey = MessageKey::new("notifications.by-mail");
+
+/// The message `notifications.customize`.
+pub const NOTIFICATIONS_CUSTOMIZE: MessageKey = MessageKey::new("notifications.customize");
+
+/// The message `notifications.customize-intro`.
+pub const NOTIFICATIONS_CUSTOMIZE_INTRO: MessageKey =
+    MessageKey::new("notifications.customize-intro");
+
+/// The message `notifications.customize-reset`.
+pub const NOTIFICATIONS_CUSTOMIZE_RESET: MessageKey =
+    MessageKey::new("notifications.customize-reset");
+
+/// The message `notifications.customize-title`.
+pub const NOTIFICATIONS_CUSTOMIZE_TITLE: MessageKey =
+    MessageKey::new("notifications.customize-title");
+
+/// The message `notifications.filter.all`.
+pub const NOTIFICATIONS_FILTER_ALL: MessageKey = MessageKey::new("notifications.filter.all");
+
+/// The message `notifications.filter.mentions`.
+pub const NOTIFICATIONS_FILTER_MENTIONS: MessageKey =
+    MessageKey::new("notifications.filter.mentions");
+
+/// The message `notifications.filter.unread`.
+pub const NOTIFICATIONS_FILTER_UNREAD: MessageKey = MessageKey::new("notifications.filter.unread");
+
+/// The message `notifications.filters`.
+pub const NOTIFICATIONS_FILTERS: MessageKey = MessageKey::new("notifications.filters");
+
+/// The message `notifications.hide-result`.
+pub const NOTIFICATIONS_HIDE_RESULT: MessageKey = MessageKey::new("notifications.hide-result");
+
+/// The message `notifications.in-app`.
+pub const NOTIFICATIONS_IN_APP: MessageKey = MessageKey::new("notifications.in-app");
+
+/// The message `notifications.kind`.
+pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
+
+/// The message `notifications.mark-all-read`.
+pub const NOTIFICATIONS_MARK_ALL_READ: MessageKey = MessageKey::new("notifications.mark-all-read");
+
+/// The message `notifications.mark-read`.
+pub const NOTIFICATIONS_MARK_READ: MessageKey = MessageKey::new("notifications.mark-read");
+
+/// The message `notifications.more`.
+pub const NOTIFICATIONS_MORE: MessageKey = MessageKey::new("notifications.more");
+
+/// The message `notifications.new`.
+pub const NOTIFICATIONS_NEW: MessageKey = MessageKey::new("notifications.new");
+
+/// The message `notifications.news`.
+pub const NOTIFICATIONS_NEWS: MessageKey = MessageKey::new("notifications.news");
+
+/// The message `notifications.nothing-all`.
+pub const NOTIFICATIONS_NOTHING_ALL: MessageKey = MessageKey::new("notifications.nothing-all");
+
+/// The message `notifications.nothing-mentions`.
+pub const NOTIFICATIONS_NOTHING_MENTIONS: MessageKey =
+    MessageKey::new("notifications.nothing-mentions");
+
+/// The message `notifications.nothing-unread`.
+pub const NOTIFICATIONS_NOTHING_UNREAD: MessageKey =
+    MessageKey::new("notifications.nothing-unread");
+
+/// The message `notifications.open`.
+pub const NOTIFICATIONS_OPEN: MessageKey = MessageKey::new("notifications.open");
+
+/// The message `notifications.run-done`.
+pub const NOTIFICATIONS_RUN_DONE: MessageKey = MessageKey::new("notifications.run-done");
+
+/// The message `notifications.run-failed`.
+pub const NOTIFICATIONS_RUN_FAILED: MessageKey = MessageKey::new("notifications.run-failed");
+
+/// The message `notifications.show-all`.
+pub const NOTIFICATIONS_SHOW_ALL: MessageKey = MessageKey::new("notifications.show-all");
+
+/// The message `notifications.show-result`.
+pub const NOTIFICATIONS_SHOW_RESULT: MessageKey = MessageKey::new("notifications.show-result");
+
+/// The message `notifications.start-nothing`.
+pub const NOTIFICATIONS_START_NOTHING: MessageKey = MessageKey::new("notifications.start-nothing");
+
+/// The message `notifications.title`.
+pub const NOTIFICATIONS_TITLE: MessageKey = MessageKey::new("notifications.title");
 
 /// The message `own.ask-keep`.
 pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
@@ -4143,6 +4257,9 @@ pub const SHORTCUT_EVERYWHERE: MessageKey = MessageKey::new("shortcut.everywhere
 /// The message `shortcut.go-home`.
 pub const SHORTCUT_GO_HOME: MessageKey = MessageKey::new("shortcut.go-home");
 
+/// The message `shortcut.go-notifications`.
+pub const SHORTCUT_GO_NOTIFICATIONS: MessageKey = MessageKey::new("shortcut.go-notifications");
+
 /// The message `shortcut.in-lists`.
 pub const SHORTCUT_IN_LISTS: MessageKey = MessageKey::new("shortcut.in-lists");
 
@@ -5603,6 +5720,33 @@ pub fn groups_used_projects(count: i64) -> Message {
     )
 }
 
+/// The message `handle.changed`.
+#[must_use]
+pub fn handle_changed(handle: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("handle.changed"),
+        vec![("handle", Value::Text(handle.to_string()))],
+    )
+}
+
+/// The message `handle.rule-characters`.
+#[must_use]
+pub fn handle_rule_characters(max: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("handle.rule-characters"),
+        vec![("max", Value::Text(max.to_string()))],
+    )
+}
+
+/// The message `handle.rule-weekly`.
+#[must_use]
+pub fn handle_rule_weekly(days: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("handle.rule-weekly"),
+        vec![("days", Value::Number(days))],
+    )
+}
+
 /// The message `history.by`.
 #[must_use]
 pub fn history_by(when: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -6677,24 +6821,108 @@ pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message
     )
 }
 
-/// The message `mentions.in`.
+/// The message `notifications.assigned`.
 #[must_use]
-pub fn mentions_in(issue: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn notifications_assigned(who: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mentions.in"),
+        MessageKey::new("notifications.assigned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.commented`.
+#[must_use]
+pub fn notifications_commented(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.commented"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.count-capped`.
+#[must_use]
+pub fn notifications_count_capped(max: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.count-capped"),
+        vec![("max", Value::Text(max.to_string()))],
+    )
+}
+
+/// The message `notifications.finish-asked`.
+#[must_use]
+pub fn notifications_finish_asked(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.finish-asked"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.group-name`.
+#[must_use]
+pub fn notifications_group_name(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.group-name"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `notifications.locked-way`.
+#[must_use]
+pub fn notifications_locked_way(
+    value: impl std::fmt::Display,
+    way: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.locked-way"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("value", Value::Text(value.to_string())),
+            ("way", Value::Text(way.to_string())),
         ],
     )
 }
 
-/// The message `mentions.unread`.
+/// The message `notifications.mark-read-name`.
 #[must_use]
-pub fn mentions_unread(count: i64) -> Message {
+pub fn notifications_mark_read_name(what: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mentions.unread"),
-        vec![("count", Value::Number(count))],
+        MessageKey::new("notifications.mark-read-name"),
+        vec![("what", Value::Text(what.to_string()))],
+    )
+}
+
+/// The message `notifications.mentioned`.
+#[must_use]
+pub fn notifications_mentioned(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.mentioned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.open-name`.
+#[must_use]
+pub fn notifications_open_name(what: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.open-name"),
+        vec![("what", Value::Text(what.to_string()))],
+    )
+}
+
+/// The message `notifications.released`.
+#[must_use]
+pub fn notifications_released(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.released"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.taken-over`.
+#[must_use]
+pub fn notifications_taken_over(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.taken-over"),
+        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -9371,6 +9599,39 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {in # project you can see} other {in # projects you can see}}",
     ),
     ("groups.used-whole", "for the whole organization"),
+    ("handle.changed", "Your handle is now @{handle}."),
+    (
+        "handle.intro",
+        "Your handle is the short name people type after @ to mention you, like @ana.brandt.",
+    ),
+    (
+        "handle.invalid",
+        "That is not a handle. Use only the letters a to z, digits, dots, dashes and underscores.",
+    ),
+    ("handle.label", "Your handle"),
+    (
+        "handle.rule-characters",
+        "A handle has only the letters a to z (no accents), digits, dots, dashes and underscores, and at most {max} characters.",
+    ),
+    (
+        "handle.rule-kept",
+        "A handle you give up stays reserved for you. Comments written before still name you, but a new comment that uses it names nobody.",
+    ),
+    (
+        "handle.rule-own",
+        "Nobody else may have it, and it cannot be the handle of a group or a role.",
+    ),
+    (
+        "handle.rule-weekly",
+        "You can change it once in {days, plural, one {# day} other {# days}}.",
+    ),
+    ("handle.rules", "How a handle works"),
+    ("handle.save", "Change my handle"),
+    (
+        "handle.taken",
+        "Somebody has this handle, or had it, or a group or a role has it. Choose another one.",
+    ),
+    ("handle.title", "Handle"),
     ("history.by", "{who} · {when}"),
     (
         "history.changed",
@@ -10093,20 +10354,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("markdown.quote", "Quote"),
     ("markdown.toolbar", "Formatting"),
     ("markdown.write", "Write"),
-    ("mentions.in", "{who} in {issue}"),
-    ("mentions.mark-read", "Mark as read"),
-    ("mentions.new", "New"),
-    ("mentions.nothing", "Nobody has mentioned you."),
-    ("mentions.title", "Mentions"),
-    (
-        "mentions.unread",
-        "{count, plural, one {# unread} other {# unread}}",
-    ),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
     ("nav.field-permissions", "Field permissions"),
     ("nav.fields", "Fields"),
+    ("nav.group.hearing", "Notifications and mentions"),
     ("nav.group.look", "Look and feel"),
     ("nav.group.look-org", "Look"),
     ("nav.group.people", "People"),
@@ -10114,10 +10367,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.group.system", "System"),
     ("nav.group.work", "Work"),
     ("nav.groups", "Groups"),
+    ("nav.handle", "Handle"),
     ("nav.home", "Home"),
     ("nav.issue-types", "Issue types"),
     ("nav.labels", "Labels and tags"),
     ("nav.my-settings", "My settings"),
+    ("nav.notification-settings", "Notification settings"),
+    ("nav.notifications", "Notifications"),
     ("nav.organization-security", "Security"),
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
@@ -10151,6 +10407,68 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notification.kind.run-ended",
         "Your run of many changes has ended",
     ),
+    ("notifications.assigned", "{who} assigned this issue to you"),
+    ("notifications.by-mail", "By e-mail"),
+    ("notifications.commented", "{who} wrote a comment"),
+    ("notifications.count-capped", "{max}+"),
+    ("notifications.customize", "Customize"),
+    (
+        "notifications.customize-intro",
+        "Choose for each kind of event whether you hear of it in the app, by e-mail, in both or not at all. You never hear of your own changes. E-mail goes only when your organization has switched it on.",
+    ),
+    ("notifications.customize-reset", "Use the standard choices"),
+    ("notifications.customize-title", "Customize notifications"),
+    ("notifications.filter.all", "All"),
+    ("notifications.filter.mentions", "Mentions"),
+    ("notifications.filter.unread", "Unread"),
+    ("notifications.filters", "Show"),
+    (
+        "notifications.finish-asked",
+        "{who} asks you to finish editing",
+    ),
+    ("notifications.group-name", "Notifications about {issue}"),
+    ("notifications.hide-result", "Hide the result"),
+    ("notifications.in-app", "In the app"),
+    ("notifications.kind", "What happens"),
+    (
+        "notifications.locked-way",
+        "{way}: {value} · Set by your organization",
+    ),
+    ("notifications.mark-all-read", "Mark all as read"),
+    ("notifications.mark-read", "Mark as read"),
+    ("notifications.mark-read-name", "Mark as read: {what}"),
+    ("notifications.mentioned", "{who} mentioned you"),
+    ("notifications.more", "Show earlier"),
+    ("notifications.new", "New"),
+    ("notifications.news", "There is news on this issue"),
+    (
+        "notifications.nothing-all",
+        "You have no notifications yet. You hear of mentions, of issues assigned to you and of what happens on issues you follow.",
+    ),
+    (
+        "notifications.nothing-mentions",
+        "Nobody has mentioned you.",
+    ),
+    ("notifications.nothing-unread", "You have read everything."),
+    ("notifications.open", "Open"),
+    ("notifications.open-name", "Open: {what}"),
+    ("notifications.released", "{who} let go of the editing"),
+    (
+        "notifications.run-done",
+        "Your change to many issues is done",
+    ),
+    (
+        "notifications.run-failed",
+        "Your change to many issues stopped before it was done",
+    ),
+    ("notifications.show-all", "Show all notifications"),
+    ("notifications.show-result", "Show the result"),
+    ("notifications.start-nothing", "Nothing new."),
+    (
+        "notifications.taken-over",
+        "{who} took over the editing. What you wrote is kept as your draft",
+    ),
+    ("notifications.title", "Notifications"),
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
@@ -11604,6 +11922,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("shortcut.everywhere", "Everywhere"),
     ("shortcut.go-home", "Go to the start page"),
+    ("shortcut.go-notifications", "Go to Notifications"),
     ("shortcut.in-lists", "Where a list is shown"),
     (
         "shortcut.intro",

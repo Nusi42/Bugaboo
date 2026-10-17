@@ -158,6 +158,8 @@ export const messages = {
   "common.loading": "Loading…",
   "common.try-again": "Try again",
   "common.save": "Save",
+  "common.on": "On",
+  "common.off": "Off",
   "validation.email": "Type an e-mail address like name@example.com.",
   "field.email": "E-mail address",
   "field.password": "Password",
@@ -393,6 +395,12 @@ export const messages = {
   "related-issues.kind-field": "What the relation means",
   "history.title": "History",
   "history.tabs": "What to show",
+  "history.system": "Bugaboo",
+  "history.changed": "{who} changed {field} from {before} to {after}",
+  "history.set": "{who} set {field} to {after}",
+  "history.set-people": "{who} set {field}: {after}",
+  "history.cleared": "{who} cleared {field}",
+  "history.changed-long-text": "{who} changed {field}",
   "history.people-none": "nobody",
   "error.issue.parent-circle":
     "That would create a circle of issues or a chain that is too long. Choose another issue.",
@@ -578,6 +586,14 @@ export const messages = {
   "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
+  "notification.kind.mentioned": "You are mentioned",
+  "notification.kind.assigned": "An issue is assigned to you",
+  "notification.kind.followed-activity":
+    "A status change, a comment or a file on an issue you follow",
+  "notification.kind.followed-fields": "Other changes to fields of an issue you follow",
+  "notification.kind.run-ended": "Your run of many changes has ended",
+  "notification.kind.edit-notice":
+    "Somebody asks you to finish editing, or takes your editing over",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
   "setting.notifications.mentioned-in-app.help":
     "Tells you under Notifications when a comment mentions you, or a group or role you are in.",
@@ -663,6 +679,12 @@ export const messages = {
     "You changed your handle only a short time ago. You can change it again later.",
   "error.mail.insecure":
     "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
+  "nav.notifications": "Notifications",
+  "nav.notification-settings": "Notification settings",
+  "nav.handle": "Handle",
+  "nav.group.hearing": "Notifications and mentions",
+  "shortcut.go-notifications": "Go to Notifications",
+  "notifications.count-capped": "{max}+",
 } as const;
 
 register(messages);

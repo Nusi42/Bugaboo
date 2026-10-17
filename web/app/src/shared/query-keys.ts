@@ -91,7 +91,6 @@ export const queryKeys = {
   },
   mentions: {
     all: ["mentions"],
-    list: () => ["mentions", "list"],
     choices: (issue: string, search: string) => ["mentions", "choices", issue, search],
   },
   issues: {
@@ -237,16 +236,17 @@ export function refreshIssueRelations(): void {
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }
 
+/** A notification was read: the list and the number on the menu are read again. */
+export function refreshNotifications(): void {
+  refreshRoutes(["/api/v1/notifications"]);
+}
+
 /** A comment was written, changed or deleted, or a follower came or went: the history is read again. */
 export function refreshHistory(): void {
   reread({ queryKey: queryKeys.history.all });
   reread({ queryKey: queryKeys.followers.all });
   reread({ queryKey: queryKeys.mentions.all });
-  refreshRoutes([
-    "/api/v1/issues/{issue}/follow",
-    "/api/v1/me/mentions",
-    "/api/v1/comments/{comment}/versions",
-  ]);
+  refreshRoutes(["/api/v1/issues/{issue}/follow", "/api/v1/comments/{comment}/versions"]);
 }
 
 /** Something about people, groups, roles or rows changed: all of it is read again where it is shown. */

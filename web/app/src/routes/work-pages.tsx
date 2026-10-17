@@ -244,6 +244,16 @@ export const projectIssuesRoute = createRoute({
 export const issueRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.issue,
+  // Where *Open* of a notification goes on the page: a comment, or the change at a moment.
+  validateSearch: (
+    search: Readonly<Record<string, unknown>>,
+  ): { comment?: string | undefined; change?: string | undefined } => {
+    const { comment, change } = search;
+    return {
+      comment: typeof comment === "string" ? comment : undefined,
+      change: typeof change === "string" ? change : undefined,
+    };
+  },
   loader: loadsScreen(IssueScreen),
   component: function Issue() {
     const issue = useAddressPart(routeParam.issue);

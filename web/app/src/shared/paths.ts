@@ -7,6 +7,7 @@ import { appPaths } from "@bugaboo/api-client";
  */
 export const paths = {
   home: "/",
+  notifications: "/notifications",
   setup: "/setup",
   signIn: appPaths.signIn,
   secondStep: "/sign-in/second-step",
@@ -16,6 +17,8 @@ export const paths = {
   mySettings: "/me",
   appearance: "/me/appearance",
   region: "/me/region",
+  notificationSettings: "/me/notifications",
+  handle: "/me/handle",
   startPage: "/me/start-page",
   shortcuts: "/me/shortcuts",
   security: "/me/security",
@@ -144,6 +147,25 @@ export function roleAddress(id: string): string {
 /** The address of an issue, `/issues/WEB-142`: the focus view, and the link that is shared. */
 export function issueAddress(key: string): string {
   return filled(paths.issue, routeParam.issue, key);
+}
+
+/** What an issue page is opened at: a comment, or the change that happened at a moment. */
+export type IssueTarget =
+  | { readonly kind: "comment"; readonly comment: string }
+  | { readonly kind: "change"; readonly at: string };
+
+/** The names of the parts of an address that say where on the issue page to look. */
+export const targetParam = { comment: "comment", change: "change" } as const;
+
+/** The address of an issue with the comment or the change that *Open* of a notification goes to. */
+export function issueTargetAddress(key: string, target: IssueTarget): string {
+  const query = new URLSearchParams();
+  if (target.kind === "comment") {
+    query.set(targetParam.comment, target.comment);
+  } else {
+    query.set(targetParam.change, target.at);
+  }
+  return `${issueAddress(key)}?${query.toString()}`;
 }
 
 /** The address of the issues of a project, `/p/WEB/issues`. */

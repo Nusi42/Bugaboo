@@ -8,7 +8,13 @@ import { itemsOf } from "../../shared/paged.ts";
 import { ChangeEntry, NothingYet } from "./ChangeEntry.tsx";
 import { CommentComposer } from "./CommentComposer.tsx";
 import { CommentEntry } from "./CommentEntry.tsx";
-import { groupByEvent, historyTabs, useHistory, type HistoryTabName } from "./history.ts";
+import {
+  groupByEvent,
+  historyTabs,
+  useHistory,
+  useOpenedEntry,
+  type HistoryTabName,
+} from "./history.ts";
 
 const tabLabel = {
   everything: "history.tab-everything",
@@ -20,15 +26,17 @@ const tabLabel = {
 function Entries({ issue, tab }: { readonly issue: string; readonly tab: HistoryTabName }) {
   const list = useHistory(issue, tab);
   const groups = groupByEvent(itemsOf(list.data?.pages));
+  // *Open* of a notification: the entry it names is marked, and earlier pages are read until it is found.
+  const found = useOpenedEntry(groups, list);
   return (
     <div {...partOf(part.stack)}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {groups.length === 0 && list.isSuccess && !list.hasNextPage ? <NothingYet /> : null}
-      {groups.map((group) =>
+      {groups.map((group, at) =>
         group[0]?.kind === "comment" ? (
-          <CommentEntry key={group[0].event} entry={group[0]} />
+          <CommentEntry key={group[0].event} entry={group[0]} highlighted={at === found} />
         ) : (
-          <ChangeEntry key={group[0]?.event} items={group} />
+          <ChangeEntry key={group[0]?.event} items={group} highlighted={at === found} />
         ),
       )}
       {list.hasNextPage ? (
