@@ -84,13 +84,10 @@ pub(crate) fn status_in(text: Option<&str>) -> Result<Option<StatusKey>, ApiErro
     text.map(body_id::<StatusKey>).transpose()
 }
 
-/// The statuses the issues of a project can have: one list for all issue types. A status with the
-/// same key, name and group in several workflows is listed once; one with the same key and another
-/// name or group is listed for each.
+/// The status changes the issues of a project can have: one list for all issue types, each status
+/// change once by its words.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct ProjectStatusesBody {
-    /// The statuses, in the order the workflows list them.
-    statuses: Vec<StatusRef>,
     /// The status changes by their words, once for the same status and text, in the order the
     /// workflows list them: what a choice of a status change for many issues offers.
     changes: Vec<ProjectStatusChangeBody>,
@@ -110,7 +107,6 @@ impl Masked for ProjectStatusesBody {}
 impl From<&ProjectStatuses> for ProjectStatusesBody {
     fn from(list: &ProjectStatuses) -> Self {
         Self {
-            statuses: list.statuses.iter().map(StatusRef::from).collect(),
             changes: list
                 .changes
                 .iter()

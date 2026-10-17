@@ -14,7 +14,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::fields::FieldKey;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{GroupId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
@@ -121,6 +121,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 if !already && held.field_level_for(None, field) < FieldLevel::CanSee {
                     return Err(ErrorCode::WorkflowInvalid.into());
                 }
+            }
+            // The description is long text with a lock of its own: a status change cannot carry it,
+            // so asking for it in the small form could never be met (M4 WP-07).
+            let asks_description = change
+                .rules
+                .ask_for
+                .contains(&FieldKey::BuiltIn(Field::Description));
+            if !already && asks_description {
+                return Err(ErrorCode::WorkflowInvalid.into());
             }
             let groups = &change.rules.who.groups;
             if !already && groups.iter().any(|group| !known_groups.contains(group)) {

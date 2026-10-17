@@ -15,15 +15,11 @@ pub struct ProjectStatusesQuery {
     pub project: String,
 }
 
-/// The statuses the issues of a project can have: those of the workflow of every issue type that is
-/// not retired, in the order the workflows list them. A status that two workflows share with the
-/// same key, name and group is listed once; one with the same key and another name or group is
-/// listed for each. What a choice of a status for
+/// The status changes the issues of a project can have: those of the workflow of every issue type
+/// that is not retired, in the order the workflows list them. What a choice of a status change for
 /// many issues offers; each issue is still judged by its own workflow.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ProjectStatuses {
-    /// The statuses.
-    pub statuses: Vec<StatusView>,
     /// The status changes by their words: each status a change ends in with the text of its
     /// button, once for the same status and text in several workflows, in the order the workflows
     /// list them. What a choice of a status change for many issues offers.
@@ -62,16 +58,9 @@ pub async fn project_statuses<S: AuthStore>(
         .issue_types()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let mut statuses: Vec<StatusView> = Vec::new();
     let mut changes: Vec<ProjectChange> = Vec::new();
     for issue_type in types.iter().filter(|each| each.retired_at.is_none()) {
         let workflow = ctx.workflow_in_force(&chain, Some(issue_type.id)).await?;
-        for status in &workflow.statuses {
-            let shown = StatusView::from(status);
-            if !statuses.contains(&shown) {
-                statuses.push(shown);
-            }
-        }
         for change in &workflow.changes {
             let Some(to) = workflow.status(&change.to) else {
                 continue;
@@ -85,5 +74,5 @@ pub async fn project_statuses<S: AuthStore>(
             }
         }
     }
-    Ok(held.authorize(ProjectStatuses { statuses, changes }))
+    Ok(held.authorize(ProjectStatuses { changes }))
 }

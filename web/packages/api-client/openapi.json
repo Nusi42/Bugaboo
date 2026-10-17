@@ -30537,8 +30537,8 @@
       },
       "ProjectStatusesBody": {
         "type": "object",
-        "description": "The statuses the issues of a project can have: one list for all issue types. A status with the\nsame key, name and group in several workflows is listed once; one with the same key and another\nname or group is listed for each.",
-        "required": ["statuses", "changes"],
+        "description": "The status changes the issues of a project can have: one list for all issue types, each status\nchange once by its words.",
+        "required": ["changes"],
         "properties": {
           "changes": {
             "type": "array",
@@ -30546,13 +30546,6 @@
               "$ref": "#/components/schemas/ProjectStatusChangeBody"
             },
             "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
-          },
-          "statuses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StatusRef"
-            },
-            "description": "The statuses, in the order the workflows list them."
           }
         }
       },

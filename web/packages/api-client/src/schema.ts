@@ -6837,9 +6837,8 @@ export interface components {
       to: components["schemas"]["StatusRef"];
     };
     /**
-     * @description The statuses the issues of a project can have: one list for all issue types. A status with the
-     *     same key, name and group in several workflows is listed once; one with the same key and another
-     *     name or group is listed for each.
+     * @description The status changes the issues of a project can have: one list for all issue types, each status
+     *     change once by its words.
      */
     ProjectStatusesBody: {
       /**
@@ -6847,8 +6846,6 @@ export interface components {
        *     workflows list them: what a choice of a status change for many issues offers.
        */
       changes: components["schemas"]["ProjectStatusChangeBody"][];
-      /** @description The statuses, in the order the workflows list them. */
-      statuses: components["schemas"]["StatusRef"][];
     };
     /** @description What publishing a workflow would drop. */
     PublishPreviewAnswer: {

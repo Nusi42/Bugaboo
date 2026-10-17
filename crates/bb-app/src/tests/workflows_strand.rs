@@ -441,13 +441,12 @@ async fn sec_06_try_it_names_nothing_of_a_field_the_person_trying_cannot_see() -
 }
 
 #[tokio::test]
-async fn wf_01_the_statuses_of_a_project_are_listed_once_for_the_same_key_name_and_group() -> Outcome
-{
+async fn wf_01_the_status_changes_of_a_project_name_the_status_they_lead_to_once() -> Outcome {
     let world = World::new().await?;
     a_project(&world, "ACME").await?;
     let admin = world.admin.session_token.clone();
     let listed = async |world: &World| -> Result<Vec<String>, AppError> {
-        Ok(crate::workflows::project_statuses(
+        let found = crate::workflows::project_statuses(
             &world.ctx(),
             crate::workflows::ProjectStatusesQuery {
                 session_token: world.admin.session_token.clone(),
@@ -455,12 +454,18 @@ async fn wf_01_the_statuses_of_a_project_are_listed_once_for_the_same_key_name_a
             },
         )
         .await?
-        .into_value()
-        .statuses
-        .into_iter()
-        .filter(|each| each.key == key(OPEN))
-        .map(|each| each.name)
-        .collect())
+        .into_value();
+        let mut names: Vec<String> = Vec::new();
+        for change in found
+            .changes
+            .into_iter()
+            .filter(|each| each.to.key == key(OPEN))
+        {
+            if !names.contains(&change.to.name) {
+                names.push(change.to.name);
+            }
+        }
+        Ok(names)
     };
     // The starter workflows all call their first status Open: it is listed once.
     assert_eq!(listed(&world).await?, ["Open"]);

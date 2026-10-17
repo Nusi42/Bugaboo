@@ -255,3 +255,28 @@ async fn iss_09_a_project_lists_the_status_changes_of_its_workflows_once_by_thei
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn wf_04_the_description_cannot_be_asked_for_in_a_small_form() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "ACME").await?;
+    let editor = a_workflow(&world, "ACME").await?;
+    // The description is long text with a lock of its own: a status change cannot carry it, so a
+    // rule that asks for it could never be met.
+    let asking = published_with(&world, &editor, |sent| {
+        if let Some(first) = sent.changes.first_mut() {
+            first.rules.ask_for = vec![FieldKey::BuiltIn(Field::Description)];
+        }
+    })
+    .await
+    .err();
+    assert_eq!(asking, Some(AppError::Refused(ErrorCode::WorkflowInvalid)));
+    // It can still be required to be filled in before a change.
+    published_with(&world, &editor, |sent| {
+        if let Some(first) = sent.changes.first_mut() {
+            first.rules.must_fill = vec![FieldKey::BuiltIn(Field::Description)];
+        }
+    })
+    .await?;
+    Ok(())
+}
