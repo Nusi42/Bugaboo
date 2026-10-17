@@ -569,6 +569,7 @@ dependencies = [
  "lettre",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "zeroize",
 ]
 

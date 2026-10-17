@@ -19,6 +19,7 @@ struct Received {
 /// Starts a mail server on a free port of this machine that takes one e-mail, answering `refuse`
 /// to the first `RCPT TO` when it is given. Returns its port and what it receives.
 async fn serve(refuse: Option<&'static str>) -> (u16, tokio::task::JoinHandle<Received>) {
+    logged_so_far();
     let listener = TcpListener::bind("127.0.0.1:0").await.expect("a free port");
     let port = listener.local_addr().expect("an address").port();
     let task = tokio::spawn(async move {
@@ -163,4 +164,67 @@ async fn an_address_that_is_none_is_a_rejection_before_anything_is_sent() {
         SmtpMailer.send(&server(1), &bad).await,
         Err(MailFailure::Rejected)
     );
+}
+
+/// Collects what the adapter logs, so a test can read it.
+#[derive(Clone, Default)]
+struct Captured(std::sync::Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for Captured {
+    type Writer = Self;
+
+    fn make_writer(&'a self) -> Self {
+        self.clone()
+    }
+}
+
+/// Everything the tests of this module log. The subscriber is global: a log statement remembers
+/// that nobody listens when it first runs without one, so a subscriber of one test would miss it.
+fn logged_so_far() -> &'static Captured {
+    static LOG: std::sync::OnceLock<Captured> = std::sync::OnceLock::new();
+    LOG.get_or_init(|| {
+        let captured = Captured::default();
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(captured.clone())
+            .with_ansi(false)
+            .finish();
+        let _ = tracing::subscriber::set_global_default(subscriber);
+        captured
+    })
+}
+
+#[tokio::test]
+async fn data_logs_no_e_mail_address_in_the_log() {
+    let captured = logged_so_far();
+    // The answer of the server names the address, as real servers do.
+    let (port, received) = serve(Some("550 5.1.1 <ana@example.test> no such mailbox")).await;
+    let outcome = SmtpMailer
+        .send(&server(port), &message("Subject", "Text"))
+        .await;
+    assert_eq!(outcome, Err(MailFailure::Rejected));
+    received.abort();
+    let logged = String::from_utf8_lossy(
+        &captured
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    )
+    .into_owned();
+    assert!(logged.contains("did not take an e-mail"), "{logged}");
+    assert!(!logged.contains("ana@"), "{logged}");
+    assert!(!logged.contains("example.test"), "{logged}");
 }

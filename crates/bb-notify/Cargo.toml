@@ -14,6 +14,7 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "time"] }
+tracing-subscriber = { workspace = true }
 zeroize = { workspace = true }
 
 [lints]
