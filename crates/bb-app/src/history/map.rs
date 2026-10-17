@@ -8,6 +8,8 @@
 //!   later events about the comment (a new text, the trash) change the comment itself, which the
 //!   history reads, and add no row.
 //! - An event about a **relation** is a row in the history of both issues.
+//! - An event about a **file** on an issue (an attachment) is a row in the history of that issue:
+//!   it was added, put into the trash or brought back. A file on a comment is part of the comment.
 //!
 //! What a reader may see of the changes in a row is decided when the history is read, with the
 //! mask of the reader, never here.
@@ -17,6 +19,7 @@ use bb_core::history::{HistoryEntry, HistoryKind};
 use bb_core::id::IssueId;
 use bb_core::technical::TechnicalName;
 
+use crate::files::member as file_member;
 use crate::issues::member as issue_member;
 use crate::member::{comment, relation};
 
@@ -107,6 +110,19 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         }
         return issue_in(&event.changes, comment::ISSUE, true)
             .map(|issue| vec![row(issue, HistoryKind::Comment, Vec::new())])
+            .unwrap_or_default();
+    }
+    if kind_is(RecordKind::Attachment) {
+        // A file on a comment is shown with the comment; only the files of the issue itself are rows.
+        if event
+            .changes
+            .iter()
+            .any(|change| change.field == file_member::COMMENT)
+        {
+            return Vec::new();
+        }
+        return issue_in(&event.changes, file_member::ISSUE, true)
+            .map(|issue| vec![row(issue, HistoryKind::Change, event.changes.clone())])
             .unwrap_or_default();
     }
     if kind_is(RecordKind::Relation) {

@@ -4471,6 +4471,10 @@ export interface components {
       field_kind?: components["schemas"]["FieldType"] | null;
       /** @description A change of an own field: its name. */
       field_name?: string | null;
+      /** @description A file: `added`, `deleted` or `restored`. */
+      file_event?: string | null;
+      /** @description A file: its name. */
+      file_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this reader. */
       html?: SafeHtml;
       issue?: components["schemas"]["IssueRef"] | null;
@@ -4494,7 +4498,7 @@ export interface components {
      * @description What an item of the history is.
      * @enum {string}
      */
-    HistoryEntryKind: "comment" | "change" | "relation";
+    HistoryEntryKind: "comment" | "change" | "relation" | "file";
     /**
      * @description Which rows of the history of an issue to list: everything, only the comments, or only the changes.
      * @enum {string}
@@ -5916,6 +5920,10 @@ export interface components {
         field_kind?: components["schemas"]["FieldType"] | null;
         /** @description A change of an own field: its name. */
         field_name?: string | null;
+        /** @description A file: `added`, `deleted` or `restored`. */
+        file_event?: string | null;
+        /** @description A file: its name. */
+        file_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this reader. */
         html?: SafeHtml;
         issue?: components["schemas"]["IssueRef"] | null;

@@ -3,11 +3,11 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
-import { changeSentence, relationSentence } from "./history.ts";
+import { sentenceOf } from "./history.ts";
 
-/** What tells the items of one event apart: the field that changed, or the relation. */
+/** What tells the items of one event apart: the field that changed, the relation or the file. */
 function keyOf(item: Schema<"HistoryEntryItem">): string {
-  return [item.event, item.field ?? item.relation ?? ""].join(" ");
+  return [item.event, item.field ?? item.relation ?? item.file_event ?? ""].join(" ");
 }
 
 /**
@@ -26,7 +26,7 @@ export function ChangeEntry({ items }: { readonly items: readonly Schema<"Histor
       <ul {...partOf(part.list)}>
         {items.map((item) => (
           <li key={keyOf(item)} {...partOf(part.itemText)}>
-            {item.kind === "relation" ? relationSentence(item) : changeSentence(item)}
+            {sentenceOf(item)}
           </li>
         ))}
       </ul>

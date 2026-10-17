@@ -85,6 +85,30 @@ pub struct FieldChangeView {
     pub after: Option<ChangeValue>,
 }
 
+/// What happened to a file of an issue.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FileEvent {
+    /// The file was added.
+    Added,
+    /// The file was put into the trash.
+    Deleted,
+    /// The file was brought back from the trash (*Undo*).
+    Restored,
+}
+
+impl FileEvent {
+    /// The word the API says it with.
+    #[must_use]
+    pub const fn word(self) -> &'static str {
+        match self {
+            Self::Added => "added",
+            Self::Deleted => "deleted",
+            Self::Restored => "restored",
+        }
+    }
+}
+
 /// What a row of the history says.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -98,6 +122,13 @@ pub enum HistoryWhat {
     Changes {
         /// The fields.
         fields: Vec<FieldChangeView>,
+    },
+    /// A file of the issue was added, put into the trash or brought back.
+    File {
+        /// What happened.
+        event: FileEvent,
+        /// The name of the file.
+        name: String,
     },
     /// A relation to another issue was added or taken away.
     Relation {

@@ -32,7 +32,7 @@ const HISTORY_LIST: &str = "history";
 
 /// The fields of an item of the history that can be asked for. A row holds only the ones that
 /// belong to its kind.
-const HISTORY_FIELDS: [FieldSpec; 29] = [
+const HISTORY_FIELDS: [FieldSpec; 31] = [
     FieldSpec::by_default("event"),
     FieldSpec::by_default("at"),
     FieldSpec::by_default("by"),
@@ -62,6 +62,8 @@ const HISTORY_FIELDS: [FieldSpec; 29] = [
     FieldSpec::by_default("relation"),
     FieldSpec::by_default("direction"),
     FieldSpec::by_default("issue"),
+    FieldSpec::by_default("file_event"),
+    FieldSpec::by_default("file_name"),
 ];
 
 /// What an item of the history is.
@@ -74,6 +76,8 @@ pub(crate) enum HistoryEntryKind {
     Change,
     /// A relation to another issue that was added or taken away.
     Relation,
+    /// A file of the issue that was added, put into the trash or brought back.
+    File,
 }
 
 /// One item of the history of an issue.
@@ -165,6 +169,12 @@ pub(crate) struct HistoryEntryItem {
     /// A relation: the issue at the other end.
     #[serde(skip_serializing_if = "Option::is_none")]
     issue: Option<IssueRef>,
+    /// A file: `added`, `deleted` or `restored`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_event: Option<String>,
+    /// A file: its name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_name: Option<String>,
 }
 
 impl Masked for HistoryEntryItem {}
@@ -201,10 +211,12 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
         relation: None,
         direction: None,
         issue: None,
+        file_event: None,
+        file_name: None,
     }
 }
 
-/// The items of one row of the history: a comment and a relation are one each, a change one for
+/// The items of one row of the history: a comment, a file and a relation are one each, a change one for
 /// each field.
 fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
     match &row.what {
@@ -239,6 +251,12 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 item
             })
             .collect(),
+        HistoryWhat::File { event, name } => {
+            let mut item = start(row, HistoryEntryKind::File);
+            item.file_event = Some(event.word().to_owned());
+            item.file_name = Some(name.clone());
+            vec![item]
+        }
         HistoryWhat::Relation {
             added,
             direction,

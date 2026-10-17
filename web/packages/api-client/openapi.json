@@ -25241,6 +25241,14 @@
             "type": ["string", "null"],
             "description": "A change of an own field: its name."
           },
+          "file_event": {
+            "type": ["string", "null"],
+            "description": "A file: `added`, `deleted` or `restored`."
+          },
+          "file_name": {
+            "type": ["string", "null"],
+            "description": "A file: its name."
+          },
           "html": {
             "type": ["string", "null"],
             "description": "A comment: the text as safe HTML, made on the server for this reader.",
@@ -25287,7 +25295,7 @@
       "HistoryEntryKind": {
         "type": "string",
         "description": "What an item of the history is.",
-        "enum": ["comment", "change", "relation"]
+        "enum": ["comment", "change", "relation", "file"]
       },
       "HistoryTab": {
         "type": "string",
@@ -28526,6 +28534,14 @@
                 "field_name": {
                   "type": ["string", "null"],
                   "description": "A change of an own field: its name."
+                },
+                "file_event": {
+                  "type": ["string", "null"],
+                  "description": "A file: `added`, `deleted` or `restored`."
+                },
+                "file_name": {
+                  "type": ["string", "null"],
+                  "description": "A file: its name."
                 },
                 "html": {
                   "type": ["string", "null"],

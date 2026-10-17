@@ -1,7 +1,13 @@
 import type { Schema } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { changeSentence, groupByEvent, relationSentence, type HistoryEntry } from "./history.ts";
+import {
+  changeSentence,
+  groupByEvent,
+  relationSentence,
+  sentenceOf,
+  type HistoryEntry,
+} from "./history.ts";
 import { mentionBeingTyped, withMention } from "./mention-text.ts";
 
 const ben = { shown: "name", id: "b", name: "Ben" } as const;
@@ -122,6 +128,19 @@ describe("iss_06 relations and the items of one event", () => {
       change({ event: "e3", field: "title" }),
     ]);
     expect(groups.map((group) => group.length)).toEqual([2, 1, 1]);
+  });
+});
+
+/** The sentence of a file item of the history with this event. */
+function fileWords(file_event: string): string {
+  return sentenceOf(change({ kind: "file", file_event, file_name: "jam.txt" }));
+}
+
+describe("iss_06 files in the history (M4-F50)", () => {
+  it("says who added a file, deleted it and brought it back, with its name", () => {
+    expect(fileWords("added")).toBe("Ben added the file jam.txt");
+    expect(fileWords("deleted")).toBe("Ben deleted the file jam.txt");
+    expect(fileWords("restored")).toBe("Ben brought back the file jam.txt");
   });
 });
 

@@ -102,6 +102,27 @@ export function changeSentence(entry: HistoryEntry): string {
     : t("history.cleared", { who, field });
 }
 
+const fileMessages = {
+  added: "history.file-added",
+  deleted: "history.file-deleted",
+  restored: "history.file-restored",
+} as const;
+
+/** The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*. */
+export function fileSentence(entry: HistoryEntry): string {
+  const event =
+    entry.file_event === "deleted" || entry.file_event === "restored" ? entry.file_event : "added";
+  return t(fileMessages[event], { who: whoOf(entry), name: entry.file_name ?? "" });
+}
+
+/** The sentence of one item that is not a comment: a change of a field, a file or a relation. */
+export function sentenceOf(entry: HistoryEntry): string {
+  if (entry.kind === "relation") {
+    return relationSentence(entry);
+  }
+  return entry.kind === "file" ? fileSentence(entry) : changeSentence(entry);
+}
+
 /** The sentence of a relation that was added or taken away. */
 export function relationSentence(entry: HistoryEntry): string {
   const message =

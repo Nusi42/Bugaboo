@@ -198,6 +198,9 @@ export interface MessageArguments {
   };
   "history.changed-long-text": { field: string | number; who: string | number };
   "history.cleared": { field: string | number; who: string | number };
+  "history.file-added": { name: string | number; who: string | number };
+  "history.file-deleted": { name: string | number; who: string | number };
+  "history.file-restored": { name: string | number; who: string | number };
   "history.relation-added": { issue: string | number; name: string | number; who: string | number };
   "history.relation-removed": {
     issue: string | number;

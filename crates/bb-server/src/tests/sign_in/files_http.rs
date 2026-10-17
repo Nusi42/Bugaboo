@@ -25,7 +25,7 @@ use super::policy_rig::Member;
 use super::rig::Rig;
 
 const UPLOADS: &str = "/api/v1/uploads";
-const ATTACHMENTS: &str = "/api/v1/attachments";
+pub(super) const ATTACHMENTS: &str = "/api/v1/attachments";
 const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
 
 /// The number of bytes of this many megabytes.
@@ -104,7 +104,7 @@ async fn upload_in_parts(
 }
 
 /// A file uploaded in as few parts as there can be; the attachment, which has to be a success.
-async fn upload(
+pub(super) async fn upload(
     browser: &mut Browser,
     issue: &str,
     name: &str,

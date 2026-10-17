@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 
 import { api } from "../../shared/api.ts";
 import { queryClient } from "../../shared/query-client.ts";
+import { refreshHistory } from "../../shared/query-keys.ts";
 import type { FileItem } from "./file-item.ts";
 
 /** How long the list of files waits before it is read again while a preview is on its way, in milliseconds. */
@@ -74,8 +75,12 @@ export function useFileRules(issue: string) {
   });
 }
 
-/** The list of files of an issue, read again: a file was added, deleted or brought back. */
+/**
+ * The list of files of an issue, read again: a file was added, deleted or brought back. The
+ * history has a row for it (M4-F50), so it is read again too.
+ */
 export function refreshFiles(): Promise<void> {
+  refreshHistory();
   return queryClient.invalidateQueries({
     queryKey: ["get", "/api/v1/issues/{issue}/files"],
   });

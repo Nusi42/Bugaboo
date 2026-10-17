@@ -73,6 +73,10 @@ test("att_01 a file that is chosen with Upload is added, and is a row with Downl
   ).toBeVisible();
   // A file of a type that has no preview shows its type, and never a picture.
   await expect(row.getByRole("img")).toHaveCount(0);
+  // The history has a row for the file, without a reload (M4-F50).
+  await expect(
+    page.getByText(t("history.file-added", { who: ada.name, name: "report.txt" })),
+  ).toBeVisible();
   // Kept: the page is read again from the server.
   await page.reload();
   await expect(rowOf(page, "report.txt")).toBeVisible();

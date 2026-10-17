@@ -30,6 +30,7 @@ mod exit_tags;
 mod fields_http;
 mod fields_names;
 mod fields_references;
+mod files_history;
 mod files_http;
 mod history_creation;
 mod history_own_fields;

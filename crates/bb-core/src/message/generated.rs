@@ -5877,6 +5877,42 @@ pub fn history_cleared(field: impl std::fmt::Display, who: impl std::fmt::Displa
     )
 }
 
+/// The message `history.file-added`.
+#[must_use]
+pub fn history_file_added(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-added"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.file-deleted`.
+#[must_use]
+pub fn history_file_deleted(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-deleted"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.file-restored`.
+#[must_use]
+pub fn history_file_restored(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-restored"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
 /// The message `history.relation-added`.
 #[must_use]
 pub fn history_relation_added(
@@ -9653,6 +9689,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
+    ("history.file-added", "{who} added the file {name}"),
+    ("history.file-deleted", "{who} deleted the file {name}"),
+    (
+        "history.file-restored",
+        "{who} brought back the file {name}",
+    ),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),

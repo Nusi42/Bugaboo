@@ -17,7 +17,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::history::{HistoryEntry, HistoryKind, HistoryTab};
-use bb_core::id::{CommentId, FieldId, IssueId, IssueTypeId, UserId};
+use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::paging::page_len;
 use bb_core::people_kinds::PeopleKind;
@@ -26,12 +26,13 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
 use super::types::{
-    ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
+    ChangeValue, FieldChangeView, FileEvent, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::comments::CommentView;
 use crate::fields::Definition;
+use crate::files::member as file_member;
 use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
 use crate::projects::ProjectRef;
@@ -139,6 +140,11 @@ pub(crate) struct ChangeReader {
 /// Whether the row is about a relation (the rest are about an issue).
 fn is_relation(row: &HistoryEntry) -> bool {
     row.record_kind.as_str() == RecordKind::Relation.code()
+}
+
+/// Whether the row is about a file of the issue.
+fn is_file(row: &HistoryEntry) -> bool {
+    row.record_kind.as_str() == RecordKind::Attachment.code()
 }
 
 /// The issues that the rows of a batch name: the parent and the sub-issues of a change, and the
@@ -483,6 +489,36 @@ impl<S: AuthStore> Ctx<'_, S> {
         }))
     }
 
+    /// A file of the issue that was added, put into the trash or brought back; `None` for a file
+    /// that is no file of the issue itself (a file of a comment) or that is gone.
+    async fn file_change(&self, row: &HistoryEntry) -> Result<Option<HistoryWhat>, AppError> {
+        let Some(attachment) = AttachmentId::from_bytes(row.record.to_bytes()).ok() else {
+            return Ok(None);
+        };
+        let Some(file) = self
+            .store()
+            .attachment(attachment)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .filter(|file| file.comment.is_none())
+        else {
+            return Ok(None);
+        };
+        let deleted = row
+            .changes
+            .iter()
+            .find(|change| change.field == file_member::DELETED_AT);
+        let event = match deleted {
+            None => FileEvent::Added,
+            Some(change) if change.after.is_some() => FileEvent::Deleted,
+            Some(_) => FileEvent::Restored,
+        };
+        Ok(Some(HistoryWhat::File {
+            event,
+            name: file.name,
+        }))
+    }
+
     /// The project, when the reader sees it.
     async fn project_seen(
         &self,
@@ -559,7 +595,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Some(HistoryWhat::Comment { comment: view })
             }
             HistoryKind::Change => {
-                if is_relation(row) {
+                if is_file(row) {
+                    self.file_change(row).await?
+                } else if is_relation(row) {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
                 } else {
