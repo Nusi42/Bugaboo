@@ -824,6 +824,18 @@ pub const ERROR_FIELD_UNKNOWN_REFERENCE: MessageKey =
 /// The message `error.field.wrong-value`.
 pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
 
+/// The message `error.file.incomplete`.
+pub const ERROR_FILE_INCOMPLETE: MessageKey = MessageKey::new("error.file.incomplete");
+
+/// The message `error.file.too-big`.
+pub const ERROR_FILE_TOO_BIG: MessageKey = MessageKey::new("error.file.too-big");
+
+/// The message `error.file.type-blocked`.
+pub const ERROR_FILE_TYPE_BLOCKED: MessageKey = MessageKey::new("error.file.type-blocked");
+
+/// The message `error.file.wrong-part`.
+pub const ERROR_FILE_WRONG_PART: MessageKey = MessageKey::new("error.file.wrong-part");
+
 /// The message `error.issue.parent-circle`.
 pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
 
@@ -3607,6 +3619,22 @@ pub const SETTING_CONTENT_IMAGE_HOSTS_HELP: MessageKey =
 /// The message `setting.content.image-hosts.name`.
 pub const SETTING_CONTENT_IMAGE_HOSTS_NAME: MessageKey =
     MessageKey::new("setting.content.image-hosts.name");
+
+/// The message `setting.files.blocked-types.help`.
+pub const SETTING_FILES_BLOCKED_TYPES_HELP: MessageKey =
+    MessageKey::new("setting.files.blocked-types.help");
+
+/// The message `setting.files.blocked-types.name`.
+pub const SETTING_FILES_BLOCKED_TYPES_NAME: MessageKey =
+    MessageKey::new("setting.files.blocked-types.name");
+
+/// The message `setting.files.max-megabytes.help`.
+pub const SETTING_FILES_MAX_MEGABYTES_HELP: MessageKey =
+    MessageKey::new("setting.files.max-megabytes.help");
+
+/// The message `setting.files.max-megabytes.name`.
+pub const SETTING_FILES_MAX_MEGABYTES_NAME: MessageKey =
+    MessageKey::new("setting.files.max-megabytes.name");
 
 /// The message `setting.issues.id-length.help`.
 pub const SETTING_ISSUES_ID_LENGTH_HELP: MessageKey =
@@ -8426,6 +8454,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That is not a value this field can hold.",
     ),
     (
+        "error.file.incomplete",
+        "The file did not arrive completely. Try adding it again.",
+    ),
+    (
+        "error.file.too-big",
+        "That file is bigger than this project allows.",
+    ),
+    (
+        "error.file.type-blocked",
+        "Your organization does not accept this type of file.",
+    ),
+    (
+        "error.file.wrong-part",
+        "A part of the file arrived out of order. The upload goes on from where it stopped.",
+    ),
+    (
         "error.issue.parent-circle",
         "That would create a circle of issues or a chain that is too long. Choose another issue.",
     ),
@@ -10644,6 +10688,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "setting.content.image-hosts.name",
         "Hosts that images may come from",
     ),
+    (
+        "setting.files.blocked-types.help",
+        "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
+    ),
+    (
+        "setting.files.blocked-types.name",
+        "Types of file that are never accepted",
+    ),
+    (
+        "setting.files.max-megabytes.help",
+        "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+    ),
+    ("setting.files.max-megabytes.name", "Biggest file"),
     (
         "setting.issues.id-length.help",
         "How many letters and digits a random issue ID has after the dash. Between 4 and 8. It grows by itself when the short ones run out.",

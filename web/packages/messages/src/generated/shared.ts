@@ -256,6 +256,11 @@ export const messages = {
   "error.setting.locked": "An administrator locked this setting, so it cannot be changed here.",
   "error.assignment.conflict":
     "This person or group already has a role here, so it cannot also have No access here, and the other way round. Take the other row away first.",
+  "error.file.too-big": "That file is bigger than this project allows.",
+  "error.file.type-blocked": "Your organization does not accept this type of file.",
+  "error.file.wrong-part":
+    "A part of the file arrived out of order. The upload goes on from where it stopped.",
+  "error.file.incomplete": "The file did not arrive completely. Try adding it again.",
   "error.name.taken": "That name is already used. Choose another one.",
   "error.project.move-lifts-no-access":
     "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",
@@ -410,6 +415,12 @@ export const messages = {
   "issue-id-mode.counting": "Counting IDs",
   "error.issue.type-retired":
     "That issue type is retired, so no new issues can be created with it. Choose another type.",
+  "setting.files.max-megabytes.name": "Biggest file",
+  "setting.files.max-megabytes.help":
+    "The most megabytes one file added to an issue or a comment may have. A project can allow less than the organization, never more. Between 1 and 100.",
+  "setting.files.blocked-types.name": "Types of file that are never accepted",
+  "setting.files.blocked-types.help":
+    "File types the organization never accepts, as a list separated by commas, like exe, bat. A file is refused when its content or its name has one of these types.",
   "setting.issues.id-mode.name": "Issue IDs",
   "setting.issues.id-mode.help":
     "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",

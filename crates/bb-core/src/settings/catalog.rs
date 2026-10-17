@@ -350,6 +350,33 @@ settings! {
         format: Format::Choices(ID_MODE_CHOICES),
     }
 
+    /// The most megabytes one file added to an issue or a comment may have (ATT-03, ADR-0032). The
+    /// organization sets up to 100; a project may set less, never more (the limit that counts is the
+    /// smaller of the two).
+    FILES_MAX_MEGABYTES: Integer = {
+        key: "files.max-megabytes",
+        name: message::SETTING_FILES_MAX_MEGABYTES_NAME,
+        default: 25,
+        levels: [Organization, Project],
+        changed_by: ProjectLeads,
+        help: message::SETTING_FILES_MAX_MEGABYTES_HELP,
+        lockable: false,
+        bounds: (1, 100),
+    }
+
+    /// The types of file the organization never accepts, by their extension (a list separated by
+    /// commas: `exe, bat`). A file is refused when its content or its name has one of them.
+    FILES_BLOCKED_TYPES: Text = {
+        key: "files.blocked-types",
+        name: message::SETTING_FILES_BLOCKED_TYPES_NAME,
+        default: "",
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_FILES_BLOCKED_TYPES_HELP,
+        lockable: false,
+        list: (100, 16),
+    }
+
     /// How many symbols a random issue ID has when it is drawn; the length grows by itself when
     /// the short ones run out.
     ISSUES_ID_LENGTH: Integer = {

@@ -105,6 +105,8 @@ words! {
     pub enum RecordKind {
         /// An access key.
         AccessKey => "access_key",
+        /// A file added to an issue or a comment (ATT-01).
+        Attachment => "attachment",
         /// One run of a change to many issues (ISS-09).
         ChangeRun => "change_run",
         /// An own field (CF-01).

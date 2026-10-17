@@ -16,6 +16,7 @@ pub mod entities;
 pub mod error_code;
 pub mod event;
 pub mod fields;
+pub mod files;
 pub mod follow;
 pub mod hex;
 pub mod history;
