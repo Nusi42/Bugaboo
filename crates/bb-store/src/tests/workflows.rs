@@ -281,9 +281,7 @@ async fn wf_02_the_live_issues_are_read_a_page_at_a_time_in_the_order_of_their_i
         wanted.sort();
         // The first page holds the lowest IDs and no more than the limit.
         let first = page(None, 2).await?;
-        let ids_of = |issues: &[bb_core::issue::Issue]| -> Vec<_> {
-            issues.iter().map(|issue| issue.id).collect()
-        };
+        let ids_of = |issues: &[Issue]| -> Vec<_> { issues.iter().map(|issue| issue.id).collect() };
         assert_eq!(ids_of(&first), wanted[..2]);
         // Each page goes on after the last ID of the one before; the last one is short.
         let second = page(Some(wanted[1]), 2).await?;

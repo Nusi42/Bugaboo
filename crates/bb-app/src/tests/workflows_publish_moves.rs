@@ -418,52 +418,47 @@ async fn wf_02_a_move_ignores_the_rules_of_the_old_change_and_closes_by_the_grou
     Ok(())
 }
 
-#[tokio::test]
-async fn wf_02_a_move_may_go_to_a_status_that_is_new_in_the_draft() -> Outcome {
-    let world = World::new().await?;
-    let project = a_project(&world, "ACME").await?;
+/// Publishes with *In progress* dropped and a new status `named` in the draft, the issues of the
+/// dropped one moved to `to`; says where the issue ended.
+async fn moved_to_a_new_status(named: &str, to: &str) -> Result<String, AppError> {
+    let world = World::new().await.map_err(AppError::Internal)?;
+    let project = a_project(&world, "ACME")
+        .await
+        .map_err(AppError::Internal)?;
     let admin = world.admin.session_token.clone();
     let id = issue_in_progress(&world, project).await?;
-    let editor = a_workflow(&world, "ACME").await?;
+    let editor = a_workflow(&world, "ACME")
+        .await
+        .map_err(AppError::Internal)?;
     published_with(&world, &editor, |sent| {
         without_progress(sent);
         sent.statuses.push(StatusDraft {
             key: None,
-            name: "Review".to_owned(),
+            name: named.to_owned(),
             group: StatusGroup::InProgress,
         });
         sent.moves = vec![StatusMoveInput {
             from: key(IN_PROGRESS),
-            to: "Review".to_owned(),
+            to: to.to_owned(),
         }];
     })
     .await?;
-    assert_eq!(status_of(&world, &admin, id).await?, "review");
+    status_of(&world, &admin, id).await
+}
+
+#[tokio::test]
+async fn wf_02_a_move_may_go_to_a_status_that_is_new_in_the_draft() -> Outcome {
+    assert_eq!(moved_to_a_new_status("Review", "Review").await?, "review");
     Ok(())
 }
 
 #[tokio::test]
 async fn wf_02_a_move_names_a_new_status_the_way_the_editor_does_with_other_capitals_and_spaces()
 -> Outcome {
-    let world = World::new().await?;
-    let project = a_project(&world, "ACME").await?;
-    let admin = world.admin.session_token.clone();
-    let id = issue_in_progress(&world, project).await?;
-    let editor = a_workflow(&world, "ACME").await?;
-    published_with(&world, &editor, |sent| {
-        without_progress(sent);
-        sent.statuses.push(StatusDraft {
-            key: None,
-            name: " Review ".to_owned(),
-            group: StatusGroup::InProgress,
-        });
-        sent.moves = vec![StatusMoveInput {
-            from: key(IN_PROGRESS),
-            to: "  REVIEW".to_owned(),
-        }];
-    })
-    .await?;
-    assert_eq!(status_of(&world, &admin, id).await?, "review");
+    assert_eq!(
+        moved_to_a_new_status(" Review ", "  REVIEW").await?,
+        "review"
+    );
     Ok(())
 }
 
