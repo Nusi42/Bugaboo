@@ -29135,6 +29135,21 @@
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
       },
+      "ProjectStatusChangeBody": {
+        "type": "object",
+        "description": "A status change of some workflow of the project.",
+        "required": ["to", "button"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "to": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status it ends in."
+          }
+        }
+      },
       "ProjectStatusesBody": {
         "type": "object",
         "description": "The statuses the issues of a project can have: one list for all issue types. A status with the\nsame key, name and group in several workflows is listed once; one with the same key and another\nname or group is listed for each.",
@@ -29143,7 +29158,7 @@
           "changes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ProjectChangeBody"
+              "$ref": "#/components/schemas/ProjectStatusChangeBody"
             },
             "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
           },

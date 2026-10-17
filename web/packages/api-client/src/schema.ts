@@ -6552,6 +6552,13 @@ export interface components {
      * @enum {string}
      */
     ProjectShown: "visible" | "hidden";
+    /** @description A status change of some workflow of the project. */
+    ProjectStatusChangeBody: {
+      /** @description The text of the button. */
+      button: string;
+      /** @description The status it ends in. */
+      to: components["schemas"]["StatusRef"];
+    };
     /**
      * @description The statuses the issues of a project can have: one list for all issue types. A status with the
      *     same key, name and group in several workflows is listed once; one with the same key and another
@@ -6562,7 +6569,7 @@ export interface components {
        * @description The status changes by their words, once for the same status and text, in the order the
        *     workflows list them: what a choice of a status change for many issues offers.
        */
-      changes: components["schemas"]["ProjectChangeBody"][];
+      changes: components["schemas"]["ProjectStatusChangeBody"][];
       /** @description The statuses, in the order the workflows list them. */
       statuses: components["schemas"]["StatusRef"][];
     };

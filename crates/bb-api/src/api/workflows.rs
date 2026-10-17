@@ -93,12 +93,12 @@ pub(crate) struct ProjectStatusesBody {
     statuses: Vec<StatusRef>,
     /// The status changes by their words, once for the same status and text, in the order the
     /// workflows list them: what a choice of a status change for many issues offers.
-    changes: Vec<ProjectChangeBody>,
+    changes: Vec<ProjectStatusChangeBody>,
 }
 
 /// A status change of some workflow of the project.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct ProjectChangeBody {
+pub(crate) struct ProjectStatusChangeBody {
     /// The status it ends in.
     to: StatusRef,
     /// The text of the button.
@@ -114,7 +114,7 @@ impl From<&ProjectStatuses> for ProjectStatusesBody {
             changes: list
                 .changes
                 .iter()
-                .map(|change| ProjectChangeBody {
+                .map(|change| ProjectStatusChangeBody {
                     to: StatusRef::from(&change.to),
                     button: change.button.clone(),
                 })
