@@ -24,6 +24,7 @@ Points found while building M4 that were accepted for later. Each names where it
 | M4-F50 | Adding and deleting a file writes no row in *History* (the events are recorded already) | Not a task of WP-05 | WP-09 (the issue page) |
 | M4-F51 | Previews run in the shared job runner, five at a time for up to 20 s each, so many large files can delay other jobs | WP-05 limits each preview; a queue of its own is a change of the job runner | WP-10 (speed) |
 | M4-F52 | The bytes of files are personal content that the personal-data marks cannot see (`StoredFile` is marked not personal) | *Remove a person* and *Download my data* come in M9 | M9 |
+| M4-F53 | The generated API description `openapi.json` is over 1 MiB with WP-04…WP-06 together; it is allowed up to 2 MiB by its own limit in GIT-FILES | Finding why it is this large (repeated schemas, long texts) is its own change | Before `m4-done`, when the frozen copy for ARCH-API-FREEZE is stored |
 | M4-F60 | Tag versions are counted inside the one change of a tag rename (M3-F126 partly done), so renaming a tag on very many issues is one long change | A step job like *Change many issues* is its own work | WP-10 (speed), if the sample shows it |
 | M4-F61 | The mail server is reached with the built-in certificate authorities only; a company mail server with its own authority cannot use TLS | Needs a setting for a certificate and its checks | M9 (operations) |
 | M4-F62 | A person cannot ask for the confirmation link again | The sign-up path is rebuilt in WP-06's fixes; resending fits the screens | WP-08 |

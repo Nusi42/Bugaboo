@@ -87,8 +87,15 @@ test("prj_01 an old short name opens the project and the address becomes the new
 }) => {
   await signIn(page, ada);
   await page.goto(addressInProject(paths.projectSettings, "WEB"));
-  await page.getByLabel(t("projects.field-short-name"), { exact: true }).fill("site");
-  await page.getByRole("button", { name: t("common.save"), exact: true }).click();
+  // The page has one form for the project and one for its settings (the biggest file, M4 WP-05),
+  // each with its own Save: this one is the form of the short name.
+  const shortName = page.getByLabel(t("projects.field-short-name"), { exact: true });
+  await shortName.fill("site");
+  await page
+    .locator("form")
+    .filter({ has: shortName })
+    .getByRole("button", { name: t("common.save"), exact: true })
+    .click();
   await expect(page.getByText(t("save.saved"))).toBeVisible();
   await expect(page).toHaveURL(addressEndingAt(addressInProject(paths.projectSettings, "SITE")));
   // The old address still works and is replaced by the new one.

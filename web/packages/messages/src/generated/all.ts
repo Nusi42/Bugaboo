@@ -4,6 +4,7 @@ export { messages as access } from "./access.ts";
 export { messages as account } from "./account.ts";
 export { messages as admin } from "./admin.ts";
 export { messages as fields } from "./fields.ts";
+export { messages as files } from "./files.ts";
 export { messages as follow } from "./follow.ts";
 export { messages as history } from "./history.ts";
 export { messages as home } from "./home.ts";

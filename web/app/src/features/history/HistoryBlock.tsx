@@ -34,7 +34,12 @@ function Entries({ issue, tab }: { readonly issue: string; readonly tab: History
       {groups.length === 0 && list.isSuccess && !list.hasNextPage ? <NothingYet /> : null}
       {groups.map((group, at) =>
         group[0]?.kind === "comment" ? (
-          <CommentEntry key={group[0].event} entry={group[0]} highlighted={at === found} />
+          <CommentEntry
+            key={group[0].event}
+            issue={issue}
+            entry={group[0]}
+            highlighted={at === found}
+          />
         ) : (
           <ChangeEntry key={group[0]?.event} items={group} highlighted={at === found} />
         ),

@@ -9,6 +9,7 @@
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
+mod preview;
 mod renewal;
 mod secrets;
 mod serve;
@@ -18,6 +19,7 @@ mod setup;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use bb_core::files::PreviewKind;
 use bb_core::message::{self, Message, MessageKey};
 use clap::{Args, Parser, Subcommand};
 
@@ -61,6 +63,24 @@ enum Command {
         #[command(subcommand)]
         command: KeysCommand,
     },
+    /// Started by the server, never by a person: creates the preview of one file in a process of
+    /// its own, with limits on pixels, time, size and memory (ADR-0032 §4). The file comes on the
+    /// standard input and the preview leaves on the standard output.
+    #[command(name = "preview", hide = true)]
+    Preview(PreviewArgs),
+}
+
+/// What `bugaboo preview` is told: the kind of preview. The rest comes on its standard streams.
+#[derive(Args)]
+pub(crate) struct PreviewArgs {
+    /// `image` or `pdf`.
+    #[arg(value_parser = preview_kind)]
+    kind: PreviewKind,
+}
+
+/// The kind of a preview, as the server names it on the command line.
+fn preview_kind(word: &str) -> Result<PreviewKind, String> {
+    PreviewKind::from_code(word).ok_or_else(|| word.to_owned())
 }
 
 #[derive(Subcommand)]
@@ -168,9 +188,27 @@ fn given<const N: usize>(
         .collect()
 }
 
-/// Runs the command line and says how it went.
-pub(crate) async fn run() -> ExitCode {
+/// Reads the command line and runs it. The child process of a preview runs at once, with no
+/// runtime; every other command runs in the runtime of the server.
+pub(crate) fn start() -> ExitCode {
     let cli = Cli::parse();
+    if let Command::Preview(args) = cli.command {
+        return preview::run(args.kind);
+    }
+    match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime.block_on(run(cli)),
+        Err(error) => {
+            output::error(&format!("{error:#}"));
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Runs a command of the command line and says how it went.
+async fn run(cli: Cli) -> ExitCode {
     let result = match cli.command {
         Command::Serve(args) => serve::serve(args).await,
         Command::Openapi => {
@@ -190,6 +228,8 @@ pub(crate) async fn run() -> ExitCode {
         Command::Keys {
             command: KeysCommand::Export { store, folder },
         } => secrets::export_keys(&store, &folder).await,
+        // Taken before the runtime is built (`start`), never here.
+        Command::Preview(_) => return ExitCode::FAILURE,
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

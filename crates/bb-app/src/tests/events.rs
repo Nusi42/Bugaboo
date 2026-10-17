@@ -13,6 +13,7 @@ use std::pin::Pin;
 
 use super::scenarios::{self as s, Added};
 use super::scenarios_fields as sf;
+use super::scenarios_files as sfi;
 use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
 use super::scenarios_notifications as sn;
@@ -139,6 +140,9 @@ table! {
     "combine_labels" => st::combine_labels_scenario,
     "add_label" => st::add_label_scenario,
     "remove_label" => st::remove_label_scenario,
+    "finish_upload" => sfi::finish_upload_scenario,
+    "delete_attachment" => sfi::delete_attachment_scenario,
+    "restore_attachment" => sfi::restore_attachment_scenario,
     "create_layout" => sl::create_layout_scenario,
     "save_layout" => sl::save_layout_scenario,
     "delete_layout" => sl::delete_layout_scenario,

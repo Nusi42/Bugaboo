@@ -16,6 +16,7 @@ bb-api = { path = "../bb-api" }
 bb-app = { path = "../bb-app" }
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
+bb-files = { path = "../bb-files" }
 bb-jobs = { path = "../bb-jobs" }
 bb-notify = { path = "../bb-notify" }
 bb-store = { path = "../bb-store" }
@@ -48,6 +49,7 @@ bb-api = { path = "../bb-api", features = ["testing"] }
 bb-api-words = { path = "../bb-api-words" }
 bb-app = { path = "../bb-app", features = ["peek", "testing"] }
 bb-dev-words = { path = "../bb-dev-words" }
+bb-files = { path = "../bb-files", features = ["testing"] }
 bb-load-check = { path = "../bb-load-check" }
 # The settings that only exist for tests, so the project level can be tested (CFG-06).
 bb-core = { path = "../bb-core", features = ["test-settings"] }

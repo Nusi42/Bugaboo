@@ -90,6 +90,8 @@ tokens {
     size "size-form" "$size-dialog"
     size "size-qr" "200px"
     size "size-code" "220px"
+    // The square in the row of a file: its preview, or the sign of its type (M4 WP-05).
+    size "size-file-tile" "64px" phone="56px"
     // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
     // least, so no control is smaller (a test holds the tokens to it).
     size "size-target-least" "24px"
@@ -4283,6 +4285,131 @@ part "history.entry[variant=comment]" {
 
 part "history.when" {
     use "quiet-text"
+}
+
+// ───────────── Files (features/files, M4 WP-05) ─────────────
+//
+// The Files block of the issue page and the files under a comment (UX §4.4): the place that takes
+// files dropped on it, a row for each file and for each upload on its way, and the larger preview. The
+// rest uses the shared parts (buttons, alerts, the bar of `progress`).
+
+part "files.drop" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2 $space-3"
+    padding "$space-3"
+    border "$border-width dashed $border"
+    border-radius "$r-card"
+    color "$fg-muted"
+    font-size "$fs-md"
+}
+
+// Files are being dragged over the place (React Aria marks it `drop-target`): it says "here" in the color of what is chosen.
+part "files.drop[drop-target]" {
+    border-color "$accent"
+    background "$accent-soft"
+    color "$accent-fg"
+    use "marked"
+}
+
+part "files.row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2 $space-3"
+    padding "$space-3"
+    min-width 0
+    use "surface-box"
+}
+
+part "files.tile" {
+    display flex
+    align-items center
+    justify-content center
+    flex-shrink 0
+    box-sizing border-box
+    inline-size "$size-file-tile"
+    block-size "$size-file-tile"
+    overflow hidden
+    padding 0
+    color "$fg-muted"
+    font-size "$fs-base"
+    font-weight "$weight-bold"
+    text-transform uppercase
+    use "sunken-box"
+}
+
+part "files.tile[variant=picture]" {
+    cursor zoom-in
+}
+
+part "files.tile[hovered]" {
+    background "$bg-hover"
+}
+
+part "files.tile[focus-visible]" {
+    use "ring"
+}
+
+// The whole picture in the square, never cropped: a page of a PDF has its heading at the edge.
+part "files.picture" {
+    display block
+    inline-size "100%"
+    block-size "100%"
+    object-fit contain
+}
+
+part "files.info" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    flex "1 1 $size-col-labels"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "files.name" {
+    font-weight "$weight-bold"
+    font-size "$fs-md"
+}
+
+part "files.meta" {
+    use "quiet-text"
+}
+
+// The words of a refusal and its buttons: side by side when they fit, the buttons at the end like in
+// the rows of files; when they do not, the buttons come under the words, at their left edge.
+part "files.refusal" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2 $space-4"
+}
+
+// The bar of an upload: as wide as the row lets it be, with the words about it after it when they
+// fit and under it when they do not, so it never stops short on a narrow screen.
+part "files.progress" {
+    flex "1 1 $size-line-medium"
+    min-inline-size 0
+    accent-color "$accent"
+}
+
+part "files.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+}
+
+// The larger preview: as big as it is, never wider than the window.
+part "files.large" {
+    display block
+    max-inline-size "100%"
+    block-size auto
+    margin-inline auto
+    border-radius "$r-ctl"
 }
 
 // ───────────── Own fields (features/fields, packages/ui: FieldValue) ─────────────

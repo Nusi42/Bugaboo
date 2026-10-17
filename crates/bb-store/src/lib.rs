@@ -17,6 +17,7 @@ mod editing;
 mod error;
 mod events;
 mod fields;
+mod files;
 mod follow;
 mod handles;
 mod history;

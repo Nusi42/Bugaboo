@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ClipboardEvent } from "react";
 import {
   Label,
   Tab,
@@ -10,6 +10,7 @@ import {
 } from "react-aria-components";
 
 import { partOf } from "../parts.ts";
+import { takePastedFiles } from "../pasted-files.ts";
 import { busyState, fieldShape } from "../props.ts";
 import { part } from "../tokens.ts";
 import { FormattingToolbar } from "./FormattingToolbar.tsx";
@@ -34,6 +35,11 @@ export interface MarkdownEditorProps {
   readonly imageHosts: readonly string[];
   /** The text is being saved: the box shows it and takes no key until the answer is there. */
   readonly busy?: boolean;
+  /**
+   * Gets the files that are pasted into the box (a screenshot): they are taken out of the paste,
+   * so no text is written for them. Without it a paste is left alone.
+   */
+  readonly onFiles?: (files: readonly File[]) => void;
 }
 
 /** The text box with its label and toolbar. */
@@ -44,6 +50,7 @@ function WriteBox({
   value,
   onChange,
   busy = false,
+  onFiles,
 }: Omit<MarkdownEditorProps, "imageHosts">) {
   const { area, format } = useFormatting(value, onChange, { linkText: labels.linkText });
   return (
@@ -64,6 +71,12 @@ function WriteBox({
         })}
         rows={8}
         aria-busy={busy}
+        onPaste={(event: ClipboardEvent<HTMLTextAreaElement>) => {
+          const files = onFiles === undefined ? [] : takePastedFiles(event);
+          if (onFiles !== undefined && files.length > 0) {
+            onFiles(files);
+          }
+        }}
       />
     </AriaTextField>
   );

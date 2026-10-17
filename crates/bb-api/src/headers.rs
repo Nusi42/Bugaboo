@@ -44,6 +44,13 @@ pub const SECURITY_HEADERS: [(&str, &str); 6] = [
     ),
 ];
 
+/// The policy of a download (ADR-0032 §3): the content may load nothing, no page may frame it, and
+/// even a page it would make of itself runs in a sandbox with no right at all. A file is only ever
+/// saved; this holds if a browser shows it anyway. It replaces the policy of the table on those
+/// answers, and SEC-HEADERS holds it against the requirement that a policy allows nothing, and
+/// that no other code sets the policy header.
+pub const DOWNLOAD_POLICY: &str = "default-src 'none'; frame-ancestors 'none'; sandbox";
+
 /// The name of the policy header: the first entry of the table (a test holds it to that), so the
 /// name is written once.
 const POLICY: &str = SECURITY_HEADERS[0].0;
@@ -175,6 +182,12 @@ pub(crate) fn apply(router: Router, hsts_max_age: Option<u64>, auth: AuthHandle)
     });
     let router = fixed.chain(hsts).fold(router, |router, (name, value)| {
         match HeaderValue::from_str(&value) {
+            // The policy of the table is the one every answer gets, unless the answer brought a
+            // stricter one of its own: a download (`DOWNLOAD_POLICY`).
+            Ok(value) if name == POLICY => router.layer(SetResponseHeaderLayer::if_not_present(
+                HeaderName::from_static(name),
+                value,
+            )),
             Ok(value) => router.layer(SetResponseHeaderLayer::overriding(
                 HeaderName::from_static(name),
                 value,

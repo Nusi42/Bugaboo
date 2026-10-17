@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import { useFilesToComment } from "../files/index.ts";
 import { DraftOffered } from "../../shared/editing/DraftOffered.tsx";
 import { editedThing } from "../../shared/editing/edited-thing.ts";
 import { HeldEditNotice } from "../../shared/editing/HeldEditNotice.tsx";
@@ -10,6 +11,8 @@ import { CommentBox, KeptText } from "./CommentBox.tsx";
 import { useCommentText, type CommentSource } from "./use-comment-text.ts";
 
 export interface CommentEditorProps extends CommentSource {
+  /** The issue the comment is under, by its readable ID: files pasted into the box go to it. */
+  readonly issue: string;
   /** The comment as it is read, shown while someone else holds the lock. */
   readonly reading: ReactNode;
   readonly onClose: () => void;
@@ -22,8 +25,9 @@ export interface CommentEditorProps extends CommentSource {
  * note that says who; what the person typed stays visible and is kept as a draft, and *Close*
  * leaves it there. When the lock ran out or was taken over, *Try again* takes it again.
  */
-export function CommentEditor({ reading, onClose, ...source }: CommentEditorProps) {
+export function CommentEditor({ issue, reading, onClose, ...source }: CommentEditorProps) {
   const now = useNow();
+  const addFiles = useFilesToComment(issue, source.comment);
   const long = useCommentText(source, onClose);
   const { phase, offered } = long;
   return (
@@ -47,7 +51,7 @@ export function CommentEditor({ reading, onClose, ...source }: CommentEditorProp
           <p {...partOf(part.muted)}>{t("editing.text-kept-on-close")}</p>
         </>
       ) : (
-        <CommentBox long={long} onClose={onClose} />
+        <CommentBox long={long} onClose={onClose} onFiles={addFiles} />
       )}
     </>
   );

@@ -1155,6 +1155,197 @@
         "x-permission": "decide-roles"
       }
     },
+    "/api/v1/attachments/{attachment}": {
+      "delete": {
+        "tags": ["files"],
+        "summary": "Puts a file into the trash (*Undo* takes it out again). The person who added it may, and whoever\nmay change issues.",
+        "operationId": "deleteAttachment",
+        "parameters": [
+          {
+            "name": "attachment",
+            "in": "path",
+            "description": "The ID of the attachment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The file is in the trash."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/attachments/{attachment}/restore": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Takes a file out of the trash (*Undo*).",
+        "operationId": "restoreAttachment",
+        "parameters": [
+          {
+            "name": "attachment",
+            "in": "path",
+            "description": "The ID of the attachment.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The attachment, out of the trash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
     "/api/v1/auth/invitation/accept": {
       "post": {
         "tags": ["auth"],
@@ -7232,6 +7423,115 @@
         "x-permission": "manage-fields"
       }
     },
+    "/api/v1/files/{file}": {
+      "get": {
+        "tags": ["files"],
+        "summary": "Downloads a file, or shows its preview, through a signed link: one made for this person, good\nfor five minutes. The use case judges again that the person sees the issue and the comment, so\na link that is passed on or kept after access ended opens nothing. The file is sent as an\nattachment with `nosniff` and a policy that allows nothing; SVG and HTML are only downloaded.",
+        "operationId": "downloadFile",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "description": "The signed address of a file, as the list of files gives it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The bytes of the file, or the PNG of its preview.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartBytes"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
     "/api/v1/groups": {
       "get": {
         "tags": ["groups"],
@@ -9393,6 +9693,253 @@
         },
         "x-long-text": true,
         "x-permission": "by-record"
+      }
+    },
+    "/api/v1/issues/{issue}/file-rules": {
+      "get": {
+        "tags": ["files"],
+        "summary": "What the reader may add to the issue, and the most bytes one file may have in its project.",
+        "operationId": "getFileRules",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rules.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRulesItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/files": {
+      "get": {
+        "tags": ["files"],
+        "summary": "The files of an issue and of the comments under it, oldest first. Each has the signed links of\nthe file and of its preview for the reader.",
+        "operationId": "listIssueFiles",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The files.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AttachmentItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "see-issues"
       }
     },
     "/api/v1/issues/{issue}/follow": {
@@ -11648,6 +12195,155 @@
           },
           "404": {
             "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/issues/{issue}/uploads": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Starts an upload of a file to an issue, or to a comment under it. Needs the right to change the\nissue (a Guest: an issue they reported), or, for a comment, to have written it. A file that is\ntoo big for the project or of a type the organization never accepts is refused here, before\nany part is sent.",
+        "operationId": "startUpload",
+        "parameters": [
+          {
+            "name": "issue",
+            "in": "path",
+            "description": "The readable ID (WEB-142) or the internal ID of the issue.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartUploadBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The upload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The organization does not accept this type of file (file.type_blocked).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -20704,6 +21400,502 @@
         "x-permission": "manage-labels"
       }
     },
+    "/api/v1/uploads/{upload}": {
+      "get": {
+        "tags": ["files"],
+        "summary": "How far an upload is. After a lost connection the client asks this and sends the next part from\n`offset`.",
+        "operationId": "getUpload",
+        "parameters": [
+          {
+            "name": "upload",
+            "in": "path",
+            "description": "The ID of the upload.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The upload.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-issues"
+      },
+      "put": {
+        "tags": ["files"],
+        "summary": "Sends the next part of an upload. The body is the bytes of the part, at most `part_bytes`; the\nquery says where the part starts, which must be the number of bytes the server has.",
+        "operationId": "sendUploadPart",
+        "parameters": [
+          {
+            "name": "upload",
+            "in": "path",
+            "description": "The ID of the upload.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "The number of bytes the server has: the part starts there. The answer of the upload says it.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/PartBytes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The upload, with the bytes the server has now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The organization does not accept this type of file (file.type_blocked).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "The disk of the server has no room for the part (file.no_room); trying later can work.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      },
+      "delete": {
+        "tags": ["files"],
+        "summary": "Throws an unfinished upload away.",
+        "operationId": "cancelUpload",
+        "parameters": [
+          {
+            "name": "upload",
+            "in": "path",
+            "description": "The ID of the upload.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The upload is gone."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
+    "/api/v1/uploads/{upload}/finish": {
+      "post": {
+        "tags": ["files"],
+        "summary": "Finishes an upload: the whole file is checked, and it becomes an attachment of the issue or the\ncomment. A file that is stored already is not stored again.",
+        "operationId": "finishUpload",
+        "parameters": [
+          {
+            "name": "upload",
+            "in": "path",
+            "description": "The ID of the upload.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The attachment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The organization does not accept this type of file (file.type_blocked).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-issues"
+      }
+    },
     "/api/v1/versions/check": {
       "post": {
         "tags": ["editing"],
@@ -21845,6 +23037,80 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "AttachmentItem": {
+        "type": "object",
+        "description": "A file on an issue or a comment, as the reader sees it.",
+        "required": [
+          "id",
+          "issue",
+          "name",
+          "media_type",
+          "size",
+          "added_by",
+          "added_at",
+          "version",
+          "download_url",
+          "preview",
+          "may_delete"
+        ],
+        "properties": {
+          "added_at": {
+            "type": "string",
+            "description": "When it was added."
+          },
+          "added_by": {
+            "$ref": "#/components/schemas/PersonRef",
+            "description": "Who added it, as the reader may see people of the kind *Authors*."
+          },
+          "comment": {
+            "type": ["string", "null"],
+            "description": "The comment it was added to, if it was."
+          },
+          "download_url": {
+            "type": "string",
+            "description": "The signed link that downloads the file: good for five minutes and for this reader only,\nand judged again when it is used."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the attachment."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The issue it belongs to."
+          },
+          "may_delete": {
+            "type": "boolean",
+            "description": "Whether the reader may put it into the trash."
+          },
+          "media_type": {
+            "type": "string",
+            "description": "The real type of the file, read from its content."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the file."
+          },
+          "preview": {
+            "$ref": "#/components/schemas/PreviewStatus",
+            "description": "Where the preview of this attachment is: on its way (`pending`), `ready` or `without`. It is\nthe attachment's own state: a file that was stored before is `pending` as well, until its\nown job has run."
+          },
+          "preview_url": {
+            "type": ["string", "null"],
+            "description": "The signed link of the preview, once it is `ready`."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The size in bytes.",
+            "minimum": 0
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change."
           }
         }
       },
@@ -23203,6 +24469,11 @@
           "field.unknown_choice",
           "field.unknown_reference",
           "field.not_here",
+          "file.too_big",
+          "file.type_blocked",
+          "file.wrong_part",
+          "file.incomplete",
+          "file.no_room",
           "name.taken",
           "resource.not_found",
           "request.invalid",
@@ -23599,6 +24870,23 @@
           "whole_organization": {
             "type": "boolean",
             "description": "The field is not limited to projects."
+          }
+        }
+      },
+      "FileRulesItem": {
+        "type": "object",
+        "description": "What the reader may add to an issue and the limits of its project.",
+        "required": ["may_add", "limit_bytes"],
+        "properties": {
+          "limit_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most bytes one file may have in the project of the issue.",
+            "minimum": 0
+          },
+          "may_add": {
+            "type": "boolean",
+            "description": "Whether the reader may add files to the issue itself."
           }
         }
       },
@@ -26982,6 +28270,95 @@
           }
         }
       },
+      "Page_AttachmentItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A file on an issue or a comment, as the reader sees it.",
+              "required": [
+                "id",
+                "issue",
+                "name",
+                "media_type",
+                "size",
+                "added_by",
+                "added_at",
+                "version",
+                "download_url",
+                "preview",
+                "may_delete"
+              ],
+              "properties": {
+                "added_at": {
+                  "type": "string",
+                  "description": "When it was added."
+                },
+                "added_by": {
+                  "$ref": "#/components/schemas/PersonRef",
+                  "description": "Who added it, as the reader may see people of the kind *Authors*."
+                },
+                "comment": {
+                  "type": ["string", "null"],
+                  "description": "The comment it was added to, if it was."
+                },
+                "download_url": {
+                  "type": "string",
+                  "description": "The signed link that downloads the file: good for five minutes and for this reader only,\nand judged again when it is used."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The ID of the attachment."
+                },
+                "issue": {
+                  "type": "string",
+                  "description": "The issue it belongs to."
+                },
+                "may_delete": {
+                  "type": "boolean",
+                  "description": "Whether the reader may put it into the trash."
+                },
+                "media_type": {
+                  "type": "string",
+                  "description": "The real type of the file, read from its content."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name of the file."
+                },
+                "preview": {
+                  "$ref": "#/components/schemas/PreviewStatus",
+                  "description": "Where the preview of this attachment is: on its way (`pending`), `ready` or `without`. It is\nthe attachment's own state: a file that was stored before is `pending` as well, until its\nown job has run."
+                },
+                "preview_url": {
+                  "type": ["string", "null"],
+                  "description": "The signed link of the preview, once it is `ready`."
+                },
+                "size": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "The size in bytes.",
+                  "minimum": 0
+                },
+                "version": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Counts up with every change."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_ChoiceItem": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -28307,6 +29684,10 @@
           }
         }
       },
+      "PartBytes": {
+        "type": "string",
+        "format": "binary"
+      },
       "PasskeyAnswerBody": {
         "type": "object",
         "description": "What the device answered to a passkey challenge.",
@@ -28750,6 +30131,11 @@
             "description": "The issues, by their readable or internal IDs."
           }
         }
+      },
+      "PreviewStatus": {
+        "type": "string",
+        "description": "Where the preview of a file is: on its way, there, or none (a type without one, or a file the preview could not be made of).",
+        "enum": ["pending", "ready", "without"]
       },
       "PreviewSummaryBody": {
         "type": "object",
@@ -30442,6 +31828,27 @@
           }
         }
       },
+      "StartUploadBody": {
+        "type": "object",
+        "description": "The file to upload.",
+        "required": ["name", "size"],
+        "properties": {
+          "comment": {
+            "type": ["string", "null"],
+            "description": "The comment the file is for; left out for a file of the issue itself."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the file as the device has it. A path is cut off."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The size in bytes.",
+            "minimum": 0
+          }
+        }
+      },
       "StatusChangeRef": {
         "type": "object",
         "description": "A status change the reader may make on an issue now.",
@@ -30811,6 +32218,35 @@
           "unread": {
             "type": "integer",
             "description": "The number, at most 100: only what the person may still see is counted.",
+            "minimum": 0
+          }
+        }
+      },
+      "UploadItem": {
+        "type": "object",
+        "description": "An upload that is going on.",
+        "required": ["id", "size", "offset", "part_bytes"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the upload."
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Where the next part starts: the bytes the server has.",
+            "minimum": 0
+          },
+          "part_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most bytes one part may have.",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The size the file will have.",
             "minimum": 0
           }
         }

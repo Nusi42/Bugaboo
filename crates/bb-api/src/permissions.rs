@@ -475,6 +475,56 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::Comment),
         Answer::NeverStored,
     ),
+    route(
+        "startUpload",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "getUpload",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "sendUploadPart",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "cancelUpload",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "finishUpload",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "listIssueFiles",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "getFileRules",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
+    route(
+        "deleteAttachment",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "restoreAttachment",
+        Declared::Permission(Permission::ChangeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "downloadFile",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::NeverStored,
+    ),
     route("listMentions", Declared::SignedIn, Answer::NeverStored),
     route("readMentions", Declared::SignedIn, Answer::Ordinary),
     route("getMyHandle", Declared::SignedIn, Answer::NeverStored),

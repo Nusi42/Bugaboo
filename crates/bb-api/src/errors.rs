@@ -278,6 +278,26 @@ where
     }
 }
 
+/// The bytes of a request body as they are (the part of an upload), with a body that is too big or
+/// cannot be read answered as problem+json. The limit is the one the route sets
+/// (`DefaultBodyLimit`); every other route keeps the small one.
+#[derive(Debug)]
+pub struct ApiBytes(pub axum::body::Bytes);
+
+impl<S: Send + Sync> FromRequest<S> for ApiBytes {
+    type Rejection = ApiError;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, ApiError> {
+        match axum::body::Bytes::from_request(request, state).await {
+            Ok(bytes) => Ok(Self(bytes)),
+            Err(rejection) => Err(ApiError::new(match rejection.status() {
+                StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::TooLarge,
+                _ => ErrorCode::InvalidRequest,
+            })),
+        }
+    }
+}
+
 /// What a rejected body means for the person: too big has its own answer, everything else is a
 /// request that is not valid. The text of the rejection is not sent. (A body that arrives too
 /// slowly is stopped by the time limit of the whole request, `api::time_limit`.)

@@ -14,10 +14,10 @@ use std::time::Duration;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
-    IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
-    ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId,
-    SessionId, TagId, UserId, WorkflowId,
+    AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
+    FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
+    LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
+    RelationKindId, RoleId, SessionId, TagId, UploadId, UserId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -424,6 +424,12 @@ pub(crate) enum LockClass {
     /// written with a status takes it together with the others who do, so an issue is never
     /// written into a status that a workflow being published drops.
     Workflows = 8,
+    /// Starting uploads (key: four bytes of the person's ID): two uploads of one person started at
+    /// the same moment cannot both pass the limits of what a person may have open.
+    Uploads = 9,
+    /// Finishing an upload of an issue (key: four bytes of the issue's ID): two finishes at the same
+    /// moment cannot both take the last place for a file of the issue.
+    IssueFiles = 10,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -689,6 +695,8 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AssignmentId => "an assignment ID",
+    AttachmentId => "an attachment ID",
+    UploadId => "an upload ID",
     ManyChangeRunId => "a run ID",
     CommentId => "a comment ID",
     EditorId => "an editor ID",

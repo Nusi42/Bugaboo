@@ -4,6 +4,7 @@ import type { messages as access } from "./access.ts";
 import type { messages as account } from "./account.ts";
 import type { messages as admin } from "./admin.ts";
 import type { messages as fields } from "./fields.ts";
+import type { messages as files } from "./files.ts";
 import type { messages as follow } from "./follow.ts";
 import type { messages as history } from "./history.ts";
 import type { messages as home } from "./home.ts";
@@ -32,6 +33,7 @@ export type MessageKey =
   | keyof typeof account
   | keyof typeof admin
   | keyof typeof fields
+  | keyof typeof files
   | keyof typeof follow
   | keyof typeof history
   | keyof typeof home
@@ -160,6 +162,20 @@ export interface MessageArguments {
   "fields.used-in-projects": { count: number };
   "fields.used-more": { count: number };
   "fields.used-types": { names: string | number };
+  "files.added": { size: string | number; when: string | number; who: string | number };
+  "files.delete-named": { name: string | number };
+  "files.deleted": { name: string | number };
+  "files.download-named": { name: string | number };
+  "files.empty": { name: string | number };
+  "files.lost": { name: string | number };
+  "files.not-added": { name: string | number; reason: string | number };
+  "files.preview-of": { name: string | number };
+  "files.sending": { name: string | number };
+  "files.sent-of": { sent: string | number; size: string | number };
+  "files.show-larger": { name: string | number };
+  "files.take-out": { name: string | number };
+  "files.too-big": { limit: string | number };
+  "files.waiting": { name: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
   "followers.count": { count: string | number };
   "groups.add-name": { name: string | number };
