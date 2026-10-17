@@ -62,12 +62,10 @@ export async function aGuestMakesABug(page: Page): Promise<void> {
   await goodInFourThemes(page, "02-guest-bug-made");
 }
 
-/** Picks a person in the picker that *Add Assigned to* opens. */
+/** Picks a person in the picker that *Assign someone* opens. */
 async function assign(page: Page, person: SamplePerson): Promise<void> {
   const form = newIssueDialog(page);
-  await form
-    .getByRole("button", { name: t("issues.add-field", { field: assignedToName }) })
-    .click();
+  await form.getByRole("button", { name: t("issues.assign-someone") }).click();
   const picker = page.getByRole("dialog", { name: t("issues.assign-title") });
   await picker.getByLabel(t("issues.assign-search"), { exact: true }).fill(person.name);
   await picker

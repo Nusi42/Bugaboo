@@ -1856,6 +1856,9 @@ pub const ISSUES_ASSIGN_ONLY_YOU: MessageKey = MessageKey::new("issues.assign-on
 /// The message `issues.assign-search`.
 pub const ISSUES_ASSIGN_SEARCH: MessageKey = MessageKey::new("issues.assign-search");
 
+/// The message `issues.assign-someone`.
+pub const ISSUES_ASSIGN_SOMEONE: MessageKey = MessageKey::new("issues.assign-someone");
+
 /// The message `issues.assign-title`.
 pub const ISSUES_ASSIGN_TITLE: MessageKey = MessageKey::new("issues.assign-title");
 
@@ -1999,6 +2002,9 @@ pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-pane
 
 /// The message `issues.summary-separator`.
 pub const ISSUES_SUMMARY_SEPARATOR: MessageKey = MessageKey::new("issues.summary-separator");
+
+/// The message `issues.summary-unassigned`.
+pub const ISSUES_SUMMARY_UNASSIGNED: MessageKey = MessageKey::new("issues.summary-unassigned");
 
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
@@ -6058,15 +6064,6 @@ pub fn issue_types_created(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `issues.add-field`.
-#[must_use]
-pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.add-field"),
-        vec![("field", Value::Text(field.to_string()))],
-    )
-}
-
 /// The message `issues.asked-to-finish`.
 #[must_use]
 pub fn issues_asked_to_finish(name: impl std::fmt::Display) -> Message {
@@ -9836,7 +9833,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("issue-types.retired", "Retired"),
     ("issue-types.search", "Search issue types"),
-    ("issues.add-field", "Add {field}"),
     ("issues.all-details", "All details"),
     (
         "issues.asked-to-finish",
@@ -9855,6 +9851,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Nobody else is offered here: people you cannot see by name are not listed.",
     ),
     ("issues.assign-search", "Search the people of the project"),
+    ("issues.assign-someone", "Assign someone"),
     ("issues.assign-title", "Assigned to"),
     ("issues.assigned", "Assigned"),
     ("issues.bar", "Actions for this issue"),
@@ -9963,6 +9960,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
     ("issues.summary-separator", " · "),
+    ("issues.summary-unassigned", "Not assigned"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.type", "Type"),
