@@ -37,16 +37,41 @@ impl TechnicalName {
     /// Fails unless `name` starts with a lower-case letter, is at most 64 characters long and
     /// holds only lower-case letters, digits, dots, hyphens and underscores.
     pub fn new(name: &str) -> Result<Self, InvalidTechnicalName> {
-        let valid = name.starts_with(|c: char| c.is_ascii_lowercase())
-            && name.len() <= MAX_LENGTH
-            && name.chars().all(|c| {
-                c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '.' | '-' | '_')
-            });
-        if valid {
+        if Self::is_valid(name) {
             Ok(Self(name.to_owned()))
         } else {
             Err(InvalidTechnicalName)
         }
+    }
+
+    /// Whether `name` is a technical name: the one rule of [`Self::new`], also usable in a
+    /// `const` assertion over names that are written in the code.
+    #[must_use]
+    pub const fn is_valid(name: &str) -> bool {
+        let bytes = name.as_bytes();
+        if bytes.is_empty() || bytes.len() > MAX_LENGTH || !bytes[0].is_ascii_lowercase() {
+            return false;
+        }
+        let mut at = 0;
+        while at < bytes.len() {
+            let byte = bytes[at];
+            if !(byte.is_ascii_lowercase()
+                || byte.is_ascii_digit()
+                || matches!(byte, b'.' | b'-' | b'_'))
+            {
+                return false;
+            }
+            at += 1;
+        }
+        true
+    }
+
+    /// A name this crate built from characters it checked itself, or one written in the code and
+    /// checked by a `const` assertion with [`Self::is_valid`] where it is declared.
+    pub(crate) fn trusted(name: impl Into<String>) -> Self {
+        let name = name.into();
+        debug_assert!(Self::is_valid(&name), "not a technical name: {name}");
+        Self(name)
     }
 
     /// The name as text.

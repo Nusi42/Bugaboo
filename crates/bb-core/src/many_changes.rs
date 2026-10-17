@@ -49,6 +49,9 @@ words! {
         /// A value of the issue breaks the rule of its field (it is too long, does not match, is
         /// missing where the field must be filled in).
         FieldRule => "field-rule",
+        /// The workflow of the issue does not allow this status change: it has no such change, its
+        /// rules turn the person down, or it needs a field the person cannot fill in.
+        Workflow => "workflow",
         /// The change cannot be made to this issue, for a reason that has no word of its own.
         NotValid => "not-valid",
     }

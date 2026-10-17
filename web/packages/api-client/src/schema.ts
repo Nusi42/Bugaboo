@@ -3538,6 +3538,12 @@ export interface components {
       | "project.too_deep"
       | "project.preview_changed"
       | "issue.type_retired"
+      | "workflow.no_such_change"
+      | "workflow.not_for_you"
+      | "workflow.only_if"
+      | "workflow.cannot_fill"
+      | "workflow.status_in_use"
+      | "workflow.invalid"
       | "issue.parent_circle"
       | "relation.exists"
       | "limit.reached"
@@ -6618,6 +6624,7 @@ export interface components {
       | "same-issue"
       | "limit-reached"
       | "field-rule"
+      | "workflow"
       | "not-valid";
     /** @description Where the value that counts comes from. */
     SourceBody: {

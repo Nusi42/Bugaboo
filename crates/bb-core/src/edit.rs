@@ -51,6 +51,9 @@ pub const DRAFT_KEPT_BY: [ErrorCode; 3] = [
 pub const DESCRIPTION_PART: &str = "description";
 /// The part of a layout that its edit lock is about: a layout is edited as a whole (ADR-0027).
 pub const LAYOUT_PART: &str = "layout";
+/// The part of a workflow that its edit lock is about: a workflow is edited as a whole and made to
+/// count with *Publish* (ADR-0031).
+pub const WORKFLOW_PART: &str = "workflow";
 
 /// How long a lock lasts after the last heartbeat.
 #[must_use]

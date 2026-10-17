@@ -97,6 +97,10 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::Forbidden => SkipReason::NotAllowed,
             ErrorCode::IssueTypeRetired => SkipReason::TypeMissing,
             ErrorCode::FieldNotHere => SkipReason::FieldMissing,
+            ErrorCode::WorkflowNoSuchChange
+            | ErrorCode::WorkflowNotForYou
+            | ErrorCode::WorkflowOnlyIf
+            | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
@@ -128,6 +132,8 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::MovePreviewChanged
             | ErrorCode::ParentCircle
             | ErrorCode::PickOneConflict
+            | ErrorCode::WorkflowStatusInUse
+            | ErrorCode::WorkflowInvalid
             | ErrorCode::FieldRequired
             | ErrorCode::FieldTooShort
             | ErrorCode::FieldTooLong
