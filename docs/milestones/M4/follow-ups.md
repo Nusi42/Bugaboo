@@ -1,6 +1,6 @@
 # M4 follow-ups
 
-Points found while building M4 that were accepted for later. Each names where it will be done. The IDs (`M4-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F40 and up, WP-05 F50 and up, WP-06 F60 and up, WP-07 F70 and up, WP-08 F80 and up, WP-09 F90 and up, WP-10 F100 and up.
+Points found while building M4 that were accepted for later. Each names where it will be done. The IDs (`M4-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F40 and up, WP-05 F50 and up, WP-06 F60 and up, WP-07 F70 and up, WP-08 F80 and up, WP-09 F90 and up, WP-10 F100 and up, WP-11 F110 and up.
 
 | ID | What | Why later | Planned in |
 |----|------|-----------|------------|
@@ -36,6 +36,8 @@ Points found while building M4 that were accepted for later. Each names where it
 | M4-F80 | *Open* of a notification finds its entry by reading pages of the history in the browser, up to a fixed number of pages; the server could answer the page that holds a comment or a change | A new cursor parameter on the history routes | WP-10 (speed), or when the history routes are next touched |
 | M4-F81 | The tab list of the history, the notifications and the form tabs is written three times with the same react-aria pattern | A shared tab-list component is a small change of three screens | The next package that touches one of those screens |
 | M4-F82 | The user pages of notifications copy numbers by hand (the defaults table, the e-mail wait, 90 days, 10 s, 24 h) | The user docs have no generated numbers yet | When the user docs get generated values (M5 docs work) |
+| M4-F83 | Mention rows still have a `read_at` column and `Mention.read_at`, which nothing sets or reads since the notifications replaced the *Mentions* block (WP-08) | Removing a column needs a migration | The next migration that touches comments |
 | M4-F90 | The *Sub-issues* heading shows no count ("Sub-issues (0)" in the UX design) | The count changes the name of a region that about 20 tests use | The next package that touches the sub-issues block |
 | M4-F91 | The Details follow the layout by group: own fields are one group, so a built-in row cannot stand between two own fields, and own fields in titled sections or tabs still come as their own lists after the Details | Interleaving them is a change of the issue page's model | When the maintainer asks for it after the M4 review |
 | M4-F92 | A change of a tag or a label moves the version of the issue, so a *Priority* save of the same person that is still on its way is refused as a conflict with their own change | It was possible before WP-09; the rows of *Details* that change in place make it easier to hit. Tags would need a version of their own, or a save that retries with the person's own newer version | When versions are next touched (with M4-F11) |
+| M4-F110 | Moving a project can bring two issue types or label groups with the same name into one project chain; names are checked when a subject is created or renamed, not when a project moves (WP-11) | The move of a project would need its own name check and a way to resolve a clash | When moving projects is next touched |
