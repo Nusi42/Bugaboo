@@ -284,6 +284,10 @@ stored_tables! {
         Section => section,
         Position => position,
     },
+    LayoutOffFieldRow => bb_core::layout::LayoutOffField {
+        Layout => layout,
+        Field => field,
+    },
     LayoutFieldRoleRow => bb_core::layout::LayoutFieldRole {
         Layout => layout,
         Field => field,

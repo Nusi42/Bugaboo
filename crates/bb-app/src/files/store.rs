@@ -34,6 +34,9 @@ pub trait AttachmentStore: CommentStore + 'static {
         /// How many attachments an issue has, the ones in the trash too: they come back with
         /// *Undo* until the daily clean-up removes them, so they count toward the limit.
         fn attachment_count_of_issue(issue: IssueId) -> u64;
+        /// The attachments with these IDs that exist, the ones in the trash too: read once for a
+        /// page of the history.
+        fn attachments_by_ids(ids: &[AttachmentId]) -> Vec<Attachment>;
         /// The files with these hashes that exist.
         fn stored_files(hashes: &[Digest]) -> Vec<StoredFile>;
         /// Starts an upload, unless the person has `open_max` open uploads already or the sizes

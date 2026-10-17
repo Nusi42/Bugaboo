@@ -8,6 +8,8 @@
 //!   later events about the comment (a new text, the trash) change the comment itself, which the
 //!   history reads, and add no row.
 //! - An event about a **relation** is a row in the history of both issues.
+//! - An event about a **file** on an issue (an attachment) is a row in the history of that issue:
+//!   it was added, put into the trash or brought back. A file on a comment is part of the comment.
 //!
 //! What a reader may see of the changes in a row is decided when the history is read, with the
 //! mask of the reader, never here.
@@ -17,6 +19,7 @@ use bb_core::history::{HistoryEntry, HistoryKind};
 use bb_core::id::IssueId;
 use bb_core::technical::TechnicalName;
 
+use crate::files::member as file_member;
 use crate::issues::member as issue_member;
 use crate::member::{comment, relation};
 
@@ -25,6 +28,32 @@ pub(crate) fn issue_in(changes: &[FieldChange], field: &str, after: bool) -> Opt
     let change = changes.iter().find(|change| change.field == field)?;
     let value = if after { &change.after } else { &change.before };
     value.as_ref()?.as_str()?.parse().ok()
+}
+
+/// Whether a value says nothing: no value, an empty text, no people. A new issue has such values
+/// for the fields nobody filled in.
+fn is_empty(value: Option<&serde_json::Value>) -> bool {
+    match value {
+        None | Some(serde_json::Value::Null) => true,
+        Some(serde_json::Value::String(text)) => text.is_empty(),
+        Some(serde_json::Value::Array(items)) => items.is_empty(),
+        Some(_) => false,
+    }
+}
+
+/// What a new issue shows in its history: the values that were set, not the empty ones ("set
+/// Assigned to: nobody", M3-F185). A new issue is the event that did not count a version up; every
+/// later change of a value to an empty one is a change and stays.
+fn set_at_creation(event: &DomainEvent) -> Vec<FieldChange> {
+    if event.counted_version() {
+        return event.changes.clone();
+    }
+    event
+        .changes
+        .iter()
+        .filter(|change| !(is_empty(change.before.as_ref()) && is_empty(change.after.as_ref())))
+        .cloned()
+        .collect()
 }
 
 /// The rows of the history that an event makes, at its place in the outbox. None for an event that
@@ -53,7 +82,7 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         let Ok(issue) = IssueId::from_bytes(event.entity.id.to_bytes()) else {
             return Vec::new();
         };
-        let mut rows = vec![row(issue, HistoryKind::Change, event.changes.clone())];
+        let mut rows = vec![row(issue, HistoryKind::Change, set_at_creation(event))];
         // The parent: one row for the issue it left and one for the issue it joined.
         for (parent, joined) in [
             (issue_in(&event.changes, issue_member::PARENT, false), false),
@@ -81,6 +110,34 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         }
         return issue_in(&event.changes, comment::ISSUE, true)
             .map(|issue| vec![row(issue, HistoryKind::Comment, Vec::new())])
+            .unwrap_or_default();
+    }
+    if kind_is(RecordKind::Attachment) {
+        // A file on a comment is shown with the comment; only the files of the issue itself are rows.
+        if event
+            .changes
+            .iter()
+            .any(|change| change.field == file_member::COMMENT)
+        {
+            return Vec::new();
+        }
+        // The row keeps what says which file and what happened to it, and not the name, the content
+        // or the type of the file: the name is read from the file while it is there, and is the
+        // person's content, which the history does not keep after the file is deleted.
+        let kept = event
+            .changes
+            .iter()
+            .filter(|change| change.field == file_member::DELETED_AT)
+            .chain(
+                event
+                    .changes
+                    .iter()
+                    .filter(|change| change.field == file_member::ISSUE),
+            )
+            .cloned()
+            .collect();
+        return issue_in(&event.changes, file_member::ISSUE, true)
+            .map(|issue| vec![row(issue, HistoryKind::Change, kept)])
             .unwrap_or_default();
     }
     if kind_is(RecordKind::Relation) {
@@ -137,6 +194,36 @@ mod tests {
         assert_eq!(rows[0].position, 7);
         assert_eq!(rows[0].kind, HistoryKind::Change);
         assert_eq!(rows[0].record, made.entity.id);
+    }
+
+    #[test]
+    fn iss_06_history_leaves_out_empty_values_at_creation() {
+        let made = event(
+            RecordKind::Issue,
+            vec![
+                set("title", &json!("A")),
+                set("assigned-to", &json!([])),
+                set("description", &json!("")),
+            ],
+        );
+        let rows = rows_of(1, &made);
+        let fields: Vec<_> = rows[0]
+            .changes
+            .iter()
+            .map(|change| change.field.as_str())
+            .collect();
+        assert_eq!(fields, ["title"]);
+        // Later, taking the people away is a change: the event counted the version up.
+        let mut cleared = event(
+            RecordKind::Issue,
+            vec![FieldChange {
+                field: "assigned-to".to_owned(),
+                before: Some(json!(["a"])),
+                after: Some(json!([])),
+            }],
+        );
+        cleared.changes.push(bb_core::version::counted_up(1));
+        assert_eq!(rows_of(2, &cleared)[0].changes.len(), 2);
     }
 
     #[test]

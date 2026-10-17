@@ -34,3 +34,15 @@ export async function addRelation(
     page.getByText(t("related-issues.added", { key: from, name: meaning, other })),
   ).toBeVisible();
 }
+
+/**
+ * Makes an issue a sub-issue of the one that is open: *Add sub-issue* opens the small form, then the
+ * ID goes in and the sentence that says it was done is waited for.
+ */
+export async function addSubIssue(page: Page, other: string): Promise<void> {
+  const parts = page.getByRole("region", { name: t("sub-issues.title") });
+  await parts.getByRole("button", { name: t("sub-issues.add"), exact: true }).click();
+  await parts.getByLabel(t("common.issue-id")).fill(other);
+  await parts.getByRole("button", { name: t("sub-issues.add-it"), exact: true }).click();
+  await expect(page.getByText(t("sub-issues.added", { key: other }))).toBeVisible();
+}

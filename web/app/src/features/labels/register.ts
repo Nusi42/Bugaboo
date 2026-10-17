@@ -3,16 +3,27 @@ import { lazyRouteComponent } from "@tanstack/react-router";
 import { addIssueBlock, issueSlots } from "../issues/index.ts";
 
 // Loaded when an issue is first opened, so the first page stays small (coding-standards section 6).
-const IssueLabelsAndTagsBlock = lazyRouteComponent(
+const IssueTagsBlock = lazyRouteComponent(
   () => import("./IssueLabelsAndTagsBlock.tsx"),
-  "IssueLabelsAndTagsBlock",
+  "IssueTagsBlock",
+);
+const IssueLabelsBlock = lazyRouteComponent(
+  () => import("./IssueLabelsAndTagsBlock.tsx"),
+  "IssueLabelsBlock",
 );
 
-/** Puts the tags and labels of an issue into the Details of the issue page (WP-08). */
+/** Puts the rows *Tags* and *Labels* of an issue into the Details of the issue page (WP-08). */
 export function registerLabelBlocks(): void {
   addIssueBlock(issueSlots.details, {
-    id: "labels-and-tags",
+    id: "tags",
     order: 200,
-    component: IssueLabelsAndTagsBlock,
+    places: ["tags"],
+    component: IssueTagsBlock,
+  });
+  addIssueBlock(issueSlots.details, {
+    id: "labels",
+    order: 201,
+    places: ["labels"],
+    component: IssueLabelsBlock,
   });
 }

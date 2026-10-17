@@ -128,6 +128,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 // Only a reason this function gave is a refusal of the save; whatever else the write
                 // or the store did is a failure of its own, not a stale version.
                 let refused = match why.said() {
+                    Some(ErrorCode::EditTakenOver) => {
+                        self.taken_over_by(me, place, &save.what).await
+                    }
                     Some(code) => AppError::Refused(code).about(&save.what.record, place, me),
                     None => change_failed::<S>(&error, Stops::NONE),
                 };

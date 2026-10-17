@@ -1,130 +1,18 @@
-import { type Schema } from "@bugaboo/api-client";
+import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { FieldLook } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
-import { fieldList, linesFrom, pageSize, useAllPages, usePaged } from "../../shared/paged.ts";
+import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys, refreshLabelReads } from "../../shared/query-keys.ts";
 import { versionCounted } from "../issues/index.ts";
+import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
-/** A group of labels, as the list of the organization shows it. */
-export type LabelGroup = Schema<"LabelGroupBody">;
-/** A label of the organization's list. */
-export type Label = Schema<"LabelBody">;
+export { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
+
 /** A tag or a label on an issue, as the chip needs it. */
 export type Chip = Pick<Schema<"TagRefBody">, "id" | "name" | "color">;
-
-/**
- * The labels of the organization with their groups: anybody who is signed in may read them. With a
- * project (a short name or an ID), each group says whether the project offers it.
- */
-export function useLabels(project?: string) {
-  const projectQuery = project === undefined ? {} : { project };
-  const groupsRead = usePaged({
-    queryKey: queryKeys.labels.groups(project),
-    read: (after) =>
-      api.client.GET("/api/v1/label-groups", {
-        params: {
-          query: {
-            ...projectQuery,
-            fields: fieldList<Schema<"LabelGroupItem">>([
-              "id",
-              "name",
-              "pick_one",
-              "retired",
-              "created_in",
-              "may_manage",
-              "version",
-              "offered_here",
-              "own_offer",
-              "may_change_offer",
-            ]),
-            limit: pageSize.largest,
-            ...after,
-          },
-        },
-      }),
-  });
-  const labelsRead = usePaged({
-    queryKey: queryKeys.labels.list(project),
-    read: (after) =>
-      api.client.GET("/api/v1/labels", {
-        params: { query: { ...projectQuery, limit: pageSize.largest, ...after } },
-      }),
-  });
-  // The groups and the labels are choices in forms: every page is read, not the first.
-  useAllPages(groupsRead);
-  useAllPages(labelsRead);
-  return {
-    groups: linesFrom(groupsRead.data?.pages, groupOf),
-    labels: linesFrom(labelsRead.data?.pages, labelOf),
-    isError: groupsRead.isError || labelsRead.isError,
-    error: groupsRead.error ?? labelsRead.error,
-  };
-}
-
-/** The group of an item of the list, or nothing for an item that came without what it needs. */
-export function groupOf(item: Schema<"LabelGroupItem">): LabelGroup | undefined {
-  const { id, name, pick_one: pickOne, retired, created_in: createdIn, may_manage, version } = item;
-  return id === undefined ||
-    id === null ||
-    name === undefined ||
-    name === null ||
-    pickOne === undefined ||
-    pickOne === null ||
-    retired === undefined ||
-    retired === null ||
-    createdIn === undefined ||
-    createdIn === null ||
-    may_manage === undefined ||
-    may_manage === null ||
-    version === undefined ||
-    version === null
-    ? undefined
-    : {
-        id,
-        name,
-        pick_one: pickOne,
-        retired,
-        created_in: createdIn,
-        may_manage,
-        version,
-        ...(item.offered_here === undefined || item.offered_here === null
-          ? {}
-          : { offered_here: item.offered_here }),
-        ...(item.own_offer === undefined || item.own_offer === null
-          ? {}
-          : { own_offer: item.own_offer }),
-        ...(item.may_change_offer === undefined || item.may_change_offer === null
-          ? {}
-          : { may_change_offer: item.may_change_offer }),
-      };
-}
-
-/** The label of an item of the list, or nothing for an item that came without what it needs. */
-export function labelOf(item: Schema<"LabelItem">): Label | undefined {
-  const { id, name, color, retired, version } = item;
-  return id === undefined ||
-    id === null ||
-    name === undefined ||
-    name === null ||
-    color === undefined ||
-    color === null ||
-    retired === undefined ||
-    retired === null ||
-    version === undefined ||
-    version === null
-    ? undefined
-    : {
-        id,
-        ...(item.group === undefined || item.group === null ? {} : { group: item.group }),
-        name,
-        color,
-        retired,
-        version,
-      };
-}
 
 /** A tag that has what a line of the list and its editor need. */
 export interface TagLine {
@@ -209,6 +97,47 @@ export function refreshLabels(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
   refreshLabelReads();
   void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
+}
+
+/** The tags and labels of an issue as the answer of a change says them. */
+export type IssueLabelsAndTags = Schema<"IssueLabelsAndTagsBody">;
+
+/** Puts a tag on an issue by its name; a tag that does not exist yet is created by it (TAG-01). */
+export async function putTag(issue: string, name: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.POST("/api/v1/issues/{issue}/tags", {
+      params: { path: { issue } },
+      body: { name },
+    }),
+  );
+}
+
+/** Takes a tag off an issue. */
+export async function takeTagOff(issue: string, tag: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.DELETE("/api/v1/issues/{issue}/tags/{tag}", {
+      params: { path: { issue, tag } },
+    }),
+  );
+}
+
+/** Puts a label of the organization on an issue. */
+export async function putLabel(issue: string, label: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.POST("/api/v1/issues/{issue}/labels", {
+      params: { path: { issue } },
+      body: { label },
+    }),
+  );
+}
+
+/** Takes a label off an issue. */
+export async function takeLabelOff(issue: string, label: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.DELETE("/api/v1/issues/{issue}/labels/{label}", {
+      params: { path: { issue, label } },
+    }),
+  );
 }
 
 /** The answer of putting a tag or a label on an issue or taking one off: the version it counted to. */

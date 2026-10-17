@@ -33,6 +33,8 @@ pub(crate) mod layout {
     pub(crate) const PROJECT: &str = "project";
     pub(crate) const ISSUE_TYPE: &str = "issue_type";
     pub(crate) const SECTIONS: &str = "sections";
+    /// The fields taken off the form, each with the roles it keeps (M3-F107).
+    pub(crate) const OFF: &str = "off";
 }
 
 /// The members of a workflow.

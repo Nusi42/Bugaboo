@@ -345,12 +345,21 @@ mod tests {
     async fn code_file_at_first_connection(
         folder: &Path,
     ) -> Result<String, Box<dyn std::error::Error>> {
-        // A port that is free now: nothing else in these tests binds one.
-        let port = std::net::TcpListener::bind("127.0.0.1:0")?
+        // An address of its own, with a port that is free on it now. Other tests, and other
+        // folders running at the same time, start servers on 127.0.0.1 and on ports the system
+        // gives them; one of those could take our port between the moment it is given back and
+        // the moment the server binds it, and the client would then talk to a server that is not
+        // ours. Nothing but this test uses this address.
+        let mut random = [0_u8; 3];
+        getrandom::fill(&mut random)?;
+        let address =
+            std::net::Ipv4Addr::new(127, 1 + random[0] % 254, random[1], 1 + random[2] % 254);
+        let port = std::net::TcpListener::bind((address, 0))?
             .local_addr()?
             .port();
         let data = folder.join("data");
         let given = [
+            (SettingName::Address, address.to_string()),
             (SettingName::Port, port.to_string()),
             (SettingName::TlsMode, "off".to_owned()),
             (SettingName::DataDir, data.to_string_lossy().into_owned()),
@@ -369,7 +378,7 @@ mod tests {
         // there already.
         let client = std::thread::spawn(move || {
             let started = std::time::Instant::now();
-            while std::net::TcpStream::connect(("127.0.0.1", port)).is_err() {
+            while std::net::TcpStream::connect((address, port)).is_err() {
                 assert!(
                     started.elapsed().as_secs() < 30,
                     "the server did not listen"

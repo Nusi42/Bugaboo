@@ -52,6 +52,15 @@ export async function pickSizeStep(page: Page, step: "wider" | "narrower" | "tal
   await page.getByRole("button", { name: t(`window.${step}`), exact: true }).click();
 }
 
+/** Where the text of an element starts, from the left of the page: after its own padding and border. */
+export function textStartOf(element: Locator): Promise<number> {
+  return element.evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    return range.getBoundingClientRect().left;
+  });
+}
+
 /** Where an element is on the page; it must be there. */
 export async function boxOf(
   element: Locator,

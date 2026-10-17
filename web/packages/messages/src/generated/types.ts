@@ -165,6 +165,7 @@ export interface MessageArguments {
   "fields.used-in-projects": { count: number };
   "fields.used-more": { count: number };
   "fields.used-types": { names: string | number };
+  "fields.value-of": { name: string | number };
   "files.added": { size: string | number; when: string | number; who: string | number };
   "files.delete-named": { name: string | number };
   "files.deleted": { name: string | number };
@@ -180,7 +181,8 @@ export interface MessageArguments {
   "files.too-big": { limit: string | number };
   "files.waiting": { name: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
-  "followers.count": { count: string | number };
+  "followers.count": { count: number };
+  "followers.count-more": { count: number };
   "groups.add-name": { name: string | number };
   "groups.added": { group: string | number; name: string | number };
   "groups.created": { name: string | number };
@@ -203,6 +205,13 @@ export interface MessageArguments {
   };
   "history.changed-long-text": { field: string | number; who: string | number };
   "history.cleared": { field: string | number; who: string | number };
+  "history.file-added": { name: string | number; who: string | number };
+  "history.file-added-unnamed": { who: string | number };
+  "history.file-changed-unnamed": { who: string | number };
+  "history.file-deleted": { name: string | number; who: string | number };
+  "history.file-deleted-unnamed": { who: string | number };
+  "history.file-restored": { name: string | number; who: string | number };
+  "history.file-restored-unnamed": { who: string | number };
   "history.relation-added": { issue: string | number; name: string | number; who: string | number };
   "history.relation-removed": {
     issue: string | number;
@@ -220,7 +229,6 @@ export interface MessageArguments {
   "invitations.take-back-title": { email: string | number };
   "issue-types.created": { name: string | number };
   "issue-types.project-title": { project: string | number };
-  "issues.add-field": { field: string | number };
   "issues.ask-for-intro": { to: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
@@ -248,10 +256,14 @@ export interface MessageArguments {
   "labels.combine-dialog-title": { name: string | number; other: string | number };
   "labels.field-color": { name: string | number };
   "labels.group-created": { name: string | number };
+  "labels.label-added": { name: string | number };
   "labels.label-created": { name: string | number };
+  "labels.label-taken-off": { name: string | number };
   "labels.preview-line": { after: string | number; before: string | number };
   "labels.project-title": { project: string | number };
+  "labels.tag-added": { name: string | number };
   "labels.tag-in-projects": { count: number };
+  "labels.tag-taken-off": { name: string | number };
   "labels.take-off": { name: string | number };
   "labels.take-project-off": { name: string | number };
   "layouts.customize-project": { project: string | number };

@@ -38,4 +38,9 @@ describe("cf_03 a field that must be filled in says so in its name", () => {
       errorMessage: "Must be filled in",
     });
   });
+
+  it("hides the name only in a row of the Details, which shows it already (M3-F187)", () => {
+    expect(boxWords(field({}), undefined, true)).toEqual({ label: "Customer", hideLabel: true });
+    expect(boxWords(field({}))).toEqual({ label: "Customer" });
+  });
 });

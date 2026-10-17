@@ -7,6 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import {
   breakSecondPartOnce,
   bytesOf,
+  expectActionsOnTileEdge,
   dropFile,
   limitInWords,
   limitOf,
@@ -72,9 +73,21 @@ test("att_01 a file that is chosen with Upload is added, and is a row with Downl
   ).toBeVisible();
   // A file of a type that has no preview shows its type, and never a picture.
   await expect(row.getByRole("img")).toHaveCount(0);
+  // The history has a row for the file, without a reload (M4-F50).
+  await expect(
+    page.getByText(t("history.file-added", { who: ada.name, name: "report.txt" })),
+  ).toBeVisible();
   // Kept: the page is read again from the server.
   await page.reload();
   await expect(rowOf(page, "report.txt")).toBeVisible();
+});
+
+test("ux_4_4 a file's Download and Delete start on the edge of its tile, where the text of the row starts (R1)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-1"));
+  await expectActionsOnTileEdge(page, rowOf(page, "report.txt"), "report.txt");
 });
 
 test("att_04 a screenshot that is pasted is added and shows its preview as soon as it is made", async ({

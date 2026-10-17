@@ -44,3 +44,5 @@ Files are never shown inside the page and are never run: a download is always sa
 - A part of a file is refused when the disk of the server would be left with less than 1 GB free.
 - Files are stored once by their content: the same file added twice takes the room of one.
 - Unfinished uploads are cleaned up after one day.
+
+Adding a file, deleting it and bringing it back with **Undo** are rows in the **History** of the issue, each with the name of the file. A file on a comment belongs to its comment and has no row of its own.

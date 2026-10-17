@@ -511,6 +511,7 @@ mod tests {
             },
             title: None,
             status: Some(crate::api::workflows::StatusRef::blank()),
+            priority: Some(bb_core::issue::Priority::Normal),
         };
         let project = || ProjectRef {
             id: String::new(),

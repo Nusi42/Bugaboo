@@ -8,8 +8,8 @@ import { statusGroupOf, statusWordsOf } from "./ref-status.ts";
 import type { ShownIssue } from "./shown-issue.ts";
 import { refColumns } from "./ref-columns.ts";
 
-/** An issue reference has no priority, so its row shows none: the normal one draws no edge. */
-const noPriority: Schema<"Priority"> = "normal";
+/** An issue whose priority the viewer may not see is drawn plain: the normal priority draws no edge. */
+const plainPriority: Schema<"Priority"> = "normal";
 /** An issue whose status the viewer may not see is drawn plain, like one that has not started. */
 const plainGroup: Schema<"StatusGroup"> = "not-started";
 
@@ -25,7 +25,7 @@ export interface IssueRefRowProps {
  * An issue as a row of the sub-issues or the related issues (UX §4.4, R9): the status icon, the
  * issue ID, the type and the title in the same places as in the list, tinted by its status group.
  * The whole row opens the issue. What the viewer may not see of it (its status, its title) is left
- * out. The priority is not part of an issue reference, so no edge is drawn.
+ * out. The row has the edge of its priority, as in the list (M3-F173).
  */
 export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
   const phone = useLayout() === "phone";
@@ -34,7 +34,7 @@ export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
   return (
     <ListRow
       group={group ?? plainGroup}
-      priority={noPriority}
+      priority={issue.priority ?? plainPriority}
       columns={refColumns}
       {...(phone ? { variant: listRowLook.phone } : {})}
       cells={{

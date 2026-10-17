@@ -16,8 +16,8 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
-use bb_core::history::{HistoryEntry, HistoryKind, HistoryTab};
-use bb_core::id::{CommentId, FieldId, IssueId, IssueTypeId, UserId};
+use bb_core::history::{FileEvent, HistoryEntry, HistoryKind, HistoryTab};
+use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::paging::page_len;
 use bb_core::people_kinds::PeopleKind;
@@ -32,11 +32,13 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::comments::CommentView;
 use crate::fields::Definition;
+use crate::files::member as file_member;
 use crate::issues::member as issue_member;
 use crate::member::relation as relation_member;
 use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
 use bb_core::comment::Comment;
+use bb_core::files::Attachment;
 use bb_core::issue::Issue;
 
 /// How a member of the event of an issue is shown.
@@ -107,6 +109,8 @@ struct Batch<'a> {
     comments: BTreeMap<CommentId, Comment>,
     issues: BTreeMap<IssueId, Issue>,
     kinds: &'a [RelationKind],
+    /// The files the rows of files name, also the ones in the trash.
+    files: BTreeMap<AttachmentId, Attachment>,
     /// The own fields, to name them and to read their values.
     fields: Arc<Vec<Definition>>,
 }
@@ -139,6 +143,11 @@ pub(crate) struct ChangeReader {
 /// Whether the row is about a relation (the rest are about an issue).
 fn is_relation(row: &HistoryEntry) -> bool {
     row.record_kind.as_str() == RecordKind::Relation.code()
+}
+
+/// Whether the row is about a file of the issue.
+fn is_file(row: &HistoryEntry) -> bool {
+    row.record_kind.as_str() == RecordKind::Attachment.code()
 }
 
 /// The issues that the rows of a batch name: the parent and the sub-issues of a change, and the
@@ -483,6 +492,31 @@ impl<S: AuthStore> Ctx<'_, S> {
         }))
     }
 
+    /// A file of the issue that was added, put into the trash or brought back; `None` for a file of
+    /// a comment (it belongs to the comment). The name is the one the file has now, from the batch;
+    /// a file that is gone for good keeps its row, as "a file" with no name.
+    fn file_change(batch: &Batch<'_>, row: &HistoryEntry) -> Option<HistoryWhat> {
+        let file = AttachmentId::from_bytes(row.record.to_bytes())
+            .ok()
+            .and_then(|id| batch.files.get(&id));
+        if file.is_some_and(|file| file.comment.is_some()) {
+            return None;
+        }
+        let deleted = row
+            .changes
+            .iter()
+            .find(|change| change.field == file_member::DELETED_AT);
+        let event = match deleted {
+            None => FileEvent::Added,
+            Some(change) if change.after.is_some() => FileEvent::Deleted,
+            Some(_) => FileEvent::Restored,
+        };
+        Some(HistoryWhat::File {
+            event,
+            name: file.map(|file| file.name.clone()),
+        })
+    }
+
     /// The project, when the reader sees it.
     async fn project_seen(
         &self,
@@ -528,10 +562,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .map(|issue| (issue.id, issue))
             .collect();
+        let file_ids: Vec<AttachmentId> = rows
+            .iter()
+            .filter(|row| is_file(row))
+            .filter_map(|row| AttachmentId::from_bytes(row.record.to_bytes()).ok())
+            .collect();
+        let files = self
+            .store()
+            .attachments_by_ids(&file_ids)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|file| (file.id, file))
+            .collect();
         Ok(Batch {
             comments,
             issues,
             kinds,
+            files,
             fields: self.field_catalogue().await?,
         })
     }
@@ -559,7 +607,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Some(HistoryWhat::Comment { comment: view })
             }
             HistoryKind::Change => {
-                if is_relation(row) {
+                if is_file(row) {
+                    Self::file_change(batch, row)
+                } else if is_relation(row) {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?
                 } else {

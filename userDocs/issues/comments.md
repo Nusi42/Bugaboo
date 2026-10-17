@@ -20,7 +20,7 @@ Nothing is sent by e-mail yet, and there is no bell: that comes with the next ve
 
 ## History
 
-An issue's **History** has three tabs: **Everything**, **Comments** and **Changes**. It is newest first and shows who changed which field, from what to what, and the relations and sub-issues added or taken away.
+An issue's **History** has three tabs: **Everything**, **Comments** and **Changes**. It is newest first and shows who changed which field, from what to what, and the relations and sub-issues added or taken away. A file that is added, deleted or brought back with **Undo** has a row too, with its name. A new issue lists what was set when it was created, and leaves out what was empty.
 
 You see only what you may see: a change to a field your role cannot see is left out, and so is a person whose name is hidden from you (it reads *someone*).
 

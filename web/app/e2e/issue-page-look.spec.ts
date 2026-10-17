@@ -7,7 +7,7 @@ import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import {
   detailRow,
   expectStatus,
-  savedNote,
+  issueNote,
   startWorking,
   statusButton,
 } from "./support/issues.ts";
@@ -34,7 +34,7 @@ test("ux_4_4 the big status button shows the status with its group's icon and li
   await expect(statusButton(page)).toHaveAttribute("data-variant", "in-progress");
   // Kept: the page is read again from the server, once the server has the change (the button shows
   // it at once, before the answer comes).
-  await expect(savedNote(page)).toBeVisible();
+  await expect(issueNote(page)).toBeVisible();
   await page.reload();
   await expectStatus(page, t("status.in-progress"));
 });

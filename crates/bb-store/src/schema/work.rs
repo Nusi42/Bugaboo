@@ -226,6 +226,15 @@ pub(crate) enum LayoutFieldRow {
     Position,
 }
 
+/// A field that was taken off the form of a layout; its roles are rows of `layout_field_role`.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum LayoutOffFieldRow {
+    #[iden = "layout_off_field"]
+    Table,
+    Layout,
+    Field,
+}
+
 /// A role a field of a layout is shown to.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum LayoutFieldRoleRow {

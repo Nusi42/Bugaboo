@@ -5,7 +5,7 @@
 //! *Assigned to* and *Reported by* say, and an issue another row names is a line only when the
 //! reader may see it.
 
-use bb_core::history::HistoryTab;
+use bb_core::history::{FileEvent, HistoryTab};
 use bb_core::id::EventId;
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
@@ -98,6 +98,14 @@ pub enum HistoryWhat {
     Changes {
         /// The fields.
         fields: Vec<FieldChangeView>,
+    },
+    /// A file of the issue was added, put into the trash or brought back.
+    File {
+        /// What happened.
+        event: FileEvent,
+        /// The name of the file, read from the file itself: none once the file is gone for good
+        /// (the history keeps no name after the file is deleted, it is the person's content).
+        name: Option<String>,
     },
     /// A relation to another issue was added or taken away.
     Relation {

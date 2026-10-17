@@ -26,6 +26,14 @@ export function tabsOf(sections: readonly FormSection[]): readonly TabGroup[] {
 }
 
 /**
+ * Whether the sections are no more than one run of fields: at most one section and no tabs, so a
+ * place with a list of its own (the Details) can hold them as rows of that list, with no title.
+ */
+export function isPlain(sections: readonly FormSection[]): boolean {
+  return sections.length <= 1 && tabsOf(sections).length <= 1;
+}
+
+/**
  * The sections with only the fields `keep` says yes to; a section left without a field is
  * dropped. A place that draws only some of the fields of the layout (the details of an issue)
  * asks for these.

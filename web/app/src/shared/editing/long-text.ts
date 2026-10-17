@@ -1,4 +1,4 @@
-import { conflictOf } from "@bugaboo/api-client";
+import { conflictOf, takenOverByOf } from "@bugaboo/api-client";
 
 import { codeOf } from "../errors.ts";
 import { EditLockSession, type Answer } from "./edit-lock-session.ts";
@@ -165,7 +165,7 @@ export class LongTextEditor extends WatchingEditor {
       return;
     }
     void this.lock.refused(found.reason);
-    const by = found.by ?? conflictOf(error)?.changed_by;
+    const by = found.by ?? takenOverByOf(error) ?? conflictOf(error)?.changed_by;
     this.set({
       phase: {
         kind: "lost",
@@ -229,6 +229,19 @@ export class LongTextEditor extends WatchingEditor {
       this.answered(await this.lock.editAnyway());
     } catch (error) {
       this.set({ problem: error });
+    }
+  };
+
+  /**
+   * The page came back from the back and forward cache: it let its lock go as it was hidden
+   * (`dispose`), so a text that is being edited says that its time ran out, and *Try again* takes
+   * the lock again. The text is where it was; nothing is lost.
+   */
+  readonly cameBack = (): void => {
+    const { kind } = this.state.phase;
+    if (kind === "locked" || kind === "taking" || kind === "saving") {
+      this.saveWhenLocked = false;
+      this.set({ phase: { kind: "lost", reason: "ran-out" } });
     }
   };
 

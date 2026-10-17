@@ -3,6 +3,7 @@ import type { ChangeStatus } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { FormView } from "../layouts/index.ts";
+import type { Places } from "./details-order.ts";
 
 /**
  * The slots of the issue page (UX design §4.4): the places where packages other than the issue page
@@ -32,8 +33,17 @@ export const issueSlots = {
   history: "history",
   /** Sections of own fields that the layout puts into the main column (WP-05). */
   ownFieldSections: "own-field-sections",
-  /** The own fields in the Details (*Details*), below the built-in ones (WP-05). */
+  /**
+   * Rows of the Details, below the built-in ones: a block draws `NameValueRow`s and the panel puts
+   * them into its one list (own fields, *Followers*, *Tags*, *Labels*), so a row is a `dt` and a
+   * `dd` of that list and a block never draws a list of its own (M3-F188).
+   */
   details: "details",
+  /**
+   * What the Details cannot hold as rows of its one list: the own fields of a layout that has
+   * titled sections or tabs. Each is a block of its own after the list (CFG-01).
+   */
+  detailSections: "detail-sections",
 } as const;
 
 /** The name of a slot. */
@@ -97,6 +107,11 @@ export interface IssueBlockEntry {
   readonly id: string;
   /** Blocks of a slot are drawn in this order, then by `id`. */
   readonly order: number;
+  /**
+   * For a block of the Details slot: which fields of the layout its rows are, so that the Details
+   * follow the order of the layout (CFG-01). A block that says nothing comes after the rest.
+   */
+  readonly places?: Places;
   readonly component: IssueBlock;
 }
 

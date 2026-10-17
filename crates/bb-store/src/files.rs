@@ -185,6 +185,26 @@ impl AttachmentStore for AuthStorage {
             .collect()
     }
 
+    async fn attachments_by_ids(
+        &self,
+        ids: &[AttachmentId],
+    ) -> Result<Vec<Attachment>, StoreError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut select = attachment_select();
+        select.and_where(
+            Expr::col(AttachmentRow::Id)
+                .is_in(ids.iter().map(|id| id.stored()).collect::<Vec<_>>()),
+        );
+        self.database()
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(read_attachment)
+            .collect()
+    }
+
     async fn stored_files(&self, hashes: &[Digest]) -> Result<Vec<StoredFile>, StoreError> {
         if hashes.is_empty() {
             return Ok(Vec::new());

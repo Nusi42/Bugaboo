@@ -132,7 +132,7 @@ impl From<HistoryWhat> for NotificationWhat {
         match what {
             HistoryWhat::Comment { comment } => Self::Comment { comment },
             HistoryWhat::Changes { fields } => Self::Changes { fields },
-            HistoryWhat::Relation { .. } => Self::Plain,
+            HistoryWhat::File { .. } | HistoryWhat::Relation { .. } => Self::Plain,
         }
     }
 }

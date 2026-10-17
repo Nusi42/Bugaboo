@@ -5,6 +5,7 @@ import { register } from "../registry.ts";
 export const messages = {
   "sub-issues.title": "Sub-issues",
   "sub-issues.none": "No sub-issues yet.",
+  "sub-issues.add": "Add sub-issue",
   "sub-issues.add-it": "Add",
   "sub-issues.added": "{key} is now a sub-issue.",
   "sub-issues.more": "Show more sub-issues",

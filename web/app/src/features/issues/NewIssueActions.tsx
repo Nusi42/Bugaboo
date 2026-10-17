@@ -54,25 +54,20 @@ function missingForCreate(form: NewIssue) {
 }
 
 /**
- * The footer of the new-issue window (UX §4.5, §6.3): in the first row what is missing, that the
- * draft is kept and *Customize this form*; in the second the buttons at the right with the main one
- * last (R6). The footer stays in place
- * while the form scrolls, so the buttons never move while the fields of the layout load.
+ * The footer of the new-issue window (UX §4.5, §6.3): what is missing (it comes and goes with the
+ * title), the buttons at the right with the main one last (R6), and below them the note: that the
+ * draft is kept, and *Customize this form*. The note under the buttons never changes while the
+ * person types, so the buttons stay where a finger is on its way to them. The footer stays in place
+ * while the form scrolls.
  */
 export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActionsProps) {
   const why = useId();
   const missing = missingForCreate(form);
   return (
     <>
-      <div {...partOf(part.windowFooterNote)}>
-        <div>
-          <p id={why} {...partOf(part.muted)}>
-            {t(missing ?? "issues.ready-to-create")}
-          </p>
-          <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
-        </div>
-        <CustomizeThisForm form={form} />
-      </div>
+      <p id={why} {...partOf(part.muted)}>
+        {t(missing ?? "issues.ready-to-create")}
+      </p>
       <div {...partOf(part.windowFooterActions)}>
         <Button look={buttonLook.quiet} onPress={onClose}>
           {t("common.cancel")}
@@ -90,6 +85,10 @@ export function NewIssueActions({ form, formId, onMade, onClose }: NewIssueActio
         <SubmitButton form={formId} isPending={form.pending}>
           {t("issues.create")}
         </SubmitButton>
+      </div>
+      <div {...partOf(part.windowFooterNote)}>
+        <p {...partOf(part.muted)}>{t("issues.draft-kept")}</p>
+        <CustomizeThisForm form={form} />
       </div>
     </>
   );

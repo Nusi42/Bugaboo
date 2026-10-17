@@ -89,3 +89,21 @@ export function conflictOf(error: unknown): Conflict | undefined {
   const found: unknown = Reflect.get(error.problem, "conflict");
   return isConflict(found) ? found : undefined;
 }
+
+/** Whether a value looks like a person as the reader may see them: the API tags each kind by `shown`. */
+function isPersonRef(value: unknown): value is Schema<"PersonRef"> {
+  return typeof value === "object" && value !== null && "shown" in value;
+}
+
+/**
+ * Who took the editing over, when the error is the refusal of a save for that reason
+ * (`edit.taken_over`, M3-F176): the server names them in the answer, as the reader may see them,
+ * so the screen needs no further request. Nothing for any other error.
+ */
+export function takenOverByOf(error: unknown): Schema<"PersonRef"> | undefined {
+  if (!(error instanceof ApiError) || error.problem?.code !== "edit.taken_over") {
+    return undefined;
+  }
+  const found: unknown = Reflect.get(error.problem, "taken_over_by");
+  return isPersonRef(found) ? found : undefined;
+}

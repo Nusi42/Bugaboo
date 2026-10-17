@@ -1,6 +1,6 @@
 # Tags and labels
 
-Tags and labels sort issues. Both show on the issue page, in the **Labels and tags** block of the details, as small colored words.
+Tags and labels sort issues. Both show on the issue page, in the details, as the rows **Tags** and **Labels**, as small colored words.
 
 - A **tag** is a free word. Anybody who may change an issue can add a tag to it, and a tag that does not exist yet is created by adding it. Type a few letters and Bugaboo offers the tags of the project that fit.
 - A **label** is a word from a list that the people who look after labels keep. Labels can be in a **label group**, for example *Area* with *invoices* and *billing*. A label group can be a **group to pick one from**: an issue then has at most one label of it.
@@ -10,10 +10,12 @@ Whether you see tags and labels on an issue, and whether you can change them, fo
 ## Putting tags and labels on an issue
 
 1. Open the issue and, on a small window, press **All details**.
-2. Under **Labels and tags**, type a tag and press **Add tag**, or choose a label and press **Add label**.
+2. In the row **Tags**, type a tag and press **Add tag**; in the row **Labels**, choose a label and press **Add label**.
 3. **Take off** next to a tag or a label removes it again.
 
-Adding and taking off are in the history of the issue, and they do not change the version of the issue, so adding a label never makes somebody else's edit a conflict.
+A change takes effect at once. The row says **Saved**, with **Undo**, which does the opposite change.
+
+Adding and taking off are in the history of the issue, and they do not change the version of the issue, so adding a label never turns somebody else's edit into a conflict.
 
 A tag can be limited to some projects. In another project it is not offered while you type, and adding it there says so in a sentence.
 

@@ -17,7 +17,7 @@ mod attachments;
 mod download;
 mod file_store;
 mod jobs;
-mod member;
+pub(crate) mod member;
 mod rules;
 mod store;
 mod types;

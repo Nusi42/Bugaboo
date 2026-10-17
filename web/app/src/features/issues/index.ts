@@ -13,6 +13,7 @@ export { priorityChoices } from "./issue-choices.ts";
 export { useProjectStatusChanges } from "./use-project-status-changes.ts";
 export { choiceIdOf, choiceLabelOf, type ProjectChange } from "./status-choices.ts";
 export { versionCounted } from "./issue-requests.ts";
+export { rowStatusOf, type RowChange } from "./row-status.ts";
 export type { SaveLongText } from "./use-description.ts";
 export {
   addIssueBlock,

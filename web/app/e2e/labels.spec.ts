@@ -1,12 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
+import { ada, bob } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { expectStatus, prepareWeb, savedNote, startWorking } from "./support/issues.ts";
+import { detailRow, expectStatus, issueNote, prepareWeb, startWorking } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
@@ -82,11 +82,62 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
   await expect(
     listNamed(page, t("labels.tags-heading")).getByText("quick", { exact: true }),
   ).toBeVisible();
-  // The tag counted the version of the issue up; the change of status is made on that version.
+  // The tag counted the version of the issue up; the change of status is made on that version. The
+  // row of the tag says *Saved* already, so the note of the status is what is waited for.
   await startWorking(page);
-  await expect(savedNote(page)).toBeVisible();
+  await expect(issueNote(page)).toBeVisible();
   await page.reload();
   await expectStatus(page, t("status.in-progress"));
+});
+
+test("ux_4_4 Tags and Labels are rows of the one list of the Details and change in place with Saved and Undo (R7)", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-3"));
+  await showDetails(page);
+  // One list for all the rows of the Details: the own fields, following, tags and labels too.
+  const details = page.getByRole("complementary", { name: t("issues.details"), exact: true });
+  await expect(details.locator("dl")).toHaveCount(1);
+  const tags = detailRow(page, t("labels.tags-heading"));
+  await expect(tags).toBeVisible();
+  await tags.getByLabel(t("labels.add-tag"), { exact: true }).fill("fresh");
+  await tags.getByRole("button", { name: t("labels.add-tag-button"), exact: true }).click();
+  await expect(tags.getByText("fresh", { exact: true })).toBeVisible();
+  // Saved, and Undo, in the row where it happened; Undo takes the tag off again.
+  await expect(tags.getByText(new RegExp(`^${t("save.saved")}`, "u"))).toBeVisible();
+  await expect(detailRow(page, t("labels.labels-heading")).getByText(t("save.saved"))).toHaveCount(
+    0,
+  );
+  await tags.getByRole("button", { name: t("common.undo"), exact: true }).click();
+  await expect(tags.getByText("fresh", { exact: true })).toHaveCount(0);
+});
+
+test("tag_01 a read of the tags and labels that failed says why in their rows", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/issues/*/labels-and-tags", (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/problem+json",
+      body: JSON.stringify({
+        type: "urn:bugaboo:error:access.forbidden",
+        title: "access.forbidden",
+        status: 403,
+        code: "access.forbidden",
+        message_key: "error.access.forbidden",
+        params: {},
+      }),
+    }),
+  );
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-1"));
+  await showDetails(page);
+  const tags = detailRow(page, t("labels.tags-heading"));
+  await expect(tags.getByText(t("error.access.forbidden"))).toBeVisible();
+  await expect(
+    detailRow(page, t("labels.labels-heading")).getByText(t("error.access.forbidden")),
+  ).toBeVisible();
 });
 
 test("tag_03 renaming a label shows which issues change before it is saved", async ({

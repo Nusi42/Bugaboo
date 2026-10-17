@@ -62,3 +62,25 @@ describe("iss_17 nothing is started after the screen went away", () => {
     expect(w.log.filter((entry) => entry === "start-beats")).toHaveLength(1);
   });
 });
+
+describe("iss_05 a page that comes back from the cache after its lock was let go", () => {
+  it("says the editing time ran out and keeps the text, so Try again can take the lock again", async () => {
+    const w = world({ take: () => Promise.resolve(taken("t1")) });
+    w.editor.open();
+    w.editor.type("Mine");
+    await settle();
+    // The page was hidden: the lock went with it. It is shown again as it was left.
+    w.editor.dispose();
+    w.editor.cameBack();
+    expect(w.log).toContain("release t1");
+    const state = w.editor.snapshot();
+    expect(state.phase).toEqual({ kind: "lost", reason: "ran-out" });
+    expect(state.text).toBe("Mine");
+  });
+
+  it("leaves a box that was not being edited as it is", () => {
+    const w = world({});
+    w.editor.cameBack();
+    expect(w.editor.snapshot().phase.kind).toBe("reading");
+  });
+});

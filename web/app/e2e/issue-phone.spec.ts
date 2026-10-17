@@ -7,12 +7,32 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
 import { prepareLook } from "./support/list-look.ts";
+import { partIn } from "./support/parts.ts";
 import { boxOf } from "./support/windows.ts";
 
 // The top of the issue page on a phone (UX §3.3, M3 WP-17): the bar with Back and the steps, and
 // the header with the type, the ID and More each stay on one line, so the header does not wrap.
 
 test.use({ preparation: { run: prepareLook } });
+
+test("ux_03 on a phone the closed Details button says who has the issue and its priority with its icon (M3-F184)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "only a phone has this button");
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-1"));
+  const toggle = partIn(page, "issue-details-toggle");
+  // Nobody has the issue: the summary says so in words, not by leaving a bare word.
+  await expect(toggle.getByText(t("issues.summary-unassigned"))).toBeVisible();
+  // The priority with its icon, as everywhere else.
+  await expect(partIn(toggle, "priority")).toContainText(t("priority.critical"));
+  await expect(partIn(toggle, "priority-icon")).toBeVisible();
+  // The way to the first person says what it does.
+  await page.getByRole("button", { name: t("issues.all-details"), exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: t("issues.assign-someone"), exact: true }),
+  ).toBeVisible();
+});
 
 test("ux_03 on a phone the header of an issue does not wrap: Back and the steps, the type and More", async ({
   page,

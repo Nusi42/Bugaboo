@@ -27,30 +27,48 @@ function partsOf(value: unknown, withTime: boolean): readonly [string, string] {
 /** The box of the time of day. */
 function TimeBox({
   value,
+  hideLabel,
   onChange,
 }: {
   readonly value: string;
+  readonly hideLabel: boolean;
   readonly onChange: (time: string) => void;
 }) {
-  return <TextField label={t("fields.time-of-day")} value={value} onChange={onChange} />;
+  return (
+    <TextField
+      label={t("fields.time-of-day")}
+      hideLabel={hideLabel}
+      value={value}
+      onChange={onChange}
+    />
+  );
 }
 
-/** A day, and for a day and time also the time of day. */
-export function MomentEditor({
-  field,
-  value,
-  onCommit,
-  problem,
-  isPending = false,
-  live = false,
-  inRow = false,
-}: ValueEditorProps) {
+/**
+ * The day and the time of day a moment holds, each as typed so far and as saved, and what a live
+ * form does as each changes: it sends the moment at once.
+ */
+function useMomentParts({ value, field, live, onCommit }: ValueEditorProps) {
   const withTime = field.kind === "date-time";
   const [savedDay, savedTime] = partsOf(value, withTime);
   const [day, setDay] = useSynced(savedDay);
   const [time, setTime] = useSynced(savedTime);
+  const sendLive = (nextDay: string, nextTime: string) => {
+    if (live === true) {
+      onCommit(momentOf(withTime, nextDay, nextTime));
+    }
+  };
+  return { withTime, savedDay, savedTime, day, setDay, time, setTime, sendLive };
+}
+
+/** A day, and for a day and time also the time of day. */
+export function MomentEditor(props: ValueEditorProps) {
+  const { field, onCommit, problem, isPending = false, live = false, inRow = false } = props;
+  const { withTime, savedDay, savedTime, day, setDay, time, setTime, sendLive } =
+    useMomentParts(props);
   return (
     <SaveForm
+      name={field.name}
       isPending={isPending}
       live={live}
       inRow={inRow}
@@ -61,25 +79,22 @@ export function MomentEditor({
       }}
     >
       <TextField
-        {...boxWords(field, problem)}
+        {...boxWords(field, problem, inRow)}
         kind={fieldKind.text}
         date={CALENDAR}
         value={day}
         onChange={(next) => {
           setDay(next);
-          if (live) {
-            onCommit(momentOf(withTime, next, time));
-          }
+          sendLive(next, time);
         }}
       />
       {withTime ? (
         <TimeBox
+          hideLabel={inRow}
           value={time}
           onChange={(next) => {
             setTime(next);
-            if (live) {
-              onCommit(momentOf(withTime, day, next));
-            }
+            sendLive(day, next);
           }}
         />
       ) : null}

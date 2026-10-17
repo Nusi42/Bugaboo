@@ -3,6 +3,7 @@ export { forgetBrowserDrafts } from "./browser-drafts.ts";
 export { useLongText, type LongText, type LongTextOptions } from "./use-long-text.ts";
 export { lockCanBeRetaken, lostReasonOf, retakingLockHelps } from "./long-text-model.ts";
 export type { LostReason, Phase, Who } from "./long-text-model.ts";
+export { useLetGoWhenHidden } from "./let-go-when-hidden.ts";
 export type { LockState } from "./edit-lock-state.ts";
 export { editedThing } from "./edited-thing.ts";
 export { LockedEditor } from "./LockedEditor.tsx";
