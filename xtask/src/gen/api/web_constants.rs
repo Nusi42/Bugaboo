@@ -155,7 +155,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 10] = [
+const WORD_LISTS: [&str; 11] = [
     "IssueIcon",
     "StatusGroup",
     "Priority",
@@ -166,6 +166,7 @@ const WORD_LISTS: [&str; 10] = [
     "ChoiceColor",
     "LayoutKind",
     "HistoryTab",
+    "Test",
 ];
 
 /// `IssueIcon` as `issueIconWords`.

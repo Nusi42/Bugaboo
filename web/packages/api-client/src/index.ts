@@ -66,6 +66,7 @@ export {
   newIssuePriority,
   priorityWords,
   statusGroupWords,
+  testWords,
 } from "./words.generated.ts";
 export {
   settingChoices,
