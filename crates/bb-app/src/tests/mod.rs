@@ -23,6 +23,7 @@ mod fake_settings;
 mod fake_tags;
 mod handles;
 mod hidden;
+mod keep;
 mod key_scope;
 mod keys;
 mod layout_roles;
