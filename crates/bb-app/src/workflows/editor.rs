@@ -219,6 +219,7 @@ pub async fn workflow_editor<S: AuthStore>(
     input: WorkflowEditorQuery,
 ) -> Result<Authorized<WorkflowEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .workflow_where(input.project.as_deref(), input.issue_type)
         .await?;

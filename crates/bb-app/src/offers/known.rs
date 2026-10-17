@@ -15,7 +15,9 @@ use bb_core::id::{IssueTypeId, LabelGroupId, ProjectId};
 use bb_core::issue::IssueType;
 use bb_core::tags::LabelGroup;
 
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::offers::Here;
 use crate::projects::Shown;
 
 /// Whether the person has to be told by an issue: the subject was created in a project they may
@@ -130,11 +132,43 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// The issue type, or `resource.not_found` for one that is not there or that the person may
-    /// not know.
-    pub(crate) async fn known_type(
+    /// The issue types a list holds: those the person may know, and, in a list about a project, only
+    /// those that can reach it (`Here::reached_by`).
+    pub(crate) async fn listed_types(
         &self,
         shown: &Shown,
+        here: Option<&Here>,
+        types: Vec<IssueType>,
+    ) -> Result<Vec<IssueType>, AppError> {
+        Ok(self
+            .known_types(shown, types)
+            .await?
+            .into_iter()
+            .filter(|found| here.is_none_or(|here| here.reached_by(found.project)))
+            .collect())
+    }
+
+    /// The groups of labels a list holds, by the same rule as [`Self::listed_types`].
+    pub(crate) async fn listed_group_rows(
+        &self,
+        shown: &Shown,
+        here: Option<&Here>,
+        groups: Vec<LabelGroup>,
+    ) -> Result<Vec<LabelGroup>, AppError> {
+        Ok(self
+            .known_groups(shown, groups)
+            .await?
+            .into_iter()
+            .filter(|found| here.is_none_or(|here| here.reached_by(found.project)))
+            .collect())
+    }
+
+    /// The issue type, or `resource.not_found` for one that is not there or that the person may
+    /// not know. A type of the organization is known to everybody, so only one created in a project
+    /// costs a look at what the person knows.
+    pub(crate) async fn known_type(
+        &self,
+        actor: &Actor,
         id: IssueTypeId,
     ) -> Result<IssueType, AppError> {
         let found = self
@@ -143,17 +177,34 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        self.known_types(shown, vec![found])
+        if found.project.is_none() {
+            return Ok(found);
+        }
+        let shown = self.shown_to(actor).await?;
+        self.known_types(&shown, vec![found])
             .await?
             .pop()
             .ok_or(AppError::Refused(ErrorCode::NotFound))
+    }
+
+    /// Refuses (`resource.not_found`) an issue type a request names that the person may not know:
+    /// a screen that is for one issue type does not open as if it were for all of them.
+    pub(crate) async fn ensure_type_known(
+        &self,
+        actor: &Actor,
+        issue_type: Option<IssueTypeId>,
+    ) -> Result<(), AppError> {
+        match issue_type {
+            Some(id) => self.known_type(actor, id).await.map(|_| ()),
+            None => Ok(()),
+        }
     }
 
     /// The group of labels, or `resource.not_found` for one that is not there or that the person
     /// may not know.
     pub(crate) async fn known_group(
         &self,
-        shown: &Shown,
+        actor: &Actor,
         id: LabelGroupId,
     ) -> Result<LabelGroup, AppError> {
         let found = self
@@ -164,7 +215,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .find(|each| each.id == id)
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        self.known_groups(shown, vec![found])
+        if found.project.is_none() {
+            return Ok(found);
+        }
+        let shown = self.shown_to(actor).await?;
+        self.known_groups(&shown, vec![found])
             .await?
             .pop()
             .ok_or(AppError::Refused(ErrorCode::NotFound))

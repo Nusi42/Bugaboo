@@ -290,7 +290,8 @@ pub(crate) struct CheckAccessBody {
     /// person whose levels are the same for every type is asked nothing.
     differs_by_type: bool,
     /// The issue types the question may ask about: those the place offers and that are not
-    /// retired. The screen lists exactly these.
+    /// retired. The screen lists exactly these. Only there when `differs_by_type` is true.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     issue_types: Vec<IssueTypeRef>,
 }
 

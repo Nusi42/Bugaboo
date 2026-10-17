@@ -25,29 +25,14 @@ const fn refusal_code(refusal: TypeRefusal) -> ErrorCode {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The issue type a write names, for a person: `resource.not_found` for one that is not there
     /// or that they may not know (`known.rs`), then the refusals of
-    /// [`Self::ensure_type_takes_issues`]. A type of the organization is known to everybody, so
-    /// only one created in a project costs a look at what the person knows.
+    /// [`Self::ensure_type_takes_issues`].
     pub(crate) async fn writable_issue_type(
         &self,
         actor: &crate::access::Actor,
         id: IssueTypeId,
         chain: &[ProjectId],
     ) -> Result<IssueType, AppError> {
-        let found = self
-            .store()
-            .issue_type(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        let found = if found.project.is_some() {
-            let shown = self.shown_to(actor).await?;
-            self.known_types(&shown, vec![found])
-                .await?
-                .pop()
-                .ok_or(AppError::Refused(ErrorCode::NotFound))?
-        } else {
-            found
-        };
+        let found = self.known_type(actor, id).await?;
         self.ensure_type_takes_issues(&found, chain).await?;
         Ok(found)
     }

@@ -167,7 +167,8 @@ pub struct AccessAnswer {
     /// field that the others do not. The screen asks *"Which issue type?"* only then.
     pub differs_by_type: bool,
     /// The issue types the question may ask about: those the place offers and that are not
-    /// retired, which the answer judged. The screen lists exactly these.
+    /// retired, which the answer judged. The screen lists exactly these. Empty unless
+    /// `differs_by_type`.
     pub issue_types: Vec<IssueTypeRef>,
 }
 
@@ -414,13 +415,20 @@ pub async fn check_access<S: AuthStore>(
         .collect();
     // One report for all types; the report for one type is built only when one is asked.
     let all = theirs.report();
+    let differs = Ctx::<S>::levels_differ_by_type(&theirs, &all, &choices, &own_names);
+    // The screen asks which type is meant only when the levels differ by type, so only then does
+    // the answer carry the choices.
     let by_type = (
         asked.map(IssueTypeRef::from),
-        Ctx::<S>::levels_differ_by_type(&theirs, &all, &choices, &own_names),
-        choices
-            .iter()
-            .map(|found| IssueTypeRef::from(*found))
-            .collect(),
+        differs,
+        if differs {
+            choices
+                .iter()
+                .map(|found| IssueTypeRef::from(*found))
+                .collect()
+        } else {
+            Vec::new()
+        },
     );
     let report = match asked {
         Some(found) => theirs.report_for(Some(found.id)),

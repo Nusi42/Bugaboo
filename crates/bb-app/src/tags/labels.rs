@@ -125,14 +125,7 @@ impl Reach {
         if shown.holds(Place::Organization, Permission::ManageLabels) {
             return Self(None);
         }
-        Self(Some(
-            shown
-                .everything()
-                .into_iter()
-                .map(|project| project.id)
-                .filter(|project| shown.allows(*project, Permission::ManageLabels))
-                .collect(),
-        ))
+        Self(Some(shown.holding(Permission::ManageLabels)))
     }
 
     /// Whether every one of these projects is in reach.
@@ -330,16 +323,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         project: Option<&str>,
     ) -> Result<(Vec<LabelGroup>, Option<Here>), AppError> {
         let here = self.offers_here(shown, project).await?;
-        // A list about a project holds the groups that can reach it, and no others.
-        let known: Vec<LabelGroup> = self
-            .known_groups(shown, std::mem::take(&mut catalogue.groups))
-            .await?
-            .into_iter()
-            .filter(|found| {
-                here.as_ref()
-                    .is_none_or(|here| here.reached_by(found.project))
-            })
-            .collect();
+        let known = self
+            .listed_group_rows(shown, here.as_ref(), std::mem::take(&mut catalogue.groups))
+            .await?;
         Ok((known, here))
     }
 }

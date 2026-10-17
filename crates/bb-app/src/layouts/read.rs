@@ -161,6 +161,7 @@ pub async fn form_layout<S: AuthStore>(
     input: FormLayoutQuery,
 ) -> Result<Authorized<FormLayout>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .layout_where(Some(&input.project), input.issue_type, input.kind)
         .await?;
@@ -374,8 +375,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         id: IssueTypeId,
     ) -> Result<Option<IssueTypeRef>, AppError> {
-        let shown = self.shown_to(actor).await?;
-        Ok(if_there(self.known_type(&shown, id).await)?
+        Ok(if_there(self.known_type(actor, id).await)?
             .as_ref()
             .map(IssueTypeRef::from))
     }
@@ -437,6 +437,7 @@ pub async fn layout_editor<S: AuthStore>(
     input: LayoutEditorQuery,
 ) -> Result<Authorized<LayoutEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .layout_where(input.project.as_deref(), input.issue_type, input.kind)
         .await?;

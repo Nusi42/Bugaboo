@@ -481,6 +481,10 @@ async fn sec_03_no_screen_names_a_type_of_a_project_the_reader_does_not_know() -
                     !text.contains("Questionnaire") && !text.contains(&question),
                     "{label}: GET {path}: {text}"
                 );
+                // A screen that is for one issue type does not open as if it were for all of them.
+                if path.contains("issue_type=") && path.contains("/editor") {
+                    assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not_found"));
+                }
             }
         }
         Ok(())

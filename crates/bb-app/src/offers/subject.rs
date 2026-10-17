@@ -73,12 +73,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// know (`known.rs`).
     pub(crate) async fn offer_subject(
         &self,
-        shown: &Shown,
+        actor: &crate::access::Actor,
         id: OfferSubject,
     ) -> Result<Subject, AppError> {
         Ok(match id {
-            OfferSubject::IssueType(id) => Subject::of_type(&self.known_type(shown, id).await?),
-            OfferSubject::LabelGroup(id) => Subject::of_group(&self.known_group(shown, id).await?),
+            OfferSubject::IssueType(id) => Subject::of_type(&self.known_type(actor, id).await?),
+            OfferSubject::LabelGroup(id) => Subject::of_group(&self.known_group(actor, id).await?),
         })
     }
 

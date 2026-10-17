@@ -24426,7 +24426,7 @@
       "CheckAccessBody": {
         "type": "object",
         "description": "What a person can do in a place, and why.",
-        "required": ["person", "permissions", "fields", "kinds", "differs_by_type", "issue_types"],
+        "required": ["person", "permissions", "fields", "kinds", "differs_by_type"],
         "properties": {
           "differs_by_type": {
             "type": "boolean",
@@ -24455,7 +24455,7 @@
             "items": {
               "$ref": "#/components/schemas/IssueTypeRef"
             },
-            "description": "The issue types the question may ask about: those the place offers and that are not\nretired. The screen lists exactly these."
+            "description": "The issue types the question may ask about: those the place offers and that are not\nretired. The screen lists exactly these. Only there when `differs_by_type` is true."
           },
           "kinds": {
             "type": "array",

@@ -106,6 +106,32 @@ async fn a_new_type(fixture: &Fixture<'_>, project: Option<String>) -> Result<St
         .to_string())
 }
 
+/// An issue type created in the target project, the one that is there already if there is one: a
+/// route that only reads takes the same type for every actor, so the matrix does not use up the room
+/// of the project (`ISSUE_TYPES_MAX`).
+async fn a_type_of_the_target(fixture: &Fixture<'_>) -> Result<String, Failure> {
+    let target = fixture.project(Project::Target).to_string();
+    let listed = fixture
+        .rig()
+        .api()
+        .issue_types(
+            Rig::info(),
+            IssueTypesQuery {
+                session_token: fixture.admin_session().to_owned(),
+                cursor: None,
+                limit: 100,
+                project: Some(target.clone()),
+            },
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .into_value();
+    match listed.items.iter().find(|found| found.created_in.is_some()) {
+        Some(found) => Ok(found.id.to_string()),
+        None => a_new_type(fixture, Some(target)).await,
+    }
+}
+
 pub(super) async fn issue_request(
     fixture: &Fixture<'_>,
     operation: &str,
@@ -134,7 +160,7 @@ pub(super) async fn issue_request(
             "GET",
             format!(
                 "/api/v1/issue-types/{}/offers",
-                a_new_type(fixture, None).await?
+                a_type_of_the_target(fixture).await?
             ),
             None,
         ),

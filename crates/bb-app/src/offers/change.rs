@@ -83,7 +83,7 @@ pub async fn offers<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let shown = ctx.shown_to(&actor).await?;
-    let subject = ctx.offer_subject(&shown, input.subject).await?;
+    let subject = ctx.offer_subject(&actor, input.subject).await?;
     let rows = ctx.offer_rows(&shown, &subject).await?;
     let page = window(rows.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
@@ -109,7 +109,7 @@ pub async fn change_offers<S: AuthStore>(
 ) -> Result<Authorized<Offers>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let shown = ctx.shown_to(&actor).await?;
-    let subject = ctx.offer_subject(&shown, input.subject).await?;
+    let subject = ctx.offer_subject(&actor, input.subject).await?;
     if input.changes.is_empty() {
         return Err(ErrorCode::InvalidRequest.into());
     }
@@ -189,7 +189,7 @@ pub async fn change_offers<S: AuthStore>(
             )
         })?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    let now = ctx.offer_subject(&shown, input.subject).await?;
+    let now = ctx.offer_subject(&actor, input.subject).await?;
     Ok(held.authorize(Offers {
         rows: ctx.offer_rows(&shown, &now).await?,
         version: now.version,

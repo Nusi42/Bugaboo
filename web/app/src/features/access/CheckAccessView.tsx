@@ -41,7 +41,7 @@ export function CheckAccessView({ project }: CheckAccessViewProps) {
       {answer.data?.differs_by_type === true ? (
         <IssueTypeChoice
           label={t("check-access.issue-type-question")}
-          types={answer.data.issue_types}
+          types={answer.data.issue_types ?? []}
           type={issueType}
           onChange={setIssueType}
         />

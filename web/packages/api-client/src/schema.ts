@@ -3767,9 +3767,9 @@ export interface components {
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /**
        * @description The issue types the question may ask about: those the place offers and that are not
-       *     retired. The screen lists exactly these.
+       *     retired. The screen lists exactly these. Only there when `differs_by_type` is true.
        */
-      issue_types: components["schemas"]["IssueTypeRef"][];
+      issue_types?: components["schemas"]["IssueTypeRef"][];
       /** @description Every kind of people information. */
       kinds: components["schemas"]["LevelAnswerBody_PeopleKind_PeopleLevel"][];
       /** @description Every permission that counts here. */

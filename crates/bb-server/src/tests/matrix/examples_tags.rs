@@ -5,7 +5,7 @@
 //! the matrix in the target project (`examples_issues::an_issue`). The routes of the people who
 //! look after tags and labels make what they work on first, as the administrator.
 
-use bb_app::tags::{AddTag, CreateLabel, CreateLabelGroup};
+use bb_app::tags::{AddTag, CreateLabel, CreateLabelGroup, LabelGroupsQuery};
 use bb_testing::Failure;
 use serde_json::json;
 
@@ -61,6 +61,32 @@ async fn a_group(fixture: &Fixture<'_>, project: Option<String>) -> Result<Strin
         .into_value()
         .id
         .to_string())
+}
+
+/// A group of labels created in the target project, the one that is there already if there is one
+/// (a route that only reads takes the same group for every actor, so the matrix does not use up the
+/// room of the project).
+async fn a_group_of_the_target(fixture: &Fixture<'_>) -> Result<String, Failure> {
+    let target = target_of(fixture);
+    let listed = fixture
+        .rig()
+        .api()
+        .label_groups(
+            Rig::info(),
+            LabelGroupsQuery {
+                session_token: fixture.admin_session().to_owned(),
+                project: Some(target.clone()),
+                cursor: None,
+                limit: 100,
+            },
+        )
+        .await
+        .map_err(|error| error.to_string())?
+        .into_value();
+    match listed.items.first() {
+        Some(found) => Ok(found.id.to_string()),
+        None => a_group(fixture, Some(target)).await,
+    }
 }
 
 /// A label made by the administrator, in no group: its ID.
@@ -211,7 +237,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             "GET",
             format!(
                 "/api/v1/label-groups/{}/offers",
-                a_group(fixture, None).await?
+                a_group_of_the_target(fixture).await?
             ),
             None,
         ),

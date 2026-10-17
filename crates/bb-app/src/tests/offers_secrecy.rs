@@ -17,7 +17,7 @@ use super::offers::{
     refused, types, version_of,
 };
 use super::scenarios_issues::an_issue;
-use super::workflows_rules::member;
+use super::workflows_rules::{assign, member, starting_role};
 use super::world::{Outcome, PASSWORD, World};
 use crate::auth::{AppError, CreateAccessKey, create_access_key};
 use crate::issues::{CreateIssueType, MoveIssue, create_issue_type, move_issue};
@@ -561,5 +561,89 @@ async fn sec_03_an_issue_of_a_type_the_writer_does_not_know_is_not_found() -> Ou
     )
     .await;
     assert!(refused(&create, ErrorCode::NotFound));
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_06_a_group_in_use_is_unknown_to_a_reader_whose_role_hides_the_labels() -> Outcome {
+    use bb_core::access::FieldLevel;
+    use bb_core::fields::{Field, FieldKey};
+
+    use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
+
+    let g = groups().await?;
+    let world = &g.world;
+    // An issue with a label of the group of ACME leaves for OTHER.
+    let issue = an_issue(world, g.acme).await?;
+    label_on(world, &g.admin, issue, g.login).await?;
+    move_issue(
+        &world.ctx(),
+        MoveIssue {
+            session_token: g.admin.clone(),
+            issue: issue.to_string(),
+            version: 2,
+            project: "OTHER".to_owned(),
+        },
+    )
+    .await?;
+    // Two readers of OTHER: a Team member, and a copy of that role that does not see the labels.
+    let member_role = starting_role(world, StartingRole::TeamMember).await?;
+    let blind = copy_role(
+        &world.ctx(),
+        CopyRole {
+            session_token: g.admin.clone(),
+            role: member_role,
+            name: "Blind to labels".to_owned(),
+        },
+    )
+    .await?
+    .into_value();
+    set_level(
+        &world.ctx(),
+        SetFieldLevel {
+            session_token: g.admin.clone(),
+            role: blind.id,
+            project: None,
+            issue_type: None,
+            field: FieldKey::BuiltIn(Field::Labels),
+            level: Some(FieldLevel::Hidden),
+        },
+    )
+    .await?;
+    let sighted = member(world, "sia@example.test", StartingRole::TeamMember, g.other).await?;
+    let ron = world.person("ron@example.test").await?;
+    assign(world, &ron, blind.id, g.other).await?;
+    // The one who may see the labels of the issue is told of the group; the other is not.
+    let knows = all_labels(world, &sighted.session_token, None).await?;
+    assert!(knows.groups.iter().any(|each| each.id == g.area));
+    let blind_to = all_labels(world, &ron.session_token, None).await?;
+    assert!(blind_to.groups.iter().all(|each| each.id != g.area));
+    assert!(blind_to.labels.iter().all(|each| each.id != g.login));
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_03_a_lead_who_knows_a_project_they_cannot_see_is_told_the_same_by_the_list_and_the_put()
+-> Outcome {
+    let g = groups().await?;
+    let world = &g.world;
+    let lia = lead_of(world, "lia@example.test", g.acme).await?;
+    crate::roles::assign_role(
+        &world.ctx(),
+        crate::roles::AssignRole {
+            session_token: g.admin.clone(),
+            subject: crate::roles::Subject::Person(lia.person.id),
+            given: crate::roles::Given::NoAccess,
+            project: Some(g.sub),
+            applies_to: bb_core::access::AppliesTo::ProjectAndSubProjects,
+        },
+    )
+    .await?;
+    let bug = another_type(world).await?;
+    // SUB is known to the lead (they decide who has which role there) but not seen: the list about
+    // it is answered, and a row for it is refused for the permission, not as a project not there.
+    types(world, &lia.session_token, Some("SUB")).await?;
+    let put = change(world, &lia.session_token, bug, vec![at("SUB", Some(false))]).await;
+    assert!(refused(&put, ErrorCode::Forbidden));
     Ok(())
 }

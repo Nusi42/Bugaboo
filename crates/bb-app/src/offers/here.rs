@@ -35,7 +35,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let (Some(found), chain) = self.place_of_request(address).await? else {
             return Ok(None);
         };
-        if !shown.sees(found.id) {
+        if !shown.knows(found.id) {
             return Err(ErrorCode::NotFound.into());
         }
         Ok(Some(Here {

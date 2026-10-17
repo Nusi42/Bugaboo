@@ -99,16 +99,7 @@ pub async fn issue_types<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     let here = ctx.offers_here(&shown, input.project.as_deref()).await?;
-    // A list about a project holds the types that can reach it, and no others.
-    let types: Vec<IssueType> = ctx
-        .known_types(&shown, types)
-        .await?
-        .into_iter()
-        .filter(|found| {
-            here.as_ref()
-                .is_none_or(|here| here.reached_by(found.project))
-        })
-        .collect();
+    let types = ctx.listed_types(&shown, here.as_ref(), types).await?;
     let page = window(types.len(), input.cursor.as_deref(), input.limit)
         .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     Ok(held.authorize(IssueTypePage {
@@ -309,8 +300,7 @@ pub async fn change_issue_type<S: AuthStore>(
         .ok_or(AppError::Refused(ErrorCode::NotFound))?
         .clone();
     // A type the person may not know is not there for them (`offers/known.rs`).
-    let shown = ctx.shown_to(&actor).await?;
-    let current = ctx.known_type(&shown, current.id).await?;
+    let current = ctx.known_type(&actor, current.id).await?;
     let place = Place::from(current.project);
     let held = ctx
         .require(&actor, Permission::ManageIssueTypes, place)

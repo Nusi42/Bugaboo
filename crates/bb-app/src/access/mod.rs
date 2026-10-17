@@ -121,6 +121,17 @@ pub enum ProjectLabel {
 
 impl Masked for ProjectLabel {}
 
+impl ProjectLabel {
+    /// The project as a name the person may use: the one place that builds it.
+    pub(crate) fn of(project: &bb_core::project::Project) -> Self {
+        Self::Visible {
+            id: project.id,
+            short_name: project.short_name.to_string(),
+            name: project.name.clone(),
+        }
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Who asks: the signed-in person behind a cookie, or the owner of an access key (`bb_...`,
     /// sent as `Authorization: Bearer`). Use cases that judge a permission start here; what
@@ -335,11 +346,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .project(project)
             .await
             .map_err(|error| internal::<S>(&error))?
-            .map_or(ProjectLabel::Hidden, |found| ProjectLabel::Visible {
-                id: found.id,
-                short_name: found.short_name.to_string(),
-                name: found.name,
-            }))
+            .as_ref()
+            .map_or(ProjectLabel::Hidden, ProjectLabel::of))
     }
 }
 
