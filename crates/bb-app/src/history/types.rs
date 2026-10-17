@@ -5,7 +5,7 @@
 //! *Assigned to* and *Reported by* say, and an issue another row names is a line only when the
 //! reader may see it.
 
-use bb_core::history::HistoryTab;
+use bb_core::history::{FileEvent, HistoryTab};
 use bb_core::id::EventId;
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
@@ -85,30 +85,6 @@ pub struct FieldChangeView {
     pub after: Option<ChangeValue>,
 }
 
-/// What happened to a file of an issue.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum FileEvent {
-    /// The file was added.
-    Added,
-    /// The file was put into the trash.
-    Deleted,
-    /// The file was brought back from the trash (*Undo*).
-    Restored,
-}
-
-impl FileEvent {
-    /// The word the API says it with.
-    #[must_use]
-    pub const fn word(self) -> &'static str {
-        match self {
-            Self::Added => "added",
-            Self::Deleted => "deleted",
-            Self::Restored => "restored",
-        }
-    }
-}
-
 /// What a row of the history says.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -127,8 +103,9 @@ pub enum HistoryWhat {
     File {
         /// What happened.
         event: FileEvent,
-        /// The name of the file.
-        name: String,
+        /// The name of the file, read from the file itself: none once the file is gone for good
+        /// (the history keeps no name after the file is deleted, it is the person's content).
+        name: Option<String>,
     },
     /// A relation to another issue was added or taken away.
     Relation {

@@ -4280,6 +4280,11 @@ export interface components {
       /** @description The field is not limited to projects. */
       whole_organization: boolean;
     };
+    /**
+     * @description What happened to a file of an issue: added, deleted or brought back.
+     * @enum {string}
+     */
+    FileEvent: "added" | "deleted" | "restored";
     /** @description What the reader may add to an issue and the limits of its project. */
     FileRulesItem: {
       /**
@@ -4471,8 +4476,7 @@ export interface components {
       field_kind?: components["schemas"]["FieldType"] | null;
       /** @description A change of an own field: its name. */
       field_name?: string | null;
-      /** @description A file: `added`, `deleted` or `restored`. */
-      file_event?: string | null;
+      file_event?: components["schemas"]["FileEvent"] | null;
       /** @description A file: its name. */
       file_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this reader. */
@@ -5921,8 +5925,7 @@ export interface components {
         field_kind?: components["schemas"]["FieldType"] | null;
         /** @description A change of an own field: its name. */
         field_name?: string | null;
-        /** @description A file: `added`, `deleted` or `restored`. */
-        file_event?: string | null;
+        file_event?: components["schemas"]["FileEvent"] | null;
         /** @description A file: its name. */
         file_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this reader. */

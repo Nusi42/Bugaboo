@@ -121,8 +121,23 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         {
             return Vec::new();
         }
+        // The row keeps what says which file and what happened to it, and not the name, the content
+        // or the type of the file: the name is read from the file while it is there, and is the
+        // person's content, which the history does not keep after the file is deleted.
+        let kept = event
+            .changes
+            .iter()
+            .filter(|change| change.field == file_member::DELETED_AT)
+            .chain(
+                event
+                    .changes
+                    .iter()
+                    .filter(|change| change.field == file_member::ISSUE),
+            )
+            .cloned()
+            .collect();
         return issue_in(&event.changes, file_member::ISSUE, true)
-            .map(|issue| vec![row(issue, HistoryKind::Change, event.changes.clone())])
+            .map(|issue| vec![row(issue, HistoryKind::Change, kept)])
             .unwrap_or_default();
     }
     if kind_is(RecordKind::Relation) {

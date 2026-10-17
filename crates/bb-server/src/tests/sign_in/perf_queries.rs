@@ -11,14 +11,16 @@ use bb_store::Database;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
+use super::files_http::upload;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, ok, text_in};
 
 /// The most statements any read of the issue page or the list may run, however much the issue has
 /// (a ceiling that a change to the code has to notice; the exact numbers are compared apart). The
 /// workflows that count (ADR-0031) are two statements for a request, and one when no place uses a
-/// stored workflow; with them the ceiling went from 45 to 46.
-const AT_MOST: usize = 46;
+/// stored workflow; with them the ceiling went from 45 to 46. The files that a page of history
+/// names are read in one statement, which made it 47.
+const AT_MOST: usize = 47;
 
 /// Counts the statements a database runs between one look and the next.
 struct Counter<'a> {
@@ -85,10 +87,12 @@ struct Size {
     tags: usize,
     labels: usize,
     followers: usize,
+    /// Files of the issue: each is a row in its history.
+    files: usize,
 }
 
 /// Gives the issue `amount` of everything the page reads: related issues, sub-issues, comments that
-/// mention a person and name an issue, tags, labels, and followers.
+/// mention a person and name an issue, tags, labels, files and followers.
 async fn fill(
     site: &Site<'_>,
     ada: &mut Browser,
@@ -157,6 +161,9 @@ async fn fill(
             )
             .await?)?;
     }
+    for number in 0..amount.files {
+        upload(ada, issue, &format!("file{number}.txt"), b"the same bytes").await?;
+    }
     // The followers are people of their own: each follows the issue from their own session. Both
     // issues of the test have as many, because every different person on a page costs the
     // statements of their own access (M3-F113).
@@ -187,6 +194,7 @@ async fn perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_is
             tags: 2,
             labels: 2,
             followers: 1,
+            files: 2,
         };
         let many = Size {
             relations: 8,
@@ -195,6 +203,7 @@ async fn perf_05_the_reads_of_an_issue_page_run_as_many_statements_for_a_busy_is
             tags: 5,
             labels: 4,
             followers: 1,
+            files: 7,
         };
         fill(&site, &mut ada, &quiet, &named, two).await?;
         fill(&site, &mut ada, &busy, &named, many).await?;

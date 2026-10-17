@@ -16,7 +16,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::{Field, FieldKey};
-use bb_core::history::{HistoryEntry, HistoryKind, HistoryTab};
+use bb_core::history::{FileEvent, HistoryEntry, HistoryKind, HistoryTab};
 use bb_core::id::{AttachmentId, CommentId, FieldId, IssueId, IssueTypeId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::paging::page_len;
@@ -26,7 +26,7 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef};
 use serde_json::Value;
 
 use super::types::{
-    ChangeValue, FieldChangeView, FileEvent, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
+    ChangeValue, FieldChangeView, HistoryItem, HistoryPage, HistoryQuery, HistoryWhat,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -38,6 +38,7 @@ use crate::member::relation as relation_member;
 use crate::projects::ProjectRef;
 use crate::relations::LineMaker;
 use bb_core::comment::Comment;
+use bb_core::files::Attachment;
 use bb_core::issue::Issue;
 
 /// How a member of the event of an issue is shown.
@@ -108,6 +109,8 @@ struct Batch<'a> {
     comments: BTreeMap<CommentId, Comment>,
     issues: BTreeMap<IssueId, Issue>,
     kinds: &'a [RelationKind],
+    /// The files the rows of files name, also the ones in the trash.
+    files: BTreeMap<AttachmentId, Attachment>,
     /// The own fields, to name them and to read their values.
     fields: Arc<Vec<Definition>>,
 }
@@ -489,21 +492,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         }))
     }
 
-    /// A file of the issue that was added, put into the trash or brought back; `None` for a file
-    /// that is no file of the issue itself (a file of a comment) or that is gone.
-    async fn file_change(&self, row: &HistoryEntry) -> Result<Option<HistoryWhat>, AppError> {
-        let Some(attachment) = AttachmentId::from_bytes(row.record.to_bytes()).ok() else {
-            return Ok(None);
-        };
-        let Some(file) = self
-            .store()
-            .attachment(attachment)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .filter(|file| file.comment.is_none())
-        else {
-            return Ok(None);
-        };
+    /// A file of the issue that was added, put into the trash or brought back; `None` for a file of
+    /// a comment (it belongs to the comment). The name is the one the file has now, from the batch;
+    /// a file that is gone for good keeps its row, as "a file" with no name.
+    fn file_change(batch: &Batch<'_>, row: &HistoryEntry) -> Option<HistoryWhat> {
+        let file = AttachmentId::from_bytes(row.record.to_bytes())
+            .ok()
+            .and_then(|id| batch.files.get(&id));
+        if file.is_some_and(|file| file.comment.is_some()) {
+            return None;
+        }
         let deleted = row
             .changes
             .iter()
@@ -513,10 +511,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(change) if change.after.is_some() => FileEvent::Deleted,
             Some(_) => FileEvent::Restored,
         };
-        Ok(Some(HistoryWhat::File {
+        Some(HistoryWhat::File {
             event,
-            name: file.name,
-        }))
+            name: file.map(|file| file.name.clone()),
+        })
     }
 
     /// The project, when the reader sees it.
@@ -564,10 +562,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_iter()
             .map(|issue| (issue.id, issue))
             .collect();
+        let file_ids: Vec<AttachmentId> = rows
+            .iter()
+            .filter(|row| is_file(row))
+            .filter_map(|row| AttachmentId::from_bytes(row.record.to_bytes()).ok())
+            .collect();
+        let files = self
+            .store()
+            .attachments_by_ids(&file_ids)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|file| (file.id, file))
+            .collect();
         Ok(Batch {
             comments,
             issues,
             kinds,
+            files,
             fields: self.field_catalogue().await?,
         })
     }
@@ -596,7 +608,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             HistoryKind::Change => {
                 if is_file(row) {
-                    self.file_change(row).await?
+                    Self::file_change(batch, row)
                 } else if is_relation(row) {
                     self.relation_change(reading.actor, &mut reading.maker, issue.id, batch, row)
                         .await?

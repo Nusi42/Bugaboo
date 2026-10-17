@@ -50,6 +50,23 @@ words_in_api!(
     "Which rows of the history of an issue to list: everything, only the comments, or only the changes."
 );
 
+words! {
+    /// What happened to a file of an issue.
+    pub enum FileEvent {
+        /// The file was added.
+        Added => "added",
+        /// The file was put into the trash.
+        Deleted => "deleted",
+        /// The file was brought back from the trash (*Undo*).
+        Restored => "restored",
+    }
+}
+
+words_in_api!(
+    FileEvent,
+    "What happened to a file of an issue: added, deleted or brought back."
+);
+
 /// One row of the history of an issue.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct HistoryEntry {

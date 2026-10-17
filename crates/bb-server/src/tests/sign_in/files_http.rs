@@ -26,7 +26,7 @@ use super::rig::Rig;
 
 const UPLOADS: &str = "/api/v1/uploads";
 pub(super) const ATTACHMENTS: &str = "/api/v1/attachments";
-const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
+pub(super) const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
 
 /// The number of bytes of this many megabytes.
 fn megabytes(count: u64) -> usize {
@@ -153,7 +153,7 @@ fn on_disk(rig: &Rig, folder: &str) -> Vec<std::path::PathBuf> {
 }
 
 /// Runs the jobs that are due: the previews, and the daily clean-up.
-async fn run_jobs(rig: &Rig) -> Result<(), Failure> {
+pub(super) async fn run_jobs(rig: &Rig) -> Result<(), Failure> {
     let ctx = rig.services.ctx(RequestInfo::default());
     ctx.start_daily_jobs().await?;
     while ctx.run_due_jobs().await? > 0 {}

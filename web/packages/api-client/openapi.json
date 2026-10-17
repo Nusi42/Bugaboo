@@ -24796,6 +24796,11 @@
           }
         }
       },
+      "FileEvent": {
+        "type": "string",
+        "description": "What happened to a file of an issue: added, deleted or brought back.",
+        "enum": ["added", "deleted", "restored"]
+      },
       "FileRulesItem": {
         "type": "object",
         "description": "What the reader may add to an issue and the limits of its project.",
@@ -25242,8 +25247,15 @@
             "description": "A change of an own field: its name."
           },
           "file_event": {
-            "type": ["string", "null"],
-            "description": "A file: `added`, `deleted` or `restored`."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileEvent",
+                "description": "A file: what happened to it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "file_name": {
             "type": ["string", "null"],
@@ -28547,8 +28559,15 @@
                   "description": "A change of an own field: its name."
                 },
                 "file_event": {
-                  "type": ["string", "null"],
-                  "description": "A file: `added`, `deleted` or `restored`."
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FileEvent",
+                      "description": "A file: what happened to it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "file_name": {
                   "type": ["string", "null"],

@@ -9,7 +9,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat};
-use bb_core::history::HistoryTab;
+use bb_core::history::{FileEvent, HistoryTab};
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
 use bb_policy::{Masked, PersonRef};
@@ -169,9 +169,9 @@ pub(crate) struct HistoryEntryItem {
     /// A relation: the issue at the other end.
     #[serde(skip_serializing_if = "Option::is_none")]
     issue: Option<IssueRef>,
-    /// A file: `added`, `deleted` or `restored`.
+    /// A file: what happened to it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    file_event: Option<String>,
+    file_event: Option<FileEvent>,
     /// A file: its name.
     #[serde(skip_serializing_if = "Option::is_none")]
     file_name: Option<String>,
@@ -253,8 +253,8 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
             .collect(),
         HistoryWhat::File { event, name } => {
             let mut item = start(row, HistoryEntryKind::File);
-            item.file_event = Some(event.word().to_owned());
-            item.file_name = Some(name.clone());
+            item.file_event = Some(*event);
+            item.file_name.clone_from(name);
             vec![item]
         }
         HistoryWhat::Relation {
@@ -393,7 +393,7 @@ mod tests {
             relation: Some(String::new()),
             direction: Some(Direction::Forward),
             issue: Some(line()),
-            file_event: Some(String::new()),
+            file_event: Some(FileEvent::Added),
             file_name: Some(String::new()),
         };
         crate::lean::assert_fields_are_the_keys_of(&HISTORY_FIELDS, &item);

@@ -65,6 +65,17 @@ impl AttachmentStore for FakeStore {
         }))
     }
 
+    async fn attachments_by_ids(&self, ids: &[AttachmentId]) -> Result<Vec<Attachment>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .attachments
+                .iter()
+                .filter(|attachment| ids.contains(&attachment.id))
+                .cloned()
+                .collect()
+        }))
+    }
+
     async fn stored_files(&self, hashes: &[Digest]) -> Result<Vec<StoredFile>, FakeError> {
         Ok(self.read(|state| {
             state
