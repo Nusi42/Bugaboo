@@ -2001,6 +2001,9 @@ pub const ISSUES_NEW: MessageKey = MessageKey::new("issues.new");
 /// The message `issues.new-title`.
 pub const ISSUES_NEW_TITLE: MessageKey = MessageKey::new("issues.new-title");
 
+/// The message `issues.no-issue-type`.
+pub const ISSUES_NO_ISSUE_TYPE: MessageKey = MessageKey::new("issues.no-issue-type");
+
 /// The message `issues.nothing`.
 pub const ISSUES_NOTHING: MessageKey = MessageKey::new("issues.nothing");
 
@@ -10114,6 +10117,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.more-issues", "Show more issues"),
     ("issues.new", "New issue"),
     ("issues.new-title", "New issue"),
+    (
+        "issues.no-issue-type",
+        "This project offers no issue type. Ask who looks after the project.",
+    ),
     ("issues.nothing", "There are no issues here yet."),
     ("issues.of-project", "Issues of this project"),
     ("issues.open-full-page", "Open full page"),

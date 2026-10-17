@@ -104,6 +104,9 @@ export const messages = {
   "projects.offered-in-picked": "Line for {place}",
   "projects.offered-in-state": "Offered there?",
   "projects.offered-in-save": "Save the line",
+  "projects.offered-in-created-organization": "Created for the whole organization.",
+  "projects.offered-in-created-project":
+    "Created in {project}. Offered there and below until a line says otherwise.",
 } as const;
 
 register(messages);

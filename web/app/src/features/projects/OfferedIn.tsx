@@ -15,6 +15,7 @@ import { useState } from "react";
 
 import { pageSize } from "../../shared/paged.ts";
 import { pickerStatus, usePickerFrame } from "../../shared/picker-status.ts";
+import { offerStateName } from "./offer-state.ts";
 import { linesOf, useProjectList } from "./use-projects.ts";
 
 /** One line that says where something is offered, as the server sends it (the fields can be missing). */
@@ -28,6 +29,8 @@ export interface OfferChangeLine {
 }
 
 export interface OfferedInProps {
+  /** Where the issue type or the group was created: a project, or the whole organization (none). */
+  readonly createdIn: Schema<"PlaceRef"> | undefined;
   /** The lines there are. */
   readonly rows: readonly OfferLine[];
   readonly isPending: boolean;
@@ -52,9 +55,23 @@ function placeName(place: OfferLine["place"]): string {
   return place.kind === "project" ? place.name : t("projects.offer-whole-organization");
 }
 
-/** What a line says about the place: offered or not. */
-function stateName(offered: boolean | null | undefined): string {
-  return offered === true ? t("projects.offer-state-offered") : t("projects.offer-state-not");
+/** The key of a line: its place, so the lines of two places never share one. */
+function keyOf(place: OfferLine["place"], position: number): string {
+  const project = projectOf(place);
+  if (project === undefined) {
+    return `hidden-${String(position)}`;
+  }
+  return project ?? "organization";
+}
+
+/** Where it was created, as a sentence. */
+function createdText(createdIn: Schema<"PlaceRef"> | undefined): string {
+  if (createdIn?.kind === "project") {
+    return t("projects.offered-in-created-project", { project: createdIn.name });
+  }
+  return createdIn?.kind === "hidden"
+    ? t("projects.offered-in-created-project", { project: t("projects.offer-hidden-project") })
+    : t("projects.offered-in-created-organization");
 }
 
 /** A place the person picked to add a line for. */
@@ -115,8 +132,8 @@ function NewLine({
       <SelectField
         label={t("projects.offered-in-state")}
         choices={[
-          { value: OFFERED, label: t("projects.offer-state-offered") },
-          { value: NOT_OFFERED, label: t("projects.offer-state-not") },
+          { value: OFFERED, label: offerStateName(true) },
+          { value: NOT_OFFERED, label: offerStateName(false) },
         ]}
         value={state}
         onChange={setState}
@@ -137,9 +154,12 @@ function NewLine({
 
 /** The form that adds a line: pick a place, then say whether it is offered there. */
 function AddLine({
+  forWholeOrganization,
   isPending,
   onChange,
 }: {
+  /** Whether the whole organization is a place to offer it in: not for what a project created. */
+  readonly forWholeOrganization: boolean;
   readonly isPending: boolean;
   readonly onChange: (change: OfferChangeLine) => void;
 }) {
@@ -148,16 +168,18 @@ function AddLine({
     <div {...partOf(part.stack)}>
       <h4 {...partOf(part.fieldLabel)}>{t("projects.offered-in-add")}</h4>
       <PlacePicker onPick={setPicked} />
-      <div {...partOf(part.row)}>
-        <Button
-          look={buttonLook.quiet}
-          onPress={() => {
-            setPicked({ project: null, name: t("projects.offer-whole-organization") });
-          }}
-        >
-          {t("projects.offer-whole-organization")}
-        </Button>
-      </div>
+      {forWholeOrganization ? (
+        <div {...partOf(part.row)}>
+          <Button
+            look={buttonLook.quiet}
+            onPress={() => {
+              setPicked({ project: null, name: t("projects.offer-whole-organization") });
+            }}
+          >
+            {t("projects.offer-whole-organization")}
+          </Button>
+        </div>
+      ) : null}
       {picked === undefined ? (
         <p {...partOf(part.muted)}>{t("projects.offered-in-pick-first")}</p>
       ) : (
@@ -187,12 +209,12 @@ function Lines({
 }) {
   return (
     <ul {...partOf(part.list)} aria-label={t("projects.offered-in-list")}>
-      {rows.map((row) => {
+      {rows.map((row, position) => {
         const name = placeName(row.place);
         const project = projectOf(row.place);
         return (
-          <li key={project ?? "organization"} {...partOf(part.item)}>
-            <span>{t("projects.offer-line", { name, state: stateName(row.offered) })}</span>
+          <li key={keyOf(row.place, position)} {...partOf(part.item)}>
+            <span>{t("projects.offer-line", { name, state: offerStateName(row.offered) })}</span>
             {row.may_change === true && project !== undefined ? (
               <Button
                 look={buttonLook.quiet}
@@ -217,10 +239,13 @@ function Lines({
  * the lines that say where it is offered, each with a button that takes it away, and the form that
  * adds one. Without a line it is offered in every project.
  */
-export function OfferedIn({ rows, isPending, error, onChange }: OfferedInProps) {
+export function OfferedIn({ createdIn, rows, isPending, error, onChange }: OfferedInProps) {
+  // What a project created is offered in that project and below, never for the whole organization.
+  const forWholeOrganization = createdIn?.kind !== "project";
   return (
     <section {...partOf(part.stack)} aria-label={t("projects.offered-in-title")}>
       <h3 {...partOf(part.accessTopic)}>{t("projects.offered-in-title")}</h3>
+      <p {...partOf(part.muted)}>{createdText(createdIn)}</p>
       {rows.length === 0 ? (
         <p {...partOf(part.text)}>{t("projects.offered-in-everywhere")}</p>
       ) : (
@@ -230,7 +255,11 @@ export function OfferedIn({ rows, isPending, error, onChange }: OfferedInProps) 
         </>
       )}
       {error === null ? null : <Alert tone={alertTone.danger}>{error}</Alert>}
-      <AddLine isPending={isPending} onChange={onChange} />
+      <AddLine
+        forWholeOrganization={forWholeOrganization}
+        isPending={isPending}
+        onChange={onChange}
+      />
     </section>
   );
 }

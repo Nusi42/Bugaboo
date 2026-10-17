@@ -39,7 +39,7 @@ export function CheckAccessView({ project }: CheckAccessViewProps) {
       ) : null}
       {answer.isError ? <Alert tone={alertTone.danger}>{messageOf(answer.error)}</Alert> : null}
       {answer.data?.differs_by_type === true ? (
-        <IssueTypeQuestion value={issueType} onChange={setIssueType} />
+        <IssueTypeQuestion project={where} value={issueType} onChange={setIssueType} />
       ) : null}
       {answer.data === undefined ? null : <CheckAnswer answer={answer.data} />}
     </div>

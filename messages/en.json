@@ -1422,6 +1422,7 @@
   "issues.new-title": "New issue",
   "issues.project": "Project",
   "issues.type": "Type",
+  "issues.no-issue-type": "This project offers no issue type. Ask who looks after the project.",
   "issues.create": "Create",
   "issues.create-another": "Create and start another",
   "issues.missing-title": "Write a title first, then you can create and start another.",

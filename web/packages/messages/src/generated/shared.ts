@@ -681,9 +681,6 @@ export const messages = {
     "How many old files of the server log are kept next to the current one. Older ones are deleted.",
   "error.handle.changed-lately":
     "You changed your handle only a short time ago. You can change it again later.",
-  "projects.offered-in-created-organization": "Created for the whole organization.",
-  "projects.offered-in-created-project":
-    "Created in {project}. Offered there and below until a line says otherwise.",
   "issue-types.project-title": "Issue types of {project}",
   "labels.project-title": "Labels of {project}",
   "error.mail.insecure":

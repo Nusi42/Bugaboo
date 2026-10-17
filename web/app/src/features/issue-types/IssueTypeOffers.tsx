@@ -1,4 +1,3 @@
-import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
@@ -7,14 +6,6 @@ import { pageSize } from "../../shared/paged.ts";
 import { refreshIssueTypes } from "../../shared/query-keys.ts";
 import { OfferedIn } from "../projects/index.ts";
 import type { IssueTypeLine } from "./issue-types.ts";
-
-/** Where the place of creation of a type says it is offered, as a sentence. */
-function createdText(issueType: IssueTypeLine): string {
-  const place = issueType.createdIn;
-  return place?.kind === "project"
-    ? t("projects.offered-in-created-project", { project: place.name })
-    : t("projects.offered-in-created-organization");
-}
 
 /**
  * *Offered in* for an issue type (ISS-02): where it was created, the lines that say where it is
@@ -34,8 +25,8 @@ export function IssueTypeOffers({ issueType }: { readonly issueType: IssueTypeLi
   });
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.muted)}>{createdText(issueType)}</p>
       <OfferedIn
+        createdIn={issueType.createdIn}
         rows={rows.data?.items ?? []}
         isPending={change.isPending}
         error={change.isError ? messageOf(change.error) : null}

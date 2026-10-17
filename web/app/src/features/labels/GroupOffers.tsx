@@ -1,4 +1,3 @@
-import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
@@ -6,13 +5,6 @@ import { messageOf } from "../../shared/errors.ts";
 import { pageSize } from "../../shared/paged.ts";
 import { OfferedIn } from "../projects/index.ts";
 import { refreshLabels, type LabelGroup } from "./labels.ts";
-
-/** Where the place of creation of a group says it is offered, as a sentence. */
-function createdText(group: LabelGroup): string {
-  return group.created_in.kind === "project"
-    ? t("projects.offered-in-created-project", { project: group.created_in.name })
-    : t("projects.offered-in-created-organization");
-}
 
 /**
  * *Offered in* for a group of labels (TAG-02): where it was created, the lines that say where it
@@ -31,8 +23,8 @@ export function GroupOffers({ group }: { readonly group: LabelGroup }) {
   });
   return (
     <div {...partOf(part.stack)}>
-      <p {...partOf(part.muted)}>{createdText(group)}</p>
       <OfferedIn
+        createdIn={group.created_in}
         rows={rows.data?.items ?? []}
         isPending={change.isPending}
         error={change.isError ? messageOf(change.error) : null}

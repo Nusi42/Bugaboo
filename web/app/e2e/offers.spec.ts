@@ -113,12 +113,11 @@ test("tag_02 a Project lead creates a group of labels for Website, and Lab does 
   await signOut(page);
   await signIn(page, ada);
   await page.goto(addressInProject(paths.projectLabels, "LAB"));
-  // Lab is no place of the group: it is told, and there is no switch to press.
+  // Lab is no place the group can reach: the screen of Lab does not list it at all.
   await expect(
-    page.getByText(
-      t("projects.offer-line", { name: "Area", state: t("projects.offer-state-not") }),
-    ),
+    page.getByRole("heading", { level: 1, name: t("labels.project-title", { project: "Lab" }) }),
   ).toBeVisible();
+  await expect(page.getByText("Area", { exact: true })).toHaveCount(0);
 });
 
 test("sec_03 Check access asks which issue type only when the levels differ by type", async ({

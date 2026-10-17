@@ -2,6 +2,8 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, Switch, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
+import { offerStateName } from "./offer-state.ts";
+
 export interface OfferedHereProps {
   /** What is offered or not: the name of the issue type or of the group of labels. */
   readonly name: string;
@@ -49,7 +51,7 @@ export function OfferedHere({
           <span>
             {t("projects.offer-line", {
               name,
-              state: offered ? t("projects.offer-state-offered") : t("projects.offer-state-not"),
+              state: offerStateName(offered),
             })}
           </span>
         )}
