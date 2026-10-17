@@ -4320,12 +4320,6 @@ part "files.row" {
     use "surface-box"
 }
 
-// An upload that was refused or lost: the edge says it, and the words next to it.
-part "files.row[state=refused]" {
-    border-color "$danger"
-    background "$danger-soft"
-}
-
 part "files.tile" {
     display flex
     align-items center
@@ -4380,7 +4374,8 @@ part "files.meta" {
     use "quiet-text"
 }
 
-// The words of a refusal and its buttons: on one line, the buttons at the end, like the rows of files.
+// The words of a refusal and its buttons: side by side when they fit, the buttons at the end like in
+// the rows of files; when they do not, the buttons come under the words, at their left edge.
 part "files.refusal" {
     display flex
     flex-wrap wrap

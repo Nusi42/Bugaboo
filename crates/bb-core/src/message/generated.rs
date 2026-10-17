@@ -1364,6 +1364,9 @@ pub const FILES_DOWNLOAD: MessageKey = MessageKey::new("files.download");
 /// The message `files.drop`.
 pub const FILES_DROP: MessageKey = MessageKey::new("files.drop");
 
+/// The message `files.drop-place`.
+pub const FILES_DROP_PLACE: MessageKey = MessageKey::new("files.drop-place");
+
 /// The message `files.for-comment`.
 pub const FILES_FOR_COMMENT: MessageKey = MessageKey::new("files.for-comment");
 
@@ -9014,6 +9017,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "files.drop",
         "Drop files here, paste a screenshot, or use Upload.",
     ),
+    ("files.drop-place", "Place to drop files for this issue"),
     ("files.empty", "{name} is empty, so it was not added."),
     ("files.for-comment", "Files that go with the comment"),
     (

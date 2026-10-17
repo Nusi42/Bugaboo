@@ -7,6 +7,7 @@ export const messages = {
   "files.upload": "Upload",
   "files.none": "No files yet.",
   "files.of-issue": "Files of this issue",
+  "files.drop-place": "Place to drop files for this issue",
   "files.of-comment": "Files of this comment",
   "files.added": "{size} · Added by {who}, {when}",
   "files.download": "Download",

@@ -934,7 +934,7 @@ export const partWords = {
   "history.entry": { variant: ["comment"], state: [] },
   "history.when": { variant: [], state: [] },
   "files.drop": { variant: [], state: [] },
-  "files.row": { variant: [], state: ["refused"] },
+  "files.row": { variant: [], state: [] },
   "files.tile": { variant: ["picture"], state: [] },
   "files.picture": { variant: [], state: [] },
   "files.info": { variant: [], state: [] },

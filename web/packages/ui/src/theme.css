@@ -4679,11 +4679,6 @@ body {
   background: var(--bg-surface);
 }
 
-[data-part="files.row"][data-state~="refused"] {
-  border-color: var(--danger);
-  background: var(--danger-soft);
-}
-
 [data-part="files.tile"] {
   display: flex;
   align-items: center;

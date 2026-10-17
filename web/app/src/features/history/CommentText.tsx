@@ -6,10 +6,12 @@ import { CommentEditor } from "./CommentEditor.tsx";
 
 /** The text of a comment: as it reads, or in the editor while its writer changes it. */
 export function CommentText({
+  issue,
   entry,
   editing,
   onClose,
 }: {
+  readonly issue: string;
   readonly entry: Schema<"HistoryEntryItem">;
   readonly editing: boolean;
   readonly onClose: () => void;
@@ -20,6 +22,7 @@ export function CommentText({
   if (editing && id !== undefined && id !== null) {
     return (
       <CommentEditor
+        issue={issue}
         comment={id}
         version={versionOf(entry)}
         text={entry.text ?? ""}

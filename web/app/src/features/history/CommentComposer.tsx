@@ -88,6 +88,7 @@ export function CommentComposer({ issue }: { readonly issue: string }) {
         value={text}
         onChange={setText}
         imageHosts={noImageHosts}
+        onFiles={chosen.add}
       />
       <p {...partOf(part.muted)}>{t("comments.write-help")}</p>
       {typed === undefined ? null : (

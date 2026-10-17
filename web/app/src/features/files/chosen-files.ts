@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { useFileRules } from "./files.ts";
 import { transfers } from "./transfers.ts";
@@ -38,4 +38,21 @@ export function useChosenFiles(issue: string): ChosenFiles {
 /** What tells one chosen file from another in a list: the same file may be chosen twice. */
 export function chosenKey(file: File, at: number): string {
   return [file.name, file.size, file.lastModified, at].join("-");
+}
+
+/**
+ * Where the files pasted into the box of an existing comment go: to that comment, as if they were
+ * added with *Add files* under it.
+ */
+export function useFilesToComment(
+  issue: string,
+  comment: string,
+): (files: readonly File[]) => void {
+  const limit = useFileRules(issue).data?.limit_bytes ?? 0;
+  return useCallback(
+    (files) => {
+      transfers.add({ issue, comment }, files, limit);
+    },
+    [issue, comment, limit],
+  );
 }

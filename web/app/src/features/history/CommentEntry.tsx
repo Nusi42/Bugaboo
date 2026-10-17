@@ -30,6 +30,7 @@ export function CommentEntry({
       </span>
       {edited ? <span {...partOf(part.historyWhen)}>{t("comments.edited")}</span> : null}
       <CommentText
+        issue={issue}
         entry={entry}
         editing={editing}
         onClose={() => {

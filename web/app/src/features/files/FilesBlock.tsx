@@ -39,12 +39,12 @@ export function FilesBlock({ readableId }: { readonly readableId: string }) {
       </h2>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {mayAdd ? (
-        <FileDrop label={t("files.of-issue")} chooseLabel={t("files.upload")} onFiles={add}>
+        <FileDrop label={t("files.drop-place")} chooseLabel={t("files.upload")} onFiles={add}>
           <span>{t("files.drop")}</span>
         </FileDrop>
       ) : null}
-      <TransferRows items={sending} />
       <FileRows items={items} issue={readableId} label={t("files.of-issue")} />
+      <TransferRows items={sending} />
       {list.isSuccess && items.length === 0 && sending.length === 0 ? (
         <p {...partOf(part.muted)}>{t("files.none")}</p>
       ) : null}
