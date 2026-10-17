@@ -153,15 +153,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(StatusChecked { group })
     }
 
-    /// The status changes from `status` that the person may make now, each with what it still
-    /// needs. An issue in a status that its workflow does not have may go to any status of it.
-    pub(crate) async fn status_changes_of(
+    /// What the judge says about every status change from `status`, each with the status it ends in
+    /// and the text of its button. An issue in a status that its workflow does not have may go to
+    /// any status of it, and the button is the name of that status.
+    pub(crate) async fn status_verdicts(
         &self,
         check: &StatusCheck<'_>,
         workflow: &WorkflowContent,
         status: &StatusKey,
-    ) -> Result<Vec<StatusChangeView>, AppError> {
-        let mut views = Vec::new();
+    ) -> Result<Vec<(StatusView, String, Verdict)>, AppError> {
         let targets: Vec<(&StatusKey, String)> = if workflow.status(status).is_some() {
             workflow
                 .changes_from(status)
@@ -174,21 +174,35 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map(|each| (&each.key, each.name.clone()))
                 .collect()
         };
+        let mut verdicts = Vec::with_capacity(targets.len());
         for (to, button) in targets {
-            let needs = match self.status_verdict(check, workflow, status, to).await? {
-                Verdict::Allowed => Vec::new(),
-                Verdict::Needs(fields) => fields,
-                Verdict::NotAllowed(_) => continue,
-            };
             let Some(entered) = workflow.status(to) else {
                 continue;
             };
-            views.push(StatusChangeView {
-                to: StatusView::from(entered),
-                button,
-                needs,
-            });
+            let verdict = self.status_verdict(check, workflow, status, to).await?;
+            verdicts.push((StatusView::from(entered), button, verdict));
         }
-        Ok(views)
+        Ok(verdicts)
+    }
+
+    /// The status changes from `status` that the person may make now, each with what it still
+    /// needs.
+    pub(crate) async fn status_changes_of(
+        &self,
+        check: &StatusCheck<'_>,
+        workflow: &WorkflowContent,
+        status: &StatusKey,
+    ) -> Result<Vec<StatusChangeView>, AppError> {
+        Ok(self
+            .status_verdicts(check, workflow, status)
+            .await?
+            .into_iter()
+            .filter_map(|(to, button, verdict)| match verdict {
+                Verdict::Allowed => Some((to, button, Vec::new())),
+                Verdict::Needs(fields) => Some((to, button, fields)),
+                Verdict::NotAllowed(_) => None,
+            })
+            .map(|(to, button, needs)| StatusChangeView { to, button, needs })
+            .collect())
     }
 }

@@ -21,7 +21,7 @@ use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, Re
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
     FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId, LabelId, LayoutId, ProjectId,
-    RelationKindId, RoleId, TagId, UserId,
+    RelationKindId, RoleId, TagId, UserId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -257,6 +257,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             RecordKind::Field
             | RecordKind::RelationKind
             | RecordKind::Layout
+            | RecordKind::Workflow
             | RecordKind::LabelGroup
             | RecordKind::Label
             | RecordKind::Tag => self.version_in_list(kind, bytes).await?,
@@ -302,6 +303,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(failed)?
             .map(|stored| stored.layout.version),
+            RecordKind::Workflow => found(WorkflowId::from_bytes(bytes).ok(), |id| {
+                store.stored_workflow(id)
+            })
+            .await
+            .map_err(failed)?
+            .map(|stored| stored.workflow.version),
             RecordKind::LabelGroup => {
                 let id = LabelGroupId::from_bytes(bytes).ok();
                 store

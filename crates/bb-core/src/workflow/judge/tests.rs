@@ -119,7 +119,7 @@ fn wf_01_a_status_change_the_workflow_does_not_have_is_not_allowed() {
 }
 
 #[test]
-fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people() {
+fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people_in_the_judge() {
     let mut source = SequentialIds::default();
     let lead = RoleId::generate(&mut source).unwrap();
     let member = RoleId::generate(&mut source).unwrap();
@@ -189,7 +189,7 @@ fn wf_03_who_can_do_it_allows_only_the_named_roles_and_people() {
 }
 
 #[test]
-fn wf_03_a_rule_never_gives_a_right_change_issues_does_not() {
+fn wf_03_a_rule_never_gives_a_right_change_issues_does_not_in_the_judge() {
     // The change names everybody, or the reporter and the assigned: still, a person who may not
     // change the status of the issue is turned away.
     for who in [
@@ -218,7 +218,7 @@ fn wf_03_a_rule_never_gives_a_right_change_issues_does_not() {
 }
 
 #[test]
-fn wf_03_only_if_refuses_with_a_sentence() {
+fn wf_03_only_if_refuses_with_a_sentence_in_the_judge() {
     let field = customer();
     let workflow = simple_with(StatusRules {
         only_if: vec![Condition {
@@ -252,7 +252,7 @@ fn wf_03_only_if_refuses_with_a_sentence() {
 }
 
 #[test]
-fn wf_04_must_be_filled_in_names_the_missing_field() {
+fn wf_04_must_be_filled_in_names_the_missing_field_in_the_judge() {
     let field = customer();
     let workflow = simple_with(StatusRules {
         must_fill: vec![field, description()],
@@ -296,7 +296,7 @@ fn wf_04_ask_for_needs_the_fields_the_request_does_not_carry() {
 }
 
 #[test]
-fn wf_04_ask_for_never_asks_for_a_hidden_field() {
+fn wf_04_ask_for_never_asks_for_a_hidden_field_in_the_judge() {
     let hidden = customer();
     for rules in [
         StatusRules {
@@ -377,5 +377,108 @@ fn wf_03_every_reason_has_its_own_error_code_and_message() {
                 .render()
                 .is_empty()
         );
+    }
+}
+
+mod properties {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    /// A few fields to name in rules: two built-in and two of the organization.
+    fn pool() -> [FieldKey; 4] {
+        let mut source = SequentialIds::default();
+        [
+            description(),
+            FieldKey::BuiltIn(Field::AssignedTo),
+            FieldKey::Own(FieldId::generate(&mut source).unwrap()),
+            FieldKey::Own(FieldId::generate(&mut source).unwrap()),
+        ]
+    }
+
+    fn level() -> impl Strategy<Value = FieldLevel> {
+        prop_oneof![
+            Just(FieldLevel::Hidden),
+            Just(FieldLevel::CanSee),
+            Just(FieldLevel::CanChange)
+        ]
+    }
+
+    fn some_of(fields: &[FieldKey; 4], chosen: [bool; 4]) -> Vec<FieldKey> {
+        fields
+            .iter()
+            .zip(chosen)
+            .filter_map(|(field, yes)| yes.then_some(*field))
+            .collect()
+    }
+
+    proptest! {
+        #[test]
+        fn wf_03_whatever_the_rules_are_they_give_no_right_and_name_no_hidden_field(
+            levels in proptest::array::uniform4(level()),
+            filled in proptest::array::uniform4(any::<bool>()),
+            given in proptest::array::uniform4(any::<bool>()),
+            ask_for in proptest::array::uniform4(any::<bool>()),
+            must_fill in proptest::array::uniform4(any::<bool>()),
+            only_if in proptest::array::uniform4(any::<bool>()),
+            is_empty_test in any::<bool>(),
+            who_assigned in any::<bool>(),
+            who_reporter in any::<bool>(),
+            may_change_status in any::<bool>(),
+            assigned in any::<bool>(),
+            reporter in any::<bool>(),
+        ) {
+            let fields = pool();
+            let mut facts = Facts::default();
+            for (index, field) in fields.iter().enumerate() {
+                facts = facts.can(*field, levels[index]);
+                if filled[index] {
+                    facts = facts.with_value(*field);
+                }
+                if given[index] {
+                    facts = facts.carrying(*field);
+                }
+            }
+            let test = if is_empty_test { Test::Empty } else { Test::Filled };
+            let workflow = simple_with(StatusRules {
+                who: WhoCan {
+                    assigned: who_assigned,
+                    reporter: who_reporter,
+                    ..WhoCan::default()
+                },
+                only_if: some_of(&fields, only_if)
+                    .into_iter()
+                    .map(|field| Condition { field, test })
+                    .collect(),
+                must_fill: some_of(&fields, must_fill),
+                ask_for: some_of(&fields, ask_for),
+            });
+            let changer = Changer {
+                may_change_status,
+                assigned,
+                reporter,
+                ..anyone()
+            };
+            let verdict = judged(&workflow, &changer, &facts);
+            // A rule never gives a right (WF-03).
+            if !may_change_status {
+                prop_assert!(matches!(verdict, Verdict::NotAllowed(_)), "{verdict:?}");
+            }
+            // A field the person may not see is never named, and none they may not change is asked
+            // for (SEC-06, WF-04).
+            let named: Vec<FieldKey> = match &verdict {
+                Verdict::Allowed => Vec::new(),
+                Verdict::Needs(needed) => {
+                    for field in needed {
+                        prop_assert_eq!(facts.level(*field), FieldLevel::CanChange);
+                    }
+                    needed.clone()
+                }
+                Verdict::NotAllowed(because) => because.field.into_iter().collect(),
+            };
+            for field in named {
+                prop_assert!(facts.level(field) > FieldLevel::Hidden, "{verdict:?}");
+            }
+        }
     }
 }

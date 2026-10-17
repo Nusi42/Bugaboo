@@ -133,30 +133,45 @@ async fn delete_content(transaction: &mut Transaction, id: WorkflowId) -> Result
     Ok(())
 }
 
-/// The statuses and status changes of these workflows, three reads for any number of them.
-async fn read_contents(
-    transaction: &mut Transaction,
-    ids: &[WorkflowId],
-) -> Result<Vec<(WorkflowId, WorkflowContent)>, StoreError> {
-    let wanted: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
+/// The columns of the header that the read of the statuses brings along.
+#[derive(Clone, Copy)]
+enum HeaderOf {
+    Name,
+    Version,
+}
+
+impl sea_query::Iden for HeaderOf {
+    fn unquoted(&self) -> &str {
+        match self {
+            Self::Name => "workflow_name",
+            Self::Version => "workflow_version",
+        }
+    }
+}
+
+fn statuses_select(wanted: Vec<Vec<u8>>) -> sea_query::SelectStatement {
     let mut statuses = Query::select();
     statuses
         .columns([
-            WorkflowStatusRow::Workflow,
-            WorkflowStatusRow::Key,
-            WorkflowStatusRow::Name,
-            WorkflowStatusRow::StatusGroup,
-            WorkflowStatusRow::Position,
+            (WorkflowStatusRow::Table, WorkflowStatusRow::Workflow),
+            (WorkflowStatusRow::Table, WorkflowStatusRow::Key),
+            (WorkflowStatusRow::Table, WorkflowStatusRow::Name),
+            (WorkflowStatusRow::Table, WorkflowStatusRow::StatusGroup),
+            (WorkflowStatusRow::Table, WorkflowStatusRow::Position),
         ])
         .from(WorkflowStatusRow::Table)
-        .and_where(Expr::col(WorkflowStatusRow::Workflow).is_in(wanted.clone()))
-        .order_by(WorkflowStatusRow::Position, Order::Asc);
-    let statuses = transaction
-        .fetch_all(&statuses)
-        .await?
-        .iter()
-        .map(read_status)
-        .collect::<Result<Vec<_>, StoreError>>()?;
+        .and_where(Expr::col((WorkflowStatusRow::Table, WorkflowStatusRow::Workflow)).is_in(wanted))
+        .order_by(
+            (WorkflowStatusRow::Table, WorkflowStatusRow::Position),
+            Order::Asc,
+        );
+    statuses
+}
+
+async fn read_changes(
+    transaction: &mut Transaction,
+    wanted: Vec<Vec<u8>>,
+) -> Result<Vec<StoredChange>, StoreError> {
     let mut changes = Query::select();
     changes
         .columns([
@@ -170,27 +185,49 @@ async fn read_contents(
         .from(WorkflowChangeRow::Table)
         .and_where(Expr::col(WorkflowChangeRow::Workflow).is_in(wanted))
         .order_by(WorkflowChangeRow::Position, Order::Asc);
-    let changes = transaction
+    transaction
         .fetch_all(&changes)
         .await?
         .iter()
         .map(read_change)
+        .collect()
+}
+
+/// The content of the workflow `id` out of rows of any number of workflows.
+fn content_of(
+    id: WorkflowId,
+    statuses: &[StoredStatus],
+    changes: &[StoredChange],
+) -> WorkflowContent {
+    let own_statuses: Vec<StoredStatus> = statuses
+        .iter()
+        .filter(|status| status.workflow == id)
+        .cloned()
+        .collect();
+    let own_changes: Vec<StoredChange> = changes
+        .iter()
+        .filter(|change| change.workflow == id)
+        .cloned()
+        .collect();
+    WorkflowContent::from_rows(&own_statuses, &own_changes)
+}
+
+/// The statuses and status changes of these workflows, two reads for any number of them.
+async fn read_contents(
+    transaction: &mut Transaction,
+    ids: &[WorkflowId],
+) -> Result<Vec<(WorkflowId, WorkflowContent)>, StoreError> {
+    let wanted: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
+    let statuses = transaction
+        .fetch_all(&statuses_select(wanted.clone()))
+        .await?
+        .iter()
+        .map(read_status)
         .collect::<Result<Vec<_>, StoreError>>()?;
+    let changes = read_changes(transaction, wanted).await?;
     Ok(ids
         .iter()
-        .map(|id| {
-            let own_statuses: Vec<StoredStatus> = statuses
-                .iter()
-                .filter(|status| status.workflow == *id)
-                .cloned()
-                .collect();
-            let own_changes: Vec<StoredChange> = changes
-                .iter()
-                .filter(|change| change.workflow == *id)
-                .cloned()
-                .collect();
-            (*id, WorkflowContent::from_rows(&own_statuses, &own_changes))
-        })
+        .map(|id| (*id, content_of(*id, &statuses, &changes)))
         .collect())
 }
 
@@ -288,23 +325,52 @@ impl WorkflowStore for AuthStorage {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let mut select = header_select();
+        // The header comes with the statuses (every workflow has one), so that this is two reads.
+        let wanted: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
+        let mut select = statuses_select(wanted.clone());
         select
-            .and_where(Expr::col(WorkflowRow::Id).is_in(ids.iter().map(|id| id.stored())))
-            .order_by(WorkflowRow::Id, Order::Asc);
-        let headers = transaction
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_header)
-            .collect::<Result<Vec<_>, StoreError>>()?;
-        let found: Vec<WorkflowId> = headers.iter().map(|header| header.id).collect();
-        let mut contents = read_contents(transaction, &found).await?;
+            .expr_as(
+                Expr::col((WorkflowRow::Table, WorkflowRow::Name)),
+                HeaderOf::Name,
+            )
+            .expr_as(
+                Expr::col((WorkflowRow::Table, WorkflowRow::Version)),
+                HeaderOf::Version,
+            )
+            .inner_join(
+                WorkflowRow::Table,
+                Expr::col((WorkflowStatusRow::Table, WorkflowStatusRow::Workflow))
+                    .equals((WorkflowRow::Table, WorkflowRow::Id)),
+            );
+        let rows = transaction.fetch_all(&select).await?;
+        let mut statuses = Vec::with_capacity(rows.len());
+        let mut headers: Vec<Workflow> = Vec::new();
+        for row in &rows {
+            let status = read_status(row)?;
+            if !headers.iter().any(|header| header.id == status.workflow) {
+                headers.push(Workflow {
+                    id: status.workflow,
+                    name: row.get(HeaderOf::Name)?,
+                    version: row.get(HeaderOf::Version)?,
+                });
+            }
+            statuses.push(status);
+        }
+        headers.sort_by_key(|header| header.id);
+        let changes = read_changes(transaction, wanted).await?;
         Ok(headers
             .into_iter()
-            .zip(contents.drain(..))
-            .map(|(workflow, (_, content))| StoredWorkflow { workflow, content })
+            .map(|workflow| {
+                let content = content_of(workflow.id, &statuses, &changes);
+                StoredWorkflow { workflow, content }
+            })
             .collect())
+    }
+
+    async fn has_issues_in(transaction: &mut Transaction) -> Result<bool, StoreError> {
+        let mut select = Query::select();
+        select.column(IssueRow::Id).from(IssueRow::Table).limit(1);
+        Ok(!transaction.fetch_all(&select).await?.is_empty())
     }
 
     async fn issues_in_statuses_in(

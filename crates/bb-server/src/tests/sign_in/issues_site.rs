@@ -25,8 +25,9 @@ pub(super) struct Site<'a> {
     roles: BTreeMap<String, RoleId>,
     /// The ID of the project ACME.
     pub(super) acme: String,
-    /// The ID of the issue type *Bug*.
-    pub(super) bug: String,
+    /// The ID of the issue type the tests create issues of: *Task*, which uses the starter workflow
+    /// *Simple*, where any status can follow any other.
+    pub(super) kind: String,
 }
 
 impl<'a> Site<'a> {
@@ -47,9 +48,11 @@ impl<'a> Site<'a> {
             .ok_or("no project ID")?
             .to_owned();
         let types = ada.send("GET", "/api/v1/issue-types", None).await?;
-        let bug = types.body["items"][0]["id"]
-            .as_str()
-            .ok_or("no issue type on a started server")?
+        let kind = types.body["items"]
+            .as_array()
+            .and_then(|items| items.iter().find(|each| each["name"] == "Task"))
+            .and_then(|found| found["id"].as_str())
+            .ok_or("no issue type Task on a started server")?
             .to_owned();
         Ok((
             Self {
@@ -57,7 +60,7 @@ impl<'a> Site<'a> {
                 app,
                 roles,
                 acme,
-                bug,
+                kind,
             },
             ada,
         ))
@@ -150,7 +153,7 @@ impl<'a> Site<'a> {
 
     /// The body that makes an issue with this title.
     pub(super) fn new_issue(&self, title: &str) -> Value {
-        json!({"issue_type": self.bug, "title": title})
+        json!({"issue_type": self.kind, "title": title})
     }
 
     /// Creates an issue in ACME as `browser`; the answer.

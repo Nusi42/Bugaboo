@@ -18,6 +18,8 @@ use crate::auth::{
 use crate::context::Clock;
 use crate::editing::EditableRecords;
 use crate::first_start::first_start;
+use crate::issues::{CreateStartingIssueTypes, create_starting_issue_types};
+use crate::relations::{CreateStartingRelationKinds, create_starting_relation_kinds};
 
 pub(crate) use bb_dev_words::accounts::{CLOCK_START, OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
@@ -95,6 +97,29 @@ impl World {
             .await
             .map_err(text)?
             .ok_or("no setup code on a new store")?;
+        world.admin = world.first_administrator(code.as_str()).await?;
+        Ok(world)
+    }
+
+    /// The first start and the first administrator, before the starter workflows are made: an
+    /// organization as it was before workflows, or the moment before the last step of a start.
+    pub(crate) async fn new_without_workflows() -> Result<Self, String> {
+        let mut world = Self::bare()?;
+        let ctx = world.ctx();
+        create_starting_roles(&ctx, CreateStartingRoles)
+            .await
+            .map_err(text)?;
+        create_starting_issue_types(&ctx, CreateStartingIssueTypes)
+            .await
+            .map_err(text)?;
+        create_starting_relation_kinds(&ctx, CreateStartingRelationKinds)
+            .await
+            .map_err(text)?;
+        let code = issue_setup_code(&ctx, IssueSetupCode)
+            .await
+            .map_err(text)?
+            .ok_or("no setup code on a new store")?;
+        drop(ctx);
         world.admin = world.first_administrator(code.as_str()).await?;
         Ok(world)
     }

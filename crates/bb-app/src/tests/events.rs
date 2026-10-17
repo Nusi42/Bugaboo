@@ -17,6 +17,7 @@ use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
 use super::scenarios_relations as sr;
 use super::scenarios_tags as st;
+use super::scenarios_workflows as sw;
 use super::world::{Outcome, World};
 use crate::auth::USE_CASES;
 
@@ -25,11 +26,12 @@ use crate::auth::USE_CASES;
 type Scenario = for<'a> fn(&'a World) -> Pin<Box<dyn Future<Output = Added> + 'a>>;
 
 /// The use cases the server calls itself, at every start, and not through `AuthApi`.
-const SYSTEM_USE_CASES: [&str; 4] = [
+const SYSTEM_USE_CASES: [&str; 5] = [
     "issue_setup_code",
     "create_starting_roles",
     "create_starting_issue_types",
     "create_starting_relation_kinds",
+    "create_starting_workflows",
 ];
 
 /// The table: the name of the use case and its scenario. One line per command use case.
@@ -133,6 +135,11 @@ table! {
     "create_layout" => sl::create_layout_scenario,
     "save_layout" => sl::save_layout_scenario,
     "delete_layout" => sl::delete_layout_scenario,
+    "create_starting_workflows" => sw::create_starting_workflows_scenario,
+    "create_workflow" => sw::create_workflow_scenario,
+    "use_workflow" => sw::use_workflow_scenario,
+    "publish_workflow" => sw::publish_workflow_scenario,
+    "delete_workflow" => sw::delete_workflow_scenario,
 }
 
 #[test]

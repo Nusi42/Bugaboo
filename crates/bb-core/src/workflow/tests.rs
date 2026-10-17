@@ -1,5 +1,6 @@
 use super::starter::{BUG, DEVELOPMENT, DONE, IN_PROGRESS, OPEN, SIMPLE, STARTERS, Starter};
 use super::*;
+use crate::fields::Field;
 use crate::id::SequentialIds;
 
 fn key(text: &str) -> StatusKey {
@@ -121,7 +122,7 @@ fn wf_06_every_starter_status_is_reachable_and_can_be_left() {
 }
 
 #[test]
-fn wf_01_a_project_finds_its_workflow_like_a_layout() {
+fn wf_01_find_picks_the_nearest_place_and_an_issue_type_over_all_types() {
     let Ids {
         parent,
         child,
@@ -189,6 +190,10 @@ fn wf_02_a_workflow_breaks_a_rule_when_it_cannot_work() {
         Err(Problem::KeyTwice)
     );
     assert_eq!(
+        broken(|c| c.statuses[1].name = " OPEN ".into()),
+        Err(Problem::NameTwice)
+    );
+    assert_eq!(
         broken(|c| c.statuses[0].name = "  ".into()),
         Err(Problem::NameEmpty)
     );
@@ -243,6 +248,61 @@ fn wf_02_the_statuses_a_workflow_drops_are_the_ones_it_no_longer_has() {
         .retain(|change| change.from.as_str() != "testing" && change.to.as_str() != "testing");
     assert_eq!(before.dropped_by(&after), [key("testing")]);
     assert!(after.dropped_by(&before).is_empty());
+}
+
+fn draft(key: Option<&str>, name: &str, group: StatusGroup) -> StatusDraft {
+    StatusDraft {
+        key: key.map(|text| StatusKey::new(text).unwrap()),
+        name: name.to_owned(),
+        group,
+    }
+}
+
+fn change_draft(from: &str, to: &str, button: &str) -> ChangeDraft {
+    ChangeDraft {
+        from: from.to_owned(),
+        to: to.to_owned(),
+        button: button.to_owned(),
+        rules: StatusRules::default(),
+    }
+}
+
+#[test]
+fn wf_02_a_new_status_gets_a_key_and_a_status_change_names_it_by_its_name() {
+    let statuses = [
+        draft(Some("open"), "Open", StatusGroup::NotStarted),
+        draft(None, "In QA", StatusGroup::InProgress),
+        draft(Some("done"), "Done", StatusGroup::Done),
+    ];
+    let changes = [
+        change_draft("open", "In QA", "Send to QA"),
+        change_draft(" in qa ", "done", "Pass"),
+        change_draft("done", "open", "Reopen"),
+    ];
+    let content = WorkflowContent::from_drafts(&statuses, &changes).unwrap();
+    let keys: Vec<&str> = content
+        .statuses
+        .iter()
+        .map(|each| each.key.as_str())
+        .collect();
+    assert_eq!(keys, ["open", "in-qa", "done"]);
+    assert_eq!(content.changes[0].to.as_str(), "in-qa");
+    assert_eq!(content.changes[1].from.as_str(), "in-qa");
+    // A key that the workflow has counts before a name; a status that is not there is not one.
+    let unknown = [change_draft("open", "nowhere", "Go")];
+    assert_eq!(
+        WorkflowContent::from_drafts(&statuses, &unknown),
+        Err(Problem::UnknownStatus)
+    );
+    // Two new statuses with the same words get keys of their own, and then are one problem.
+    let twice = [
+        draft(None, "In QA", StatusGroup::InProgress),
+        draft(None, "in qa", StatusGroup::InProgress),
+    ];
+    assert_eq!(
+        WorkflowContent::from_drafts(&twice, &[]),
+        Err(Problem::NameTwice)
+    );
 }
 
 #[test]

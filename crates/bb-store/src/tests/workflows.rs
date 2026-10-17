@@ -112,7 +112,7 @@ async fn wf_01_a_workflow_comes_back_as_stored_and_a_save_needs_the_version_it_s
 }
 
 #[tokio::test]
-async fn wf_01_the_uses_of_workflows_are_found_by_their_place_like_a_layout() -> TestResult {
+async fn wf_01_a_project_finds_its_workflow_like_a_layout() -> TestResult {
     each_database("wf_01_store_uses", async |db| {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;

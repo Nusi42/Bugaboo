@@ -67,7 +67,7 @@ pub(super) async fn other_type(site: &Site<'_>, ada: &mut Browser) -> Result<Str
             items
                 .iter()
                 .filter_map(|item| item["id"].as_str())
-                .find(|id| *id != site.bug)
+                .find(|id| *id != site.kind)
         })
         .map(str::to_owned)
         .ok_or_else(|| "no second issue type on a started server".into())
@@ -135,13 +135,13 @@ async fn sec_04_the_description_is_judged_by_the_levels_of_the_type_of_the_issue
                 (Field::Description.into(), None, FieldLevel::CanSee),
                 (
                     Field::Description.into(),
-                    Some(&site.bug),
+                    Some(&site.kind),
                     FieldLevel::CanChange,
                 ),
             ],
         )
         .await?;
-        let (bug_key, bug_id) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (bug_key, bug_id) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         let (task_key, _) = issue_of_type(&site, &mut ada, &task, "A task").await?;
         // On the task the text is read-only: refused whatever the lock.
         let refused = tim
@@ -191,9 +191,9 @@ async fn sec_06_a_related_issue_is_shown_by_the_levels_of_its_own_type() -> Test
             ],
         )
         .await?;
-        let (bug, _) = issue_of_type(&site, &mut ada, &site.bug, "The bug").await?;
+        let (bug, _) = issue_of_type(&site, &mut ada, &site.kind, "The bug").await?;
         let (hidden, _) = issue_of_type(&site, &mut ada, &task, "The hidden title").await?;
-        let (shown, _) = issue_of_type(&site, &mut ada, &site.bug, "The shown title").await?;
+        let (shown, _) = issue_of_type(&site, &mut ada, &site.kind, "The shown title").await?;
         let kind = ada.send("GET", "/api/v1/relation-kinds", None).await?;
         let blocks = kind.body["items"][0]["id"]
             .as_str()
@@ -279,11 +279,11 @@ async fn sec_06_a_conflict_names_no_field_the_type_of_the_issue_hides() -> TestR
             &[
                 (Field::Title.into(), None, FieldLevel::CanChange),
                 (Field::Priority.into(), None, FieldLevel::CanChange),
-                (Field::Priority.into(), Some(&site.bug), FieldLevel::Hidden),
+                (Field::Priority.into(), Some(&site.kind), FieldLevel::Hidden),
             ],
         )
         .await?;
-        let (bug, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (bug, _) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         ok(&ada
             .send(
                 "PATCH",
@@ -328,13 +328,13 @@ async fn sec_04_who_may_be_assigned_follows_the_levels_of_the_type_of_the_issue(
                 (Field::AssignedTo.into(), None, FieldLevel::CanSee),
                 (
                     Field::AssignedTo.into(),
-                    Some(&site.bug),
+                    Some(&site.kind),
                     FieldLevel::CanChange,
                 ),
             ],
         )
         .await?;
-        let (bug, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (bug, _) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         let (other, _) = issue_of_type(&site, &mut ada, &task, "A task").await?;
         let path = format!("/api/v1/projects/{}/assignable-people", site.acme);
         let on_bug = lou

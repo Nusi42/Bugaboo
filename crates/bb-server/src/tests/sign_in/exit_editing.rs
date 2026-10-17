@@ -70,7 +70,7 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
             .await?,
         )?;
         let part = format!("field-{notes}");
-        let (_, id) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (_, id) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         // A part that does not exist is refused like a record that is not there.
         for nonsense in ["nonsense", "field-nonsense", "layout"] {
             let taken = take(&mut ada, &id, nonsense).await?;
@@ -158,7 +158,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         let mut first = String::new();
         for number in 0..DRAFTS_PER_AUTHOR_MAX {
             let (_, id) =
-                issue_of_type(&site, &mut ada, &site.bug, &format!("Issue {number}")).await?;
+                issue_of_type(&site, &mut ada, &site.kind, &format!("Issue {number}")).await?;
             let kept = draft(&mut ada, &id, "description").await?;
             assert_eq!(kept.status, StatusCode::OK, "{number}: {}", kept.body);
             rig.clock.advance(1);
@@ -167,7 +167,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
             }
         }
         // A new draft at the cap is kept, and the oldest one goes.
-        let (_, one_more) = issue_of_type(&site, &mut ada, &site.bug, "One more").await?;
+        let (_, one_more) = issue_of_type(&site, &mut ada, &site.kind, "One more").await?;
         let kept = draft(&mut ada, &one_more, "description").await?;
         assert_eq!(kept.status, StatusCode::OK, "{}", kept.body);
         let read = |id: &str| format!("{DRAFTS}?kind=issue&id={id}&part=description");
@@ -176,7 +176,7 @@ async fn sec_06_past_the_cap_the_oldest_draft_goes_and_no_save_is_refused() -> T
         // A save with a lock nobody holds is refused as before (`edit.lock_lost`), and the text is kept as
         // the draft, though the person is at the cap.
         rig.clock.advance(1);
-        let (other, other_id) = issue_of_type(&site, &mut ada, &site.bug, "Another").await?;
+        let (other, other_id) = issue_of_type(&site, &mut ada, &site.kind, "Another").await?;
         let lost = ada
             .send(
                 "PUT",
@@ -215,7 +215,7 @@ async fn sec_04_releasing_a_stuck_lock_needs_the_right_to_change_the_record_too(
     each_database("sec_04_release_stuck", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (_, id) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (_, id) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         let levels = [
             (Field::Title.into(), None, FieldLevel::CanChange),
             (Field::Description.into(), None, FieldLevel::CanChange),
@@ -311,7 +311,7 @@ async fn sec_06_a_comment_and_a_layout_have_one_part_each() -> TestResult {
     each_database("sec_06_other_kinds_parts", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (key, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (key, _) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         let comment = ok(&ada
             .send(
                 "POST",

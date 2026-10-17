@@ -145,7 +145,7 @@ async fn sec_06_issue_answers_refuse_every_field_the_role_may_not_see() -> TestR
                 "POST",
                 &format!("{PROJECTS}/ACME/issues"),
                 Some(json!({
-                    "issue_type": site.bug,
+                    "issue_type": site.kind,
                     "title": "Seen by everyone",
                     "description": "Hidden from some",
                     "priority": "high",
@@ -259,7 +259,7 @@ async fn sec_04_an_unchanged_value_of_a_field_i_may_not_change_is_refused_like_a
                 "POST",
                 &format!("{PROJECTS}/ACME/issues"),
                 Some(json!({
-                    "issue_type": site.bug,
+                    "issue_type": site.kind,
                     "title": "Guess me",
                     "description": "A secret",
                     "priority": "high",

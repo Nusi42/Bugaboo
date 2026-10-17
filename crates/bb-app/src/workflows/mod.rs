@@ -6,16 +6,27 @@
 //! fields have a value) and turn its answer into an error or a list of buttons. There is no second
 //! place that decides a status change (ADR-0031 decision 3).
 
+mod editor;
 mod facts;
+mod publish;
 mod read;
+mod records;
 mod resolve;
+mod starting;
 mod status;
 mod store;
+mod try_it;
 mod types;
+mod write;
 
+pub use editor::{workflow_editor, workflows};
+pub use publish::publish_workflow;
 pub use read::{ProjectStatuses, ProjectStatusesQuery, project_statuses};
+pub use starting::{CreateStartingWorkflows, create_starting_workflows};
 pub use store::WorkflowStore;
-pub use types::{StatusChangeView, StatusView};
+pub use try_it::try_workflow;
+pub use types::*;
+pub use write::{create_workflow, delete_workflow, use_workflow};
 
 pub(crate) use resolve::WorkflowDirectory;
 pub(crate) use status::StatusCheck;

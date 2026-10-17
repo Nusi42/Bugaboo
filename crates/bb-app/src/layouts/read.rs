@@ -9,6 +9,7 @@ use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_core::layout::{Layout, LayoutContent, LayoutKind, LayoutPlace, built_in_fields, find};
+use bb_core::project::Project;
 use bb_policy::{Authorized, Evaluation, LevelSubject as _, Permission, Place};
 
 use super::effective::{Viewer, effective};
@@ -60,6 +61,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue_type: Option<IssueTypeId>,
         kind: LayoutKind,
     ) -> Result<Where, AppError> {
+        let (found, chain) = self.place_of_request(project).await?;
+        Ok(Where {
+            project: found.as_ref().map(ProjectRef::from),
+            chain,
+            issue_type,
+            kind,
+        })
+    }
+
+    /// The project a request for an editor names (it must exist for the person) and the projects
+    /// from the top down to it: both empty for the organization.
+    pub(crate) async fn place_of_request(
+        &self,
+        project: Option<&str>,
+    ) -> Result<(Option<Project>, Vec<ProjectId>), AppError> {
         let found = match project {
             Some(address) => Some(
                 self.find_project(address)
@@ -73,12 +89,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(project) => self.chain_of(project.id).await?,
             None => Vec::new(),
         };
-        Ok(Where {
-            project: found.as_ref().map(ProjectRef::from),
-            chain,
-            issue_type,
-            kind,
-        })
+        Ok((found, chain))
     }
 
     /// The own fields of issues that reach the place and the issue type, retired ones left out, in
@@ -357,7 +368,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    async fn issue_type_ref(&self, id: IssueTypeId) -> Result<Option<IssueTypeRef>, AppError> {
+    pub(crate) async fn issue_type_ref(
+        &self,
+        id: IssueTypeId,
+    ) -> Result<Option<IssueTypeRef>, AppError> {
         Ok(self
             .store()
             .issue_type(id)
@@ -367,14 +381,25 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(IssueTypeRef::from))
     }
 
-    /// Where an inherited layout is set, as the editor may know it: a project they cannot see is
-    /// not named.
+    /// Where an inherited layout is set, as the editor may know it.
     async fn inherited_from(
         &self,
         actor: &Actor,
         header: &Layout,
     ) -> Result<InheritedFrom, AppError> {
-        let project = match header.project {
+        self.inherited_from_place(actor, header.project, header.issue_type)
+            .await
+    }
+
+    /// Where an inherited layout or workflow is set (the project and the issue type of its row), as
+    /// the editor may know it: a project they cannot see is not named.
+    pub(crate) async fn inherited_from_place(
+        &self,
+        actor: &Actor,
+        set_for: Option<ProjectId>,
+        issue_type: Option<IssueTypeId>,
+    ) -> Result<InheritedFrom, AppError> {
+        let project = match set_for {
             Some(id) => {
                 let held = self.evaluation_of(actor, Place::Project(id)).await?;
                 if held.sees_project() {
@@ -391,9 +416,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             None => None,
         };
         Ok(InheritedFrom {
-            whole_organization: header.project.is_none(),
+            whole_organization: set_for.is_none(),
             project,
-            issue_type: match header.issue_type {
+            issue_type: match issue_type {
                 Some(id) => self.issue_type_ref(id).await?,
                 None => None,
             },

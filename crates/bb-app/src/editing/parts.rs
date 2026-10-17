@@ -2,14 +2,14 @@
 //!
 //! Each kind of record lists its valid parts: an issue has its `description` and the long text of
 //! an own field (`field-<id>`) that the role of the person lets them see (to read a lock) or change
-//! (to take one or keep a draft); a comment has its `text`, a layout the `layout`, a project its
+//! (to take one or keep a draft); a comment has its `text`, a layout the `layout`, a workflow the `workflow`, a project its
 //! `description`. A part that is not valid, or that the person may not see, is refused like a record
 //! that is not there, so a lock or a draft cannot be used to find a hidden field or to fill the disk.
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::comment::TEXT_PART;
-use bb_core::edit::{EditWhat, LAYOUT_PART};
+use bb_core::edit::{EditWhat, LAYOUT_PART, WORKFLOW_PART};
 use bb_core::event::{EntityKind, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{FieldId, IssueId};
@@ -60,6 +60,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let listed = if *kind == EntityKind::from(RecordKind::Layout) {
             part == LAYOUT_PART
+        } else if *kind == EntityKind::from(RecordKind::Workflow) {
+            part == WORKFLOW_PART
         } else if *kind == EntityKind::from(RecordKind::Comment) {
             part == TEXT_PART
         } else if *kind == EntityKind::from(RecordKind::Project) {

@@ -60,6 +60,10 @@ pub(super) enum Quirk {
     /// `resource.not_found`, as for an issue that is not there; a person who sees the issue and
     /// lacks the permission of the route is refused.
     AnIssueOfTheTarget,
+    /// The route asks about a field of issues (M3-F53): a field that the actor's roles give no
+    /// level for, as the role that holds exactly the permission, is not there for them
+    /// (`resource.not_found`), and no role is named for it.
+    NamesAField,
     /// The route takes something out of the trash: a person who sees the issue and lacks the
     /// permission is told `resource.not_found`, as for something that is not in the trash, and
     /// not that they are refused (SEC-06).
@@ -317,6 +321,14 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("saveLayout", &[Quirk::AtTheTargetProject]),
     Example::with("deleteLayout", &[Quirk::AtTheTargetProject]),
     Example::with("getProjectStatuses", &[Quirk::HidesUnseen]),
+    Example::with("getWhoMayChange", &[Quirk::HidesUnseen, Quirk::NamesAField]),
+    Example::with("listWorkflows", &[Quirk::AtTheTargetProject]),
+    Example::with("getWorkflowEditor", &[Quirk::AtTheTargetProject]),
+    Example::with("createWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("useWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("publishWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("deleteWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("tryWorkflow", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),
     Example::with("createIssue", &[Quirk::NeedsToSeeTheProject]),
@@ -476,7 +488,7 @@ pub(super) async fn request(
     if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {
         return Ok(found);
     }
-    if let Some(found) = super::examples_workflows::workflow_request(fixture, operation)? {
+    if let Some(found) = super::examples_workflows::workflow_request(fixture, operation).await? {
         return Ok(found);
     }
     Err(format!("{operation} has a row in the table but no request").into())

@@ -497,6 +497,46 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
+        "getWhoMayChange",
+        Declared::Permission(Permission::SeeIssues),
+        Answer::Ordinary,
+    ),
+    route(
+        "listWorkflows",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::NeverStored,
+    ),
+    route(
+        "getWorkflowEditor",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::NeverStored,
+    ),
+    route(
+        "createWorkflow",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::Ordinary,
+    ),
+    route(
+        "useWorkflow",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::Ordinary,
+    ),
+    route(
+        "publishWorkflow",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::Ordinary,
+    ),
+    route(
+        "deleteWorkflow",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::Ordinary,
+    ),
+    route(
+        "tryWorkflow",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::NeverStored,
+    ),
+    route(
         "getFormLayout",
         Declared::Permission(Permission::SeeProjects),
         Answer::NeverStored,

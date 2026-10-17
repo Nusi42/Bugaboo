@@ -201,9 +201,10 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult 
             .await?;
         ok(&other)?;
         let types = ada.send("GET", "/api/v1/issue-types", None).await?;
-        let task = ok(&types)?["items"][1]["id"]
+        // The type the tests create issues of is the second; the first is the other one.
+        let task = ok(&types)?["items"][0]["id"]
             .as_str()
-            .ok_or("no second issue type")?
+            .ok_or("no other issue type")?
             .to_owned();
         let bug = key_of(&site.create(&mut ada, "A bug").await?)?;
         let made = ada
@@ -270,7 +271,7 @@ pub(super) async fn targets_for_a_job(rig: &Rig, site: &Site<'_>) -> Result<Vec<
                 CreateIssue {
                     session_token: site.org.admin.session.clone(),
                     project: site.acme.clone(),
-                    issue_type: site.bug.parse().map_err(|_| "no type ID")?,
+                    issue_type: site.kind.parse().map_err(|_| "no type ID")?,
                     title: format!("Issue {number}"),
                     description: None,
                     status: None,

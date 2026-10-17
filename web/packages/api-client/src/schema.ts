@@ -1601,6 +1601,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/issues/{issue}/status-changes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * *Try it*: the status changes a person would get on an issue, and why not the others. Needs the
+     *     permission *Manage workflows* in the project of the issue.
+     */
+    get: operations["tryWorkflow"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/issues/{issue}/sub-issues": {
     parameters: {
       query?: never;
@@ -2446,6 +2466,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/projects/{project}/who-may-change/{field}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Which roles may change a field in the issues of a project, as the reader may know them: only
+     *     roles somebody holds there are named, and a reader who is not shown the people of the project
+     *     by role is named none. Needs the permission *See issues*.
+     */
+    get: operations["getWhoMayChange"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/relation-kinds": {
     parameters: {
       query?: never;
@@ -2801,6 +2842,98 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/workflows": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The workflows there are, by name, for choosing one for a place. Needs the permission *Manage
+     *     workflows* at the place.
+     */
+    get: operations["listWorkflows"];
+    put?: never;
+    /**
+     * Creates the workflow of a place as a copy of the one that counts there (*Customize*). Needs the
+     *     permission *Manage workflows* at the place.
+     */
+    post: operations["createWorkflow"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/workflows/editor": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The workflow that counts at a place, for somebody who may change it: its statuses, status
+     *     changes and rules, with the roles, groups and fields the rules can name. Needs the permission
+     *     *Manage workflows* at the place.
+     */
+    get: operations["getWorkflowEditor"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/workflows/uses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Says which workflow a place uses, or that it follows its parent again. Needs the permission
+     *     *Manage workflows* at the place.
+     */
+    put: operations["useWorkflow"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/workflows/{workflow}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Publishes a workflow under the edit lock the person holds: the statuses, the status changes and
+     *     their rules are replaced by what is sent, on the version the person looked at. A status that is
+     *     dropped while issues are in it needs a place to move them to, and they are moved by a change to
+     *     many issues, with history. Needs the permission *Manage workflows* wherever the workflow is
+     *     used.
+     */
+    put: operations["publishWorkflow"];
+    post?: never;
+    /**
+     * Takes a workflow away together with the places it was used at: those places follow their
+     *     parent again. Needs the permission *Manage workflows* wherever the workflow is used.
+     */
+    delete: operations["deleteWorkflow"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2990,6 +3123,17 @@ export interface components {
        * @description The version of the field the person looked at.
        */
       version: number;
+    };
+    /** @description A status change as the editor sends it. */
+    ChangeDraftBody: {
+      /** @description The text of the button. */
+      button: string;
+      /** @description The status it starts from: a key, or the name of a new status. */
+      from: string;
+      /** @description Its rules. */
+      rules?: components["schemas"]["StatusRulesBody"];
+      /** @description The status it ends in: a key, or the name of a new status. */
+      to: string;
     };
     /** @description What to change about an own field: what is left out stays as it is. */
     ChangeFieldBody: {
@@ -3201,6 +3345,15 @@ export interface components {
       before: string[];
       /** @description The issue, as the person sees it. */
       issue: components["schemas"]["IssueRef"];
+    };
+    /** @description A role that may change the field. */
+    ChangingRoleBody: {
+      /** @description The ID of the role. */
+      id: string;
+      /** @description Its name. */
+      name: string;
+      /** @description Whether it may change the field only in the issues its holders reported. */
+      own_only: boolean;
     };
     /** @description What a person can do in a place, and why. */
     CheckAccessBody: {
@@ -3497,6 +3650,17 @@ export interface components {
     EditWhatOnlyBody: {
       /** @description The thing somebody else is editing. */
       what: components["schemas"]["EditWhatBody"];
+    };
+    /** @description A status change in the editor. */
+    EditorChangeBody: {
+      /** @description The text of the button. */
+      button: string;
+      /** @description The key of the status it starts from. */
+      from: string;
+      /** @description Its rules. */
+      rules: components["schemas"]["StatusRulesBody"];
+      /** @description The key of the status it ends in. */
+      to: string;
     };
     /** @description A field of a layout in the editor. */
     EditorFieldBody: {
@@ -4832,6 +4996,13 @@ export interface components {
      * @enum {string}
      */
     MoveRightBody: "nowhere" | "into-projects" | "into-projects-or-top";
+    /** @description A role or a group a rule can name. */
+    NamedBody: {
+      /** @description The ID. */
+      id: string;
+      /** @description The name. */
+      name: string;
+    };
     /** @description A comment to write. */
     NewCommentBody: {
       /** @description The text, in Markdown. */
@@ -5008,6 +5179,13 @@ export interface components {
       /** @description The value. It must be of the type of the setting and one it accepts. */
       value: components["schemas"]["ValueBody"];
     };
+    /** @description The workflow to create for a place. */
+    NewWorkflowBody: {
+      /** @description The issue type; leave it out for all types. */
+      issue_type?: string | null;
+      /** @description The project, by its ID or its short name; leave it out for the whole organization. */
+      project?: string | null;
+    };
     /** @description A note for the person who is editing. */
     NoticeBody: {
       /** @description When. */
@@ -5022,6 +5200,13 @@ export interface components {
      * @enum {string}
      */
     NoticeKind: "finish_asked" | "taken_over" | "released";
+    /** @description One condition of *Only if …*, in the same words as *Must be filled in*. */
+    OnlyIfRuleBody: {
+      /** @description The key of the field: the word of a built-in field or the ID of an own field. */
+      field: string;
+      /** @description What it must be like. */
+      test: components["schemas"]["Test"];
+    };
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -5717,6 +5902,7 @@ export interface components {
       | "move-issues"
       | "edit-anyway"
       | "manage-issue-types"
+      | "manage-workflows"
       | "manage-fields"
       | "manage-labels"
       | "decide-roles"
@@ -6058,6 +6244,32 @@ export interface components {
       /** @description The statuses, in the order the workflows list them. */
       statuses: components["schemas"]["StatusBody"][];
     };
+    /** @description The workflow to publish. */
+    PublishWorkflowBody: {
+      /** @description All the status changes. They replace the ones that are stored. */
+      changes: components["schemas"]["ChangeDraftBody"][];
+      /** @description The token the edit lock was taken with. */
+      lock_token: string;
+      /**
+       * @description Where the issues of a dropped status go. Needed for each dropped status that issues are
+       *     still in; nothing is published without it.
+       */
+      moves?: components["schemas"]["StatusMoveBody"][];
+      /** @description What the workflow is called. */
+      name: string;
+      /** @description All the statuses, in order. The first is where a new issue starts. */
+      statuses: components["schemas"]["StatusDraftBody"][];
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
+    /** @description What *Publish* did. */
+    PublishedBody: {
+      /** @description The workflow, with its new version. */
+      workflow: components["schemas"]["WorkflowSlotBody"];
+    };
     /** @description The mentions to mark as read. */
     ReadMentionsBody: {
       /** @description The IDs of the comments. */
@@ -6344,6 +6556,13 @@ export interface components {
       projects: number;
       /** @description Whether somebody has the role for the whole organization. */
       whole_organization: boolean;
+    };
+    /** @description A field a rule can name. */
+    RuleFieldBody: {
+      /** @description The key of the field: the word of a built-in field or the ID of an own field. */
+      field: string;
+      /** @description The name of an own field; a built-in field is named by its word. */
+      name?: string | null;
     };
     /**
      * @description The rules a value has to keep (CF-03). Which rules a type can have is decided by
@@ -6710,11 +6929,41 @@ export interface components {
       /** @description The status it ends in. */
       to: components["schemas"]["StatusBody"];
     };
+    /** @description A status as the editor sends it. */
+    StatusDraftBody: {
+      /** @description The status group it belongs to. */
+      group: components["schemas"]["StatusGroup"];
+      /**
+       * @description The key of a status the workflow has. Left out for a new status, which gets a key made from
+       *     its name; a status change names a new status by its name.
+       */
+      key?: string | null;
+      /** @description What it is called. */
+      name: string;
+    };
     /**
      * @description The group of a status.
      * @enum {string}
      */
     StatusGroup: "not-started" | "in-progress" | "done";
+    /** @description Where the issues of a dropped status go. */
+    StatusMoveBody: {
+      /** @description The key of the status that is dropped. */
+      from: string;
+      /** @description The key of the status of the new workflow the issues go to. */
+      to: string;
+    };
+    /** @description The rules of a status change. */
+    StatusRulesBody: {
+      /** @description *Ask for*: the keys of the fields shown in a small form during the change. */
+      ask_for?: string[];
+      /** @description *Must be filled in*: the keys of the fields that need a value first. */
+      must_fill?: string[];
+      /** @description *Only if …*: every condition must hold. */
+      only_if?: components["schemas"]["OnlyIfRuleBody"][];
+      /** @description *Who can do it*. */
+      who?: components["schemas"]["WhoCanBody"];
+    };
     /**
      * @description The only value a status can have today.
      * @enum {string}
@@ -6776,10 +7025,49 @@ export interface components {
       lock_token: string;
     };
     /**
+     * @description What a condition of a status change asks of a field.
+     * @enum {string}
+     */
+    Test: "filled" | "empty";
+    /**
      * @description What a group of permissions is about.
      * @enum {string}
      */
     Topic: "projects" | "issues" | "work-settings" | "people" | "settings";
+    /** @description What *Try it* found. */
+    TriedBody: {
+      /** @description The status changes from there, each with the answer for the person. */
+      changes: components["schemas"]["TriedChangeBody"][];
+      /** @description The status the issue is in. */
+      status: components["schemas"]["StatusBody"];
+    };
+    /** @description One status change *Try it* looked at. */
+    TriedChangeBody: components["schemas"]["TriedVerdictBody"] & {
+      /** @description The text of the button. */
+      button: string;
+      /** @description The status it ends in. */
+      to: components["schemas"]["StatusBody"];
+    };
+    /** @description What the judge says about one status change. */
+    TriedVerdictBody:
+      | {
+          /** @enum {string} */
+          verdict: "allowed";
+        }
+      | {
+          /** @description The keys of the fields. */
+          fields: string[];
+          /** @enum {string} */
+          verdict: "needs";
+        }
+      | {
+          /** @description The key of the field it is about, when the person who tries may see it too. */
+          field?: string | null;
+          /** @enum {string} */
+          verdict: "not_allowed";
+          /** @description Why. */
+          why: components["schemas"]["Why"];
+        };
     /** @description How the second step of a person is set up. */
     TwoStepBody: {
       /**
@@ -6796,6 +7084,18 @@ export interface components {
       passkeys: components["schemas"]["PasskeyBody"][];
       /** @description There are more passkeys than the list holds. */
       truncated: boolean;
+    };
+    /** @description Which workflow a place uses. */
+    UseWorkflowBody: {
+      /** @description The issue type; leave it out for all types. */
+      issue_type?: string | null;
+      /** @description The project, by its ID or its short name; leave it out for the whole organization. */
+      project?: string | null;
+      /**
+       * @description The ID of the workflow the place uses from now on. Leave it out (or `null`) for the place to
+       *     follow its parent again.
+       */
+      workflow?: string | null;
     };
     /** @description What a setting holds: yes or no, a whole number, or text. */
     ValueBody: boolean | number | string;
@@ -6817,6 +7117,32 @@ export interface components {
       person?: string | null;
     };
     /**
+     * @description *Who can do it*: the people who may make a status change. Naming nobody means everybody who may
+     *     change the issue; a rule never gives a right *Change anybody's issues* does not.
+     */
+    WhoCanBody: {
+      /** @description The people the issue is assigned to. */
+      assigned?: boolean;
+      /** @description The IDs of the groups. */
+      groups?: string[];
+      /** @description The person who reported the issue. */
+      reported_by?: boolean;
+      /** @description The IDs of the roles. */
+      roles?: string[];
+    };
+    /** @description The roles that may change a field. */
+    WhoMayChangeBody: {
+      /** @description The roles somebody holds in the project that may change the field. */
+      roles: components["schemas"]["ChangingRoleBody"][];
+      /** @description The reader is not shown the people of the project, so no role is named. */
+      roles_hidden: boolean;
+    };
+    /**
+     * @description Why a status change is not allowed.
+     * @enum {string}
+     */
+    Why: "no-such-change" | "not-for-you" | "only-if" | "cannot-fill";
+    /**
      * @description A word of the vocabulary with the message that names it: a kind of people information
      *     or a level.
      */
@@ -6825,6 +7151,52 @@ export interface components {
       code: string;
       /** @description The key of the message that names it. */
       message_key: string;
+    };
+    /** @description A workflow in the list. */
+    WorkflowChoiceBody: {
+      /** @description The ID of the workflow. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change.
+       */
+      version: number;
+    };
+    /** @description What the editor shows for a place. */
+    WorkflowEditorBody: {
+      /** @description Its status changes. */
+      changes: components["schemas"]["EditorChangeBody"][];
+      /** @description The fields the rules can name. */
+      fields: components["schemas"]["RuleFieldBody"][];
+      /** @description The groups *Who can do it* can name. */
+      groups: components["schemas"]["NamedBody"][];
+      inherited_from?: components["schemas"]["InheritedFromBody"] | null;
+      issue_type?: components["schemas"]["IssueTypeRef"] | null;
+      /** @description What the workflow is called. */
+      name: string;
+      project?: components["schemas"]["ProjectRef"] | null;
+      /** @description The roles *Who can do it* can name. */
+      roles: components["schemas"]["NamedBody"][];
+      /** @description Its statuses, in order. */
+      statuses: components["schemas"]["StatusBody"][];
+      workflow?: components["schemas"]["WorkflowSlotBody"] | null;
+    };
+    /** @description The workflows there are. */
+    WorkflowListBody: {
+      /** @description The workflows, by name. */
+      items: components["schemas"]["WorkflowChoiceBody"][];
+    };
+    /** @description The workflow set at exactly the place that was asked about. */
+    WorkflowSlotBody: {
+      /** @description The ID of the workflow, which the edit lock is about. */
+      id: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version: number;
     };
   };
   responses: never;
@@ -15409,6 +15781,108 @@ export interface operations {
       };
     };
   };
+  tryWorkflow: {
+    parameters: {
+      query: {
+        /** @description The ID of the person. */
+        person: string;
+      };
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The status changes and the answer for each. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TriedBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   listSubIssues: {
     parameters: {
       query?: {
@@ -19882,6 +20356,92 @@ export interface operations {
       };
     };
   };
+  getWhoMayChange: {
+    parameters: {
+      query?: {
+        /** @description The ID of the issue type; leave it out for all types. */
+        issue_type?: string;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the project, or its short name. */
+        project: string;
+        /** @description The key of the field: its word, or the ID of an own field. */
+        field: components["schemas"]["FieldKey"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The roles. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WhoMayChangeBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   listRelationKinds: {
     parameters: {
       query?: {
@@ -21908,6 +22468,574 @@ export interface operations {
       };
       /** @description Not signed in (auth.not_signed_in). */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  listWorkflows: {
+    parameters: {
+      query?: {
+        /** @description The project, by its ID or its short name; leave it out for the whole organization. */
+        project?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The workflows. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkflowListBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  createWorkflow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewWorkflowBody"];
+      };
+    };
+    responses: {
+      /** @description The workflow of the place. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkflowEditorBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getWorkflowEditor: {
+    parameters: {
+      query?: {
+        /** @description The project, by its ID or its short name; leave it out for the whole organization. */
+        project?: string;
+        /** @description The issue type; leave it out for all types. */
+        issue_type?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The workflow with what its rules can name. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkflowEditorBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  useWorkflow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UseWorkflowBody"];
+      };
+    };
+    responses: {
+      /** @description The workflow that counts at the place now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkflowEditorBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  publishWorkflow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workflow. */
+        workflow: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PublishWorkflowBody"];
+      };
+    };
+    responses: {
+      /** @description The workflow with its new version. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublishedBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ConflictProblem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  deleteWorkflow: {
+    parameters: {
+      query: {
+        /** @description The version the person looked at. */
+        version: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID of the workflow. */
+        workflow: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The workflow is gone. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

@@ -1,6 +1,6 @@
 //! Workflows in the API (WF-01, ADR-0031): a status is sent as its key, its name and its status
 //! group, never as a word of a fixed list, and every issue carries the status changes the reader
-//! may make now.
+//! may make now. The editor's routes are in `workflows/editor.rs`.
 
 use axum::extract::State;
 use axum::response::Response;
@@ -19,6 +19,10 @@ use super::auth::{
 };
 use super::body_id;
 use crate::errors::{ApiError, ApiPath};
+
+mod bodies;
+mod editor;
+mod who_may_change;
 
 /// A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.
 #[derive(Clone, Serialize, ToSchema)]
@@ -132,5 +136,8 @@ where
     S: Clone + Send + Sync + 'static,
     AuthHandle: axum::extract::FromRef<S>,
 {
-    OpenApiRouter::new().routes(routes!(get_project_statuses))
+    OpenApiRouter::new()
+        .routes(routes!(get_project_statuses))
+        .merge(editor::routes())
+        .merge(who_may_change::routes())
 }

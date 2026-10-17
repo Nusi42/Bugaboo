@@ -220,9 +220,9 @@ async fn iss_01_who_may_change_their_own_issues_may_change_its_type_but_not_that
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut cora, _) = site.person(StartingRole::Contributor, "cora").await?;
         let types = ada.send("GET", TYPES, None).await?;
-        let task = types.body["items"][1]["id"]
+        let bug = types.body["items"][0]["id"]
             .as_str()
-            .ok_or("no task")?
+            .ok_or("no bug")?
             .to_owned();
         // Changing the type takes the right to change the issue and no field of its own
         // (`Evaluation::may_change_issue`): *Change own issues* is enough on one's own.
@@ -232,17 +232,17 @@ async fn iss_01_who_may_change_their_own_issues_may_change_its_type_but_not_that
             .send(
                 "PATCH",
                 &own_path,
-                Some(json!({"version": 1, "issue_type": task})),
+                Some(json!({"version": 1, "issue_type": bug})),
             )
             .await?;
-        assert_eq!(ok(&moved)?["issue_type"]["name"], "Task");
+        assert_eq!(ok(&moved)?["issue_type"]["name"], "Bug");
         let theirs = site.create(&mut ada, "Ada's").await?;
         let their_path = format!("{ISSUES}/{}", key_in(ok(&theirs)?)?);
         let refused = cora
             .send(
                 "PATCH",
                 &their_path,
-                Some(json!({"version": 1, "issue_type": task})),
+                Some(json!({"version": 1, "issue_type": bug})),
             )
             .await?;
         assert_eq!(
@@ -385,9 +385,13 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
     each_database("iss_02_retired_type", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let made = site.create(&mut ada, "A bug").await?;
+        let made = site.create(&mut ada, "A task").await?;
         let path = format!("{ISSUES}/{}", key_in(ok(&made)?)?);
         let types = ada.send("GET", TYPES, None).await?;
+        let bug = types.body["items"][0]["id"]
+            .as_str()
+            .ok_or("no bug")?
+            .to_owned();
         let names: Vec<&str> = types.body["items"]
             .as_array()
             .map(|items| {
@@ -398,26 +402,22 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
             })
             .unwrap_or_default();
         assert_eq!(names, ["Bug", "Task", "Feature", "Goal"]);
-        let task = types.body["items"][1]["id"]
-            .as_str()
-            .ok_or("no task")?
-            .to_owned();
         let retired = ada
             .send(
                 "PATCH",
-                &format!("{TYPES}/{}", site.bug),
+                &format!("{TYPES}/{}", site.kind),
                 Some(json!({"version": 1, "retired": true})),
             )
             .await?;
         assert_eq!(ok(&retired)?["retired"], true);
         // No new issue of the type; the old one keeps it and can still be changed.
-        let refused = site.create(&mut ada, "Another bug").await?;
+        let refused = site.create(&mut ada, "Another task").await?;
         assert_eq!(
             (refused.status, refused.code()),
             (StatusCode::CONFLICT, "issue.type_retired")
         );
         let kept = ada.send("GET", &path, None).await?;
-        assert_eq!(ok(&kept)?["issue"]["issue_type"]["name"], "Bug");
+        assert_eq!(ok(&kept)?["issue"]["issue_type"]["name"], "Task");
         assert_eq!(kept.body["issue"]["issue_type"]["retired"], true);
         let changed = ada
             .send(
@@ -428,19 +428,19 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
             .await?;
         assert_eq!(ok(&changed)?["issue_type"]["retired"], true);
         // Moving an issue to a retired type is refused as well; to another type it works.
-        let back_to_task = ada
+        let back_to_bug = ada
             .send(
                 "PATCH",
                 &path,
-                Some(json!({"version": 2, "issue_type": task})),
+                Some(json!({"version": 2, "issue_type": bug})),
             )
             .await?;
-        assert_eq!(ok(&back_to_task)?["issue_type"]["name"], "Task");
+        assert_eq!(ok(&back_to_bug)?["issue_type"]["name"], "Bug");
         let to_retired = ada
             .send(
                 "PATCH",
                 &path,
-                Some(json!({"version": 3, "issue_type": site.bug})),
+                Some(json!({"version": 3, "issue_type": site.kind})),
             )
             .await?;
         assert_eq!(to_retired.code(), "issue.type_retired");
@@ -448,12 +448,12 @@ async fn iss_02_a_retired_type_keeps_its_issues_and_takes_no_new_ones() -> TestR
         let again = ada
             .send(
                 "PATCH",
-                &format!("{TYPES}/{}", site.bug),
+                &format!("{TYPES}/{}", site.kind),
                 Some(json!({"version": 2, "retired": false})),
             )
             .await?;
         assert_eq!(ok(&again)?["retired"], false);
-        ok(&site.create(&mut ada, "A bug again").await?)?;
+        ok(&site.create(&mut ada, "A task again").await?)?;
         Ok(())
     })
     .await
@@ -573,7 +573,7 @@ async fn iss_02_two_administrators_renaming_the_same_type_get_who_and_which_fiel
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut ben, _) = site.person(StartingRole::Administrator, "ben").await?;
-        let path = format!("{TYPES}/{}", site.bug);
+        let path = format!("{TYPES}/{}", site.kind);
         let first = ada
             .send(
                 "PATCH",

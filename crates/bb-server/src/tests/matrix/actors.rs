@@ -167,7 +167,7 @@ const ORGANIZATION_ONLY: [Permission; 8] = [
 /// The permissions no access key keeps, whatever its choice (`NOT_FOR_KEYS`, decisions on
 /// access keys and M3-Q6): inviting people, deciding who has which role, changing organization
 /// settings, taking over somebody's editing and the work settings stay in the app.
-const NOT_FOR_KEYS: [Permission; 11] = [
+const NOT_FOR_KEYS: [Permission; 12] = [
     Permission::ManageInvitations,
     Permission::ManagePeople,
     Permission::ManageGroups,
@@ -179,6 +179,7 @@ const NOT_FOR_KEYS: [Permission; 11] = [
     Permission::ManageIssueTypes,
     Permission::ManageFields,
     Permission::ManageLabels,
+    Permission::ManageWorkflows,
 ];
 
 /// The permissions of the kind *See*, which an access key that may only see keeps (*Kind: See*).
@@ -239,8 +240,8 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
         CheckAccess, Comment, CreateIssues, CreateProjects, CreateSubProjects, DecideRoles,
         DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
-        ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles, MoveIssues,
-        MoveProjects, SeeIssues, SeeProjects, SeeStatus,
+        ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles,
+        ManageWorkflows, MoveIssues, MoveProjects, SeeIssues, SeeProjects, SeeStatus,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -260,6 +261,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ManageIssueTypes,
             ManageFields,
             ManageLabels,
+            ManageWorkflows,
             DecideRoles,
             DecideWhatRolesSee,
             CheckAccess,
@@ -285,6 +287,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             EditAnyway,
             ManageIssueTypes,
             ManageLabels,
+            ManageWorkflows,
             DecideRoles,
             DecideWhatRolesSee,
             CheckAccess,

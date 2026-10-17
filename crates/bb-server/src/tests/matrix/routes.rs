@@ -134,8 +134,11 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
             {
                 let unknown_tag =
                     example.has(Quirk::NamesATagOfTheTarget) && !reads_issues_of_the_target(actor);
+                let unseen_field = example.has(Quirk::NamesAField)
+                    && matches!(actor, Actor::Exactly(_) | Actor::ExactlyBoth(..));
                 if (at == Where::Target && example.has(Quirk::NeedsToSeeTheProject) && !held.sees())
                     || unknown_tag
+                    || unseen_field
                 {
                     // A tag that exists only on an issue of the target project is not known to
                     // whoever does not read the issues there (SEC-06, WP-12).

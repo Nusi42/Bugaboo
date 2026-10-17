@@ -52,6 +52,10 @@ impl WorkflowStore for FakeStore {
         Ok(found)
     }
 
+    async fn has_issues_in(tx: &mut Tx) -> Result<bool, FakeError> {
+        Ok(!tx.state.issues.is_empty())
+    }
+
     async fn issues_in_statuses_in(
         tx: &mut Tx,
         keys: Vec<StatusKey>,

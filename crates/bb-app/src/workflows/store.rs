@@ -24,6 +24,9 @@ pub trait WorkflowStore: FieldStore + 'static {
         fn stored_workflow(id: WorkflowId) -> Option<StoredWorkflow> = stored_workflow_in;
         /// These workflows with their statuses and status changes, in as few reads as one.
         fn stored_workflows(ids: Vec<WorkflowId>) -> Vec<StoredWorkflow> = stored_workflows_in;
+        /// Whether any issue was ever written, also one in the trash: what tells an organization
+        /// that ran before workflows from a new one.
+        fn has_issues() -> bool = has_issues_in;
         /// The issues that are not in the trash and are in one of these statuses, in any project:
         /// what *Publish* looks at when a workflow drops a status.
         fn issues_in_statuses(keys: Vec<StatusKey>) -> Vec<Issue> = issues_in_statuses_in;
