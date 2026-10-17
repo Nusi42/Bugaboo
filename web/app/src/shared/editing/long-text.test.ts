@@ -113,3 +113,16 @@ describe("iss_17 somebody else is editing", () => {
     expect(w.editor.snapshot().text).toBe("My words");
   });
 });
+
+describe("iss_17 comparing with the newest text", () => {
+  it("reads the record again when the person opens the comparison", async () => {
+    // The page may have been told that the editing was taken over before the other person saved:
+    // what it holds as the newer text is then older than what the server has.
+    const w = world();
+    w.editor.open();
+    w.editor.type("New words");
+    await settle();
+    await w.editor.reread();
+    expect(w.log.at(-1)).toBe("refresh");
+  });
+});

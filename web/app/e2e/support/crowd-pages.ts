@@ -2,12 +2,17 @@ import { t } from "@bugaboo/messages";
 import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
 import { type Person, signInThroughApi } from "./accounts.ts";
+import { saveButton } from "./description.ts";
 import { crowd, crowdSize, type Edit } from "./crowd.ts";
 import { openIssueWithDetails } from "./flows.ts";
 import { changeField, savedNote, statusButton } from "./issues.ts";
 import { type Instance } from "./server.ts";
 
 // The pages of ten people at the same time (architecture §11, M3 WP-10).
+
+/** One try of a step that may find the page in either of two states, and the time all tries get. */
+const RETRY_MS = 2000;
+const SETTLE_MS = 20_000;
 
 /** How the window of a person looks: the part of the project's setup that a context of its own does not inherit. */
 export interface ScreenLook {
@@ -89,6 +94,23 @@ export async function untilKept(page: Page, pressed = 0): Promise<number> {
 /** The note that says the text was not saved and is kept (*Not saved yet …*). */
 export function lostEditNotice(page: Page) {
   return page.getByText(new RegExp(`^${t("save.not-saved")}`, "u")).first();
+}
+
+/**
+ * Saves a text whose editing somebody took over, and waits for the note that says it was not saved.
+ * The page of the one who lost the lock is told on its next heartbeat (every few seconds) or when
+ * it saves, whichever comes first: when the heartbeat came first, *Save* is off already and the
+ * note is there, which is what the test is about.
+ */
+export async function saveAfterTakeOver(page: Page): Promise<void> {
+  const save = saveButton(page);
+  const note = lostEditNotice(page);
+  await expect(async () => {
+    if (await save.isEnabled()) {
+      await save.click({ timeout: RETRY_MS });
+    }
+    await expect(note).toBeVisible({ timeout: RETRY_MS });
+  }).toPass({ timeout: SETTLE_MS });
 }
 
 /** Opens an issue with its details and waits until the page shows the status. */

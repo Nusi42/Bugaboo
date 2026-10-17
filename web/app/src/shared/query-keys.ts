@@ -147,15 +147,31 @@ const FIELD_READS = [
   "/api/v1/projects/{project}",
 ] as const;
 
+/** Which reads to do again: by the start of their key, or by a test of their key. */
+type Rereading = Readonly<{
+  queryKey?: readonly unknown[];
+  predicate?: (query: Readonly<{ queryKey: readonly unknown[] }>) => boolean;
+}>;
+
+/**
+ * Reads again what matches `filters`, now that something changed. A first read that began before
+ * the change is on its way with the state of before, and a read that is on its way is not started
+ * again (it has no data to keep): it is cancelled first, so the screen is left with a read that
+ * began after the change.
+ */
+function reread(filters: Rereading): void {
+  void queryClient.cancelQueries(filters).then(() => queryClient.invalidateQueries(filters));
+}
+
 /** Reads the lists of issues and what an issue shows about itself again: issues changed. */
 export function refreshIssues(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
+  reread({ queryKey: queryKeys.issues.all });
 }
 
 /** Reads again every answer of these routes of the API (their keys are made by the client). */
 function refreshReads(paths: readonly string[]): void {
   for (const path of paths) {
-    void queryClient.invalidateQueries({ queryKey: ["get", path] });
+    reread({ queryKey: ["get", path] });
   }
 }
 
@@ -184,19 +200,19 @@ export function refreshLayouts(): void {
 
 /** A save of a layout was refused: the draft it kept is read again. */
 export function refreshLayoutDraft(layout: string): void {
-  void queryClient.invalidateQueries({
+  reread({
     queryKey: queryKeys.layouts.draft(layout),
   });
 }
 
 /** An issue type was made or changed: the list of types is read again. */
 export function refreshIssueTypes(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.issueTypes.all });
+  reread({ queryKey: queryKeys.issueTypes.all });
 }
 
 /** A kind of relation was made or changed: the list of kinds is read again. */
 export function refreshRelationKinds(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.relationKinds.all });
+  reread({ queryKey: queryKeys.relationKinds.all });
 }
 
 /**
@@ -204,7 +220,7 @@ export function refreshRelationKinds(): void {
  * route starts with one of `routes`.
  */
 function refreshRoutes(routes: readonly string[]): void {
-  void queryClient.invalidateQueries({
+  reread({
     predicate: (query: Readonly<{ queryKey: readonly unknown[] }>) => {
       const route = query.queryKey[1];
       return typeof route === "string" && routes.some((each) => route.startsWith(each));
@@ -214,18 +230,18 @@ function refreshRoutes(routes: readonly string[]): void {
 
 /** A sub-issue or a relation was added or taken away: what an issue stands among is read again. */
 export function refreshIssueRelations(): void {
-  void queryClient.invalidateQueries({
+  reread({
     queryKey: queryKeys.issueRelations.all,
   });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
+  reread({ queryKey: queryKeys.history.all });
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }
 
 /** A comment was written, changed or deleted, or a follower came or went: the history is read again. */
 export function refreshHistory(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.followers.all });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.mentions.all });
+  reread({ queryKey: queryKeys.history.all });
+  reread({ queryKey: queryKeys.followers.all });
+  reread({ queryKey: queryKeys.mentions.all });
   refreshRoutes([
     "/api/v1/issues/{issue}/follow",
     "/api/v1/me/mentions",
@@ -241,6 +257,6 @@ export function refreshAccess(): void {
     queryKeys.roles.all,
     queryKeys.assignments.all,
   ]) {
-    void queryClient.invalidateQueries({ queryKey: key });
+    reread({ queryKey: key });
   }
 }

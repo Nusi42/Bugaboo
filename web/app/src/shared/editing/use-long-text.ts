@@ -94,6 +94,8 @@ export interface LongText extends Editing {
   readonly editAnyway: () => void;
   /** *Compare and save*: the person's choice of the text, saved. */
   readonly resolve: (text: string) => void;
+  /** Reads the record again, so the comparison is with the newest text. */
+  readonly reread: () => void;
 }
 
 /**
@@ -133,6 +135,9 @@ export function useLongText(options: LongTextOptions): LongText {
     },
     resolve: (text) => {
       void editor.resolve(text);
+    },
+    reread: () => {
+      void editor.reread();
     },
   };
 }
