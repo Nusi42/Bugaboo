@@ -642,3 +642,44 @@ async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_12_over_http_the_background_header_counts_as_use_only_on_a_post() -> TestResult {
+    each_database("sec_12_background_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        for person in [&mut ada, &mut bob] {
+            person.set_header(bb_api::cookies::BACKGROUND_HEADER, "1");
+        }
+        // The idle time is 30 minutes. Twenty minutes in, both ask with the header.
+        rig.clock.advance(20 * 60);
+        let count = ada
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(count.status, StatusCode::OK, "{}", count.body);
+        let read = bob
+            .send(
+                "POST",
+                "/api/v1/notifications/read",
+                Some(json!({"up_to": "01900000-0000-7000-8000-000000000000"})),
+            )
+            .await?;
+        assert_eq!(read.status, StatusCode::NO_CONTENT, "{}", read.body);
+        // Twenty minutes later, asking without the header: the read did not count as use, the
+        // post did.
+        rig.clock.advance(20 * 60);
+        ada.clear_headers();
+        bob.clear_headers();
+        let gone = ada
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(gone.status, StatusCode::UNAUTHORIZED, "{}", gone.body);
+        let kept = bob
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(kept.status, StatusCode::OK, "{}", kept.body);
+        Ok(())
+    })
+    .await
+}

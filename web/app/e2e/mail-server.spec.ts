@@ -60,7 +60,7 @@ test("ntf_02 a wrong password is refused in words, and the button then waits", a
   page,
   tolerate,
 }) => {
-  const refusal = tolerate(page.context(), mailRejectedLine, false);
+  const refusal = tolerate(page.context(), mailRejectedLine, { network: "stays-up" });
   await openMailServer(page, ada);
   await fillMailServer(page, formFor(mailbox, { user: login.user, password: wrong }));
   await expect(page.getByText(t("mail-server.password-set"))).toBeVisible();

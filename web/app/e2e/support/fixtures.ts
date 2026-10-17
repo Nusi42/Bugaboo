@@ -141,12 +141,16 @@ export const test = base.extend<
      * For a test that cuts the network of one browser on purpose (a lock holder who goes offline):
      * the console lines of that context that match `lines` are expected, from `begin` (which cuts
      * the network) until `end` (which brings it back). Lines of any other context, lines while it
-     * is online, other lines, and uncaught errors are never let off. With `cut: false` the network
-     * stays up and only the lines are expected between `begin` and `end` (a refusal the test
+     * is online, other lines, and uncaught errors are never let off. With `{ network: "stays-up" }` the
+     * network stays up and only the lines are expected between `begin` and `end` (a refusal the test
      * causes on purpose). Only `concurrent/locks.spec.ts`, `mail-server.spec.ts` and `screenshots-notifications.spec.ts` may use it
      * (TEST-CONCURRENT).
      */
-    tolerate: (context: BrowserContext, lines: Readonly<RegExp>, cut?: boolean) => Offline;
+    tolerate: (
+      context: BrowserContext,
+      lines: Readonly<RegExp>,
+      mode?: Readonly<{ network: "cut" | "stays-up" }>,
+    ) => Offline;
   },
   { pool: Servers }
 >({
@@ -165,7 +169,8 @@ export const test = base.extend<
     await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
   },
   tolerate: async ({ browser: _browser }, provide) => {
-    await provide((context, lines, cut = true) => {
+    await provide((context, lines, mode) => {
+      const cut = mode?.network !== "stays-up";
       const network = tolerances.add(context, lines);
       return {
         begin: async () => {

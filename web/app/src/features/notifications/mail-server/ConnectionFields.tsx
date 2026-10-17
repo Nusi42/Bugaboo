@@ -18,8 +18,20 @@ import { type MySettings } from "../../../shared/my-settings.ts";
 import { wordsOf } from "../../settings/index.ts";
 import { useMailServerStatus, useSetMailPassword } from "./use-mail-server.ts";
 
-/** The last choice of the protection, the one that sends nothing encrypted (the list is the registry's). */
-const [, , noEncryption] = settingChoices.mailSecurity;
+/**
+ * Whether each choice of the protection sends nothing encrypted. Every choice of the registry has to
+ * be named here, so a new or moved choice cannot leave the warning on the wrong one.
+ */
+const sendsInTheClear = {
+  starttls: false,
+  tls: false,
+  off: true,
+} as const satisfies Record<(typeof settingChoices.mailSecurity)[number], boolean>;
+
+/** Whether the chosen protection sends nothing encrypted. */
+function isInTheClear(choice: string): boolean {
+  return settingChoices.mailSecurity.some((each) => each === choice && sendsInTheClear[each]);
+}
 
 export interface SettingTextProps {
   readonly settings: MySettings;
@@ -118,7 +130,7 @@ export function Protection({
         onChange={onChange}
       />
       <p {...partOf(part.muted)}>{wordsOf(found?.help_key ?? "")}</p>
-      {value === noEncryption ? (
+      {isInTheClear(value) ? (
         <Alert tone={alertTone.warning}>{t("mail-server.no-encryption-note")}</Alert>
       ) : null}
     </div>

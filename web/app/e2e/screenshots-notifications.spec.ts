@@ -36,7 +36,7 @@ test("the notifications, the start page, Customize and the handle", async ({ pag
 test("the mail server: at the start, refused, and tried", async ({ page, tolerate }) => {
   test.setTimeout(ALL_THE_THEMES_MS);
   // The refusal of the wrong password is part of the pictures: its console line is expected.
-  const refusal = tolerate(page.context(), mailRejectedLine, false);
+  const refusal = tolerate(page.context(), mailRejectedLine, { network: "stays-up" });
   await refusal.begin();
   await shootMailServer(page, mailbox);
   await refusal.end();

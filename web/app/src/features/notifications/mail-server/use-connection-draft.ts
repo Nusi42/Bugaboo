@@ -62,8 +62,15 @@ export function useConnectionDraft(settings: MySettings) {
       const found = changesOf(settings, draft);
       setProblem(found.problem);
       if (found.problem === undefined) {
-        saving.mutate({ changes: found.changes, password: draft.password });
-        setDraft({ ...draft, password: "" });
+        // The typed password stays in the box until the save has worked: a refused save keeps it.
+        saving.mutate(
+          { changes: found.changes, password: draft.password },
+          {
+            onSuccess: () => {
+              setDraft((now) => ({ ...now, password: "" }));
+            },
+          },
+        );
       }
     },
   };
