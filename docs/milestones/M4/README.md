@@ -17,6 +17,7 @@ M4 runs in **four waves**. A wave starts when the previous one is merged to `mai
 | 3 | [WP-07](WP-07-workflow-editor-and-status-changes-on-screen.md) | The workflow editor and status changes on screen | Builder | `bugaboo.win2` / `WIN2` |
 | 3 | [WP-08](WP-08-notifications-on-screen-and-the-mail-server.md) | Notifications on screen, notification settings, the mail server | Builder | `bugaboo.win4` / `WIN4` |
 | 3 | [WP-09](WP-09-issue-page-after-the-new-look.md) | The issue page after the new look (M3 follow-ups) | Builder | `bugaboo.win3` / `WIN3` |
+| 3 | [WP-11](WP-11-types-and-labels-per-project.md) | Issue types and labels per project, *Check access* per issue type (moved out of WP-04) | Builder | `bugaboo.win5` / `WIN5` |
 | 4 | [WP-10](WP-10-sample-organization-and-exit-demo.md) | Sample organization part 3, ten people with workflows, speed, the exit demo | Builder | `bugaboo.win2` / `WIN2` |
 
 Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package files were written in WP-01, after the maintainer's answers.
@@ -48,7 +49,7 @@ Progress is kept only in [`docs/STATUS.md`](../../STATUS.md). The work package f
   - The rules on a status change: *Who can do it*, *Only if …*, *Must be filled in*, *Ask for*.
   - The starter workflows *Simple*, *Bug* and *Development*. The starting workflow becomes *Simple*, and stored issues keep their statuses.
   - Changing many issues follows each issue's workflow, and the preview names the issues that will be skipped.
-  - Issue types, labels and moving per project (M3-F22, F122, F124), and the answer to who may change a field (M3-F53), which the editor's *Who can do it* needs too.
+  - The answer to who may change a field (M3-F53), which the editor's *Who can do it* needs too. Issue types, labels and moving per project (M3-F22, F122, F124) moved to WP-11.
 - **WP-05 (ATT-01, ATT-02, ATT-03, ATT-04, ATT-07):**
   - **Upload** by dragging, pasting or choosing, on issues and comments; an interrupted upload goes on where it stopped.
   - **Storage** by content hash outside any web root.
@@ -121,7 +122,8 @@ As in M3: a package changes only what it owns; shared files get added lines only
 |-----------|---------|
 | M3-F141, M3-F152, M3-F153, M2-F93, M2C-F42 | WP-02 |
 | M2C-F104 (showcase pictures differ between runs) | [WP-03](WP-03-browser-tests-without-running-out-of-connections.md) |
-| M3-F22, F44, F53, F122, F124, F23 (*Priority* as a list stays: decided in WP-01) | WP-04 |
+| M3-F53, F23 (*Priority* as a list stays: decided in WP-01) | WP-04 |
+| M3-F22, F44, F122, F124 | WP-11 |
 | M1-F30 (attachments get their own body limit; the row said M5) | WP-05 |
 | M3-F75, F125, F126, F132, F150, F70 (a unique handle for mentions, decided in WP-01), M2-F65 (e-mail column), M1-F21, M1-F43, M1-F61 (jobs that keep and delete) | WP-06 |
 | M3-F175, F181, F172 (other keys for resizing a window, if a test with a screen reader shows the clash) | WP-07 |
