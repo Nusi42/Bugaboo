@@ -8,12 +8,13 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::FieldChange;
-use bb_core::id::{IssueId, LabelId};
+use bb_core::id::{IssueId, LabelId, ProjectId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::SkipReason;
 use bb_policy::Evaluation;
 use serde_json::json;
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use super::types::{ManyChange, ManyChangeAction};
 use crate::access::Actor;
@@ -80,6 +81,36 @@ pub(super) struct Selection<'a> {
     pub(super) action: &'a ManyChangeAction,
     /// The issue at the other end of a relation, found once.
     pub(super) other: Option<IssueId>,
+    /// The projects above a project, read once for each project of the selection (the workflow of
+    /// an issue is found from them; the workflows themselves are read once for the request).
+    pub(super) chains: Mutex<HashMap<ProjectId, Arc<[ProjectId]>>>,
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The chain of a project, from the cache of the selection when an issue of the same project
+    /// was judged before.
+    async fn chain_in(
+        &self,
+        selection: &Selection<'_>,
+        project: ProjectId,
+    ) -> Result<Arc<[ProjectId]>, AppError> {
+        let known = selection
+            .chains
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(&project)
+            .cloned();
+        if let Some(chain) = known {
+            return Ok(chain);
+        }
+        let chain: Arc<[ProjectId]> = self.chain_of(project).await?.into();
+        selection
+            .chains
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(project, Arc::clone(&chain));
+        Ok(chain)
+    }
 }
 
 /// The reason an issue is left alone for the error a single change gives, or the error itself when
@@ -236,6 +267,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// a change that names no words is any change to the status.
     async fn has_chosen_change(
         &self,
+        selection: &Selection<'_>,
         change: &ManyChange,
         issue: &Issue,
     ) -> Result<bool, AppError> {
@@ -245,7 +277,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if *status == issue.status {
             return Ok(true);
         }
-        let chain = self.chain_of(issue.project).await?;
+        let chain = self.chain_in(selection, issue.project).await?;
         let workflow = self
             .workflow_in_force(&chain, Some(issue.issue_type))
             .await?;
@@ -260,7 +292,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         change: &ManyChange,
         issue: &Issue,
     ) -> Result<Judged, AppError> {
-        if !self.has_chosen_change(change, issue).await? {
+        if !self.has_chosen_change(selection, change, issue).await? {
             return Ok(Judged::Skip(SkipReason::Workflow));
         }
         let asked = ChangeIssue {
