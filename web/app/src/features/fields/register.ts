@@ -17,6 +17,7 @@ export function registerFields(): void {
   addIssueBlock(issueSlots.details, {
     id: "own-fields",
     order: 100,
+    places: "own-fields",
     component: OwnFieldRows,
   });
   addIssueBlock(issueSlots.detailSections, {

@@ -3,6 +3,7 @@ import type { ChangeStatus } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { FormView } from "../layouts/index.ts";
+import type { Places } from "./details-order.ts";
 
 /**
  * The slots of the issue page (UX design §4.4): the places where packages other than the issue page
@@ -106,6 +107,11 @@ export interface IssueBlockEntry {
   readonly id: string;
   /** Blocks of a slot are drawn in this order, then by `id`. */
   readonly order: number;
+  /**
+   * For a block of the Details slot: which fields of the layout its rows are, so that the Details
+   * follow the order of the layout (CFG-01). A block that says nothing comes after the rest.
+   */
+  readonly places?: Places;
   readonly component: IssueBlock;
 }
 
