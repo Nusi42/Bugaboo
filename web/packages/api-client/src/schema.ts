@@ -5407,7 +5407,7 @@ export interface components {
       /** @description A change of an own field: its name. */
       field_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this person. */
-      html?: string | null;
+      html?: SafeHtml;
       /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
       id: string;
       issue?: components["schemas"]["IssueRef"] | null;
@@ -5899,7 +5899,7 @@ export interface components {
         /** @description A change of an own field: its name. */
         field_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this person. */
-        html?: string | null;
+        html?: SafeHtml;
         /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
         id: string;
         issue?: components["schemas"]["IssueRef"] | null;

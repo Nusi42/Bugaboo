@@ -26584,7 +26584,8 @@
           },
           "html": {
             "type": ["string", "null"],
-            "description": "A comment: the text as safe HTML, made on the server for this person."
+            "description": "A comment: the text as safe HTML, made on the server for this person.",
+            "x-safe-html": true
           },
           "id": {
             "type": "string",
@@ -27822,7 +27823,8 @@
                 },
                 "html": {
                   "type": ["string", "null"],
-                  "description": "A comment: the text as safe HTML, made on the server for this person."
+                  "description": "A comment: the text as safe HTML, made on the server for this person.",
+                  "x-safe-html": true
                 },
                 "id": {
                   "type": "string",
