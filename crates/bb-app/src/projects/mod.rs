@@ -61,6 +61,24 @@ pub(crate) async fn tree_in<S: AuthStore>(
     Ok(Tree::of(&S::project_tree_in(transaction).await?))
 }
 
+/// Inside the transaction that writes an issue (or a label on one) in a project: takes the lock of
+/// the workflows shared, before any lock on the codes of a project (the one order of the locks,
+/// see `LockClass`), and reads the projects from the top down to the project, which the offers and
+/// the workflow are judged on.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn lock_chain_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    project: ProjectId,
+) -> Result<Vec<ProjectId>, S::Error> {
+    S::lock_workflows_shared(transaction).await?;
+    Ok(tree_in::<S>(transaction)
+        .await?
+        .chain(project)
+        .unwrap_or_default())
+}
+
 /// Every project below `project`, at any depth, as the tree is stored now (inside a change, after
 /// the policy lock).
 ///

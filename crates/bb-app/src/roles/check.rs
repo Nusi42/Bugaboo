@@ -166,6 +166,9 @@ pub struct AccessAnswer {
     /// Whether the field levels of the person differ by issue type: some type has a level for some
     /// field that the others do not. The screen asks *"Which issue type?"* only then.
     pub differs_by_type: bool,
+    /// The issue types the question may ask about: those the place offers and that are not
+    /// retired, which the answer judged. The screen lists exactly these.
+    pub issue_types: Vec<IssueTypeRef>,
 }
 
 impl Masked for AccessAnswer {}
@@ -281,7 +284,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         report: &AccessReport,
         person: PersonRef,
         own_names: &std::collections::HashMap<FieldKey, String>,
-        by_type: (Option<IssueTypeRef>, bool),
+        by_type: (Option<IssueTypeRef>, bool, Vec<IssueTypeRef>),
     ) -> Result<AccessAnswer, AppError> {
         let mut permissions = Vec::with_capacity(report.permissions.len());
         for decision in &report.permissions {
@@ -318,6 +321,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             kinds,
             issue_type: by_type.0,
             differs_by_type: by_type.1,
+            issue_types: by_type.2,
         })
     }
 
@@ -413,6 +417,10 @@ pub async fn check_access<S: AuthStore>(
     let by_type = (
         asked.map(IssueTypeRef::from),
         Ctx::<S>::levels_differ_by_type(&theirs, &all, &choices, &own_names),
+        choices
+            .iter()
+            .map(|found| IssueTypeRef::from(*found))
+            .collect(),
     );
     let report = match asked {
         Some(found) => theirs.report_for(Some(found.id)),

@@ -117,12 +117,12 @@ use crate::settings::{
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
     CreateLabel, CreateLabelGroup, IssueLabelsAndTags, IssueLabelsAndTagsQuery,
-    LabelChangePreviewQuery, LabelGroupView, LabelView, Labels, LabelsQuery, RemoveLabel,
-    RemoveTag, TagChangePreview, TagChangePreviewQuery, TagPage, TagSuggestions,
-    TagSuggestionsQuery, TagView, TagsQuery, add_label, add_tag, change_label, change_label_group,
-    change_tag, combine_labels, combine_tags, create_label, create_label_group,
-    issue_labels_and_tags, label_change_preview, labels, remove_label, remove_tag,
-    tag_change_preview, tag_suggestions, tags,
+    LabelChangePreviewQuery, LabelGroupPage, LabelGroupView, LabelGroupsQuery, LabelPage,
+    LabelView, LabelsQuery, RemoveLabel, RemoveTag, TagChangePreview, TagChangePreviewQuery,
+    TagPage, TagSuggestions, TagSuggestionsQuery, TagView, TagsQuery, add_label, add_tag,
+    change_label, change_label_group, change_tag, combine_labels, combine_tags, create_label,
+    create_label_group, issue_labels_and_tags, label_change_preview, label_groups, labels,
+    remove_label, remove_tag, tag_change_preview, tag_suggestions, tags,
 };
 use crate::workflows::{
     CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishWorkflow,
@@ -572,8 +572,10 @@ use_cases! {
     change_tag(ChangeTag) -> Authorized<TagView>;
     /// Moves every issue from a tag to another and takes the first away.
     combine_tags(CombineTags) -> Authorized<TagView>;
-    /// Lists the labels of the organization with their groups.
-    labels(LabelsQuery) -> Authorized<Labels>;
+    /// Lists the labels of the organization a page at a time.
+    labels(LabelsQuery) -> Authorized<LabelPage>;
+    /// Lists the groups of labels of the organization a page at a time.
+    label_groups(LabelGroupsQuery) -> Authorized<LabelGroupPage>;
     /// Creates a group of labels.
     create_label_group(CreateLabelGroup) -> Authorized<LabelGroupView>;
     /// Changes a group of labels.

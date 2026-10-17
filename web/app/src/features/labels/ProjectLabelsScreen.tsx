@@ -54,7 +54,7 @@ function Groups({
 /** The cards of the screen once the project is known. */
 function ProjectLabels({ project, name }: { readonly project: string; readonly name: string }) {
   const labels = useLabels(project);
-  const groups = labels.data?.groups ?? [];
+  const groups = labels.groups;
   return (
     <>
       <Card heading={t("labels.project-title", { project: name })} level={1}>

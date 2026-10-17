@@ -24,8 +24,9 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
-use crate::offers::{ensure_type_takes_issues_in, lock_chain_in};
+use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
+use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 
 /// How often a change is tried again when two writers drew the same random code at the same
@@ -152,14 +153,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             None => Vec::new(),
         };
-        let issue_type = self
-            .store()
-            .issue_type(input.issue_type)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         let chain = self.chain_of(project.id).await?;
-        self.ensure_type_takes_issues(&issue_type, &chain).await?;
+        let issue_type = self
+            .writable_issue_type(actor, input.issue_type, &chain)
+            .await?;
         let now = self.now();
         let id = IssueId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;

@@ -21,6 +21,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IssueId, LabelGroupId, LabelId, ProjectId};
 use bb_core::offer::{can_meet, has_room};
 use bb_core::own_fields::{ChoiceColor, Edit};
+use bb_core::paging::window;
 use bb_core::tags::{LABEL_GROUPS_MAX, LABELS_MAX, Label, LabelGroup, name_key};
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Evaluation, Permission, Place, Tree};
@@ -30,13 +31,14 @@ use serde_json::json;
 use super::rewrite::{Combining, ISSUES_PER_READ, Replacement, Rewrite, Sorted};
 use super::types::{
     ChangeLabel, ChangeLabelGroup, CombineLabels, CreateLabel, CreateLabelGroup,
-    LabelChangePreviewQuery, LabelGroupView, LabelView, Labels, LabelsQuery, TagChangePreview,
+    LabelChangePreviewQuery, LabelGroupPage, LabelGroupView, LabelGroupsQuery, LabelPage,
+    LabelView, LabelsQuery, TagChangePreview,
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
 use crate::input::clean_tag_name;
 use crate::member::{label as member, label_group as group_member};
-use crate::offers::{Standing, Subject};
+use crate::offers::{Here, Standing, Subject};
 use crate::projects::{Shown, Why, tree_in};
 
 /// The groups and the labels as they are stored.
@@ -111,6 +113,49 @@ fn group_name_taken(
                 tree.is_within(inside, outside)
             })
     })
+}
+
+/// The projects whose issues a person may rewrite labels in: all of them for whoever holds *Manage
+/// labels and tags* for the whole organization, else the projects where they hold it.
+#[derive(Clone)]
+struct Reach(Option<Vec<ProjectId>>);
+
+impl Reach {
+    fn of(shown: &Shown) -> Self {
+        if shown.holds(Place::Organization, Permission::ManageLabels) {
+            return Self(None);
+        }
+        Self(Some(
+            shown
+                .everything()
+                .into_iter()
+                .map(|project| project.id)
+                .filter(|project| shown.allows(*project, Permission::ManageLabels))
+                .collect(),
+        ))
+    }
+
+    /// Whether every one of these projects is in reach.
+    fn covers(&self, projects: &[ProjectId]) -> bool {
+        self.0
+            .as_ref()
+            .is_none_or(|own| projects.iter().all(|project| own.contains(project)))
+    }
+
+    /// The same, inside a change after the lock, on the issues as they are stored now: a label
+    /// that was put on an issue of another project meanwhile is seen. Stops with `access.forbidden`.
+    async fn ensure_in<S: AuthStore>(
+        &self,
+        transaction: &mut S::Transaction,
+        label: LabelId,
+        stopped: &Why,
+    ) -> Result<(), S::Error> {
+        if self.0.is_none() || self.covers(&S::projects_with_label_in(transaction, label).await?) {
+            Ok(())
+        } else {
+            Err(stopped.stop::<S>(ErrorCode::Forbidden))
+        }
+    }
 }
 
 /// Whether some issue has two of these labels, read inside a change after the lock.
@@ -223,18 +268,12 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// on an issue that moved out of the project of its group. The person who holds *Manage labels
     /// and tags* for the whole organization is not held back.
     async fn ensure_rewrite_in_reach(&self, shown: &Shown, label: &Label) -> Result<(), AppError> {
-        if shown.holds(Place::Organization, Permission::ManageLabels) {
-            return Ok(());
-        }
         let projects = self
             .store()
             .projects_with_label(label.id)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        if projects
-            .iter()
-            .all(|project| shown.allows(*project, Permission::ManageLabels))
-        {
+        if Reach::of(shown).covers(&projects) {
             Ok(())
         } else {
             Err(ErrorCode::Forbidden.into())
@@ -281,32 +320,51 @@ fn label_group_view(group: &LabelGroup, standing: Standing) -> LabelGroupView {
     }
 }
 
-/// Lists the labels of the organization with their groups. Anybody who is signed in may, and sees
-/// the groups they may know with the labels in them, and the labels that sit in no group.
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The groups of labels the person may know that a list about the project holds, and the rows of
+    /// that project.
+    async fn listed_groups(
+        &self,
+        shown: &Shown,
+        catalogue: &mut Catalogue,
+        project: Option<&str>,
+    ) -> Result<(Vec<LabelGroup>, Option<Here>), AppError> {
+        let here = self.offers_here(shown, project).await?;
+        // A list about a project holds the groups that can reach it, and no others.
+        let known: Vec<LabelGroup> = self
+            .known_groups(shown, std::mem::take(&mut catalogue.groups))
+            .await?
+            .into_iter()
+            .filter(|found| {
+                here.as_ref()
+                    .is_none_or(|here| here.reached_by(found.project))
+            })
+            .collect();
+        Ok((known, here))
+    }
+}
+
+/// Lists the groups of labels of the organization a page at a time. Anybody who is signed in may,
+/// and sees the groups they may know.
 ///
 /// # Errors
-/// `not_signed_in` without a session.
-pub async fn labels<S: AuthStore>(
+/// `request.invalid` for a cursor that is not one, `resource.not_found` for a project the person
+/// may not see.
+pub async fn label_groups<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: LabelsQuery,
-) -> Result<Authorized<Labels>, AppError> {
+    input: LabelGroupsQuery,
+) -> Result<Authorized<LabelGroupPage>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     let shown = ctx.shown_to(&actor).await?;
-    let catalogue = ctx.label_catalogue().await?;
-    let here = ctx.offers_here(&shown, input.project.as_deref()).await?;
-    // A list about a project holds the groups that can reach it, and no others.
-    let known: Vec<LabelGroup> = ctx
-        .known_groups(&shown, catalogue.groups)
-        .await?
-        .into_iter()
-        .filter(|found| {
-            here.as_ref()
-                .is_none_or(|here| here.reached_by(found.project))
-        })
-        .collect();
-    Ok(held.authorize(Labels {
-        groups: known
+    let mut catalogue = ctx.label_catalogue().await?;
+    let (groups, here) = ctx
+        .listed_groups(&shown, &mut catalogue, input.project.as_deref())
+        .await?;
+    let page = window(groups.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+    Ok(held.authorize(LabelGroupPage {
+        items: groups[page.start..page.end]
             .iter()
             .map(|group| {
                 label_group_view(
@@ -315,17 +373,44 @@ pub async fn labels<S: AuthStore>(
                 )
             })
             .collect(),
-        labels: catalogue
-            .labels
+        next_cursor: page.next,
+    }))
+}
+
+/// Lists the labels of the organization a page at a time: those in a group the person may know,
+/// and those in no group. Anybody who is signed in may.
+///
+/// # Errors
+/// `request.invalid` for a cursor that is not one, `resource.not_found` for a project the person
+/// may not see.
+pub async fn labels<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: LabelsQuery,
+) -> Result<Authorized<LabelPage>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let held = ctx.evaluation_of(&actor, Place::Organization).await?;
+    let shown = ctx.shown_to(&actor).await?;
+    let mut catalogue = ctx.label_catalogue().await?;
+    let (groups, _) = ctx
+        .listed_groups(&shown, &mut catalogue, input.project.as_deref())
+        .await?;
+    let listed: Vec<&Label> = catalogue
+        .labels
+        .iter()
+        .filter(|label| {
+            label
+                .group
+                .is_none_or(|group| groups.iter().any(|each| each.id == group))
+        })
+        .collect();
+    let page = window(listed.len(), input.cursor.as_deref(), input.limit)
+        .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+    Ok(held.authorize(LabelPage {
+        items: listed[page.start..page.end]
             .iter()
-            .filter(|label| {
-                label
-                    .group
-                    .is_none_or(|group| known.iter().any(|each| each.id == group))
-            })
-            .map(LabelView::from)
+            .map(|label| LabelView::from(*label))
             .collect(),
-        may_manage: held.allows(Permission::ManageLabels),
+        next_cursor: page.next,
     }))
 }
 
@@ -731,6 +816,7 @@ pub async fn change_label<S: AuthStore>(
         joins_pick_one,
         crowd_ids,
         rewrite,
+        reach: Reach::of(&shown),
     };
     let (id, why) = (label.id, Why::default());
     let owner = catalogue.owner_of(label.group)?;
@@ -888,7 +974,7 @@ pub async fn combine_labels<S: AuthStore>(
     let Combining { event, events, why } =
         ctx.combine_events(&actor, Sorted::Label, from.id.into(), into.id.into())?;
     let (ids, versions) = ((from.id, into.id), (from.version, into.version));
-    let stopped = why.clone();
+    let (stopped, reach) = (why.clone(), Reach::of(&shown));
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -905,6 +991,7 @@ pub async fn combine_labels<S: AuthStore>(
                 if into_pick_one && two_of_in::<S>(transaction, &crowd_ids).await? {
                     return Err(stopped.stop::<S>(ErrorCode::PickOneConflict));
                 }
+                reach.ensure_in::<S>(transaction, ids.0, &stopped).await?;
                 rewrite.append_events::<S>(transaction, &events).await?;
                 S::retarget_issue_labels(transaction, ids.0, ids.1).await?;
                 S::delete_label(transaction, ids.0).await?;
@@ -934,6 +1021,7 @@ struct LabelWrite {
     joins_pick_one: bool,
     crowd_ids: Vec<LabelId>,
     rewrite: Option<Rewrite>,
+    reach: Reach,
 }
 
 impl LabelWrite {
@@ -958,6 +1046,9 @@ impl LabelWrite {
             return Err(stopped.stop::<S>(ErrorCode::PickOneConflict));
         }
         if let Some(rewrite) = &self.rewrite {
+            self.reach
+                .ensure_in::<S>(transaction, self.id, stopped)
+                .await?;
             rewrite.append_events::<S>(transaction, events).await?;
         }
         if S::update_label(

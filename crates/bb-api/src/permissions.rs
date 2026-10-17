@@ -406,6 +406,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("listLabels", Declared::SignedIn, Answer::Ordinary),
+    route("listLabelGroups", Declared::SignedIn, Answer::Ordinary),
     route(
         "createLabelGroup",
         Declared::Permission(Permission::ManageLabels),

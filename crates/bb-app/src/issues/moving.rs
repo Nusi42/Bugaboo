@@ -29,8 +29,8 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::issues::member;
 use crate::many_changes::ManyChangeNote;
-use crate::offers::lock_chain_in;
 use crate::projects::Why;
+use crate::projects::lock_chain_in;
 use crate::workflows::ensure_status_in_force_in;
 
 /// A move that the person may make, judged but not written yet.

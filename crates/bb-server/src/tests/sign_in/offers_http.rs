@@ -283,19 +283,39 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
         assert_eq!(group["may_manage"], true);
         // The group is offered in ACME and below, and not in the other projects.
         let says = |listed: &Value| -> Value {
-            listed["groups"]
+            listed["items"]
                 .as_array()
                 .and_then(|groups| groups.iter().find(|each| each["id"] == group["id"]))
                 .map_or(Value::Null, |found| found["offered_here"].clone())
         };
-        let in_acme = ada.send("GET", "/api/v1/labels?project=ACME", None).await?;
+        let in_acme = ada
+            .send(
+                "GET",
+                "/api/v1/label-groups?project=ACME&fields=id,offered_here",
+                None,
+            )
+            .await?;
         assert_eq!(says(ok(&in_acme)?), true);
-        let in_web = ada.send("GET", "/api/v1/labels?project=WEB", None).await?;
+        let in_web = ada
+            .send(
+                "GET",
+                "/api/v1/label-groups?project=WEB&fields=id,offered_here",
+                None,
+            )
+            .await?;
         // A project the group cannot reach does not list it at all.
         assert_eq!(says(ok(&in_web)?), Value::Null);
-        let in_sub = ada.send("GET", "/api/v1/labels?project=SUB", None).await?;
+        let in_sub = ada
+            .send(
+                "GET",
+                "/api/v1/label-groups?project=SUB&fields=id,offered_here",
+                None,
+            )
+            .await?;
         assert_eq!(says(ok(&in_sub)?), true, "and in the sub-projects of ACME");
-        let without = ada.send("GET", "/api/v1/labels", None).await?;
+        let without = ada
+            .send("GET", "/api/v1/label-groups?fields=id,offered_here", None)
+            .await?;
         assert_eq!(says(ok(&without)?), Value::Null);
         // A label in the group follows the group: the lead makes it; the group of nobody's project
         // takes no label from them.
@@ -330,29 +350,38 @@ async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> TestR
     .await
 }
 
+/// The project WEB (its ID) and a type with this name created in ACME (its ID).
+async fn web_and_a_type_of_acme(
+    ada: &mut Browser,
+    name: &str,
+) -> Result<(String, String), Failure> {
+    let web = ok(&ada
+        .send(
+            "POST",
+            PROJECTS,
+            Some(json!({"short_name": "WEB", "name": "Website"})),
+        )
+        .await?)?["id"]
+        .as_str()
+        .ok_or("no project ID")?
+        .to_owned();
+    let created = ada
+        .send(
+            "POST",
+            TYPES,
+            Some(json!({"name": name, "icon": "circle-help", "project": "ACME"})),
+        )
+        .await?;
+    Ok((web, id_in(ok(&created)?)?))
+}
+
 #[tokio::test]
 async fn sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_sibling_lead_or_a_key()
 -> TestResult {
     each_database("sec_03_subject_of_a_project", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let web = ok(&ada
-            .send(
-                "POST",
-                PROJECTS,
-                Some(json!({"short_name": "WEB", "name": "Website"})),
-            )
-            .await?)?["id"]
-            .as_str()
-            .ok_or("no project ID")?
-            .to_owned();
-        let question = id_in(ok(&ada
-            .send(
-                "POST",
-                TYPES,
-                Some(json!({"name": "Question", "icon": "circle-help", "project": "ACME"})),
-            )
-            .await?)?)?;
+        let (web, question) = web_and_a_type_of_acme(&mut ada, "Question").await?;
         let area = id_in(ok(&ada
             .send(
                 "POST",
@@ -405,6 +434,53 @@ async fn sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_siblin
                 if path.contains("/offers") {
                     assert_eq!(code(&reply), (StatusCode::NOT_FOUND, "resource.not_found"));
                 }
+            }
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_03_no_screen_names_a_type_of_a_project_the_reader_does_not_know() -> TestResult {
+    each_database("sec_03_type_names_everywhere", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (web, question) = web_and_a_type_of_acme(&mut ada, "Questionnaire").await?;
+        // A field limited to the type: the fields, the layouts and the workflows would name it.
+        ok(&ada
+            .send(
+                "POST",
+                "/api/v1/fields",
+                Some(json!({
+                    "name": "Customer",
+                    "kind": "text",
+                    "applies_to": "issues",
+                    "scope": {"issue_types": [question]},
+                })),
+            )
+            .await?)?;
+        let (mut gus, _) = site.person_in(StartingRole::Guest, "gus", &web).await?;
+        let (mut sam, _) = site
+            .person_in(StartingRole::ProjectLead, "sam", &web)
+            .await?;
+        let routes = [
+            "/api/v1/fields".to_owned(),
+            format!("/api/v1/layouts/editor?project=WEB&kind=new-issue&issue_type={question}"),
+            format!("/api/v1/layouts/form?project=WEB&kind=new-issue&issue_type={question}"),
+            format!("/api/v1/workflows/editor?project=WEB&issue_type={question}"),
+            format!("/api/v1/projects/{web}/statuses"),
+            format!("{TYPES}?project=WEB"),
+            "/api/v1/check-access/people?project=WEB".to_owned(),
+        ];
+        for (reader, label) in [(&mut gus, "a guest"), (&mut sam, "a lead of WEB")] {
+            for path in &routes {
+                let reply = reader.send("GET", path, None).await?;
+                let text = reply.body.to_string();
+                assert!(
+                    !text.contains("Questionnaire") && !text.contains(&question),
+                    "{label}: GET {path}: {text}"
+                );
             }
         }
         Ok(())

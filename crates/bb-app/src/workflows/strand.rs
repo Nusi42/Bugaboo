@@ -147,7 +147,7 @@ pub(crate) async fn content_in<S: AuthStore>(
 }
 
 /// Inside the transaction that writes an issue with this status, in the project whose chain from
-/// the top down is given (after `offers::lock_chain_in`, which takes the shared lock of the
+/// the top down is given (after `projects::lock_chain_in`, which takes the shared lock of the
 /// workflows): checks that the workflow that counts now still has the status, which the request
 /// was judged on. If a workflow was published meanwhile and dropped it, the write is stopped with
 /// `edit.version_changed`, and the person looks again.

@@ -241,13 +241,16 @@ function Lines({
  */
 export function OfferedIn({ createdIn, rows, isPending, error, onChange }: OfferedInProps) {
   // What a project created is offered in that project and below, never for the whole organization.
-  const forWholeOrganization = createdIn?.kind !== "project";
+  const forWholeOrganization = createdIn === undefined || createdIn.kind === "organization";
   return (
     <section {...partOf(part.stack)} aria-label={t("projects.offered-in-title")}>
       <h3 {...partOf(part.accessTopic)}>{t("projects.offered-in-title")}</h3>
       <p {...partOf(part.muted)}>{createdText(createdIn)}</p>
       {rows.length === 0 ? (
-        <p {...partOf(part.text)}>{t("projects.offered-in-everywhere")}</p>
+        // What a project created is offered there and below, which the sentence above says.
+        forWholeOrganization ? (
+          <p {...partOf(part.text)}>{t("projects.offered-in-everywhere")}</p>
+        ) : null
       ) : (
         <>
           <p {...partOf(part.muted)}>{t("projects.offered-in-rows")}</p>

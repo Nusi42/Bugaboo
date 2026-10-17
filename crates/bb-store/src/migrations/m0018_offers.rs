@@ -15,13 +15,19 @@
 //! deletes an issue type or a group of labels (they are retired), so no row is left without its
 //! subject; a change that deletes them must delete their rows in the same change.
 
-use sea_query::{ColumnDef, ForeignKey, Index, Table};
+use sea_query::{ColumnDef, ForeignKey, Iden as _, Index, Table};
 
 /// The reference of a column that holds the project a subject was created in.
-const PROJECT_REFERENCE: &str = "REFERENCES \"project\" (\"id\")";
+fn project_reference() -> String {
+    format!(
+        "REFERENCES \"{}\" (\"{}\")",
+        ProjectRow::Table.to_string(),
+        ProjectRow::Id.to_string()
+    )
+}
 
 use super::{Step, id_column};
-use crate::schema::{IssueTypeRow, LabelGroupRow, OfferRow, ProjectRow};
+use crate::schema::{IssueRow, IssueTypeRow, LabelGroupRow, OfferRow, ProjectRow};
 
 pub(super) fn steps() -> Vec<Step> {
     vec![
@@ -31,7 +37,7 @@ pub(super) fn steps() -> Vec<Step> {
                 .add_column(
                     ColumnDef::new(IssueTypeRow::Project)
                         .blob()
-                        .extra(PROJECT_REFERENCE),
+                        .extra(project_reference()),
                 )
                 .to_owned(),
         ),
@@ -41,7 +47,7 @@ pub(super) fn steps() -> Vec<Step> {
                 .add_column(
                     ColumnDef::new(LabelGroupRow::Project)
                         .blob()
-                        .extra(PROJECT_REFERENCE),
+                        .extra(project_reference()),
                 )
                 .to_owned(),
         ),
@@ -65,6 +71,16 @@ pub(super) fn steps() -> Vec<Step> {
                         .from(OfferRow::Table, OfferRow::Project)
                         .to(ProjectRow::Table, ProjectRow::Id),
                 )
+                .to_owned(),
+        ),
+        // The issue types in use on the issues of some projects (what a person may know of a type):
+        // answered from the index alone.
+        Step::Index(
+            Index::create()
+                .name("issue_by_project_and_type")
+                .table(IssueRow::Table)
+                .col(IssueRow::Project)
+                .col(IssueRow::IssueType)
                 .to_owned(),
         ),
         Step::Index(

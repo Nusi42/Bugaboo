@@ -53,6 +53,13 @@ export const queryKeys = {
     /** Who is editing a layout now. */
     editing: (layout: string) => ["layouts", "editing", layout],
   },
+  labels: {
+    all: ["labels"],
+    /** The groups of labels; with a project, each says whether the project offers it. */
+    groups: (project?: string) => ["labels", "groups", project ?? null],
+    /** The labels; with a project, those of groups that can reach it. */
+    list: (project?: string) => ["labels", "list", project ?? null],
+  },
   issueTypes: {
     all: ["issue-types"],
     /** The types; with a project, each says whether the project offers it. */
@@ -184,7 +191,6 @@ export function refreshFields(): void {
 
 /** The answers that show the tags and labels of an issue or the lists of them. */
 const LABEL_READS = [
-  "/api/v1/labels",
   "/api/v1/issues/{issue}/labels-and-tags",
   "/api/v1/projects/{project}/tag-suggestions",
   "/api/v1/issues/{issue}/history",
@@ -192,6 +198,7 @@ const LABEL_READS = [
 
 /** A label or tag changed: the answers that show them are read again. */
 export function refreshLabelReads(): void {
+  reread({ queryKey: queryKeys.labels.all });
   refreshReads(LABEL_READS);
 }
 

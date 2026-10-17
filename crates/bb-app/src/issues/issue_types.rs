@@ -310,11 +310,7 @@ pub async fn change_issue_type<S: AuthStore>(
         .clone();
     // A type the person may not know is not there for them (`offers/known.rs`).
     let shown = ctx.shown_to(&actor).await?;
-    let current = ctx
-        .known_types(&shown, vec![current])
-        .await?
-        .pop()
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+    let current = ctx.known_type(&shown, current.id).await?;
     let place = Place::from(current.project);
     let held = ctx
         .require(&actor, Permission::ManageIssueTypes, place)

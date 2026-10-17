@@ -1835,7 +1835,12 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * The groups of labels of the organization the person may know, a page at a time. Open to
+     *     everybody who is signed in. With `project`, only the groups that can reach that project, each
+     *     saying whether that project offers it.
+     */
+    get: operations["listLabelGroups"];
     put?: never;
     /**
      * Creates a group of labels for the whole organization or in a project. Needs *Manage labels and
@@ -1897,9 +1902,9 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The labels of the organization with their groups. Open to everybody who is signed in: the
-     *     people who put labels on issues choose from them. With `project`, each group says whether that
-     *     project offers it.
+     * The labels of the organization, a page at a time: those in a group the person may know and
+     *     those in no group. Open to everybody who is signed in: the people who put labels on issues
+     *     choose from them. With `project`, only the labels of groups that can reach that project.
      */
     get: operations["listLabels"];
     put?: never;
@@ -3756,6 +3761,11 @@ export interface components {
       /** @description Every field of the catalogue. */
       fields: components["schemas"]["LevelAnswerBody_FieldKey_FieldLevel"][];
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
+      /**
+       * @description The issue types the question may ask about: those the place offers and that are not
+       *     retired. The screen lists exactly these.
+       */
+      issue_types: components["schemas"]["IssueTypeRef"][];
       /** @description Every kind of people information. */
       kinds: components["schemas"]["LevelAnswerBody_PeopleKind_PeopleLevel"][];
       /** @description Every permission that counts here. */
@@ -4872,6 +4882,54 @@ export interface components {
        */
       version: number;
     };
+    /** @description A group of labels in a list: the fields that can be asked for. */
+    LabelGroupItem: {
+      created_in?: components["schemas"]["PlaceRef"] | null;
+      /** @description The ID of the group. */
+      id?: string | null;
+      /** @description Whether the person who asks may change that for the project. */
+      may_change_offer?: boolean | null;
+      /** @description Whether the person who asks looks after it. */
+      may_manage?: boolean | null;
+      /** @description What it is called. */
+      name?: string | null;
+      /**
+       * @description Whether the project the list is asked about offers it. Only when the request names a
+       *     `project` and asks for the field.
+       */
+      offered_here?: boolean | null;
+      /**
+       * @description The row that says so at exactly that project; left out while the project follows the place
+       *     above it.
+       */
+      own_offer?: boolean | null;
+      /** @description Whether an issue has at most one label of the group. */
+      pick_one?: boolean | null;
+      /** @description Whether it is retired: old issues keep its labels, new ones are not offered them. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change.
+       */
+      version?: number | null;
+    };
+    /** @description A label in a list: the fields that can be asked for. */
+    LabelItem: {
+      color?: components["schemas"]["ChoiceColor"] | null;
+      /** @description The group it is in, if any. */
+      group?: string | null;
+      /** @description The ID of the label. */
+      id?: string | null;
+      /** @description What it is called. */
+      name?: string | null;
+      /** @description Whether it is retired: old issues keep it, new ones are not offered it. */
+      retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change.
+       */
+      version?: number | null;
+    };
     /** @description A label as a small reference: what a chip needs. */
     LabelRefBody: {
       /** @description Its color, as a category token of the theme. */
@@ -4882,15 +4940,6 @@ export interface components {
       id: string;
       /** @description What it is called. */
       name: string;
-    };
-    /** @description The labels of the organization with their groups. */
-    LabelsBody: {
-      /** @description The groups, in the order they are offered in. */
-      groups: components["schemas"]["LabelGroupBody"][];
-      /** @description The labels, those in a group and those in none. */
-      labels: components["schemas"]["LabelBody"][];
-      /** @description Whether the person looks after labels and tags. */
-      may_manage: boolean;
     };
     /** @description What the editor shows for a place. */
     LayoutEditorBody: {
@@ -6204,6 +6253,70 @@ export interface components {
         /**
          * Format: int64
          * @description Counts up with every change. A change is made on the version that was looked at.
+         */
+        version?: number | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_LabelGroupItem: {
+      /** @description The items of this page. */
+      items: {
+        created_in?: components["schemas"]["PlaceRef"] | null;
+        /** @description The ID of the group. */
+        id?: string | null;
+        /** @description Whether the person who asks may change that for the project. */
+        may_change_offer?: boolean | null;
+        /** @description Whether the person who asks looks after it. */
+        may_manage?: boolean | null;
+        /** @description What it is called. */
+        name?: string | null;
+        /**
+         * @description Whether the project the list is asked about offers it. Only when the request names a
+         *     `project` and asks for the field.
+         */
+        offered_here?: boolean | null;
+        /**
+         * @description The row that says so at exactly that project; left out while the project follows the place
+         *     above it.
+         */
+        own_offer?: boolean | null;
+        /** @description Whether an issue has at most one label of the group. */
+        pick_one?: boolean | null;
+        /** @description Whether it is retired: old issues keep its labels, new ones are not offered them. */
+        retired?: boolean | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change.
+         */
+        version?: number | null;
+      }[];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /**
+     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
+     *     items cut to the chosen fields ([`Page::of_authorized`]).
+     */
+    Page_LabelItem: {
+      /** @description The items of this page. */
+      items: {
+        color?: components["schemas"]["ChoiceColor"] | null;
+        /** @description The group it is in, if any. */
+        group?: string | null;
+        /** @description The ID of the label. */
+        id?: string | null;
+        /** @description What it is called. */
+        name?: string | null;
+        /** @description Whether it is retired: old issues keep it, new ones are not offered it. */
+        retired?: boolean | null;
+        /**
+         * Format: int64
+         * @description Counts up with every change.
          */
         version?: number | null;
       }[];
@@ -17671,6 +17784,93 @@ export interface operations {
       };
     };
   };
+  listLabelGroups: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
+        /** @description The ID or short name of a project. */
+        project?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The groups of labels. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_LabelGroupItem"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   createLabelGroup: {
     parameters: {
       query?: never;
@@ -18053,6 +18253,12 @@ export interface operations {
   listLabels: {
     parameters: {
       query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: string;
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: string;
+        /** @description How many items a page holds at most (default 50, at most 100). */
+        limit?: number;
         /** @description The ID or short name of a project. */
         project?: string;
       };
@@ -18062,7 +18268,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The groups and the labels. */
+      /** @description The labels. */
       200: {
         headers: {
           /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
@@ -18070,7 +18276,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["LabelsBody"];
+          "application/json": components["schemas"]["Page_LabelItem"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */

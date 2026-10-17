@@ -79,7 +79,7 @@ function MoveFields({ draft, onDraft }: ActionFieldsProps) {
 /** *Add a label*: one of the labels that are not retired. */
 function LabelFields({ draft, onDraft }: ActionFieldsProps) {
   const labels = useLabels();
-  const offered = (labels.data?.labels ?? []).filter((label) => !label.retired);
+  const offered = labels.labels.filter((label) => !label.retired);
   return (
     <SelectField
       label={t("many-changes.field-label")}

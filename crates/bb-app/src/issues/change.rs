@@ -19,8 +19,9 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::fields::{Item, ItemValues, PlannedValues};
 use crate::follow::started_following;
-use crate::offers::{ensure_type_takes_issues_in, lock_chain_in};
+use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
+use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 use std::sync::Arc;
 
@@ -243,7 +244,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         next.priority = input.priority.unwrap_or(current.priority);
         if let Some(issue_type) = input.issue_type {
-            next.issue_type = self.writable_type(issue_type, &current).await?;
+            next.issue_type = self.writable_type(actor, issue_type, &current).await?;
         }
         let chain = self.chain_of(current.project).await?;
         // The status of the request is judged in the workflow that counts afterwards, from the
@@ -303,22 +304,37 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// the type is only judged when it changes).
     async fn writable_type(
         &self,
+        actor: &Actor,
         wanted: IssueTypeId,
         current: &Issue,
     ) -> Result<IssueTypeId, AppError> {
         if wanted == current.issue_type {
             return Ok(wanted);
         }
-        let found = self
-            .store()
-            .issue_type(wanted)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
         let chain = self.chain_of(current.project).await?;
-        self.ensure_type_takes_issues(&found, &chain).await?;
+        self.writable_issue_type(actor, wanted, &chain).await?;
         Ok(wanted)
     }
+}
+
+/// Inside the change of an issue: a change of the type or of the status looks at the offers and the
+/// workflow again, on what is stored now, after the shared lock of the workflows; any other change
+/// takes no such lock.
+async fn ensure_type_and_status_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    stored: &Issue,
+    written: &Issue,
+    stopped: &Why,
+) -> Result<(), S::Error> {
+    if written.issue_type == stored.issue_type && written.status == stored.status {
+        return Ok(());
+    }
+    let chain = lock_chain_in::<S>(transaction, written.project).await?;
+    if written.issue_type != stored.issue_type {
+        ensure_type_takes_issues_in::<S>(transaction, &chain, written.issue_type, stopped).await?;
+    }
+    // The workflow the status was judged on is still the one that counts.
+    ensure_written_status_in::<S>(transaction, &chain, written, Some(stored), stopped).await
 }
 
 /// The rows that say who an issue is assigned to.
@@ -408,25 +424,7 @@ pub async fn change_issue<S: AuthStore>(
                 if stored.version != version {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
-                let chain = lock_chain_in::<S>(transaction, written.project).await?;
-                if written.issue_type != stored.issue_type {
-                    ensure_type_takes_issues_in::<S>(
-                        transaction,
-                        &chain,
-                        written.issue_type,
-                        &stopped,
-                    )
-                    .await?;
-                }
-                // The workflow the status was judged on is still the one that counts.
-                ensure_written_status_in::<S>(
-                    transaction,
-                    &chain,
-                    &written,
-                    Some(&stored),
-                    &stopped,
-                )
-                .await?;
+                ensure_type_and_status_in::<S>(transaction, &stored, &written, &stopped).await?;
                 if !S::update_issue(transaction, &written, version).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }

@@ -36,7 +36,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         Ok(rows
             .iter()
-            .filter(|row| row.project.is_none_or(|project| shown.sees(project)))
+            .filter(|row| row.project.is_none_or(|project| shown.knows(project)))
             .map(|row| {
                 let place = Place::from(row.project);
                 OfferRowView {

@@ -162,7 +162,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(WorkflowEditor {
             project: at.project.clone(),
             issue_type: match at.issue_type {
-                Some(id) => self.issue_type_ref(id).await?,
+                Some(id) => self.issue_type_ref(actor, id).await?,
                 None => None,
             },
             workflow: slot,

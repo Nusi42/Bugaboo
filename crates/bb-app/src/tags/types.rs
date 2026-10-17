@@ -323,23 +323,49 @@ impl From<&Label> for LabelView {
 
 /// The labels of the organization with their groups, in the order they are offered in.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct Labels {
-    /// The groups.
-    pub groups: Vec<LabelGroupView>,
-    /// The labels, those in a group and those that are in none.
-    pub labels: Vec<LabelView>,
-    /// Whether the person looks after labels and tags.
-    pub may_manage: bool,
+pub struct LabelPage {
+    /// The labels, those in a group and those that are in none, in the order they are offered in.
+    pub items: Vec<LabelView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
 }
 
-impl Masked for Labels {}
+impl Masked for LabelPage {}
 
-/// The labels of the organization.
+/// A page of the groups of labels the person may know.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct LabelGroupPage {
+    /// The groups, in the order they are offered in.
+    pub items: Vec<LabelGroupView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
+}
+
+impl Masked for LabelGroupPage {}
+
+/// The labels of the organization, a page at a time.
 pub struct LabelsQuery {
     /// The secret of the session of the request.
     pub session_token: String,
-    /// A project, by its ID or short name: each group then says whether the project offers it.
+    /// A project, by its ID or short name: only the labels of groups that can reach it.
     pub project: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many labels the page holds at most.
+    pub limit: u32,
+}
+
+/// The groups of labels of the organization, a page at a time.
+pub struct LabelGroupsQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// A project, by its ID or short name: each group then says whether the project offers it, and
+    /// only the groups that can reach it are listed.
+    pub project: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many groups the page holds at most.
+    pub limit: u32,
 }
 
 /// Make a group of labels, at the end of the order.

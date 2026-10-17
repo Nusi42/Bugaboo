@@ -44,6 +44,8 @@ impl LineMaker {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The maker of lines for a request.
     pub(crate) async fn line_maker(&self) -> Result<LineMaker, AppError> {
+        // Only the types of the issues the viewer reads are named, which they know by use
+        // (`offers/known.rs`); a line of an issue they may not read is never made.
         let types = self
             .store()
             .issue_types()

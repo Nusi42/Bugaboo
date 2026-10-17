@@ -370,7 +370,20 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
 -> TestResult {
     each_database("perf_05_types_and_groups", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        // A guest of another project knows none of the types and groups of ACME, so the lists
+        // look for what they use on the issues they read.
+        let web = ok(&ada
+            .send(
+                "POST",
+                PROJECTS,
+                Some(json!({"short_name": "WEB", "name": "Website"})),
+            )
+            .await?)?["id"]
+            .as_str()
+            .ok_or("no project ID")?
+            .to_owned();
+        let (mut gus, _) = site.person_in(StartingRole::Guest, "gus", &web).await?;
         let create = async |ada: &mut Browser, range: std::ops::Range<u32>| -> TestResult {
             for number in range {
                 ok(&ada
@@ -399,25 +412,39 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
             Ok(())
         };
         let types = "/api/v1/issue-types?project=ACME&limit=200";
-        let labels = "/api/v1/labels?project=ACME";
+        let labels = "/api/v1/label-groups?project=ACME";
         let mut counter = Counter::on(&rig.database);
         create(&mut ada, 0..5).await?;
         // Warm, then count.
         ok(&ada.send("GET", types, None).await?)?;
         ok(&ada.send("GET", labels, None).await?)?;
+        ok(&gus
+            .send("GET", "/api/v1/issue-types?limit=200", None)
+            .await?)?;
+        ok(&gus.send("GET", "/api/v1/label-groups", None).await?)?;
         counter.take();
         ok(&ada.send("GET", types, None).await?)?;
         let types_on_five = counter.take();
         ok(&ada.send("GET", labels, None).await?)?;
         let labels_on_five = counter.take();
+        ok(&gus
+            .send("GET", "/api/v1/issue-types?limit=200", None)
+            .await?)?;
+        ok(&gus.send("GET", "/api/v1/label-groups", None).await?)?;
+        let guest_on_five = counter.take();
         create(&mut ada, 5..40).await?;
         counter.take();
         let listed = ada.send("GET", types, None).await?;
         assert!(ok(&listed)?["items"].as_array().map_or(0, Vec::len) >= 40);
         let types_on_forty = counter.take();
         let listed = ada.send("GET", labels, None).await?;
-        assert!(ok(&listed)?["groups"].as_array().map_or(0, Vec::len) >= 40);
+        assert!(ok(&listed)?["items"].as_array().map_or(0, Vec::len) >= 40);
         let labels_on_forty = counter.take();
+        ok(&gus
+            .send("GET", "/api/v1/issue-types?limit=200", None)
+            .await?)?;
+        ok(&gus.send("GET", "/api/v1/label-groups", None).await?)?;
+        let guest_on_forty = counter.take();
         assert!(
             types_on_five > 0 && labels_on_five > 0,
             "the counter sees nothing"
@@ -429,6 +456,10 @@ async fn perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_
         assert_eq!(
             labels_on_five, labels_on_forty,
             "more groups must not run more statements"
+        );
+        assert_eq!(
+            guest_on_five, guest_on_forty,
+            "more subjects the reader does not know must not run more statements"
         );
         Ok(())
     })

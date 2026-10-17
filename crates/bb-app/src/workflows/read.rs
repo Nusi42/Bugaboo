@@ -1,6 +1,7 @@
 //! Seeing the statuses a project offers.
 
 use bb_core::ErrorCode;
+use bb_core::offer::reaches;
 use bb_policy::{Authorized, Masked};
 use serde::Serialize;
 
@@ -50,7 +51,12 @@ pub async fn project_statuses<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     let mut statuses: Vec<StatusView> = Vec::new();
-    for issue_type in types.iter().filter(|each| each.retired_at.is_none()) {
+    // Only the types that can reach the project: the statuses of a type created in another project
+    // are no business of this one (and nothing about that type is told).
+    for issue_type in types
+        .iter()
+        .filter(|each| each.retired_at.is_none() && reaches(each.project, &chain))
+    {
         let workflow = ctx.workflow_in_force(&chain, Some(issue_type.id)).await?;
         for status in &workflow.statuses {
             let shown = StatusView::from(status);

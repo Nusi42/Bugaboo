@@ -41,6 +41,7 @@ pub async fn create_starting_workflows<S: AuthStore>(
     if !none_made || ctx.store().has_issues().await.map_err(failed)? {
         return Ok(());
     }
+    // The job of the first start judges for nobody: it may see all types.
     let types = ctx
         .store()
         .issue_types()

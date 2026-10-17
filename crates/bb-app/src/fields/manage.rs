@@ -27,6 +27,7 @@ use serde_json::{Value, json};
 use super::member;
 use super::pattern::{Linear, is_usable};
 use super::types::{ChangeField, CreateField, Definition, FieldView, NewChoice};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::input::{clean_name, clean_text};
 use crate::projects::Why;
@@ -135,9 +136,15 @@ fn default_text(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Checks where a field is used: the projects and issue types are there, and a field for
-    /// projects has no issue types.
-    async fn check_scope(&self, applies_to: FieldFor, scope: &Scope) -> Result<Scope, AppError> {
+    /// Checks where a field is used: the projects and issue types are there (for the person: a type
+    /// they may not know is as good as none, `offers/known.rs`), and a field for projects has no
+    /// issue types.
+    async fn check_scope(
+        &self,
+        actor: &Actor,
+        applies_to: FieldFor,
+        scope: &Scope,
+    ) -> Result<Scope, AppError> {
         if applies_to == FieldFor::Projects && !scope.issue_types.is_empty() {
             return Err(ErrorCode::InvalidRequest.into());
         }
@@ -153,11 +160,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
             checked.projects.push(*project);
         }
+        let shown = self.shown_to(actor).await?;
         let types = self
             .store()
             .issue_types()
             .await
             .map_err(|error| internal::<S>(&error))?;
+        let types = self.known_types(&shown, types).await?;
         for issue_type in &scope.issue_types {
             if checked.issue_types.contains(issue_type) {
                 continue;
@@ -257,7 +266,9 @@ pub async fn create_field<S: AuthStore>(
     if !look.fits(kind) || (!kind.has_choices() && !input.choices.is_empty()) {
         return Err(ErrorCode::InvalidRequest.into());
     }
-    let scope = ctx.check_scope(input.applies_to, &input.scope).await?;
+    let scope = ctx
+        .check_scope(&actor, input.applies_to, &input.scope)
+        .await?;
     let id =
         FieldId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?;
     let choices = ctx.new_choices(id, &input.choices)?;
@@ -411,6 +422,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The field with what the request changes applied, after every part has been checked.
     async fn changed_definition(
         &self,
+        actor: &Actor,
         input: &ChangeField,
         current: &Definition,
         definitions: &[Definition],
@@ -452,7 +464,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             after.field.never_to_assistant = never;
         }
         if let Some(scope) = &input.scope {
-            after.scope = self.check_scope(current.field.applies_to, scope).await?;
+            after.scope = self
+                .check_scope(actor, current.field.applies_to, scope)
+                .await?;
         }
         if let Some(retired) = input.retired {
             after.field.retired_at = if retired {
@@ -507,7 +521,7 @@ pub async fn change_field<S: AuthStore>(
         ));
     }
     let mut after = ctx
-        .changed_definition(&input, &current, &definitions)
+        .changed_definition(&actor, &input, &current, &definitions)
         .await?;
     let mut changes = differences(&current, &after);
     if changes.is_empty() {

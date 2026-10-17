@@ -189,6 +189,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             Some(json!({"into": a_tag(fixture).await?, "version": 1, "into_version": 1})),
         ),
         "listLabels" => ("GET", "/api/v1/labels".into(), None),
+        "listLabelGroups" => ("GET", "/api/v1/label-groups".into(), None),
         "createLabelGroup" => (
             "POST",
             "/api/v1/label-groups".into(),

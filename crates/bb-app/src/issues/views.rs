@@ -56,6 +56,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         viewer: Arc<Evaluation>,
         project: Project,
     ) -> Result<IssueViews, AppError> {
+        // Every type is read to name the type of an issue the viewer reads: a type in use on an
+        // issue they read is known to them (`offers/known.rs`), and no other name is given out.
         let types = self
             .store()
             .issue_types()

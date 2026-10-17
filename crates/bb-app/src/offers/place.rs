@@ -23,6 +23,35 @@ const fn refusal_code(refusal: TypeRefusal) -> ErrorCode {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The issue type a write names, for a person: `resource.not_found` for one that is not there
+    /// or that they may not know (`known.rs`), then the refusals of
+    /// [`Self::ensure_type_takes_issues`]. A type of the organization is known to everybody, so
+    /// only one created in a project costs a look at what the person knows.
+    pub(crate) async fn writable_issue_type(
+        &self,
+        actor: &crate::access::Actor,
+        id: IssueTypeId,
+        chain: &[ProjectId],
+    ) -> Result<IssueType, AppError> {
+        let found = self
+            .store()
+            .issue_type(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let found = if found.project.is_some() {
+            let shown = self.shown_to(actor).await?;
+            self.known_types(&shown, vec![found])
+                .await?
+                .pop()
+                .ok_or(AppError::Refused(ErrorCode::NotFound))?
+        } else {
+            found
+        };
+        self.ensure_type_takes_issues(&found, chain).await?;
+        Ok(found)
+    }
+
     /// Refuses an issue type that takes no new issue in the project whose chain from the top down
     /// is given: it is retired (`issue.type_retired`), or the project does not offer it
     /// (`issue.type_not_offered`). An issue keeps a type that is retired or not offered; only a new
@@ -39,24 +68,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         type_takes_issues(found, &offers, chain).map_err(|refusal| refusal_code(refusal).into())
     }
-}
-
-/// Inside the transaction that writes an issue (or a label on one) in a project: takes the lock of
-/// the workflows shared, before any lock on the codes of a project (the one order of the locks,
-/// see `LockClass`), and reads the projects from the top down to the project, which the offers and
-/// the workflow are judged on.
-///
-/// # Errors
-/// The error of the store.
-pub(crate) async fn lock_chain_in<S: AuthStore>(
-    transaction: &mut S::Transaction,
-    project: ProjectId,
-) -> Result<Vec<ProjectId>, S::Error> {
-    S::lock_workflows_shared(transaction).await?;
-    Ok(crate::projects::tree_in::<S>(transaction)
-        .await?
-        .chain(project)
-        .unwrap_or_default())
 }
 
 /// Inside the transaction that writes an issue of this type in the project whose chain is given
@@ -130,6 +141,6 @@ pub(crate) async fn group_offers_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     project: ProjectId,
 ) -> Result<GroupOffers, S::Error> {
-    let chain = lock_chain_in::<S>(transaction, project).await?;
+    let chain = crate::projects::lock_chain_in::<S>(transaction, project).await?;
     Ok(GroupOffers::new(S::offers_in(transaction).await?, chain))
 }

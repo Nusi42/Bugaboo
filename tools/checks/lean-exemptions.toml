@@ -121,6 +121,12 @@ reason = "The answer holds one entry for each field of the catalogue (16 in M2):
 
 [[exempt]]
 route = "GET /api/v1/check-access/people/{person}"
+property = "issue_types"
+whole_value = true
+reason = "The answer holds the issue types the question may ask about: those the place offers and that are not retired, at most the limit of types of each place on the chain of the place (ISSUE_TYPES_MAX, M4 WP-11): a list bounded by the code, not one that grows with data (M2-F20)."
+
+[[exempt]]
+route = "GET /api/v1/check-access/people/{person}"
 property = "kinds"
 whole_value = true
 reason = "The answer holds one entry for each kind of people information (10 in M2): a list bounded by the code, not one that grows with data (M2-F20)."
@@ -177,18 +183,6 @@ route = "GET /api/v1/issues/{issue}/labels-and-tags"
 property = "labels"
 whole_value = true
 reason = "The labels of one issue: at most 30, refused when more are put on, so the list is bounded when it is written (M3 WP-08, M3-F120)."
-
-[[exempt]]
-route = "GET /api/v1/labels"
-property = "groups"
-whole_value = true
-reason = "The groups of labels of the organization: at most 100, refused when more are made, and the screen that chooses a label needs all of them at once (M3 WP-08, M3-F120)."
-
-[[exempt]]
-route = "GET /api/v1/labels"
-property = "labels"
-whole_value = true
-reason = "The labels of the organization: at most 1,000, refused when more are made, and the screen that chooses a label needs all of them at once (M3 WP-08, M3-F120)."
 
 [[exempt]]
 route = "GET /api/v1/projects/{project}/tag-suggestions"

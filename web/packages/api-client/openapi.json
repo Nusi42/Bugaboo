@@ -12687,6 +12687,141 @@
       }
     },
     "/api/v1/label-groups": {
+      "get": {
+        "tags": ["tags"],
+        "summary": "The groups of labels of the organization the person may know, a page at a time. Open to\neverybody who is signed in. With `project`, only the groups that can reach that project, each\nsaying whether that project offers it.",
+        "operationId": "listLabelGroups",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID or short name of a project.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The groups of labels.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_LabelGroupItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
       "post": {
         "tags": ["tags"],
         "summary": "Creates a group of labels for the whole organization or in a project. Needs *Manage labels and\ntags* where it is made.",
@@ -13190,9 +13325,38 @@
     "/api/v1/labels": {
       "get": {
         "tags": ["tags"],
-        "summary": "The labels of the organization with their groups. Open to everybody who is signed in: the\npeople who put labels on issues choose from them. With `project`, each group says whether that\nproject offers it.",
+        "summary": "The labels of the organization, a page at a time: those in a group the person may know and\nthose in no group. Open to everybody who is signed in: the people who put labels on issues\nchoose from them. With `project`, only the labels of groups that can reach that project.",
         "operationId": "listLabels",
         "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
           {
             "name": "project",
             "in": "query",
@@ -13205,7 +13369,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The groups and the labels.",
+            "description": "The labels.",
             "headers": {
               "etag": {
                 "schema": {
@@ -13217,7 +13381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LabelsBody"
+                  "$ref": "#/components/schemas/Page_LabelItem"
                 }
               }
             }
@@ -24255,7 +24419,7 @@
       "CheckAccessBody": {
         "type": "object",
         "description": "What a person can do in a place, and why.",
-        "required": ["person", "permissions", "fields", "kinds", "differs_by_type"],
+        "required": ["person", "permissions", "fields", "kinds", "differs_by_type", "issue_types"],
         "properties": {
           "differs_by_type": {
             "type": "boolean",
@@ -24278,6 +24442,13 @@
                 "type": "null"
               }
             ]
+          },
+          "issue_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueTypeRef"
+            },
+            "description": "The issue types the question may ask about: those the place offers and that are not\nretired. The screen lists exactly these."
           },
           "kinds": {
             "type": "array",
@@ -26499,6 +26670,98 @@
           }
         }
       },
+      "LabelGroupItem": {
+        "type": "object",
+        "description": "A group of labels in a list: the fields that can be asked for.",
+        "properties": {
+          "created_in": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRef",
+                "description": "Where it was created: the whole organization or a project. It is looked after where it was\ncreated."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the group."
+          },
+          "may_change_offer": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks may change that for the project."
+          },
+          "may_manage": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks looks after it."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "offered_here": {
+            "type": ["boolean", "null"],
+            "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project` and asks for the field."
+          },
+          "own_offer": {
+            "type": ["boolean", "null"],
+            "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
+          },
+          "pick_one": {
+            "type": ["boolean", "null"],
+            "description": "Whether an issue has at most one label of the group."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is retired: old issues keep its labels, new ones are not offered them."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change."
+          }
+        }
+      },
+      "LabelItem": {
+        "type": "object",
+        "description": "A label in a list: the fields that can be asked for.",
+        "properties": {
+          "color": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChoiceColor",
+                "description": "Its color, as a category token of the theme."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group": {
+            "type": ["string", "null"],
+            "description": "The group it is in, if any."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the label."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is retired: old issues keep it, new ones are not offered it."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change."
+          }
+        }
+      },
       "LabelRefBody": {
         "type": "object",
         "description": "A label as a small reference: what a chip needs.",
@@ -26519,31 +26782,6 @@
           "name": {
             "type": "string",
             "description": "What it is called."
-          }
-        }
-      },
-      "LabelsBody": {
-        "type": "object",
-        "description": "The labels of the organization with their groups.",
-        "required": ["groups", "labels", "may_manage"],
-        "properties": {
-          "groups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LabelGroupBody"
-            },
-            "description": "The groups, in the order they are offered in."
-          },
-          "labels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LabelBody"
-            },
-            "description": "The labels, those in a group and those in none."
-          },
-          "may_manage": {
-            "type": "boolean",
-            "description": "Whether the person looks after labels and tags."
           }
         }
       },
@@ -29613,6 +29851,128 @@
                   "type": ["integer", "null"],
                   "format": "int64",
                   "description": "Counts up with every change. A change is made on the version that was looked at."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_LabelGroupItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A group of labels in a list: the fields that can be asked for.",
+              "properties": {
+                "created_in": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlaceRef",
+                      "description": "Where it was created: the whole organization or a project. It is looked after where it was\ncreated."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the group."
+                },
+                "may_change_offer": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks may change that for the project."
+                },
+                "may_manage": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks looks after it."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "offered_here": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project` and asks for the field."
+                },
+                "own_offer": {
+                  "type": ["boolean", "null"],
+                  "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
+                },
+                "pick_one": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether an issue has at most one label of the group."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it is retired: old issues keep its labels, new ones are not offered them."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_LabelItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A label in a list: the fields that can be asked for.",
+              "properties": {
+                "color": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChoiceColor",
+                      "description": "Its color, as a category token of the theme."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "group": {
+                  "type": ["string", "null"],
+                  "description": "The group it is in, if any."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the label."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it is retired: old issues keep it, new ones are not offered it."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change."
                 }
               }
             },

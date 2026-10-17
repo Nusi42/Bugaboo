@@ -77,6 +77,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let held_tags = store.issue_tags(issue.id).await.map_err(internal)?;
         let labels = store.labels().await.map_err(internal)?;
         let held_labels = store.issue_labels(issue.id).await.map_err(internal)?;
+        // The issue is one the viewer reads, so its type and its labels are known to them by use
+        // (`offers/known.rs`).
         let issue_type = store
             .issue_type(issue.issue_type)
             .await

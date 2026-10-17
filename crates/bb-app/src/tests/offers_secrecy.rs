@@ -13,8 +13,8 @@ use bb_core::tags::{LABEL_GROUPS_MAX, LABELS_MAX};
 use bb_policy::StartingRole;
 
 use super::offers::{
-    Groups, all_labels, another_type, change, group_in, groups, label_on, lead_of, refused, types,
-    version_of,
+    Groups, all_labels, another_type, change, group_in, groups, label_on, lead_of, new_issue,
+    refused, types, version_of,
 };
 use super::scenarios_issues::an_issue;
 use super::workflows_rules::member;
@@ -499,5 +499,67 @@ async fn tag_02_a_list_about_a_project_holds_only_the_subjects_that_can_reach_it
     // Without a project the list holds everything the person may know.
     let all = name_of(&types(&g.world, &g.admin, None).await?);
     assert!(all.contains(&"In OTHER".to_owned()));
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_03_a_visible_sub_project_under_a_hidden_parent_knows_what_reaches_it() -> Outcome {
+    let g = groups().await?;
+    let world = &g.world;
+    let create = async |parent: Option<ProjectId>, short: &str| {
+        crate::projects::create_project(
+            &world.ctx(),
+            crate::projects::CreateProject {
+                session_token: g.admin.clone(),
+                parent,
+                short_name: short.to_owned(),
+                name: short.to_owned(),
+            },
+        )
+        .await
+    };
+    let hidden = create(None, "HID").await?.into_value().id;
+    let visible = create(Some(hidden), "VIS").await?.into_value().id;
+    let inherited = new_type(world, &g.admin, Some("HID"), "Inherited").await?;
+    let area = group_in(world, &g.admin, Some("HID"), "Shared area").await?;
+    let lead = lead_of(world, "vera@example.test", visible)
+        .await?
+        .session_token;
+    // The lead sees VIS and not HID, and is told what HID created because it reaches VIS.
+    let listed = types(world, &lead, Some("VIS")).await?;
+    assert!(listed.iter().any(|each| each.id == inherited.id));
+    assert!(
+        all_labels(world, &lead, Some("VIS"))
+            .await?
+            .groups
+            .iter()
+            .any(|each| each.id == area)
+    );
+    // New issue in VIS offers it, and the lead may switch it off there.
+    crate::issues::create_issue(&world.ctx(), new_issue(&lead, "VIS", inherited.id)).await?;
+    change(world, &lead, inherited.id, vec![at("VIS", Some(false))]).await?;
+    let refused_now =
+        crate::issues::create_issue(&world.ctx(), new_issue(&lead, "VIS", inherited.id)).await;
+    assert!(refused(&refused_now, ErrorCode::IssueTypeNotOffered));
+    // The name of HID itself is not told.
+    let created_in = listed
+        .iter()
+        .find(|each| each.id == inherited.id)
+        .and_then(|each| each.created_in.clone());
+    assert_eq!(created_in, Some(crate::access::ProjectLabel::Hidden));
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_03_an_issue_of_a_type_the_writer_does_not_know_is_not_found() -> Outcome {
+    let g = groups().await?;
+    let question = new_type(&g.world, &g.lead, Some("ACME"), "Question").await?;
+    let outside = outsiders(&g).await?;
+    let create = crate::issues::create_issue(
+        &g.world.ctx(),
+        new_issue(&outside.sibling_lead, "OTHER", question.id),
+    )
+    .await;
+    assert!(refused(&create, ErrorCode::NotFound));
     Ok(())
 }

@@ -26,12 +26,8 @@ export function LabelsPage(props: LabelsPageProps) {
         <p {...partOf(part.text)}>{t("labels.intro")}</p>
         {labels.isError ? <Alert tone={alertTone.danger}>{messageOf(labels.error)}</Alert> : null}
       </Card>
-      <GroupsSection groups={labels.data?.groups ?? []} {...props} />
-      <LabelsSection
-        labels={labels.data?.labels ?? []}
-        groups={labels.data?.groups ?? []}
-        {...props}
-      />
+      <GroupsSection groups={labels.groups} {...props} />
+      <LabelsSection labels={labels.labels} groups={labels.groups} {...props} />
       <TagsSection {...props} />
     </div>
   );

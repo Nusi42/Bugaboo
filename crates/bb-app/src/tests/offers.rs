@@ -24,8 +24,9 @@ use crate::offers::{ChangeOffers, OfferChange, OffersQuery, change_offers, offer
 use crate::projects::{CreateProject, create_project};
 use crate::tags::{
     AddLabel, ChangeLabelGroup, CreateLabel, CreateLabelGroup, IssueLabelsAndTags,
-    IssueLabelsAndTagsQuery, Labels, LabelsQuery, add_label, change_label_group, create_label,
-    create_label_group, issue_labels_and_tags, labels,
+    IssueLabelsAndTagsQuery, LabelGroupView, LabelGroupsQuery, LabelView, LabelsQuery, add_label,
+    change_label_group, create_label, create_label_group, issue_labels_and_tags, label_groups,
+    labels,
 };
 
 /// A change that offers or does not offer a subject in a project, by its short name.
@@ -91,7 +92,7 @@ pub(super) async fn change(
     .map(|_| ())
 }
 
-fn new_issue(who: &str, project: &str, issue_type: IssueTypeId) -> CreateIssue {
+pub(super) fn new_issue(who: &str, project: &str, issue_type: IssueTypeId) -> CreateIssue {
     CreateIssue {
         session_token: who.to_owned(),
         project: project.to_owned(),
@@ -406,20 +407,62 @@ pub(super) async fn group_in(
     .id)
 }
 
+/// The groups and the labels a person is told of, every page read.
+pub(super) struct Labels {
+    pub(super) groups: Vec<LabelGroupView>,
+    pub(super) labels: Vec<LabelView>,
+}
+
+/// A page size that makes the tests read more than one page of what they make.
+const PAGE: u32 = 50;
+
 pub(super) async fn all_labels(
     world: &World,
     who: &str,
     project: Option<&str>,
 ) -> Result<Labels, AppError> {
-    Ok(labels(
-        &world.ctx(),
-        LabelsQuery {
-            session_token: who.to_owned(),
-            project: project.map(str::to_owned),
-        },
-    )
-    .await?
-    .into_value())
+    let mut found = Labels {
+        groups: Vec::new(),
+        labels: Vec::new(),
+    };
+    let mut cursor = None;
+    loop {
+        let page = label_groups(
+            &world.ctx(),
+            LabelGroupsQuery {
+                session_token: who.to_owned(),
+                project: project.map(str::to_owned),
+                cursor: cursor.take(),
+                limit: PAGE,
+            },
+        )
+        .await?
+        .into_value();
+        found.groups.extend(page.items);
+        cursor = page.next_cursor;
+        if cursor.is_none() {
+            break;
+        }
+    }
+    loop {
+        let page = labels(
+            &world.ctx(),
+            LabelsQuery {
+                session_token: who.to_owned(),
+                project: project.map(str::to_owned),
+                cursor: cursor.take(),
+                limit: PAGE,
+            },
+        )
+        .await?
+        .into_value();
+        found.labels.extend(page.items);
+        cursor = page.next_cursor;
+        if cursor.is_none() {
+            break;
+        }
+    }
+    Ok(found)
 }
 
 /// ACME with a sub-project SUB, a project OTHER, and a lead of ACME; the lead made the group

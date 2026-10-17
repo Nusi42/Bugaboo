@@ -289,6 +289,9 @@ pub(crate) struct CheckAccessBody {
     /// Whether the field levels differ by issue type, so the screen asks which type is meant. A
     /// person whose levels are the same for every type is asked nothing.
     differs_by_type: bool,
+    /// The issue types the question may ask about: those the place offers and that are not
+    /// retired. The screen lists exactly these.
+    issue_types: Vec<IssueTypeRef>,
 }
 
 impl Masked for CheckAccessBody {}
@@ -303,6 +306,7 @@ impl From<AccessAnswer> for CheckAccessBody {
             kinds: checked.kinds.iter().map(level_body).collect(),
             issue_type: checked.issue_type.as_ref().map(IssueTypeRef::from),
             differs_by_type: checked.differs_by_type,
+            issue_types: checked.issue_types.iter().map(IssueTypeRef::from).collect(),
         }
     }
 }

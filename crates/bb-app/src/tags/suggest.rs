@@ -31,6 +31,8 @@ pub async fn tag_suggestions<S: AuthStore>(
 ) -> Result<Authorized<TagSuggestions>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let shown = ctx.shown_to(&actor).await?;
+    // Only to tell whether the asked type exists (the lowest level counts if not): no name is given
+    // out, so this may see all types.
     let types: Vec<IssueTypeId> = ctx
         .store()
         .issue_types()

@@ -174,17 +174,50 @@ impl Shown {
             .unwrap_or_default()
     }
 
-    /// The place as a name the person may use: the project if they see it, else *a project you
-    /// can't see*; none for the whole organization.
+    /// Whether the person may know the project: the one definition of the policy
+    /// (`Evaluation::knows_project`), they see it or decide who has which role there.
+    pub(crate) fn knows(&self, project: ProjectId) -> bool {
+        self.held_in(project)
+            .is_some_and(|held| held.knows_project())
+    }
+
+    /// Whether the person sees a project that is `outside` or inside it, at any depth: a subject
+    /// created in `outside` reaches a project they work in, also when they know nothing above it.
+    pub(crate) fn sees_inside(&self, outside: ProjectId) -> bool {
+        self.visible
+            .iter()
+            .any(|project| self.tree.is_within(*project, outside))
+    }
+
+    /// The place as a name the person may use: the project if they may know it, else *a project
+    /// you can't see*; none for the whole organization.
     pub(crate) fn label(&self, place: Place) -> Option<ProjectLabel> {
         place.project().map(|project| {
-            self.get(project)
+            self.projects
+                .get(&project)
+                .filter(|found| self.knows(found.id))
                 .map_or(ProjectLabel::Hidden, |found| ProjectLabel::Visible {
                     id: found.id,
                     short_name: found.short_name.to_string(),
                     name: found.name.clone(),
                 })
         })
+    }
+
+    /// Which issues the person reads where their role lets them see the labels (SEC-06), judged in
+    /// memory on a copy of the policy that holds `rules`; for the groups of labels in use.
+    pub(crate) fn label_sight(&self, rules: LevelRules, types: &[IssueTypeId]) -> IssueSight {
+        let mut policy = self.policy.clone();
+        policy.rules = rules;
+        let with = Self {
+            person: self.person,
+            key: self.key.clone(),
+            policy,
+            tree: self.tree.clone(),
+            projects: self.projects.clone(),
+            visible: self.visible.clone(),
+        };
+        with.issue_sight_with(Field::Labels, types)
     }
 
     /// The parent a stored project has, whether the person sees it or not: only for comparing

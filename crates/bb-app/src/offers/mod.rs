@@ -25,6 +25,6 @@ pub use change::{change_offers, offers};
 pub use store::OfferStore;
 pub use types::*;
 
-pub(crate) use here::Standing;
-pub(crate) use place::{GroupOffers, ensure_type_takes_issues_in, group_offers_in, lock_chain_in};
+pub(crate) use here::{Here, Standing};
+pub(crate) use place::{GroupOffers, ensure_type_takes_issues_in, group_offers_in};
 pub(crate) use subject::Subject;

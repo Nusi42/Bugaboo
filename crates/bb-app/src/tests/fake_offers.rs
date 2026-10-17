@@ -72,8 +72,12 @@ impl OfferStore for FakeStore {
         }))
     }
 
-    async fn projects_with_label(&self, label: LabelId) -> Result<Vec<ProjectId>, FakeError> {
-        Ok(self.read(|state| {
+    async fn projects_with_label_in(
+        tx: &mut Tx,
+        label: LabelId,
+    ) -> Result<Vec<ProjectId>, FakeError> {
+        Ok({
+            let state = &tx.state;
             let mut found: Vec<ProjectId> = state
                 .issue_labels
                 .iter()
@@ -89,7 +93,7 @@ impl OfferStore for FakeStore {
             found.sort();
             found.dedup();
             found
-        }))
+        })
     }
 
     async fn put_offer(tx: &mut Tx, offer: &Offer) -> Result<(), FakeError> {

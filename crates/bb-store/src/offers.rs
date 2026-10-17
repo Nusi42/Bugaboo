@@ -127,7 +127,10 @@ impl OfferStore for AuthStorage {
         ids_of(&rows, LabelRow::Group)
     }
 
-    async fn projects_with_label(&self, label: LabelId) -> Result<Vec<ProjectId>, StoreError> {
+    async fn projects_with_label_in(
+        transaction: &mut Transaction,
+        label: LabelId,
+    ) -> Result<Vec<ProjectId>, StoreError> {
         let mut select = Query::select();
         select
             .distinct()
@@ -139,7 +142,7 @@ impl OfferStore for AuthStorage {
                     .equals((IssueLabelRow::Table, IssueLabelRow::Issue)),
             )
             .and_where(Expr::col((IssueLabelRow::Table, IssueLabelRow::Label)).eq(label.stored()));
-        let rows = self.database().fetch_all(&select).await?;
+        let rows = transaction.fetch_all(&select).await?;
         ids_of(&rows, IssueRow::Project)
     }
 

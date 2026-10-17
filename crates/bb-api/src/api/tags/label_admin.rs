@@ -4,39 +4,97 @@ use super::{
     ApiError, ApiJson, ApiPath, ApiQuery, AuthHandle, ChangeLabel, ChangeLabelBody,
     ChangeLabelGroup, ChangeLabelGroupBody, ChangePreviewBody, CombineBody, CombineLabels,
     ConflictAnswer, CreateLabel, CreateLabelGroup, Edit, ForbiddenAnswer, Info, InvalidAnswer,
-    LabelBody, LabelChangePreviewQuery, LabelGroupBody, LabelGroupId, LabelId, LabelsBody,
-    LabelsQuery, NewLabelBody, NewLabelGroupBody, NotFoundAnswer, NotSignedInAnswer, OfferProject,
-    PreviewChangeBody, Response, Session, State, answer_authorized, body_id, path_id,
+    LABEL_FIELDS, LABEL_GROUP_FIELDS, LABEL_GROUPS_LIST, LABELS_LIST, LabelBody,
+    LabelChangePreviewQuery, LabelGroupBody, LabelGroupId, LabelGroupItem, LabelGroupsQuery,
+    LabelId, LabelItem, LabelsQuery, ListParams, Listed, NewLabelBody, NewLabelGroupBody,
+    NotFoundAnswer, NotSignedInAnswer, OfferProject, Page, PreviewChangeBody, Response, Session,
+    State, answer, answer_authorized, body_id, cursor_error, path_id,
 };
 
-/// The labels of the organization with their groups. Open to everybody who is signed in: the
-/// people who put labels on issues choose from them. With `project`, each group says whether that
-/// project offers it.
+/// The labels of the organization, a page at a time: those in a group the person may know and
+/// those in no group. Open to everybody who is signed in: the people who put labels on issues
+/// choose from them. With `project`, only the labels of groups that can reach that project.
 #[utoipa::path(
     get,
     path = "/api/v1/labels",
     operation_id = "listLabels",
     tag = "tags",
-    params(OfferProject),
-    responses((status = 200, description = "The groups and the labels.", body = LabelsBody), NotSignedInAnswer, NotFoundAnswer)
+    params(ListParams, OfferProject),
+    responses((status = 200, description = "The labels.", body = Page<LabelItem>), NotSignedInAnswer, NotFoundAnswer)
 )]
 pub(super) async fn list_labels(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
+    ApiQuery(params): ApiQuery<ListParams>,
     ApiQuery(asked): ApiQuery<OfferProject>,
 ) -> Result<Response, ApiError> {
-    let labels = auth
+    let (cursor, bad_cursor) = params.start(LABELS_LIST);
+    let page = auth
         .api()?
         .labels(
             info,
             LabelsQuery {
                 session_token,
                 project: asked.project,
+                cursor,
+                limit: params.limit(),
             },
         )
-        .await?;
-    answer_authorized(&labels.map(LabelsBody::from))
+        .await
+        .map_err(cursor_error)?;
+    bad_cursor?;
+    let list = page.map(|page| Listed {
+        items: page.items.iter().map(LabelItem::from).collect(),
+        next: page.next_cursor,
+    });
+    let fields = params.fields_readable(&LABEL_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(LABELS_LIST, &list, &fields)?))
+}
+
+/// The groups of labels of the organization the person may know, a page at a time. Open to
+/// everybody who is signed in. With `project`, only the groups that can reach that project, each
+/// saying whether that project offers it.
+#[utoipa::path(
+    get,
+    path = "/api/v1/label-groups",
+    operation_id = "listLabelGroups",
+    tag = "tags",
+    params(ListParams, OfferProject),
+    responses((status = 200, description = "The groups of labels.", body = Page<LabelGroupItem>), NotSignedInAnswer, NotFoundAnswer)
+)]
+pub(super) async fn list_label_groups(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiQuery(params): ApiQuery<ListParams>,
+    ApiQuery(asked): ApiQuery<OfferProject>,
+) -> Result<Response, ApiError> {
+    let (cursor, bad_cursor) = params.start(LABEL_GROUPS_LIST);
+    let page = auth
+        .api()?
+        .label_groups(
+            info,
+            LabelGroupsQuery {
+                session_token,
+                project: asked.project,
+                cursor,
+                limit: params.limit(),
+            },
+        )
+        .await
+        .map_err(cursor_error)?;
+    bad_cursor?;
+    let list = page.map(|page| Listed {
+        items: page.items.iter().map(LabelGroupItem::from).collect(),
+        next: page.next_cursor,
+    });
+    let fields = params.fields_readable(&LABEL_GROUP_FIELDS, &list.hidden_properties())?;
+    Ok(answer(Page::of_authorized(
+        LABEL_GROUPS_LIST,
+        &list,
+        &fields,
+    )?))
 }
 
 /// Creates a group of labels for the whole organization or in a project. Needs *Manage labels and

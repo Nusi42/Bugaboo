@@ -143,11 +143,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         held: &Evaluation,
         definition: &Definition,
     ) -> Result<FieldView, AppError> {
-        let types = self
-            .store()
-            .issue_types()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
+        let types = self.types_for_scope(actor).await?;
         self.field_view(actor, held, definition, &types, &mut Seen::default())
             .await
     }
@@ -182,12 +178,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// The issue types, for the names in a scope.
-    async fn types_for_scope(&self) -> Result<Vec<IssueType>, AppError> {
-        self.store()
+    /// The issue types the viewer may know, for the names in a scope (`offers/known.rs`).
+    async fn types_for_scope(&self, actor: &Actor) -> Result<Vec<IssueType>, AppError> {
+        let shown = self.shown_to(actor).await?;
+        let types = self
+            .store()
             .issue_types()
             .await
-            .map_err(|error| internal::<S>(&error))
+            .map_err(|error| internal::<S>(&error))?;
+        self.known_types(&shown, types).await
     }
 }
 
@@ -232,7 +231,7 @@ pub async fn fields<S: AuthStore>(
     if matches!(place, Place::Project(_)) && !held.sees_project() {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    let types = ctx.types_for_scope().await?;
+    let types = ctx.types_for_scope(&actor).await?;
     let mut seen = Seen::new();
     let mut items = Vec::new();
     for definition in ctx.field_catalogue().await?.iter() {
@@ -289,7 +288,7 @@ pub async fn field<S: AuthStore>(
         .cloned()
         .filter(|definition| may_know(&held, definition.field.id))
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let types = ctx.types_for_scope().await?;
+    let types = ctx.types_for_scope(&actor).await?;
     let view = ctx
         .field_view(&actor, &held, &definition, &types, &mut Seen::new())
         .await?;
