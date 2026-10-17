@@ -21550,7 +21550,6 @@
             }
           }
         },
-        "x-never-stored": true,
         "x-permission": "manage-workflows"
       }
     }
