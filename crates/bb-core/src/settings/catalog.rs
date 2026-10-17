@@ -6,6 +6,7 @@ use super::themes::{
 use super::{
     Bool, ChangedBy, Choice, Format, Integer, Level, Setting, SettingDefinition, Text, settings,
 };
+use crate::mail::MailSecurity;
 use crate::message;
 use crate::readable_id::IdMode;
 
@@ -67,6 +68,23 @@ const ID_MODE_CHOICES: &[Choice] = &[
 const _: () = {
     assert!(crate::words::same_text(IdMode::Random.code(), "random"));
     assert!(crate::words::same_text(IdMode::Counting.code(), "counting"));
+};
+
+/// The choices of *Protect the connection*. Written out like the modes of the issue IDs, and held
+/// to the words of `MailSecurity` by the assertions below.
+const MAIL_SECURITY_CHOICES: &[Choice] = &[
+    Choice::new("starttls", message::SETTING_MAIL_SECURITY_STARTTLS),
+    Choice::new("tls", message::SETTING_MAIL_SECURITY_TLS),
+    Choice::new("off", message::SETTING_MAIL_SECURITY_OFF),
+];
+
+const _: () = {
+    assert!(crate::words::same_text(
+        MailSecurity::StartTls.code(),
+        "starttls"
+    ));
+    assert!(crate::words::same_text(MailSecurity::Tls.code(), "tls"));
+    assert!(crate::words::same_text(MailSecurity::Off.code(), "off"));
 };
 
 settings! {
@@ -312,6 +330,44 @@ settings! {
         lockable: false,
     }
 
+    /// How many days the security log keeps its entries before the oldest whole blocks of it are
+    /// deleted (M1-F21, SEC-15, PRIV-05).
+    SECURITY_LOG_KEEP_DAYS: Integer = {
+        key: "security.log-keep-days",
+        name: message::SETTING_SECURITY_LOG_KEEP_DAYS_NAME,
+        default: 365,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_SECURITY_LOG_KEEP_DAYS_HELP,
+        lockable: false,
+        bounds: (30, 3650),
+    }
+
+    /// How big the log file of a server that runs as a service may get, in megabytes, before a new
+    /// file is started (M1-F61).
+    LOGS_SERVER_LOG_MEGABYTES: Integer = {
+        key: "logs.server-log-megabytes",
+        name: message::SETTING_LOGS_SERVER_LOG_MEGABYTES_NAME,
+        default: 20,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_LOGS_SERVER_LOG_MEGABYTES_HELP,
+        lockable: false,
+        bounds: (1, 1024),
+    }
+
+    /// How many old log files of a server that runs as a service are kept (M1-F61).
+    LOGS_SERVER_LOG_FILES: Integer = {
+        key: "logs.server-log-files",
+        name: message::SETTING_LOGS_SERVER_LOG_FILES_NAME,
+        default: 5,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_LOGS_SERVER_LOG_FILES_HELP,
+        lockable: false,
+        bounds: (1, 100),
+    }
+
     /// How many days a new access key lives when the person picks no other date.
     AUTH_ACCESS_KEY_DEFAULT_DAYS: Integer = {
         key: "auth.access-key-default-days",
@@ -361,6 +417,226 @@ settings! {
         help: message::SETTING_ISSUES_ID_LENGTH_HELP,
         lockable: false,
         bounds: (4, 8),
+    }
+
+    /// Whether the person is told in the app when they are mentioned.
+    NOTIFICATIONS_MENTIONED_IN_APP: Bool = {
+        key: "notifications.mentioned-in-app",
+        name: message::SETTING_NOTIFICATIONS_MENTIONED_IN_APP_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_MENTIONED_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told by e-mail when they are mentioned.
+    NOTIFICATIONS_MENTIONED_BY_MAIL: Bool = {
+        key: "notifications.mentioned-by-mail",
+        name: message::SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told in the app when an issue is assigned to them.
+    NOTIFICATIONS_ASSIGNED_IN_APP: Bool = {
+        key: "notifications.assigned-in-app",
+        name: message::SETTING_NOTIFICATIONS_ASSIGNED_IN_APP_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_ASSIGNED_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told by e-mail when an issue is assigned to them.
+    NOTIFICATIONS_ASSIGNED_BY_MAIL: Bool = {
+        key: "notifications.assigned-by-mail",
+        name: message::SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told in the app when a status change, a comment or a file on an issue
+    /// they follow.
+    NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP: Bool = {
+        key: "notifications.followed-activity-in-app",
+        name: message::SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told by e-mail when a status change, a comment or a file on an issue
+    /// they follow.
+    NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL: Bool = {
+        key: "notifications.followed-activity-by-mail",
+        name: message::SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_NAME,
+        default: false,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told in the app when other changes to fields of an issue they follow.
+    NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP: Bool = {
+        key: "notifications.followed-fields-in-app",
+        name: message::SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_NAME,
+        default: false,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told by e-mail when other changes to fields of an issue they follow.
+    NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL: Bool = {
+        key: "notifications.followed-fields-by-mail",
+        name: message::SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL_NAME,
+        default: false,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told in the app when their run of many changes has ended.
+    NOTIFICATIONS_RUN_ENDED_IN_APP: Bool = {
+        key: "notifications.run-ended-in-app",
+        name: message::SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told by e-mail when their run of many changes has ended.
+    NOTIFICATIONS_RUN_ENDED_BY_MAIL: Bool = {
+        key: "notifications.run-ended-by-mail",
+        name: message::SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_NAME,
+        default: false,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told in the app when somebody asks them to finish editing, or takes
+    /// their editing over.
+    NOTIFICATIONS_EDIT_NOTICE_IN_APP: Bool = {
+        key: "notifications.edit-notice-in-app",
+        name: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_NAME,
+        default: true,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_HELP,
+        lockable: true,
+    }
+
+    /// Whether the person is told by e-mail when somebody asks them to finish editing, or takes
+    /// their editing over.
+    NOTIFICATIONS_EDIT_NOTICE_BY_MAIL: Bool = {
+        key: "notifications.edit-notice-by-mail",
+        name: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_NAME,
+        default: false,
+        levels: [Organization, Person],
+        changed_by: EachPerson,
+        help: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_HELP,
+        lockable: true,
+    }
+
+    /// Whether the organization sends e-mail at all (PRIV-08): off until an administrator has
+    /// entered the mail server and switched it on.
+    MAIL_ENABLED: Bool = {
+        key: "mail.enabled",
+        name: message::SETTING_MAIL_ENABLED_NAME,
+        default: false,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_ENABLED_HELP,
+        lockable: false,
+    }
+
+    /// The host name of the mail server Bugaboo sends e-mail through.
+    MAIL_HOST: Text = {
+        key: "mail.host",
+        name: message::SETTING_MAIL_HOST_NAME,
+        default: "",
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_HOST_HELP,
+        lockable: false,
+        list: (1, 253),
+        format: Format::Hosts,
+    }
+
+    /// The port of the mail server.
+    MAIL_PORT: Integer = {
+        key: "mail.port",
+        name: message::SETTING_MAIL_PORT_NAME,
+        default: 587,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_PORT_HELP,
+        lockable: false,
+        bounds: (1, 65535),
+    }
+
+    /// How the connection to the mail server is protected.
+    MAIL_SECURITY: Text = {
+        key: "mail.security",
+        name: message::SETTING_MAIL_SECURITY_NAME,
+        default: "starttls",
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_SECURITY_HELP,
+        lockable: false,
+        format: Format::Choices(MAIL_SECURITY_CHOICES),
+    }
+
+    /// The user name Bugaboo signs in to the mail server with; empty for a server that asks for
+    /// none.
+    MAIL_USERNAME: Text = {
+        key: "mail.username",
+        name: message::SETTING_MAIL_USERNAME_NAME,
+        default: "",
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_USERNAME_HELP,
+        lockable: false,
+    }
+
+    /// The address e-mails come from.
+    MAIL_FROM: Text = {
+        key: "mail.from",
+        name: message::SETTING_MAIL_FROM_NAME,
+        default: "",
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_FROM_HELP,
+        lockable: false,
+    }
+
+    /// *Short e-mails*: e-mails leave out all issue text (title and comments), for places where
+    /// mail leaves the company (M4-Q6).
+    MAIL_SHORT: Bool = {
+        key: "mail.short",
+        name: message::SETTING_MAIL_SHORT_NAME,
+        default: false,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_MAIL_SHORT_HELP,
+        lockable: false,
     }
 }
 

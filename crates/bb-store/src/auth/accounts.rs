@@ -14,7 +14,7 @@ use crate::schema::{PasswordLogin, PersonRow};
 use super::AuthStorage;
 use crate::db::Row;
 
-fn person_columns() -> [PersonRow; 4] {
+pub(crate) fn person_columns() -> [PersonRow; 4] {
     [
         PersonRow::Id,
         PersonRow::DisplayName,
@@ -23,7 +23,7 @@ fn person_columns() -> [PersonRow; 4] {
     ]
 }
 
-fn read_person(row: &Row) -> Result<Person, StoreError> {
+pub(crate) fn read_person(row: &Row) -> Result<Person, StoreError> {
     Ok(Person {
         id: row.id::<UserId>(PersonRow::Id)?,
         display_name: row.get(PersonRow::DisplayName)?,

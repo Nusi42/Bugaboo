@@ -22,6 +22,23 @@ fn the_policy_name_comes_from_the_macro_of_the_api_words() {
     assert!(browser_names(&[]).is_err());
 }
 
+#[test]
+fn the_app_paths_come_from_the_constants_of_the_core() {
+    let source = (
+        APP_PATHS_SOURCE.to_owned(),
+        "pub const ISSUE: &str = \"/issues/$issue\";
+pub const INVITATION: &str = \"/invitation\";
+pub const CONFIRM_ADDRESS: &str = \"/confirm\";
+pub const SIGN_IN: &str = \"/in\";
+"
+        .to_owned(),
+    );
+    let written = app_paths(&[source]).unwrap();
+    assert!(written.contains("issue: \"/issues/$issue\","), "{written}");
+    assert!(written.contains("signIn: \"/in\","), "{written}");
+    assert!(app_paths(&[]).is_err());
+}
+
 const CATALOG: &str = "const MODE_CHOICES: &[Choice] = &[
     Choice::new(\"device\", message::A),
     Choice::new(\"light\", message::B),

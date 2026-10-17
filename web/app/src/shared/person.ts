@@ -26,16 +26,16 @@ export type SubjectKind = "person" | "group";
 export type Position = "start" | "inside";
 
 const roleMessage = {
-  start: "projects.person-role",
-  inside: "access.person-role-inside",
+  start: "person.role",
+  inside: "person.role-inside",
 } as const;
 const formerMessage = {
-  start: "projects.person-former",
-  inside: "access.person-former-inside",
+  start: "person.former",
+  inside: "person.former-inside",
 } as const;
 const someoneMessage = {
-  start: "projects.person-someone",
-  inside: "access.person-someone-inside",
+  start: "person.someone",
+  inside: "person.someone-inside",
 } as const;
 
 /** What a person is called when they are shown by their role only: *a Team member*. */

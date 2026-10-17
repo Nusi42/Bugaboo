@@ -63,7 +63,7 @@ export const messages = {
   "setting.auth.access-key-longest-days.help":
     "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
-    "Let people create an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+    "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
   "setting.content.image-hosts.help":
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
@@ -348,9 +348,9 @@ export const messages = {
   "projects.picker-nothing": "No project found. Try another word.",
   "projects.picker-more": "Show more projects",
   "projects.picker-list": "Projects it can go into",
-  "projects.person-role": "A {role}",
-  "projects.person-someone": "Someone",
-  "projects.person-former": "Former user {label}",
+  "person.role": "A person with the role {role}",
+  "person.someone": "Someone",
+  "person.former": "Former user {label}",
   "error.role.in-use":
     "Someone has this role. Choose the role that takes its place before you delete it.",
   "nav.people": "People",
@@ -380,9 +380,9 @@ export const messages = {
   "field-permissions.project-title": "Field permissions in {project}",
   "people-visibility.project-title": "Who sees people in {project}",
   "check-access.project-title": "Check access in {project}",
-  "access.person-role-inside": "a {role}",
-  "access.person-someone-inside": "someone",
-  "access.person-former-inside": "former user {label}",
+  "person.role-inside": "a person with the role {role}",
+  "person.someone-inside": "someone",
+  "person.former-inside": "former user {label}",
   "issue-type.bug": "Bug",
   "issue-type.task": "Task",
   "issue-type.feature": "Feature",
@@ -563,6 +563,91 @@ export const messages = {
   "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
+  "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
+  "setting.notifications.mentioned-in-app.help":
+    "Tells you under Notifications when a comment mentions you, or a group or role you are in.",
+  "setting.notifications.mentioned-by-mail.name": "You are mentioned: by e-mail",
+  "setting.notifications.mentioned-by-mail.help":
+    "Sends you an e-mail when a comment mentions you, or a group or role you are in. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.assigned-in-app.name": "An issue is assigned to you: in the app",
+  "setting.notifications.assigned-in-app.help":
+    "Tells you under Notifications when an issue is assigned to you.",
+  "setting.notifications.assigned-by-mail.name": "An issue is assigned to you: by e-mail",
+  "setting.notifications.assigned-by-mail.help":
+    "Sends you an e-mail when an issue is assigned to you. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.followed-activity-in-app.name":
+    "Status changes, comments and files on issues you follow: in the app",
+  "setting.notifications.followed-activity-in-app.help":
+    "Tells you under Notifications when somebody else changes the status of an issue you follow, or comments on it or adds a file to it.",
+  "setting.notifications.followed-activity-by-mail.name":
+    "Status changes, comments and files on issues you follow: by e-mail",
+  "setting.notifications.followed-activity-by-mail.help":
+    "Sends you an e-mail when somebody else changes the status of an issue you follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.followed-fields-in-app.name":
+    "Other changes to issues you follow: in the app",
+  "setting.notifications.followed-fields-in-app.help":
+    "Tells you under Notifications when somebody else changes other fields of an issue you follow.",
+  "setting.notifications.followed-fields-by-mail.name":
+    "Other changes to issues you follow: by e-mail",
+  "setting.notifications.followed-fields-by-mail.help":
+    "Sends you an e-mail when somebody else changes other fields of an issue you follow. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.run-ended-in-app.name": "Your run of many changes has ended: in the app",
+  "setting.notifications.run-ended-in-app.help":
+    "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
+  "setting.notifications.run-ended-by-mail.name": "Your run of many changes has ended: by e-mail",
+  "setting.notifications.run-ended-by-mail.help":
+    "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.edit-notice-in-app.name":
+    "Somebody asks you to finish editing: in the app",
+  "setting.notifications.edit-notice-in-app.help":
+    "Tells you under Notifications when somebody asks you to finish editing a text, or takes the editing over.",
+  "setting.notifications.edit-notice-by-mail.name":
+    "Somebody asks you to finish editing: by e-mail",
+  "setting.notifications.edit-notice-by-mail.help":
+    "Sends you an e-mail when somebody asks you to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
+  "setting.mail.enabled.name": "Send e-mail",
+  "setting.mail.enabled.help":
+    "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
+  "setting.mail.host.name": "Mail server",
+  "setting.mail.host.help":
+    "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+  "setting.mail.port.name": "Mail server port",
+  "setting.mail.port.help":
+    "The port of the mail server, as the provider of your mail server tells you. It depends on how the connection is protected.",
+  "setting.mail.security.name": "Protect the connection",
+  "setting.mail.security.help":
+    "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+  "setting.mail.security.starttls": "Switch to encryption (usual)",
+  "setting.mail.security.tls": "Encrypted from the start",
+  "setting.mail.security.off": "No encryption",
+  "setting.mail.username.name": "Mail server user name",
+  "setting.mail.username.help":
+    "The user name Bugaboo signs in to the mail server with. Leave it empty for a mail server that asks for none. The password is entered separately and is stored encrypted.",
+  "setting.mail.from.name": "Send e-mail from",
+  "setting.mail.from.help":
+    "The e-mail address that e-mails from Bugaboo come from, like bugaboo@example.com.",
+  "setting.mail.short.name": "Short e-mails",
+  "setting.mail.short.help":
+    "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+  "error.mail.rejected":
+    "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+  "error.mail.unavailable":
+    "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
+  "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
+  "person.bugaboo": "Bugaboo",
+  "setting.security.log-keep-days.name": "Days to keep the security log",
+  "setting.security.log-keep-days.help":
+    "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
+  "setting.logs.server-log-megabytes.name": "Size of the server log file",
+  "setting.logs.server-log-megabytes.help":
+    "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
+  "setting.logs.server-log-files.name": "Old server log files to keep",
+  "setting.logs.server-log-files.help":
+    "How many old files of the server log are kept next to the current one. Older ones are deleted.",
+  "error.handle.changed-lately":
+    "You changed your handle only a short time ago. You can change it again later.",
+  "error.mail.insecure":
+    "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
 } as const;
 
 register(messages);

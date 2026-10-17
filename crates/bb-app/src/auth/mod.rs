@@ -15,6 +15,7 @@ mod limit;
 mod request_session;
 mod second_factor;
 mod session;
+mod sign_up;
 mod store;
 mod types;
 
@@ -68,6 +69,11 @@ use crate::many_changes::{
     ManyChangeRunQuery, ManyChangeRunStatus, ManyChangeRunView, apply_many_changes,
     many_changes_run, preview_many_changes, stop_many_changes_run,
 };
+use crate::notifications::{
+    ChangeHandle, MyHandle, MyHandleQuery, NotificationPage, NotificationsQuery, ReadNotifications,
+    SendTestEmail, SetMailPassword, Unread, UnreadQuery, change_handle, my_handle, notifications,
+    read_notifications, send_test_email, set_mail_password, unread_notifications,
+};
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
     GroupList, GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery,
@@ -117,7 +123,7 @@ pub use access_keys::{
     access_key_rules, access_keys, create_access_key, delete_access_key, project_choices,
     require_session, see_server_status,
 };
-pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
+pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code};
 pub(crate) use ctx::EventMaker;
 pub use ctx::{AuthServices, Ctx, RequestInfo};
 pub use error::AppError;
@@ -135,10 +141,12 @@ pub use second_factor::{
     passkey_second_step_options, passkey_sign_in, passkey_sign_in_options, remove_code_app,
     remove_passkey, renew_backup_codes, start_code_app, two_step,
 };
+pub(crate) use session::purge as purge_sessions;
 pub use session::{
     authenticate, end_session, passkey_second_step, second_step, second_step_gap, sessions,
     sign_in, sign_out, sign_out_everywhere, status,
 };
+pub use sign_up::{SignUpStore, sign_up};
 pub use store::{
     AccessKeyRecord, AccessKeyStore, Account, AccountStore, AuthSettings, AuthStore,
     InvitationStore, PeoplePosition, SearchIn, SecondStepStore, SecurityEvent, SessionRecord,
@@ -278,8 +286,8 @@ use_cases! {
     invitation_lookup(InvitationLookupQuery) -> InvitationLookup;
     /// Creates an account from an invitation.
     accept_invitation(AcceptInvitation) -> Started;
-    /// Creates an account without an invitation.
-    sign_up(SignUp) -> Started;
+    /// Asks for an account without an invitation: a link goes to the address.
+    sign_up(SignUp) -> Done;
     /// Who may sign up on their own.
     sign_up_policy(SignUpPolicyQuery) -> Authorized<SignUpPolicy>;
     /// Changes who may sign up on their own.
@@ -450,6 +458,20 @@ use_cases! {
     mention_choices(MentionChoicesQuery) -> Authorized<MentionChoices>;
     /// Lists the comments that mention the person.
     mentions(MentionsQuery) -> Authorized<Mentions>;
+    /// Lists the notifications of the person.
+    notifications(NotificationsQuery) -> Authorized<NotificationPage>;
+    /// How many notifications the person has not read.
+    unread_notifications(UnreadQuery) -> Authorized<Unread>;
+    /// The handle of the person.
+    my_handle(MyHandleQuery) -> Authorized<MyHandle>;
+    /// Changes the handle of the person.
+    change_handle(ChangeHandle) -> Authorized<MyHandle>;
+    /// Enters, changes or removes the password of the mail server.
+    set_mail_password(SetMailPassword) -> Authorized<Done>;
+    /// Sends a test e-mail to the person who asks.
+    send_test_email(SendTestEmail) -> Authorized<Done>;
+    /// Marks notifications of the person as read.
+    read_notifications(ReadNotifications) -> Done;
     /// Marks the mentions of the person as read.
     read_mentions(ReadMentions) -> Done;
     /// Shows the history of an issue.

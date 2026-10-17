@@ -22,7 +22,9 @@ use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::access::Actor as ActingPerson;
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
+use crate::mailer::{Mailer, NoMailer};
 use crate::ports::SetupCodeFile;
+use crate::server_log::ServerLogFile;
 use crate::status::LogWrites;
 
 /// What is known about the request that is being served.
@@ -46,6 +48,12 @@ pub struct AuthServices<S> {
     pub(crate) log_writes: Arc<LogWrites>,
     pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
     pub(crate) records: Arc<dyn EditableRecords>,
+    pub(crate) mailer: Arc<dyn Mailer>,
+    pub(crate) server_log: Option<Arc<dyn ServerLogFile>>,
+    /// The address people reach the server at, which the links in e-mails start with.
+    pub(crate) public_url: String,
+    /// When each person last sent a test e-mail, so they cannot send a stream of them.
+    pub(crate) test_mail_at: Mutex<HashMap<UserId, Timestamp>>,
 }
 
 impl<S> AuthServices<S> {
@@ -72,6 +80,10 @@ impl<S> AuthServices<S> {
             log_writes: Arc::new(LogWrites::default()),
             setup_code_file: None,
             records: Arc::new(NoRecords),
+            mailer: Arc::new(NoMailer),
+            server_log: None,
+            public_url: String::new(),
+            test_mail_at: Mutex::default(),
         }
     }
 
@@ -80,6 +92,29 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_records(mut self, records: Arc<dyn EditableRecords>) -> Self {
         self.records = records;
+        self
+    }
+
+    /// The adapter that sends e-mail (ADR-0033 §3). Without one, every e-mail is turned away.
+    #[must_use]
+    pub fn with_mailer(mut self, mailer: Arc<dyn Mailer>) -> Self {
+        self.mailer = mailer;
+        self
+    }
+
+    /// The log file of a server that runs without a console, which a job starts a new file of
+    /// when it is big (M1-F61).
+    #[must_use]
+    pub fn with_server_log(mut self, file: Arc<dyn ServerLogFile>) -> Self {
+        self.server_log = Some(file);
+        self
+    }
+
+    /// The address people reach the server at (`https://bugaboo.example.com`): the links in
+    /// e-mails start with it.
+    #[must_use]
+    pub fn with_public_url(mut self, public_url: impl Into<String>) -> Self {
+        self.public_url = public_url.into();
         self
     }
 
@@ -244,6 +279,33 @@ impl EventMaker {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Lets a person send a test e-mail if they did not send one in the last
+    /// `TEST_EMAIL_EVERY_SECONDS` seconds, and notes the moment.
+    ///
+    /// # Errors
+    /// `Limited` with the seconds to wait.
+    pub(crate) fn reserve_test_email(&self, person: UserId) -> Result<(), AppError> {
+        let now = self.now();
+        let every = jiff::SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
+        let mut sent = self
+            .services
+            .test_mail_at
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // Only the last few seconds matter: the others are forgotten, so the map stays small.
+        sent.retain(|_, at| at.checked_add(every).is_ok_and(|until| until > now));
+        if let Some(at) = sent.get(&person)
+            && let Ok(until) = at.checked_add(every)
+        {
+            let wait = until.as_second().saturating_sub(now.as_second());
+            return Err(AppError::Limited {
+                retry_after: u64::try_from(wait).unwrap_or(1).max(1),
+            });
+        }
+        sent.insert(person, now);
+        Ok(())
+    }
+
     pub(crate) const fn store(&self) -> &S {
         &self.services.store
     }

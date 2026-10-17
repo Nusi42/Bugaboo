@@ -3,6 +3,7 @@
 
 use bb_auth::{EmailAddress, Purpose, SecretToken, listed_domains};
 use bb_core::ErrorCode;
+use bb_core::app_paths;
 use bb_core::event::RecordKind;
 use bb_core::id::InvitationId;
 use bb_core::paging::{Cut, page_len, read_len, read_time_cursor, write_time_cursor};
@@ -67,7 +68,7 @@ pub async fn create_invitation<S: AuthStore>(
         id: InvitationId::generate(&mut ctx.ids()),
         token_hash: secret.hash(Purpose::Invitation),
         email: email.as_str().to_owned(),
-        invited_by: actor.person.id,
+        invited_by: Some(actor.person.id),
         created_at: now,
         expires_at,
         used_at: None,
@@ -92,7 +93,7 @@ pub async fn create_invitation<S: AuthStore>(
     .await;
     Ok(access.authorize(CreatedInvitation {
         invitation: view(&invitation),
-        link_path: format!("/invitation#{}", secret.encode()),
+        link_path: format!("{}#{}", app_paths::INVITATION, secret.encode()),
     }))
 }
 
@@ -174,15 +175,21 @@ pub async fn invitation_lookup<S: AuthStore>(
     let invalid = || AppError::Refused(ErrorCode::InvitationInvalid);
     let secret = SecretToken::parse(&input.secret).ok_or_else(invalid)?;
     let now = ctx.now();
-    ctx.store()
+    let found = ctx
+        .store()
         .invitation_by_hash(&secret.hash(Purpose::Invitation))
         .await
         .map_err(|error| internal::<S>(&error))?
         .filter(|invitation| invitation.used_at.is_none() && invitation.expires_at > now)
-        .map(|invitation| InvitationLookup {
-            email: invitation.email,
-        })
-        .ok_or_else(invalid)
+        .ok_or_else(invalid)?;
+    // The link of a sign-up is judged by the rule of signing up again (see `accept_invitation`).
+    if found.invited_by.is_none() {
+        let email = EmailAddress::parse(&found.email).ok_or_else(invalid)?;
+        if !ctx.sign_up_allows(&email).await? {
+            return Err(invalid());
+        }
+    }
+    Ok(InvitationLookup { email: found.email })
 }
 
 /// Who may sign up on their own.

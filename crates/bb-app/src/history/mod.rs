@@ -13,7 +13,8 @@ mod store;
 mod types;
 
 pub use build::{catch_up, catch_up_batch};
-pub(crate) use read::ChangeReader;
+pub(crate) use map::issue_in;
 pub use read::history;
+pub(crate) use read::{ChangeReader, visible_changes};
 pub use store::HistoryStore;
 pub use types::*;

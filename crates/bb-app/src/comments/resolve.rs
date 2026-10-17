@@ -13,7 +13,9 @@
 use std::sync::{Arc, PoisonError};
 
 use bb_core::access::PeopleLevel;
-use bb_core::comment::{MENTION_RECIPIENTS_MAX, Mention, MentionTarget, names_the_handle};
+use bb_core::comment::{
+    MENTION_RECIPIENTS_MAX, Mention, MentionTarget, handle_of, names_the_handle,
+};
 use bb_core::id::{CommentId, GroupId, RoleId, UserId};
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
@@ -24,10 +26,9 @@ use bb_markdown::{
 use bb_policy::{Evaluation, PeopleContext, row_reaches};
 
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, SearchIn, internal};
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// The most people a search for the person behind a handle reads: names that share the first word
-/// beyond this many are not told apart.
+/// The most people a search for the people to offer after `@` reads (`mention_choices`).
 pub(super) const PEOPLE_LOOK_AT: u64 = 100;
 
 /// What a handle names.
@@ -89,6 +90,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .unwrap_or_else(PoisonError::into_inner)
             .insert(key, named);
         Ok(named)
+    }
+
+    /// The handles of the groups and the roles, which no person can have too: a mention of such a
+    /// handle names the group or the role.
+    pub(crate) async fn reserved_handles(&self) -> Result<Vec<String>, AppError> {
+        let groups = self.group_names().await?;
+        let roles = self.role_names().await?;
+        Ok(groups
+            .iter()
+            .map(|(_, name)| name.as_str())
+            .chain(roles.iter().map(|(_, name)| name.as_str()))
+            .filter_map(handle_of)
+            .collect())
     }
 
     /// The names of the groups, read once for the request.
@@ -156,20 +170,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Option<Named>, AppError> {
         let mut found: Vec<Named> = Vec::new();
         let failed = |error| internal::<S>(&error);
-        if level == PeopleLevel::Names {
-            let first = handle.split('.').next().unwrap_or(handle);
-            let people = self
+        if level == PeopleLevel::Names
+            // The handle a person has now. One they gave up names nobody in a new text; an old
+            // text stores the person it named, so it keeps naming them.
+            && let Some(person) = self
                 .store()
-                .people_page(Some(first), SearchIn::Names, None, PEOPLE_LOOK_AT)
+                .person_with_current_handle(&handle.to_lowercase())
                 .await
-                .map_err(failed)?;
-            for person in people {
-                if names_the_handle(handle, &person.display_name)
-                    && self.person_sees_issue(person.id, issue).await?
-                {
-                    found.push(Named::Person(person.id));
-                }
-            }
+                .map_err(failed)?
+            && self.person_sees_issue(person, issue).await?
+        {
+            found.push(Named::Person(person));
         }
         if level != PeopleLevel::Hidden {
             for (id, name) in self.group_names().await?.iter() {

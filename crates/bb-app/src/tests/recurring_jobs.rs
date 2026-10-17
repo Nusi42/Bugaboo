@@ -22,6 +22,16 @@ async fn run_all(world: &World) -> Result<usize, crate::auth::AppError> {
     }
 }
 
+/// Every kind that comes back every day, in the order the queue lists them.
+fn every_day() -> Vec<String> {
+    let mut kinds: Vec<String> = kind::DAILY_JOBS
+        .iter()
+        .map(|kind| (*kind).to_owned())
+        .collect();
+    kinds.sort();
+    kinds
+}
+
 fn kinds_waiting(world: &World) -> Vec<String> {
     let mut kinds: Vec<String> = world
         .store
@@ -40,20 +50,18 @@ fn kinds_waiting(world: &World) -> Vec<String> {
 async fn m3_f30_the_daily_jobs_run_at_the_start_and_come_back_every_day() -> Outcome {
     let world = World::new().await?;
     world.ctx().start_daily_jobs().await?;
-    assert_eq!(
-        kinds_waiting(&world),
-        vec![kind::PURGE_DRAFTS, kind::CATCH_UP_HISTORY]
-    );
-    // At the start both run, and each leaves its next round behind, a day away.
-    assert_eq!(run_all(&world).await?, 2);
-    assert_eq!(
-        kinds_waiting(&world),
-        vec![kind::PURGE_DRAFTS, kind::CATCH_UP_HISTORY]
-    );
+    assert_eq!(kinds_waiting(&world), every_day());
+    // At the start every kind runs, and each leaves its next round behind, a day away.
+    assert_eq!(run_all(&world).await?, kind::DAILY_JOBS.len());
+    assert_eq!(kinds_waiting(&world), every_day());
     assert_eq!(run_all(&world).await?, 0, "the next round is not due yet");
     world.clock.advance(DAILY.as_secs() + 1);
-    assert_eq!(run_all(&world).await?, 2);
-    assert_eq!(kinds_waiting(&world).len(), 2, "never more than one each");
+    assert_eq!(run_all(&world).await?, kind::DAILY_JOBS.len());
+    assert_eq!(
+        kinds_waiting(&world).len(),
+        kind::DAILY_JOBS.len(),
+        "never more than one each"
+    );
     Ok(())
 }
 
@@ -64,8 +72,8 @@ async fn m3_f30_a_start_while_the_next_round_waits_does_not_add_a_second_chain()
     run_all(&world).await?;
     // The server starts again within the day: it runs once more at once, and the chain stays one.
     world.ctx().start_daily_jobs().await?;
-    assert_eq!(run_all(&world).await?, 2);
-    assert_eq!(kinds_waiting(&world).len(), 2);
+    assert_eq!(run_all(&world).await?, kind::DAILY_JOBS.len());
+    assert_eq!(kinds_waiting(&world).len(), kind::DAILY_JOBS.len());
     Ok(())
 }
 

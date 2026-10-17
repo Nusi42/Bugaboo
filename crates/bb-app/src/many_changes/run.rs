@@ -28,6 +28,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::jobs::{kind, kind_name};
+use crate::member;
 
 /// The member of the payload of a step that names the run.
 const RUN_KEY: &str = "run";
@@ -94,10 +95,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        if matches!(
-            run.status,
-            ManyChangeStatus::Done | ManyChangeStatus::Failed | ManyChangeStatus::Stopped
-        ) {
+        if run.status.is_over() {
             return Ok(());
         }
         let Some(person) = self
@@ -186,10 +184,38 @@ impl<S: AuthStore> Ctx<'_, S> {
                 return Ok(());
             }
         }
-        if run.status != ManyChangeStatus::Done {
-            self.queue_next_step(id).await?;
+        self.after_step(id, run.status).await
+    }
+
+    /// What follows a step: the next step is queued, or the run is announced as done.
+    async fn after_step(
+        &self,
+        id: ManyChangeRunId,
+        status: ManyChangeStatus,
+    ) -> Result<(), AppError> {
+        if status == ManyChangeStatus::Done {
+            self.announce_run_done(id).await
+        } else {
+            self.queue_next_step(id).await
         }
-        Ok(())
+    }
+
+    /// Writes the event that a run is done, so the person who asked for it is told (M3-F125): the
+    /// status was counted up by the step that changed the last issue, which writes no event of the
+    /// run itself.
+    async fn announce_run_done(&self, id: ManyChangeRunId) -> Result<(), AppError> {
+        let event = self.event(
+            EventActor::System,
+            entity(RecordKind::ChangeRun, id),
+            vec![set_to(
+                member::run::STATUS,
+                serde_json::json!(ManyChangeStatus::Done.code()),
+            )],
+        )?;
+        self.store()
+            .record_change(&event, |_| Box::pin(async { Ok(()) }))
+            .await
+            .map_err(|error| internal::<S>(&error))
     }
 
     /// Whether the run is over (done, failed or stopped) now, as the store has it.
@@ -235,7 +261,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let event = self.event(
             who,
             entity(RecordKind::ChangeRun, id),
-            vec![set_to("status", serde_json::json!(status.code()))],
+            vec![set_to(
+                member::run::STATUS,
+                serde_json::json!(status.code()),
+            )],
         )?;
         self.store()
             .record_change(&event, move |transaction| {

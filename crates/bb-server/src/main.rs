@@ -6,6 +6,8 @@ mod cli;
 mod config;
 mod data_folder;
 mod log;
+#[cfg(any(windows, test))]
+mod log_file;
 mod output;
 mod probe;
 mod wiring;

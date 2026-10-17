@@ -14,6 +14,7 @@ use bb_api::openapi::Operation;
 use bb_api_words::sec_matrix as words;
 
 use super::actors::Actor;
+use super::delivery::Delivered;
 use super::routes::Expect;
 
 /// The root of the repository, from the folder of this crate.
@@ -23,6 +24,7 @@ const REPOSITORY_ROOT: &str = "../..";
 pub(super) struct Record {
     actors: Vec<String>,
     routes: BTreeMap<String, (Operation, Vec<(String, Expect)>)>,
+    deliveries: Vec<Delivered>,
 }
 
 impl Record {
@@ -30,6 +32,7 @@ impl Record {
         Self {
             actors: actors.iter().map(|actor| actor.name()).collect(),
             routes: BTreeMap::new(),
+            deliveries: Vec::new(),
         }
     }
 
@@ -40,6 +43,11 @@ impl Record {
             .or_insert_with(|| (route.clone(), Vec::new()))
             .1
             .push((actor.name(), expected));
+    }
+
+    /// What the server sent on its own to the people who could receive it.
+    pub(super) fn delivered(&mut self, deliveries: Vec<Delivered>) {
+        self.deliveries = deliveries;
     }
 
     /// The text of the file.
@@ -53,6 +61,9 @@ impl Record {
             words::write_command()
         );
         let _ = writeln!(text, "actors {}", self.actors.join(" "));
+        for delivered in &self.deliveries {
+            let _ = writeln!(text, "{}", delivered.line());
+        }
         for (route, ran) in self.routes.values() {
             let answers: Vec<String> = ran
                 .iter()

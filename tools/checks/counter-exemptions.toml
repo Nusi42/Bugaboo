@@ -154,3 +154,8 @@ reason = "Counts only the people in the projects the person sees: the answer say
 route = "POST /api/v1/projects/{project}/move-preview"
 property = "skipped"
 reason = "Counts only the people in the projects the person sees: the answer says so (PRIV-13, M2C-F80)."
+
+[[exempt]]
+route = "GET /api/v1/notifications/unread"
+property = "unread"
+reason = "Counts only the notifications the person may still see: each of the newest hundred unread ones is checked again against the issue and the fields the person sees now, and a hidden one is not counted (ADR-0033 §2, `unread_notifications`)."

@@ -254,6 +254,22 @@ impl Database {
         Ok(self.execute(&update).await? > 0)
     }
 
+    /// Empties the payload of the jobs on the dead-letter list whose last start was before
+    /// `before`. Returns how many were emptied.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn clear_dead_job_payloads(&self, before: Timestamp) -> Result<u64, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(Columns::Table)
+            .value(Columns::Payload, "null")
+            .and_where(Expr::col(Columns::State).eq(JobState::Dead.code()))
+            .and_where(Expr::col(Columns::RunAt).lt(to_micros(before)))
+            .and_where(Expr::col(Columns::Payload).ne("null"));
+        self.execute(&update).await
+    }
+
     /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
     ///
     /// # Errors
@@ -415,6 +431,10 @@ impl JobStore for AuthStorage {
         after: Timestamp,
     ) -> Result<bool, StoreError> {
         self.database().later_job_waits(kind, after).await
+    }
+
+    async fn clear_dead_job_payloads(&self, before: Timestamp) -> Result<u64, StoreError> {
+        self.database().clear_dead_job_payloads(before).await
     }
 
     async fn queue_job(

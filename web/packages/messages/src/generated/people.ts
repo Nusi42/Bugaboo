@@ -25,13 +25,13 @@ export const messages = {
   "invitations.more": "Show more",
   "sign-up-policy.title": "Signing up without an invitation",
   "sign-up-policy.intro":
-    "When this is on, anyone who can open Bugaboo can create an account without being invited.",
+    "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
   "sign-up-policy.switch": "Let people create their own account",
   "sign-up-policy.domains": "E-mail domains that may sign up",
   "sign-up-policy.domains-help":
     "One domain per line, like example.com. Only addresses of these domains can sign up.",
   "sign-up-policy.warning":
-    "No domain is listed, so everyone who can reach Bugaboo can create an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+    "No domain is listed, so everyone who can reach Bugaboo can ask for an account. The e-mail goes to the address they give, so only a person who can read that address can create one.",
   "sign-up-policy.confirm-title": "Let everybody sign up?",
   "sign-up-policy.confirm-text":
     "No domain is listed. Everybody who can reach Bugaboo will be able to create an account.",

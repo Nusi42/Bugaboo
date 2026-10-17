@@ -11,7 +11,9 @@ mod accounts;
 mod invitations;
 mod second_step;
 mod sessions;
+mod sign_up;
 
+pub(crate) use accounts::{person_columns, read_person};
 use std::sync::Arc;
 
 use bb_app::auth::{AuthSettings, AuthStore, SecurityEvent};
@@ -31,10 +33,7 @@ use crate::db::{Database, Transaction};
 use crate::error::StoreError;
 use crate::keys::KeyRing;
 use crate::security_log::NewSecurityLogEntry;
-use crate::settings::{
-    Scopes, count_policy_version_up, policy_version, put_organization_setting, resolved,
-    resolved_in_bounds, resolved_list,
-};
+use crate::settings::{Scopes, count_policy_version_up, policy_version, put_organization_setting};
 
 /// The sign-in storage: the database, the keys that protect secrets in it, and the seal of the
 /// security log.
@@ -61,10 +60,15 @@ impl AuthStorage {
     pub const fn database(&self) -> &Database {
         &self.database
     }
+
+    /// The keys that protect the secrets in the database.
+    pub(crate) fn key_ring(&self) -> &KeyRing {
+        &self.keys
+    }
 }
 
 /// The hash stored in a row, or the report that it is not one.
-pub(super) fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {
+pub(crate) fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {
     Digest::from_slice(bytes).ok_or(StoreError::Corrupt("a hash"))
 }
 
@@ -130,12 +134,12 @@ impl AuthStore for AuthStorage {
         // Whole numbers and the list are cut to their bounds: a value that was stored before the
         // bounds, or by hand, never reaches a use case.
         Ok(AuthSettings {
-            session_idle_minutes: resolved_in_bounds(&SECURITY_SESSION_IDLE_MINUTES, &layers)?,
-            session_absolute_hours: resolved_in_bounds(&SECURITY_SESSION_ABSOLUTE_HOURS, &layers)?,
-            sign_up_enabled: resolved(&AUTH_SIGN_UP_ENABLED, &layers)?,
-            sign_up_domains: resolved_list(&AUTH_SIGN_UP_DOMAINS, &layers)?,
-            access_key_default_days: resolved_in_bounds(&AUTH_ACCESS_KEY_DEFAULT_DAYS, &layers)?,
-            access_key_longest_days: resolved_in_bounds(&AUTH_ACCESS_KEY_LONGEST_DAYS, &layers)?,
+            session_idle_minutes: layers.number(&SECURITY_SESSION_IDLE_MINUTES),
+            session_absolute_hours: layers.number(&SECURITY_SESSION_ABSOLUTE_HOURS),
+            sign_up_enabled: layers.yes(&AUTH_SIGN_UP_ENABLED),
+            sign_up_domains: layers.list(&AUTH_SIGN_UP_DOMAINS),
+            access_key_default_days: layers.number(&AUTH_ACCESS_KEY_DEFAULT_DAYS),
+            access_key_longest_days: layers.number(&AUTH_ACCESS_KEY_LONGEST_DAYS),
         })
     }
 
@@ -152,6 +156,16 @@ impl AuthStore for AuthStorage {
             .append_security_log(&self.seal, &entry)
             .await
             .map(|_| ())
+    }
+
+    async fn prune_security_log(
+        &self,
+        before: Timestamp,
+        now: Timestamp,
+    ) -> Result<u64, StoreError> {
+        self.database
+            .prune_security_log(&self.seal, before, now)
+            .await
     }
 
     async fn sign_up_policy_version(&self) -> Result<i64, StoreError> {

@@ -22,6 +22,7 @@ use bb_policy::Permission;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
+use super::sign_up::SignUpStore;
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::comments::CommentStore;
@@ -32,6 +33,7 @@ use crate::history::HistoryStore;
 use crate::issues::IssueStore;
 use crate::layouts::LayoutStore;
 use crate::many_changes::ManyChangeStore;
+use crate::notifications::{HandleStore, NotificationStore};
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -326,6 +328,9 @@ pub trait AuthStore:
     + CommentStore
     + FollowStore
     + HistoryStore
+    + NotificationStore
+    + HandleStore
+    + SignUpStore
     + FieldStore
     + LayoutStore
     + SettingsStore
@@ -364,6 +369,9 @@ pub trait AuthStore:
         fn sign_up_policy_version() -> i64;
         /// Adds an entry to the security log.
         fn append_security_log(event: &SecurityEvent) -> ();
+        /// Deletes the oldest whole blocks of the security log whose entries are all older than
+        /// `before`, and signs the checkpoint they leave (M1-F21). Returns how many entries went.
+        fn prune_security_log(before: Timestamp, now: Timestamp) -> u64;
     }
 
     writes! {

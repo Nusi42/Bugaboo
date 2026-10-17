@@ -204,6 +204,38 @@ fn resolve_uses_the_stored_value_and_reports_one_of_the_wrong_type() {
 }
 
 #[test]
+fn cfg_06_the_layers_give_a_setting_as_its_type_and_the_default_when_nothing_usable_is_stored() {
+    let mut layers = Layers::default();
+    // Nothing stored: the defaults of the registry, with no default written anywhere else.
+    assert_eq!(layers.number(&SECURITY_LOG_KEEP_DAYS), 365);
+    assert_eq!(layers.number(&LOGS_SERVER_LOG_FILES), 5);
+    assert!(!layers.yes(&MAIL_ENABLED));
+    assert_eq!(layers.text(&MAIL_HOST), "");
+    // A stored value counts, cut to the bounds of the setting.
+    layers.organization.insert(
+        SECURITY_LOG_KEEP_DAYS.definition().key().to_owned(),
+        OrganizationValue {
+            value: SettingValue::Integer(5),
+            locked: false,
+        },
+    );
+    assert_eq!(
+        layers.number(&SECURITY_LOG_KEEP_DAYS),
+        30,
+        "the least it may be"
+    );
+    // A value of another type, written by hand, counts as the default.
+    layers.organization.insert(
+        LOGS_SERVER_LOG_FILES.definition().key().to_owned(),
+        OrganizationValue {
+            value: SettingValue::Text("many".to_owned()),
+            locked: false,
+        },
+    );
+    assert_eq!(layers.number(&LOGS_SERVER_LOG_FILES), 5);
+}
+
+#[test]
 fn find_looks_a_key_up_in_the_registry() {
     assert_eq!(find("appearance.mode"), Some(APPEARANCE_MODE.definition()));
     assert_eq!(find("appearance.nothing"), None);

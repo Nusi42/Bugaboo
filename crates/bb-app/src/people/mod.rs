@@ -189,7 +189,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `access.forbidden` without *Manage groups*, `request.invalid` for a name that cannot be one,
-/// `name.taken` when another group has the name.
+/// `name.taken` when another group has the name or a person has or had it as a handle.
 pub async fn create_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: CreateGroup,
@@ -199,6 +199,7 @@ pub async fn create_group<S: AuthStore>(
         .require(&actor, Permission::ManageGroups, Place::Organization)
         .await?;
     let name = clean_name(&input.name)?;
+    ctx.refuse_a_persons_handle(&name).await?;
     let group = Group {
         id: GroupId::generate(&mut ctx.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?,
@@ -242,6 +243,9 @@ pub async fn rename_group<S: AuthStore>(
         .await?;
     let name = clean_name(&input.name)?;
     let before = ctx.group_or_missing(input.group).await?;
+    if name != before.name {
+        ctx.refuse_a_persons_handle(&name).await?;
+    }
     let id = before.id;
     let (record, editor) = (entity(RecordKind::Group, id), actor.person.id);
     if before.version != input.version {

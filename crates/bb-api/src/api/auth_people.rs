@@ -2,7 +2,8 @@
 //! the rule for who may sign up.
 
 use axum::extract::State;
-use axum::response::Response;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse as _, Response};
 use bb_app::auth::{
     AcceptInvitation, ChangeSignUpPolicy, CompleteSetup, CreateInvitation, InvitationLookupQuery,
     InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery,
@@ -37,15 +38,11 @@ pub(crate) struct SetupBody {
     password: String,
 }
 
-/// Somebody who makes an account on their own.
+/// Somebody who asks for an account on their own.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct SignUpBody {
-    /// The e-mail address.
+    /// The e-mail address. The link that makes the account goes there.
     email: String,
-    /// The name others see.
-    display_name: String,
-    /// The password.
-    password: String,
 }
 
 /// Somebody who makes an account from an invitation.
@@ -208,7 +205,18 @@ async fn complete_setup(
     signed_in(&started)
 }
 
-/// Creates an account without an invitation, when an administrator allows it.
+/// What signing up comes to: the same for every address.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct SignUpAnswer {
+    /// Always `true`: an e-mail goes to the address. For an address with no account it holds a link
+    /// to the invitation page, where the person chooses a name and a password; for an address with
+    /// one it says so. Nothing is made yet, and the answer does not tell which of the two it is.
+    check_your_mail: bool,
+}
+
+/// Asks for an account without an invitation, when an administrator allows it and e-mail is on.
+/// Nothing is made yet: the answer is `202` for every address, and a link goes to the address
+/// (24 hours, once) that opens the invitation page.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/sign-up",
@@ -216,30 +224,26 @@ async fn complete_setup(
     tag = "auth",
     request_body = SignUpBody,
     responses(
-        (status = 200, description = "The account was made and is signed in.", body = SignedInBody),
+        (status = 202, description = "An e-mail goes to the address, the same answer for every address.", body = SignUpAnswer),
         InvalidAnswer,
-        (status = 403, description = "Signing up is not possible here (auth.sign_up_refused).", body = bb_core::Problem)
+        (status = 403, description = "Signing up is not possible here (auth.sign_up_refused): it is off, the domain is not listed, or e-mail is off.", body = bb_core::Problem)
     )
 )]
 async fn sign_up(
     State(auth): State<AuthHandle>,
     Info(info): Info,
-    PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<SignUpBody>,
 ) -> Result<Response, ApiError> {
-    let started = auth
-        .api()?
-        .sign_up(
-            info,
-            SignUp {
-                email: body.email,
-                display_name: body.display_name,
-                password: body.password,
-                previous_session,
-            },
-        )
+    auth.api()?
+        .sign_up(info, SignUp { email: body.email })
         .await?;
-    signed_in(&started)
+    Ok((
+        StatusCode::ACCEPTED,
+        axum::Json(SignUpAnswer {
+            check_your_mail: true,
+        }),
+    )
+        .into_response())
 }
 
 /// Shows which address an invitation is for. It is a `POST` so the secret is in the body, not in
@@ -487,9 +491,17 @@ where
 {
     OpenApiRouter::new()
         .routes(routes!(complete_setup))
-        .routes(routes!(sign_up))
         .routes(routes!(look_up_invitation))
         .routes(routes!(accept_invitation))
+}
+
+/// The route to sign up, which has a small limit of its own besides the one of the sign-in family.
+pub(crate) fn sign_up_routes<S>() -> OpenApiRouter<S>
+where
+    S: Clone + Send + Sync + 'static,
+    AuthHandle: axum::extract::FromRef<S>,
+{
+    OpenApiRouter::new().routes(routes!(sign_up))
 }
 
 /// The routes of an administrator.

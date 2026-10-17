@@ -334,6 +334,11 @@ define_ordered_id! {
     JobId
 }
 
+define_ordered_id! {
+    /// The ID of a notification for one person (NTF-01).
+    NotificationId
+}
+
 define_random_id! {
     /// The ID of a sign-in session as people see it in *Where you're signed in*. It is not the
     /// secret in the cookie and opens nothing.
@@ -421,6 +426,7 @@ into_entity_id!(
     ManyChangeRunId,
     EventId,
     JobId,
+    NotificationId,
     SessionId,
     PasskeyId,
     InvitationId,

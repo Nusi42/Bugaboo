@@ -235,7 +235,7 @@ async fn auth_03_a_backup_code_and_an_invitation_work_once() -> TestResult {
             id: InvitationId::generate(&mut source),
             token_hash: Digest::new([3; 32]),
             email: "bob@example.test".to_owned(),
-            invited_by: id,
+            invited_by: Some(id),
             created_at: at(0),
             expires_at: at(100),
             used_at: None,

@@ -47,3 +47,8 @@ reason = "E-mail addresses belong to Manage people (M2-Q3): the list and the pag
 type = "PersonItem"
 field = "email"
 reason = "E-mail addresses belong to Manage people (M2-Q3): the list and the page of a person need that permission, so whoever gets this answer may see every address."
+
+[[exempt]]
+type = "MailJob"
+field = "email"
+reason = "The payload of the job that answers a sign-up holds the address the person typed, because no account exists for it: it is only in the queue until the e-mail has gone (and with a dead job for its keep period), never in an answer, and the address is the recipient of the e-mail itself."

@@ -472,3 +472,56 @@ async fn tag_01_putting_a_tag_or_label_on_or_off_counts_the_version_of_the_issue
     assert_eq!(version_of(&world, issue).await?, start + 4);
     Ok(())
 }
+
+#[tokio::test]
+async fn m3_f126_renaming_or_combining_a_tag_counts_the_version_of_each_issue() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let (first, second) = (
+        an_issue(&world, project).await?,
+        an_issue(&world, project).await?,
+    );
+    let tag = tagged(&world, first, "login").await?;
+    tagged(&world, second, "login").await?;
+    let into = tagged(&world, second, "sign-in").await?;
+    let before = (
+        version_of(&world, first).await?,
+        version_of(&world, second).await?,
+    );
+    // A rename counts every issue that has the tag.
+    change_tag(
+        &world.ctx(),
+        ChangeTag {
+            session_token: token(&world),
+            tag,
+            version: 1,
+            name: Some("log-in".to_owned()),
+            color: None,
+            projects: None,
+        },
+    )
+    .await?;
+    let renamed = (
+        version_of(&world, first).await?,
+        version_of(&world, second).await?,
+    );
+    assert_eq!(renamed, (before.0 + 1, before.1 + 1));
+    // A combine counts them too.
+    combine_tags(
+        &world.ctx(),
+        CombineTags {
+            session_token: token(&world),
+            tag,
+            version: 2,
+            into,
+            into_version: 1,
+        },
+    )
+    .await?;
+    let combined = (
+        version_of(&world, first).await?,
+        version_of(&world, second).await?,
+    );
+    assert_eq!(combined, (renamed.0 + 1, renamed.1 + 1));
+    Ok(())
+}
