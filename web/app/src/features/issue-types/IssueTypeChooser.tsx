@@ -7,17 +7,19 @@ import { issueTypeLinesOf, useIssueTypes } from "./issue-types.ts";
 const allTypes = "";
 
 export interface IssueTypeChooserProps {
+  /** What the choice is for, as its label. */
+  readonly label: string;
   /** The ID of the issue type that is open; nothing for all types. */
   readonly type: string | undefined;
   readonly onChange: (type: string | undefined) => void;
 }
 
-/** Which issue type a place-wide thing is for (a layout, a workflow): one, or all of them. */
-export function IssueTypeChooser({ type, onChange }: IssueTypeChooserProps) {
+/** Which issue type a place-wide thing is for (a layout, a workflow, field permissions): one, or all of them. */
+export function IssueTypeChooser({ label, type, onChange }: IssueTypeChooserProps) {
   const types = issueTypeLinesOf(useIssueTypes().data?.pages);
   return (
     <SelectField
-      label={t("issue-field.issue-type")}
+      label={label}
       choices={[
         { value: allTypes, label: t("issue-types.all-types") },
         ...types.map((each) => ({ value: each.id, label: each.name })),

@@ -34,16 +34,18 @@ function Where({
   targets,
   chosen,
   onChoose,
+  over,
 }: {
   readonly dropped: Dropped;
+  /** There are more issues than one publish moves: the numbers are not told, they stop at the limit. */
+  readonly over: boolean;
   readonly targets: readonly Target[];
   readonly chosen: string;
   readonly onChoose: (to: string) => void;
 }) {
-  const label = t("workflows.publish-where", {
-    count: dropped.issues,
-    status: dropped.status.name,
-  });
+  const label = over
+    ? t("workflows.publish-where-over", { status: dropped.status.name })
+    : t("workflows.publish-where", { count: dropped.issues, status: dropped.status.name });
   return (
     <div {...partOf(part.stack)}>
       <SelectField label={label} choices={targets} value={chosen} onChange={onChoose} />
@@ -91,7 +93,9 @@ export function PublishDialog(props: PublishDialogProps) {
       }}
       title={t("workflows.publish-title")}
       text={t("workflows.publish-text")}
-      confirmLabel={t("workflows.publish-go", { count: total })}
+      confirmLabel={
+        tooMany ? t("workflows.publish-go-over") : t("workflows.publish-go", { count: total })
+      }
       cancelLabel={t("common.cancel")}
       confirmDisabled={stuck}
       onConfirm={() => {
@@ -102,6 +106,7 @@ export function PublishDialog(props: PublishDialogProps) {
         <Where
           key={each.status.key}
           dropped={each}
+          over={tooMany}
           targets={targets}
           chosen={where(each)}
           onChoose={(next) => {

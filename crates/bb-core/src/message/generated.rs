@@ -707,12 +707,6 @@ pub const EDITING_DRAFT_DROP: MessageKey = MessageKey::new("editing.draft-drop")
 /// The message `editing.edit-anyway`.
 pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway");
 
-/// The message `editing.kind-layout`.
-pub const EDITING_KIND_LAYOUT: MessageKey = MessageKey::new("editing.kind-layout");
-
-/// The message `editing.kind-workflow`.
-pub const EDITING_KIND_WORKFLOW: MessageKey = MessageKey::new("editing.kind-workflow");
-
 /// The message `editing.lost-ran-out`.
 pub const EDITING_LOST_RAN_OUT: MessageKey = MessageKey::new("editing.lost-ran-out");
 
@@ -1043,9 +1037,6 @@ pub const FIELD_LOOK_PLAIN_TEXT: MessageKey = MessageKey::new("field-look.plain-
 
 /// The message `field-look.progress-bar`.
 pub const FIELD_LOOK_PROGRESS_BAR: MessageKey = MessageKey::new("field-look.progress-bar");
-
-/// The message `field-permissions.all-types`.
-pub const FIELD_PERMISSIONS_ALL_TYPES: MessageKey = MessageKey::new("field-permissions.all-types");
 
 /// The message `field-permissions.fewer-options`.
 pub const FIELD_PERMISSIONS_FEWER_OPTIONS: MessageKey =
@@ -2299,6 +2290,15 @@ pub const LAYOUTS_TABS: MessageKey = MessageKey::new("layouts.tabs");
 
 /// The message `layouts.unreadable`.
 pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
+
+/// The message `layouts.use-inherited`.
+pub const LAYOUTS_USE_INHERITED: MessageKey = MessageKey::new("layouts.use-inherited");
+
+/// The message `layouts.use-inherited-text`.
+pub const LAYOUTS_USE_INHERITED_TEXT: MessageKey = MessageKey::new("layouts.use-inherited-text");
+
+/// The message `layouts.use-inherited-title`.
+pub const LAYOUTS_USE_INHERITED_TITLE: MessageKey = MessageKey::new("layouts.use-inherited-title");
 
 /// The message `list.next`.
 pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
@@ -4605,6 +4605,9 @@ pub const WORKFLOWS_ORGANIZATION_TITLE: MessageKey =
 /// The message `workflows.publish`.
 pub const WORKFLOWS_PUBLISH: MessageKey = MessageKey::new("workflows.publish");
 
+/// The message `workflows.publish-go-over`.
+pub const WORKFLOWS_PUBLISH_GO_OVER: MessageKey = MessageKey::new("workflows.publish-go-over");
+
 /// The message `workflows.publish-text`.
 pub const WORKFLOWS_PUBLISH_TEXT: MessageKey = MessageKey::new("workflows.publish-text");
 
@@ -4652,6 +4655,17 @@ pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text")
 
 /// The message `workflows.try-title`.
 pub const WORKFLOWS_TRY_TITLE: MessageKey = MessageKey::new("workflows.try-title");
+
+/// The message `workflows.use-inherited`.
+pub const WORKFLOWS_USE_INHERITED: MessageKey = MessageKey::new("workflows.use-inherited");
+
+/// The message `workflows.use-inherited-text`.
+pub const WORKFLOWS_USE_INHERITED_TEXT: MessageKey =
+    MessageKey::new("workflows.use-inherited-text");
+
+/// The message `workflows.use-inherited-title`.
+pub const WORKFLOWS_USE_INHERITED_TITLE: MessageKey =
+    MessageKey::new("workflows.use-inherited-title");
 
 /// The message `workflows.view`.
 pub const WORKFLOWS_VIEW: MessageKey = MessageKey::new("workflows.view");
@@ -5435,18 +5449,6 @@ pub fn editing_ask_to_finish(name: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `editing.delete-held`.
-#[must_use]
-pub fn editing_delete_held(kind: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("editing.delete-held"),
-        vec![
-            ("kind", Value::Text(kind.to_string())),
-            ("name", Value::Text(name.to_string())),
-        ],
-    )
-}
-
 /// The message `editing.draft-continue`.
 #[must_use]
 pub fn editing_draft_continue(when: impl std::fmt::Display) -> Message {
@@ -5515,33 +5517,6 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.lost-taken-over"),
         vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `editing.use-inherited`.
-#[must_use]
-pub fn editing_use_inherited(kind: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("editing.use-inherited"),
-        vec![("kind", Value::Text(kind.to_string()))],
-    )
-}
-
-/// The message `editing.use-inherited-text`.
-#[must_use]
-pub fn editing_use_inherited_text(kind: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("editing.use-inherited-text"),
-        vec![("kind", Value::Text(kind.to_string()))],
-    )
-}
-
-/// The message `editing.use-inherited-title`.
-#[must_use]
-pub fn editing_use_inherited_title(kind: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("editing.use-inherited-title"),
-        vec![("kind", Value::Text(kind.to_string()))],
     )
 }
 
@@ -6645,6 +6620,15 @@ pub fn layouts_customize_project(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.customize-project"),
         vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `layouts.delete-held`.
+#[must_use]
+pub fn layouts_delete_held(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("layouts.delete-held"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -8569,6 +8553,15 @@ pub fn workflows_customize_project(project: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `workflows.delete-held`.
+#[must_use]
+pub fn workflows_delete_held(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.delete-held"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `workflows.from`.
 #[must_use]
 pub fn workflows_from(name: impl std::fmt::Display) -> Message {
@@ -8635,6 +8628,15 @@ pub fn workflows_publish_where(count: i64, status: impl std::fmt::Display) -> Me
             ("count", Value::Number(count)),
             ("status", Value::Text(status.to_string())),
         ],
+    )
+}
+
+/// The message `workflows.publish-where-over`.
+#[must_use]
+pub fn workflows_publish_where_over(status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-where-over"),
+        vec![("status", Value::Text(status.to_string()))],
     )
 }
 
@@ -9430,10 +9432,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("editing.ask-to-finish", "Ask {name} to finish"),
     ("editing.changes-drop", "Throw my changes away"),
-    (
-        "editing.delete-held",
-        "{name} is editing this {kind}, so it cannot be taken away yet. Try again when they have finished.",
-    ),
     ("editing.draft-continue", "Continue your draft from {when}"),
     ("editing.draft-drop", "Throw the draft away"),
     (
@@ -9449,8 +9447,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "editing.is-editing",
         "{name} is editing {thing} · since {since}",
     ),
-    ("editing.kind-layout", "layout"),
-    ("editing.kind-workflow", "workflow"),
     (
         "editing.lost-changed",
         "Not saved yet: {name} changed {thing} after you. Your text is kept.",
@@ -9473,15 +9469,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("editing.this-comment", "this comment"),
     ("editing.this-layout", "this layout"),
     ("editing.this-workflow", "this workflow"),
-    ("editing.use-inherited", "Use the inherited {kind} again"),
-    (
-        "editing.use-inherited-text",
-        "The {kind} of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave something without what it needs.",
-    ),
-    (
-        "editing.use-inherited-title",
-        "Use the inherited {kind} again?",
-    ),
     (
         "error.access.cannot-lift",
         "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
@@ -9777,7 +9764,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("field-look.pill", "Pill"),
     ("field-look.plain-text", "Plain text"),
     ("field-look.progress-bar", "Progress bar"),
-    ("field-permissions.all-types", "All issue types"),
     ("field-permissions.fewer-options", "Fewer options"),
     (
         "field-permissions.intro",
@@ -10584,6 +10570,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("layouts.customize-project", "Customize for {project}"),
     (
+        "layouts.delete-held",
+        "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
+    ),
+    (
         "layouts.draft-changed",
         "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
     ),
@@ -10672,6 +10662,12 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.unreadable",
         "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
     ),
+    ("layouts.use-inherited", "Reset to default"),
+    (
+        "layouts.use-inherited-text",
+        "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+    ),
+    ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     (
@@ -12600,6 +12596,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("workflows.customize-project", "Customize for {project}"),
     (
+        "workflows.delete-held",
+        "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
+    ),
+    (
         "workflows.draft-changed",
         "This workflow changed while you were editing, and you see it as it is now. Your changes are kept.",
     ),
@@ -12649,6 +12649,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "workflows.publish-go",
         "Publish and move {count, plural, one {# issue} other {# issues}}",
     ),
+    ("workflows.publish-go-over", "Publish and move the issues"),
     (
         "workflows.publish-text",
         "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
@@ -12666,6 +12667,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "workflows.publish-where",
         "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
     ),
+    ("workflows.publish-where-over", "Issues in {status} go to"),
     ("workflows.remove-condition", "Stop checking {field}"),
     ("workflows.rules-done", "Done"),
     (
@@ -12702,6 +12704,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Pick an issue and a person to see which status changes they would get, and why.",
     ),
     ("workflows.try-title", "Try it"),
+    (
+        "workflows.use-inherited",
+        "Use the inherited workflow again",
+    ),
+    (
+        "workflows.use-inherited-text",
+        "The workflow of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+    ),
+    (
+        "workflows.use-inherited-title",
+        "Use the inherited workflow again?",
+    ),
     (
         "workflows.uses-hidden",
         "These issues use the workflow {name}, which is set higher up.",

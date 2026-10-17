@@ -45,6 +45,7 @@ export function WorkflowsCard({ project, heading, open, onOpen }: WorkflowsCardP
       <div {...partOf(part.stack)}>
         <p {...partOf(part.muted)}>{t("workflows.intro")}</p>
         <IssueTypeChooser
+          label={t("issue-field.issue-type")}
           type={open.type}
           onChange={(type) => {
             onOpen({ type });

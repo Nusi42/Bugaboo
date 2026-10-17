@@ -547,16 +547,8 @@ export const messages = {
   "editing.this-comment": "this comment",
   "editing.this-layout": "this layout",
   "editing.this-workflow": "this workflow",
-  "editing.kind-layout": "layout",
-  "editing.kind-workflow": "workflow",
   "editing.taking": "Getting ready to edit…",
   "editing.changes-drop": "Throw my changes away",
-  "editing.use-inherited": "Use the inherited {kind} again",
-  "editing.use-inherited-title": "Use the inherited {kind} again?",
-  "editing.use-inherited-text":
-    "The {kind} of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave something without what it needs.",
-  "editing.delete-held":
-    "{name} is editing this {kind}, so it cannot be taken away yet. Try again when they have finished.",
   "editing.ask-to-finish": "Ask {name} to finish",
   "editing.edit-anyway": "Edit anyway",
   "editing.draft-found": "You have a draft of {thing} from {when}.",

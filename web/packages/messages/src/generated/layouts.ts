@@ -57,6 +57,12 @@ export const messages = {
     "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
   "layouts.draft-restore": "Put my changes back",
   "layouts.roles-hidden": "Which roles see a field is set by people who may decide what roles see.",
+  "layouts.use-inherited": "Reset to default",
+  "layouts.use-inherited-title": "Reset to default?",
+  "layouts.use-inherited-text":
+    "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
+  "layouts.delete-held":
+    "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
 } as const;
 
 register(messages);

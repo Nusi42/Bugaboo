@@ -25,6 +25,7 @@ export function FormChooser({ kind, type, onChange }: FormChooserProps) {
         }}
       />
       <IssueTypeChooser
+        label={t("issue-field.issue-type")}
         type={type}
         onChange={(next) => {
           onChange(kind, next);

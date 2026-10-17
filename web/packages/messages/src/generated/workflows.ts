@@ -11,6 +11,12 @@ export const messages = {
   "workflows.uses-hidden": "These issues use the workflow {name}, which is set higher up.",
   "workflows.uses-starting": "These issues use the starting workflow {name}.",
   "workflows.uses-type": "It is only for {type}.",
+  "workflows.use-inherited": "Use the inherited workflow again",
+  "workflows.use-inherited-title": "Use the inherited workflow again?",
+  "workflows.use-inherited-text":
+    "The workflow of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+  "workflows.delete-held":
+    "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
   "workflows.customize-project": "Customize for {project}",
   "workflows.customize-organization": "Customize for the whole organization",
   "workflows.name": "Name of the workflow",
@@ -72,6 +78,7 @@ export const messages = {
     "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
   "workflows.publish-where":
     "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
+  "workflows.publish-where-over": "Issues in {status} go to",
   "workflows.publish-unseen":
     "{count, plural, one {# of them is an issue} other {# of them are issues}} that you cannot see.",
   "workflows.publish-blocked":
@@ -79,6 +86,7 @@ export const messages = {
   "workflows.publish-too-many":
     "More than {limit} issues are in the statuses you removed. Move some of them first, then publish.",
   "workflows.publish-go": "Publish and move {count, plural, one {# issue} other {# issues}}",
+  "workflows.publish-go-over": "Publish and move the issues",
   "workflows.try-title": "Try it",
   "workflows.try-text":
     "Pick an issue and a person to see which status changes they would get, and why.",

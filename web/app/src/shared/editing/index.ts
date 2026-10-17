@@ -4,9 +4,9 @@ export { useLongText, type LongText, type LongTextOptions } from "./use-long-tex
 export { lockCanBeRetaken, lostReasonOf, retakingLockHelps } from "./long-text-model.ts";
 export type { LostReason, Phase, Who } from "./long-text-model.ts";
 export type { LockState } from "./edit-lock-state.ts";
-export { editedKind, editedThing } from "./edited-thing.ts";
+export { editedThing } from "./edited-thing.ts";
 export { LockedEditor } from "./LockedEditor.tsx";
-export { RemoveEditable } from "./RemoveEditable.tsx";
+export { RemoveEditable, type RemoveWords } from "./RemoveEditable.tsx";
 export { useEditingNow } from "./use-editing-now.ts";
 export { SaveBar, type SaveBarProps } from "./SaveBar.tsx";
 export { shownSaveError } from "./save-error.ts";
