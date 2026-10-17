@@ -1,10 +1,21 @@
 import { dataOf, type Schema, workflowEditPart } from "@bugaboo/api-client";
+import { type Page } from "@playwright/test";
 
 import { roleName, signedInAdmin, createPeopleWithRoles } from "./access.ts";
 import { cleo } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { createOwnField } from "./fields.ts";
-import { firstIssueType, prepareWeb, type MadeIssue } from "./issues.ts";
+import {
+  firstIssueType,
+  issueOf,
+  prepareWeb,
+  tickBox,
+  setStatusAndPriority,
+  versionOf,
+  type MadeIssue,
+} from "./issues.ts";
+import { inOrder } from "./sequence.ts";
+import { statusOf } from "./many-changes.ts";
 import { type Instance } from "./server.ts";
 
 /** The own field that the workflow tests ask for and require. */
@@ -128,4 +139,47 @@ export async function createBug(admin: ApiSession, title: string): Promise<MadeI
     throw new TypeError("The server made an issue without an ID.");
   }
   return { id: made.id, key: made.key };
+}
+
+/** Puts the issues in the status *In progress*, one after the other. */
+async function startWorkingOn(admin: ApiSession, issues: readonly MadeIssue[]): Promise<void> {
+  await inOrder(
+    issues.map((issue) => async () => {
+      await setStatusAndPriority(admin, issue, await versionOf(admin, issue), {
+        status: "in-progress",
+        priority: "normal",
+      });
+    }),
+  );
+}
+
+/** The issues the tests of changing many issues start from: two Bugs and a Task, all *In progress*. */
+export async function threeInProgress(admin: ApiSession): Promise<readonly MadeIssue[]> {
+  const bugs = [await createBug(admin, "First bug"), await createBug(admin, "Second bug")];
+  const task = await issueOf(admin, "WEB-1");
+  await startWorkingOn(admin, [...bugs, task]);
+  return [...bugs, task];
+}
+
+/** The status each of the issues has now, in the order of the issues. */
+export async function statusesOf(
+  admin: ApiSession,
+  issues: readonly MadeIssue[],
+): Promise<(string | undefined)[]> {
+  const found: (string | undefined)[] = [];
+  await inOrder(
+    issues.map((issue) => async () => {
+      found.push(await statusOf(admin, issue));
+    }),
+  );
+  return found;
+}
+
+/** Ticks the issues of the list one after the other. */
+export async function tickAll(page: Page, issues: readonly MadeIssue[]): Promise<void> {
+  await inOrder(
+    issues.map((issue) => async () => {
+      await tickBox(page, issue.key).check({ force: true });
+    }),
+  );
 }

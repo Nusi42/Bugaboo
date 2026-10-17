@@ -61,6 +61,18 @@ export async function requireFoundInVersion(page: Page): Promise<void> {
   await expect(rules).toHaveCount(0);
 }
 
+/** Takes a status out of the draft with its button, which also takes the status changes from and to it. */
+export async function removeStatus(page: Page, name: string): Promise<void> {
+  await page
+    .getByRole("button", { name: t("workflows.status-remove", { name }), exact: true })
+    .click();
+}
+
+/** Gives the workflow in the editor another name. */
+export async function renameWorkflowTo(page: Page, name: string): Promise<void> {
+  await page.getByLabel(t("workflows.name"), { exact: true }).fill(name);
+}
+
 /** *Try it* for an issue and a person: the answer for the status change *Mark as done*. */
 export async function tryMarkAsDone(page: Page, issue: string, person: Person): Promise<Locator> {
   const tryIt = page.getByRole("region", { name: t("workflows.try-title") });
