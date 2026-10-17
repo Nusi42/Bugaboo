@@ -46,6 +46,7 @@ crate::entities! {
     crate::own_fields::OwnField,
     crate::own_fields_value::StoredFieldValue,
     crate::migration::MigrationRecord,
+    crate::notification::Notification,
     crate::outbox::OutboxEntry,
     crate::outbox::OutboxPosition,
     crate::person::Person,

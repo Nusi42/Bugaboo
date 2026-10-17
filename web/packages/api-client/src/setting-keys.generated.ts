@@ -26,6 +26,25 @@ export const settingKeys = {
   authAccessKeyLongestDays: "auth.access-key-longest-days",
   issuesIdMode: "issues.id-mode",
   issuesIdLength: "issues.id-length",
+  notificationsMentionedInApp: "notifications.mentioned-in-app",
+  notificationsMentionedByMail: "notifications.mentioned-by-mail",
+  notificationsAssignedInApp: "notifications.assigned-in-app",
+  notificationsAssignedByMail: "notifications.assigned-by-mail",
+  notificationsFollowedActivityInApp: "notifications.followed-activity-in-app",
+  notificationsFollowedActivityByMail: "notifications.followed-activity-by-mail",
+  notificationsFollowedFieldsInApp: "notifications.followed-fields-in-app",
+  notificationsFollowedFieldsByMail: "notifications.followed-fields-by-mail",
+  notificationsRunEndedInApp: "notifications.run-ended-in-app",
+  notificationsRunEndedByMail: "notifications.run-ended-by-mail",
+  notificationsEditNoticeInApp: "notifications.edit-notice-in-app",
+  notificationsEditNoticeByMail: "notifications.edit-notice-by-mail",
+  mailEnabled: "mail.enabled",
+  mailHost: "mail.host",
+  mailPort: "mail.port",
+  mailSecurity: "mail.security",
+  mailUsername: "mail.username",
+  mailFrom: "mail.from",
+  mailShort: "mail.short",
 } as const;
 
 /** The key of a setting of the registry. */
@@ -42,6 +61,7 @@ export const settingChoices = {
   regionNumberFormat: ["device", "point", "comma", "space"],
   regionFirstDay: ["device", "monday", "sunday", "saturday"],
   issuesIdMode: ["random", "counting"],
+  mailSecurity: ["starttls", "tls", "off"],
 } as const;
 
 /** What a person who chose nothing gets, for every setting of the registry. */
@@ -70,6 +90,25 @@ export const settingDefaults = {
   authAccessKeyLongestDays: 365,
   issuesIdMode: "random",
   issuesIdLength: 5,
+  notificationsMentionedInApp: true,
+  notificationsMentionedByMail: true,
+  notificationsAssignedInApp: true,
+  notificationsAssignedByMail: true,
+  notificationsFollowedActivityInApp: true,
+  notificationsFollowedActivityByMail: false,
+  notificationsFollowedFieldsInApp: false,
+  notificationsFollowedFieldsByMail: false,
+  notificationsRunEndedInApp: true,
+  notificationsRunEndedByMail: false,
+  notificationsEditNoticeInApp: true,
+  notificationsEditNoticeByMail: false,
+  mailEnabled: false,
+  mailHost: "",
+  mailPort: 587,
+  mailSecurity: "starttls",
+  mailUsername: "",
+  mailFrom: "",
+  mailShort: false,
 } as const;
 
 /** One of the choices of a setting, like `"device"` for `appearanceMode`. */

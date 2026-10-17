@@ -563,6 +563,72 @@ export const messages = {
   "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
+  "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
+  "setting.notifications.mentioned-in-app.help":
+    "Tell me under Notifications when a comment mentions me, or a group or role I am in.",
+  "setting.notifications.mentioned-by-mail.name": "You are mentioned: by e-mail",
+  "setting.notifications.mentioned-by-mail.help":
+    "Send me an e-mail when a comment mentions me, or a group or role I am in. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.assigned-in-app.name": "An issue is assigned to you: in the app",
+  "setting.notifications.assigned-in-app.help":
+    "Tell me under Notifications when an issue is assigned to me.",
+  "setting.notifications.assigned-by-mail.name": "An issue is assigned to you: by e-mail",
+  "setting.notifications.assigned-by-mail.help":
+    "Send me an e-mail when an issue is assigned to me. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.followed-activity-in-app.name":
+    "Status changes, comments and files on issues you follow: in the app",
+  "setting.notifications.followed-activity-in-app.help":
+    "Tell me under Notifications when somebody else changes the status of an issue I follow, or comments on it or adds a file to it.",
+  "setting.notifications.followed-activity-by-mail.name":
+    "Status changes, comments and files on issues you follow: by e-mail",
+  "setting.notifications.followed-activity-by-mail.help":
+    "Send me an e-mail when somebody else changes the status of an issue I follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.followed-fields-in-app.name":
+    "Other changes to issues you follow: in the app",
+  "setting.notifications.followed-fields-in-app.help":
+    "Tell me under Notifications when somebody else changes other fields of an issue I follow.",
+  "setting.notifications.followed-fields-by-mail.name":
+    "Other changes to issues you follow: by e-mail",
+  "setting.notifications.followed-fields-by-mail.help":
+    "Send me an e-mail when somebody else changes other fields of an issue I follow. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.run-ended-in-app.name": "Your run of many changes has ended: in the app",
+  "setting.notifications.run-ended-in-app.help":
+    "Tell me under Notifications when a change to many issues that I asked for has ended, or when work I asked for gave up.",
+  "setting.notifications.run-ended-by-mail.name": "Your run of many changes has ended: by e-mail",
+  "setting.notifications.run-ended-by-mail.help":
+    "Send me an e-mail when a change to many issues that I asked for has ended, or when work I asked for gave up. E-mail goes only when your organization has switched it on.",
+  "setting.notifications.edit-notice-in-app.name":
+    "Somebody asks you to finish editing: in the app",
+  "setting.notifications.edit-notice-in-app.help":
+    "Tell me under Notifications when somebody asks me to finish editing a text, or takes the editing over.",
+  "setting.notifications.edit-notice-by-mail.name":
+    "Somebody asks you to finish editing: by e-mail",
+  "setting.notifications.edit-notice-by-mail.help":
+    "Send me an e-mail when somebody asks me to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
+  "setting.mail.enabled.name": "Send e-mail",
+  "setting.mail.enabled.help":
+    "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
+  "setting.mail.host.name": "Mail server",
+  "setting.mail.host.help":
+    "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+  "setting.mail.port.name": "Mail server port",
+  "setting.mail.port.help":
+    "The port of the mail server. Usually 587 when the connection switches to encryption, and 465 when it is encrypted from the start.",
+  "setting.mail.security.name": "Protect the connection",
+  "setting.mail.security.help":
+    "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+  "setting.mail.security.starttls": "Switch to encryption (usual)",
+  "setting.mail.security.tls": "Encrypted from the start",
+  "setting.mail.security.off": "No encryption",
+  "setting.mail.username.name": "Mail server user name",
+  "setting.mail.username.help":
+    "The user name Bugaboo signs in to the mail server with. Leave it empty for a mail server that asks for none. The password is entered separately and is stored encrypted.",
+  "setting.mail.from.name": "Send e-mail from",
+  "setting.mail.from.help":
+    "The e-mail address that e-mails from Bugaboo come from, like bugaboo@example.com.",
+  "setting.mail.short.name": "Short e-mails",
+  "setting.mail.short.help":
+    "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
 } as const;
 
 register(messages);

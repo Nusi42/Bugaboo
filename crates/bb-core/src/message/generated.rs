@@ -2495,6 +2495,27 @@ pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
 /// The message `nav.themes`.
 pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
+/// The message `notification.kind.assigned`.
+pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
+
+/// The message `notification.kind.edit-notice`.
+pub const NOTIFICATION_KIND_EDIT_NOTICE: MessageKey =
+    MessageKey::new("notification.kind.edit-notice");
+
+/// The message `notification.kind.followed-activity`.
+pub const NOTIFICATION_KIND_FOLLOWED_ACTIVITY: MessageKey =
+    MessageKey::new("notification.kind.followed-activity");
+
+/// The message `notification.kind.followed-fields`.
+pub const NOTIFICATION_KIND_FOLLOWED_FIELDS: MessageKey =
+    MessageKey::new("notification.kind.followed-fields");
+
+/// The message `notification.kind.mentioned`.
+pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notification.kind.mentioned");
+
+/// The message `notification.kind.run-ended`.
+pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
+
 /// The message `own.ask-keep`.
 pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
 
@@ -3621,6 +3642,154 @@ pub const SETTING_ISSUES_ID_MODE_HELP: MessageKey = MessageKey::new("setting.iss
 
 /// The message `setting.issues.id-mode.name`.
 pub const SETTING_ISSUES_ID_MODE_NAME: MessageKey = MessageKey::new("setting.issues.id-mode.name");
+
+/// The message `setting.mail.enabled.help`.
+pub const SETTING_MAIL_ENABLED_HELP: MessageKey = MessageKey::new("setting.mail.enabled.help");
+
+/// The message `setting.mail.enabled.name`.
+pub const SETTING_MAIL_ENABLED_NAME: MessageKey = MessageKey::new("setting.mail.enabled.name");
+
+/// The message `setting.mail.from.help`.
+pub const SETTING_MAIL_FROM_HELP: MessageKey = MessageKey::new("setting.mail.from.help");
+
+/// The message `setting.mail.from.name`.
+pub const SETTING_MAIL_FROM_NAME: MessageKey = MessageKey::new("setting.mail.from.name");
+
+/// The message `setting.mail.host.help`.
+pub const SETTING_MAIL_HOST_HELP: MessageKey = MessageKey::new("setting.mail.host.help");
+
+/// The message `setting.mail.host.name`.
+pub const SETTING_MAIL_HOST_NAME: MessageKey = MessageKey::new("setting.mail.host.name");
+
+/// The message `setting.mail.port.help`.
+pub const SETTING_MAIL_PORT_HELP: MessageKey = MessageKey::new("setting.mail.port.help");
+
+/// The message `setting.mail.port.name`.
+pub const SETTING_MAIL_PORT_NAME: MessageKey = MessageKey::new("setting.mail.port.name");
+
+/// The message `setting.mail.security.help`.
+pub const SETTING_MAIL_SECURITY_HELP: MessageKey = MessageKey::new("setting.mail.security.help");
+
+/// The message `setting.mail.security.name`.
+pub const SETTING_MAIL_SECURITY_NAME: MessageKey = MessageKey::new("setting.mail.security.name");
+
+/// The message `setting.mail.security.off`.
+pub const SETTING_MAIL_SECURITY_OFF: MessageKey = MessageKey::new("setting.mail.security.off");
+
+/// The message `setting.mail.security.starttls`.
+pub const SETTING_MAIL_SECURITY_STARTTLS: MessageKey =
+    MessageKey::new("setting.mail.security.starttls");
+
+/// The message `setting.mail.security.tls`.
+pub const SETTING_MAIL_SECURITY_TLS: MessageKey = MessageKey::new("setting.mail.security.tls");
+
+/// The message `setting.mail.short.help`.
+pub const SETTING_MAIL_SHORT_HELP: MessageKey = MessageKey::new("setting.mail.short.help");
+
+/// The message `setting.mail.short.name`.
+pub const SETTING_MAIL_SHORT_NAME: MessageKey = MessageKey::new("setting.mail.short.name");
+
+/// The message `setting.mail.username.help`.
+pub const SETTING_MAIL_USERNAME_HELP: MessageKey = MessageKey::new("setting.mail.username.help");
+
+/// The message `setting.mail.username.name`.
+pub const SETTING_MAIL_USERNAME_NAME: MessageKey = MessageKey::new("setting.mail.username.name");
+
+/// The message `setting.notifications.assigned-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.assigned-by-mail.help");
+
+/// The message `setting.notifications.assigned-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.assigned-by-mail.name");
+
+/// The message `setting.notifications.assigned-in-app.help`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.assigned-in-app.help");
+
+/// The message `setting.notifications.assigned-in-app.name`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.assigned-in-app.name");
+
+/// The message `setting.notifications.edit-notice-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-by-mail.help");
+
+/// The message `setting.notifications.edit-notice-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-by-mail.name");
+
+/// The message `setting.notifications.edit-notice-in-app.help`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-in-app.help");
+
+/// The message `setting.notifications.edit-notice-in-app.name`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-in-app.name");
+
+/// The message `setting.notifications.followed-activity-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-by-mail.help");
+
+/// The message `setting.notifications.followed-activity-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-by-mail.name");
+
+/// The message `setting.notifications.followed-activity-in-app.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-in-app.help");
+
+/// The message `setting.notifications.followed-activity-in-app.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-in-app.name");
+
+/// The message `setting.notifications.followed-fields-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-by-mail.help");
+
+/// The message `setting.notifications.followed-fields-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-by-mail.name");
+
+/// The message `setting.notifications.followed-fields-in-app.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-in-app.help");
+
+/// The message `setting.notifications.followed-fields-in-app.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-in-app.name");
+
+/// The message `setting.notifications.mentioned-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-by-mail.help");
+
+/// The message `setting.notifications.mentioned-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-by-mail.name");
+
+/// The message `setting.notifications.mentioned-in-app.help`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-in-app.help");
+
+/// The message `setting.notifications.mentioned-in-app.name`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-in-app.name");
+
+/// The message `setting.notifications.run-ended-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-by-mail.help");
+
+/// The message `setting.notifications.run-ended-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-by-mail.name");
+
+/// The message `setting.notifications.run-ended-in-app.help`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-in-app.help");
+
+/// The message `setting.notifications.run-ended-in-app.name`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-in-app.name");
 
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
@@ -9587,6 +9756,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.start-page", "Start page"),
     ("nav.status", "Server status"),
     ("nav.themes", "Themes"),
+    ("notification.kind.assigned", "An issue is assigned to you"),
+    (
+        "notification.kind.edit-notice",
+        "Somebody asks you to finish editing, or takes your editing over",
+    ),
+    (
+        "notification.kind.followed-activity",
+        "A status change, a comment or a file on an issue you follow",
+    ),
+    (
+        "notification.kind.followed-fields",
+        "Other changes to fields of an issue you follow",
+    ),
+    ("notification.kind.mentioned", "You are mentioned"),
+    (
+        "notification.kind.run-ended",
+        "Your run of many changes has ended",
+    ),
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
@@ -10657,6 +10844,143 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
     ),
     ("setting.issues.id-mode.name", "Issue IDs"),
+    (
+        "setting.mail.enabled.help",
+        "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
+    ),
+    ("setting.mail.enabled.name", "Send e-mail"),
+    (
+        "setting.mail.from.help",
+        "The e-mail address that e-mails from Bugaboo come from, like bugaboo@example.com.",
+    ),
+    ("setting.mail.from.name", "Send e-mail from"),
+    (
+        "setting.mail.host.help",
+        "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+    ),
+    ("setting.mail.host.name", "Mail server"),
+    (
+        "setting.mail.port.help",
+        "The port of the mail server. Usually 587 when the connection switches to encryption, and 465 when it is encrypted from the start.",
+    ),
+    ("setting.mail.port.name", "Mail server port"),
+    (
+        "setting.mail.security.help",
+        "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+    ),
+    ("setting.mail.security.name", "Protect the connection"),
+    ("setting.mail.security.off", "No encryption"),
+    (
+        "setting.mail.security.starttls",
+        "Switch to encryption (usual)",
+    ),
+    ("setting.mail.security.tls", "Encrypted from the start"),
+    (
+        "setting.mail.short.help",
+        "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+    ),
+    ("setting.mail.short.name", "Short e-mails"),
+    (
+        "setting.mail.username.help",
+        "The user name Bugaboo signs in to the mail server with. Leave it empty for a mail server that asks for none. The password is entered separately and is stored encrypted.",
+    ),
+    ("setting.mail.username.name", "Mail server user name"),
+    (
+        "setting.notifications.assigned-by-mail.help",
+        "Send me an e-mail when an issue is assigned to me. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.assigned-by-mail.name",
+        "An issue is assigned to you: by e-mail",
+    ),
+    (
+        "setting.notifications.assigned-in-app.help",
+        "Tell me under Notifications when an issue is assigned to me.",
+    ),
+    (
+        "setting.notifications.assigned-in-app.name",
+        "An issue is assigned to you: in the app",
+    ),
+    (
+        "setting.notifications.edit-notice-by-mail.help",
+        "Send me an e-mail when somebody asks me to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.edit-notice-by-mail.name",
+        "Somebody asks you to finish editing: by e-mail",
+    ),
+    (
+        "setting.notifications.edit-notice-in-app.help",
+        "Tell me under Notifications when somebody asks me to finish editing a text, or takes the editing over.",
+    ),
+    (
+        "setting.notifications.edit-notice-in-app.name",
+        "Somebody asks you to finish editing: in the app",
+    ),
+    (
+        "setting.notifications.followed-activity-by-mail.help",
+        "Send me an e-mail when somebody else changes the status of an issue I follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.followed-activity-by-mail.name",
+        "Status changes, comments and files on issues you follow: by e-mail",
+    ),
+    (
+        "setting.notifications.followed-activity-in-app.help",
+        "Tell me under Notifications when somebody else changes the status of an issue I follow, or comments on it or adds a file to it.",
+    ),
+    (
+        "setting.notifications.followed-activity-in-app.name",
+        "Status changes, comments and files on issues you follow: in the app",
+    ),
+    (
+        "setting.notifications.followed-fields-by-mail.help",
+        "Send me an e-mail when somebody else changes other fields of an issue I follow. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.followed-fields-by-mail.name",
+        "Other changes to issues you follow: by e-mail",
+    ),
+    (
+        "setting.notifications.followed-fields-in-app.help",
+        "Tell me under Notifications when somebody else changes other fields of an issue I follow.",
+    ),
+    (
+        "setting.notifications.followed-fields-in-app.name",
+        "Other changes to issues you follow: in the app",
+    ),
+    (
+        "setting.notifications.mentioned-by-mail.help",
+        "Send me an e-mail when a comment mentions me, or a group or role I am in. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.mentioned-by-mail.name",
+        "You are mentioned: by e-mail",
+    ),
+    (
+        "setting.notifications.mentioned-in-app.help",
+        "Tell me under Notifications when a comment mentions me, or a group or role I am in.",
+    ),
+    (
+        "setting.notifications.mentioned-in-app.name",
+        "You are mentioned: in the app",
+    ),
+    (
+        "setting.notifications.run-ended-by-mail.help",
+        "Send me an e-mail when a change to many issues that I asked for has ended, or when work I asked for gave up. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.run-ended-by-mail.name",
+        "Your run of many changes has ended: by e-mail",
+    ),
+    (
+        "setting.notifications.run-ended-in-app.help",
+        "Tell me under Notifications when a change to many issues that I asked for has ended, or when work I asked for gave up.",
+    ),
+    (
+        "setting.notifications.run-ended-in-app.name",
+        "Your run of many changes has ended: in the app",
+    ),
     (
         "setting.page.region-intro",
         "These choices are kept with you, so they follow you to every browser you sign in from.",
