@@ -1,6 +1,5 @@
 import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { type Page } from "@playwright/test";
 
 import { ada } from "./support/accounts.ts";
 import { ana, signedInAdmin } from "./support/access.ts";
@@ -9,18 +8,13 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { labelNamesOf, createLabel, tickTwo } from "./support/labels.ts";
+import { openAction, previewDoneOnScreen } from "./support/many-changes-pages.ts";
 
 // Changing many issues at once (ISS-09, M3 WP-08): tick issues, choose what to do, read what would
 // change, apply, and take it back. The preview is the one long preview of the app.
 
 test.use({ preparation: { run: prepareWeb } });
 test.describe.configure({ mode: "serial" });
-
-/** Opens the dialog of one of the five things. */
-async function openAction(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).click();
-  return page.getByRole("alertdialog");
-}
 
 test("iss_09 a label is added to two ticked issues after a preview, and Undo takes it off", async ({
   page,
@@ -62,11 +56,7 @@ test("iss_09 the status of two ticked issues is changed and the preview names ea
 }) => {
   await signIn(page, ada);
   await tickTwo(page);
-  const dialog = await openAction(page, t("many-changes.action-change"));
-  await dialog.getByLabel(t("issue-field.status"), { exact: true }).selectOption({
-    label: t("status.done"),
-  });
-  await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();
+  const dialog = await previewDoneOnScreen(page, 2);
   const list = dialog.getByRole("list", { name: t("preview.label"), exact: true });
   await expect(list.getByText("WEB-1", { exact: true })).toBeVisible();
   await expect(list.getByText("WEB-2", { exact: true })).toBeVisible();

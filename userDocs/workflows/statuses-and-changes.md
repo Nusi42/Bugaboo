@@ -1,5 +1,7 @@
 # Statuses and status changes
 
+On an issue, the status button lists the status changes you can use now, in the words of their buttons (*Start working*, *Send to testing*). A change that needs something filled in opens a small window, **Ask for**, with only those fields; **Save** changes the status and **Undo** takes it back. A field that must be filled in and is still empty is named at its box. In **Change many issues** the status is chosen by the same words, and the preview names the issues whose workflow does not allow the change.
+
 A workflow has **statuses** and **status changes**. A status has a name and a status group. Renaming a status changes its name only, so old issues and their history keep working. The first status of a workflow is where a new issue starts.
 
 A **status change** goes from one status to another and has the text of its button, for example *Start working*. The issue page shows the status changes you may carry out now as the choices of the status button, and nothing else: a change that the workflow does not have, or that its rules keep from you, is not offered.

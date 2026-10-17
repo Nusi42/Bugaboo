@@ -54,7 +54,7 @@ export function KeptDraft({ editor, layout, onRestore }: KeptDraftProps) {
             drop.mutate();
           }}
         >
-          {t("layouts.draft-drop")}
+          {t("editing.changes-drop")}
         </Button>
       </div>
     </Alert>

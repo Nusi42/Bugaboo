@@ -264,3 +264,44 @@ async fn wf_02_the_live_issues_of_some_projects_and_types_are_found() -> TestRes
     })
     .await
 }
+
+#[tokio::test]
+async fn wf_02_the_live_issues_are_read_a_page_at_a_time_in_the_order_of_their_ids() -> TestResult {
+    each_database("wf_02_store_live_issues_after", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 5).await;
+        let page = async |after, limit| {
+            storage
+                .live_issues_after(None, None, StatusFilter::Any, after, limit)
+                .await
+        };
+        let mut wanted: Vec<_> = world.issues.iter().map(|issue| issue.id).collect();
+        wanted.sort();
+        // The first page holds the lowest IDs and no more than the limit.
+        let first = page(None, 2).await?;
+        let ids_of = |issues: &[Issue]| -> Vec<_> { issues.iter().map(|issue| issue.id).collect() };
+        assert_eq!(ids_of(&first), wanted[..2]);
+        // Each page goes on after the last ID of the one before; the last one is short.
+        let second = page(Some(wanted[1]), 2).await?;
+        assert_eq!(ids_of(&second), wanted[2..4]);
+        let third = page(Some(wanted[3]), 2).await?;
+        assert_eq!(ids_of(&third), wanted[4..]);
+        assert!(page(Some(wanted[4]), 2).await?.is_empty());
+        // The limit holds with a status filter and a place, and a place with nothing is empty.
+        let status = first[0].status.clone();
+        let in_status = storage
+            .live_issues_after(None, None, StatusFilter::In(vec![status]), None, 1)
+            .await?;
+        assert_eq!(in_status.len(), 1);
+        assert!(
+            storage
+                .live_issues_after(Some(Vec::new()), None, StatusFilter::Any, None, 10)
+                .await?
+                .is_empty()
+        );
+        Ok(())
+    })
+    .await
+}

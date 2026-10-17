@@ -2,7 +2,7 @@ import { iconName } from "@bugaboo/ui/icons";
 
 import { fieldPlaces } from "./field-places.ts";
 import { labelPlaces } from "./label-places.ts";
-import { layoutPlaces } from "./layout-places.ts";
+import { workPlaces } from "./work-places.ts";
 import { paths } from "./paths.ts";
 import type { Place } from "./place.ts";
 import { relationPlaces } from "./relation-places.ts";
@@ -120,7 +120,7 @@ const organizationTopics: readonly Place[] = [
   ...fieldPlaces,
   ...relationPlaces,
   ...labelPlaces,
-  ...layoutPlaces,
+  ...workPlaces,
   {
     path: paths.mailServer,
     name: "nav.mail-server",

@@ -7,8 +7,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::workflows::{
-    CreateWorkflow, DeleteWorkflow, PublishWorkflow, StatusMoveInput, TryWorkflowQuery,
-    UseWorkflow, WorkflowEditorQuery, WorkflowsQuery,
+    CreateWorkflow, DeleteWorkflow, PublishPreviewQuery, PublishWorkflow, StatusMoveInput,
+    TryWorkflowQuery, UseWorkflow, WorkflowEditorQuery, WorkflowsQuery,
 };
 use bb_core::id::{IssueTypeId, LockToken, UserId, WorkflowId};
 use serde::Deserialize;
@@ -17,8 +17,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::bodies::{
-    ChangeDraftBody, PublishWorkflowBody, PublishedBody, StatusDraftBody, TriedBody,
-    WorkflowEditorBody, WorkflowListBody, workflow_in_path,
+    ChangeDraftBody, PublishPreviewAnswer, PublishPreviewBody, PublishWorkflowBody, PublishedBody,
+    StatusDraftBody, TriedBody, WorkflowEditorBody, WorkflowListBody, workflow_in_path,
 };
 use crate::api::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
@@ -264,6 +264,48 @@ async fn publish_workflow(
     answer_authorized(&published.map(|published| PublishedBody::from(&published)))
 }
 
+/// Says which statuses publishing a workflow would drop and which issues are in them, so the editor
+/// can ask where those issues go. The issues the person sees are named; the others are only
+/// counted. Needs the permission *Manage workflows* wherever the workflow is used.
+#[utoipa::path(
+    post,
+    path = "/api/v1/workflows/{workflow}/publish-preview",
+    operation_id = "previewPublishWorkflow",
+    tag = "workflows",
+    params(("workflow" = String, Path, description = "The ID of the workflow.")),
+    request_body = PublishPreviewBody,
+    responses((status = 200, description = "The dropped statuses and their issues.", body = PublishPreviewAnswer), InvalidAnswer, NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
+)]
+async fn preview_publish_workflow(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+    ApiPath(workflow): ApiPath<String>,
+    ApiJson(body): ApiJson<PublishPreviewBody>,
+) -> Result<Response, ApiError> {
+    let preview = auth
+        .api()?
+        .publish_preview(
+            info,
+            PublishPreviewQuery {
+                session_token,
+                workflow: workflow_in_path(&workflow)?,
+                statuses: body
+                    .statuses
+                    .iter()
+                    .map(StatusDraftBody::draft)
+                    .collect::<Result<_, _>>()?,
+                changes: body
+                    .changes
+                    .iter()
+                    .map(ChangeDraftBody::draft)
+                    .collect::<Result<_, _>>()?,
+            },
+        )
+        .await?;
+    answer_authorized(&preview.map(|preview| PublishPreviewAnswer::from(&preview)))
+}
+
 /// Takes a workflow away together with the places it was used at: those places follow their
 /// parent again. Needs the permission *Manage workflows* wherever the workflow is used.
 #[utoipa::path(
@@ -336,5 +378,6 @@ where
         .routes(routes!(get_workflow_editor))
         .routes(routes!(use_workflow))
         .routes(routes!(publish_workflow, delete_workflow))
+        .routes(routes!(preview_publish_workflow))
         .routes(routes!(try_workflow))
 }

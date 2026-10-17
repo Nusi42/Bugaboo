@@ -107,7 +107,7 @@ async fn wf_02_publishing_without_a_status_moves_its_issues_with_history() -> Ou
         without(sent);
         sent.moves = vec![StatusMoveInput {
             from: key(IN_PROGRESS),
-            to: key(OPEN),
+            to: OPEN.to_owned(),
         }];
     })
     .await?;
@@ -177,6 +177,56 @@ async fn iss_09_many_changes_skip_an_issue_whose_workflow_does_not_allow_it() ->
     assert_eq!(outcomes, [Some(SkipReason::Workflow), None]);
     assert_eq!(status_of(&world, &admin, blocked).await?, OPEN);
     assert_eq!(status_of(&world, &admin, free).await?, DONE);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_09_many_changes_match_the_words_of_the_chosen_status_change() -> Outcome {
+    use super::many_changes::{preview, targets};
+
+    let world = World::new().await?;
+    let acme = a_project(&world, "ACME").await?;
+    let other = a_project(&world, "OTHER").await?;
+    // ACME has the way from Open to Done under other words than the starting workflow has.
+    let editor = a_workflow(&world, "ACME").await?;
+    published_with(&world, &editor, |sent| {
+        for each in &mut sent.changes {
+            if each.from == OPEN && each.to == DONE {
+                "Finish".clone_into(&mut each.button);
+            }
+        }
+    })
+    .await?;
+    let (own_words, starting_words) = (
+        an_issue(&world, acme).await?,
+        an_issue(&world, other).await?,
+    );
+    let admin = world.admin.session_token.clone();
+    let action = |button: &str| ManyChangeAction::Change {
+        change: ManyChange {
+            status: Some(key(DONE)),
+            status_button: Some(button.to_owned()),
+            ..ManyChange::default()
+        },
+    };
+    let skipped = async |button: &str| -> Result<Vec<Option<SkipReason>>, AppError> {
+        let shown = preview(
+            &world,
+            &admin,
+            &[own_words, starting_words],
+            &action(button),
+        )
+        .await?;
+        let _ = targets(&shown);
+        Ok(shown.rows.iter().map(|row| row.skipped).collect())
+    };
+    // The chosen words find the change in one workflow only: the other issue is skipped, also
+    // though its workflow has another change to the same status.
+    assert_eq!(skipped("Finish").await?, [None, Some(SkipReason::Workflow)]);
+    assert_eq!(
+        skipped("Mark as done").await?,
+        [Some(SkipReason::Workflow), None]
+    );
     Ok(())
 }
 

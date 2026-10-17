@@ -15,6 +15,7 @@ export {
   draftTextMax,
   heartbeatSeconds,
   layoutEditPart,
+  workflowEditPart,
   leaseSeconds,
   versionsMax,
   watchSeconds,
@@ -77,6 +78,7 @@ export {
   notificationKindWords,
   priorityWords,
   statusGroupWords,
+  testWords,
 } from "./words.generated.ts";
 export {
   settingChoices,

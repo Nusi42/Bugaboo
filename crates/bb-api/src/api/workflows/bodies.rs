@@ -2,13 +2,14 @@
 //! change, the statuses and status changes an editor sends, and what the editor shows.
 
 use bb_app::workflows::{
-    EditorChange, EditorGroup, EditorRole, RuleField, Tried, TriedChange, TriedVerdict,
-    WorkflowEditor, WorkflowList, WorkflowListItem, WorkflowSlot,
+    EditorChange, EditorGroup, EditorRole, PublishPreview, RuleField, Tried, TriedChange,
+    TriedVerdict, WorkflowEditor, WorkflowList, WorkflowListItem, WorkflowSlot,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, RoleId};
 use bb_core::issue::StatusGroup;
+use bb_core::workflow::ask_may_name;
 use bb_core::workflow::judge::Why;
 use bb_core::workflow::{
     ChangeDraft, Condition, StatusDraft, StatusKey, StatusRules, Test, WhoCan,
@@ -21,6 +22,7 @@ use super::{StatusRef, status_in};
 use crate::api::issues::IssueTypeRef;
 use crate::api::layouts::InheritedFromBody;
 use crate::api::projects::ProjectRef;
+use crate::api::relations::IssueRef;
 use crate::api::{body_id, path_id};
 use crate::errors::ApiError;
 
@@ -209,13 +211,13 @@ impl ChangeDraftBody {
 pub(crate) struct StatusMoveBody {
     /// The key of the status that is dropped.
     from: String,
-    /// The key of the status of the new workflow the issues go to.
+    /// The status of the new workflow the issues go to: its key, or its name when it is new.
     to: String,
 }
 
 impl StatusMoveBody {
-    pub(super) fn parts(&self) -> Result<(StatusKey, StatusKey), ApiError> {
-        Ok((body_id(&self.from)?, body_id(&self.to)?))
+    pub(super) fn parts(&self) -> Result<(StatusKey, String), ApiError> {
+        Ok((body_id(&self.from)?, self.to.clone()))
     }
 }
 
@@ -236,6 +238,66 @@ pub(crate) struct PublishWorkflowBody {
     /// still in; nothing is published without it.
     #[serde(default)]
     pub(super) moves: Vec<StatusMoveBody>,
+}
+
+/// What to preview: the workflow as *Publish* would send it.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct PublishPreviewBody {
+    /// All the statuses, in order.
+    pub(super) statuses: Vec<StatusDraftBody>,
+    /// All the status changes.
+    pub(super) changes: Vec<ChangeDraftBody>,
+}
+
+/// A status that publishing would drop, and the issues that are in it.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct DroppedStatusBody {
+    /// The status, as the stored workflow names it.
+    status: StatusRef,
+    /// How many live issues the workflow governs that are in it, also the ones the person does not
+    /// see.
+    issues: usize,
+    /// Some of the issues the person sees, as a list shows them.
+    named: Vec<IssueRef>,
+    /// How many of the issues the person does not see. They are counted, never named.
+    unseen: usize,
+    /// How many of the issues the person could not move: those they do not see, and those they may
+    /// not change. A publish that has to move them is refused.
+    blocked: usize,
+}
+
+/// What publishing a workflow would drop.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct PublishPreviewAnswer {
+    /// The statuses the stored workflow has and the new one lacks.
+    dropped: Vec<DroppedStatusBody>,
+    /// The most issues one publish moves; a publish that would move more is refused.
+    limit: usize,
+    /// There are more issues than that in the statuses that would go. They are then not judged or
+    /// named, and the counts are not complete.
+    too_many: bool,
+}
+
+impl Masked for PublishPreviewAnswer {}
+
+impl From<&PublishPreview> for PublishPreviewAnswer {
+    fn from(preview: &PublishPreview) -> Self {
+        Self {
+            limit: preview.limit,
+            too_many: preview.too_many,
+            dropped: preview
+                .dropped
+                .iter()
+                .map(|each| DroppedStatusBody {
+                    status: StatusRef::from(&each.status),
+                    issues: each.issues,
+                    named: each.named.iter().map(IssueRef::from).collect(),
+                    unseen: each.unseen,
+                    blocked: each.blocked,
+                })
+                .collect(),
+        }
+    }
 }
 
 /// The workflow set at exactly the place that was asked about.
@@ -314,6 +376,9 @@ pub(crate) struct RuleFieldBody {
     field: String,
     /// The name of an own field; a built-in field is named by its word.
     name: Option<String>,
+    /// Whether a rule may ask for the field in the small form of a status change; the description
+    /// can only be required to be filled in.
+    askable: bool,
 }
 
 impl From<&RuleField> for RuleFieldBody {
@@ -321,6 +386,7 @@ impl From<&RuleField> for RuleFieldBody {
         Self {
             field: field.field.code().into_owned(),
             name: field.name.clone(),
+            askable: ask_may_name(field.field),
         }
     }
 }

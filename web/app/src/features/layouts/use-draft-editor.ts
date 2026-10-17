@@ -2,10 +2,10 @@ import type { Schema } from "@bugaboo/api-client";
 import { useLayout } from "@bugaboo/ui";
 import { useState } from "react";
 
+import type { EditLock } from "../../shared/editing/index.ts";
 import { actionsOn, moveLabel, type EditorActions, type EditorContext } from "./editor-actions.ts";
 import { addSection, bodyOf, draftOf, sameLayout, type Draft } from "./editor-model.ts";
 import { useSaveLayout } from "./layouts.ts";
-import type { LayoutLock } from "./use-layout-lock.ts";
 
 /** What the screen of the editor gets: the draft, what it is changed with, and the save. */
 export interface DraftEditorState {
@@ -55,7 +55,7 @@ function contextOf(
  */
 export function useDraftEditor(
   editor: Schema<"LayoutEditorBody">,
-  lock: LayoutLock,
+  lock: EditLock,
   onSaved: (version: number | undefined) => void,
 ): DraftEditorState {
   const [draft, setDraft] = useState(() => draftOf(editor));

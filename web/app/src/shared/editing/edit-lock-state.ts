@@ -1,12 +1,8 @@
-import {
-  EditLockSession,
-  type Answer,
-  type SessionDeps,
-} from "../../shared/editing/edit-lock-session.ts";
-import type { HeldBySomebody, LostReason } from "../../shared/editing/long-text-model.ts";
-import { Store } from "../../shared/store.ts";
+import { EditLockSession, type Answer, type SessionDeps } from "./edit-lock-session.ts";
+import type { HeldBySomebody, LostReason } from "./long-text-model.ts";
+import { Store } from "../store.ts";
 
-/** Where the person stands with the edit lock on a layout (ADR-0019, ADR-0027 decision 6). */
+/** Where the person stands with the edit lock on a thing that is edited as a whole (ADR-0019): a layout or a workflow. */
 export type LockState =
   | { readonly phase: "taking" }
   | { readonly phase: "mine"; readonly token: string }
@@ -21,12 +17,12 @@ const taking: LockState = { phase: "taking" };
 const lost: LockState = { phase: "lost" };
 
 /**
- * The state of the edit lock on a layout while its editor is open: taken when the editor opens,
+ * The state of the edit lock on a layout or a workflow while its editor is open: taken when the editor opens,
  * kept with a heartbeat, let go when it closes. The hold on the lock is the shared session; this
  * is what the screen reads of it, a plain object to subscribe to, so every path is tested without
  * a browser.
  */
-export class LayoutLockController extends Store<LockState> {
+export class EditLockController extends Store<LockState> {
   private readonly session: EditLockSession;
 
   constructor(deps: SessionDeps) {

@@ -22513,6 +22513,125 @@
         },
         "x-permission": "manage-workflows"
       }
+    },
+    "/api/v1/workflows/{workflow}/publish-preview": {
+      "post": {
+        "tags": ["workflows"],
+        "summary": "Says which statuses publishing a workflow would drop and which issues are in them, so the editor\ncan ask where those issues go. The issues the person sees are named; the others are only\ncounted. Needs the permission *Manage workflows* wherever the workflow is used.",
+        "operationId": "previewPublishWorkflow",
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPreviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The dropped statuses and their issues.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPreviewAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-workflows"
+      }
     }
   },
   "components": {
@@ -24083,6 +24202,39 @@
           "text": {
             "type": "string",
             "description": "The text as it stands now."
+          }
+        }
+      },
+      "DroppedStatusBody": {
+        "type": "object",
+        "description": "A status that publishing would drop, and the issues that are in it.",
+        "required": ["status", "issues", "named", "unseen", "blocked"],
+        "properties": {
+          "blocked": {
+            "type": "integer",
+            "description": "How many of the issues the person could not move: those they do not see, and those they may\nnot change. A publish that has to move them is refused.",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "integer",
+            "description": "How many live issues the workflow governs that are in it, also the ones the person does not\nsee.",
+            "minimum": 0
+          },
+          "named": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueRef"
+            },
+            "description": "Some of the issues the person sees, as a list shows them."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status, as the stored workflow names it."
+          },
+          "unseen": {
+            "type": "integer",
+            "description": "How many of the issues the person does not see. They are counted, never named.",
+            "minimum": 0
           }
         }
       },
@@ -26572,6 +26724,10 @@
           "status": {
             "type": ["string", "null"],
             "description": "The key of a new status. Each issue is judged by its own workflow, and an issue whose\nworkflow does not allow the change is skipped."
+          },
+          "status_button": {
+            "type": ["string", "null"],
+            "description": "The words of the status change that was chosen to get to `status` (*Start working*). An\nissue whose workflow has no such change from its status is skipped, also when it has\nanother change to that status."
           }
         }
       },
@@ -27055,6 +27211,26 @@
           "name": {
             "type": "string",
             "description": "The name."
+          }
+        }
+      },
+      "NeedKind": {
+        "type": "string",
+        "description": "What kind of input a field of a status change is asked for with.",
+        "enum": ["description", "assigned-to", "own"]
+      },
+      "NeededFieldBody": {
+        "type": "object",
+        "description": "A field a status change still needs.",
+        "required": ["field", "kind"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NeedKind",
+            "description": "What kind of input it needs."
           }
         }
       },
@@ -30204,17 +30380,76 @@
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
       },
+      "ProjectStatusChangeBody": {
+        "type": "object",
+        "description": "A status change of some workflow of the project.",
+        "required": ["to", "button"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "to": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status it ends in."
+          }
+        }
+      },
       "ProjectStatusesBody": {
         "type": "object",
-        "description": "The statuses the issues of a project can have: one list for all issue types. A status with the\nsame key, name and group in several workflows is listed once; one with the same key and another\nname or group is listed for each.",
-        "required": ["statuses"],
+        "description": "The status changes the issues of a project can have: one list for all issue types, each status\nchange once by its words.",
+        "required": ["changes"],
         "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStatusChangeBody"
+            },
+            "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
+          }
+        }
+      },
+      "PublishPreviewAnswer": {
+        "type": "object",
+        "description": "What publishing a workflow would drop.",
+        "required": ["dropped", "limit", "too_many"],
+        "properties": {
+          "dropped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DroppedStatusBody"
+            },
+            "description": "The statuses the stored workflow has and the new one lacks."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The most issues one publish moves; a publish that would move more is refused.",
+            "minimum": 0
+          },
+          "too_many": {
+            "type": "boolean",
+            "description": "There are more issues than that in the statuses that would go. They are then not judged or\nnamed, and the counts are not complete."
+          }
+        }
+      },
+      "PublishPreviewBody": {
+        "type": "object",
+        "description": "What to preview: the workflow as *Publish* would send it.",
+        "required": ["statuses", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeDraftBody"
+            },
+            "description": "All the status changes."
+          },
           "statuses": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StatusRef"
+              "$ref": "#/components/schemas/StatusDraftBody"
             },
-            "description": "The statuses, in the order the workflows list them."
+            "description": "All the statuses, in order."
           }
         }
       },
@@ -30847,8 +31082,12 @@
       "RuleFieldBody": {
         "type": "object",
         "description": "A field a rule can name.",
-        "required": ["field"],
+        "required": ["field", "askable"],
         "properties": {
+          "askable": {
+            "type": "boolean",
+            "description": "Whether a rule may ask for the field in the small form of a status change; the description\ncan only be required to be filled in."
+          },
           "field": {
             "type": "string",
             "description": "The key of the field: the word of a built-in field or the ID of an own field."
@@ -31577,9 +31816,9 @@
           "needs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FieldKey"
+              "$ref": "#/components/schemas/NeededFieldBody"
             },
-            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), by their keys. Empty when it needs none."
+            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), each with the kind of input it needs. Empty when it needs\nnone."
           },
           "to": {
             "$ref": "#/components/schemas/StatusRef",
@@ -31622,7 +31861,7 @@
           },
           "to": {
             "type": "string",
-            "description": "The key of the status of the new workflow the issues go to."
+            "description": "The status of the new workflow the issues go to: its key, or its name when it is new."
           }
         }
       },

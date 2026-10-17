@@ -11384,3 +11384,188 @@ part "customize-actions" {
 part "customize-actions button[variant=quiet]:first-child" {
     use "hang-start"
 }
+
+// ───────────── Workflows (M4 WP-07) ─────────────
+//
+// The editor of a workflow (UX §5.4): the plain list of statuses with their status changes, the
+// rules of a change, the drawing of boxes and arrows, and the answers of *Try it*.
+
+part "workflow-editor" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+part "workflow-statuses" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+part "workflow-status" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$space-4"
+}
+
+part "workflow-status.head" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "workflow-status.name" {
+    margin 0
+    color "$fg"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+part "workflow-changes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "workflow-change" {
+    use "sunken-box"
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+    padding "$space-3"
+}
+
+part "workflow-change.to" {
+    min-width "$size-name"
+    font-weight "$weight-bold"
+    line-height "$size-control"
+    overflow-wrap anywhere
+}
+
+part "workflow-add" {
+    use "fieldset-reset"
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "workflow-rules" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "workflow-condition" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "workflow-tried" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "workflow-try" {
+    use "sunken-box"
+    display flex
+    flex-wrap wrap
+    align-items baseline
+    gap "$space-2" "$space-4"
+    padding "$space-3"
+}
+
+// The drawing: a column for each status group, the boxes in them, and the arrows over them.
+part "workflow-drawing" {
+    position relative
+    padding "$space-4"
+    use "surface-box"
+}
+
+part "drawing-columns" {
+    position relative
+    display grid
+    grid-auto-flow column
+    grid-auto-columns "minmax(0, 1fr)"
+    gap "$space-7"
+}
+
+part "drawing-column" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    align-content flex-start
+    gap "$space-5"
+}
+
+part "drawing-box" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid currentColor"
+    border-radius "$r-ctl"
+    overflow-wrap anywhere
+}
+
+part "drawing-box.name" {
+    display flex
+    align-items center
+    gap "$space-2"
+    font-weight "$weight-bold"
+}
+
+part "drawing-box.changes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    align-items flex-start
+}
+
+part "drawing-box[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "drawing-box[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "drawing-box[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+part "drawing-arrows" {
+    position absolute
+    top 0
+    left 0
+    width "100%"
+    height "100%"
+    overflow visible
+    pointer-events none
+}
+
+part "drawing-line" {
+    stroke "$fg-muted"
+    stroke-width "$border-width"
+    fill none
+}
+
+part "drawing-head" {
+    fill "$fg-muted"
+}

@@ -1,6 +1,6 @@
-import { retakingLockHelps } from "../../shared/editing/index.ts";
-import { codeOf } from "../../shared/errors.ts";
-import type { LockState } from "./layout-lock.ts";
+import { codeOf } from "../errors.ts";
+import type { LockState } from "./edit-lock-state.ts";
+import { retakingLockHelps } from "./long-text-model.ts";
 
 /**
  * What the save bar says went wrong. A refusal for the lock's sake (the editing time ran out, or

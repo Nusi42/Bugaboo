@@ -1,9 +1,9 @@
 import type { Heartbeat, LockOutcome } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import { LockServer } from "../../shared/editing/lock-server-testing.ts";
-import type { SessionDeps } from "../../shared/editing/edit-lock-session.ts";
-import { LayoutLockController } from "./layout-lock.ts";
+import { LockServer } from "./lock-server-testing.ts";
+import type { SessionDeps } from "./edit-lock-session.ts";
+import { EditLockController } from "./edit-lock-state.ts";
 
 const taken: LockOutcome = {
   status: "taken",
@@ -53,7 +53,7 @@ function rig(first: LockOutcome, beat: Heartbeat) {
     },
     newEditorId: () => "editor-1",
   };
-  return { lock: new LayoutLockController(deps), released, beats };
+  return { lock: new EditLockController(deps), released, beats };
 }
 
 /** A lock that answers each `take` when the test says so, to start twice while one is in flight. */
@@ -82,7 +82,7 @@ function slowRig() {
     newEditorId: () => "editor-1",
   };
   return {
-    lock: new LayoutLockController(deps),
+    lock: new EditLockController(deps),
     released,
     answers,
     beats: () => beats,
@@ -122,7 +122,7 @@ function orderRig() {
     },
   };
   return {
-    lock: new LayoutLockController(deps),
+    lock: new EditLockController(deps),
     calls,
     answers,
   };
@@ -232,7 +232,7 @@ describe("iss_17 asking for the lock more than once", () => {
 describe("iss_17 a refused save of a layout", () => {
   it("lets the lock go before it is asked for again, so the next save goes through", async () => {
     const server = new LockServer();
-    const lock = new LayoutLockController({
+    const lock = new EditLockController({
       ...quiet,
       take: server.take,
       release: server.release,
@@ -255,7 +255,7 @@ describe("iss_17 a refused save of a layout", () => {
 
   it("asks again after a save that went through, when the server let go of the lock itself", async () => {
     const server = new LockServer();
-    const lock = new LayoutLockController({
+    const lock = new EditLockController({
       ...quiet,
       take: server.take,
       release: server.release,
