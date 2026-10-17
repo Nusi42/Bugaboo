@@ -20593,6 +20593,16 @@
                 }
               }
             }
+          },
+          "507": {
+            "description": "The disk of the server has no room for the part (file.no_room); trying later can work.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         },
         "x-permission": "change-issues"
@@ -22595,6 +22605,7 @@
           "file.type_blocked",
           "file.wrong_part",
           "file.incomplete",
+          "file.no_room",
           "name.taken",
           "resource.not_found",
           "request.invalid",

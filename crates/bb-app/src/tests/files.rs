@@ -515,3 +515,36 @@ async fn att_02_the_clean_up_does_not_take_the_bytes_of_a_file_that_is_being_add
     assert_eq!(open(&world, link).await?.name, attachment.name);
     Ok(())
 }
+
+#[tokio::test]
+async fn att_01_a_part_is_refused_when_the_disk_has_no_room_and_the_upload_goes_on_later() -> Outcome
+{
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?.to_string();
+    start(&world, &issue, "jam.txt", A_FILE.len() as u64).await?;
+    let upload = world.store.lock().state.uploads[0].id;
+    world.files.fill_up();
+    let part = |offset: u64| SendPartQuery {
+        session_token: token(&world),
+        upload,
+        offset,
+        bytes: A_FILE.to_vec(),
+    };
+    refused(
+        send_part(&world.ctx(), part(0)).await,
+        ErrorCode::FileNoRoom,
+    );
+    // Nothing of the part was stored, and the upload is still there to go on from the start.
+    let state = upload_state(
+        &world.ctx(),
+        UploadStateQuery {
+            session_token: token(&world),
+            upload,
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(state.offset, 0);
+    Ok(())
+}

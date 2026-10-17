@@ -203,7 +203,7 @@ pub async fn upload_state<S: AuthStore>(
 /// too big or that goes past the size the upload started with, `file.wrong_part` for a part that
 /// does not start where the file stands (the answer to `upload_state` says where), and
 /// `file.type_blocked` when the content is of a type the organization never accepts: the upload
-/// is then gone.
+/// is then gone, and `file.no_room` when the disk would be left with less room than it keeps free.
 pub async fn send_part<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SendPartQuery,
@@ -220,6 +220,14 @@ pub async fn send_part<S: AuthStore>(
         || end.is_none_or(|end| end > bytes_of(upload.size))
     {
         return Err(ErrorCode::InvalidRequest.into());
+    }
+    if !ctx
+        .files()
+        .has_room(length)
+        .await
+        .map_err(|error| AppError::Internal(error.to_string()))?
+    {
+        return Err(ErrorCode::FileNoRoom.into());
     }
     if input.offset == 0 {
         let limits = ctx.file_limits(issue.project).await?;

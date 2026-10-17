@@ -262,6 +262,8 @@ export const messages = {
   "error.file.wrong-part":
     "A part of the file arrived out of order. The upload goes on from where it stopped.",
   "error.file.incomplete": "The file did not arrive completely. Try adding it again.",
+  "error.file.no-room":
+    "The server has no room for this file right now. Try again later, or tell your administrator.",
   "error.name.taken": "That name is already used. Choose another one.",
   "error.project.move-lifts-no-access":
     "This move would let someone take away a No access that applies to them. Take that No access away first, or move the project somewhere else.",

@@ -193,3 +193,13 @@ async fn att_02_whoever_holds_a_file_keeps_the_others_of_that_file_waiting() {
     drop(first);
     drop(files.hold(hash).await);
 }
+
+#[tokio::test]
+async fn att_01_a_part_has_room_on_a_disk_with_space_and_none_on_one_that_would_be_full() {
+    let (_folder, files) = files();
+    assert!(files.has_room(1).await.unwrap(), "a byte fits");
+    assert!(
+        !files.has_room(u64::MAX).await.unwrap(),
+        "more than the disk has does not"
+    );
+}

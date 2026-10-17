@@ -110,6 +110,14 @@ describe("att_01 an upload that resumes", () => {
     );
   });
 
+  it("tells the person at once when the disk of the server is full", async () => {
+    const full = new ApiError(507, problem("file.no_room", 507));
+    const { transport } = server([full]);
+    const c = course();
+    await expect(sendFile(transport, delivery, new Blob(["0123456789"]), c)).rejects.toBe(full);
+    expect(c.waited).toEqual([]);
+  });
+
   it("does not ask again after a refusal", async () => {
     const refusal = new ApiError(413, problem("file.too_big", 413));
     const { transport } = server([refusal]);

@@ -40,6 +40,11 @@ pub const OPEN_UPLOADS_MAX: usize = 20;
 /// a few uploads that are never finished from filling the disk before the daily clean-up.
 pub const OPEN_UPLOADS_BYTES_MAX: u64 = 4 * BIGGEST_FILE_BYTES;
 
+/// How much room the disk of the server keeps free: a part of an upload is refused
+/// (`file.no_room`) when less than this would be left after it, so a full disk never takes the
+/// database and the logs down with it.
+pub const DISK_KEPT_FREE_BYTES: u64 = 1024 * MEGABYTE;
+
 /// How long an unfinished upload is kept after its last part (ADR-0032): then it is deleted.
 pub const UNFINISHED_KEPT: SignedDuration = SignedDuration::from_hours(24);
 

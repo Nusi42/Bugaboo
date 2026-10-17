@@ -15,6 +15,7 @@ testing = []
 [dependencies]
 bb-app = { path = "../bb-app" }
 bb-core = { path = "../bb-core" }
+fs4 = { version = "1.1.0", default-features = false, features = ["sync"] }
 hayro = "0.8.0"
 image = { version = "0.25.10", default-features = false, features = ["gif", "jpeg", "png", "webp"] }
 infer = { version = "0.22.0", default-features = false, features = ["std"] }

@@ -63,6 +63,8 @@ problem_answers! {
     TooBigAnswer => ("413", "The file is bigger than the project allows, or the part is bigger than a part may be (file.too_big, request.too_large)."),
     /// A type the organization does not accept.
     BlockedAnswer => ("415", "The organization does not accept this type of file (file.type_blocked)."),
+    /// The disk has no room for the part.
+    NoRoomAnswer => ("507", "The disk of the server has no room for the part (file.no_room); trying later can work."),
     /// A part out of order, or an upload that is not complete.
     OutOfOrderAnswer => ("409", "The part does not start where the file stands, or the upload is not complete yet (file.wrong_part, file.incomplete)."),
 }
@@ -302,7 +304,8 @@ async fn get_upload(
         NotFoundAnswer,
         OutOfOrderAnswer,
         TooBigAnswer,
-        BlockedAnswer
+        BlockedAnswer,
+        NoRoomAnswer
     )
 )]
 async fn send_upload_part(

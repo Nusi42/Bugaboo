@@ -827,6 +827,9 @@ pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wro
 /// The message `error.file.incomplete`.
 pub const ERROR_FILE_INCOMPLETE: MessageKey = MessageKey::new("error.file.incomplete");
 
+/// The message `error.file.no-room`.
+pub const ERROR_FILE_NO_ROOM: MessageKey = MessageKey::new("error.file.no-room");
+
 /// The message `error.file.too-big`.
 pub const ERROR_FILE_TOO_BIG: MessageKey = MessageKey::new("error.file.too-big");
 
@@ -8629,6 +8632,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.file.incomplete",
         "The file did not arrive completely. Try adding it again.",
+    ),
+    (
+        "error.file.no-room",
+        "The server has no room for this file right now. Try again later, or tell your administrator.",
     ),
     (
         "error.file.too-big",

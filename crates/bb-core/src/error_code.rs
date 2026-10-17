@@ -137,6 +137,10 @@ error_codes! {
     FileWrongPart => ("file.wrong_part", 409),
     /// An upload was finished before all its bytes were there (ATT-01).
     FileIncomplete => ("file.incomplete", 409),
+    /// The disk of the server has no room for a part of an upload: less than
+    /// [`DISK_KEPT_FREE_BYTES`](crate::files::DISK_KEPT_FREE_BYTES) would be left. Trying later can
+    /// work; the administrator frees room (ATT-01).
+    FileNoRoom => ("file.no_room", 507),
     /// A name of a group, role or project is used already.
     NameTaken => ("name.taken", 409),
     /// There is no such thing, or the person may not know about it.

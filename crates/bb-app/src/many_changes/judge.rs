@@ -137,6 +137,7 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::FileTypeBlocked
             | ErrorCode::FileWrongPart
             | ErrorCode::FileIncomplete
+            | ErrorCode::FileNoRoom
             | ErrorCode::FieldNoMatch
             | ErrorCode::FieldWrongValue
             | ErrorCode::FieldUnknownChoice

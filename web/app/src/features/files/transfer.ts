@@ -36,6 +36,8 @@ export const waitsBetweenTries: readonly number[] = [1_000, 2_000, 4_000, 8_000,
 const TIMED_OUT = 408;
 /** The first status of the answers that say the server failed. */
 const SERVER_FAILED = 500;
+/** The answer that says the disk of the server is full: the person is told, it is not retried. */
+const NO_ROOM = 507;
 
 /**
  * Whether trying again can help: no answer came at all (the connection was lost), the server was
@@ -44,7 +46,9 @@ const SERVER_FAILED = 500;
 export function isTemporary(error: unknown): boolean {
   return (
     error instanceof ApiError &&
-    (error.status === 0 || error.status === TIMED_OUT || error.status >= SERVER_FAILED)
+    (error.status === 0 ||
+      error.status === TIMED_OUT ||
+      (error.status >= SERVER_FAILED && error.status !== NO_ROOM))
   );
 }
 

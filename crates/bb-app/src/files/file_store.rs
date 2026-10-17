@@ -79,6 +79,10 @@ pub trait FileStore: Send + Sync {
     /// so the one cannot take the bytes away between the other's two steps.
     fn hold(&self, hash: Digest) -> BoxFuture<'_, FileHold>;
 
+    /// Whether the disk has room for `bytes` more and still keeps
+    /// [`DISK_KEPT_FREE_BYTES`](bb_core::files::DISK_KEPT_FREE_BYTES) free.
+    fn has_room(&self, bytes: u64) -> BoxFuture<'_, io::Result<bool>>;
+
     /// Starts the place an upload is put together in.
     fn begin_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>>;
 
@@ -141,6 +145,10 @@ impl FileStore for NoFileStore {
 
     fn hold(&self, _hash: Digest) -> BoxFuture<'_, FileHold> {
         Box::pin(async { Box::new(()) as FileHold })
+    }
+
+    fn has_room(&self, _bytes: u64) -> BoxFuture<'_, io::Result<bool>> {
+        unavailable()
     }
 
     fn begin_upload(&self, _upload: UploadId) -> BoxFuture<'_, io::Result<()>> {

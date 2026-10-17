@@ -273,6 +273,7 @@ const PROGRAM_START: &[u8] = b"MZ";
 pub(crate) struct FakeFiles {
     held: Arc<Mutex<Held>>,
     turn: Arc<tokio::sync::Mutex<()>>,
+    full: Arc<std::sync::atomic::AtomicBool>,
     gate: Arc<Mutex<Option<Gate>>>,
 }
 
@@ -281,6 +282,11 @@ impl FakeFiles {
         self.held
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Makes the disk full: no part has room any more.
+    pub(crate) fn fill_up(&self) {
+        self.full.store(true, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// How many different files are stored.
@@ -332,6 +338,11 @@ impl FileStore for FakeFiles {
     fn hold(&self, _hash: Digest) -> BoxFuture<'_, FileHold> {
         let turn = Arc::clone(&self.turn);
         Box::pin(async move { Box::new(turn.lock_owned().await) as FileHold })
+    }
+
+    fn has_room(&self, _bytes: u64) -> BoxFuture<'_, io::Result<bool>> {
+        let room = !self.full.load(std::sync::atomic::Ordering::SeqCst);
+        Box::pin(async move { Ok(room) })
     }
 
     fn begin_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>> {

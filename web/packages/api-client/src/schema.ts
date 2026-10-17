@@ -3759,6 +3759,7 @@ export interface components {
       | "file.type_blocked"
       | "file.wrong_part"
       | "file.incomplete"
+      | "file.no_room"
       | "name.taken"
       | "resource.not_found"
       | "request.invalid"
@@ -22750,6 +22751,15 @@ export interface operations {
       };
       /** @description error.server.unavailable (server.unavailable) */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description The disk of the server has no room for the part (file.no_room); trying later can work. */
+      507: {
         headers: {
           [name: string]: unknown;
         };

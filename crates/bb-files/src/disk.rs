@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use bb_app::files::{ChunkReader, FileBody, FileHold, FileStore, Inspected, PartError, Sniffed};
 use bb_app::ports::BoxFuture;
-use bb_core::files::{LinkTarget, PreviewKind, PreviewState};
+use bb_core::files::{DISK_KEPT_FREE_BYTES, LinkTarget, PreviewKind, PreviewState};
 use bb_core::hex;
 use bb_core::id::UploadId;
 use bb_core::security_log::Digest;
@@ -154,6 +154,19 @@ impl FileStore for DiskFiles {
     fn hold(&self, hash: Digest) -> BoxFuture<'_, FileHold> {
         let lock = Arc::clone(&self.holds[usize::from(hash.as_bytes()[0])]);
         Box::pin(async move { Box::new(lock.lock_owned().await) as FileHold })
+    }
+
+    fn has_room(&self, bytes: u64) -> BoxFuture<'_, io::Result<bool>> {
+        Box::pin(async move {
+            tokio::fs::create_dir_all(&self.root).await?;
+            let root = self.root.clone();
+            let free = tokio::task::spawn_blocking(move || fs4::available_space(root))
+                .await
+                .map_err(io::Error::other)??;
+            Ok(free
+                .checked_sub(DISK_KEPT_FREE_BYTES)
+                .is_some_and(|spare| spare >= bytes))
+        })
     }
 
     fn begin_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>> {
