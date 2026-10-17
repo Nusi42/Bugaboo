@@ -31,6 +31,23 @@ pub struct IssueFacts {
     pub version: i64,
     /// The description the issue row has.
     pub description: String,
+    /// The title the issue row has.
+    pub title: String,
+    /// The key of the status the issue row has.
+    pub status: String,
+    /// How many files the issue holds that are not in the trash.
+    pub attachments: usize,
+}
+
+/// A notification of a person the run judges by what they may see.
+#[derive(Debug)]
+pub struct NotificationFacts {
+    /// The ID of the person it is for.
+    pub recipient: String,
+    /// The readable ID of the issue it is about, when it is about one of the run.
+    pub issue: Option<String>,
+    /// The fields of the changes it keeps.
+    pub fields: Vec<String>,
 }
 
 /// A lock row.
@@ -62,6 +79,8 @@ pub struct Facts {
     pub locks: Vec<LockRow>,
     /// The drafts that the book names.
     pub drafts: Vec<StoredDraft>,
+    /// The notifications of the Guests of the book.
+    pub notifications: Vec<NotificationFacts>,
 }
 
 fn describe(what: &str, error: impl std::fmt::Display) -> Failure {
@@ -133,7 +152,25 @@ pub async fn gather(database: &Database, book: &Book) -> Result<Facts, Failure> 
                 .count(),
             version: row.version,
             description: row.description,
+            title: row.title,
+            status: row.status.to_string(),
+            attachments: database.stored_attachments(id).await?.len(),
         });
+    }
+    for guest in &book.guests {
+        let person: UserId = guest.parse().map_err(|e| describe(guest, e))?;
+        for row in database.stored_notifications(person).await? {
+            facts.notifications.push(NotificationFacts {
+                recipient: guest.clone(),
+                issue: row.issue.and_then(|issue| {
+                    book.issues
+                        .iter()
+                        .find(|work| work.id == issue.to_string())
+                        .map(|work| work.key.clone())
+                }),
+                fields: row.changes.into_iter().map(|change| change.field).collect(),
+            });
+        }
     }
     facts.locks = lock_rows(database).await?;
     for drafted in last_drafts(book) {

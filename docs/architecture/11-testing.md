@@ -112,6 +112,8 @@ Concurrency is tested with **10 simulated people** (an administrator and Team me
 | Two people change the status of the same issue within a second | One wins; the other sees the conflict message; nothing is half-saved |
 | A lock holder's network drops | The lock frees itself within a minute; their text is kept as a draft and offered with *Compare and save* |
 | Ten people change different fields of one issue | All ten changes land (whoever was second presses *Use mine*); one event for each; the version counts up ten times |
+| Ten people move issues through a workflow whose status change asks for who does the work (*Ask for*) and write an own field that Guests cannot see (M4 WP-10) | Each status that was kept is the one the issue has; a change whose buttons were read before somebody moved the issue is refused, not half saved; the Guest, who reported one issue, is told only of that issue and no notification of theirs shows the hidden field |
+| Ten people add files while others change the issue | Every file that was added is stored once on its issue, none is lost or doubled |
 | Changing many issues while somebody edits one of them | A lock covers only the long text, so the issue under edit changes too, and the editor's save lands afterwards with no conflict note (the status is another field); an issue whose text was saved after the preview is skipped and named, and the others change |
 | Everyone drags cards on the same board | Final board matches the event log; every person's screen shows the final state after refresh |
 | Timers and working hours start and stop at the same time | No double entries; working-time rules evaluated once per change |
@@ -133,6 +135,9 @@ They are written once, as the function `check` of the crate `bb-load-check` (`ju
 2. Versions only go up, one at a time: the versions of the kept changes of an issue are `2` up to its version, each once, and what one person reads of an issue never goes down.
 3. No lock outlives its lease: no lock row ends later than the lease (60 seconds) from now, nobody holds a lock when the leases are over (in a load run nobody starts to edit under a lock in the last 70 seconds), and after the purge no row of a lock is left. One definition, used while the people work (the test of the server) and at the end (both).
 4. No text is lost: a save that was refused (lock lost, taken over, text changed) is the draft of the person at once, the heartbeat draft of an editor who vanished is still there after the lease, and the description is the text of the last save that was kept.
+5. The title is what the last kept title change set (M3-F93), and the status what the last kept status change under the workflow set (WF-01); a change that is lost or half saved is found.
+6. The files of an issue are the ones that were added to it, none more and none fewer (ATT-01).
+7. No notification shows what its person cannot see (SEC-06): a Guest is told only of the issues they reported, and no notification of a Guest keeps a field that is hidden from Guests, neither a built-in one that the starting role hides nor the own field the run hid. The run has nine Team members and one Guest, a project with a workflow of its own that asks for *Assigned to* on *Open* to *In progress*, and the own field *Internal note*, which Guests cannot see.
 
 Enforced by: TEST-CONCURRENT (the scenarios, the invariants test and the load step of `cargo xtask ci` are there and not switched off), TEST-EDIT-LOCKS (the browser scenarios of the locks).
 

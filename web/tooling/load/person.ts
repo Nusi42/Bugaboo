@@ -1,5 +1,4 @@
 import {
-  ApiError,
   conflictOf,
   dataOf,
   descriptionEditPart,
@@ -11,62 +10,19 @@ import {
   releaseEditLock,
   sendHeartbeat,
   takeEditLock,
-  type Client,
   type EditWhat,
 } from "@bugaboo/api-client";
 
-import { type BookWriter, type Work } from "./book.ts";
+import { type Work } from "./book.ts";
+import { broke, codeOf, type Context, read, tag } from "./context.ts";
 import { pick } from "./random.ts";
-
-/** One person at work: who they are, what they work on, and when to stop. */
-export interface Context {
-  readonly number: number;
-  /** The ID of the person. */
-  readonly holder: string;
-  readonly client: Client;
-  readonly book: BookWriter;
-  readonly issues: readonly Work[];
-  readonly random: () => number;
-  /** When to stop, as milliseconds since 1970. */
-  readonly deadline: number;
-  /**
-   * Until when people edit under locks. After it only short values and comments change, so every
-   * lease has ended when the run does and a lock that is still held then is one that outlived it.
-   */
-  readonly editUntil: number;
-}
+import { addFile, hear, moveOn } from "./work.ts";
 
 /** How often a stale change is sent again on the newer version before it is called stuck. */
 const MOST_TRIES = 40;
 
 function whatOf(work: Work): EditWhat {
   return { record: { kind: "issue", id: work.id }, part: descriptionEditPart };
-}
-
-/** The code of a refusal, or nothing for a failure that is not one. */
-function codeOf(error: unknown): string | undefined {
-  return error instanceof ApiError ? error.problem?.code : undefined;
-}
-
-/** Writes down what broke a rule, with who was doing what. */
-export function broke(context: Context, doing: string, error: unknown): void {
-  const said = error instanceof Error ? error.message : String(error);
-  context.book.broken(`person ${String(context.number)} ${doing}: ${said}`);
-}
-
-/** A number for a title or a text, so that no two are the same. */
-function tag(context: Context): string {
-  return `${String(context.number)}-${String(pick(context.random, 1_000_000))}`;
-}
-
-/** Reads the issue and writes down the version that was read. */
-async function read(context: Context, work: Work): Promise<number> {
-  const found = dataOf(
-    await context.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: work.key } } }),
-  );
-  const version = found.issue.version ?? 0;
-  context.book.seen({ person: context.number, key: work.key, version });
-  return version;
 }
 
 /** Changes the title on the version that was read; a change that came second is sent again (*Use mine*). */
@@ -88,7 +44,7 @@ async function changeOn(
         body: { version, title },
       }),
     );
-    context.book.kept({ key: work.key, version: changed.version ?? 0 });
+    context.book.kept({ key: work.key, version: changed.version ?? 0, title });
   } catch (error) {
     const newer = conflictOf(error);
     if (newer === undefined) {
@@ -199,14 +155,34 @@ async function describe(context: Context, work: Work): Promise<void> {
   }
 }
 
-/** What a person does next: mostly changing, writing and editing, and looking in between. */
-async function doNext(context: Context, work: Work, kind: number): Promise<void> {
+/** What a Guest does on the issue they reported: comment, add a file, look, read their notifications. */
+async function guestDoes(context: Context, work: Work, kind: number): Promise<void> {
   if (kind < 30) {
-    await change(context, work);
-  } else if (kind < 55 && Date.now() < context.editUntil) {
-    await describe(context, work);
-  } else if (kind < 70) {
     await comment(context, work);
+  } else if (kind < 55) {
+    await addFile(context, work);
+  } else if (kind < 80) {
+    await hear(context);
+  } else {
+    await look(context, work);
+  }
+}
+
+/** What a person does next: changing, writing and editing, moving issues along their workflow, adding files, and looking in between. */
+async function doNext(context: Context, work: Work, kind: number): Promise<void> {
+  if (context.guest) {
+    await guestDoes(context, work, kind);
+  } else if (kind < 20) {
+    await change(context, work);
+  } else if (kind < 40 && Date.now() < context.editUntil) {
+    await describe(context, work);
+  } else if (kind < 55) {
+    await comment(context, work);
+  } else if (kind < 75) {
+    await moveOn(context, work);
+  } else if (kind < 80) {
+    await addFile(context, work);
+    await hear(context);
   } else {
     await look(context, work);
   }

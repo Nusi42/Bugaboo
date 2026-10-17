@@ -62,7 +62,11 @@ describe("test_concurrent the book of a run is what the people wrote", () => {
     const book = newBook();
     book.kept({ key: "LOAD-1", version: 2 });
     book.kept({ key: "LOAD-1", version: 3, text: "A text that was kept" });
+    book.kept({ key: "LOAD-1", version: 4, title: "A title", status: "in-progress" });
     book.comment("LOAD-1");
+    book.fileAdded("LOAD-1");
+    book.guest("00000000-0000-4000-8000-000000000004");
+    book.hiddenFromGuests("00000000-0000-4000-8000-000000000005");
     book.seen({ person: 1, key: "LOAD-1", version: 2 });
     book.drafted({
       holder: "00000000-0000-4000-8000-000000000002",
@@ -79,11 +83,21 @@ describe("test_concurrent the book of a run is what the people wrote", () => {
     });
     const file = book.file([issue]);
     expect(file.issues).toEqual([issue]);
-    expect(file.kept.map((note) => note.version)).toEqual([2, 3]);
+    expect(file.kept.map((note) => note.version)).toEqual([2, 3, 4]);
+    expect(file.kept[2]).toMatchObject({ title: "A title", status: "in-progress" });
     expect(file.comments).toEqual(["LOAD-1"]);
+    expect(file.files).toEqual(["LOAD-1"]);
+    expect(file.guests).toEqual(["00000000-0000-4000-8000-000000000004"]);
+    expect(file.hidden_from_guests).toEqual(["00000000-0000-4000-8000-000000000005"]);
     expect(file.seen).toHaveLength(1);
     expect(file.drafted.map((note) => note.ending)).toEqual(["refused", "vanished"]);
     expect(file.broken).toEqual([]);
-    expect(book.counts()).toMatchObject({ kept: 2, comments: 1, refused: 1, vanished: 1 });
+    expect(book.counts()).toMatchObject({
+      kept: 3,
+      comments: 1,
+      files: 1,
+      refused: 1,
+      vanished: 1,
+    });
   });
 });

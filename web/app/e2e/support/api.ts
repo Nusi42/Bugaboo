@@ -56,6 +56,12 @@ async function send(context: APIRequestContext, asked: Request, origin: string):
   return responseOf({ status: answer.status(), headers, body: await answer.text() });
 }
 
+/** The bytes of a part of an upload, which must not be read as text. */
+async function bytesOf(asked: Request): Promise<{ body: string; bytes: () => Uint8Array }> {
+  const bytes = new Uint8Array(await asked.arrayBuffer());
+  return { body: "", bytes: () => bytes };
+}
+
 /** Sends what the client made through the shared connections of the server, with the cookies of one session. */
 async function sendPooled(jar: CookieJar, asked: Request, origin: string): Promise<Response> {
   const cookie = jar.header(new URL(asked.url).pathname);
@@ -69,7 +75,9 @@ async function sendPooled(jar: CookieJar, asked: Request, origin: string): Promi
         ...(cookie === undefined ? {} : { cookie }),
         ...Object.fromEntries(asked.headers),
       },
-      body: await asked.text(),
+      ...(asked.headers.get("content-type") === "application/octet-stream"
+        ? await bytesOf(asked)
+        : { body: await asked.text() }),
     },
     origin,
   );

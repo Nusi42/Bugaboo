@@ -62,18 +62,22 @@ async function simple(admin: ApiSession) {
   return dataOf(await admin.client.GET("/api/v1/workflows/editor", { params: { query: {} } }));
 }
 
+/** The editor of a workflow, as the server answers it. */
+type Editor = Awaited<ReturnType<typeof simple>>;
+
 /**
- * Changes *Simple* the way the editor does: takes the edit lock, publishes what `change` made of
- * the statuses and status changes, and lets the lock go.
+ * Publishes what `change` made of the statuses and status changes of the workflow in the editor,
+ * the way the editor does: takes the edit lock, publishes, and lets the lock go.
  */
-export async function changeSimple(
+async function publishChanged(
   admin: ApiSession,
+  editorOf: () => Promise<Editor>,
   change: (content: Content) => Content,
 ): Promise<void> {
-  const editor = await simple(admin);
+  const editor = await editorOf();
   const slot = editor.workflow;
   if (slot === undefined || slot === null) {
-    throw new TypeError("The organization has no workflow of its own for all issue types.");
+    throw new TypeError("The place has no workflow of its own.");
   }
   const what = { record: { kind: "workflow", id: slot.id }, part: workflowEditPart };
   const taken = dataOf(
@@ -109,6 +113,34 @@ export async function changeSimple(
   await admin.client.POST("/api/v1/edit-locks/release", {
     body: { what, lock_token: taken.lock_token },
   });
+}
+
+/**
+ * Changes *Simple* the way the editor does: takes the edit lock, publishes what `change` made of
+ * the statuses and status changes, and lets the lock go.
+ */
+export async function changeSimple(
+  admin: ApiSession,
+  change: (content: Content) => Content,
+): Promise<void> {
+  await publishChanged(admin, () => simple(admin), change);
+}
+
+/**
+ * Gives a project a workflow of its own, a copy of the one that counts there, in which the status
+ * change from *Open* to *In progress* asks for who does the work (*Ask for*, WF-04).
+ */
+export async function askForWhoWorks(admin: ApiSession, project: string): Promise<void> {
+  const editorOf = async (): Promise<Editor> =>
+    dataOf(await admin.client.POST("/api/v1/workflows", { body: { project } }));
+  await publishChanged(admin, editorOf, (content) => ({
+    ...content,
+    changes: content.changes.map((each) =>
+      each.from === "open" && each.to === "in-progress"
+        ? { ...each, rules: { ...each.rules, ask_for: ["assigned-to"] } }
+        : each,
+    ),
+  }));
 }
 
 /** The content with the status change from one status to another made for these roles only (*Who can do it*). */

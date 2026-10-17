@@ -5,16 +5,20 @@
 use serde::{Deserialize, Serialize};
 
 /// An issue the people work on.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Work {
     /// The ID of the issue.
     pub id: String,
     /// Its readable ID.
     pub key: String,
+    /// The ID of the Guest who reported it; none for an issue the team made. A Guest hears only
+    /// of the issues they reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reporter: Option<String>,
 }
 
 /// A change the server kept.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Kept {
     /// The readable ID of the issue.
     pub key: String,
@@ -23,6 +27,12 @@ pub struct Kept {
     /// The description, when the change was a save of the description.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
+    /// The title, when the change was a new title (M3-F93).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// The key of the status, when the change was a status change under the workflow.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
 }
 
 /// A version of an issue that a person read.
@@ -79,6 +89,15 @@ pub struct Book {
     pub drafted: Vec<Drafted>,
     /// What the people saw break a rule while they worked.
     pub broken: Vec<String>,
+    /// The readable ID of the issue of every file that was added.
+    #[serde(default)]
+    pub files: Vec<String>,
+    /// The IDs of the Guests of the run: what they are told is judged by what a Guest may see.
+    #[serde(default)]
+    pub guests: Vec<String>,
+    /// The keys of the own fields the run hid from Guests.
+    #[serde(default)]
+    pub hidden_from_guests: Vec<String>,
 }
 
 impl Book {
@@ -118,10 +137,11 @@ mod tests {
     #[test]
     fn test_concurrent_the_book_of_the_driver_is_read_and_written_back_unchanged() {
         let example = serde_json::json!({
-            "issues": [{"id": "00000000-0000-4000-8000-000000000001", "key": "LOAD-1"}],
+            "issues": [{"id": "00000000-0000-4000-8000-000000000001", "key": "LOAD-1", "reporter": "00000000-0000-4000-8000-000000000004"}],
             "kept": [
                 {"key": "LOAD-1", "version": 2},
-                {"key": "LOAD-1", "version": 3, "text": "A text that was kept"}
+                {"key": "LOAD-1", "version": 3, "text": "A text that was kept"},
+                {"key": "LOAD-1", "version": 4, "title": "A title", "status": "in-progress"}
             ],
             "comments": ["LOAD-1"],
             "seen": [{"person": 1, "key": "LOAD-1", "version": 2}],
@@ -140,10 +160,13 @@ mod tests {
                     "ending": "vanished"
                 }
             ],
-            "broken": []
+            "broken": [],
+            "files": ["LOAD-1"],
+            "guests": ["00000000-0000-4000-8000-000000000004"],
+            "hidden_from_guests": ["00000000-0000-4000-8000-000000000005"]
         });
         let book: Book = serde_json::from_value(example.clone()).unwrap();
-        assert_eq!(book.kept.len(), 2);
+        assert_eq!(book.kept.len(), 3);
         assert_eq!(book.drafted[1].ending, DraftEnd::Vanished);
         assert_eq!(serde_json::to_value(&book).unwrap(), example);
     }

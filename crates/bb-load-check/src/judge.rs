@@ -13,11 +13,20 @@
 //! - What a person read of an issue only goes up.
 //! - No text is lost: the text of a refused save was found as the draft at once, and the heartbeat
 //!   draft of an editor who vanished is still there.
+//! - The title is the last title that was kept, and the status the last status change that was kept
+//!   (M3-F93, WF-01).
+//! - The files of an issue are the ones that were added to it (ATT-01).
+//! - No notification shows a Guest what a Guest may not see: only issues they reported, and none of
+//!   the fields that are hidden from Guests (SEC-06).
 //! - A lock never outlives its lease: no row ends later than the lease from now, nobody holds a
 //!   lock once the leases are over, and after the purge no row is left.
 
+use bb_app::access::StartingRole;
+use bb_core::access::FieldLevel;
+use bb_core::fields::Field;
+
 use crate::book::{Book, DraftEnd, last_drafts};
-use crate::facts::{Facts, IssueFacts, LockRow};
+use crate::facts::{Facts, IssueFacts, LockRow, NotificationFacts};
 
 /// When the run is looked at.
 #[derive(Clone, Copy, Debug)]
@@ -86,6 +95,91 @@ fn last_description(book: &Book, issue: &IssueFacts) -> Option<String> {
             issue.key
         )
     })
+}
+
+/// The last value that a kept change set, by version: the title or the status.
+fn last_kept<'a>(
+    book: &'a Book,
+    issue: &IssueFacts,
+    value: impl Fn(&'a crate::book::Kept) -> Option<&'a String>,
+) -> Option<&'a String> {
+    book.kept
+        .iter()
+        .filter(|each| each.key == issue.key)
+        .filter_map(|each| value(each).map(|set| (each.version, set)))
+        .max_by_key(|(version, _)| *version)
+        .map(|(_, set)| set)
+}
+
+/// The title and the status are what the last change that set them set (M3-F93): a title or a
+/// status change that was lost or half saved is found. An issue nobody changed keeps what it had.
+fn titles_and_statuses(book: &Book, issue: &IssueFacts) -> Vec<String> {
+    let mut found = Vec::new();
+    if let Some(title) = last_kept(book, issue, |each| each.title.as_ref())
+        && *title != issue.title
+    {
+        found.push(format!(
+            "{}: the title is not the one that was kept last",
+            issue.key
+        ));
+    }
+    if let Some(status) = last_kept(book, issue, |each| each.status.as_ref())
+        && *status != issue.status
+    {
+        found.push(format!(
+            "{}: the status is not the one that was kept last",
+            issue.key
+        ));
+    }
+    found
+}
+
+/// The files of an issue are the ones that were added to it, none more and none fewer.
+fn files_are_kept(book: &Book, issue: &IssueFacts) -> Option<String> {
+    let added = book.files.iter().filter(|each| **each == issue.key).count();
+    (issue.attachments != added).then(|| {
+        format!(
+            "{}: {} files are stored, {added} were added",
+            issue.key, issue.attachments
+        )
+    })
+}
+
+/// The fields a Guest may not see: the built-in ones the starting role hides, and the own fields the
+/// run hid from Guests.
+fn hidden_from_guests(book: &Book) -> Vec<String> {
+    Field::ALL
+        .iter()
+        .filter(|field| StartingRole::Guest.field_level(**field) == FieldLevel::Hidden)
+        .map(|field| field.code().to_owned())
+        .chain(book.hidden_from_guests.iter().cloned())
+        .collect()
+}
+
+/// A notification of a Guest is about an issue they reported and keeps no field they may not see.
+fn guests_hear_only_what_they_may(book: &Book, notifications: &[NotificationFacts]) -> Vec<String> {
+    let hidden = hidden_from_guests(book);
+    let mut found = Vec::new();
+    for each in notifications {
+        let reported = each.issue.as_ref().and_then(|key| {
+            book.issues
+                .iter()
+                .find(|work| &work.key == key)
+                .and_then(|work| work.reporter.as_ref())
+        });
+        if each.issue.is_some() && reported != Some(&each.recipient) {
+            found.push(format!(
+                "a Guest was told of {}, which they did not report",
+                each.issue.as_deref().unwrap_or_default()
+            ));
+        }
+        for field in each.fields.iter().filter(|field| hidden.contains(field)) {
+            found.push(format!(
+                "a notification of a Guest shows {field}, which a Guest may not see"
+            ));
+        }
+    }
+    found
 }
 
 /// What each person read of an issue only went up.
@@ -191,7 +285,10 @@ pub fn judge(book: &Book, facts: &Facts, afterwards: &Afterwards) -> Vec<String>
     for issue in &facts.issues {
         found.extend(events_and_versions(book, issue));
         found.extend(last_description(book, issue));
+        found.extend(titles_and_statuses(book, issue));
+        found.extend(files_are_kept(book, issue));
     }
+    found.extend(guests_hear_only_what_they_may(book, &facts.notifications));
     found.extend(no_text_lost(book, facts));
     found.extend(locks_are_gone(book, facts, afterwards));
     found
@@ -219,6 +316,8 @@ mod tests {
             key: "A-1".to_owned(),
             version,
             text: text.map(str::to_owned),
+            title: None,
+            status: None,
         }
     }
 
@@ -243,23 +342,63 @@ mod tests {
     /// A run of one issue that went well: made, a title change, a description save, a comment.
     fn good_run() -> (Book, Facts) {
         let book = Book {
-            issues: vec![Work {
-                id: "id-1".to_owned(),
-                key: "A-1".to_owned(),
-            }],
-            kept: vec![kept(2, None), kept(3, Some("Last text"))],
+            issues: vec![
+                Work {
+                    id: "id-1".to_owned(),
+                    key: "A-1".to_owned(),
+                    reporter: None,
+                },
+                Work {
+                    id: "id-2".to_owned(),
+                    key: "A-2".to_owned(),
+                    reporter: Some("guest".to_owned()),
+                },
+            ],
+            kept: vec![
+                Kept {
+                    title: Some("A title".to_owned()),
+                    ..kept(2, None)
+                },
+                Kept {
+                    status: Some("in-progress".to_owned()),
+                    ..kept(3, Some("Last text"))
+                },
+            ],
             comments: vec!["A-1".to_owned()],
             seen: vec![seen(1, 2), seen(1, 3)],
             drafted: vec![drafted("p1", DraftEnd::Vanished, None)],
             broken: Vec::new(),
+            files: vec!["A-1".to_owned(), "A-1".to_owned()],
+            guests: vec!["guest".to_owned()],
+            hidden_from_guests: vec!["secret-field".to_owned()],
         };
         let facts = Facts {
-            issues: vec![IssueFacts {
-                key: "A-1".to_owned(),
-                event_versions: vec![2, 3],
-                comment_events: 1,
-                version: 3,
-                description: "Last text".to_owned(),
+            issues: vec![
+                IssueFacts {
+                    key: "A-1".to_owned(),
+                    event_versions: vec![2, 3],
+                    comment_events: 1,
+                    version: 3,
+                    description: "Last text".to_owned(),
+                    title: "A title".to_owned(),
+                    status: "in-progress".to_owned(),
+                    attachments: 2,
+                },
+                IssueFacts {
+                    key: "A-2".to_owned(),
+                    event_versions: Vec::new(),
+                    comment_events: 0,
+                    version: 1,
+                    description: String::new(),
+                    title: "A bug of the Guest".to_owned(),
+                    status: "open".to_owned(),
+                    attachments: 0,
+                },
+            ],
+            notifications: vec![NotificationFacts {
+                recipient: "guest".to_owned(),
+                issue: Some("A-2".to_owned()),
+                fields: vec!["status".to_owned()],
             }],
             locks: Vec::new(),
             drafts: vec![StoredDraft {
@@ -380,6 +519,51 @@ mod tests {
             ["the lock on A-1 outlives its lease"]
         );
         assert!(locks_beyond_lease(&book, &facts.locks, NOW + 1, LEASE).is_empty());
+    }
+
+    #[test]
+    fn test_concurrent_m3_f93_a_title_that_is_not_the_last_kept_one_is_found() {
+        let (book, mut facts) = good_run();
+        facts.issues[0].title = "An older title".to_owned();
+        let found = judge(&book, &facts, &afterwards());
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!(found[0].contains("title"), "{found:?}");
+    }
+
+    #[test]
+    fn test_concurrent_wf_01_a_status_that_is_not_the_last_kept_one_is_found() {
+        let (book, mut facts) = good_run();
+        facts.issues[0].status = "open".to_owned();
+        let found = judge(&book, &facts, &afterwards());
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!(found[0].contains("status"), "{found:?}");
+    }
+
+    #[test]
+    fn test_concurrent_att_01_a_file_that_is_lost_or_added_twice_is_found() {
+        let (book, mut facts) = good_run();
+        facts.issues[0].attachments = 1;
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
+        facts.issues[0].attachments = 3;
+        assert_eq!(judge(&book, &facts, &afterwards()).len(), 1);
+    }
+
+    #[test]
+    fn test_concurrent_sec_06_a_guest_is_told_only_of_what_they_reported_and_may_see() {
+        let (book, mut facts) = good_run();
+        // About an issue the team made.
+        facts.notifications[0].issue = Some("A-1".to_owned());
+        let found = judge(&book, &facts, &afterwards());
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!(found[0].contains("did not report"), "{found:?}");
+        // A field the starting role hides from Guests, and one the run hid.
+        facts.notifications[0].issue = Some("A-2".to_owned());
+        for field in ["cost-center", "secret-field"] {
+            facts.notifications[0].fields = vec!["status".to_owned(), field.to_owned()];
+            let found = judge(&book, &facts, &afterwards());
+            assert_eq!(found.len(), 1, "{field}: {found:?}");
+            assert!(found[0].contains(field), "{found:?}");
+        }
     }
 
     #[test]

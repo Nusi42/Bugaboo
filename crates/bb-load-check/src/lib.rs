@@ -11,7 +11,7 @@ mod facts;
 mod judge;
 
 pub use book::{Book, DraftEnd, Drafted, Kept, Seen, Work};
-pub use facts::{Facts, Failure, LockRow, gather, lock_rows};
+pub use facts::{Facts, Failure, LockRow, NotificationFacts, gather, lock_rows};
 pub use judge::{Afterwards, judge, locks_beyond_lease};
 
 use bb_store::Database;
