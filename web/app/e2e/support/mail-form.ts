@@ -3,6 +3,13 @@ import { expect, type Page } from "@playwright/test";
 
 import { type Login, type Mailbox } from "./mailbox.ts";
 
+/**
+ * The line the browser writes when the mail server turns the test e-mail away: Bugaboo answers
+ * 502 (`mail.rejected`). The tests that cause it on purpose expect it with `tolerate`.
+ */
+export const mailRejectedLine =
+  /^Failed to load resource: the server responded with a status of 502/u;
+
 /** What the person types into the form of the mail server. */
 export interface MailForm {
   readonly host: string;

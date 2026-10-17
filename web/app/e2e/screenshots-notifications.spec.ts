@@ -1,6 +1,7 @@
 import { test } from "./support/fixtures.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { shootMailServer, shotLogin } from "./support/mail-server-shots.ts";
+import { mailRejectedLine } from "./support/mail-form.ts";
 import { startMailbox, type Mailbox } from "./support/mailbox.ts";
 import { shootNotifications } from "./support/notification-shots.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -32,9 +33,13 @@ test("the notifications, the start page, Customize and the handle", async ({ pag
   await shootNotifications(page, server);
 });
 
-test("the mail server: at the start, refused, and tried", async ({ page }) => {
+test("the mail server: at the start, refused, and tried", async ({ page, tolerate }) => {
   test.setTimeout(ALL_THE_THEMES_MS);
+  // The refusal of the wrong password is part of the pictures: its console line is expected.
+  const refusal = tolerate(page.context(), mailRejectedLine, false);
+  await refusal.begin();
   await shootMailServer(page, mailbox);
+  await refusal.end();
 });
 
 test("signing up: the form and Check your e-mail", async ({ page }) => {

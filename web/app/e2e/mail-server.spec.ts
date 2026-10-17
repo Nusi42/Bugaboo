@@ -7,7 +7,7 @@ import { ada, cleo, createAdmin, createPerson, ownId, type Person } from "./supp
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn, signOut } from "./support/flows.ts";
-import { formFor, fillMailServer, sendTestEmail } from "./support/mail-form.ts";
+import { formFor, fillMailServer, mailRejectedLine, sendTestEmail } from "./support/mail-form.ts";
 import { type Login, type Mailbox, startMailbox } from "./support/mailbox.ts";
 
 // The mail server of the organization (NTF-02, PRIV-08, M4 WP-08): an administrator enters it,
@@ -56,12 +56,18 @@ test("ntf_02 e-mail is off at the start, and a test without a mail server says s
   await expect(page.getByRole("alert")).toContainText(t("error.mail.off"));
 });
 
-test("ntf_02 a wrong password is refused in words, and the button then waits", async ({ page }) => {
+test("ntf_02 a wrong password is refused in words, and the button then waits", async ({
+  page,
+  tolerate,
+}) => {
+  const refusal = tolerate(page.context(), mailRejectedLine, false);
   await openMailServer(page, ada);
   await fillMailServer(page, formFor(mailbox, { user: login.user, password: wrong }));
   await expect(page.getByText(t("mail-server.password-set"))).toBeVisible();
+  await refusal.begin();
   await sendTestEmail(page);
   await expect(page.getByRole("alert")).toContainText(t("error.mail.rejected"));
+  await refusal.end();
   // The server lets one person send a test e-mail every ten seconds; the button waits that long.
   await expect(
     page.getByRole("button", { name: t("mail-server.test-send"), exact: true }),
@@ -103,7 +109,10 @@ test("ntf_02 with the right password the test e-mail reaches the mail server, an
   const sending = page.getByRole("switch", { name: t("setting.mail.enabled.name") });
   await page.getByText(t("setting.mail.enabled.name"), { exact: true }).click();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
+  // The page is reloaded only when the server has the second change.
+  const saved = page.waitForResponse(/\/api\/v1\/settings\/mail\.short$/u);
   await page.getByText(t("setting.mail.short.name"), { exact: true }).click();
+  await saved;
   await page.reload();
   await expect(sending).toBeChecked();
   await expect(page.getByRole("switch", { name: t("setting.mail.short.name") })).toBeChecked();

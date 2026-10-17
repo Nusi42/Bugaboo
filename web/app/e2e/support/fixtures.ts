@@ -19,12 +19,11 @@ const reports: string[] = [];
 
 /**
  * The browser writes a line for every refused request. Tests of refusals expect those, so a
- * line about a 4xx status does not count, nor does 502: it is how Bugaboo says that the mail
- * server turned an e-mail away (`mail.rejected`), and no proxy stands in front of the servers of
- * the tests that could say it otherwise. Any other line about a request (another 5xx status, a
- * `net::ERR_*`) is a real failure and counts.
+ * line about a 4xx status does not count. Any other line about a request (a 5xx status, a
+ * `net::ERR_*`) is a real failure and counts; the one test that expects a 502 (the mail server
+ * turned an e-mail away, `mail.rejected`) says so with `tolerate`.
  */
-const REFUSED = /^Failed to load resource: the server responded with a status of (4\d\d|502)/u;
+const REFUSED = /^Failed to load resource: the server responded with a status of (4\d\d)/u;
 
 /** The console lines a test expects of a browser that it cuts off the network (see `tolerate`). */
 const tolerances = new Tolerances();
@@ -142,10 +141,12 @@ export const test = base.extend<
      * For a test that cuts the network of one browser on purpose (a lock holder who goes offline):
      * the console lines of that context that match `lines` are expected, from `begin` (which cuts
      * the network) until `end` (which brings it back). Lines of any other context, lines while it
-     * is online, other lines, and uncaught errors are never let off. Only
-     * `concurrent/locks.spec.ts` may use it (TEST-CONCURRENT).
+     * is online, other lines, and uncaught errors are never let off. With `cut: false` the network
+     * stays up and only the lines are expected between `begin` and `end` (a refusal the test
+     * causes on purpose). Only `concurrent/locks.spec.ts`, `mail-server.spec.ts` and `screenshots-notifications.spec.ts` may use it
+     * (TEST-CONCURRENT).
      */
-    tolerate: (context: BrowserContext, lines: Readonly<RegExp>) => Offline;
+    tolerate: (context: BrowserContext, lines: Readonly<RegExp>, cut?: boolean) => Offline;
   },
   { pool: Servers }
 >({
@@ -164,15 +165,19 @@ export const test = base.extend<
     await provide(await pool.forFile(testInfo.file, serverSettings, sample, preparation.run));
   },
   tolerate: async ({ browser: _browser }, provide) => {
-    await provide((context, lines) => {
+    await provide((context, lines, cut = true) => {
       const network = tolerances.add(context, lines);
       return {
         begin: async () => {
           network.cut();
-          await context.setOffline(true);
+          if (cut) {
+            await context.setOffline(true);
+          }
         },
         end: async () => {
-          await context.setOffline(false);
+          if (cut) {
+            await context.setOffline(false);
+          }
           // A round trip to every page, so the lines written while it was offline have arrived.
           await Promise.all(context.pages().map((page) => page.evaluate(() => 0)));
           network.restored();
