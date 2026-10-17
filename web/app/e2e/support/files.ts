@@ -210,3 +210,38 @@ export async function breakSecondPartOnce(page: Page, arrives: boolean): Promise
     await route.continue();
   });
 }
+
+/**
+ * Chooses files with the button of a place (*Upload*), as a person does with the window of their
+ * device.
+ */
+export async function chooseFiles(
+  page: Page,
+  button: Locator,
+  files: readonly Pictured[],
+): Promise<void> {
+  const chooser = page.waitForEvent("filechooser");
+  await button.click();
+  await (await chooser).setFiles([...files]);
+}
+
+/** What lets go of a part that is being held. */
+export interface Hold {
+  readonly release: () => void;
+}
+
+/**
+ * Keeps the second part of an upload from reaching the server until `release` is called, so the
+ * upload stands still a part of the way and the bar of it can be looked at.
+ */
+export async function holdSecondPart(page: Page): Promise<Hold> {
+  const { promise: released, resolve: release } = Promise.withResolvers<void>();
+  await page.route(/\/api\/v1\/uploads\/[^/?]+\?offset=/u, async (route) => {
+    const offset = new URL(route.request().url()).searchParams.get("offset");
+    if (route.request().method() === "PUT" && offset === String(PART_BYTES)) {
+      await released;
+    }
+    await route.continue();
+  });
+  return { release };
+}

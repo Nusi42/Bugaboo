@@ -15,7 +15,7 @@ function Sending({ transfer }: { readonly transfer: Transfer }) {
         ) : (
           <div {...partOf(part.row)}>
             <progress
-              {...partOf(part.progress)}
+              {...partOf(part.filesProgress)}
               aria-label={t("files.sending", { name: transfer.name })}
               value={transfer.sent}
               max={transfer.size}

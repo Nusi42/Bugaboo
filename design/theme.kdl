@@ -4349,11 +4349,12 @@ part "files.tile[focus-visible]" {
     use "ring"
 }
 
+// The whole picture in the square, never cropped: a page of a PDF has its heading at the edge.
 part "files.picture" {
     display block
     inline-size "100%"
     block-size "100%"
-    object-fit cover
+    object-fit contain
 }
 
 part "files.info" {
@@ -4382,6 +4383,14 @@ part "files.refusal" {
     align-items center
     justify-content space-between
     gap "$space-2 $space-4"
+}
+
+// The bar of an upload: as wide as the row lets it be, with the words about it after it when they
+// fit and under it when they do not, so it never stops short on a narrow screen.
+part "files.progress" {
+    flex "1 1 $size-line-medium"
+    min-inline-size 0
+    accent-color "$accent"
 }
 
 part "files.actions" {
