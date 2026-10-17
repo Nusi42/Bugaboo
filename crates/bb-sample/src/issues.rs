@@ -406,18 +406,20 @@ impl Maker<'_, '_> {
         reached: Reached,
         person: usize,
     ) -> Result<(), SampleError> {
-        let token = self.hands.token(person).await?;
         // The workflow of the issue says which status changes there are: walk them toward the group.
         for _ in 0..STEPS_TO_A_GROUP_MAX {
             let made = self.issue(at)?.clone();
             let Some(next) = made.toward(reached.group()) else {
                 break;
             };
+            // The session is taken only when a request follows: a session that is marked as used
+            // and is not used would run out of idle time on the server unseen.
+            let token = self.hands.token(person).await?;
             let changed = json(
                 change_issue(
                     &self.world.services.ctx(self.world.request()),
                     ChangeIssue {
-                        session_token: token.clone(),
+                        session_token: token,
                         issue: made.id.to_string(),
                         version: made.version,
                         issue_type: None,
