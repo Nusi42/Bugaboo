@@ -22,7 +22,7 @@ use serde_json::Value;
 use zeroize::Zeroizing;
 
 use super::compose::compose;
-use super::prefs::wants;
+use super::plan::wants;
 use super::read::Reading;
 use super::types::NotificationItem;
 use crate::access::Actor;

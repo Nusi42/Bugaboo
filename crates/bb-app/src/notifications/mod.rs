@@ -7,17 +7,15 @@
 //! - `read.rs`: the list and *Mark as read*; checks again when a row is shown.
 //! - `mail.rs`: the job `mail.send` and the e-mail a notification makes; checks again when it is
 //!   sent.
-//! - `prefs.rs`: who wants to hear of what, and the settings of the mail server.
 
 mod build;
 mod compose;
 mod handles;
+mod keep;
 mod mail;
 mod mail_settings;
 mod plan;
-mod prefs;
 mod read;
-mod retention;
 mod store;
 mod types;
 

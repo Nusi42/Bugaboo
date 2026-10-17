@@ -1,17 +1,9 @@
-//! Reading settings for the notifications: whether a person wants to hear of a kind of event in
-//! the app or by e-mail, and the settings of the mail server (ADR-0033 §1, §3).
+//! The stored values a use case reads settings from: the organization's and, for a person, theirs.
 
 use bb_core::id::UserId;
-use bb_core::notification::{NotificationKind, Via};
 use bb_core::settings::{Layers, MAIL_ENABLED};
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-
-/// Whether a person in the layers they have wants to hear of `kind` this way. The organization's
-/// value is the default of everybody and a locked one counts for everybody.
-pub(crate) fn wants(layers: &Layers, kind: NotificationKind, via: Via) -> bool {
-    layers.yes(kind.setting(via))
-}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The stored values of the organization and, with `person`, of that person.

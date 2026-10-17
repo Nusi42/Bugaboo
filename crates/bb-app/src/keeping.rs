@@ -1,15 +1,12 @@
-//! Keeping and deleting (PRIV-05, M1-F21, M1-F43, M1-F61, ADR-0033 §5): the jobs that remove what
-//! outlived its keep period. Each is safe to run again, and each has its test of idempotency.
+//! Keeping and deleting (PRIV-05, M1-F21, M1-F43, M1-F61, ADR-0017): the jobs that remove what
+//! outlived its keep period. Each is safe to run again, and each has its test of idempotency. The
+//! notifications and the payloads of dead jobs are in `notifications/keep.rs`.
 //!
-//! - `notifications.purge`: notifications after 90 days, and the payload of a job that died after
-//!   its own keep period (it can hold the address and the text of a person).
 //! - `security-log.prune`: the oldest whole blocks of the security log past its keep setting.
-//! - `sessions.purge`: the sessions nobody can use any more.
+//! - `sessions.purge`: the sessions nobody can use any more, and the links of finished sign-ups.
 //! - `server-log.rotate`: a new file of the log of a server that runs as a service.
 
 use bb_core::event::{Actor as EventActor, RecordKind};
-use bb_core::job::dead_payload_cutoff;
-use bb_core::notification::cutoff;
 use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, SECURITY_LOG_KEEP_DAYS};
 use bb_core::time::SECONDS_PER_DAY;
 use jiff::{SignedDuration, Timestamp};
@@ -21,43 +18,7 @@ use crate::auth::{
 /// The bytes in a megabyte, for the size of the server log.
 const MEGABYTE: u64 = 1_048_576;
 
-/// What a purge of notifications removed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Purged {
-    /// Notifications past their 90 days.
-    pub(crate) notifications: u64,
-    /// Payloads of dead jobs past their keep period.
-    pub(crate) payloads: u64,
-}
-
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Deletes the notifications that outlived 90 days and empties the payloads of the jobs that
-    /// died long ago.
-    pub(crate) async fn purge_old_notifications(&self) -> Result<Purged, AppError> {
-        let failed = |error| internal::<S>(&error);
-        let now = self.now();
-        let notifications = match cutoff(now) {
-            Some(before) => self
-                .store()
-                .purge_notifications(before)
-                .await
-                .map_err(failed)?,
-            None => 0,
-        };
-        let payloads = match dead_payload_cutoff(now) {
-            Some(before) => self
-                .store()
-                .clear_dead_job_payloads(before)
-                .await
-                .map_err(failed)?,
-            None => 0,
-        };
-        Ok(Purged {
-            notifications,
-            payloads,
-        })
-    }
-
     /// Removes the sessions nobody can use any more, and the links of sign-ups that were used or
     /// ran out. A change of Bugaboo itself, so it writes an event.
     pub(crate) async fn purge_dead_sessions(&self) -> Result<(), AppError> {

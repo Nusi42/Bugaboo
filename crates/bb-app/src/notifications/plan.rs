@@ -8,10 +8,17 @@ use bb_core::event::FieldChange;
 use bb_core::fields::Field;
 use bb_core::id::UserId;
 use bb_core::many_changes::ManyChangeStatus;
-use bb_core::notification::NotificationKind;
+use bb_core::notification::{NotificationKind, Via};
+use bb_core::settings::Layers;
 use serde_json::Value;
 
 use crate::member::{edit_lock, run};
+
+/// Whether a person in the layers they have wants to hear of `kind` this way. The organization's
+/// value is the default of everybody and a locked one counts for everybody.
+pub(crate) fn wants(layers: &Layers, kind: NotificationKind, via: Via) -> bool {
+    layers.yes(kind.setting(via))
+}
 
 /// Where the event of a run of many changes says the run is now, if it says.
 pub(crate) fn run_status_of(changes: &[FieldChange]) -> Option<ManyChangeStatus> {

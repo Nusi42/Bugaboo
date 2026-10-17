@@ -31,8 +31,7 @@ use bb_core::settings::Layers;
 use serde_json::json;
 
 use super::mail::MailJob;
-use super::plan::{edit_note_of, followed_kind, newly_assigned, run_status_of};
-use super::prefs::wants;
+use super::plan::{edit_note_of, followed_kind, newly_assigned, run_status_of, wants};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
 use crate::history::{issue_in, visible_changes};

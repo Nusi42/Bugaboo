@@ -18,6 +18,7 @@
 //! `Authorized<T>`.
 
 mod image_hosts;
+mod layers;
 mod store;
 
 use std::sync::Arc;
