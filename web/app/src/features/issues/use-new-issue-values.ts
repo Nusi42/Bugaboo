@@ -48,7 +48,11 @@ export function useNewIssueValues(): NewIssueValuesState {
   const [typed, setTyped] = useState<NewIssueValues>(emptyForm);
   const [dropped, setDropped] = useState(false);
   const found = useProject(address).data;
-  const types = issueTypeLinesOf(useIssueTypes().data?.pages).filter((type) => !type.retired);
+  // The types the project offers: a retired type, or one the project switched off, is not chosen
+  // from. The server refuses them as well. Until the project is known nothing is asked.
+  const types = issueTypeLinesOf(useIssueTypes(found?.project.short_name ?? "").data?.pages).filter(
+    (type) => !type.retired && type.here?.offered !== false,
+  );
   const draft = useNewIssueDraft(found?.project.id);
   const values = withType(typed, types);
   const change = (next: NewIssueValues): void => {

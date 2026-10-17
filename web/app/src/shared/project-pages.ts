@@ -84,6 +84,24 @@ export const projectPages = {
     needs: "manage-issue-types",
     title: (project) => t("layouts.project-title", { project }),
   },
+  issueTypes: {
+    path: paths.projectIssueTypes,
+    name: "nav.issue-types",
+    icon: iconName["issue-types"],
+    parent: paths.projectSettings,
+    tab: "nav.issue-types",
+    needs: "manage-issue-types",
+    title: (project) => t("issue-types.project-title", { project }),
+  },
+  labels: {
+    path: paths.projectLabels,
+    name: "nav.labels",
+    icon: iconName.labels,
+    parent: paths.projectSettings,
+    tab: "nav.labels",
+    needs: "manage-labels",
+    title: (project) => t("labels.project-title", { project }),
+  },
   people: {
     path: paths.projectPeople,
     name: "nav.people-visibility",
@@ -110,6 +128,8 @@ export const settingsTabs: readonly ProjectPage[] = [
   projectPages.roles,
   projectPages.fields,
   projectPages.layouts,
+  projectPages.issueTypes,
+  projectPages.labels,
   projectPages.people,
   projectPages.check,
 ];

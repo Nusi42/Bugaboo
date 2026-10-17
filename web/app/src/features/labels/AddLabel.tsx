@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { afterLabelsAndTags, useLabels, type Chip, type Counted } from "./labels.ts";
+import { afterLabelsAndTags, useLabelsToAdd, type Chip, type Counted } from "./labels.ts";
 
 /** The choice that stands for no label picked yet. */
 const NONE = "";
@@ -13,21 +13,21 @@ const NONE = "";
 export function AddLabel({
   issue,
   has,
+  project,
 }: {
   readonly issue: string;
   readonly has: readonly Chip[];
+  /** The project of the issue (a short name): only the labels of the groups it offers are chosen from. */
+  readonly project?: string | undefined;
 }) {
   const [picked, setPicked] = useState(NONE);
-  const labels = useLabels();
+  const offered = useLabelsToAdd(project, has);
   const add = api.query.useMutation("post", "/api/v1/issues/{issue}/labels", {
     onSuccess: (labelsAndTags: Counted) => {
       afterLabelsAndTags(issue, labelsAndTags);
       setPicked(NONE);
     },
   });
-  const offered = (labels.data?.labels ?? []).filter(
-    (label) => !label.retired && !has.some((each) => each.id === label.id),
-  );
   if (offered.length === 0) {
     return <p {...partOf(part.muted)}>{t("labels.nothing-to-add")}</p>;
   }

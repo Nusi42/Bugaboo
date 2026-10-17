@@ -50,7 +50,11 @@ export function TagsPart({
 }
 
 /** The labels of the issue, with the ways to take one off and to add one. */
-export function LabelsPart({ body, readableId }: LabelsAndTagsPartProps) {
+export function LabelsPart({
+  body,
+  readableId,
+  project,
+}: LabelsAndTagsPartProps & { readonly project: string | undefined }) {
   const takeOff = api.query.useMutation("delete", "/api/v1/issues/{issue}/labels/{label}", {
     onSuccess: (labelsAndTags: Counted) => {
       afterLabelsAndTags(readableId, labelsAndTags);
@@ -71,7 +75,9 @@ export function LabelsPart({ body, readableId }: LabelsAndTagsPartProps) {
             : undefined
         }
       />
-      {body.may_change_labels ? <AddLabel issue={readableId} has={body.labels ?? []} /> : null}
+      {body.may_change_labels ? (
+        <AddLabel issue={readableId} has={body.labels ?? []} project={project} />
+      ) : null}
       {takeOff.isError ? <Alert tone={alertTone.danger}>{messageOf(takeOff.error)}</Alert> : null}
     </>
   );

@@ -1830,6 +1830,20 @@ pub const ISSUE_TYPES_NOTHING: MessageKey = MessageKey::new("issue-types.nothing
 /// The message `issue-types.offer-again`.
 pub const ISSUE_TYPES_OFFER_AGAIN: MessageKey = MessageKey::new("issue-types.offer-again");
 
+/// The message `issue-types.project-create-intro`.
+pub const ISSUE_TYPES_PROJECT_CREATE_INTRO: MessageKey =
+    MessageKey::new("issue-types.project-create-intro");
+
+/// The message `issue-types.project-create-title`.
+pub const ISSUE_TYPES_PROJECT_CREATE_TITLE: MessageKey =
+    MessageKey::new("issue-types.project-create-title");
+
+/// The message `issue-types.project-intro`.
+pub const ISSUE_TYPES_PROJECT_INTRO: MessageKey = MessageKey::new("issue-types.project-intro");
+
+/// The message `issue-types.project-list`.
+pub const ISSUE_TYPES_PROJECT_LIST: MessageKey = MessageKey::new("issue-types.project-list");
+
 /// The message `issue-types.retire`.
 pub const ISSUE_TYPES_RETIRE: MessageKey = MessageKey::new("issue-types.retire");
 
@@ -2144,6 +2158,18 @@ pub const LABELS_PICK_LABEL: MessageKey = MessageKey::new("labels.pick-label");
 
 /// The message `labels.preview-truncated`.
 pub const LABELS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("labels.preview-truncated");
+
+/// The message `labels.project-create-intro`.
+pub const LABELS_PROJECT_CREATE_INTRO: MessageKey = MessageKey::new("labels.project-create-intro");
+
+/// The message `labels.project-create-title`.
+pub const LABELS_PROJECT_CREATE_TITLE: MessageKey = MessageKey::new("labels.project-create-title");
+
+/// The message `labels.project-intro`.
+pub const LABELS_PROJECT_INTRO: MessageKey = MessageKey::new("labels.project-intro");
+
+/// The message `labels.project-list`.
+pub const LABELS_PROJECT_LIST: MessageKey = MessageKey::new("labels.project-list");
 
 /// The message `labels.retire`.
 pub const LABELS_RETIRE: MessageKey = MessageKey::new("labels.retire");
@@ -2990,6 +3016,82 @@ pub const PROJECTS_NONE_YET: MessageKey = MessageKey::new("projects.none-yet");
 
 /// The message `projects.nothing`.
 pub const PROJECTS_NOTHING: MessageKey = MessageKey::new("projects.nothing");
+
+/// The message `projects.offer-follow-button`.
+pub const PROJECTS_OFFER_FOLLOW_BUTTON: MessageKey =
+    MessageKey::new("projects.offer-follow-button");
+
+/// The message `projects.offer-follows`.
+pub const PROJECTS_OFFER_FOLLOWS: MessageKey = MessageKey::new("projects.offer-follows");
+
+/// The message `projects.offer-hidden-project`.
+pub const PROJECTS_OFFER_HIDDEN_PROJECT: MessageKey =
+    MessageKey::new("projects.offer-hidden-project");
+
+/// The message `projects.offer-state-not`.
+pub const PROJECTS_OFFER_STATE_NOT: MessageKey = MessageKey::new("projects.offer-state-not");
+
+/// The message `projects.offer-state-offered`.
+pub const PROJECTS_OFFER_STATE_OFFERED: MessageKey =
+    MessageKey::new("projects.offer-state-offered");
+
+/// The message `projects.offer-whole-organization`.
+pub const PROJECTS_OFFER_WHOLE_ORGANIZATION: MessageKey =
+    MessageKey::new("projects.offer-whole-organization");
+
+/// The message `projects.offered-in-add`.
+pub const PROJECTS_OFFERED_IN_ADD: MessageKey = MessageKey::new("projects.offered-in-add");
+
+/// The message `projects.offered-in-created-organization`.
+pub const PROJECTS_OFFERED_IN_CREATED_ORGANIZATION: MessageKey =
+    MessageKey::new("projects.offered-in-created-organization");
+
+/// The message `projects.offered-in-everywhere`.
+pub const PROJECTS_OFFERED_IN_EVERYWHERE: MessageKey =
+    MessageKey::new("projects.offered-in-everywhere");
+
+/// The message `projects.offered-in-list`.
+pub const PROJECTS_OFFERED_IN_LIST: MessageKey = MessageKey::new("projects.offered-in-list");
+
+/// The message `projects.offered-in-pick-first`.
+pub const PROJECTS_OFFERED_IN_PICK_FIRST: MessageKey =
+    MessageKey::new("projects.offered-in-pick-first");
+
+/// The message `projects.offered-in-pick-legend`.
+pub const PROJECTS_OFFERED_IN_PICK_LEGEND: MessageKey =
+    MessageKey::new("projects.offered-in-pick-legend");
+
+/// The message `projects.offered-in-pick-list`.
+pub const PROJECTS_OFFERED_IN_PICK_LIST: MessageKey =
+    MessageKey::new("projects.offered-in-pick-list");
+
+/// The message `projects.offered-in-pick-more`.
+pub const PROJECTS_OFFERED_IN_PICK_MORE: MessageKey =
+    MessageKey::new("projects.offered-in-pick-more");
+
+/// The message `projects.offered-in-pick-nothing`.
+pub const PROJECTS_OFFERED_IN_PICK_NOTHING: MessageKey =
+    MessageKey::new("projects.offered-in-pick-nothing");
+
+/// The message `projects.offered-in-pick-search`.
+pub const PROJECTS_OFFERED_IN_PICK_SEARCH: MessageKey =
+    MessageKey::new("projects.offered-in-pick-search");
+
+/// The message `projects.offered-in-rows`.
+pub const PROJECTS_OFFERED_IN_ROWS: MessageKey = MessageKey::new("projects.offered-in-rows");
+
+/// The message `projects.offered-in-save`.
+pub const PROJECTS_OFFERED_IN_SAVE: MessageKey = MessageKey::new("projects.offered-in-save");
+
+/// The message `projects.offered-in-state`.
+pub const PROJECTS_OFFERED_IN_STATE: MessageKey = MessageKey::new("projects.offered-in-state");
+
+/// The message `projects.offered-in-take-away`.
+pub const PROJECTS_OFFERED_IN_TAKE_AWAY: MessageKey =
+    MessageKey::new("projects.offered-in-take-away");
+
+/// The message `projects.offered-in-title`.
+pub const PROJECTS_OFFERED_IN_TITLE: MessageKey = MessageKey::new("projects.offered-in-title");
 
 /// The message `projects.open`.
 pub const PROJECTS_OPEN: MessageKey = MessageKey::new("projects.open");
@@ -6015,6 +6117,15 @@ pub fn issue_types_created(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issue-types.project-title`.
+#[must_use]
+pub fn issue_types_project_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issue-types.project-title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
 /// The message `issues.add-field`.
 #[must_use]
 pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
@@ -6409,6 +6520,15 @@ pub fn labels_preview_line(
             ("after", Value::Text(after.to_string())),
             ("before", Value::Text(before.to_string())),
         ],
+    )
+}
+
+/// The message `labels.project-title`.
+#[must_use]
+pub fn labels_project_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.project-title"),
+        vec![("project", Value::Text(project.to_string()))],
     )
 }
 
@@ -7324,6 +7444,54 @@ pub fn projects_moved(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.moved"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.offer-follow-button-for`.
+#[must_use]
+pub fn projects_offer_follow_button_for(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.offer-follow-button-for"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `projects.offer-line`.
+#[must_use]
+pub fn projects_offer_line(name: impl std::fmt::Display, state: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.offer-line"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("state", Value::Text(state.to_string())),
+        ],
+    )
+}
+
+/// The message `projects.offered-in-created-project`.
+#[must_use]
+pub fn projects_offered_in_created_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.offered-in-created-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `projects.offered-in-picked`.
+#[must_use]
+pub fn projects_offered_in_picked(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.offered-in-picked"),
+        vec![("place", Value::Text(place.to_string()))],
+    )
+}
+
+/// The message `projects.offered-in-take-away-for`.
+#[must_use]
+pub fn projects_offered_in_take_away_for(place: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("projects.offered-in-take-away-for"),
+        vec![("place", Value::Text(place.to_string()))],
     )
 }
 
@@ -9795,6 +9963,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-types.more", "Show more issue types"),
     ("issue-types.nothing", "No issue type has that name."),
     ("issue-types.offer-again", "Offer the issue type again"),
+    (
+        "issue-types.project-create-intro",
+        "A type created here is offered in this project and below.",
+    ),
+    (
+        "issue-types.project-create-title",
+        "Create an issue type for this project",
+    ),
+    (
+        "issue-types.project-intro",
+        "Switch off the issue types this project does not use. Issues keep the type they have.",
+    ),
+    ("issue-types.project-list", "Issue types of the project"),
+    ("issue-types.project-title", "Issue types of {project}"),
     ("issue-types.retire", "Retire the issue type"),
     (
         "issue-types.retire-help",
@@ -10048,6 +10230,20 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "labels.preview-truncated",
         "More issues change than this list shows.",
     ),
+    (
+        "labels.project-create-intro",
+        "A group created here is offered in this project and below.",
+    ),
+    (
+        "labels.project-create-title",
+        "Create a group of labels for this project",
+    ),
+    (
+        "labels.project-intro",
+        "Switch off the groups of labels this project does not use. Labels already on an issue stay on it.",
+    ),
+    ("labels.project-list", "Groups of labels of the project"),
+    ("labels.project-title", "Labels of {project}"),
     ("labels.retire", "Retire"),
     (
         "labels.retire-help",
@@ -10764,6 +10960,56 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "There is no project yet. Create the first one below.",
     ),
     ("projects.nothing", "No project found. Try another word."),
+    ("projects.offer-follow-button", "Follow the project above"),
+    (
+        "projects.offer-follow-button-for",
+        "Follow the project above for {name}",
+    ),
+    ("projects.offer-follows", "Follows the project above"),
+    ("projects.offer-hidden-project", "A project you can't see"),
+    ("projects.offer-line", "{name} · {state}"),
+    ("projects.offer-state-not", "Not offered"),
+    ("projects.offer-state-offered", "Offered"),
+    (
+        "projects.offer-whole-organization",
+        "The whole organization",
+    ),
+    ("projects.offered-in-add", "Add a line"),
+    (
+        "projects.offered-in-created-organization",
+        "Created for the whole organization.",
+    ),
+    (
+        "projects.offered-in-created-project",
+        "Created in {project}. Offered there and below until a line says otherwise.",
+    ),
+    (
+        "projects.offered-in-everywhere",
+        "Offered in every project.",
+    ),
+    ("projects.offered-in-list", "Where it is offered"),
+    (
+        "projects.offered-in-pick-first",
+        "Pick a project, or the whole organization, to add a line.",
+    ),
+    ("projects.offered-in-pick-legend", "Pick a project"),
+    ("projects.offered-in-pick-list", "Projects"),
+    ("projects.offered-in-pick-more", "Show more projects"),
+    ("projects.offered-in-pick-nothing", "No project found."),
+    ("projects.offered-in-pick-search", "Search projects"),
+    ("projects.offered-in-picked", "Line for {place}"),
+    (
+        "projects.offered-in-rows",
+        "Offered where the lines say so. A project follows the project above it until it has a line of its own.",
+    ),
+    ("projects.offered-in-save", "Save the line"),
+    ("projects.offered-in-state", "Offered there?"),
+    ("projects.offered-in-take-away", "Take away"),
+    (
+        "projects.offered-in-take-away-for",
+        "Take away the line for {place}",
+    ),
+    ("projects.offered-in-title", "Offered in"),
     ("projects.open", "Open the project"),
     ("projects.overview-inside", "Inside"),
     ("projects.overview-short-name", "Short name"),

@@ -5,6 +5,7 @@ import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditIssueType } from "./EditIssueType.tsx";
+import { IssueTypeOffers } from "./IssueTypeOffers.tsx";
 import { issueTypeLinesOf, useIssueTypes, type IssueTypeLine } from "./issue-types.ts";
 import { CreateIssueTypeForm } from "./CreateIssueTypeForm.tsx";
 import { RetireIssueType } from "./RetireIssueType.tsx";
@@ -29,8 +30,13 @@ function rowOf(issueType: IssueTypeLine): ListRow {
     ),
     editor: (
       <div {...partOf(part.stack)}>
-        <EditIssueType key={issueType.id} issueType={issueType} />
-        <RetireIssueType issueType={issueType} />
+        {issueType.mayManage ? (
+          <>
+            <EditIssueType key={issueType.id} issueType={issueType} />
+            <RetireIssueType issueType={issueType} />
+          </>
+        ) : null}
+        <IssueTypeOffers key={issueType.id} issueType={issueType} />
       </div>
     ),
   };

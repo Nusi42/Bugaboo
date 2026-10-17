@@ -55,7 +55,10 @@ export const queryKeys = {
   },
   issueTypes: {
     all: ["issue-types"],
-    list: () => ["issue-types", "list"],
+    /** The types; with a project, each says whether the project offers it. */
+    list: (project?: string) => ["issue-types", "list", project ?? null],
+    /** The lines that say where one type is offered. */
+    offers: (issueType: string) => ["issue-types", "offers", issueType],
   },
   relationKinds: {
     all: ["relation-kinds"],

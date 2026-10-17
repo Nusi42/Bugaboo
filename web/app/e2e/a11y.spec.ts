@@ -194,6 +194,16 @@ const visits: readonly Visit[] = [
     guest: false,
   },
   {
+    address: paths.projectIssueTypes,
+    open: signedIn(addressInProject(paths.projectIssueTypes, "WEB")),
+    guest: false,
+  },
+  {
+    address: paths.projectLabels,
+    open: signedIn(addressInProject(paths.projectLabels, "WEB")),
+    guest: false,
+  },
+  {
     address: paths.projectFields,
     open: signedIn(addressInProject(paths.projectFields, "WEB")),
     guest: false,

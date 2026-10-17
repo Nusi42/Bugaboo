@@ -20,6 +20,11 @@ export const messages = {
     "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
   "issue-types.retire": "Retire the issue type",
   "issue-types.offer-again": "Offer the issue type again",
+  "issue-types.project-intro":
+    "Switch off the issue types this project does not use. Issues keep the type they have.",
+  "issue-types.project-list": "Issue types of the project",
+  "issue-types.project-create-title": "Create an issue type for this project",
+  "issue-types.project-create-intro": "A type created here is offered in this project and below.",
 } as const;
 
 register(messages);

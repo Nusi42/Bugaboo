@@ -33,7 +33,9 @@ export function IssueLabelsAndTagsBlock({ issue, readableId, form }: IssueBlockP
       {showTags ? (
         <TagsPart body={body} readableId={readableId} project={issue.project?.short_name} />
       ) : null}
-      {showLabels ? <LabelsPart body={body} readableId={readableId} /> : null}
+      {showLabels ? (
+        <LabelsPart body={body} readableId={readableId} project={issue.project?.short_name} />
+      ) : null}
     </section>
   );
 }

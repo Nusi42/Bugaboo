@@ -46,6 +46,8 @@ export const paths = {
   projectRoles: "/p/$project/settings/roles",
   projectFields: "/p/$project/settings/fields",
   projectLayouts: "/p/$project/settings/layouts",
+  projectIssueTypes: "/p/$project/settings/issue-types",
+  projectLabels: "/p/$project/settings/labels",
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",

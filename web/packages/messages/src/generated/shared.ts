@@ -595,7 +595,6 @@ export const messages = {
     "{changed, plural, =0 {No issue} one {# issue} other {# issues}} will change{skipped, plural, =0 {} one {, # will be skipped} other {, # will be skipped}}.",
   "preview.label": "Issues in this change",
   "preview.nothing": "None of the issues would change.",
-  "many-changes.note-type-not-used": "{type} is not used in {project}. The issue keeps it.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
@@ -681,6 +680,11 @@ export const messages = {
     "How many old files of the server log are kept next to the current one. Older ones are deleted.",
   "error.handle.changed-lately":
     "You changed your handle only a short time ago. You can change it again later.",
+  "projects.offered-in-created-organization": "Created for the whole organization.",
+  "projects.offered-in-created-project":
+    "Created in {project}. Offered there and below until a line says otherwise.",
+  "issue-types.project-title": "Issue types of {project}",
+  "labels.project-title": "Labels of {project}",
   "error.mail.insecure":
     "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
 } as const;

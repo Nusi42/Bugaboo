@@ -27,6 +27,7 @@ export const messages = {
   "many-changes.line-changes": "{field}: {after}",
   "many-changes.line-relation": "This issue · {name} · {issue}",
   "many-changes.line-delete": "Is deleted",
+  "many-changes.note-type-not-used": "{type} is not used in {project}. The issue keeps it.",
   "many-changes.background-note":
     "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
   "many-changes.result-done":

@@ -213,6 +213,7 @@ export interface MessageArguments {
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
   "issue-types.created": { name: string | number };
+  "issue-types.project-title": { project: string | number };
   "issues.add-field": { field: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
@@ -242,6 +243,7 @@ export interface MessageArguments {
   "labels.group-created": { name: string | number };
   "labels.label-created": { name: string | number };
   "labels.preview-line": { after: string | number; before: string | number };
+  "labels.project-title": { project: string | number };
   "labels.tag-in-projects": { count: number };
   "labels.take-off": { name: string | number };
   "labels.take-project-off": { name: string | number };
@@ -343,6 +345,11 @@ export interface MessageArguments {
   "projects.move-dialog-title": { name: string | number };
   "projects.move-text": { name: string | number };
   "projects.moved": { name: string | number };
+  "projects.offer-follow-button-for": { name: string | number };
+  "projects.offer-line": { name: string | number; state: string | number };
+  "projects.offered-in-created-project": { project: string | number };
+  "projects.offered-in-picked": { place: string | number };
+  "projects.offered-in-take-away-for": { place: string | number };
   "projects.preview-summary": { changed: number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };
