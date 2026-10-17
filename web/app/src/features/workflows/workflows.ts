@@ -33,7 +33,7 @@ export function useWorkflowEditor({ project, issueType }: EditorQuery) {
   });
 }
 
-/** *Customize*: makes the workflow of the place as a copy of the one that counts there. */
+/** *Customize*: creates the workflow of the place as a copy of the one that counts there. */
 export function useCreateWorkflow({ project, issueType }: EditorQuery) {
   return useMutation({
     mutationFn: async () =>

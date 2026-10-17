@@ -65,7 +65,7 @@ pub enum Problem {
     SameStatus,
     /// Two status changes have the same start and end.
     ChangeTwice,
-    /// A rule names a built-in field that a rule cannot ask about.
+    /// A rule names a built-in field that a rule cannot ask about, or asks for the description.
     FieldNotAllowed,
 }
 
@@ -78,6 +78,14 @@ pub const fn rule_may_name(field: FieldKey) -> bool {
         FieldKey::Own(_) => true,
         FieldKey::BuiltIn(built_in) => matches!(built_in, Field::Description | Field::AssignedTo),
     }
+}
+
+/// Whether a rule may ask for the field in the small form of a status change. The description is
+/// long text with a lock of its own, which a status change cannot carry, so asking for it could
+/// never be met (it can still be required to be filled in).
+#[must_use]
+pub const fn ask_may_name(field: FieldKey) -> bool {
+    rule_may_name(field) && !matches!(field, FieldKey::BuiltIn(Field::Description))
 }
 
 fn name_problem(name: &str) -> Option<Problem> {
@@ -322,7 +330,9 @@ impl StatusRules {
         {
             return Err(Problem::TooBig);
         }
-        if named.iter().any(|field| !rule_may_name(*field)) {
+        if named.iter().any(|field| !rule_may_name(*field))
+            || self.ask_for.iter().any(|field| !ask_may_name(*field))
+        {
             return Err(Problem::FieldNotAllowed);
         }
         Ok(())

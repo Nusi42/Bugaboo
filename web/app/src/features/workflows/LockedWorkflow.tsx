@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
-import { EditLockNotices, editedThing, useEditLock } from "../../shared/editing/index.ts";
+import { editedThing, LockedEditor } from "../../shared/editing/index.ts";
 import type { Draft } from "./draft-model.ts";
 import { DraftWorkflow } from "./DraftWorkflow.tsx";
 import { whatOf, type WorkflowEditor } from "./workflows.ts";
@@ -20,27 +20,22 @@ export function LockedWorkflow({
   readonly editor: WorkflowEditor;
   readonly workflow: string;
 }) {
-  const lock = useEditLock(whatOf(workflow));
   const [publishedAt, setPublishedAt] = useState<number | undefined>();
   const [left, setLeft] = useState<Draft | undefined>();
   const version = editor.workflow?.version;
   return (
-    <>
-      <EditLockNotices
-        lock={lock}
-        thing={editedThing.workflow}
-        lost={t("workflows.lost")}
-        taking={t("workflows.taking")}
-      />
-      <DraftWorkflow
-        key={version}
-        editor={editor}
-        lock={lock}
-        published={publishedAt !== undefined && publishedAt === version}
-        onPublished={setPublishedAt}
-        left={left}
-        onLeft={setLeft}
-      />
-    </>
+    <LockedEditor what={whatOf(workflow)} thing={editedThing.workflow} lost={t("workflows.lost")}>
+      {(lock) => (
+        <DraftWorkflow
+          key={version}
+          editor={editor}
+          lock={lock}
+          published={publishedAt !== undefined && publishedAt === version}
+          onPublished={setPublishedAt}
+          left={left}
+          onLeft={setLeft}
+        />
+      )}
+    </LockedEditor>
   );
 }

@@ -1,3 +1,5 @@
+import type { EditWhat } from "@bugaboo/api-client";
+
 import { queryClient } from "./query-client.ts";
 
 /**
@@ -50,12 +52,10 @@ export const queryKeys = {
   layouts: {
     /** The draft that a refused save of a layout kept, by layout. */
     draft: (layout: string) => ["layouts", "draft", layout],
-    /** Who is editing a layout now. */
-    editing: (layout: string) => ["layouts", "editing", layout],
   },
-  workflows: {
-    /** Who is editing a workflow now. */
-    editing: (workflow: string) => ["workflows", "editing", workflow],
+  editing: {
+    /** Who is editing a thing now (a layout, a workflow): what its edit lock is about. */
+    now: (what: EditWhat) => ["editing", "now", what.record.kind, what.record.id, what.part],
   },
   issueTypes: {
     all: ["issue-types"],
@@ -103,7 +103,7 @@ export const queryKeys = {
     lists: () => ["issues", "list"],
     list: (project: string) => ["issues", "list", project],
     one: (address: string) => ["issues", "one", address],
-    statuses: (project: string) => ["issues", "statuses", project],
+    statusChanges: (project: string) => ["issues", "status-changes", project],
     people: (project: string, search: string, field = "", issue = "", issueType = "") => [
       "issues",
       "assignable-people",
@@ -216,7 +216,7 @@ const WORKFLOW_READS = [
   "/api/v1/projects/{project}/statuses",
 ] as const;
 
-/** A workflow was made, published or taken away: the editor and what issues offer are read again. */
+/** A workflow was created, published or taken away: the editor and what issues offer are read again. */
 export function refreshWorkflows(): void {
   refreshReads(WORKFLOW_READS);
   refreshIssues();

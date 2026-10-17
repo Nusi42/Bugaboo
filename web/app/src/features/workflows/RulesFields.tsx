@@ -12,9 +12,6 @@ export interface RulesFieldsProps {
   readonly onChange: (rules: ChangeRules) => void;
 }
 
-/** The field that is asked for in a small form can not be the description: long text has a lock of its own. */
-const notAsked = "description";
-
 /** A list of named things with a box each; ticking changes the list. */
 function Boxes({
   legend,
@@ -95,6 +92,7 @@ export function RulesFields(props: RulesFieldsProps) {
   const named: readonly RuleFieldChoice[] = editor.fields.map((each) => ({
     id: each.field,
     name: fieldNameOf({ code: each.field, name: each.name }),
+    askable: each.askable,
   }));
   return (
     <>
@@ -112,7 +110,7 @@ export function RulesFields(props: RulesFieldsProps) {
       <Boxes
         legend={t("workflows.ask-for")}
         help={t("workflows.ask-for-help")}
-        items={named.filter((each) => each.id !== notAsked)}
+        items={named.filter((each) => each.askable)}
         chosen={rules.askFor}
         onChange={(askFor) => {
           onChange({ ...rules, askFor });

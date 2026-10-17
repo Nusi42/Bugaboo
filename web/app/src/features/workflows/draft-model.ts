@@ -1,13 +1,14 @@
 import type { components, Schema } from "@bugaboo/api-client";
 
+import { newId } from "./new-ids.ts";
 import { noRules, rulesBodyOf, rulesOf, sameRules, type ChangeRules } from "./rules-model.ts";
 
 /** The status group of a status. */
 export type StatusGroupWord = Schema<"StatusRef">["group"];
 
-/** A status in the draft. A new status has no key yet: the server makes it from the name. */
+/** A status in the draft. A new status has no key yet: the server creates it from the name. */
 export interface DraftStatus {
-  /** Names the status in the draft: the key it has, or a made-up one while it is new. */
+  /** Names the status in the draft: the key it has, or an invented one while it is new. */
   readonly id: string;
   readonly key: string | null;
   readonly name: string;
@@ -30,14 +31,6 @@ export interface Draft {
   /** In order; the first is where a new issue starts. */
   readonly statuses: readonly DraftStatus[];
   readonly changes: readonly DraftChange[];
-}
-
-let counter = 0;
-
-/** A made-up ID for something new in the draft. */
-function nextId(): string {
-  counter += 1;
-  return `new-${counter}`;
 }
 
 /** The draft that starts from what the editor shows. */
@@ -64,6 +57,11 @@ export function draftOf(editor: Schema<"WorkflowEditorBody">): Draft {
 function nameInBody(draft: Draft, id: string): string {
   const status = draft.statuses.find((each) => each.id === id);
   return status === undefined ? id : (status.key ?? status.name);
+}
+
+/** The name of a status of the draft by its ID in the draft. */
+export function nameOf(draft: Draft, id: string): string {
+  return draft.statuses.find((each) => each.id === id)?.name ?? id;
 }
 
 /** The statuses and status changes as *Publish* takes them. */
@@ -99,7 +97,7 @@ function sameChange(
   );
 }
 
-/** Whether two drafts say the same: the made-up IDs do not count. */
+/** Whether two drafts say the same: the invented IDs do not count. */
 export function sameDraft(a: Draft, b: Draft): boolean {
   return (
     a.name === b.name &&
@@ -128,7 +126,7 @@ export function addStatus(draft: Draft, name: string, group: StatusGroupWord): D
   if (trimmed === "" || taken(draft, trimmed)) {
     return draft;
   }
-  const added: DraftStatus = { id: nextId(), key: null, name: trimmed, group };
+  const added: DraftStatus = { id: newId("status"), key: null, name: trimmed, group };
   return { ...draft, statuses: [...draft.statuses, added] };
 }
 
@@ -188,7 +186,7 @@ export function addChange(draft: Draft, from: string, to: string, button: string
   if (words === "" || from === to || there) {
     return draft;
   }
-  const added: DraftChange = { id: nextId(), from, to, button: words, rules: noRules };
+  const added: DraftChange = { id: newId("change"), from, to, button: words, rules: noRules };
   return { ...draft, changes: [...draft.changes, added] };
 }
 

@@ -232,12 +232,37 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// Whether the workflow of the issue has the status change that was chosen, with its words;
+    /// a change that names no words is any change to the status.
+    async fn has_chosen_change(
+        &self,
+        change: &ManyChange,
+        issue: &Issue,
+    ) -> Result<bool, AppError> {
+        let (Some(status), Some(button)) = (&change.status, &change.status_button) else {
+            return Ok(true);
+        };
+        if *status == issue.status {
+            return Ok(true);
+        }
+        let chain = self.chain_of(issue.project).await?;
+        let workflow = self
+            .workflow_in_force(&chain, Some(issue.issue_type))
+            .await?;
+        Ok(workflow
+            .change(&issue.status, status)
+            .is_some_and(|each| each.button == *button))
+    }
+
     async fn judge_change(
         &self,
         selection: &Selection<'_>,
         change: &ManyChange,
         issue: &Issue,
     ) -> Result<Judged, AppError> {
+        if !self.has_chosen_change(change, issue).await? {
+            return Ok(Judged::Skip(SkipReason::Workflow));
+        }
         let asked = ChangeIssue {
             session_token: selection.token.to_owned(),
             issue: issue.id.to_string(),

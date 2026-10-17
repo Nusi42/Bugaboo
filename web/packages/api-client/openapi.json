@@ -24329,7 +24329,7 @@
           },
           "issues": {
             "type": "integer",
-            "description": "All the live issues the workflow governs that are in it, also the ones the person does not\nsee.",
+            "description": "How many live issues the workflow governs that are in it, also the ones the person does not\nsee.",
             "minimum": 0
           },
           "named": {
@@ -26816,6 +26816,10 @@
           "status": {
             "type": ["string", "null"],
             "description": "The key of a new status. Each issue is judged by its own workflow, and an issue whose\nworkflow does not allow the change is skipped."
+          },
+          "status_button": {
+            "type": ["string", "null"],
+            "description": "The words of the status change that was chosen to get to `status` (*Start working*). An\nissue whose workflow has no such change from its status is skipped, also when it has\nanother change to that status."
           }
         }
       },
@@ -27331,6 +27335,26 @@
           "name": {
             "type": "string",
             "description": "The name."
+          }
+        }
+      },
+      "NeedKind": {
+        "type": "string",
+        "description": "What kind of input a field of a status change is asked for with.",
+        "enum": ["description", "assigned-to", "own"]
+      },
+      "NeededFieldBody": {
+        "type": "object",
+        "description": "A field a status change still needs.",
+        "required": ["field", "kind"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NeedKind",
+            "description": "What kind of input it needs."
           }
         }
       },
@@ -30552,7 +30576,7 @@
       "PublishPreviewAnswer": {
         "type": "object",
         "description": "What publishing a workflow would drop.",
-        "required": ["dropped", "limit"],
+        "required": ["dropped", "limit", "too_many"],
         "properties": {
           "dropped": {
             "type": "array",
@@ -30565,6 +30589,10 @@
             "type": "integer",
             "description": "The most issues one publish moves; a publish that would move more is refused.",
             "minimum": 0
+          },
+          "too_many": {
+            "type": "boolean",
+            "description": "There are more issues than that in the statuses that would go. They are then not judged or\nnamed, and the counts are not complete."
           }
         }
       },
@@ -31232,8 +31260,12 @@
       "RuleFieldBody": {
         "type": "object",
         "description": "A field a rule can name.",
-        "required": ["field"],
+        "required": ["field", "askable"],
         "properties": {
+          "askable": {
+            "type": "boolean",
+            "description": "Whether a rule may ask for the field in the small form of a status change; the description\ncan only be required to be filled in."
+          },
           "field": {
             "type": "string",
             "description": "The key of the field: the word of a built-in field or the ID of an own field."
@@ -31962,9 +31994,9 @@
           "needs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FieldKey"
+              "$ref": "#/components/schemas/NeededFieldBody"
             },
-            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), by their keys. Empty when it needs none."
+            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), each with the kind of input it needs. Empty when it needs\nnone."
           },
           "to": {
             "$ref": "#/components/schemas/StatusRef",
@@ -32007,7 +32039,7 @@
           },
           "to": {
             "type": "string",
-            "description": "The key of the status of the new workflow the issues go to."
+            "description": "The status of the new workflow the issues go to: its key, or its name when it is new."
           }
         }
       },

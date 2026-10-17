@@ -33,16 +33,20 @@ export async function openSimpleToChange(page: Page): Promise<void> {
 /** Adds the status *Testing* and the status change *Send to testing* from *In progress* to the draft. */
 export async function addSendToTesting(page: Page): Promise<void> {
   await page.getByLabel(t("workflows.new-status"), { exact: true }).fill("Testing");
-  await page.getByRole("button", { name: t("workflows.add-status"), exact: true }).click();
+  await page.getByRole("button", { name: t("workflows.create-status"), exact: true }).click();
   await expect(blockOf(page, "Testing")).toBeVisible();
   const progress = page.getByRole("group", {
-    name: t("workflows.add-change", { from: "In progress" }),
+    name: t("workflows.create-change", { from: "In progress" }),
   });
-  await progress.getByLabel(t("workflows.add-change-to"), { exact: true }).selectOption("Testing");
   await progress
-    .getByLabel(t("workflows.add-change-button"), { exact: true })
+    .getByLabel(t("workflows.create-change-to"), { exact: true })
+    .selectOption("Testing");
+  await progress
+    .getByLabel(t("workflows.create-change-button"), { exact: true })
     .fill("Send to testing");
-  await progress.getByRole("button", { name: t("workflows.add-change-do"), exact: true }).click();
+  await progress
+    .getByRole("button", { name: t("workflows.create-change-do"), exact: true })
+    .click();
 }
 
 /** Opens the rules of *Send to testing*, asks for *Found in version* to be filled in, and closes them. */

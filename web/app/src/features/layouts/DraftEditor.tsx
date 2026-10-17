@@ -53,7 +53,6 @@ export function DraftEditor({ editor, lock, saved, onSaved }: DraftEditorProps) 
           onSave={state.save}
           onDiscard={state.discard}
           saveLabel={t("layouts.save")}
-          discardLabel={t("layouts.draft-drop")}
         />
       </fieldset>
     </>

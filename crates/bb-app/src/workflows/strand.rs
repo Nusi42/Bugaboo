@@ -198,32 +198,48 @@ pub(crate) async fn ensure_written_status_in<S: AuthStore>(
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The live issues that this workflow governs and that are in one of these statuses, found
-    /// from the places the workflow is used at and no others.
+    /// from the places the workflow is used at and no others. It reads a page at a time and stops
+    /// once it has found more than `cap` of them: the answer then holds `cap` and one more, which
+    /// is all a caller that refuses a bigger answer needs to know.
     pub(crate) async fn governed_issues(
         &self,
         directory: &WorkflowDirectory,
         workflow: WorkflowId,
         keys: &[StatusKey],
+        cap: usize,
     ) -> Result<Vec<Issue>, AppError> {
         let failed = |error| internal::<S>(&error);
         let tree = Tree::of(&self.store().project_tree().await.map_err(failed)?);
         let reach = Reach::of(&places_of(directory.uses(), workflow), &tree);
-        let found = self
-            .store()
-            .live_issues(
-                reach.projects,
-                reach.issue_types,
-                StatusFilter::In(keys.to_vec()),
-            )
-            .await
-            .map_err(failed)?;
-        Ok(found
-            .into_iter()
-            .filter(|issue| {
+        let mut governed: Vec<Issue> = Vec::new();
+        let mut after = None;
+        loop {
+            let page = self
+                .store()
+                .live_issues_after(
+                    reach.projects.clone(),
+                    reach.issue_types.clone(),
+                    StatusFilter::In(keys.to_vec()),
+                    after,
+                    cap + 1,
+                )
+                .await
+                .map_err(failed)?;
+            let last = page.last().map(|issue| issue.id);
+            let full = page.len() > cap;
+            governed.extend(page.into_iter().filter(|issue| {
                 let chain = tree.chain(issue.project).unwrap_or_default();
                 directory.id_in_force(&chain, Some(issue.issue_type)) == Some(workflow)
-            })
-            .collect())
+            }));
+            if governed.len() > cap {
+                governed.truncate(cap + 1);
+                return Ok(governed);
+            }
+            match last {
+                Some(last) if full => after = Some(last),
+                _ => return Ok(governed),
+            }
+        }
     }
 }
 

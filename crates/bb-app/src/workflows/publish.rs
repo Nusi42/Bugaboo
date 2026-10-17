@@ -2,19 +2,21 @@
 //! now on.
 //!
 //! The workflow is saved under the edit lock the person holds, on the version they looked at. When
-//! it drops a status that issues are still in, the person says where those issues go. Every such
-//! move is judged first, on the same path as the preview of a change to many issues and in the
-//! workflow as it will be; if any issue would be skipped, nothing is published. The moves are made
-//! inside the change that saves the workflow, each with its history, and the last thing the change
-//! does is to check that no live issue is left in a status its workflow does not have
-//! (`strand.rs`). So *Publish* either does all of it or none.
+//! it drops a status that issues are still in, the person says where those issues go: any status
+//! of the new workflow, also a new one named like a status change names it (ADR-0031 amendments 2
+//! and 11). A move is no status change and no rule of one applies to it; it is judged with the
+//! rights of the person who publishes (`mover_of`), and if any issue would be skipped, or there are
+//! more than one change to many issues takes, nothing is published. The moves are made inside the
+//! change that saves the workflow, each with its history, and the last thing the change does is to
+//! check that no live issue is left in a status its workflow does not have (`strand.rs`). So
+//! *Publish* either does all of it or none.
 
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
@@ -70,8 +72,16 @@ pub(super) enum Mover {
 pub(super) struct Dropping {
     /// The statuses that are dropped.
     pub(super) statuses: Vec<StatusKey>,
-    /// The issues in them.
+    /// The issues in them: at most one change to many issues takes, and one more when there are
+    /// more of them than that.
     pub(super) issues: Vec<Issue>,
+}
+
+impl Dropping {
+    /// Whether there are more issues than one change to many issues takes, so nothing is judged.
+    pub(super) fn too_many(&self) -> bool {
+        self.issues.len() > MANY_CHANGES_ISSUES_MAX
+    }
 }
 
 /// An issue that goes to another status because the status it was in is dropped.
@@ -110,26 +120,15 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .change(&change.from, &change.to)
                 .is_some_and(|each| each.rules == change.rules);
             for field in change.rules.fields() {
-                if let FieldKey::Own(id) = field {
-                    let for_issues = definitions.iter().any(|each| {
-                        each.field.id == id && each.field.applies_to == FieldFor::Issues
-                    });
-                    if !for_issues {
-                        return Err(ErrorCode::FieldNotHere.into());
-                    }
-                }
-                if !already && held.field_level_for(None, field) < FieldLevel::CanSee {
+                // A field that does not exist for issues and a field the person may not see get
+                // the same answer, so the answer cannot be used to find out which it is.
+                let unknown = matches!(field, FieldKey::Own(id) if !definitions.iter().any(|each| {
+                    each.field.id == id && each.field.applies_to == FieldFor::Issues
+                }));
+                let hidden = held.field_level_for(None, field) < FieldLevel::CanSee;
+                if !already && (unknown || hidden) {
                     return Err(ErrorCode::WorkflowInvalid.into());
                 }
-            }
-            // The description is long text with a lock of its own: a status change cannot carry it,
-            // so asking for it in the small form could never be met (M4 WP-07).
-            let asks_description = change
-                .rules
-                .ask_for
-                .contains(&FieldKey::BuiltIn(Field::Description));
-            if !already && asks_description {
-                return Err(ErrorCode::WorkflowInvalid.into());
             }
             let groups = &change.rules.who.groups;
             if !already && groups.iter().any(|group| !known_groups.contains(group)) {
@@ -175,20 +174,25 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let directory = self.workflow_directory().await?;
         let issues = self
-            .governed_issues(&directory, stored.workflow.id, &statuses)
+            .governed_issues(
+                &directory,
+                stored.workflow.id,
+                &statuses,
+                MANY_CHANGES_ISSUES_MAX,
+            )
             .await?;
         Ok(Dropping { statuses, issues })
     }
 
-    /// Whether the person who publishes may move an issue: they see it, may change it, and may
-    /// change its status. The one judge of a move, with no rule of a status change: the issue has
-    /// no status change into the new workflow, and the person chose where it goes.
+    /// Whether the person who publishes may move an issue: they see it and may change its status
+    /// (`StatusCheck::may_change_status`, which holds the right to change the issue). The one judge
+    /// of a move in *Publish* and its preview, with no rule of a status change: the issue has no
+    /// status change into the new workflow, and the person chose where it goes.
     pub(super) async fn mover_of(&self, actor: &Actor, issue: &Issue) -> Result<Mover, AppError> {
         let Some(held) = self.seen_in(actor, issue, Where::Live).await? else {
             return Ok(Mover::Unseen);
         };
-        let may = held.may_change_issue(issue.reported_by)
-            && StatusCheck::may_change_status(&held, issue.issue_type, issue.reported_by);
+        let may = StatusCheck::may_change_status(&held, issue.issue_type, issue.reported_by);
         Ok(if may { Mover::Can } else { Mover::Blocked })
     }
 
@@ -202,28 +206,29 @@ impl<S: AuthStore> Ctx<'_, S> {
         content: &WorkflowContent,
         asked: &[StatusMoveInput],
     ) -> Result<Vec<Moving>, AppError> {
-        let Dropping {
-            statuses: dropped,
-            issues,
-        } = self.dropping(stored, content).await?;
-        // A move goes to a status the new workflow has, from a status it drops.
-        let sensible = asked
-            .iter()
-            .all(|each| dropped.contains(&each.from) && content.status(&each.to).is_some());
-        if !sensible {
-            return Err(ErrorCode::InvalidRequest.into());
+        let dropping = self.dropping(stored, content).await?;
+        // A move goes to a status the new workflow has, named by its key or, when it is new, by
+        // its name, from a status it drops.
+        let mut targets: Vec<(StatusKey, StatusKey)> = Vec::new();
+        for each in asked {
+            match target_of(stored, content, &each.to) {
+                Some(to) if dropping.statuses.contains(&each.from) => {
+                    targets.push((each.from.clone(), to));
+                }
+                _ => return Err(ErrorCode::InvalidRequest.into()),
+            }
         }
         // One publish moves no more issues than one change to many issues takes (the job route of
         // a bigger move is a follow-up).
-        if issues.len() > MANY_CHANGES_ISSUES_MAX {
+        if dropping.too_many() {
             return Err(ErrorCode::WorkflowStatusInUse.into());
         }
-        let mut planned = Vec::with_capacity(issues.len());
-        for issue in issues {
-            let target = asked
+        let mut planned = Vec::with_capacity(dropping.issues.len());
+        for issue in dropping.issues {
+            let target = targets
                 .iter()
-                .find(|each| each.from == issue.status)
-                .map(|each| each.to.clone())
+                .find(|(from, _)| *from == issue.status)
+                .map(|(_, to)| to.clone())
                 .ok_or(AppError::Refused(ErrorCode::WorkflowStatusInUse))?;
             let group = content
                 .status(&target)
@@ -240,6 +245,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(planned)
     }
+}
+
+/// The status of the new workflow that a move names: by its key, or, for a status that is new in
+/// the draft, by its name (ADR-0031 amendment 2).
+fn target_of(stored: &StoredWorkflow, content: &WorkflowContent, named: &str) -> Option<StatusKey> {
+    if let Ok(key) = StatusKey::new(named)
+        && content.status(&key).is_some()
+    {
+        return Some(key);
+    }
+    content
+        .statuses
+        .iter()
+        .find(|each| stored.content.status(&each.key).is_none() && each.name == named)
+        .map(|each| each.key.clone())
 }
 
 /// Carries out the moves of the issues of the dropped statuses inside the change, each with its history.

@@ -19,4 +19,5 @@ export function registerRelationBlocks(): void {
     component: RelatedIssuesBlock,
   });
 }
+export { IssueRefLine } from "./IssueRefLine.tsx";
 export { relationChoices, type RelationChoice } from "./relations.ts";

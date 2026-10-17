@@ -9,6 +9,7 @@ use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
 use bb_core::id::{GroupId, RoleId};
 use bb_core::issue::StatusGroup;
+use bb_core::workflow::ask_may_name;
 use bb_core::workflow::judge::Why;
 use bb_core::workflow::{
     ChangeDraft, Condition, StatusDraft, StatusKey, StatusRules, Test, WhoCan,
@@ -210,13 +211,13 @@ impl ChangeDraftBody {
 pub(crate) struct StatusMoveBody {
     /// The key of the status that is dropped.
     from: String,
-    /// The key of the status of the new workflow the issues go to.
+    /// The status of the new workflow the issues go to: its key, or its name when it is new.
     to: String,
 }
 
 impl StatusMoveBody {
-    pub(super) fn parts(&self) -> Result<(StatusKey, StatusKey), ApiError> {
-        Ok((body_id(&self.from)?, body_id(&self.to)?))
+    pub(super) fn parts(&self) -> Result<(StatusKey, String), ApiError> {
+        Ok((body_id(&self.from)?, self.to.clone()))
     }
 }
 
@@ -253,7 +254,7 @@ pub(crate) struct PublishPreviewBody {
 pub(crate) struct DroppedStatusBody {
     /// The status, as the stored workflow names it.
     status: StatusRef,
-    /// All the live issues the workflow governs that are in it, also the ones the person does not
+    /// How many live issues the workflow governs that are in it, also the ones the person does not
     /// see.
     issues: usize,
     /// Some of the issues the person sees, as a list shows them.
@@ -272,6 +273,9 @@ pub(crate) struct PublishPreviewAnswer {
     dropped: Vec<DroppedStatusBody>,
     /// The most issues one publish moves; a publish that would move more is refused.
     limit: usize,
+    /// There are more issues than that in the statuses that would go. They are then not judged or
+    /// named, and the counts are not complete.
+    too_many: bool,
 }
 
 impl Masked for PublishPreviewAnswer {}
@@ -280,6 +284,7 @@ impl From<&PublishPreview> for PublishPreviewAnswer {
     fn from(preview: &PublishPreview) -> Self {
         Self {
             limit: preview.limit,
+            too_many: preview.too_many,
             dropped: preview
                 .dropped
                 .iter()
@@ -371,6 +376,9 @@ pub(crate) struct RuleFieldBody {
     field: String,
     /// The name of an own field; a built-in field is named by its word.
     name: Option<String>,
+    /// Whether a rule may ask for the field in the small form of a status change; the description
+    /// can only be required to be filled in.
+    askable: bool,
 }
 
 impl From<&RuleField> for RuleFieldBody {
@@ -378,6 +386,7 @@ impl From<&RuleField> for RuleFieldBody {
         Self {
             field: field.field.code().into_owned(),
             name: field.name.clone(),
+            askable: ask_may_name(field.field),
         }
     }
 }

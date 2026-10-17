@@ -11,7 +11,7 @@ export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
 export { issueCells } from "./issue-cells.tsx";
 export { priorityChoices } from "./issue-choices.ts";
 export { useProjectStatusChanges } from "./use-project-status-changes.ts";
-export { choiceIdOf, statusKeyOfChoice, type ProjectChange } from "./status-choices.ts";
+export { choiceIdOf, choiceLabelOf, type ProjectChange } from "./status-choices.ts";
 export { versionCounted } from "./issue-requests.ts";
 export type { SaveLongText } from "./use-description.ts";
 export {

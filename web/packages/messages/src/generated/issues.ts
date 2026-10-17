@@ -86,6 +86,7 @@ export const messages = {
   "issues.selected": "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
   "issues.clear-selection": "Clear the ticks",
   "issues.changed-own": "{count, plural, one {# field changed.} other {# fields changed.}}",
+  "many-changes.change-and-status": "{button} (to {status})",
   "layouts.customize-form": "Customize this form",
 } as const;
 

@@ -3,7 +3,7 @@ import { StatusButton, StatusMenu, partOf, part, type StatusGroup } from "@bugab
 import { useState } from "react";
 
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
-import { needsAsking, type OfferedChange } from "./ask-for.ts";
+import { statusActions, type OfferedChange } from "./ask-for.ts";
 import { AskFor } from "./AskFor.tsx";
 import { openStatusMenu, statusId } from "./bar-targets.ts";
 import { readOnlyReason } from "./read-only.ts";
@@ -52,17 +52,12 @@ export function StatusChange({ blocks, changes }: StatusChangeProps) {
         label={word}
         id={statusId}
         menuLabel={t("issues.change-status")}
-        choices={(issue.status_changes ?? []).map((change) => ({
-          id: `${change.to.key}:${change.button}`,
-          label: change.button,
-          onAction: () => {
-            if (needsAsking(change)) {
-              setAsking(change);
-            } else {
-              changes.change({ status: change.to });
-            }
+        choices={statusActions(issue.status_changes ?? [], {
+          ask: setAsking,
+          make: (change) => {
+            changes.change({ status: change.to });
           },
-        }))}
+        })}
       />
       {asking === null ? null : (
         <AskFor

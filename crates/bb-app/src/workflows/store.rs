@@ -5,7 +5,7 @@
 
 use crate::fields::FieldStore;
 use crate::store_macros::{queries, writes};
-use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::Issue;
 use bb_core::workflow::{
     StatusKey, StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse,
@@ -58,6 +58,15 @@ pub trait WorkflowStore: FieldStore + 'static {
             issue_types: Option<Vec<IssueTypeId>>,
             statuses: StatusFilter
         ) -> Vec<Issue> = live_issues_in;
+        /// The same, by ID, at most `limit` issues that come after the issue `after` (the first
+        /// ones when it is `None`): what a count that stops at a limit reads, a page at a time.
+        fn live_issues_after(
+            projects: Option<Vec<ProjectId>>,
+            issue_types: Option<Vec<IssueTypeId>>,
+            statuses: StatusFilter,
+            after: Option<IssueId>,
+            limit: usize
+        ) -> Vec<Issue> = live_issues_after_in;
     }
 
     writes! {

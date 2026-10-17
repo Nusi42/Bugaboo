@@ -4,7 +4,7 @@
 
 use bb_core::edit::EditLock;
 use bb_core::event::{EntityRef, RecordKind};
-use bb_core::id::{EditorId, IssueTypeId, LockToken};
+use bb_core::id::{EditorId, IssueTypeId, LockToken, UserId};
 use bb_core::technical::TechnicalName;
 use bb_core::workflow::{ChangeDraft, StatusDraft};
 use jiff::Timestamp;
@@ -46,6 +46,15 @@ pub(crate) fn slot_of(editor: &WorkflowEditor) -> Result<WorkflowSlot, String> {
 
 /// The lock Ada holds on a workflow, to the end of the century.
 pub(crate) fn lock_the_workflow(world: &World, slot: WorkflowSlot) -> LockToken {
+    lock_the_workflow_for(world, slot, world.admin.person.id)
+}
+
+/// The lock a person holds on a workflow, to the end of the century.
+pub(crate) fn lock_the_workflow_for(
+    world: &World,
+    slot: WorkflowSlot,
+    holder: UserId,
+) -> LockToken {
     let token = LockToken::from_random([7; 16]);
     world.store.lock().state.locks.push(EditLock {
         record: EntityRef {
@@ -53,7 +62,7 @@ pub(crate) fn lock_the_workflow(world: &World, slot: WorkflowSlot) -> LockToken 
             id: slot.id.into(),
         },
         part: TechnicalName::new(bb_core::edit::WORKFLOW_PART).unwrap_or_else(|_| unreachable!()),
-        holder: world.admin.person.id,
+        holder,
         editor: EditorId::from_random([6; 16]),
         token,
         taken_at: Timestamp::UNIX_EPOCH,
@@ -99,18 +108,29 @@ pub(crate) fn publish_of(
     })
 }
 
-/// Publishes the workflow of a project after `change` changed what the editor showed; the lock is
-/// taken for the test. Says what the person got.
+/// Publishes the workflow of a project as Ada after `change` changed what the editor showed; the
+/// lock is taken for the test. Says what the person got.
 pub(crate) async fn published_with(
     world: &World,
+    editor: &WorkflowEditor,
+    change: impl FnOnce(&mut PublishWorkflow),
+) -> Result<(), crate::auth::AppError> {
+    published_by(world, &world.admin, editor, change).await
+}
+
+/// The same for another person, who holds the lock.
+pub(crate) async fn published_by(
+    world: &World,
+    who: &crate::auth::Started,
     editor: &WorkflowEditor,
     change: impl FnOnce(&mut PublishWorkflow),
 ) -> Result<(), crate::auth::AppError> {
     let slot = editor
         .workflow
         .ok_or_else(|| crate::auth::AppError::Internal("no workflow of its own".into()))?;
-    let lock = lock_the_workflow(world, slot);
+    let lock = lock_the_workflow_for(world, slot, who.person.id);
     let mut sent = publish_of(world, editor, lock).map_err(crate::auth::AppError::Internal)?;
+    sent.session_token.clone_from(&who.session_token);
     change(&mut sent);
     publish_workflow(&world.ctx(), sent).await?;
     Ok(())

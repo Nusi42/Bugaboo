@@ -2,9 +2,9 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
-import { EditLockNotices, editedThing, useEditLock } from "../../shared/editing/index.ts";
-import { whatOf } from "./layouts.ts";
+import { editedThing, LockedEditor as Locked } from "../../shared/editing/index.ts";
 import { DraftEditor } from "./DraftEditor.tsx";
+import { whatOf } from "./layouts.ts";
 
 /**
  * The editor of a layout that exists: the lock is taken when it opens and let go when it closes.
@@ -19,24 +19,19 @@ export function LockedEditor({
   readonly editor: Schema<"LayoutEditorBody">;
   readonly layout: string;
 }) {
-  const lock = useEditLock(whatOf(layout));
   const [savedAt, setSavedAt] = useState<number | undefined>();
   const version = editor.layout?.version;
   return (
-    <>
-      <EditLockNotices
-        lock={lock}
-        thing={editedThing.layout}
-        lost={t("layouts.lost")}
-        taking={t("layouts.taking")}
-      />
-      <DraftEditor
-        key={version}
-        editor={editor}
-        lock={lock}
-        saved={savedAt !== undefined && savedAt === version}
-        onSaved={setSavedAt}
-      />
-    </>
+    <Locked what={whatOf(layout)} thing={editedThing.layout} lost={t("layouts.lost")}>
+      {(lock) => (
+        <DraftEditor
+          key={version}
+          editor={editor}
+          lock={lock}
+          saved={savedAt !== undefined && savedAt === version}
+          onSaved={setSavedAt}
+        />
+      )}
+    </Locked>
   );
 }

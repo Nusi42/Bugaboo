@@ -27,16 +27,16 @@ export function AddChange({ draft, from, edit }: AddChangeProps) {
   }
   return (
     <fieldset
-      aria-label={t("workflows.add-change", { from: from.name })}
+      aria-label={t("workflows.create-change", { from: from.name })}
       {...partOf(part.workflowAdd)}
     >
       <SelectField
-        label={t("workflows.add-change-to")}
+        label={t("workflows.create-change-to")}
         choices={free.map((status) => ({ value: status.id, label: status.name }))}
         value={target}
         onChange={setTo}
       />
-      <TextField label={t("workflows.add-change-button")} value={button} onChange={setButton} />
+      <TextField label={t("workflows.create-change-button")} value={button} onChange={setButton} />
       <Button
         isDisabled={noWords}
         onPress={() => {
@@ -44,7 +44,7 @@ export function AddChange({ draft, from, edit }: AddChangeProps) {
           setButton("");
         }}
       >
-        {t("workflows.add-change-do")}
+        {t("workflows.create-change-do")}
       </Button>
     </fieldset>
   );

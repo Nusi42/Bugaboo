@@ -6,8 +6,6 @@ export const messages = {
   "workflows.organization-title": "Workflows of the whole organization",
   "workflows.intro":
     "A workflow says which statuses an issue can have and which status changes are allowed between them. Change it as a draft, try it, and publish it when it is right.",
-  "workflows.type": "Issue type",
-  "workflows.type-all": "All issue types",
   "workflows.uses-organization": "These issues use the workflow {name} of the whole organization.",
   "workflows.uses-project": "These issues use the workflow {name} of {project}.",
   "workflows.uses-hidden": "These issues use the workflow {name}, which is set higher up.",
@@ -15,12 +13,6 @@ export const messages = {
   "workflows.uses-type": "It is only for {type}.",
   "workflows.customize-project": "Customize for {project}",
   "workflows.customize-organization": "Customize for the whole organization",
-  "workflows.use-inherited": "Use the inherited workflow again",
-  "workflows.use-inherited-title": "Use the inherited workflow again?",
-  "workflows.use-inherited-text":
-    "The workflow of this place is taken away, and the place follows its parent again. This is refused while an issue would be left in a status that the inherited workflow does not have. It cannot be undone.",
-  "workflows.delete-held":
-    "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
   "workflows.name": "Name of the workflow",
   "workflows.statuses": "Statuses",
   "workflows.statuses-help":
@@ -31,7 +23,7 @@ export const messages = {
   "workflows.status-up": "Move {name} up",
   "workflows.status-down": "Move {name} down",
   "workflows.status-remove": "Remove {name}",
-  "workflows.add-status": "Add a status",
+  "workflows.create-status": "Create status",
   "workflows.new-status": "Name of the new status",
   "workflows.new-status-group": "Group of the new status",
   "workflows.from": "From {name} you can go to:",
@@ -41,10 +33,10 @@ export const messages = {
   "workflows.rules-link": "Rules",
   "workflows.has-rules": "Has rules",
   "workflows.change-remove": "Remove the status change from {from} to {to}",
-  "workflows.add-change": "Add a status change from {from}",
-  "workflows.add-change-to": "Go to",
-  "workflows.add-change-button": "Button text",
-  "workflows.add-change-do": "Add status change",
+  "workflows.create-change": "Create a status change from {from}",
+  "workflows.create-change-to": "Go to",
+  "workflows.create-change-button": "Button text",
+  "workflows.create-change-do": "Create status change",
   "workflows.rules-title": "Rules for “{button}”",
   "workflows.rules-intro": "From {from} to {to}. A rule that is left empty does not apply.",
   "workflows.who": "Who can do it",
@@ -69,9 +61,7 @@ export const messages = {
     "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is long text with a lock of its own.",
   "workflows.rules-done": "Done",
   "workflows.publish": "Publish",
-  "workflows.draft-drop": "Throw my changes away",
   "workflows.draft-note": "These changes are a draft: they count only after you publish them.",
-  "workflows.taking": "Getting ready to edit…",
   "workflows.lost":
     "Not published yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to publish them.",
   "workflows.draft-changed":

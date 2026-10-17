@@ -41,13 +41,17 @@ test("wf_02 Publish asks where the issues of a removed status go and moves them"
   await expect(
     question.getByText(t("workflows.publish-where", { count: 1, status: "In progress" })),
   ).toBeVisible();
-  await expect(question.getByText(/^WEB-1 · /u)).toBeVisible();
+  await expect(question.getByText("WEB-1", { exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
+  // Any status of the new workflow can be chosen, not only the first.
+  await question
+    .getByLabel(t("workflows.publish-where", { count: 1, status: "In progress" }))
+    .selectOption({ label: "Done" });
   await question
     .getByRole("button", { name: t("workflows.publish-go", { count: 1 }), exact: true })
     .click();
   await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
-  await expect.poll(() => statusOf(admin, issue)).toBe("open");
+  await expect.poll(() => statusOf(admin, issue)).toBe("done");
   await admin.dispose();
 });
 

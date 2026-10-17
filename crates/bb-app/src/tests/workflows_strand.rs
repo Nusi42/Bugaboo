@@ -15,7 +15,7 @@ use super::scenarios::a_project;
 use super::scenarios_issues::an_issue;
 use super::scenarios_workflows::{a_workflow, published_with};
 use super::workflows::change;
-use super::workflows_rules::{assign, issue_in_progress, key, member, starting_role, status_of};
+use super::workflows_rules::{assign, key, member, starting_role, status_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::{HistoryQuery, HistoryWhat, history};
@@ -23,9 +23,8 @@ use crate::issues::{DeleteIssue, RestoreIssue, change_issue, delete_issue, resto
 use crate::projects::{MovePreviewQuery, MoveProject, move_project, preview_move};
 use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
 use crate::workflows::{
-    CreateWorkflow, DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict,
-    TryWorkflowQuery, UseWorkflow, WorkflowsQuery, create_workflow, delete_workflow, try_workflow,
-    use_workflow, workflows,
+    CreateWorkflow, DeleteWorkflow, TriedVerdict, TryWorkflowQuery, UseWorkflow, WorkflowsQuery,
+    create_workflow, delete_workflow, try_workflow, use_workflow, workflows,
 };
 
 const REVIEW: &str = "review";
@@ -131,41 +130,6 @@ async fn wf_02_taking_a_workflow_away_never_strands_an_issue() -> Outcome {
     // Once the issue is out of Review, the workflow can go.
     change_issue(&world.ctx(), change(&admin, &id.to_string(), 2, OPEN)?).await?;
     delete_workflow(&world.ctx(), away(slot)).await?;
-    Ok(())
-}
-
-#[tokio::test]
-async fn wf_02_publishing_whose_moves_would_be_skipped_publishes_nothing() -> Outcome {
-    let world = World::new().await?;
-    let project = a_project(&world, "ACME").await?;
-    let admin = world.admin.session_token.clone();
-    let id = issue_in_progress(&world, project).await?;
-    let editor = a_workflow(&world, "ACME").await?;
-    let without_progress = |sent: &mut PublishWorkflow, to: &str| {
-        sent.statuses
-            .retain(|each| each.key.as_ref() != Some(&key(IN_PROGRESS)));
-        sent.changes
-            .retain(|each| each.from != IN_PROGRESS && each.to != IN_PROGRESS);
-        sent.moves = vec![StatusMoveInput {
-            from: key(IN_PROGRESS),
-            to: key(to),
-        }];
-    };
-    // A move to a status the new workflow lacks makes no sense, and nothing is published for it.
-    let refused = published_with(&world, &editor, |sent| without_progress(sent, "nowhere"))
-        .await
-        .err();
-    assert_eq!(refused, Some(AppError::Refused(ErrorCode::InvalidRequest)));
-    assert_eq!(status_of(&world, &admin, id).await?, IN_PROGRESS);
-    let shown = a_workflow(&world, "ACME").await?;
-    assert!(
-        shown
-            .statuses
-            .iter()
-            .any(|each| each.key == key(IN_PROGRESS))
-    );
-    published_with(&world, &editor, |sent| without_progress(sent, OPEN)).await?;
-    assert_eq!(status_of(&world, &admin, id).await?, OPEN);
     Ok(())
 }
 

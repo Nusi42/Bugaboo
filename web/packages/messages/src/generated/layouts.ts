@@ -9,8 +9,6 @@ export const messages = {
   "layouts.intro":
     "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",
   "layouts.form": "Form",
-  "layouts.type": "Issue type",
-  "layouts.type-all": "All issue types",
   "layouts.not-customized":
     "This form has not been customized yet. It shows the usual fields to every role.",
   "layouts.inherited-organization": "This form uses the layout of the whole organization.",
@@ -18,10 +16,6 @@ export const messages = {
   "layouts.inherited-type": "It is only for {type}.",
   "layouts.customize-project": "Customize for {project}",
   "layouts.customize-organization": "Customize for the whole organization",
-  "layouts.use-inherited": "Reset to default",
-  "layouts.use-inherited-title": "Reset to default?",
-  "layouts.use-inherited-text":
-    "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
   "layouts.fixed": "The title and the issue type are always asked for.",
   "layouts.section": "Section {number}",
   "layouts.section-title": "Title of the section",
@@ -53,7 +47,6 @@ export const messages = {
   "layouts.save": "Save layout",
   "layouts.lost":
     "Not saved yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to save them.",
-  "layouts.taking": "Getting ready to edit…",
   "layouts.tabs": "Sections of the form",
   "layouts.tab-other": "Other",
   "layouts.section-named": "Section {number}: {title}",
@@ -63,9 +56,6 @@ export const messages = {
   "layouts.draft-changed":
     "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
   "layouts.draft-restore": "Put my changes back",
-  "layouts.draft-drop": "Throw my changes away",
-  "layouts.delete-held":
-    "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
   "layouts.roles-hidden": "Which roles see a field is set by people who may decide what roles see.",
 } as const;
 

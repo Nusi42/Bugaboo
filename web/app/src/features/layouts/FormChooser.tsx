@@ -2,11 +2,8 @@ import { layoutKindWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { SelectField, partOf, part } from "@bugaboo/ui";
 
-import { issueTypeLinesOf, useIssueTypes } from "../issue-types/index.ts";
+import { IssueTypeChooser } from "../issue-types/index.ts";
 import { kindName, type FormKind } from "./layouts.ts";
-
-/** What the list of issue types holds for all of them: the word of no type in particular. */
-const allTypes = "";
 
 export interface FormChooserProps {
   readonly kind: FormKind;
@@ -17,7 +14,6 @@ export interface FormChooserProps {
 
 /** Which layout is open: the form, and the issue type it is for. */
 export function FormChooser({ kind, type, onChange }: FormChooserProps) {
-  const types = issueTypeLinesOf(useIssueTypes().data?.pages);
   return (
     <div {...partOf(part.row)}>
       <SelectField
@@ -28,15 +24,10 @@ export function FormChooser({ kind, type, onChange }: FormChooserProps) {
           onChange(next, type);
         }}
       />
-      <SelectField
-        label={t("layouts.type")}
-        choices={[
-          { value: allTypes, label: t("layouts.type-all") },
-          ...types.map((each) => ({ value: each.id, label: each.name })),
-        ]}
-        value={type ?? allTypes}
+      <IssueTypeChooser
+        type={type}
         onChange={(next) => {
-          onChange(kind, next === allTypes ? undefined : next);
+          onChange(kind, next);
         }}
       />
     </div>

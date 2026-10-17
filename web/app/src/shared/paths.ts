@@ -110,21 +110,36 @@ export function issueTypeAddress(id: string): string {
 }
 
 /**
- * The address of the editor of a layout: of a project, or of the whole organization without one,
- * with the form and the issue type that are open (`?form=new-issue&type=<ID>`).
+ * The address of an editor of a place (layouts, workflows): of a project, or of the whole
+ * organization without one, with what is open in it as the search part (`?form=…&type=<ID>`);
+ * what is left out is not in the address.
  */
-export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen = {}): string {
-  const base =
-    shortName === undefined ? paths.layouts : addressInProject(paths.projectLayouts, shortName);
+function editorAddress(
+  organization: Path,
+  project: Extract<Path, `/p/${string}`>,
+  shortName: string | undefined,
+  open: Readonly<Record<string, string | undefined>>,
+): string {
+  const base = shortName === undefined ? organization : addressInProject(project, shortName);
   const query = new URLSearchParams();
-  if (open.form !== undefined) {
-    query.set("form", open.form);
-  }
-  if (open.type !== undefined) {
-    query.set("type", open.type);
+  for (const [name, value] of Object.entries(open)) {
+    if (value !== undefined) {
+      query.set(name, value);
+    }
   }
   const text = query.toString();
   return text === "" ? base : `${base}?${text}`;
+}
+
+/**
+ * The address of the editor of a layout, with the form and the issue type that are open
+ * (`?form=new-issue&type=<ID>`).
+ */
+export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen = {}): string {
+  return editorAddress(paths.layouts, paths.projectLayouts, shortName, {
+    form: open.form,
+    type: open.type,
+  });
 }
 
 /** What is open in the editor of layouts: the form (`issue-page`, `new-issue`) and the issue type's ID. */
@@ -138,14 +153,9 @@ export interface WorkflowsOpen {
   readonly type?: string | undefined;
 }
 
-/**
- * The address of the editor of workflows: of a project, or of the whole organization without one,
- * with the issue type that is open (`?type=<ID>`).
- */
+/** The address of the editor of workflows, with the issue type that is open (`?type=<ID>`). */
 export function workflowsAddress(shortName: string | undefined, open: WorkflowsOpen = {}): string {
-  const base =
-    shortName === undefined ? paths.workflows : addressInProject(paths.projectWorkflows, shortName);
-  return open.type === undefined ? base : `${base}?type=${encodeURIComponent(open.type)}`;
+  return editorAddress(paths.workflows, paths.projectWorkflows, shortName, { type: open.type });
 }
 
 /** The address of the page of an own field, `/settings/fields/<ID>`. */

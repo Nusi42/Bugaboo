@@ -33,7 +33,7 @@ export function KeptDraftNote({ left, onRestore, onDrop }: KeptDraftNoteProps) {
         >
           {t("workflows.draft-restore")}
         </Button>
-        <Button onPress={onDrop}>{t("workflows.draft-drop")}</Button>
+        <Button onPress={onDrop}>{t("editing.changes-drop")}</Button>
       </div>
     </Alert>
   );

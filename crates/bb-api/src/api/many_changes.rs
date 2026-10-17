@@ -46,6 +46,10 @@ pub(crate) struct ManyChangeBody {
     /// The key of a new status. Each issue is judged by its own workflow, and an issue whose
     /// workflow does not allow the change is skipped.
     status: Option<String>,
+    /// The words of the status change that was chosen to get to `status` (*Start working*). An
+    /// issue whose workflow has no such change from its status is skipped, also when it has
+    /// another change to that status.
+    status_button: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
     /// The IDs of the people the issues are assigned to from now on: all of them, not the ones to
@@ -95,6 +99,7 @@ impl ManyChangeActionBody {
             Self::Change { change } => ManyChangeAction::Change {
                 change: ManyChange {
                     status: status_in(change.status.as_deref())?,
+                    status_button: change.status_button,
                     priority: change.priority,
                     assigned_to: change
                         .assigned_to

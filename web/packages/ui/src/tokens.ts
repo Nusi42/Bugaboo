@@ -619,7 +619,6 @@ export const part = {
   drawingBoxName: "drawing-box.name",
   drawingBoxChanges: "drawing-box.changes",
   drawingArrows: "drawing-arrows",
-  drawingArrow: "drawing-arrow",
   drawingLine: "drawing-line",
   drawingHead: "drawing-head",
 } as const;
@@ -1063,7 +1062,6 @@ export const partWords = {
   "drawing-box.name": { variant: [], state: [] },
   "drawing-box.changes": { variant: [], state: [] },
   "drawing-arrows": { variant: [], state: [] },
-  "drawing-arrow": { variant: [], state: [] },
   "drawing-line": { variant: [], state: [] },
   "drawing-head": { variant: [], state: [] },
 } as const;

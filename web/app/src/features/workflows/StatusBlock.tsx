@@ -1,4 +1,3 @@
-import { statusGroupWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { IconButton, iconName, SelectField, TextField, partOf, part } from "@bugaboo/ui";
 
@@ -12,6 +11,7 @@ import {
   type DraftStatus,
   type StatusGroupWord,
 } from "./draft-model.ts";
+import { groupChoices } from "./status-groups.ts";
 import { AddChange } from "./AddChange.tsx";
 import { ChangeRow } from "./ChangeRow.tsx";
 import type { Edit } from "./use-draft-workflow.ts";
@@ -25,12 +25,6 @@ export interface StatusBlockProps {
   readonly last: boolean;
   readonly edit: Edit;
 }
-
-/** The status groups, by the words people read. */
-const groupChoices = statusGroupWords.map((word) => ({
-  value: word,
-  label: t(`status-group.${word}`),
-}));
 
 /** The name and group of a status, and the buttons that move or remove it. */
 function StatusHead({ status, first, last, draft, edit }: StatusBlockProps) {

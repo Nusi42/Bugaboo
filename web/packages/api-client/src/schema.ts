@@ -3986,7 +3986,7 @@ export interface components {
        */
       blocked: number;
       /**
-       * @description All the live issues the workflow governs that are in it, also the ones the person does not
+       * @description How many live issues the workflow governs that are in it, also the ones the person does not
        *     see.
        */
       issues: number;
@@ -5179,6 +5179,12 @@ export interface components {
        *     workflow does not allow the change is skipped.
        */
       status?: string | null;
+      /**
+       * @description The words of the status change that was chosen to get to `status` (*Start working*). An
+       *     issue whose workflow has no such change from its status is skipped, also when it has
+       *     another change to that status.
+       */
+      status_button?: string | null;
     };
     /** @description What a row of the preview says will happen to the issue. */
     ManyChangeDetailBody:
@@ -5400,6 +5406,18 @@ export interface components {
       id: string;
       /** @description The name. */
       name: string;
+    };
+    /**
+     * @description What kind of input a field of a status change is asked for with.
+     * @enum {string}
+     */
+    NeedKind: "description" | "assigned-to" | "own";
+    /** @description A field a status change still needs. */
+    NeededFieldBody: {
+      /** @description The key of the field: the word of a built-in field or the ID of an own field. */
+      field: string;
+      /** @description What kind of input it needs. */
+      kind: components["schemas"]["NeedKind"];
     };
     /** @description A comment to write. */
     NewCommentBody: {
@@ -6853,6 +6871,11 @@ export interface components {
       dropped: components["schemas"]["DroppedStatusBody"][];
       /** @description The most issues one publish moves; a publish that would move more is refused. */
       limit: number;
+      /**
+       * @description There are more issues than that in the statuses that would go. They are then not judged or
+       *     named, and the counts are not complete.
+       */
+      too_many: boolean;
     };
     /** @description What to preview: the workflow as *Publish* would send it. */
     PublishPreviewBody: {
@@ -7183,6 +7206,11 @@ export interface components {
     };
     /** @description A field a rule can name. */
     RuleFieldBody: {
+      /**
+       * @description Whether a rule may ask for the field in the small form of a status change; the description
+       *     can only be required to be filled in.
+       */
+      askable: boolean;
       /** @description The key of the field: the word of a built-in field or the ID of an own field. */
       field: string;
       /** @description The name of an own field; a built-in field is named by its word. */
@@ -7555,9 +7583,10 @@ export interface components {
       button: string;
       /**
        * @description The fields the change still needs before it can be made (*Must be filled in* fields that
-       *     are empty, and *Ask for* fields), by their keys. Empty when it needs none.
+       *     are empty, and *Ask for* fields), each with the kind of input it needs. Empty when it needs
+       *     none.
        */
-      needs: components["schemas"]["FieldKey"][];
+      needs: components["schemas"]["NeededFieldBody"][];
       /** @description The status it ends in. */
       to: components["schemas"]["StatusRef"];
     };
@@ -7582,7 +7611,7 @@ export interface components {
     StatusMoveBody: {
       /** @description The key of the status that is dropped. */
       from: string;
-      /** @description The key of the status of the new workflow the issues go to. */
+      /** @description The status of the new workflow the issues go to: its key, or its name when it is new. */
       to: string;
     };
     /** @description A status as it is shown: the browser keeps no list of statuses, it shows what the server sends. */

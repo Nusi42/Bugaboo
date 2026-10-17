@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { listText } from "../../shared/list-text.ts";
 import { PersonPicker } from "../access/index.ts";
 import { useTryIt, type Tried, type WorkflowEditor } from "./workflows.ts";
 
@@ -11,12 +12,12 @@ type Verdict = Tried["changes"][number];
 
 /** The fields of the editor by the names people read. */
 function namesOf(fields: WorkflowEditor["fields"], keys: readonly string[]): string {
-  return keys
-    .map((key) => {
+  return listText(
+    keys.map((key) => {
       const found = fields.find((each) => each.field === key);
       return fieldNameOf({ code: key, name: found?.name });
-    })
-    .join(", ");
+    }),
+  );
 }
 
 /** What the judge says about one status change, in a sentence. */

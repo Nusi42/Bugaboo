@@ -5,7 +5,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::workflows::{ProjectStatuses, ProjectStatusesQuery, StatusChangeView, StatusView};
-use bb_core::fields::FieldKey;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::issue::StatusGroup;
 use bb_core::workflow::StatusKey;
 use bb_policy::Masked;
@@ -65,8 +65,46 @@ pub(crate) struct StatusChangeRef {
     /// The text of the button.
     button: String,
     /// The fields the change still needs before it can be made (*Must be filled in* fields that
-    /// are empty, and *Ask for* fields), by their keys. Empty when it needs none.
-    needs: Vec<FieldKey>,
+    /// are empty, and *Ask for* fields), each with the kind of input it needs. Empty when it needs
+    /// none.
+    needs: Vec<NeededFieldBody>,
+}
+
+/// What kind of input a field of a status change is asked for with.
+#[derive(Serialize, ToSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum NeedKind {
+    /// The description: long text with a lock of its own, which a status change cannot carry.
+    Description,
+    /// The people the issue is assigned to.
+    AssignedTo,
+    /// An own field.
+    Own,
+}
+
+/// A field a status change still needs.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct NeededFieldBody {
+    /// The key of the field: the word of a built-in field or the ID of an own field.
+    field: String,
+    /// What kind of input it needs.
+    kind: NeedKind,
+}
+
+impl NeededFieldBody {
+    /// The need of a field; none for a built-in field a rule cannot name, which is never needed.
+    fn of(field: &FieldKey) -> Option<Self> {
+        let kind = match field {
+            FieldKey::Own(_) => NeedKind::Own,
+            FieldKey::BuiltIn(Field::Description) => NeedKind::Description,
+            FieldKey::BuiltIn(Field::AssignedTo) => NeedKind::AssignedTo,
+            FieldKey::BuiltIn(_) => return None,
+        };
+        Some(Self {
+            field: field.code().into_owned(),
+            kind,
+        })
+    }
 }
 
 impl From<&StatusChangeView> for StatusChangeRef {
@@ -74,7 +112,11 @@ impl From<&StatusChangeView> for StatusChangeRef {
         Self {
             to: StatusRef::from(&change.to),
             button: change.button.clone(),
-            needs: change.needs.clone(),
+            needs: change
+                .needs
+                .iter()
+                .filter_map(NeededFieldBody::of)
+                .collect(),
         }
     }
 }

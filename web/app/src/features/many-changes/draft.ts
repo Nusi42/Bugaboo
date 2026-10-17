@@ -1,7 +1,7 @@
 import { priorityWords } from "@bugaboo/api-client";
 
 import { wordOf } from "../../shared/present.ts";
-import { statusKeyOfChoice } from "../issues/index.ts";
+import { choiceIdOf, type ProjectChange } from "../issues/index.ts";
 import type { ProjectChoice } from "../fields/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
 import { manyChangeKind, type ManyChangeKind, type NewManyChangeAction } from "./many-changes.ts";
@@ -30,16 +30,29 @@ export const emptyDraft: Draft = {
   other: "",
 };
 
-/** The request of a change of status or priority; nothing while both are left as they are. */
-function changeOf(draft: Draft): NewManyChangeAction | null {
-  const status = draft.status === NONE ? undefined : statusKeyOfChoice(draft.status);
+/** What the things of a draft are chosen from: the words of a relation, the status changes of the project. */
+export interface Choices {
+  readonly relations: readonly RelationChoice[];
+  readonly statusChanges: readonly ProjectChange[];
+}
+
+/**
+ * The request of a change of status or priority; nothing while both are left as they are. A status
+ * is sent as the status change that was chosen (its status and its words), so each issue is
+ * changed only when its own workflow has that change.
+ */
+function changeOf(
+  draft: Draft,
+  statusChanges: readonly ProjectChange[],
+): NewManyChangeAction | null {
+  const chosen = statusChanges.find((each) => choiceIdOf(each) === draft.status);
   const priority = wordOf(priorityWords, draft.priority);
-  return status === undefined && priority === undefined
+  return chosen === undefined && priority === undefined
     ? null
     : {
         kind: manyChangeKind.change,
         change: {
-          ...(status === undefined ? {} : { status }),
+          ...(chosen === undefined ? {} : { status: chosen.to.key, status_button: chosen.button }),
           ...(priority === undefined ? {} : { priority }),
         },
       };
@@ -65,10 +78,10 @@ function relationOf(
 export function actionOf(
   kind: ManyChangeKind,
   draft: Draft,
-  relations: readonly RelationChoice[],
+  choices: Choices,
 ): NewManyChangeAction | null {
   if (kind === manyChangeKind.change) {
-    return changeOf(draft);
+    return changeOf(draft, choices.statusChanges);
   }
   if (kind === manyChangeKind.move) {
     return draft.project === null ? null : { kind, project: draft.project.id };
@@ -77,6 +90,6 @@ export function actionOf(
     return draft.label === NONE ? null : { kind, label: draft.label };
   }
   return kind === manyChangeKind.relation
-    ? relationOf(draft, relations)
+    ? relationOf(draft, choices.relations)
     : { kind: manyChangeKind.delete };
 }

@@ -252,5 +252,7 @@ export async function openNewIssueOfWeb(page: Page) {
 /** Opens the editor of the new-issue form for the issue type *Bug*, whose layout the tests customize through `setLayoutOfWeb`. */
 export async function openLayoutOfBugs(page: Page): Promise<void> {
   await page.goto(addressInProject(paths.projectLayouts, "WEB"));
-  await page.getByLabel(t("layouts.type"), { exact: true }).selectOption({ label: "Bug" });
+  await page
+    .getByLabel(t("issue-field.issue-type"), { exact: true })
+    .selectOption({ label: "Bug" });
 }

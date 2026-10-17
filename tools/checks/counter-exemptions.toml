@@ -169,3 +169,8 @@ reason = "Counts issues the viewer may not see on purpose, and only counts them:
 route = "POST /api/v1/workflows/{workflow}/publish-preview"
 property = "blocked"
 reason = "Counts the issues the publisher could not move, among them ones they may not see; only the number is told, for the same reason as `unseen` (ADR-0031 amendment 12)."
+
+[[exempt]]
+route = "POST /api/v1/workflows/{workflow}/publish-preview"
+property = "issues"
+reason = "Counts the issues in a status that publishing would drop, among them ones the viewer may not see, and only counts them; the publish is refused for them with the same fact (workflow.status_in_use). The answer needs Manage workflows wherever the workflow is used (ADR-0031 amendment 12)."

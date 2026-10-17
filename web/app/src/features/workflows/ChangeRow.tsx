@@ -2,7 +2,14 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, IconButton, iconName, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { removeChange, setButton, setRules, type Draft, type DraftChange } from "./draft-model.ts";
+import {
+  nameOf,
+  removeChange,
+  setButton,
+  setRules,
+  type Draft,
+  type DraftChange,
+} from "./draft-model.ts";
 import { RulesWindow } from "./RulesWindow.tsx";
 import { hasRules } from "./rules-model.ts";
 import type { Edit } from "./use-draft-workflow.ts";
@@ -13,11 +20,6 @@ export interface ChangeRowProps {
   readonly draft: Draft;
   readonly change: DraftChange;
   readonly edit: Edit;
-}
-
-/** The name of a status of the draft by its ID in the draft. */
-function nameOf(draft: Draft, id: string): string {
-  return draft.statuses.find((status) => status.id === id)?.name ?? id;
 }
 
 /**

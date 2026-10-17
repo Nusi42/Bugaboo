@@ -1,5 +1,7 @@
 import type { components, Schema } from "@bugaboo/api-client";
 
+import { newId } from "./new-ids.ts";
+
 /** One condition of *Only if …*: a field and what it must be like. */
 export interface RuleCondition {
   /** Names the condition in the editor while it is changed; it is not sent. */
@@ -8,10 +10,11 @@ export interface RuleCondition {
   readonly test: Schema<"Test">;
 }
 
-/** A field a rule can name, by the name people read. */
+/** A field a rule can name, by the name people read, and whether a rule may ask for it in the small form. */
 export interface RuleFieldChoice {
   readonly id: string;
   readonly name: string;
+  readonly askable: boolean;
 }
 
 /**
@@ -72,12 +75,9 @@ export function rulesBodyOf(rules: ChangeRules): components["schemas"]["StatusRu
   };
 }
 
-let counter = 0;
-
 /** A condition that is new: it asks of the field that it has a value. */
 export function newCondition(field: string): RuleCondition {
-  counter += 1;
-  return { id: `new-condition-${counter}`, field, test: "filled" };
+  return { id: newId("condition"), field, test: "filled" };
 }
 
 /** The list with the value in it when `on`, and without it otherwise. */

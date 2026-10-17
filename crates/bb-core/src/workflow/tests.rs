@@ -221,6 +221,11 @@ fn wf_02_a_workflow_breaks_a_rule_when_it_cannot_work() {
         broken(|c| c.changes[0].rules.must_fill = vec![FieldKey::BuiltIn(Field::Priority)]),
         Err(Problem::FieldNotAllowed)
     );
+    // The description can be required, but not asked for: a status change cannot carry it.
+    assert_eq!(
+        broken(|c| c.changes[0].rules.ask_for = vec![FieldKey::BuiltIn(Field::Description)]),
+        Err(Problem::FieldNotAllowed)
+    );
     assert_eq!(
         broken(|c| {
             c.statuses = (0..=STATUSES_MAX)

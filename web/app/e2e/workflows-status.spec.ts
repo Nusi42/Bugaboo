@@ -7,7 +7,13 @@ import { roleId, roleName, signedInAdmin } from "./support/access.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, signIn } from "./support/flows.ts";
 import { expectStatus, statusButton } from "./support/issues.ts";
-import { changeSimple, createBug, onlyForRoles, prepareWorkflows } from "./support/workflows.ts";
+import {
+  changeSimple,
+  createBug,
+  mustFill,
+  onlyForRoles,
+  prepareWorkflows,
+} from "./support/workflows.ts";
 import { serverWord } from "./support/server-words.ts";
 
 // The status button and its list (WF-04, M4 WP-07, UX §4.4): the list holds the status changes the
@@ -67,4 +73,23 @@ test("wf_03 a person whose role may not make a change does not see it in the lis
   await expect(word(second, serverWord("workflow-change.start-working"))).toBeVisible();
   await expect(word(second, serverWord("workflow-change.mark-as-done"))).toHaveCount(0);
   await expectStatus(second, t("status.open"));
+});
+
+test("wf_04 a change that needs the description says to write it first and has nothing to save", async ({
+  page,
+  server,
+}) => {
+  const admin = await signedInAdmin(server);
+  await changeSimple(admin, (content) =>
+    mustFill(content, { from: "open", to: "done" }, ["description"]),
+  );
+  await admin.dispose();
+  await signIn(page, ada);
+  await openMenu(page, "WEB-3");
+  await word(page, serverWord("workflow-change.mark-as-done")).click();
+  const window = page.getByRole("dialog", { name: serverWord("workflow-change.mark-as-done") });
+  await expect(window.getByText(t("issues.ask-for-description"))).toBeVisible();
+  await expect(window.getByRole("textbox")).toHaveCount(0);
+  await expect(window.getByRole("button", { name: t("common.save"), exact: true })).toHaveCount(0);
+  await expectStatus(page, t("status.open"));
 });

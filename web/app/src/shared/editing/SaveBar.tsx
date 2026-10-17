@@ -9,6 +9,8 @@ import {
   type SaveState,
 } from "@bugaboo/ui";
 
+import { t } from "@bugaboo/messages";
+
 import { messageOf } from "../errors.ts";
 import { saveLabels } from "../save-labels.ts";
 
@@ -26,8 +28,6 @@ export interface SaveBarProps {
   readonly onDiscard: () => void;
   /** What the main button says: it names what it does (R6). */
   readonly saveLabel: string;
-  /** What the button that throws the changes away says. */
-  readonly discardLabel: string;
 }
 
 /** The state of the last change as the words under the buttons say it. */
@@ -40,7 +40,7 @@ function stateOf({ dirty, saved }: Pick<SaveBarProps, "dirty" | "saved">): SaveS
 
 /** The main button that saves and the one that throws the changes away, with what happened to the last save. */
 export function SaveBar(props: SaveBarProps) {
-  const { dirty, canSave, pending, error, onSave, onDiscard, saveLabel, discardLabel } = props;
+  const { dirty, canSave, pending, error, onSave, onDiscard, saveLabel } = props;
   return (
     <>
       {error === null || error === undefined ? null : (
@@ -56,7 +56,7 @@ export function SaveBar(props: SaveBarProps) {
           {saveLabel}
         </Button>
         <Button isDisabled={!dirty} onPress={onDiscard}>
-          {discardLabel}
+          {t("editing.changes-drop")}
         </Button>
         <SaveStatus state={stateOf(props)} labels={saveLabels()} />
       </div>

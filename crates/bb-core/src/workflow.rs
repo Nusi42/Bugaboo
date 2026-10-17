@@ -27,7 +27,9 @@ mod content;
 pub mod judge;
 pub mod starter;
 
-pub use content::{ChangeDraft, Problem, StatusDraft, WorkflowContent, check_name, rule_may_name};
+pub use content::{
+    ChangeDraft, Problem, StatusDraft, WorkflowContent, ask_may_name, check_name, rule_may_name,
+};
 
 /// The most statuses a workflow has.
 pub const STATUSES_MAX: usize = 30;

@@ -123,8 +123,8 @@ pub struct UseWorkflow {
 pub struct StatusMoveInput {
     /// The status that is dropped.
     pub from: StatusKey,
-    /// The status of the new workflow the issues go to.
-    pub to: StatusKey,
+    /// The status of the new workflow the issues go to: its key, or its name when it is new.
+    pub to: String,
 }
 
 /// Publish a workflow under the edit lock the person holds: it counts from now on.
@@ -186,6 +186,9 @@ pub struct PublishPreview {
     pub dropped: Vec<DroppedStatus>,
     /// The most issues one publish moves; a publish that would move more is refused.
     pub limit: usize,
+    /// There are more issues than that in the statuses that would go. They are then not judged or
+    /// named, and the counts are not complete.
+    pub too_many: bool,
 }
 
 impl Masked for PublishPreview {}

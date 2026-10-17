@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 
 import {
   changesFrom,
+  nameOf,
   setRules,
   type Draft,
   type DraftChange,
@@ -20,11 +21,6 @@ export interface DrawingViewProps {
   readonly editor: WorkflowEditor;
   readonly draft: Draft;
   readonly edit: Edit;
-}
-
-/** The name of a status of the draft by its ID in the draft. */
-function nameOf(draft: Draft, id: string): string {
-  return draft.statuses.find((each) => each.id === id)?.name ?? id;
 }
 
 /** The lane an arrow runs in: a way back between the same two boxes runs on the other side of the way there. */

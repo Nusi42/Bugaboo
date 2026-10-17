@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { fieldOf } from "../../shared/errors.ts";
-import { askedFieldsOf, askKeyOf, askValuesOf, type OfferedChange } from "./ask-for.ts";
+import { askValuesOf, type OfferedChange } from "./ask-for.ts";
 import { emptyForm, type NewIssueValues } from "./new-issue-form.ts";
 import type { IssueView } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
@@ -19,7 +19,6 @@ export function useAskFor(
   });
   const [pending, setPending] = useState(false);
   const [refused, setRefused] = useState<unknown>();
-  const asked = askedFieldsOf(change.needs);
   const field = fieldOf(refused);
   return {
     values,
@@ -29,10 +28,9 @@ export function useAskFor(
       setRefused(undefined);
     },
     pending,
-    asked,
     refused,
     /** The field the refusal is about, when the window shows that field. */
-    refusedField: asked.some((each) => askKeyOf(each) === field) ? field : undefined,
+    refusedField: change.needs.some((need) => need.field === field) ? field : undefined,
     send: (): void => {
       setPending(true);
       setRefused(undefined);

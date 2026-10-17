@@ -127,7 +127,23 @@ export function onlyForRoles(
   };
 }
 
-/** Makes an issue of the first issue type (*Bug*) in the project WEB. */
+/** The content with the status change from one status to another that needs these fields filled in first. */
+export function mustFill(
+  content: Content,
+  change: { readonly from: string; readonly to: string },
+  fields: readonly string[],
+): Content {
+  return {
+    ...content,
+    changes: content.changes.map((each) =>
+      each.from === change.from && each.to === change.to
+        ? { ...each, rules: { ...each.rules, must_fill: [...fields] } }
+        : each,
+    ),
+  };
+}
+
+/** Creates an issue of the first issue type (*Bug*) in the project WEB. */
 export async function createBug(admin: ApiSession, title: string): Promise<MadeIssue> {
   const made = dataOf(
     await admin.client.POST("/api/v1/projects/{project}/issues", {

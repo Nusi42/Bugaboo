@@ -96,7 +96,8 @@ export function usePublishFlow(args: PublishArgs): PublishFlow {
   return {
     pending: preview.isPending || pending,
     error: preview.error ?? error,
-    asking,
+    // Without the lock the question is closed: the note of the lost lock says what happened.
+    asking: args.lock.state.phase === "mine" ? asking : null,
     start: () => {
       if (slot === null || slot === undefined) {
         return;

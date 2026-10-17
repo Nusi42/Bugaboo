@@ -12,7 +12,7 @@ import type { ProjectChange } from "./status-choices.ts";
  */
 export function useProjectStatusChanges(project: string) {
   return useQuery({
-    queryKey: queryKeys.issues.statuses(project),
+    queryKey: queryKeys.issues.statusChanges(project),
     queryFn: async (): Promise<readonly ProjectChange[]> =>
       dataOf(
         await api.client.GET("/api/v1/projects/{project}/statuses", {

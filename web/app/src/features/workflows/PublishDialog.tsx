@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, AskDialog, SelectField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { IssueRefLine } from "../relations/index.ts";
 import type { Draft } from "./draft-model.ts";
 import type { Move } from "./use-publish.ts";
 import type { PublishPreview } from "./workflows.ts";
@@ -22,11 +23,9 @@ interface Target {
   readonly label: string;
 }
 
-/** The statuses an issue can go to: the ones the draft keeps and that have a key already. */
+/** The statuses an issue can go to: the ones of the draft, a new one by its name (as a status change names it). */
 function targetsOf(draft: Draft): readonly Target[] {
-  return draft.statuses.flatMap((status) =>
-    status.key === null ? [] : [{ value: status.key, label: status.name }],
-  );
+  return draft.statuses.map((status) => ({ value: status.key ?? status.name, label: status.name }));
 }
 
 /** One removed status: how many issues are in it, which of them the person sees, and where they go. */
@@ -50,7 +49,9 @@ function Where({
       <SelectField label={label} choices={targets} value={chosen} onChange={onChoose} />
       <ul {...partOf(part.list)}>
         {dropped.named.map((issue) => (
-          <li key={issue.id}>{[issue.key, issue.title].filter(Boolean).join(" · ")}</li>
+          <li key={issue.id}>
+            <IssueRefLine issue={issue} />
+          </li>
         ))}
       </ul>
       {dropped.unseen > 0 ? (
@@ -77,7 +78,7 @@ export function PublishDialog(props: PublishDialogProps) {
   const first = targets[0]?.value ?? "";
   const [chosen, setChosen] = useState<Readonly<Record<string, string>>>({});
   const total = asked.reduce((sum, each) => sum + each.issues, 0);
-  const tooMany = total > preview.limit;
+  const tooMany = preview.too_many;
   const where = (each: Dropped): string => chosen[each.status.key] ?? first;
   const stuck = tooMany || asked.some((each) => each.blocked > 0) || pending || first === "";
   return (

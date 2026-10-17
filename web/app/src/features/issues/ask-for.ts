@@ -1,47 +1,52 @@
-import { fieldWords, type Schema } from "@bugaboo/api-client";
+import type { Schema } from "@bugaboo/api-client";
+
+import type { MenuAction } from "@bugaboo/ui";
 
 import type { IssueValues } from "./issue-values.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
+import { choiceIdOf } from "./status-choices.ts";
 
 /** A status change the person may make now, as the issue answer lists it. */
 export type OfferedChange = Schema<"StatusChangeRef">;
 
-/** A field a status change asks for, by the kind of input it needs. */
-export type AskedField =
-  | { readonly kind: "description" }
-  | { readonly kind: "assigned-to" }
-  | { readonly kind: "own"; readonly field: string };
-
-/** The key of a built-in field that is asked for in a small form. */
-const assignedTo = "assigned-to" satisfies (typeof fieldWords)[number];
-const description = "description" satisfies (typeof fieldWords)[number];
-
-/** The key a field is asked for by: the word of a built-in field, or the ID of an own field. */
-export function askKeyOf(asked: AskedField): string {
-  return asked.kind === "own" ? asked.field : asked.kind;
-}
+/** A field a status change needs, with the kind of input the server says it needs. */
+export type NeededField = Schema<"NeededFieldBody">;
 
 /** Whether a status change needs something filled in before it can be made. */
 export function needsAsking(change: OfferedChange): boolean {
   return change.needs.length > 0;
 }
 
-/** The fields a status change needs, each by the kind of input it takes. */
-export function askedFieldsOf(needs: readonly string[]): readonly AskedField[] {
-  return needs.map((key): AskedField => {
-    if (key === description) {
-      return { kind: "description" };
-    }
-    if (key === assignedTo) {
-      return { kind: "assigned-to" };
-    }
-    return { kind: "own", field: key };
-  });
+/**
+ * The entries of the status list: one for each status change the person may make now, in the words
+ * of its button. A change that needs something filled in goes to `ask`; any other is made at once.
+ */
+export function statusActions(
+  changes: readonly OfferedChange[],
+  react: {
+    readonly ask: (change: OfferedChange) => void;
+    readonly make: (change: OfferedChange) => void;
+  },
+): readonly MenuAction[] {
+  return changes.map((change) => ({
+    id: choiceIdOf(change),
+    label: change.button,
+    onAction: () => {
+      if (needsAsking(change)) {
+        react.ask(change);
+      } else {
+        react.make(change);
+      }
+    },
+  }));
 }
 
-/** Whether a key is the word of a built-in field: anything else is the ID of an own field. */
-function isBuiltIn(key: string): boolean {
-  return fieldWords.some((word) => word === key);
+/**
+ * Whether the description is among what a status change needs. It is long text with a lock of its
+ * own, so the small form cannot take it: the person writes it on the issue first.
+ */
+export function needsTheDescription(needs: readonly NeededField[]): boolean {
+  return needs.some((need) => need.kind === "description");
 }
 
 /**
@@ -50,15 +55,15 @@ function isBuiltIn(key: string): boolean {
  */
 export function askValuesOf(
   to: Schema<"StatusRef">,
-  needs: readonly string[],
+  needs: readonly NeededField[],
   filled: NewIssueValues,
 ): IssueValues {
   const own = Object.fromEntries(
     needs
-      .filter((key) => !isBuiltIn(key) && key in filled.fields)
-      .map((key) => [key, filled.fields[key]]),
+      .filter((need) => need.kind === "own" && need.field in filled.fields)
+      .map((need) => [need.field, filled.fields[need.field]]),
   );
-  const people = needs.includes(assignedTo) && filled.assignedTo.length > 0;
+  const people = needs.some((need) => need.kind === "assigned-to") && filled.assignedTo.length > 0;
   return {
     status: to,
     ...(people ? { assignedTo: filled.assignedTo } : {}),

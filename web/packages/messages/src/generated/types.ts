@@ -136,12 +136,16 @@ export interface MessageArguments {
   "data-folder.protect-failed": { path: string | number; reason: string | number };
   "data-folder.unknown": { part: string | number; path: string | number };
   "editing.ask-to-finish": { name: string | number };
+  "editing.delete-held": { kind: string | number; name: string | number };
   "editing.draft-continue": { when: string | number };
   "editing.draft-found": { thing: string | number; when: string | number };
   "editing.elsewhere": { thing: string | number };
   "editing.is-editing": { name: string | number; since: string | number; thing: string | number };
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
+  "editing.use-inherited": { kind: string | number };
+  "editing.use-inherited-text": { kind: string | number };
+  "editing.use-inherited-title": { kind: string | number };
   "field-permissions.intro-project": { project: string | number };
   "field-permissions.project-title": { project: string | number };
   "field.unknown-name": { field: string | number };
@@ -249,7 +253,6 @@ export interface MessageArguments {
   "labels.take-off": { name: string | number };
   "labels.take-project-off": { name: string | number };
   "layouts.customize-project": { project: string | number };
-  "layouts.delete-held": { name: string | number };
   "layouts.draft-changed": { when: string | number };
   "layouts.field-add-to": { name: string | number };
   "layouts.field-down": { name: string | number };
@@ -272,6 +275,7 @@ export interface MessageArguments {
   "layouts.section-up": { number: string | number };
   "many-changes.apply": { count: number };
   "many-changes.apply-delete": { count: number };
+  "many-changes.change-and-status": { button: string | number; status: string | number };
   "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
   "many-changes.progress": { done: string | number; total: string | number };
@@ -400,12 +404,11 @@ export interface MessageArguments {
   "sub-issues.take-out": { key: string | number };
   "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
-  "workflows.add-change": { from: string | number };
   "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
   "workflows.button-text": { from: string | number; to: string | number };
   "workflows.change-remove": { from: string | number; to: string | number };
+  "workflows.create-change": { from: string | number };
   "workflows.customize-project": { project: string | number };
-  "workflows.delete-held": { name: string | number };
   "workflows.from": { name: string | number };
   "workflows.project-title": { project: string | number };
   "workflows.publish-blocked": { count: number; status: string | number };

@@ -22,7 +22,7 @@ function usedNow(editor: WorkflowEditor): string {
 }
 
 /**
- * A place that has no workflow of its own: what it uses now, and *Customize* that makes one as a
+ * A place that has no workflow of its own: what it uses now, and *Customize* that creates one as a
  * copy of it, so the person can change it without touching the place it comes from.
  */
 export function CustomizeWorkflow({

@@ -1,16 +1,10 @@
-import { statusGroupWords } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Button, SelectField, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { addStatus, type StatusGroupWord } from "./draft-model.ts";
+import { groupChoices } from "./status-groups.ts";
 import type { Edit } from "./use-draft-workflow.ts";
-
-/** The status groups, by the words people read. */
-const groupChoices = statusGroupWords.map((word) => ({
-  value: word,
-  label: t(`status-group.${word}`),
-}));
 
 /** The group a new status starts in: the one in between. */
 const startingGroup: StatusGroupWord = "in-progress";
@@ -36,7 +30,7 @@ export function AddStatus({ edit }: { readonly edit: Edit }) {
           setName("");
         }}
       >
-        {t("workflows.add-status")}
+        {t("workflows.create-status")}
       </Button>
     </div>
   );

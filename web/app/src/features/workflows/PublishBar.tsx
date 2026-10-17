@@ -25,7 +25,6 @@ export function PublishBar({ state, lock, published }: PublishBarProps) {
         onSave={publish.start}
         onDiscard={state.discard}
         saveLabel={t("workflows.publish")}
-        discardLabel={t("workflows.draft-drop")}
       />
       {publish.asking === null ? null : (
         <PublishDialog

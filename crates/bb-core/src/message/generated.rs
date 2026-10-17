@@ -698,14 +698,26 @@ pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.par
 pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
     MessageKey::new("data-folder.part.setup-code-file");
 
+/// The message `editing.changes-drop`.
+pub const EDITING_CHANGES_DROP: MessageKey = MessageKey::new("editing.changes-drop");
+
 /// The message `editing.draft-drop`.
 pub const EDITING_DRAFT_DROP: MessageKey = MessageKey::new("editing.draft-drop");
 
 /// The message `editing.edit-anyway`.
 pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway");
 
+/// The message `editing.kind-layout`.
+pub const EDITING_KIND_LAYOUT: MessageKey = MessageKey::new("editing.kind-layout");
+
+/// The message `editing.kind-workflow`.
+pub const EDITING_KIND_WORKFLOW: MessageKey = MessageKey::new("editing.kind-workflow");
+
 /// The message `editing.lost-ran-out`.
 pub const EDITING_LOST_RAN_OUT: MessageKey = MessageKey::new("editing.lost-ran-out");
+
+/// The message `editing.taking`.
+pub const EDITING_TAKING: MessageKey = MessageKey::new("editing.taking");
 
 /// The message `editing.text-kept`.
 pub const EDITING_TEXT_KEPT: MessageKey = MessageKey::new("editing.text-kept");
@@ -1799,6 +1811,9 @@ pub const ISSUE_TYPE_GOAL: MessageKey = MessageKey::new("issue-type.goal");
 /// The message `issue-type.task`.
 pub const ISSUE_TYPE_TASK: MessageKey = MessageKey::new("issue-type.task");
 
+/// The message `issue-types.all-types`.
+pub const ISSUE_TYPES_ALL_TYPES: MessageKey = MessageKey::new("issue-types.all-types");
+
 /// The message `issue-types.create`.
 pub const ISSUE_TYPES_CREATE: MessageKey = MessageKey::new("issue-types.create");
 
@@ -2221,9 +2236,6 @@ pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customiz
 pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("layouts.customize-organization");
 
-/// The message `layouts.draft-drop`.
-pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop");
-
 /// The message `layouts.draft-restore`.
 pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
 
@@ -2285,26 +2297,8 @@ pub const LAYOUTS_TAB_OTHER: MessageKey = MessageKey::new("layouts.tab-other");
 /// The message `layouts.tabs`.
 pub const LAYOUTS_TABS: MessageKey = MessageKey::new("layouts.tabs");
 
-/// The message `layouts.taking`.
-pub const LAYOUTS_TAKING: MessageKey = MessageKey::new("layouts.taking");
-
-/// The message `layouts.type`.
-pub const LAYOUTS_TYPE: MessageKey = MessageKey::new("layouts.type");
-
-/// The message `layouts.type-all`.
-pub const LAYOUTS_TYPE_ALL: MessageKey = MessageKey::new("layouts.type-all");
-
 /// The message `layouts.unreadable`.
 pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
-
-/// The message `layouts.use-inherited`.
-pub const LAYOUTS_USE_INHERITED: MessageKey = MessageKey::new("layouts.use-inherited");
-
-/// The message `layouts.use-inherited-text`.
-pub const LAYOUTS_USE_INHERITED_TEXT: MessageKey = MessageKey::new("layouts.use-inherited-text");
-
-/// The message `layouts.use-inherited-title`.
-pub const LAYOUTS_USE_INHERITED_TITLE: MessageKey = MessageKey::new("layouts.use-inherited-title");
 
 /// The message `list.next`.
 pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
@@ -4527,20 +4521,8 @@ pub const WORKFLOW_DEVELOPMENT: MessageKey = MessageKey::new("workflow.developme
 /// The message `workflow.simple`.
 pub const WORKFLOW_SIMPLE: MessageKey = MessageKey::new("workflow.simple");
 
-/// The message `workflows.add-change-button`.
-pub const WORKFLOWS_ADD_CHANGE_BUTTON: MessageKey = MessageKey::new("workflows.add-change-button");
-
-/// The message `workflows.add-change-do`.
-pub const WORKFLOWS_ADD_CHANGE_DO: MessageKey = MessageKey::new("workflows.add-change-do");
-
-/// The message `workflows.add-change-to`.
-pub const WORKFLOWS_ADD_CHANGE_TO: MessageKey = MessageKey::new("workflows.add-change-to");
-
 /// The message `workflows.add-condition`.
 pub const WORKFLOWS_ADD_CONDITION: MessageKey = MessageKey::new("workflows.add-condition");
-
-/// The message `workflows.add-status`.
-pub const WORKFLOWS_ADD_STATUS: MessageKey = MessageKey::new("workflows.add-status");
 
 /// The message `workflows.ask-for`.
 pub const WORKFLOWS_ASK_FOR: MessageKey = MessageKey::new("workflows.ask-for");
@@ -4548,15 +4530,25 @@ pub const WORKFLOWS_ASK_FOR: MessageKey = MessageKey::new("workflows.ask-for");
 /// The message `workflows.ask-for-help`.
 pub const WORKFLOWS_ASK_FOR_HELP: MessageKey = MessageKey::new("workflows.ask-for-help");
 
+/// The message `workflows.create-change-button`.
+pub const WORKFLOWS_CREATE_CHANGE_BUTTON: MessageKey =
+    MessageKey::new("workflows.create-change-button");
+
+/// The message `workflows.create-change-do`.
+pub const WORKFLOWS_CREATE_CHANGE_DO: MessageKey = MessageKey::new("workflows.create-change-do");
+
+/// The message `workflows.create-change-to`.
+pub const WORKFLOWS_CREATE_CHANGE_TO: MessageKey = MessageKey::new("workflows.create-change-to");
+
+/// The message `workflows.create-status`.
+pub const WORKFLOWS_CREATE_STATUS: MessageKey = MessageKey::new("workflows.create-status");
+
 /// The message `workflows.customize-organization`.
 pub const WORKFLOWS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("workflows.customize-organization");
 
 /// The message `workflows.draft-changed`.
 pub const WORKFLOWS_DRAFT_CHANGED: MessageKey = MessageKey::new("workflows.draft-changed");
-
-/// The message `workflows.draft-drop`.
-pub const WORKFLOWS_DRAFT_DROP: MessageKey = MessageKey::new("workflows.draft-drop");
 
 /// The message `workflows.draft-note`.
 pub const WORKFLOWS_DRAFT_NOTE: MessageKey = MessageKey::new("workflows.draft-note");
@@ -4640,9 +4632,6 @@ pub const WORKFLOWS_STATUSES: MessageKey = MessageKey::new("workflows.statuses")
 /// The message `workflows.statuses-help`.
 pub const WORKFLOWS_STATUSES_HELP: MessageKey = MessageKey::new("workflows.statuses-help");
 
-/// The message `workflows.taking`.
-pub const WORKFLOWS_TAKING: MessageKey = MessageKey::new("workflows.taking");
-
 /// The message `workflows.test-empty`.
 pub const WORKFLOWS_TEST_EMPTY: MessageKey = MessageKey::new("workflows.test-empty");
 
@@ -4663,23 +4652,6 @@ pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text")
 
 /// The message `workflows.try-title`.
 pub const WORKFLOWS_TRY_TITLE: MessageKey = MessageKey::new("workflows.try-title");
-
-/// The message `workflows.type`.
-pub const WORKFLOWS_TYPE: MessageKey = MessageKey::new("workflows.type");
-
-/// The message `workflows.type-all`.
-pub const WORKFLOWS_TYPE_ALL: MessageKey = MessageKey::new("workflows.type-all");
-
-/// The message `workflows.use-inherited`.
-pub const WORKFLOWS_USE_INHERITED: MessageKey = MessageKey::new("workflows.use-inherited");
-
-/// The message `workflows.use-inherited-text`.
-pub const WORKFLOWS_USE_INHERITED_TEXT: MessageKey =
-    MessageKey::new("workflows.use-inherited-text");
-
-/// The message `workflows.use-inherited-title`.
-pub const WORKFLOWS_USE_INHERITED_TITLE: MessageKey =
-    MessageKey::new("workflows.use-inherited-title");
 
 /// The message `workflows.view`.
 pub const WORKFLOWS_VIEW: MessageKey = MessageKey::new("workflows.view");
@@ -5463,6 +5435,18 @@ pub fn editing_ask_to_finish(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `editing.delete-held`.
+#[must_use]
+pub fn editing_delete_held(kind: impl std::fmt::Display, name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.delete-held"),
+        vec![
+            ("kind", Value::Text(kind.to_string())),
+            ("name", Value::Text(name.to_string())),
+        ],
+    )
+}
+
 /// The message `editing.draft-continue`.
 #[must_use]
 pub fn editing_draft_continue(when: impl std::fmt::Display) -> Message {
@@ -5531,6 +5515,33 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.lost-taken-over"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `editing.use-inherited`.
+#[must_use]
+pub fn editing_use_inherited(kind: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.use-inherited"),
+        vec![("kind", Value::Text(kind.to_string()))],
+    )
+}
+
+/// The message `editing.use-inherited-text`.
+#[must_use]
+pub fn editing_use_inherited_text(kind: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.use-inherited-text"),
+        vec![("kind", Value::Text(kind.to_string()))],
+    )
+}
+
+/// The message `editing.use-inherited-title`.
+#[must_use]
+pub fn editing_use_inherited_title(kind: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("editing.use-inherited-title"),
+        vec![("kind", Value::Text(kind.to_string()))],
     )
 }
 
@@ -6637,15 +6648,6 @@ pub fn layouts_customize_project(project: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `layouts.delete-held`.
-#[must_use]
-pub fn layouts_delete_held(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("layouts.delete-held"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
 /// The message `layouts.draft-changed`.
 #[must_use]
 pub fn layouts_draft_changed(when: impl std::fmt::Display) -> Message {
@@ -6984,6 +6986,21 @@ pub fn many_changes_apply_delete(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("many-changes.apply-delete"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `many-changes.change-and-status`.
+#[must_use]
+pub fn many_changes_change_and_status(
+    button: impl std::fmt::Display,
+    status: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.change-and-status"),
+        vec![
+            ("button", Value::Text(button.to_string())),
+            ("status", Value::Text(status.to_string())),
+        ],
     )
 }
 
@@ -8490,15 +8507,6 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
     )
 }
 
-/// The message `workflows.add-change`.
-#[must_use]
-pub fn workflows_add_change(from: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("workflows.add-change"),
-        vec![("from", Value::Text(from.to_string()))],
-    )
-}
-
 /// The message `workflows.arrow-label`.
 #[must_use]
 pub fn workflows_arrow_label(
@@ -8543,21 +8551,21 @@ pub fn workflows_change_remove(
     )
 }
 
+/// The message `workflows.create-change`.
+#[must_use]
+pub fn workflows_create_change(from: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.create-change"),
+        vec![("from", Value::Text(from.to_string()))],
+    )
+}
+
 /// The message `workflows.customize-project`.
 #[must_use]
 pub fn workflows_customize_project(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("workflows.customize-project"),
         vec![("project", Value::Text(project.to_string()))],
-    )
-}
-
-/// The message `workflows.delete-held`.
-#[must_use]
-pub fn workflows_delete_held(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("workflows.delete-held"),
-        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -9421,6 +9429,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
     ),
     ("editing.ask-to-finish", "Ask {name} to finish"),
+    ("editing.changes-drop", "Throw my changes away"),
+    (
+        "editing.delete-held",
+        "{name} is editing this {kind}, so it cannot be taken away yet. Try again when they have finished.",
+    ),
     ("editing.draft-continue", "Continue your draft from {when}"),
     ("editing.draft-drop", "Throw the draft away"),
     (
@@ -9436,6 +9449,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "editing.is-editing",
         "{name} is editing {thing} · since {since}",
     ),
+    ("editing.kind-layout", "layout"),
+    ("editing.kind-workflow", "workflow"),
     (
         "editing.lost-changed",
         "Not saved yet: {name} changed {thing} after you. Your text is kept.",
@@ -9448,6 +9463,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "editing.lost-taken-over",
         "Not saved yet: {name} took over the editing. Your text is kept.",
     ),
+    ("editing.taking", "Getting ready to edit…"),
     ("editing.text-kept", "What you typed is kept as a draft:"),
     (
         "editing.text-kept-on-close",
@@ -9457,6 +9473,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("editing.this-comment", "this comment"),
     ("editing.this-layout", "this layout"),
     ("editing.this-workflow", "this workflow"),
+    ("editing.use-inherited", "Use the inherited {kind} again"),
+    (
+        "editing.use-inherited-text",
+        "The {kind} of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave something without what it needs.",
+    ),
+    (
+        "editing.use-inherited-title",
+        "Use the inherited {kind} again?",
+    ),
     (
         "error.access.cannot-lift",
         "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
@@ -10239,6 +10264,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
     ("issue-type.task", "Task"),
+    ("issue-types.all-types", "All issue types"),
     ("issue-types.create", "Create the issue type"),
     (
         "issue-types.create-intro",
@@ -10558,14 +10584,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("layouts.customize-project", "Customize for {project}"),
     (
-        "layouts.delete-held",
-        "{name} is editing this layout, so it cannot be taken away yet. Try again when they have finished.",
-    ),
-    (
         "layouts.draft-changed",
         "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
     ),
-    ("layouts.draft-drop", "Throw my changes away"),
     ("layouts.draft-restore", "Put my changes back"),
     ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
@@ -10647,19 +10668,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.section-up", "Move section {number} up"),
     ("layouts.tab-other", "Other"),
     ("layouts.tabs", "Sections of the form"),
-    ("layouts.taking", "Getting ready to edit…"),
-    ("layouts.type", "Issue type"),
-    ("layouts.type-all", "All issue types"),
     (
         "layouts.unreadable",
         "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
     ),
-    ("layouts.use-inherited", "Reset to default"),
-    (
-        "layouts.use-inherited-text",
-        "The layout of this place is taken away. The place then uses the layout it inherits. This cannot be undone.",
-    ),
-    ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     (
@@ -10792,6 +10804,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
     ),
     ("many-changes.bar", "Change the issues you ticked"),
+    ("many-changes.change-and-status", "{button} (to {status})"),
     (
         "many-changes.delete-text",
         "The issues go to the trash. You can undo this for a short while.",
@@ -12558,12 +12571,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflow.bug", "Bug"),
     ("workflow.development", "Development"),
     ("workflow.simple", "Simple"),
-    ("workflows.add-change", "Add a status change from {from}"),
-    ("workflows.add-change-button", "Button text"),
-    ("workflows.add-change-do", "Add status change"),
-    ("workflows.add-change-to", "Go to"),
     ("workflows.add-condition", "Add a field to check"),
-    ("workflows.add-status", "Add a status"),
     (
         "workflows.arrow-label",
         "From {from} to {to}: {button}. Open its rules.",
@@ -12579,19 +12587,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Remove the status change from {from} to {to}",
     ),
     (
+        "workflows.create-change",
+        "Create a status change from {from}",
+    ),
+    ("workflows.create-change-button", "Button text"),
+    ("workflows.create-change-do", "Create status change"),
+    ("workflows.create-change-to", "Go to"),
+    ("workflows.create-status", "Create status"),
+    (
         "workflows.customize-organization",
         "Customize for the whole organization",
     ),
     ("workflows.customize-project", "Customize for {project}"),
     (
-        "workflows.delete-held",
-        "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
-    ),
-    (
         "workflows.draft-changed",
         "This workflow changed while you were editing, and you see it as it is now. Your changes are kept.",
     ),
-    ("workflows.draft-drop", "Throw my changes away"),
     (
         "workflows.draft-note",
         "These changes are a draft: they count only after you publish them.",
@@ -12675,7 +12686,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "workflows.statuses-help",
         "New issues start in the first status. Renaming a status does not move the issues that are in it.",
     ),
-    ("workflows.taking", "Getting ready to edit…"),
     ("workflows.test-empty", "has no value"),
     ("workflows.test-filled", "has a value"),
     ("workflows.try-allowed", "Allowed."),
@@ -12692,20 +12702,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Pick an issue and a person to see which status changes they would get, and why.",
     ),
     ("workflows.try-title", "Try it"),
-    ("workflows.type", "Issue type"),
-    ("workflows.type-all", "All issue types"),
-    (
-        "workflows.use-inherited",
-        "Use the inherited workflow again",
-    ),
-    (
-        "workflows.use-inherited-text",
-        "The workflow of this place is taken away, and the place follows its parent again. This is refused while an issue would be left in a status that the inherited workflow does not have. It cannot be undone.",
-    ),
-    (
-        "workflows.use-inherited-title",
-        "Use the inherited workflow again?",
-    ),
     (
         "workflows.uses-hidden",
         "These issues use the workflow {name}, which is set higher up.",

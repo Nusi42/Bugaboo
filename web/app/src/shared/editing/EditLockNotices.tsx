@@ -11,12 +11,10 @@ export interface EditLockNoticesProps {
   readonly thing: EditedThing;
   /** The note that the lock was lost and the changes are kept; it comes with *Try again*. */
   readonly lost: string;
-  /** The note while the lock is being asked for. */
-  readonly taking: string;
 }
 
 /** What the person needs to know about the lock on a layout or a workflow: somebody else holds it, or it was lost. */
-export function EditLockNotices({ lock, thing, lost, taking }: EditLockNoticesProps) {
+export function EditLockNotices({ lock, thing, lost }: EditLockNoticesProps) {
   const { state } = lock;
   if (state.phase === "held") {
     return (
@@ -40,5 +38,5 @@ export function EditLockNotices({ lock, thing, lost, taking }: EditLockNoticesPr
       </Alert>
     );
   }
-  return state.phase === "taking" ? <p {...partOf(part.muted)}>{taking}</p> : null;
+  return state.phase === "taking" ? <p {...partOf(part.muted)}>{t("editing.taking")}</p> : null;
 }
