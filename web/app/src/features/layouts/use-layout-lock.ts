@@ -11,7 +11,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { api } from "../../shared/api.ts";
 import type { SessionDeps } from "../../shared/editing/edit-lock-session.ts";
-import { lostReasonOf } from "../../shared/editing/index.ts";
+import { lostReasonOf, useLetGoWhenHidden } from "../../shared/editing/index.ts";
 import { codeOf } from "../../shared/errors.ts";
 import { whatOf } from "./layouts.ts";
 import { LayoutLockController, type LockState } from "./layout-lock.ts";
@@ -50,8 +50,10 @@ export function useLayoutLock(layout: string): LayoutLock {
   const state = useSyncExternalStore(lock.subscribe, lock.snapshot);
   useEffect(() => {
     lock.start();
-    return lock.dispose;
   }, [lock]);
+  // The lock goes with a hidden page (closed, reloaded or cached) and is asked for again when the
+  // page comes back from the cache: the one path every editor of a lock uses.
+  useLetGoWhenHidden(lock.dispose, lock.start);
   return {
     state,
     retry: lock.start,

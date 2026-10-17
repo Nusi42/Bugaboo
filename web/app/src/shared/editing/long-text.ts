@@ -232,6 +232,19 @@ export class LongTextEditor extends WatchingEditor {
     }
   };
 
+  /**
+   * The page came back from the back and forward cache: it let its lock go as it was hidden
+   * (`dispose`), so a text that is being edited says that its time ran out, and *Try again* takes
+   * the lock again. The text is where it was; nothing is lost.
+   */
+  readonly cameBack = (): void => {
+    const { kind } = this.state.phase;
+    if (kind === "locked" || kind === "taking" || kind === "saving") {
+      this.saveWhenLocked = false;
+      this.set({ phase: { kind: "lost", reason: "ran-out" } });
+    }
+  };
+
   /** The screen goes away: the beats stop and the lock is let go; the draft stays. */
   readonly dispose = (): void => {
     void this.lock.end();

@@ -25,6 +25,9 @@ import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
 // computer, with the list and the buttons everywhere), unticks the Guest, and the Guest's form is
 // the short one while a Team member's is the full one.
 
+/** A lock that is let go at once is free within this, not after the lease of a minute. */
+const ONE_SECOND_MS = 1000;
+
 test.use({ preparation: { run: prepareLayouts } });
 
 /** The dialog of this person, once its form is there: the description is on every form. */
@@ -169,6 +172,33 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
     other.getByText(t("editing.elsewhere", { thing: t("editing.this-layout") })),
   ).toBeVisible();
   await expect(other.getByRole("button", { name: t("layouts.save"), exact: true })).toBeDisabled();
+});
+
+/** The button that moves *Due date* up in the editor of a layout. */
+function upOf(page: Page) {
+  return rowOf(page, dueDate)
+    .last()
+    .getByRole("button", { name: t("layouts.field-up", { name: dueDate }) });
+}
+
+test("cfg_01 a window of the layout editor that goes away lets its lock go at once (ADR-0019)", async ({
+  browser,
+  server,
+}) => {
+  await setLayoutOfWeb(server, "customized");
+  const first = await anotherBrowser(browser, server);
+  await signIn(first, ada);
+  await openLayoutOfBugs(first);
+  await editWhenYouCan(first, upOf(first));
+  // The window goes away without leaving the editor: the lock is let go as the page is hidden.
+  await first.goto("about:blank");
+  const second = await anotherBrowser(browser, server);
+  await signIn(second, ada);
+  await openLayoutOfBugs(second);
+  await expect(upOf(second)).toBeEnabled({ timeout: ONE_SECOND_MS });
+  await expect(
+    second.getByRole("button", { name: t("editing.edit-anyway"), exact: true }),
+  ).toHaveCount(0);
 });
 
 test("cfg_01 a field is moved and added with the keyboard alone, and its drag handle is not announced", async ({

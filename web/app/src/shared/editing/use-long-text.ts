@@ -17,6 +17,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { api } from "../api.ts";
 import { signedInPersonId } from "../session.ts";
 import { forgetBrowserDraft, readBrowserDraft, writeBrowserDraft } from "./browser-drafts.ts";
+import { useLetGoWhenHidden } from "./let-go-when-hidden.ts";
 import { LongTextEditor } from "./long-text.ts";
 import type { Editing, LongTextDeps } from "./long-text-model.ts";
 
@@ -116,16 +117,7 @@ export function useLongText(options: LongTextOptions): LongText {
   useEffect(() => {
     editor.setSource({ saved, version });
   }, [editor, saved, version]);
-  useEffect(() => {
-    // A window that is closed or reloaded runs no cleanup of the screen, so the lock is let go as
-    // the page is hidden; the release is a `keepalive` request that the browser still sends
-    // (M3-F105, M4-F26).
-    window.addEventListener("pagehide", editor.dispose);
-    return () => {
-      window.removeEventListener("pagehide", editor.dispose);
-      editor.dispose();
-    };
-  }, [editor]);
+  useLetGoWhenHidden(editor.dispose, editor.cameBack);
   return {
     ...state,
     open: editor.open,
