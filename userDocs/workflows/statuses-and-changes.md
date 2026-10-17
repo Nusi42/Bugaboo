@@ -22,6 +22,6 @@ An issue that enters a status in the group *Done* gets a closed date; an issue t
 
 ## An issue in a status its workflow does not have
 
-This happens when an issue changes its issue type or moves to another project and the workflow there has no such status, or when a workflow that had the status is taken away while the issue is in the trash. The issue shows the name that another workflow gives that status.
+This happens when an issue changes its issue type or moves to another project and the workflow there has no such status, or when the project moves under a project that has another workflow, or when a workflow that had the status is changed while the issue is in the trash. The issue shows the name that another workflow gives that status.
 
-Such an issue starts again in the **first status** of its workflow, and only in that one. When you change the issue type or move the issue, it is put there for you, and a status change asked for in the same step is refused unless it goes there. When the status exists in the new workflow, the issue keeps it and any status change you ask for in the same step follows all the rules of that workflow. Changing the type or the project never gets around a rule.
+Such an issue starts again in the **first status** of its workflow, and only in that one; a project that moves and an issue that comes back from the trash are put there for you. When you change the issue type or move the issue, it is put there for you, and a status change asked for in the same step is refused unless it goes there. When the status exists in the new workflow, the issue keeps it and any status change you ask for in the same step follows all the rules of that workflow. Changing the type or the project never gets around a rule.

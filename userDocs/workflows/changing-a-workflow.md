@@ -12,7 +12,7 @@ You can name in a rule only the fields you may see in that place and the groups 
 
 ## A status that goes
 
-When a workflow drops a status that issues are still in, *Publish* asks where those issues go, and they can go only to the first status of the workflow. Every one of those moves is checked first, as a change by the person who publishes. If one of them could not be carried out (the person may not change that issue, or it changed since), nothing is published. Otherwise the issues are moved as part of the same step, and each issue has the change in its history. Issues in the trash keep their status; when one comes back it can start again in the first status.
+When a workflow drops a status that issues are still in, *Publish* asks where those issues go, and they can go only to the first status of the workflow. Every one of those moves is checked first, as a change by the person who publishes. If one of them could not be carried out (the person may not change that issue, or it changed since), nothing is published. Otherwise the issues are moved as part of the same step, and each issue has the change in its history. Issues in the trash keep their status; when one comes back and its workflow has no such status, it is put in the first status, and that is in its history.
 
 Taking a workflow away, or switching a place to another workflow, is refused while an issue would be left in a status that the workflow counting afterwards does not have.
 
