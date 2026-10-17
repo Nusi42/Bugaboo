@@ -176,7 +176,8 @@ impl Masked for FileRules {}
 pub struct FileDownload {
     /// The name of the file, for the download.
     pub name: String,
-    /// The real type of the file ([`bb_core::files::UNKNOWN_MEDIA_TYPE`] for a preview's own type).
+    /// The type the answer is sent as: plain data for a file, whatever it is, and the PNG of a
+    /// preview.
     pub media_type: String,
     /// The pieces and the size.
     pub body: FileBody,

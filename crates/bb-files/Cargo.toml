@@ -6,5 +6,20 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[dependencies]
+bb-app = { path = "../bb-app" }
+bb-core = { path = "../bb-core" }
+hayro = "0.8.0"
+image = { version = "0.25.10", default-features = false, features = ["gif", "jpeg", "png", "webp"] }
+infer = { version = "0.22.0", default-features = false, features = ["std"] }
+sha2 = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "process", "rt", "sync", "time"] }
+tracing = { workspace = true }
+
+[dev-dependencies]
+bb-core = { path = "../bb-core", features = ["fake-ids"] }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
 [lints]
 workspace = true

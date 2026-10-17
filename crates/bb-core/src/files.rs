@@ -11,10 +11,18 @@ use jiff::{SignedDuration, Timestamp};
 use crate::id::{AttachmentId, CommentId, IssueId, UploadId, UserId};
 use crate::personal::Entity;
 use crate::security_log::Digest;
+use crate::settings::FILES_MAX_MEGABYTES;
 
 /// The size of one megabyte in the limits of files: the limit of a project is a whole number of
 /// them.
 pub const MEGABYTE: u64 = 1024 * 1024;
+
+/// The biggest file the settings can ever allow: the upper bound of `files.max-megabytes` in
+/// bytes. No limit of a project is above it, so nothing that reads a file needs to read more.
+pub const BIGGEST_FILE_BYTES: u64 = match FILES_MAX_MEGABYTES.definition().bounds() {
+    Some((_, most)) => most.unsigned_abs() * MEGABYTE,
+    None => 0,
+};
 
 /// The most bytes one part of an upload holds; a client sends parts of this size, and the route of
 /// a part refuses a body above it (M1-F30). Every other route keeps the small limit of the API.

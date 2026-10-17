@@ -7,7 +7,9 @@
 //! not there.
 
 use bb_core::ErrorCode;
-use bb_core::files::{DownloadLink, LinkTarget, PREVIEW_MEDIA_TYPE, PreviewState};
+use bb_core::files::{
+    DownloadLink, LinkTarget, PREVIEW_MEDIA_TYPE, PreviewState, UNKNOWN_MEDIA_TYPE,
+};
 use bb_policy::Authorized;
 
 use super::types::{DownloadQuery, FileDownload};
@@ -62,10 +64,14 @@ pub async fn download<S: AuthStore>(
         tracing::error!("a stored file is missing from the file store");
         return Err(AppError::Internal("a stored file is missing".to_owned()));
     };
+    // A file is sent as plain data whatever it is: a browser that is told "HTML" or "SVG" could be
+    // led to run it, and an attachment is saved by its name anyway. Only the preview, a PNG that
+    // the server created, is sent as what it is.
     let media_type = match link.target {
-        LinkTarget::File => file.media_type.as_str().to_owned(),
-        LinkTarget::Preview => PREVIEW_MEDIA_TYPE.to_owned(),
-    };
+        LinkTarget::File => UNKNOWN_MEDIA_TYPE,
+        LinkTarget::Preview => PREVIEW_MEDIA_TYPE,
+    }
+    .to_owned();
     Ok(held.authorize(FileDownload {
         name: attachment.name,
         media_type,
