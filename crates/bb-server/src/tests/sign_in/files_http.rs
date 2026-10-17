@@ -4,12 +4,16 @@
 //! for one person and five minutes that are judged again, and previews that a harmful file cannot
 //! take down. Every flow runs on SQLite and PostgreSQL.
 
+use std::collections::BTreeMap;
+
+use axum::Router;
 use axum::http::StatusCode;
 use bb_app::access::StartingRole;
 use bb_app::auth::RequestInfo;
 use bb_app::files::AttachmentStore as _;
 use bb_app::roles::RemoveAssignment;
 use bb_core::files::{BIGGEST_FILE_BYTES, MEGABYTE, PART_BYTES, TRASH_KEPT, UNFINISHED_KEPT};
+use bb_core::id::{AssignmentId, ProjectId, RoleId, UserId};
 use bb_core::settings::{FILES_BLOCKED_TYPES, FILES_MAX_MEGABYTES};
 use bb_files::fixtures::{Format, PDF, picture, pretending_png};
 use bb_testing::{Failure, TestResult, each_database};
@@ -17,6 +21,7 @@ use serde_json::{Value, json};
 
 use super::http::{Browser, RawReply, Reply, rig_and_app};
 use super::issues_site::{ISSUES, Site, id_in, key_of, ok};
+use super::policy_rig::Member;
 use super::rig::Rig;
 
 const UPLOADS: &str = "/api/v1/uploads";
@@ -160,6 +165,81 @@ async fn download(browser: &mut Browser, item: &Value, link: &str) -> Result<Raw
     browser
         .fetch(item[link].as_str().ok_or("no link in the item")?)
         .await
+}
+
+/// Bob, a Team member of ACME: his browser, and what it takes to change his role afterwards. The
+/// browser is what a `Bob` stands for wherever one is asked for.
+struct Bob {
+    browser: Browser,
+    person: UserId,
+    roles: BTreeMap<String, RoleId>,
+    acme: ProjectId,
+    given: AssignmentId,
+}
+
+impl std::ops::Deref for Bob {
+    type Target = Browser;
+    fn deref(&self) -> &Browser {
+        &self.browser
+    }
+}
+
+impl std::ops::DerefMut for Bob {
+    fn deref_mut(&mut self) -> &mut Browser {
+        &mut self.browser
+    }
+}
+
+impl Bob {
+    /// Makes Bob a person with the role of a Team member in ACME, and signs him in.
+    async fn on_acme(rig: &Rig, app: &Router, site: &Site<'_>) -> Result<Self, Failure> {
+        let created = rig
+            .person_called(&site.org.admin.session, "bob@example.test", "Bob Builder")
+            .await?;
+        let member = Member {
+            id: created.person.id,
+            session: created.session_token,
+        };
+        let roles = site.org.starting_roles().await?;
+        let acme = site.acme.parse().map_err(|_| "no project ID")?;
+        let given = site
+            .org
+            .give(&member, roles[StartingRole::TeamMember.code()], acme)
+            .await?;
+        Ok(Self {
+            browser: Browser::signed_in_as(app, "bob@example.test").await?,
+            person: member.id,
+            roles,
+            acme,
+            given: given.id,
+        })
+    }
+
+    /// Takes the role of a Team member away from him: he has none in ACME afterwards.
+    async fn lose_the_role(&self, rig: &Rig, site: &Site<'_>) -> Result<(), Failure> {
+        rig.api()
+            .remove_assignment(
+                Rig::info(),
+                RemoveAssignment {
+                    session_token: site.org.admin.session.clone(),
+                    assignment: self.given,
+                },
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Gives him another role in ACME.
+    async fn take_the_role(&self, site: &Site<'_>, role: StartingRole) -> Result<(), Failure> {
+        let member = Member {
+            id: self.person,
+            session: site.org.admin.session.clone(),
+        };
+        site.org
+            .give(&member, self.roles[role.code()], self.acme)
+            .await?;
+        Ok(())
+    }
 }
 
 #[tokio::test]
@@ -646,36 +726,15 @@ async fn att_07_a_link_stops_working_after_access_ends() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         upload(&mut ada, &issue, "jam.txt", b"The printer jams.").await?;
-        // Bob has a role in ACME, which Ada takes away again.
-        let started = rig
-            .person_called(&site.org.admin.session, "bob@example.test", "Bob Builder")
-            .await?;
-        let bob = super::policy_rig::Member {
-            id: started.person.id,
-            session: started.session_token,
-        };
-        let roles = site.org.starting_roles().await?;
-        let acme = site.acme.parse().map_err(|_| "no project ID")?;
-        let given = site
-            .org
-            .give(&bob, roles[StartingRole::TeamMember.code()], acme)
-            .await?;
-        let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
+        // Bob is a Team member of ACME.
+        let mut bob = Bob::on_acme(&rig, &app, &site).await?;
         let item = files(&mut bob, &issue).await?.remove(0);
         assert_eq!(
             download(&mut bob, &item, "download_url").await?.status,
             StatusCode::OK
         );
 
-        rig.api()
-            .remove_assignment(
-                Rig::info(),
-                RemoveAssignment {
-                    session_token: site.org.admin.session.clone(),
-                    assignment: given.id,
-                },
-            )
-            .await?;
+        bob.lose_the_role(&rig, &site).await?;
         // The link is still within its five minutes, and opens nothing: access is judged again.
         assert_eq!(
             download(&mut bob, &item, "download_url").await?.status,
@@ -912,40 +971,14 @@ async fn att_01_a_person_who_lost_the_right_to_add_a_file_cannot_delete_it_eithe
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
-        let started = rig
-            .person_called(&site.org.admin.session, "bob@example.test", "Bob Builder")
-            .await?;
-        let bob = super::policy_rig::Member {
-            id: started.person.id,
-            session: started.session_token,
-        };
-        let roles = site.org.starting_roles().await?;
-        let acme = site.acme.parse().map_err(|_| "no project ID")?;
-        let given = site
-            .org
-            .give(&bob, roles[StartingRole::TeamMember.code()], acme)
-            .await?;
-        let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
+        // Bob is a Team member of ACME.
+        let mut bob = Bob::on_acme(&rig, &app, &site).await?;
         let own = upload(&mut bob, &issue, "bobs.txt", b"what bob saw").await?;
         assert_eq!(own["may_delete"], true);
 
         // Bob becomes a Viewer: he sees the issue and its files, and may no longer add any.
-        rig.api()
-            .remove_assignment(
-                Rig::info(),
-                RemoveAssignment {
-                    session_token: site.org.admin.session.clone(),
-                    assignment: given.id,
-                },
-            )
-            .await?;
-        let member = super::policy_rig::Member {
-            id: started.person.id,
-            session: site.org.admin.session.clone(),
-        };
-        site.org
-            .give(&member, roles[StartingRole::Viewer.code()], acme)
-            .await?;
+        bob.lose_the_role(&rig, &site).await?;
+        bob.take_the_role(&site, StartingRole::Viewer).await?;
         // The rule is the one of comments: the writer deletes while they may still write, and
         // whoever may change issues deletes any.
         let listed = files(&mut bob, &issue).await?;
@@ -1065,20 +1098,8 @@ async fn sec_06_an_upload_ends_when_the_person_loses_access_in_the_middle_of_it(
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
-        let created = rig
-            .person_called(&site.org.admin.session, "bob@example.test", "Bob Builder")
-            .await?;
-        let bob = super::policy_rig::Member {
-            id: created.person.id,
-            session: created.session_token,
-        };
-        let roles = site.org.starting_roles().await?;
-        let acme = site.acme.parse().map_err(|_| "no project ID")?;
-        let given = site
-            .org
-            .give(&bob, roles[StartingRole::TeamMember.code()], acme)
-            .await?;
-        let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
+        // Bob is a Team member of ACME.
+        let mut bob = Bob::on_acme(&rig, &app, &site).await?;
         let started = start(&mut bob, &issue, "bobs.txt", 8, None).await?;
         let upload = id_in(ok(&started)?)?;
         assert_eq!(
@@ -1089,28 +1110,14 @@ async fn sec_06_an_upload_ends_when_the_person_loses_access_in_the_middle_of_it(
 
         // Bob loses his role. The next part is refused as for something that is not there, and
         // the upload ends: its bytes and its row are gone, also if the role comes back.
-        rig.api()
-            .remove_assignment(
-                Rig::info(),
-                RemoveAssignment {
-                    session_token: site.org.admin.session.clone(),
-                    assignment: given.id,
-                },
-            )
-            .await?;
+        bob.lose_the_role(&rig, &site).await?;
         let refused = send_part(&mut bob, &upload, 5, b"end").await?;
         assert_eq!(
             (refused.status, refused.code()),
             (StatusCode::NOT_FOUND, "resource.not_found")
         );
         assert!(on_disk(&rig, "uploads").is_empty());
-        let member = super::policy_rig::Member {
-            id: created.person.id,
-            session: site.org.admin.session.clone(),
-        };
-        site.org
-            .give(&member, roles[StartingRole::TeamMember.code()], acme)
-            .await?;
+        bob.take_the_role(&site, StartingRole::TeamMember).await?;
         let again = bob
             .send("GET", &format!("{UPLOADS}/{upload}"), None)
             .await?;
