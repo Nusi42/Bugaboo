@@ -30,6 +30,7 @@ mod exit_tags;
 mod fields_http;
 mod fields_names;
 mod fields_references;
+mod files_http;
 mod history_own_fields;
 pub(crate) mod http;
 mod invitations;

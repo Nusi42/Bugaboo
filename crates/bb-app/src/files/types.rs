@@ -107,8 +107,8 @@ pub struct UploadView {
     pub id: UploadId,
     /// The size the file will have.
     pub size: u64,
-    /// How many bytes the server has: the next part starts here.
-    pub received: u64,
+    /// Where the next part starts: the bytes the server has.
+    pub offset: u64,
     /// The most bytes one part may have.
     pub part_bytes: u64,
 }

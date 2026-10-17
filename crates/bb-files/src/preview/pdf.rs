@@ -24,7 +24,8 @@ pub(super) fn render(bytes: &[u8]) -> Result<Vec<u8>, PreviewRefusal> {
     }
     // The page is drawn at the size of the preview: its pixels are known before it is drawn,
     // whatever size the page claims to have.
-    let scale = (PREVIEW_EDGE_PIXELS as f32 / longest).min(SCALE_UP_MAX);
+    let edge = f32::from(u16::try_from(PREVIEW_EDGE_PIXELS).unwrap_or(u16::MAX));
+    let scale = (edge / longest).min(SCALE_UP_MAX);
     let pixmap = render_page(page, scale);
     let (width, height) = (u32::from(pixmap.width()), u32::from(pixmap.height()));
     if width == 0 || height == 0 {

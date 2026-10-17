@@ -55,6 +55,11 @@ pub(super) enum Quirk {
     /// refusal that the matrix does not expect fails, so a permitted actor cannot be refused for
     /// another reason without anybody noticing.
     AlsoAnswers(&'static str),
+    /// The route names a record that belongs to the person who made it (an upload), and the example
+    /// names one that nobody made: whoever may do the thing is told `resource.not_found`, as for a
+    /// record that is not there, and so is whoever may not, because the record is looked up before
+    /// the permission of the issue it belongs to (M4 WP-05).
+    TheirOwn,
     /// The route is about an issue in the target project that somebody else reported (M3 WP-03): a
     /// person who does not see the project, or lacks *See issues* there, is told
     /// `resource.not_found`, as for an issue that is not there; a person who sees the issue and
@@ -144,6 +149,13 @@ impl Example {
             .any(|quirk| matches!(quirk, Quirk::AlsoAnswers(known) if *known == code))
     }
 }
+
+/// What the routes of an upload have in common: the example names an upload nobody started.
+const UPLOAD: [Quirk; 3] = [
+    Quirk::AtTheTargetProject,
+    Quirk::NamesAMissingThing,
+    Quirk::TheirOwn,
+];
 
 /// Every route of the API description, in the order of the description.
 pub(super) const EXAMPLES: &[Example] = &[
@@ -347,6 +359,19 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
     Example::route("listMentions"),
     Example::route("readMentions"),
+    Example::with("startUpload", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getUpload", &UPLOAD),
+    Example::with("sendUploadPart", &UPLOAD),
+    Example::with("cancelUpload", &UPLOAD),
+    Example::with("finishUpload", &UPLOAD),
+    Example::with("listIssueFiles", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("getFileRules", &[Quirk::AnIssueOfTheTarget]),
+    Example::with("deleteAttachment", &[Quirk::AnIssueOfTheTarget]),
+    Example::with(
+        "restoreAttachment",
+        &[Quirk::AnIssueOfTheTarget, Quirk::InTheTrash],
+    ),
+    Example::with("downloadFile", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listIssueHistory", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listFollowers", &[Quirk::AnIssueOfTheTarget]),
     Example::with(
@@ -470,6 +495,9 @@ pub(super) async fn request(
     if let Some(found) =
         super::examples_relations::relation_request(fixture, operation, browser).await?
     {
+        return Ok(found);
+    }
+    if let Some(found) = super::examples_files::file_request(fixture, operation, browser).await? {
         return Ok(found);
     }
     if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {

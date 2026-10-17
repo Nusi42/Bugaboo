@@ -19,11 +19,16 @@ use bb_app::first_start::first_start;
 use bb_app::ports::SetupCodeFile;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::message::{self, Message};
+use bb_files::{DiskFiles, PreviewCommand};
 use bb_store::{AuthStorage, Database, LogSeal};
 
 use crate::config::Settings;
 use crate::data_folder::DataFolder;
 use crate::probe::{Probe, database_kind};
+
+/// The subcommand of the program that creates a preview, which the server starts as a child
+/// process (ADR-0032 §4).
+pub(crate) const PREVIEW_COMMAND: &str = "preview";
 
 /// What the caller of `wire` knows and the status page shows.
 #[derive(Default)]
@@ -140,7 +145,12 @@ pub(crate) async fn wire(
         FailureLimits::new(settings.limits.sign_in_failures_per_minute),
         name,
     )
-    .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())));
+    .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())))
+    .with_files(Arc::new(DiskFiles::new(
+        data.files(),
+        PreviewCommand::of_this_program(PREVIEW_COMMAND)
+            .map_err(|error| anyhow!(error.to_string()))?,
+    )));
     let probe = Probe::new(
         database,
         seal,

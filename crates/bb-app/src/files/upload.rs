@@ -100,7 +100,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(UploadView {
             id: upload.id,
             size: bytes_of(upload.size),
-            received,
+            offset: received,
             part_bytes: PART_BYTES as u64,
         })
     }

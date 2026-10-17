@@ -114,7 +114,7 @@ pub fn run(kind: PreviewKind, input: &Path, output: &Path) -> i32 {
                 file.write_all(&png)?;
                 file.sync_all()
             });
-            if written.is_ok() { 0 } else { 1 }
+            i32::from(written.is_err())
         }
         Err(refusal) => refusal.exit_code(),
     }

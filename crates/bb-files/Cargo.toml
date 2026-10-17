@@ -6,6 +6,12 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+# `PreviewCommand::in_process`: previews made inside the test instead of by a child process, for
+# the tests of the server that do not start the program. Only `[dev-dependencies]` switch it on;
+# the tests of the child process itself use the real program.
+testing = []
+
 [dependencies]
 bb-app = { path = "../bb-app" }
 bb-core = { path = "../bb-core" }

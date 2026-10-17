@@ -20,6 +20,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
 use bb_core::id::{EntityId, EventId, GroupId, RoleId, UserId};
 use bb_core::settings::SettingValue;
+use bb_files::{DiskFiles, PreviewCommand};
 use bb_store::{AuthStorage, Database, LogSeal, SettingChange};
 use bb_testing::{Failure, TestDatabase};
 use jiff::Timestamp;
@@ -209,6 +210,10 @@ impl Rig {
             FailureLimits::new(shape.tries.per_minute()),
             "Bugaboo".to_owned(),
         );
+        let services = services.with_files(Arc::new(DiskFiles::new(
+            folder.path().join(bb_files::FILES_FOLDER),
+            PreviewCommand::in_process(),
+        )));
         let services = match records {
             Some(records) => services.with_records(records),
             None => services,
@@ -256,6 +261,16 @@ impl Rig {
         value: bool,
     ) -> Result<(), Failure> {
         self.put_setting(key, SettingValue::Bool(value)).await
+    }
+
+    /// Sets a text setting of the organization.
+    pub(super) async fn set_organization_text(
+        &self,
+        key: &str,
+        value: &str,
+    ) -> Result<(), Failure> {
+        self.put_setting(key, SettingValue::Text(value.to_owned()))
+            .await
     }
 
     async fn put_setting(&self, key: &str, value: SettingValue) -> Result<(), Failure> {

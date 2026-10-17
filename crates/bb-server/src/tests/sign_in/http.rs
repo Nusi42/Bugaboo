@@ -66,7 +66,32 @@ impl Reply {
     }
 }
 
+/// Whether an answer says it is JSON (a file is sent as bytes, which are not).
+fn is_json(headers: &HeaderMap) -> bool {
+    headers
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|kind| kind.contains("json"))
+}
+
+/// What the server answered with a file: the body as it is, not JSON.
+pub(crate) struct RawReply {
+    pub(crate) status: StatusCode,
+    pub(crate) headers: HeaderMap,
+    pub(crate) bytes: Vec<u8>,
+}
+
+impl RawReply {
+    pub(crate) fn header(&self, name: &str) -> &str {
+        self.headers
+            .get(name)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+    }
+}
+
 /// How a request carries the token of the session.
+#[derive(Clone, Copy)]
 enum Token<'a> {
     /// Like the generated client: the value of the `__Host-bb_csrf` cookie, if there is one.
     FromCookie,
@@ -229,6 +254,18 @@ impl Browser {
         token: Token<'_>,
         origin: &str,
     ) -> Result<Reply, Failure> {
+        let request = self.request_to(method, path, token, origin);
+        self.finish(request, method, path, body).await
+    }
+
+    /// A request of this browser: its headers, its cookies and its token, without a body.
+    fn request_to(
+        &self,
+        method: &str,
+        path: &str,
+        token: Token<'_>,
+        origin: &str,
+    ) -> axum::http::request::Builder {
         let mut request = Request::builder()
             .method(method)
             .uri(path)
@@ -259,7 +296,95 @@ impl Browser {
             Token::Nothing => {}
             Token::Is(value) => request = request.header(CSRF_HEADER, value),
         }
-        self.finish(request, method, path, body).await
+        request
+    }
+
+    /// Sends bytes as they are (a part of an upload) and reads the JSON answer.
+    pub(crate) async fn send_bytes(
+        &mut self,
+        method: &str,
+        path: &str,
+        bytes: Vec<u8>,
+    ) -> Result<Reply, Failure> {
+        let request = self
+            .request_to(method, path, Token::FromCookie, "http://bugaboo.test")
+            .header(header::CONTENT_TYPE, "application/octet-stream");
+        let (status, headers, body) = Box::pin(self.exchange(request, Body::from(bytes))).await?;
+        Self::reply_of(method, path, status, headers, &body)
+    }
+
+    /// Fetches an address and keeps the answer as it is: the bytes of a file, not JSON.
+    pub(crate) async fn fetch(&mut self, path: &str) -> Result<RawReply, Failure> {
+        let request = self.request_to("GET", path, Token::FromCookie, "http://bugaboo.test");
+        let (status, headers, bytes) = Box::pin(self.exchange(request, Body::empty())).await?;
+        // A file is never kept by a cache.
+        if status == StatusCode::OK {
+            assert_eq!(
+                headers
+                    .get(header::CACHE_CONTROL)
+                    .and_then(|value| value.to_str().ok()),
+                Some("no-store"),
+                "GET {path}"
+            );
+        }
+        Ok(RawReply {
+            status,
+            headers,
+            bytes: bytes.to_vec(),
+        })
+    }
+
+    /// Sends a request and keeps the cookies the answer sets.
+    async fn exchange(
+        &mut self,
+        request: axum::http::request::Builder,
+        body: Body,
+    ) -> Result<(StatusCode, HeaderMap, axum::body::Bytes), Failure> {
+        let mut request = request.body(body)?;
+        request
+            .extensions_mut()
+            .insert(ConnectInfo(ClientAddr(self.peer)));
+        let response = self.app.clone().oneshot(request).await?;
+        let (parts, body) = response.into_parts();
+        let bytes = axum::body::to_bytes(body, usize::MAX).await?;
+        for cookie in parts
+            .headers
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .filter_map(|value| value.to_str().ok())
+        {
+            let pair = cookie.split(';').next().unwrap_or_default();
+            if let Some((name, value)) = pair.split_once('=') {
+                if cookie.contains("Max-Age=0") {
+                    self.jar.remove(name);
+                } else {
+                    self.jar.insert(name.to_owned(), value.to_owned());
+                }
+            }
+        }
+        Ok((parts.status, parts.headers, bytes))
+    }
+
+    /// The JSON answer, after the check of what it says about keeping it.
+    fn reply_of(
+        method: &str,
+        path: &str,
+        status: StatusCode,
+        headers: HeaderMap,
+        bytes: &[u8],
+    ) -> Result<Reply, Failure> {
+        let json = is_json(&headers);
+        let reply = Reply {
+            status,
+            headers,
+            body: if bytes.is_empty() || !json {
+                Value::Null
+            } else {
+                serde_json::from_slice(bytes)?
+            },
+        };
+        assert_cache_rules(method, path, &reply);
+        Ok(reply)
     }
 
     /// A change that carries no token of the session (a page that forgot it, or a forger).
@@ -313,34 +438,8 @@ impl Browser {
             }
             None => Body::empty(),
         };
-        let mut request = request.body(body)?;
-        request
-            .extensions_mut()
-            .insert(ConnectInfo(ClientAddr(self.peer)));
-        let response = self.app.clone().oneshot(request).await?;
-        let (parts, body) = response.into_parts();
-        let bytes = axum::body::to_bytes(body, usize::MAX).await?;
-        let reply = Reply {
-            status: parts.status,
-            headers: parts.headers,
-            body: if bytes.is_empty() {
-                Value::Null
-            } else {
-                serde_json::from_slice(&bytes)?
-            },
-        };
-        assert_cache_rules(method, path, &reply);
-        for cookie in reply.cookies() {
-            let pair = cookie.split(';').next().unwrap_or_default();
-            if let Some((name, value)) = pair.split_once('=') {
-                if cookie.contains("Max-Age=0") {
-                    self.jar.remove(name);
-                } else {
-                    self.jar.insert(name.to_owned(), value.to_owned());
-                }
-            }
-        }
-        Ok(reply)
+        let (status, headers, bytes) = Box::pin(self.exchange(request, body)).await?;
+        Self::reply_of(method, path, status, headers, &bytes)
     }
 }
 

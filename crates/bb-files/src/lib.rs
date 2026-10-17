@@ -10,6 +10,8 @@
 #![forbid(unsafe_code)]
 
 mod disk;
+#[cfg(any(test, feature = "testing"))]
+pub mod fixtures;
 pub mod preview;
 mod sniff;
 

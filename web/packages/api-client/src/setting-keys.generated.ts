@@ -25,6 +25,8 @@ export const settingKeys = {
   authAccessKeyDefaultDays: "auth.access-key-default-days",
   authAccessKeyLongestDays: "auth.access-key-longest-days",
   issuesIdMode: "issues.id-mode",
+  filesMaxMegabytes: "files.max-megabytes",
+  filesBlockedTypes: "files.blocked-types",
   issuesIdLength: "issues.id-length",
 } as const;
 
@@ -69,6 +71,8 @@ export const settingDefaults = {
   authAccessKeyDefaultDays: 90,
   authAccessKeyLongestDays: 365,
   issuesIdMode: "random",
+  filesMaxMegabytes: 25,
+  filesBlockedTypes: "",
   issuesIdLength: 5,
 } as const;
 

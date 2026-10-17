@@ -30,7 +30,7 @@ use bb_core::message;
 pub(crate) const TAKE_OVER_FLAG: &str = "--take-over-data-folder";
 
 const DATABASE_FILE: &str = bb_store::DATABASE_FILE;
-const FILES: &str = "files";
+const FILES: &str = bb_files::FILES_FOLDER;
 const KEYS: &str = bb_store::KEYS_FOLDER;
 const BACKUPS: &str = "backups";
 const TLS: &str = "tls";
@@ -135,6 +135,11 @@ impl DataFolder {
 
     pub(crate) fn keys(&self) -> PathBuf {
         self.root.join(KEYS)
+    }
+
+    /// Where the bytes of files and their previews are kept (ADR-0032).
+    pub(crate) fn files(&self) -> PathBuf {
+        self.root.join(FILES)
     }
 
     /// Where the security log writes down its end (SEC-15).

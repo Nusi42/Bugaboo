@@ -18,6 +18,7 @@ mod setup;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use bb_core::files::PreviewKind;
 use bb_core::message::{self, Message, MessageKey};
 use clap::{Args, Parser, Subcommand};
 
@@ -61,6 +62,27 @@ enum Command {
         #[command(subcommand)]
         command: KeysCommand,
     },
+    /// Started by the server, never by a person: creates the preview of one file in a process of
+    /// its own, with limits on pixels, time and size (ADR-0032 §4).
+    #[command(name = "preview", hide = true)]
+    Preview(PreviewArgs),
+}
+
+/// What `bugaboo preview` reads and writes.
+#[derive(Args)]
+pub(crate) struct PreviewArgs {
+    /// `image` or `pdf`.
+    #[arg(value_parser = preview_kind)]
+    kind: PreviewKind,
+    /// The file.
+    input: PathBuf,
+    /// Where the preview, a small PNG, is written.
+    output: PathBuf,
+}
+
+/// The kind of a preview, as the server names it on the command line.
+fn preview_kind(word: &str) -> Result<PreviewKind, String> {
+    PreviewKind::from_code(word).ok_or_else(|| word.to_owned())
 }
 
 #[derive(Subcommand)]
@@ -190,6 +212,11 @@ pub(crate) async fn run() -> ExitCode {
         Command::Keys {
             command: KeysCommand::Export { store, folder },
         } => secrets::export_keys(&store, &folder).await,
+        // The child process of a preview: its exit code is its answer (`PreviewRefusal`).
+        Command::Preview(args) => {
+            let code = bb_files::preview::run(args.kind, &args.input, &args.output);
+            return u8::try_from(code).map_or(ExitCode::FAILURE, ExitCode::from);
+        }
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

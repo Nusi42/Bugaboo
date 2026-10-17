@@ -165,9 +165,9 @@ async fn att_01_an_interrupted_upload_goes_on_from_the_last_part() -> Outcome {
         offset,
         bytes: bytes.to_vec(),
     };
-    assert_eq!(started.received, 0);
+    assert_eq!(started.offset, 0);
     let after_first = send_part(&world.ctx(), part(0, head)).await?.into_value();
-    assert_eq!(after_first.received, head.len() as u64);
+    assert_eq!(after_first.offset, head.len() as u64);
 
     // The connection was lost: the client asks where the server stands and goes on from there.
     let state = upload_state(
@@ -179,7 +179,7 @@ async fn att_01_an_interrupted_upload_goes_on_from_the_last_part() -> Outcome {
     )
     .await?
     .into_value();
-    assert_eq!(state.received, head.len() as u64);
+    assert_eq!(state.offset, head.len() as u64);
     // The first part again is refused, and the file is not finished yet.
     refused(
         send_part(&world.ctx(), part(0, head)).await,
@@ -193,7 +193,7 @@ async fn att_01_an_interrupted_upload_goes_on_from_the_last_part() -> Outcome {
         finish_upload(&world.ctx(), finish()).await,
         ErrorCode::FileIncomplete,
     );
-    send_part(&world.ctx(), part(state.received, tail)).await?;
+    send_part(&world.ctx(), part(state.offset, tail)).await?;
     let attachment = finish_upload(&world.ctx(), finish()).await?.into_value();
     assert_eq!(attachment.size, A_FILE.len() as u64);
     assert_eq!(attachment.name, "jam.txt");

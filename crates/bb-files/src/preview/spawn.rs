@@ -24,9 +24,21 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 /// and the output (for the server, `bugaboo` and `preview`).
 #[derive(Clone, Debug)]
 pub struct PreviewCommand {
-    program: PathBuf,
-    arguments: Vec<OsString>,
+    runner: Runner,
     time_limit: Duration,
+}
+
+/// Who creates the preview.
+#[derive(Clone, Debug)]
+enum Runner {
+    /// A child process: the program and the arguments before the kind, the input and the output.
+    Child {
+        program: PathBuf,
+        arguments: Vec<OsString>,
+    },
+    /// The tests of the server make the preview themselves.
+    #[cfg(any(test, feature = "testing"))]
+    InProcess,
 }
 
 impl PreviewCommand {
@@ -34,8 +46,21 @@ impl PreviewCommand {
     #[must_use]
     pub fn new(program: impl Into<PathBuf>, arguments: &[&str]) -> Self {
         Self {
-            program: program.into(),
-            arguments: arguments.iter().map(OsString::from).collect(),
+            runner: Runner::Child {
+                program: program.into(),
+                arguments: arguments.iter().map(OsString::from).collect(),
+            },
+            time_limit: TIME_LIMIT,
+        }
+    }
+
+    /// A command that makes the preview in the process that asks, without a child (tests of the
+    /// server only; the limits on pixels, size and output still hold, a crash is not survived).
+    #[cfg(any(test, feature = "testing"))]
+    #[must_use]
+    pub const fn in_process() -> Self {
+        Self {
+            runner: Runner::InProcess,
             time_limit: TIME_LIMIT,
         }
     }
@@ -79,28 +104,21 @@ pub(crate) async fn create(
     input: &Path,
     output: &Path,
 ) -> io::Result<PreviewOutcome> {
-    let mut process = Command::new(&command.program);
-    process
-        .args(&command.arguments)
-        .arg(kind.code())
-        .arg(input)
-        .arg(output)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .kill_on_drop(true);
-    #[cfg(windows)]
-    process.creation_flags(CREATE_NO_WINDOW);
-    let mut child = process.spawn()?;
-    let outcome = match tokio::time::timeout(command.time_limit, child.wait()).await {
-        Ok(status) => match status?.code() {
-            Some(0) => PreviewOutcome::Created,
-            code => PreviewOutcome::Without(code),
-        },
-        Err(_) => {
-            // Stopping a child that is already gone is no error worth knowing.
-            child.kill().await.ok();
-            PreviewOutcome::TimedOut
+    let outcome = match &command.runner {
+        Runner::Child { program, arguments } => {
+            run_child(program, arguments, command.time_limit, kind, input, output).await?
+        }
+        #[cfg(any(test, feature = "testing"))]
+        Runner::InProcess => {
+            let (input, output) = (input.to_owned(), output.to_owned());
+            let code = tokio::task::spawn_blocking(move || super::run(kind, &input, &output))
+                .await
+                .map_err(io::Error::other)?;
+            if code == 0 {
+                PreviewOutcome::Created
+            } else {
+                PreviewOutcome::Without(Some(code))
+            }
         }
     };
     if outcome == PreviewOutcome::Created && !is_small_png(output).await {
@@ -111,6 +129,39 @@ pub(crate) async fn create(
         tokio::fs::remove_file(output).await.ok();
     }
     Ok(outcome)
+}
+
+/// Starts the child and waits for it, for at most `time_limit`.
+async fn run_child(
+    program: &Path,
+    arguments: &[OsString],
+    time_limit: Duration,
+    kind: PreviewKind,
+    input: &Path,
+    output: &Path,
+) -> io::Result<PreviewOutcome> {
+    let mut process = Command::new(program);
+    process
+        .args(arguments)
+        .arg(kind.code())
+        .arg(input)
+        .arg(output)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .kill_on_drop(true);
+    #[cfg(windows)]
+    process.creation_flags(CREATE_NO_WINDOW);
+    let mut child = process.spawn()?;
+    if let Ok(status) = tokio::time::timeout(time_limit, child.wait()).await {
+        return Ok(match status?.code() {
+            Some(0) => PreviewOutcome::Created,
+            code => PreviewOutcome::Without(code),
+        });
+    }
+    // Stopping a child that is already gone is no error worth knowing.
+    child.kill().await.ok();
+    Ok(PreviewOutcome::TimedOut)
 }
 
 /// Whether the file is a PNG no bigger than [`MAX_OUTPUT_BYTES`].
