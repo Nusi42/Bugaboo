@@ -1,3 +1,4 @@
+import { takePastedFiles } from "@bugaboo/ui";
 import { useEffect } from "react";
 
 /**
@@ -9,9 +10,8 @@ import { useEffect } from "react";
 export function usePastedFiles(onFiles: ((files: readonly File[]) => void) | undefined): void {
   useEffect(() => {
     const listener = (event: ClipboardEvent): void => {
-      const files = Array.from(event.clipboardData?.files ?? []);
-      if (onFiles !== undefined && files.length > 0 && !event.defaultPrevented) {
-        event.preventDefault();
+      const files = onFiles === undefined ? [] : takePastedFiles(event);
+      if (onFiles !== undefined && files.length > 0) {
         onFiles(files);
       }
     };

@@ -123,7 +123,10 @@
           // are read from it piece by piece (`Blob.slice`) and nothing changes it.
           { "from": "lib", "name": ["Blob", "File", "FileList", "ClipboardEvent"] },
           // The element a test of drag and drop hands to the page (Playwright types it so).
-          { "from": "lib", "name": ["HTMLElement", "SVGElement", "DataTransferItem"] },
+          {
+            "from": "lib",
+            "name": ["HTMLElement", "SVGElement", "DataTransfer", "DataTransferItem"]
+          },
           // The bytes of a file the tests make (a picture, a PDF) are a Node `Buffer`.
           { "from": "package", "package": "@types/node", "name": ["Buffer"] },
           // What React Aria hands the place that takes dropped files: the event, and the files,

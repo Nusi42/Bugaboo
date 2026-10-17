@@ -4,7 +4,7 @@ import { useCallback, useId } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { FileRows } from "./FileRows.tsx";
-import { useFileRules, useIssueFiles } from "./files.ts";
+import { useFileLimit, useFileRules, useIssueFiles } from "./files.ts";
 import { TransferRows } from "./TransferRows.tsx";
 import { transfers, useTransfers } from "./transfers.ts";
 import { usePastedFiles } from "./use-pasted-files.ts";
@@ -21,7 +21,7 @@ export function FilesBlock({ readableId }: { readonly readableId: string }) {
   const list = useIssueFiles(readableId);
   const sending = useTransfers({ issue: readableId, comment: null });
   const mayAdd = rules.data?.may_add === true;
-  const limit = rules.data?.limit_bytes ?? 0;
+  const limit = useFileLimit(readableId);
   const add = useCallback(
     (files: readonly File[]) => {
       transfers.add({ issue: readableId, comment: null }, files, limit);

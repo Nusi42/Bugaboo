@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { useFileRules } from "./files.ts";
+import { useFileLimit } from "./files.ts";
 import { transfers } from "./transfers.ts";
 
 /** The files a person chose for a comment they have not posted yet. */
@@ -19,7 +19,7 @@ export interface ChosenFiles {
  */
 export function useChosenFiles(issue: string): ChosenFiles {
   const [files, setFiles] = useState<readonly File[]>([]);
-  const limit = useFileRules(issue).data?.limit_bytes ?? 0;
+  const limit = useFileLimit(issue);
   return {
     files,
     add: (more) => {
@@ -48,7 +48,7 @@ export function useFilesToComment(
   issue: string,
   comment: string,
 ): (files: readonly File[]) => void {
-  const limit = useFileRules(issue).data?.limit_bytes ?? 0;
+  const limit = useFileLimit(issue);
   return useCallback(
     (files) => {
       transfers.add({ issue, comment }, files, limit);

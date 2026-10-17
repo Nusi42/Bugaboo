@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { FilePicker, partOf, part } from "@bugaboo/ui";
 
 import { FileRows } from "./FileRows.tsx";
-import { useFileRules, useIssueFiles } from "./files.ts";
+import { useFileLimit, useIssueFiles } from "./files.ts";
 import { TransferRows } from "./TransferRows.tsx";
 import { transfers, useTransfers } from "./transfers.ts";
 
@@ -20,10 +20,9 @@ export function CommentFiles({
   readonly mayAdd: boolean;
 }) {
   const list = useIssueFiles(issue);
-  const rules = useFileRules(issue);
   const sending = useTransfers({ issue, comment });
   const items = (list.data?.items ?? []).filter((each) => each.comment === comment);
-  const limit = rules.data?.limit_bytes ?? 0;
+  const limit = useFileLimit(issue);
   if (items.length === 0 && sending.length === 0 && !mayAdd) {
     return null;
   }
