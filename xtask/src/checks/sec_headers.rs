@@ -79,6 +79,8 @@ const DOWNLOAD_DIRECTIVES: [&str; 3] = ["default-src 'none'", "frame-ancestors '
 /// Where the name of the policy header may be written next to something else than the policy of the
 /// table or of a download: nowhere. The lines after it that must name the download policy.
 const POLICY_SETTER_LINES: usize = 3;
+/// How the first entry of the table, which is the policy, is named in code (in lower case).
+const POLICY_ENTRY: &str = "security_headers[0]";
 
 pub(crate) struct SecHeaders;
 
@@ -262,8 +264,12 @@ fn check_who_sets_the_policy(sources: &[Source]) -> Vec<Finding> {
         let lines: Vec<&str> = code.lines().collect();
         for (at, line) in lines.iter().enumerate() {
             let lower = line.to_ascii_lowercase();
-            if (lower.contains("content_security_policy")
-                || lower.contains("content-security-policy"))
+            // The name of the header is written out, or taken from the first entry of the table
+            // (which is the policy; a test of `headers.rs` holds it to that).
+            let names_the_header = lower.contains("content_security_policy")
+                || lower.contains("content-security-policy")
+                || lower.contains(POLICY_ENTRY);
+            if names_the_header
                 && !lower.trim_start().starts_with("//")
                 && !lines[at..lines.len().min(at + 1 + POLICY_SETTER_LINES)]
                     .iter()
@@ -509,6 +515,9 @@ mod tests { fn t() { h[header::CONTENT_SECURITY_POLICY]; } }";
         assert_eq!(check_who_sets_the_policy(&sources(own)).len(), 1);
         let named = "let name = \"content-security-policy\";";
         assert_eq!(check_who_sets_the_policy(&sources(named)).len(), 1);
+        // The name taken from the table is the name of the header all the same.
+        let from_the_table = "headers.insert(HeaderName::from_static(SECURITY_HEADERS[0].0), v);";
+        assert_eq!(check_who_sets_the_policy(&sources(from_the_table)).len(), 1);
         // The table itself is the one place that writes its own value.
         assert!(check_who_sets_the_policy(&[(SOURCE.to_owned(), own.to_owned())]).is_empty());
     }
