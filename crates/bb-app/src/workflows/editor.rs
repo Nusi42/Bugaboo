@@ -65,7 +65,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// The groups *Who can do it* can name: all of them for somebody who manages groups, and the
     /// ones the workflow names already for anybody else.
-    async fn groups_offered(
+    pub(super) async fn groups_offered(
         &self,
         actor: &Actor,
         content: &WorkflowContent,
@@ -244,11 +244,19 @@ pub async fn workflows<S: AuthStore>(
     let held = ctx
         .require(&actor, Permission::ManageWorkflows, at.place())
         .await?;
-    let headers = ctx
+    // Only workflows the person could put to use at this place: the ones that sit at the place or
+    // above it. A workflow of a project they do not manage elsewhere is not listed.
+    let mut headers = Vec::new();
+    for header in ctx
         .store()
         .workflow_headers()
         .await
-        .map_err(|error| internal::<S>(&error))?;
+        .map_err(|error| internal::<S>(&error))?
+    {
+        if ctx.may_adopt_workflow(&actor, header.id, &at.chain).await? {
+            headers.push(header);
+        }
+    }
     let truncated = headers.len() > WORKFLOWS_LISTED_MAX;
     let workflows = headers
         .into_iter()

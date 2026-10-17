@@ -15,6 +15,7 @@ mod resolve;
 mod starting;
 mod status;
 mod store;
+mod strand;
 mod try_it;
 mod types;
 mod write;

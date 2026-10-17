@@ -3,11 +3,9 @@
 //! Like the other ports, reads take `&self` and **writes** are associated functions that run inside
 //! `record_change`, so a change and its domain event are committed together (ARCH-EVENTS).
 
-use bb_core::id::WorkflowId;
+use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::Issue;
-use bb_core::workflow::{
-    StatusKey, StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse,
-};
+use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 
 use crate::fields::FieldStore;
 use crate::store_macros::{queries, writes};
@@ -27,9 +25,13 @@ pub trait WorkflowStore: FieldStore + 'static {
         /// Whether any issue was ever written, also one in the trash: what tells an organization
         /// that ran before workflows from a new one.
         fn has_issues() -> bool = has_issues_in;
-        /// The issues that are not in the trash and are in one of these statuses, in any project:
-        /// what *Publish* looks at when a workflow drops a status.
-        fn issues_in_statuses(keys: Vec<StatusKey>) -> Vec<Issue> = issues_in_statuses_in;
+        /// The issues that are not in the trash, in one of these projects (`None`: any) and of
+        /// one of these issue types (`None`: any). What a change to the workflows of some places
+        /// looks at, so it reads the issues those places reach and no others.
+        fn live_issues(
+            projects: Option<Vec<ProjectId>>,
+            issue_types: Option<Vec<IssueTypeId>>
+        ) -> Vec<Issue> = live_issues_in;
     }
 
     writes! {

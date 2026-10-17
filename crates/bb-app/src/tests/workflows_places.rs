@@ -183,17 +183,26 @@ async fn iss_09_many_changes_skip_an_issue_whose_workflow_does_not_allow_it() ->
 #[tokio::test]
 async fn wf_02_a_workflow_is_used_by_another_place_and_taken_away_again() -> Outcome {
     let world = World::new().await?;
-    a_project(&world, "ACME").await?;
-    a_project(&world, "OTHER").await?;
+    let acme = a_project(&world, "ACME").await?;
     let admin = world.admin.session_token.clone();
+    crate::projects::create_project(
+        &world.ctx(),
+        crate::projects::CreateProject {
+            session_token: admin.clone(),
+            parent: Some(acme),
+            short_name: "KID".to_owned(),
+            name: "A child".to_owned(),
+        },
+    )
+    .await?;
     let editor = a_workflow(&world, "ACME").await?;
     let slot = editor.workflow.ok_or("no workflow")?;
-    // OTHER uses the workflow of ACME.
+    // A project below ACME uses the workflow of ACME by name.
     let used = use_workflow(
         &world.ctx(),
         UseWorkflow {
             session_token: admin.clone(),
-            project: Some("OTHER".to_owned()),
+            project: Some("KID".to_owned()),
             issue_type: None,
             workflow: Some(slot.id),
         },

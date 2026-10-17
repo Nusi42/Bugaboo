@@ -348,7 +348,7 @@ async fn wf_04_must_be_filled_in_names_the_missing_field() -> Outcome {
 }
 
 /// A person whose role is a copy of a Team member's that does not see *Assigned to*.
-async fn person_who_cannot_see_who_is_assigned(
+pub(super) async fn person_who_cannot_see_who_is_assigned(
     world: &World,
     project: ProjectId,
 ) -> Result<Started, AppError> {

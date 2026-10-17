@@ -1,10 +1,8 @@
 //! The workflows part of the in-memory store.
 
-use bb_core::id::WorkflowId;
+use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::Issue;
-use bb_core::workflow::{
-    StatusKey, StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse,
-};
+use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::workflows::WorkflowStore;
@@ -56,15 +54,24 @@ impl WorkflowStore for FakeStore {
         Ok(!tx.state.issues.is_empty())
     }
 
-    async fn issues_in_statuses_in(
+    async fn live_issues_in(
         tx: &mut Tx,
-        keys: Vec<StatusKey>,
+        projects: Option<Vec<ProjectId>>,
+        issue_types: Option<Vec<IssueTypeId>>,
     ) -> Result<Vec<Issue>, FakeError> {
         let mut found: Vec<Issue> = tx
             .state
             .issues
             .iter()
-            .filter(|issue| issue.deleted_at.is_none() && keys.contains(&issue.status))
+            .filter(|issue| {
+                issue.deleted_at.is_none()
+                    && projects
+                        .as_ref()
+                        .is_none_or(|projects| projects.contains(&issue.project))
+                    && issue_types
+                        .as_ref()
+                        .is_none_or(|types| types.contains(&issue.issue_type))
+            })
             .cloned()
             .collect();
         found.sort_by_key(|issue| issue.id);

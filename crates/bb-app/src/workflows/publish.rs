@@ -2,65 +2,100 @@
 //! now on.
 //!
 //! The workflow is saved under the edit lock the person holds, on the version they looked at. When
-//! it drops a status that issues are still in, the person says where those issues go, and they are
-//! moved by changes to many issues (ADR-0017) once the workflow is saved, each with its history.
-//! Nothing is saved while an issue would be left in a status the workflow no longer has.
+//! it drops a status that issues are still in, the person says where those issues go. Every such
+//! move is judged first, on the same path as the preview of a change to many issues and in the
+//! workflow as it will be; if any issue would be skipped, nothing is published. The moves are made
+//! inside the change that saves the workflow, each with its history, and the last thing the change
+//! does is to check that no live issue is left in a status its workflow does not have
+//! (`strand.rs`). So *Publish* either does all of it or none.
+
+use std::collections::BTreeMap;
 
 use bb_core::ErrorCode;
+use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::fields::FieldKey;
-use bb_core::id::WorkflowId;
-use bb_core::issue::Issue;
-use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
+use bb_core::id::{GroupId, WorkflowId};
+use bb_core::issue::{Issue, StatusGroup};
 use bb_core::own_fields::FieldFor;
 use bb_core::version::counted_up;
 use bb_core::workflow::{StatusKey, StoredWorkflow, WorkflowContent, check_name};
-use bb_policy::{Authorized, Permission};
+use bb_policy::{Authorized, Evaluation, Permission};
 use serde_json::json;
 
+use super::strand::{Reach, count_stranded_in, places_of};
 use super::types::{PublishWorkflow, Published, StatusMoveInput, WorkflowSlot};
 use super::write::{summary, what_of};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::editing::{TextSave, Written};
-use crate::many_changes::{
-    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeTarget, apply_many_changes,
-};
+use crate::issues::{ChangeIssue, member as issue_member};
 use crate::member::workflow as member;
 
-/// The issues that go to one status, because the status they were in is dropped.
+/// An issue that goes to another status because the status it was in is dropped.
 struct Moving {
+    issue: Issue,
     target: StatusKey,
-    issues: Vec<Issue>,
+    /// The status group of the target: it decides the closed date.
+    group: StatusGroup,
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The workflow the editor sends, when it is one that can be stored: it breaks no rule, and the
-    /// own fields its rules name are fields of issues.
-    async fn publishable(&self, input: &PublishWorkflow) -> Result<WorkflowContent, AppError> {
+    /// The workflow the editor sends, when it is one that can be stored: it breaks no rule, the own
+    /// fields its rules name are fields of issues, and every rule that is new or changed names only
+    /// fields the person may see at the place and groups they may know. Rules that are there
+    /// already stay as they are, whatever they name.
+    async fn publishable(
+        &self,
+        actor: &Actor,
+        held: &Evaluation,
+        stored: &StoredWorkflow,
+        input: &PublishWorkflow,
+    ) -> Result<WorkflowContent, AppError> {
         check_name(&input.name).map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
         let content = WorkflowContent::from_drafts(&input.statuses, &input.changes)
             .map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
         let definitions = self.field_catalogue().await?;
+        let known_groups: Vec<GroupId> = self
+            .groups_offered(actor, &stored.content)
+            .await?
+            .into_iter()
+            .map(|group| group.id)
+            .collect();
         for change in &content.changes {
+            let already = stored
+                .content
+                .change(&change.from, &change.to)
+                .is_some_and(|each| each.rules == change.rules);
             for field in change.rules.fields() {
-                let FieldKey::Own(id) = field else {
-                    continue;
-                };
-                let for_issues = definitions
-                    .iter()
-                    .any(|each| each.field.id == id && each.field.applies_to == FieldFor::Issues);
-                if !for_issues {
-                    return Err(ErrorCode::FieldNotHere.into());
+                if let FieldKey::Own(id) = field {
+                    let for_issues = definitions.iter().any(|each| {
+                        each.field.id == id && each.field.applies_to == FieldFor::Issues
+                    });
+                    if !for_issues {
+                        return Err(ErrorCode::FieldNotHere.into());
+                    }
                 }
+                if !already && held.field_level_for(None, field) < FieldLevel::CanSee {
+                    return Err(ErrorCode::WorkflowInvalid.into());
+                }
+            }
+            let groups = &change.rules.who.groups;
+            if !already && groups.iter().any(|group| !known_groups.contains(group)) {
+                return Err(ErrorCode::WorkflowInvalid.into());
             }
         }
         Ok(content)
     }
 
-    /// Where the issues of the dropped statuses go: for each issue the workflow governs that is in
-    /// a dropped status, the status it is sent to.
+    /// Where the issues of the dropped statuses go: for each live issue the workflow governs that
+    /// is in a dropped status, the status it is sent to. Each move is judged as a change by the
+    /// person who publishes, in the workflow as it will be; one that would be skipped (they may not
+    /// change the issue, the status is not allowed, or the issue changed since) refuses the whole
+    /// publish.
     async fn plan_moves(
         &self,
+        actor: &Actor,
         stored: &StoredWorkflow,
         content: &WorkflowContent,
         asked: &[StatusMoveInput],
@@ -77,69 +112,65 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let directory = self.workflow_directory().await?;
         let issues = self
-            .governed_issues(&directory, stored.workflow.id, dropped)
+            .governed_issues(&directory, stored.workflow.id, &dropped)
             .await?;
-        let mut moving: Vec<Moving> = Vec::new();
-        for (issue, _) in issues {
+        let mut planned = Vec::with_capacity(issues.len());
+        for issue in issues {
             let target = asked
                 .iter()
                 .find(|each| each.from == issue.status)
                 .map(|each| each.to.clone())
                 .ok_or(AppError::Refused(ErrorCode::WorkflowStatusInUse))?;
-            match moving.iter_mut().find(|each| each.target == target) {
-                Some(found) => found.issues.push(issue),
-                None => moving.push(Moving {
-                    target,
-                    issues: vec![issue],
-                }),
+            let group = content
+                .status(&target)
+                .map(|each| each.group)
+                .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+            planned.push(Moving {
+                issue,
+                target,
+                group,
+            });
+        }
+        // From here on the request sees the workflow as it will be.
+        self.see_directory(directory.with_content(stored.workflow.id, content.clone()));
+        let mut skipped = 0_usize;
+        for each in &planned {
+            let asked = ChangeIssue {
+                session_token: String::new(),
+                issue: each.issue.id.to_string(),
+                version: each.issue.version,
+                issue_type: None,
+                title: None,
+                status: Some(each.target.clone()),
+                priority: None,
+                assigned_to: None,
+                fields: BTreeMap::new(),
+            };
+            if self.plan_issue_change(actor, &asked).await.is_err() {
+                skipped += 1;
             }
         }
-        Ok(moving)
-    }
-
-    /// Moves the issues as changes to many issues, as the person who published, in steps of the
-    /// most issues one change names.
-    async fn run_moves(&self, token: &str, moving: Vec<Moving>) -> Result<(), AppError> {
-        for Moving { target, issues } in moving {
-            for step in issues.chunks(MANY_CHANGES_ISSUES_MAX) {
-                apply_many_changes(
-                    self,
-                    ApplyManyChanges {
-                        session_token: token.to_owned(),
-                        issues: step
-                            .iter()
-                            .map(|issue| ManyChangeTarget {
-                                issue: issue.id.to_string(),
-                                version: issue.version,
-                            })
-                            .collect(),
-                        action: ManyChangeAction::Change {
-                            change: ManyChange {
-                                status: Some(target.clone()),
-                                ..ManyChange::default()
-                            },
-                        },
-                    },
-                )
-                .await?;
-            }
+        self.forget_workflows();
+        if skipped > 0 {
+            return Err(ErrorCode::WorkflowStatusInUse.into());
         }
-        Ok(())
+        Ok(planned)
     }
 }
 
 /// Publishes a workflow under the edit lock the person holds: the statuses, the status changes and
 /// their rules are replaced by what was sent, and the issues of the statuses that are dropped go
-/// where the person said.
+/// where the person said, in the same change.
 ///
 /// # Errors
 /// `resource.not_found` for a workflow that is not there, `access.forbidden` without *Manage
-/// workflows* where it is used, `workflow.invalid` for a workflow that breaks a rule,
-/// `field.not_here` for a rule that names an own field that issues do not have,
-/// `workflow.status_in_use` while an issue is in a dropped status that has no place to go to,
-/// `request.invalid` for a move that makes no sense; `edit.lock_lost`, `edit.taken_over` and
-/// `edit.version_changed` for a lock that is gone, was taken over, or a workflow that changed
-/// since (the workflow is kept as the draft of the person in all three).
+/// workflows* where it is used, `workflow.invalid` for a workflow that breaks a rule or a rule that
+/// names a field or a group the person may not know, `field.not_here` for a rule that names an own
+/// field that issues do not have, `workflow.status_in_use` while an issue would be left in a
+/// status the workflow no longer has or could not be moved by this person, `request.invalid` for a
+/// move that makes no sense; `edit.lock_lost`, `edit.taken_over` and `edit.version_changed` for a
+/// lock that is gone, was taken over, or a workflow that changed since (the workflow is kept as the
+/// draft of the person in all three).
 pub async fn publish_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PublishWorkflow,
@@ -155,9 +186,18 @@ pub async fn publish_workflow<S: AuthStore>(
     let held = ctx
         .require(&actor, Permission::ManageWorkflows, place)
         .await?;
-    let content = ctx.publishable(&input).await?;
-    let moving = ctx.plan_moves(&stored, &content, &input.moves).await?;
+    let content = ctx.publishable(&actor, &held, &stored, &input).await?;
+    let moving = ctx
+        .plan_moves(&actor, &stored, &content, &input.moves)
+        .await?;
     let id: WorkflowId = input.workflow;
+    let directory = ctx.workflow_directory().await?;
+    let tree = ctx
+        .store()
+        .project_tree()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let reach = Reach::of(&places_of(directory.uses(), id), &tree);
     let record = entity(RecordKind::Workflow, id);
     let name = input.name.trim().to_owned();
     let (before, after) = (summary(&stored.content), summary(&content));
@@ -189,18 +229,56 @@ pub async fn publish_workflow<S: AuthStore>(
         version: input.version,
     };
     let (version, written, written_name) = (input.version, content, name);
+    let (events, now) = (ctx.event_maker(by(actor.person.id)), ctx.now());
     ctx.save_text(actor.person.id, place, &save, &event, move |transaction| {
         Box::pin(async move {
-            if S::replace_workflow(transaction, id, &written_name, &written, version).await? {
-                Ok(Written::Saved(()))
-            } else {
-                Ok(Written::Stale)
+            if !S::replace_workflow(transaction, id, &written_name, &written, version).await? {
+                return Ok(Written::Stale);
             }
+            // The issues of the dropped statuses go where they were told to, each with its history.
+            for each in &moving {
+                let Some(stored) = S::issue_in(transaction, each.issue.id).await? else {
+                    return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
+                };
+                if stored.deleted_at.is_some() {
+                    // In the trash an issue keeps its status; it starts again when it comes back.
+                    continue;
+                }
+                if stored.version != each.issue.version || stored.status != each.issue.status {
+                    return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
+                }
+                let next = Issue {
+                    status: each.target.clone(),
+                    closed_at: each.group.closed_after(stored.closed_at, now),
+                    updated_at: now,
+                    ..stored.clone()
+                };
+                if !S::update_issue(transaction, &next, stored.version).await? {
+                    return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
+                }
+                let followed = events
+                    .create(
+                        entity(RecordKind::Issue, stored.id),
+                        vec![
+                            FieldChange {
+                                field: issue_member::STATUS.to_owned(),
+                                before: Some(json!(stored.status.as_str())),
+                                after: Some(json!(each.target.as_str())),
+                            },
+                            counted_up(stored.version),
+                        ],
+                    )
+                    .map_err(|_| S::aborted())?;
+                S::append_follow_up_event(transaction, &followed).await?;
+            }
+            if count_stranded_in::<S>(transaction, &reach).await? > 0 {
+                return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
+            }
+            Ok(Written::Saved(()))
         })
     })
     .await?;
     ctx.forget_workflows();
-    ctx.run_moves(&input.session_token, moving).await?;
     Ok(held.authorize(Published {
         workflow: WorkflowSlot {
             id,

@@ -2,15 +2,13 @@
 //! its version, and what a person needs to change it. The issues it governs are found here too,
 //! for *Publish* and for taking a workflow away.
 
-use std::collections::HashMap;
-
 use bb_core::event::EntityRef;
 use bb_core::id::{ProjectId, WorkflowId};
-use bb_core::issue::Issue;
-use bb_core::workflow::StatusKey;
+use bb_core::project::Project;
+use bb_core::workflow::WorkflowUse;
 use bb_policy::{Permission, Place};
 
-use super::resolve::WorkflowDirectory;
+use super::strand::chain_in;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::editing::RecordFacts;
@@ -21,30 +19,37 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// that share no project. A person who holds *Manage workflows* there holds it at every place
     /// the workflow is used.
     pub(crate) async fn place_of_workflow(&self, id: WorkflowId) -> Result<Place, AppError> {
-        let uses = self
-            .store()
-            .workflow_uses()
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let mut common: Option<Vec<ProjectId>> = None;
-        for used in uses.iter().filter(|used| used.workflow == id) {
-            let Some(project) = used.project else {
-                return Ok(Place::Organization);
-            };
-            let chain = self.chain_of(project).await?;
-            common = Some(match common {
-                None => chain,
-                Some(so_far) => so_far
-                    .iter()
-                    .zip(&chain)
-                    .take_while(|(a, b)| a == b)
-                    .map(|(a, _)| *a)
-                    .collect(),
-            });
+        let failed = |error| internal::<S>(&error);
+        let tree = self.store().project_tree().await.map_err(failed)?;
+        let uses = self.store().workflow_uses().await.map_err(failed)?;
+        Ok(place_from_uses(&tree, &uses, id))
+    }
+
+    /// Whether a person may put a workflow to use at a place: the workflow sits at that place or
+    /// at one above it, so a workflow's place never moves down into a project it was not made
+    /// for. One that is used nowhere is the organization's to hand out.
+    pub(crate) async fn may_adopt_workflow(
+        &self,
+        actor: &Actor,
+        id: WorkflowId,
+        chain: &[ProjectId],
+    ) -> Result<bool, AppError> {
+        let failed = |error| internal::<S>(&error);
+        let tree = self.store().project_tree().await.map_err(failed)?;
+        let uses = self.store().workflow_uses().await.map_err(failed)?;
+        let unused = !uses.iter().any(|used| used.workflow == id);
+        if unused
+            && !self
+                .evaluation_of(actor, Place::Organization)
+                .await?
+                .allows(Permission::ManageWorkflows)
+        {
+            return Ok(false);
         }
-        Ok(common
-            .and_then(|chain| chain.last().copied())
-            .map_or(Place::Organization, Place::Project))
+        Ok(match place_from_uses(&tree, &uses, id) {
+            Place::Project(project) => chain.contains(&project),
+            Place::Organization => true,
+        })
     }
 
     /// The facts of a workflow for the editing use cases; `None` when there is no such workflow or
@@ -76,34 +81,28 @@ impl<S: AuthStore> Ctx<'_, S> {
             edit: Permission::ManageWorkflows,
         }))
     }
+}
 
-    /// The issues that are not in the trash, are in one of these statuses, and are governed by this
-    /// workflow, each with the projects from the top down to its project.
-    pub(crate) async fn governed_issues(
-        &self,
-        directory: &WorkflowDirectory,
-        workflow: WorkflowId,
-        keys: Vec<StatusKey>,
-    ) -> Result<Vec<(Issue, Vec<ProjectId>)>, AppError> {
-        let found = self
-            .store()
-            .issues_in_statuses(keys)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let mut chains: HashMap<ProjectId, Vec<ProjectId>> = HashMap::new();
-        let mut governed = Vec::new();
-        for issue in found {
-            let chain = if let Some(known) = chains.get(&issue.project) {
-                known.clone()
-            } else {
-                let chain = self.chain_of(issue.project).await?;
-                chains.insert(issue.project, chain.clone());
-                chain
-            };
-            if directory.id_in_force(&chain, Some(issue.issue_type)) == Some(workflow) {
-                governed.push((issue, chain));
-            }
-        }
-        Ok(governed)
+/// The place that holds a workflow, from the tree of the projects and the places workflows are
+/// used at.
+pub(crate) fn place_from_uses(tree: &[Project], uses: &[WorkflowUse], id: WorkflowId) -> Place {
+    let mut common: Option<Vec<ProjectId>> = None;
+    for used in uses.iter().filter(|used| used.workflow == id) {
+        let Some(project) = used.project else {
+            return Place::Organization;
+        };
+        let chain = chain_in(tree, project);
+        common = Some(match common {
+            None => chain,
+            Some(so_far) => so_far
+                .iter()
+                .zip(&chain)
+                .take_while(|(a, b)| a == b)
+                .map(|(a, _)| *a)
+                .collect(),
+        });
     }
+    common
+        .and_then(|chain| chain.last().copied())
+        .map_or(Place::Organization, Place::Project)
 }

@@ -8,24 +8,29 @@ use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::RecordKind;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::workflow::judge::Verdict;
+use bb_core::workflow::judge::{Verdict, Why};
 use bb_policy::{Authorized, Permission, Place};
 
 use super::status::StatusCheck;
 use super::types::{StatusView, Tried, TriedChange, TriedVerdict, TryWorkflowQuery};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// The answer of the judge as *Try it* tells it. A field is named only when the person who tries
-/// may see it too.
-fn told(verdict: Verdict, may_see: impl Fn(FieldKey) -> bool) -> TriedVerdict {
+/// The answer of the judge as *Try it* tells it. A change whose rules name a field the person who
+/// tries may not see is answered `cannot fill`, with no field and no detail, whatever the judge
+/// said about it: the answer must tell nothing about the field.
+fn told(verdict: Verdict, rules_hide_a_field: bool) -> TriedVerdict {
+    if rules_hide_a_field {
+        return TriedVerdict::NotAllowed {
+            why: Why::CannotFill,
+            field: None,
+        };
+    }
     match verdict {
         Verdict::Allowed => TriedVerdict::Allowed,
-        Verdict::Needs(fields) => TriedVerdict::Needs {
-            fields: fields.into_iter().filter(|field| may_see(*field)).collect(),
-        },
+        Verdict::Needs(fields) => TriedVerdict::Needs { fields },
         Verdict::NotAllowed(because) => TriedVerdict::NotAllowed {
             why: because.why,
-            field: because.field.filter(|field| may_see(*field)),
+            field: because.field,
         },
     }
 }
@@ -90,16 +95,21 @@ pub async fn try_workflow<S: AuthStore>(
     let verdicts = ctx
         .status_verdicts(&check, &workflow, &issue.status)
         .await?;
-    let may_see =
-        |field: FieldKey| held.field_level_for(Some(issue.issue_type), field) >= FieldLevel::CanSee;
+    let hidden_from_trier =
+        |field: FieldKey| held.field_level_for(Some(issue.issue_type), field) < FieldLevel::CanSee;
     Ok(held.authorize(Tried {
         status: StatusView::of_issue(&workflow, &issue),
         changes: verdicts
             .into_iter()
-            .map(|(to, button, verdict)| TriedChange {
-                to,
-                button,
-                verdict: told(verdict, may_see),
+            .map(|(to, button, verdict)| {
+                let hides = workflow
+                    .change(&issue.status, &to.key)
+                    .is_some_and(|each| each.rules.fields().into_iter().any(hidden_from_trier));
+                TriedChange {
+                    verdict: told(verdict, hides),
+                    to,
+                    button,
+                }
             })
             .collect(),
     }))

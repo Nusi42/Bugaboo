@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
 use bb_core::workflow::starter::SIMPLE;
-use bb_core::workflow::{Workflow, WorkflowContent, WorkflowUse, find};
+use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowUse, find};
 
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
@@ -37,6 +37,56 @@ pub(crate) struct WorkflowDirectory {
 }
 
 impl WorkflowDirectory {
+    /// The places workflows are used at, with the workflows they name.
+    pub(crate) fn build(uses: Vec<WorkflowUse>, stored: Vec<StoredWorkflow>) -> Self {
+        Self {
+            uses,
+            workflows: stored
+                .into_iter()
+                .map(|each| {
+                    (
+                        each.workflow.id,
+                        Stored {
+                            workflow: each.workflow,
+                            content: Arc::new(each.content),
+                        },
+                    )
+                })
+                .collect(),
+            starting: Arc::new(SIMPLE.content()),
+        }
+    }
+
+    /// The same places and workflows, copied.
+    fn copied(&self) -> Self {
+        Self {
+            uses: self.uses.clone(),
+            workflows: self
+                .workflows
+                .iter()
+                .map(|(id, stored)| {
+                    (
+                        *id,
+                        Stored {
+                            workflow: stored.workflow.clone(),
+                            content: Arc::clone(&stored.content),
+                        },
+                    )
+                })
+                .collect(),
+            starting: Arc::clone(&self.starting),
+        }
+    }
+
+    /// The same places with one workflow changed to this content: what counts after *Publish*.
+    pub(crate) fn with_content(&self, id: WorkflowId, content: WorkflowContent) -> Self {
+        let mut changed = self.copied();
+        if let Some(stored) = changed.workflows.get_mut(&id) {
+            stored.content = Arc::new(content);
+        }
+        changed
+    }
+
     /// The workflow that counts in a place whose projects from the top down are `chain`, for an
     /// issue of this type (`None`: all types), and where it is set.
     pub(crate) fn detail(&self, chain: &[ProjectId], issue_type: Option<IssueTypeId>) -> InForce {
@@ -79,33 +129,6 @@ impl WorkflowDirectory {
             .map(|workflow| workflow.id)
     }
 
-    /// The same places without one workflow: the places that used it follow their parent.
-    pub(crate) fn without(&self, workflow: WorkflowId) -> Self {
-        Self {
-            uses: self
-                .uses
-                .iter()
-                .filter(|used| used.workflow != workflow)
-                .copied()
-                .collect(),
-            workflows: self
-                .workflows
-                .iter()
-                .filter(|(id, _)| **id != workflow)
-                .map(|(id, stored)| {
-                    (
-                        *id,
-                        Stored {
-                            workflow: stored.workflow.clone(),
-                            content: Arc::clone(&stored.content),
-                        },
-                    )
-                })
-                .collect(),
-            starting: Arc::clone(&self.starting),
-        }
-    }
-
     /// Every place a workflow is used at.
     pub(crate) fn uses(&self) -> &[WorkflowUse] {
         &self.uses
@@ -136,29 +159,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             .store()
             .stored_workflows(named)
             .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .map(|stored| {
-                (
-                    stored.workflow.id,
-                    Stored {
-                        workflow: stored.workflow,
-                        content: Arc::new(stored.content),
-                    },
-                )
-            })
-            .collect();
-        let directory = Arc::new(WorkflowDirectory {
-            uses,
-            workflows,
-            starting: Arc::new(SIMPLE.content()),
-        });
+            .map_err(|error| internal::<S>(&error))?;
+        let directory = Arc::new(WorkflowDirectory::build(uses, workflows));
         *self
             .known
             .workflows
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Arc::clone(&directory));
         Ok(directory)
+    }
+
+    /// Makes the rest of the request see these places and workflows instead of the stored ones:
+    /// what the judge answers once a change that is planned has been made.
+    pub(crate) fn see_directory(&self, directory: WorkflowDirectory) {
+        *self
+            .known
+            .workflows
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Arc::new(directory));
     }
 
     /// Forgets what this request read about workflows: a change was made, and the next question

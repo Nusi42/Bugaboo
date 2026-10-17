@@ -136,9 +136,12 @@ pub(crate) async fn create_workflow_scenario(world: &World) -> Added {
 }
 
 pub(crate) async fn use_workflow_scenario(world: &World) -> Added {
-    a_project(world, "ACME").await?;
     a_project(world, "OTHER").await?;
-    let editor = a_workflow(world, "ACME").await?;
+    // The workflow of the whole organization: a project may put it to use for one issue type.
+    let editor = create_workflow(&world.ctx(), new_workflow(world, None))
+        .await
+        .map_err(text)?
+        .into_value();
     let slot = slot_of(&editor)?;
     let bugs: IssueTypeId = a_type(world).await?;
     measured(

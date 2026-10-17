@@ -5,7 +5,7 @@
 //! the one transaction that checks the version, so a reader never sees half a workflow.
 
 use bb_app::workflows::WorkflowStore;
-use bb_core::id::WorkflowId;
+use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::workflow::{
     StatusKey, StatusRules, StoredChange, StoredStatus, StoredWorkflow, Workflow, WorkflowContent,
@@ -373,18 +373,30 @@ impl WorkflowStore for AuthStorage {
         Ok(!transaction.fetch_all(&select).await?.is_empty())
     }
 
-    async fn issues_in_statuses_in(
+    async fn live_issues_in(
         transaction: &mut Transaction,
-        keys: Vec<StatusKey>,
+        projects: Option<Vec<ProjectId>>,
+        issue_types: Option<Vec<IssueTypeId>>,
     ) -> Result<Vec<Issue>, StoreError> {
-        if keys.is_empty() {
+        if projects.as_ref().is_some_and(Vec::is_empty)
+            || issue_types.as_ref().is_some_and(Vec::is_empty)
+        {
             return Ok(Vec::new());
         }
         let mut select = issue_select();
         select
-            .and_where(Expr::col(IssueRow::Status).is_in(keys.iter().map(StatusKey::as_str)))
             .and_where(Expr::col(IssueRow::DeletedAt).is_null())
             .order_by(IssueRow::Id, Order::Asc);
+        if let Some(projects) = projects {
+            select.and_where(
+                Expr::col(IssueRow::Project).is_in(projects.iter().map(|each| each.stored())),
+            );
+        }
+        if let Some(issue_types) = issue_types {
+            select.and_where(
+                Expr::col(IssueRow::IssueType).is_in(issue_types.iter().map(|each| each.stored())),
+            );
+        }
         transaction
             .fetch_all(&select)
             .await?

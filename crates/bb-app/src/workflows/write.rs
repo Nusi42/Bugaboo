@@ -15,6 +15,7 @@ use bb_core::workflow::{Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 use bb_policy::{Authorized, Permission};
 use serde_json::{Value, json};
 
+use super::strand::{Reach, count_stranded_in, places_of};
 use super::types::{CreateWorkflow, DeleteWorkflow, UseWorkflow, WorkflowEditor};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::editing::let_go_for_delete;
@@ -160,15 +161,22 @@ pub async fn use_workflow<S: AuthStore>(
     let directory = ctx.workflow_directory().await?;
     let now = directory.uses().iter().find(|each| each.place() == place);
     let chosen = match input.workflow {
-        Some(id) => Some(
-            ctx.store()
+        Some(id) => {
+            let found = ctx
+                .store()
                 .stored_workflow(id)
                 .await
                 .map_err(|error| internal::<S>(&error))?
                 .ok_or(AppError::Refused(ErrorCode::NotFound))?
                 .workflow
-                .id,
-        ),
+                .id;
+            // Only a workflow that sits at the place or above it: its place never moves, and a
+            // workflow of a project nobody here manages is not there for this person.
+            if !ctx.may_adopt_workflow(&actor, found, &at.chain).await? {
+                return Err(AppError::Refused(ErrorCode::NotFound));
+            }
+            Some(found)
+        }
         None => None,
     };
     if now.map(|each| each.workflow) == chosen {
@@ -199,6 +207,14 @@ pub async fn use_workflow<S: AuthStore>(
         entity(RecordKind::Workflow, record),
         vec![change],
     )?;
+    let tree = ctx
+        .store()
+        .project_tree()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let reach = Reach::of(&[place], &tree);
+    let why = Why::default();
+    let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -210,14 +226,19 @@ pub async fn use_workflow<S: AuthStore>(
                             issue_type: place.issue_type,
                             workflow,
                         };
-                        S::put_workflow_use(transaction, &used).await
+                        S::put_workflow_use(transaction, &used).await?;
                     }
-                    None => S::remove_workflow_use(transaction, place).await,
+                    None => S::remove_workflow_use(transaction, place).await?,
                 }
+                // No issue of the place is left in a status of a workflow that no longer counts.
+                if count_stranded_in::<S>(transaction, &reach).await? > 0 {
+                    return Err(stopped.stop::<S>(ErrorCode::WorkflowStatusInUse));
+                }
+                Ok(())
             })
         })
         .await
-        .map_err(|error| crate::auth::change_failed::<S>(&error, crate::auth::Stops::NONE))?;
+        .map_err(|error| why.answer::<S>(&error, ErrorCode::VersionChanged))?;
     ctx.forget_workflows();
     Ok(held.authorize(ctx.editor_at(&actor, &held, &at).await?))
 }
@@ -247,8 +268,14 @@ pub async fn delete_workflow<S: AuthStore>(
     let place = ctx.place_of_workflow(input.workflow).await?;
     ctx.require(&actor, Permission::ManageWorkflows, place)
         .await?;
-    ctx.ensure_issues_fit_after_removal(&stored).await?;
     let (id, version) = (input.workflow, input.version);
+    let directory = ctx.workflow_directory().await?;
+    let tree = ctx
+        .store()
+        .project_tree()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let reach = Reach::of(&places_of(directory.uses(), id), &tree);
     let record = entity(RecordKind::Workflow, id);
     let (statuses, changes) = summary(&stored.content);
     let event = ctx.event(
@@ -275,11 +302,15 @@ pub async fn delete_workflow<S: AuthStore>(
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 let_go_for_delete::<S>(transaction, &what, me, now, &stopped).await?;
-                if S::delete_workflow(transaction, id, version).await? {
-                    Ok(())
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
+                if !S::delete_workflow(transaction, id, version).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
+                // The places that used it follow their parent now: nothing is left in a status
+                // of a workflow that no longer counts.
+                if count_stranded_in::<S>(transaction, &reach).await? > 0 {
+                    return Err(stopped.stop::<S>(ErrorCode::WorkflowStatusInUse));
+                }
+                Ok(())
             })
         })
         .await
@@ -292,32 +323,4 @@ pub async fn delete_workflow<S: AuthStore>(
         })?;
     ctx.forget_workflows();
     Ok(Done)
-}
-
-impl<S: AuthStore> Ctx<'_, S> {
-    /// Refuses (`workflow.status_in_use`) when removing the workflow would leave an issue in a status
-    /// that the workflow counting there afterwards does not have.
-    async fn ensure_issues_fit_after_removal(
-        &self,
-        stored: &bb_core::workflow::StoredWorkflow,
-    ) -> Result<(), AppError> {
-        let directory = self.workflow_directory().await?;
-        let keys = stored
-            .content
-            .statuses
-            .iter()
-            .map(|status| status.key.clone())
-            .collect();
-        let issues = self
-            .governed_issues(&directory, stored.workflow.id, keys)
-            .await?;
-        let after = directory.without(stored.workflow.id);
-        for (issue, chain) in &issues {
-            let fallback = after.in_force(chain, Some(issue.issue_type));
-            if fallback.status(&issue.status).is_none() {
-                return Err(ErrorCode::WorkflowStatusInUse.into());
-            }
-        }
-        Ok(())
-    }
 }

@@ -42,4 +42,5 @@ mod workflows_changers;
 mod workflows_outside;
 mod workflows_places;
 mod workflows_rules;
+mod workflows_strand;
 mod world;
