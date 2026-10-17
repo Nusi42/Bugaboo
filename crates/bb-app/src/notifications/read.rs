@@ -18,7 +18,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place};
 use serde_json::json;
 
-use super::plan::edit_note_of;
+use super::plan::{edit_note_of, run_status_of};
 use super::types::{
     NotificationItem, NotificationPage, NotificationWhat, NotificationsQuery, ReadNotifications,
     Unread, UnreadQuery, Which,
@@ -138,11 +138,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 run,
                 // Only a run that says it is done ended well: one that failed, one that was
                 // stopped and work that gave up are not.
-                done: row.changes.iter().any(|change| {
-                    change.field == "status"
-                        && change.after.as_ref().and_then(serde_json::Value::as_str)
-                            == Some(ManyChangeStatus::Done.code())
-                }),
+                done: run_status_of(&row.changes) == Some(ManyChangeStatus::Done),
             })),
             NotificationKind::Mentioned
             | NotificationKind::Assigned

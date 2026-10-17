@@ -7,10 +7,20 @@ use bb_core::edit::NoticeKind;
 use bb_core::event::FieldChange;
 use bb_core::fields::Field;
 use bb_core::id::UserId;
+use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::NotificationKind;
 use serde_json::Value;
 
-use crate::member::edit_lock;
+use crate::member::{edit_lock, run};
+
+/// Where the event of a run of many changes says the run is now, if it says.
+pub(crate) fn run_status_of(changes: &[FieldChange]) -> Option<ManyChangeStatus> {
+    changes
+        .iter()
+        .find(|change| change.field == run::STATUS)
+        .and_then(|change| change.after.as_ref()?.as_str())
+        .and_then(ManyChangeStatus::from_code)
+}
 
 /// The people an event assigned the issue to: in the members after and not in those before.
 pub(crate) fn newly_assigned(changes: &[FieldChange]) -> Vec<UserId> {
@@ -96,6 +106,29 @@ mod tests {
             before,
             after,
         }
+    }
+
+    #[test]
+    fn m3_f125_the_status_of_a_run_is_read_from_its_event_and_only_the_last_three_end_it() {
+        let status = |word: &str| run_status_of(&[change("status", None, Some(json!(word)))]);
+        assert_eq!(status("done"), Some(ManyChangeStatus::Done));
+        for over in ["done", "failed", "stopped"] {
+            assert!(
+                status(over).is_some_and(ManyChangeStatus::is_over),
+                "{over}"
+            );
+        }
+        for going in ["queued", "running"] {
+            assert!(
+                !status(going).is_some_and(ManyChangeStatus::is_over),
+                "{going}"
+            );
+        }
+        assert_eq!(status("nonsense"), None);
+        assert_eq!(
+            run_status_of(&[change("title", None, Some(json!("done")))]),
+            None
+        );
     }
 
     #[test]

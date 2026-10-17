@@ -22,15 +22,16 @@ use bb_core::comment::Mention;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, FieldChange, RecordKind};
 use bb_core::id::{CommentId, EntityId, IssueId, JobId, NotificationId, UserId};
 use bb_core::issue::Issue;
+use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
     BATCH, FIELDS_MAX, MailState, Notification, NotificationKind, Once, Via, mail_batch,
 };
 use bb_core::person::Person;
 use bb_core::settings::Layers;
-use serde_json::{Value, json};
+use serde_json::json;
 
 use super::mail::MailJob;
-use super::plan::{edit_note_of, followed_kind, newly_assigned};
+use super::plan::{edit_note_of, followed_kind, newly_assigned, run_status_of};
 use super::prefs::wants;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
@@ -440,16 +441,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        let ended = event.changes.iter().any(|change| {
-            change.field == "status"
-                && matches!(
-                    change.after.as_ref().and_then(Value::as_str),
-                    Some(word) if word == bb_core::many_changes::ManyChangeStatus::Done.code()
-                        || word == bb_core::many_changes::ManyChangeStatus::Failed.code()
-                        || word == bb_core::many_changes::ManyChangeStatus::Stopped.code()
-                )
-        });
-        if !ended {
+        if !run_status_of(&event.changes).is_some_and(ManyChangeStatus::is_over) {
             return Ok(());
         }
         let subject = Subject {

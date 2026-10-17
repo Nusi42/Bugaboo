@@ -78,6 +78,11 @@ pub(crate) mod edit_lock {
     pub(crate) const PERSON: &str = "person";
 }
 
+/// The member of the event of a run of many changes that says where the run is.
+pub(crate) mod run {
+    pub(crate) const STATUS: &str = "status";
+}
+
 /// The member of the event of a person changing their handle.
 pub(crate) mod handle {
     pub(crate) const FIELD: &str = "handle";

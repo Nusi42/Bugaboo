@@ -28,6 +28,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::jobs::{kind, kind_name};
+use crate::member;
 
 /// The member of the payload of a step that names the run.
 const RUN_KEY: &str = "run";
@@ -94,10 +95,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         else {
             return Ok(());
         };
-        if matches!(
-            run.status,
-            ManyChangeStatus::Done | ManyChangeStatus::Failed | ManyChangeStatus::Stopped
-        ) {
+        if run.status.is_over() {
             return Ok(());
         }
         let Some(person) = self
@@ -210,7 +208,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             EventActor::System,
             entity(RecordKind::ChangeRun, id),
             vec![set_to(
-                "status",
+                member::run::STATUS,
                 serde_json::json!(ManyChangeStatus::Done.code()),
             )],
         )?;
@@ -263,7 +261,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         let event = self.event(
             who,
             entity(RecordKind::ChangeRun, id),
-            vec![set_to("status", serde_json::json!(status.code()))],
+            vec![set_to(
+                member::run::STATUS,
+                serde_json::json!(status.code()),
+            )],
         )?;
         self.store()
             .record_change(&event, move |transaction| {
