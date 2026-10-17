@@ -65,7 +65,10 @@ test("cfg_01 the rows of the Details stand in the order of the layout (M3-F102)"
   await openIssueWithDetails(page, "WEB-1");
   await expect(page).toHaveURL(new RegExp(issueAddress("WEB-1"), "u"));
   const rows = partIn(page, "name-value.name");
-  await expect(rows.first()).toBeVisible();
+  // The rows of Tags, Labels and Followers come from parts that load when the page is opened:
+  // the last of them is waited for, so the order is read when every row is there.
+  await expect(rows.filter({ hasText: t("followers.name") })).toBeVisible();
+  await expect(rows.filter({ hasText: t("labels.labels-heading") })).toBeVisible();
   const names = await rows.allInnerTexts();
   const order = [
     t("labels.tags-heading"),
