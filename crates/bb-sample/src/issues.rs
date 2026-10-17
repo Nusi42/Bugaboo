@@ -25,6 +25,7 @@ use bb_app::tags::{AddLabel, AddTag, add_label, add_tag};
 use bb_core::comment::{TEXT_PART, handle_of};
 use bb_core::edit::EditWhat;
 use bb_core::event::{EntityRef, RecordKind};
+use bb_core::fields::Field;
 use bb_core::id::{CommentId, EditorId, IssueId, LockToken, UserId};
 use bb_core::issue::StatusGroup;
 use bb_core::relation::Direction;
@@ -125,7 +126,11 @@ impl Later for Everything {
             comments: vec![None; plan.comments.len()],
         };
         maker.carry_out(&calendar).await?;
+        let work_since = world.clock.now();
+        let full: u32 = names.projects.iter().map(|project| project.issues).sum();
+        maker.work_together(self.issues, full).await?;
         self.left = maker.leave_states_behind().await?;
+        self.left.work_since = Some(work_since);
         // What a server does every day (the job `history.catch-up`): the history of every issue
         // is read from the events, so the first page that shows one does not have to.
         world
@@ -161,25 +166,78 @@ pub(crate) struct MadeIssue {
     pub(crate) version: i64,
     /// The status group the issue is in.
     group: String,
-    /// The status changes the person who made it may make now: the key and the group of the status
-    /// each ends in.
-    changes: Vec<(String, String)>,
+    /// The status changes the person who made it may make now.
+    pub(crate) changes: Vec<StatusOption>,
+    /// The people it is assigned to, as far as the reader sees them.
+    pub(crate) assigned: Vec<UserId>,
+}
+
+/// A status change an issue offers: the status it ends in, and the fields it still needs (*Ask for*
+/// and *Must be filled in*), by their keys.
+#[derive(Clone, Debug)]
+pub(crate) struct StatusOption {
+    pub(crate) key: String,
+    pub(crate) group: String,
+    pub(crate) needs: Vec<String>,
+}
+
+impl MadeIssue {
+    /// What a status change that asks for the person who does the work carries: the one person who
+    /// is assigned, else the person who makes the change takes it over (with two or more assigned
+    /// the answer does not say in which order they are kept, so the change names one person
+    /// instead). A change that asks for nothing of the kind carries nothing.
+    pub(crate) fn assigned_for(
+        &self,
+        option: &StatusOption,
+        person: UserId,
+    ) -> Option<Vec<UserId>> {
+        option
+            .needs_a_person()
+            .then(|| match self.assigned.as_slice() {
+                [one] => vec![*one],
+                _ => vec![person],
+            })
+    }
+}
+
+impl StatusOption {
+    /// Whether the change needs a person to be assigned.
+    pub(crate) fn needs_a_person(&self) -> bool {
+        self.needs
+            .iter()
+            .any(|field| field == Field::AssignedTo.code())
+    }
 }
 
 impl MadeIssue {
     /// The issue as an answer of the use cases shows it.
-    fn of(answer: &Value) -> Result<Self, SampleError> {
+    pub(crate) fn of(answer: &Value) -> Result<Self, SampleError> {
         let text = |value: &Value| value.as_str().unwrap_or_default().to_owned();
         Ok(Self {
             id: id_in(answer, "id")?,
             version: answer["version"].as_i64().unwrap_or(1),
             group: text(&answer["status"]["group"]),
+            assigned: answer["assigned_to"]
+                .as_array()
+                .map_or(&[][..], Vec::as_slice)
+                .iter()
+                .filter_map(|person| person["id"].as_str()?.parse().ok())
+                .collect(),
             changes: answer["status_changes"]
                 .as_array()
                 .map(|changes| {
                     changes
                         .iter()
-                        .map(|each| (text(&each["to"]["key"]), text(&each["to"]["group"])))
+                        .map(|each| StatusOption {
+                            key: text(&each["to"]["key"]),
+                            group: text(&each["to"]["group"]),
+                            needs: each["needs"]
+                                .as_array()
+                                .map_or(&[][..], Vec::as_slice)
+                                .iter()
+                                .map(text)
+                                .collect(),
+                        })
                         .collect()
                 })
                 .unwrap_or_default(),
@@ -188,13 +246,9 @@ impl MadeIssue {
 
     /// The status change that goes toward the group, if there is one: one that ends in it, else
     /// one that ends in work going on while the issue has not started.
-    fn toward(&self, reached: StatusGroup) -> Option<&str> {
-        let ends_in = |group: StatusGroup| {
-            self.changes
-                .iter()
-                .find(|(_, each)| each == group.code())
-                .map(|(key, _)| key.as_str())
-        };
+    fn toward(&self, reached: StatusGroup) -> Option<&StatusOption> {
+        let ends_in =
+            |group: StatusGroup| self.changes.iter().find(|each| each.group == group.code());
         if self.group == reached.code() {
             return None;
         }
@@ -208,8 +262,8 @@ impl MadeIssue {
 
 #[derive(Clone, Debug)]
 pub(crate) struct MadeComment {
-    id: CommentId,
-    author: usize,
+    pub(crate) id: CommentId,
+    pub(crate) author: usize,
     version: i64,
 }
 
@@ -299,6 +353,7 @@ impl Maker<'_, '_> {
         let planned = &self.plan.issues[at];
         let token = self.hands.token(person).await?;
         let assigned = self.assigned_people(&planned.assigned_people);
+        let ordered = assigned.clone();
         let fields = planned
             .fields
             .iter()
@@ -333,7 +388,9 @@ impl Maker<'_, '_> {
             .await,
             Step::Issue,
         )?;
-        self.issues[at] = Some(MadeIssue::of(&made)?);
+        let mut created = MadeIssue::of(&made)?;
+        created.assigned = ordered;
+        self.issues[at] = Some(created);
         Ok(())
     }
 
@@ -415,6 +472,7 @@ impl Maker<'_, '_> {
             // The session is taken only when a request follows: a session that is marked as used
             // and is not used would run out of idle time on the server unseen.
             let token = self.hands.token(person).await?;
+            let carried = made.assigned_for(next, self.world.people[person].id);
             let changed = json(
                 change_issue(
                     &self.world.services.ctx(self.world.request()),
@@ -425,18 +483,22 @@ impl Maker<'_, '_> {
                         issue_type: None,
                         title: None,
                         status: Some(
-                            StatusKey::new(next)
+                            StatusKey::new(&next.key)
                                 .map_err(|error| SampleError::NotMade(error.to_string()))?,
                         ),
                         priority: None,
-                        assigned_to: None,
+                        // A change that asks for the person who does the work: the person who
+                        // makes it does.
+                        assigned_to: carried.clone(),
                         fields: BTreeMap::new(),
                     },
                 )
                 .await,
                 Step::Change,
             )?;
-            self.issues[at] = Some(MadeIssue::of(&changed)?);
+            let mut updated = MadeIssue::of(&changed)?;
+            updated.assigned = carried.unwrap_or(made.assigned);
+            self.issues[at] = Some(updated);
         }
         Ok(())
     }

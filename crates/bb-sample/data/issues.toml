@@ -311,3 +311,9 @@ names = [
   "Saltmarsh Fisheries",
   "Tidewater Print Shop",
 ]
+
+# The first word of the name of a file that people attach: a picture they took of the screen, or a
+# document. The sample adds a number so that no two files have the same name.
+[files]
+pictures = ["screenshot", "photo", "capture", "mockup", "error-screen", "recording-frame"]
+documents = ["report", "notes", "spec", "invoice", "log-extract", "test-plan"]

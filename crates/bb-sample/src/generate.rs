@@ -30,6 +30,7 @@ use bb_core::message::{self, Message};
 use bb_core::settings::{
     REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT, REGION_TIME_ZONE, SettingValue,
 };
+use bb_files::{DiskFiles, FILES_FOLDER, PreviewCommand};
 use bb_store::{
     AuthStorage, DATABASE_FILE, Database, KEYS_FOLDER, LOGS_FOLDER, LogSeal,
     SECURITY_LOG_ANCHOR_FILE, Verification,
@@ -158,6 +159,9 @@ pub struct LeftBehind {
     pub locks: Vec<EditWhat>,
     /// The drafts waiting: who wrote them and what they are for.
     pub drafts: Vec<(UserId, DraftTarget)>,
+    /// The moment the people began to work together (reports, status changes under workflows,
+    /// files, following): the dump counts what they did from here.
+    pub work_since: Option<Timestamp>,
 }
 
 /// The step that follows the people today: none.
@@ -288,7 +292,13 @@ pub async fn create<L: Later>(
         csrf,
         Arc::new(NoFailureLimit),
         Message::from(message::APP_NAME).render(),
-    );
+    )
+    // The files of the sample and their previews are made in this process: nobody attacks it, and
+    // the program that would be the child is not this one.
+    .with_files(Arc::new(DiskFiles::new(
+        data_folder.join(FILES_FOLDER),
+        PreviewCommand::in_process(),
+    )));
     let api: &dyn AuthApi = &services;
 
     let mut made: Vec<MadePerson> = Vec::with_capacity(plan.len());

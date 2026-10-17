@@ -332,6 +332,28 @@ pub(crate) fn plan(people: &[SamplePerson], names: &OrganizationNames) -> Plan {
     }
 }
 
+/// The top-level projects a person holds a role on, directly or through a group, in the order of
+/// the plan. A person with a role for the whole organization is not counted here.
+pub(crate) fn projects_of(plan: &Plan, person: usize) -> Vec<String> {
+    let mut found: Vec<String> = Vec::new();
+    for row in &plan.rows {
+        let Some(project) = &row.project else {
+            continue;
+        };
+        let holds = match &row.holder {
+            Holder::Person(at) => *at == person,
+            Holder::Group(key) => plan
+                .members
+                .iter()
+                .any(|(group, members)| group == key && members.contains(&person)),
+        };
+        if holds && matches!(row.grant, Grant::Role(_)) && !found.contains(project) {
+            found.push(project.clone());
+        }
+    }
+    found
+}
+
 /// The people who can do the work on every issue of the sample (their places in the plan of the people): the
 /// Administrators and the Team members for the whole organization, without the person who may
 /// not enter a sub-project and without the people who must use a code app to sign in.

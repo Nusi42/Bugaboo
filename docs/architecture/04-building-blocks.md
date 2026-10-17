@@ -93,7 +93,7 @@ flowchart TB
   auth -. tests only .-> devwords
   app -. tests only .-> devwords
   server -. tests only .-> devwords
-  sample --> app & store & core & policy & auth & devwords
+  sample --> app & store & core & policy & auth & devwords & files
   loadcheck --> app & store & core
   server -. tests only .-> loadcheck
 ```
@@ -181,7 +181,7 @@ One **tool registry** (search issues, get issue, create, change status, comment,
 
 The sample-organization generator (architecture §11): a library and a small program that `cargo xtask dataset sample` runs as a process, so `xtask` does not link the store or the use cases (it imports only `bb-api-words`, `bb-core`, `bb-dev-words` and `bb-policy`, for the names its checks hold the code against). It makes the organization through the same use cases the API calls, deterministic from a seed, on SQLite and PostgreSQL. It is a developer tool: not linked into `bugaboo` until *Try it out* (OPS-12), and never shipped before then.
 
-- **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth`, `bb-dev-words` (and `bb-testing` as a dev dependency only). Nothing depends on it except, from OPS-12 on, `bb-server`.
+- **May depend on:** `bb-app`, `bb-store`, `bb-core`, `bb-policy`, `bb-auth`, `bb-dev-words`, and `bb-files` with its feature `testing` (M4 WP-10: the sample stores its files in the data folder and makes their previews in its own process; the program that would be the child of a preview is not this one), and `bb-testing` as a dev dependency only. Nothing depends on it except, from OPS-12 on, `bb-server`.
 - **It wires an adapter:** like `bb-server`, it builds the store and hands it to the use cases, so dependency rule 4 names it as the second crate that may wire adapters to ports; ARCH-HTTP-EDGE's list of wiring crates (`bb-server`, `bb-sample`, `bb-load-check`) is in `xtask/src/checks/arch_http_edge.rs`.
 - **In the layout and the diagram:** ARCH-MAP-SYNC and ARCH-DEPS read the repository layout and the module map above, which list the crate and its edges.
 

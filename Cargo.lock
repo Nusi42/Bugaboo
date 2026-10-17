@@ -633,6 +633,7 @@ dependencies = [
  "bb-auth",
  "bb-core",
  "bb-dev-words",
+ "bb-files",
  "bb-store",
  "bb-testing",
  "clap",
