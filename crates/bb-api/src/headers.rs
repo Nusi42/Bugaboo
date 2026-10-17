@@ -44,11 +44,12 @@ pub const SECURITY_HEADERS: [(&str, &str); 6] = [
     ),
 ];
 
-/// The policy of a download (ADR-0032 §3): the content may load nothing, and even a page it
-/// would make of itself runs in a sandbox with no right at all. A file is only ever saved; this
-/// holds if a browser shows it anyway. It replaces the policy of the table on those answers, and
-/// SEC-HEADERS holds it against the requirement that a policy allows nothing.
-pub const DOWNLOAD_POLICY: &str = "default-src 'none'; sandbox";
+/// The policy of a download (ADR-0032 §3): the content may load nothing, no page may frame it, and
+/// even a page it would make of itself runs in a sandbox with no right at all. A file is only ever
+/// saved; this holds if a browser shows it anyway. It replaces the policy of the table on those
+/// answers, and SEC-HEADERS holds it against the requirement that a policy allows nothing, and
+/// that no other code sets the policy header.
+pub const DOWNLOAD_POLICY: &str = "default-src 'none'; frame-ancestors 'none'; sandbox";
 
 /// The name of the policy header: the first entry of the table (a test holds it to that), so the
 /// name is written once.

@@ -15,7 +15,7 @@
 use std::collections::BTreeMap;
 
 use super::{Check, Context, Finding};
-use crate::source::read_text;
+use crate::source::{Kind, Source, read_text};
 
 const SOURCE: &str = "crates/bb-api/src/headers.rs";
 
@@ -73,8 +73,12 @@ const CSP_DATA_ONLY_IN: &str = "img-src";
 /// The constant that holds the policy of a download (ADR-0032 §3): a file is sent with a policy that
 /// allows the content nothing, and that makes even a page it would make of itself a sandbox.
 const DOWNLOAD_POLICY: &str = "DOWNLOAD_POLICY";
-/// The directives of that policy, and no other.
-const DOWNLOAD_DIRECTIVES: [&str; 2] = ["default-src 'none'", "sandbox"];
+/// The directives of that policy, and no other (sorted): nothing is loaded, no page may frame it,
+/// and the page it would make of itself is a sandbox.
+const DOWNLOAD_DIRECTIVES: [&str; 3] = ["default-src 'none'", "frame-ancestors 'none'", "sandbox"];
+/// Where the name of the policy header may be written next to something else than the policy of the
+/// table or of a download: nowhere. The lines after it that must name the download policy.
+const POLICY_SETTER_LINES: usize = 3;
 
 pub(crate) struct SecHeaders;
 
@@ -85,7 +89,11 @@ impl Check for SecHeaders {
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
         let code = read_text(context.repo, SOURCE)?;
-        Ok(evaluate(&code))
+        let mut findings = evaluate(&code);
+        findings.extend(check_who_sets_the_policy(
+            &context.sources("SEC-HEADERS", Kind::Rust)?,
+        ));
+        Ok(findings)
     }
 }
 
@@ -240,6 +248,40 @@ fn check_download_policy(code: &str) -> Vec<Finding> {
     }
 }
 
+/// Nothing but the table and the download policy sets the policy header: every other place in the
+/// code of the server that names the header must name `DOWNLOAD_POLICY` right after it, so no route
+/// sends a policy of its own that is weaker than the one of the table (ADR-0032 §3).
+fn check_who_sets_the_policy(sources: &[Source]) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for (file, text) in sources {
+        if file == SOURCE {
+            continue;
+        }
+        // The tests of a file come last and may read the header.
+        let code = text.split("#[cfg(test)]").next().unwrap_or(text);
+        let lines: Vec<&str> = code.lines().collect();
+        for (at, line) in lines.iter().enumerate() {
+            let lower = line.to_ascii_lowercase();
+            if (lower.contains("content_security_policy")
+                || lower.contains("content-security-policy"))
+                && !lower.trim_start().starts_with("//")
+                && !lines[at..lines.len().min(at + 1 + POLICY_SETTER_LINES)]
+                    .iter()
+                    .any(|near| near.contains(DOWNLOAD_POLICY))
+            {
+                findings.push(Finding::at(
+                    file,
+                    format!(
+                        "Line {}: only `headers.rs` and `{DOWNLOAD_POLICY}` set the content security policy; another policy here could allow what the table does not (ADR-0032).",
+                        at + 1
+                    ),
+                ));
+            }
+        }
+    }
+    findings
+}
+
 /// The number a constant of the table is set to, from its line `const NAME: u64 = 86_400;`.
 fn constant_value(code: &str, name: &str) -> Option<u64> {
     let after = code.split_once(&format!("const {name}"))?.1;
@@ -344,7 +386,7 @@ mod tests {
             permissions: "camera=(), microphone=(), geolocation=(), payment=()",
             own: "86_400",
             trusted: "31_536_000",
-            download: "default-src 'none'; sandbox",
+            download: "default-src 'none'; frame-ancestors 'none'; sandbox",
         };
 
         fn code(&self) -> String {
@@ -428,8 +470,9 @@ pub const DOWNLOAD_POLICY: &str = "{}";
         for weak in [
             "default-src 'none'",
             "sandbox",
-            "default-src 'self'; sandbox",
-            "default-src 'none'; sandbox; img-src 'self'",
+            "default-src 'none'; sandbox",
+            "default-src 'self'; frame-ancestors 'none'; sandbox",
+            "default-src 'none'; frame-ancestors 'none'; sandbox; img-src 'self'",
             "",
         ] {
             let code = Table {
@@ -441,6 +484,33 @@ pub const DOWNLOAD_POLICY: &str = "{}";
         }
         let code = Table::GOOD.code().replace("DOWNLOAD_POLICY", "OTHER");
         assert_eq!(evaluate(&code).len(), 1);
+    }
+
+    #[test]
+    fn good_and_bad_examples_who_sets_the_policy_header() {
+        let ours = "headers.insert(
+    header::CONTENT_SECURITY_POLICY,
+    HeaderValue::from_static(DOWNLOAD_POLICY),
+);";
+        let own = "headers.insert(
+    header::CONTENT_SECURITY_POLICY,
+    HeaderValue::from_static(\"default-src *\"),
+);";
+        let tests_only = "fn a() {}
+#[cfg(test)]
+mod tests { fn t() { h[header::CONTENT_SECURITY_POLICY]; } }";
+        let sources = |text: &str| vec![("crates/bb-api/src/api/x.rs".to_owned(), text.to_owned())];
+        assert!(check_who_sets_the_policy(&sources(ours)).is_empty());
+        assert!(check_who_sets_the_policy(&sources(tests_only)).is_empty());
+        assert!(
+            check_who_sets_the_policy(&sources("// the content-security-policy is set elsewhere"))
+                .is_empty()
+        );
+        assert_eq!(check_who_sets_the_policy(&sources(own)).len(), 1);
+        let named = "let name = \"content-security-policy\";";
+        assert_eq!(check_who_sets_the_policy(&sources(named)).len(), 1);
+        // The table itself is the one place that writes its own value.
+        assert!(check_who_sets_the_policy(&[(SOURCE.to_owned(), own.to_owned())]).is_empty());
     }
 
     #[test]
