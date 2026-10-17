@@ -76,7 +76,7 @@ test("what roles see at phone width", async ({ page, server }) => {
   await page.goto(paths.peopleVisibility);
   await levelList(page, t("people-kind.assigned-to"), roleName.guest);
   await expect(
-    page.getByText(t("people-visibility.example-assigned", { who: t("projects.person-someone") })),
+    page.getByText(t("people-visibility.example-assigned", { who: t("person.someone") })),
   ).toBeVisible();
   await shotWhole(page, "62-people-visibility", MILESTONE);
 

@@ -39,11 +39,11 @@ fn clean(text: &str) -> String {
 
 fn who(person: Option<&PersonRef>) -> String {
     match person {
-        None => Message::from(message::MAIL_WHO_BUGABOO).render(),
+        None => Message::from(message::PERSON_BUGABOO).render(),
         Some(PersonRef::Name { name, .. }) => clean(name),
-        Some(PersonRef::Role { role }) => message::mail_who_role(clean(role)).render(),
-        Some(PersonRef::Someone) => Message::from(message::MAIL_WHO_SOMEONE).render(),
-        Some(PersonRef::Former { label }) => message::mail_who_former(clean(label)).render(),
+        Some(PersonRef::Role { role }) => message::person_role(clean(role)).render(),
+        Some(PersonRef::Someone) => Message::from(message::PERSON_SOMEONE).render(),
+        Some(PersonRef::Former { label }) => message::person_former(clean(label)).render(),
     }
 }
 

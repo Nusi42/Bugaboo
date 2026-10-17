@@ -67,8 +67,6 @@ export interface MessageArguments {
   "access-keys.row.projects-some": { names: string | number };
   "access.cell-label": { role: string | number; subject: string | number };
   "access.origin-from": { project: string | number };
-  "access.person-former-inside": { label: string | number };
-  "access.person-role-inside": { role: string | number };
   "access.reset-label": { role: string | number; subject: string | number };
   "assignments.change-here-name": { who: string | number };
   "assignments.picked": { name: string | number };
@@ -277,7 +275,11 @@ export interface MessageArguments {
   "people-visibility.preview-heading": { role: string | number };
   "people-visibility.project-title": { project: string | number };
   "people.in-groups": { groups: string | number };
+  "person.former": { label: string | number };
+  "person.former-inside": { label: string | number };
   "person.groups-none": { name: string | number };
+  "person.role": { role: string | number };
+  "person.role-inside": { role: string | number };
   "person.roles-none": { name: string | number };
   "preview.summary": { changed: number; skipped: number };
   "projects.created": { name: string | number };
@@ -324,8 +326,6 @@ export interface MessageArguments {
   "projects.move-dialog-title": { name: string | number };
   "projects.move-text": { name: string | number };
   "projects.moved": { name: string | number };
-  "projects.person-former": { label: string | number };
-  "projects.person-role": { role: string | number };
   "projects.preview-summary": { changed: number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };

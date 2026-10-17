@@ -78,6 +78,11 @@ pub(crate) mod edit_lock {
     pub(crate) const PERSON: &str = "person";
 }
 
+/// The member of the event of a person changing their handle.
+pub(crate) mod handle {
+    pub(crate) const FIELD: &str = "handle";
+}
+
 /// The member of the event of a person reading their notifications.
 pub(crate) mod notifications {
     pub(crate) const READ: &str = "notifications-read";

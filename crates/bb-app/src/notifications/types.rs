@@ -99,7 +99,7 @@ pub struct UnreadQuery {
     pub session_token: String,
 }
 
-/// How many unread notifications the person has, at most `UNREAD_COUNT_MAX`. Only the ones they
+/// How many unread notifications the person has, at most `AT_ONCE_MAX`. Only the ones they
 /// may still see are counted: no total ever counts what a person cannot see (ARCH-NO-COUNTERS).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct Unread {

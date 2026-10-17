@@ -21,6 +21,7 @@ use serde_json::json;
 use crate::auth::{
     AccountStore, AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal,
 };
+use crate::member;
 use crate::store_macros::{reads, writes};
 use bb_core::event::{Actor as EventActor, FieldChange};
 
@@ -172,7 +173,7 @@ pub async fn change_handle<S: AuthStore>(
         by(person),
         entity(RecordKind::Person, person),
         vec![FieldChange {
-            field: "handle".to_owned(),
+            field: member::handle::FIELD.to_owned(),
             before: before.map(|before| json!(before)),
             after: Some(json!(handle)),
         }],
@@ -217,7 +218,7 @@ pub async fn create_missing_handles<S: AuthStore>(
                 EventActor::System,
                 entity(RecordKind::Person, person.id),
                 vec![FieldChange {
-                    field: "handle".to_owned(),
+                    field: member::handle::FIELD.to_owned(),
                     before: None,
                     after: None,
                 }],

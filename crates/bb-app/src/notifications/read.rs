@@ -12,7 +12,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{CommentId, NotificationId, UserId};
 use bb_core::many_changes::ManyChangeStatus;
-use bb_core::notification::{Notification, NotificationFilter, NotificationKind, UNREAD_COUNT_MAX};
+use bb_core::notification::{AT_ONCE_MAX, Notification, NotificationFilter, NotificationKind};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{Authorized, Evaluation, PeopleContext, PersonRef, Place};
@@ -28,9 +28,6 @@ use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, enti
 use crate::history::ChangeReader;
 use crate::member::notifications as member;
 use crate::relations::LineMaker;
-
-/// The most notifications one *Mark as read* names.
-const READ_AT_ONCE_MAX: usize = 100;
 
 /// What a page of notifications is shaped with: the person, the issue lines and the people shown
 /// so far, which are looked up once for the page.
@@ -188,7 +185,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// How many unread notifications the person has that they may still see, at most
-    /// `UNREAD_COUNT_MAX`: no total ever counts what the person cannot see (ARCH-NO-COUNTERS).
+    /// `AT_ONCE_MAX`: no total ever counts what the person cannot see (ARCH-NO-COUNTERS).
     async fn count_unread(&self, reading: &mut Reading<'_>) -> Result<usize, AppError> {
         let rows = self
             .store()
@@ -196,7 +193,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 reading.actor.person.id,
                 NotificationFilter::Unread,
                 None,
-                u64::try_from(UNREAD_COUNT_MAX).unwrap_or(u64::MAX),
+                u64::try_from(AT_ONCE_MAX).unwrap_or(u64::MAX),
             )
             .await
             .map_err(|error| internal::<S>(&error))?;
@@ -265,7 +262,7 @@ pub async fn notifications<S: AuthStore>(
 }
 
 /// How many unread notifications the person has that they may still see, at most
-/// `UNREAD_COUNT_MAX`.
+/// `AT_ONCE_MAX`.
 ///
 /// # Errors
 /// None besides a failing store.
@@ -292,7 +289,7 @@ pub async fn read_notifications<S: AuthStore>(
 ) -> Result<Done, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     if let Which::These(ids) = &input.which
-        && (ids.is_empty() || ids.len() > READ_AT_ONCE_MAX)
+        && (ids.is_empty() || ids.len() > AT_ONCE_MAX)
     {
         return Err(ErrorCode::InvalidRequest.into());
     }

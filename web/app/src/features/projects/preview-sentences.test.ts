@@ -71,7 +71,7 @@ describe("prj_03 the preview in plain sentences", () => {
     expect(sentencesOfPreview(changed)).toEqual([
       t("projects.line-loses", { person: "Cleo", project: "Website" }),
       t("projects.line-roles", {
-        person: t("projects.person-role", { role: "Team member" }),
+        person: t("person.role", { role: "Team member" }),
         project: "Website",
         before: "Viewer",
         after: "Viewer and Guest",
@@ -93,8 +93,8 @@ describe("prj_03 how people are named in the preview", () => {
       },
     ]);
     const [first, second] = sentencesOfPreview(hidden);
-    expect(first).toContain(t("projects.person-someone"));
-    expect(second).toContain(t("projects.person-former", { label: "K7Q2" }));
+    expect(first).toContain(t("person.someone"));
+    expect(second).toContain(t("person.former", { label: "K7Q2" }));
   });
 
   it("says nothing for a change that changes nothing a person can read", () => {

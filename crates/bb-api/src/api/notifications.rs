@@ -510,4 +510,12 @@ mod tests {
         };
         crate::lean::assert_fields_are_the_keys_of(&NOTIFICATION_FIELDS, &item);
     }
+
+    #[test]
+    fn ntf_01_the_documents_name_the_cap_the_core_sets() {
+        // The text of the API description is written by hand; the number in it is the constant.
+        let document = serde_json::to_string(&crate::openapi::document()).unwrap_or_default();
+        let said = format!("at most {}", bb_core::notification::AT_ONCE_MAX);
+        assert!(document.matches(&said).count() >= 2, "{said}");
+    }
 }

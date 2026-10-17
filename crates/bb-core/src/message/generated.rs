@@ -143,10 +143,6 @@ pub const ACCESS_ORIGIN_HERE: MessageKey = MessageKey::new("access.origin-here")
 /// The message `access.origin-unset`.
 pub const ACCESS_ORIGIN_UNSET: MessageKey = MessageKey::new("access.origin-unset");
 
-/// The message `access.person-someone-inside`.
-pub const ACCESS_PERSON_SOMEONE_INSIDE: MessageKey =
-    MessageKey::new("access.person-someone-inside");
-
 /// The message `access.reset`.
 pub const ACCESS_RESET: MessageKey = MessageKey::new("access.reset");
 
@@ -2263,12 +2259,6 @@ pub const MAIL_TEST_SUBJECT: MessageKey = MessageKey::new("mail.test-subject");
 /// The message `mail.test-text`.
 pub const MAIL_TEST_TEXT: MessageKey = MessageKey::new("mail.test-text");
 
-/// The message `mail.who-bugaboo`.
-pub const MAIL_WHO_BUGABOO: MessageKey = MessageKey::new("mail.who-bugaboo");
-
-/// The message `mail.who-someone`.
-pub const MAIL_WHO_SOMEONE: MessageKey = MessageKey::new("mail.who-someone");
-
 /// The message `many-changes-skip.changed-since`.
 pub const MANY_CHANGES_SKIP_CHANGED_SINCE: MessageKey =
     MessageKey::new("many-changes-skip.changed-since");
@@ -2805,6 +2795,9 @@ pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-st
 /// The message `person.back`.
 pub const PERSON_BACK: MessageKey = MessageKey::new("person.back");
 
+/// The message `person.bugaboo`.
+pub const PERSON_BUGABOO: MessageKey = MessageKey::new("person.bugaboo");
+
 /// The message `person.email`.
 pub const PERSON_EMAIL: MessageKey = MessageKey::new("person.email");
 
@@ -2819,6 +2812,12 @@ pub const PERSON_ROLES_WHERE: MessageKey = MessageKey::new("person.roles-where")
 
 /// The message `person.since`.
 pub const PERSON_SINCE: MessageKey = MessageKey::new("person.since");
+
+/// The message `person.someone`.
+pub const PERSON_SOMEONE: MessageKey = MessageKey::new("person.someone");
+
+/// The message `person.someone-inside`.
+pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-inside");
 
 /// The message `preview.label`.
 pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
@@ -2914,9 +2913,6 @@ pub const PROJECTS_OVERVIEW_SHORT_NAME: MessageKey =
 
 /// The message `projects.overview-top`.
 pub const PROJECTS_OVERVIEW_TOP: MessageKey = MessageKey::new("projects.overview-top");
-
-/// The message `projects.person-someone`.
-pub const PROJECTS_PERSON_SOMEONE: MessageKey = MessageKey::new("projects.person-someone");
 
 /// The message `projects.picker-legend`.
 pub const PROJECTS_PICKER_LEGEND: MessageKey = MessageKey::new("projects.picker-legend");
@@ -4482,24 +4478,6 @@ pub fn access_origin_from(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("access.origin-from"),
         vec![("project", Value::Text(project.to_string()))],
-    )
-}
-
-/// The message `access.person-former-inside`.
-#[must_use]
-pub fn access_person_former_inside(label: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("access.person-former-inside"),
-        vec![("label", Value::Text(label.to_string()))],
-    )
-}
-
-/// The message `access.person-role-inside`.
-#[must_use]
-pub fn access_person_role_inside(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("access.person-role-inside"),
-        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -6504,24 +6482,6 @@ pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `mail.who-former`.
-#[must_use]
-pub fn mail_who_former(label: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.who-former"),
-        vec![("label", Value::Text(label.to_string()))],
-    )
-}
-
-/// The message `mail.who-role`.
-#[must_use]
-pub fn mail_who_role(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.who-role"),
-        vec![("role", Value::Text(role.to_string()))],
-    )
-}
-
 /// The message `many-changes.apply`.
 #[must_use]
 pub fn many_changes_apply(count: i64) -> Message {
@@ -6771,12 +6731,48 @@ pub fn people_in_groups(groups: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `person.former`.
+#[must_use]
+pub fn person_former(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.former"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `person.former-inside`.
+#[must_use]
+pub fn person_former_inside(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.former-inside"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
 /// The message `person.groups-none`.
 #[must_use]
 pub fn person_groups_none(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.groups-none"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.role`.
+#[must_use]
+pub fn person_role(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.role"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
+/// The message `person.role-inside`.
+#[must_use]
+pub fn person_role_inside(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.role-inside"),
+        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -7015,24 +7011,6 @@ pub fn projects_moved(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.moved"),
         vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `projects.person-former`.
-#[must_use]
-pub fn projects_person_former(label: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.person-former"),
-        vec![("label", Value::Text(label.to_string()))],
-    )
-}
-
-/// The message `projects.person-role`.
-#[must_use]
-pub fn projects_person_role(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.person-role"),
-        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -8128,9 +8106,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.origin-from", "From {project}"),
     ("access.origin-here", "Set for this project"),
     ("access.origin-unset", "Nothing set, so it is hidden"),
-    ("access.person-former-inside", "former user {label}"),
-    ("access.person-role-inside", "a {role}"),
-    ("access.person-someone-inside", "someone"),
     ("access.reset", "Reset"),
     ("access.reset-label", "Reset {subject} for {role}"),
     ("access.role-chooser", "Show the levels of the role"),
@@ -9869,10 +9844,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "mail.test-text",
         "This is a test e-mail from Bugaboo. If you can read it, Bugaboo can send e-mail.",
     ),
-    ("mail.who-bugaboo", "Bugaboo"),
-    ("mail.who-former", "Former user {label}"),
-    ("mail.who-role", "A {role}"),
-    ("mail.who-someone", "Someone"),
     (
         "many-changes-skip.changed-since",
         "It changed after the preview",
@@ -10265,9 +10236,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("permission.see-status", "See how the server is doing"),
     ("person.back", "All people"),
+    ("person.bugaboo", "Bugaboo"),
     ("person.email", "E-mail address"),
+    ("person.former", "Former user {label}"),
+    ("person.former-inside", "former user {label}"),
     ("person.groups", "Groups"),
     ("person.groups-none", "{name} is in no group."),
+    ("person.role", "A person with the role {role}"),
+    ("person.role-inside", "a person with the role {role}"),
     ("person.roles", "Roles"),
     (
         "person.roles-none",
@@ -10278,6 +10254,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
     ),
     ("person.since", "Account created"),
+    ("person.someone", "Someone"),
+    ("person.someone-inside", "someone"),
     ("preview.label", "Issues in this change"),
     ("preview.nothing", "None of the issues would change."),
     (
@@ -10373,9 +10351,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.overview-inside", "Inside"),
     ("projects.overview-short-name", "Short name"),
     ("projects.overview-top", "At the top level"),
-    ("projects.person-former", "Former user {label}"),
-    ("projects.person-role", "A {role}"),
-    ("projects.person-someone", "Someone"),
     ("projects.picker-legend", "Where should it go?"),
     ("projects.picker-list", "Projects it can go into"),
     ("projects.picker-more", "Show more projects"),

@@ -124,7 +124,7 @@ async function hideNames(page: Page): Promise<void> {
   // A Guest sees who is assigned by role only, as the starting rules say.
   await expect(assigned).toHaveValue("role-only");
   await pickLevel(assigned, page, t("people-level.hidden"));
-  const who = t("projects.person-someone");
+  const who = t("person.someone");
   await expect(sentence(page, t("people-visibility.example-assigned", { who }))).toBeVisible();
   await good(page, "03-hide-names");
   await seeFromTheSideOfAGuest(page);

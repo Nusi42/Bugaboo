@@ -75,7 +75,7 @@ export async function answerPreviewsWithEverything(page: Page): Promise<void> {
 
 /** The sentences the preview above is told in, as people read them. */
 export function everySentence(): readonly string[] {
-  const someone = t("projects.person-someone");
+  const someone = t("person.someone");
   return [
     t("projects.line-gains", { person: "Cleo Coder", project: "Documents", roles: "Viewer" }),
     t("projects.line-loses", { person: "Cleo Coder", project: "Interface" }),

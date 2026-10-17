@@ -348,9 +348,9 @@ export const messages = {
   "projects.picker-nothing": "No project found. Try another word.",
   "projects.picker-more": "Show more projects",
   "projects.picker-list": "Projects it can go into",
-  "projects.person-role": "A {role}",
-  "projects.person-someone": "Someone",
-  "projects.person-former": "Former user {label}",
+  "person.role": "A person with the role {role}",
+  "person.someone": "Someone",
+  "person.former": "Former user {label}",
   "error.role.in-use":
     "Someone has this role. Choose the role that takes its place before you delete it.",
   "nav.people": "People",
@@ -380,9 +380,9 @@ export const messages = {
   "field-permissions.project-title": "Field permissions in {project}",
   "people-visibility.project-title": "Who sees people in {project}",
   "check-access.project-title": "Check access in {project}",
-  "access.person-role-inside": "a {role}",
-  "access.person-someone-inside": "someone",
-  "access.person-former-inside": "former user {label}",
+  "person.role-inside": "a person with the role {role}",
+  "person.someone-inside": "someone",
+  "person.former-inside": "former user {label}",
   "issue-type.bug": "Bug",
   "issue-type.task": "Task",
   "issue-type.feature": "Feature",
@@ -634,6 +634,7 @@ export const messages = {
   "error.mail.unavailable":
     "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
   "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
+  "person.bugaboo": "Bugaboo",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
     "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out. Between 30 days and 10 years (3650 days).",

@@ -62,7 +62,7 @@ describe("adr_0019 the sentence names the person as the reader may see them", ()
         }),
         now,
       ),
-    ).toBe("Not saved: a Team member changed Title to New 2 minutes ago.");
+    ).toBe("Not saved: a person with the role Team member changed Title to New 2 minutes ago.");
   });
 
   it("has no stray space when the time is not known", () => {

@@ -30,9 +30,6 @@ pub const KEEP_DAYS: i64 = 90;
 /// e-mail.
 pub const MAIL_BATCH_SECONDS: i64 = 300;
 
-/// The most notifications one page of the list holds when the person asks for none.
-pub const PAGE_DEFAULT: usize = 50;
-
 /// The most changed fields a notification keeps, so a change to a hundred fields of an issue does
 /// not make a row a page long.
 pub const FIELDS_MAX: usize = 25;
@@ -44,10 +41,10 @@ pub const MAIL_TEXT_MAX: usize = 2000;
 /// The most notifications one e-mail names; the rest are in the app.
 pub const MAIL_ENTRIES_MAX: usize = 20;
 
-/// How many unread notifications are looked at to tell a person how many they have: the number
-/// shown is never more, so what a person cannot see any more costs a bounded amount of reading
-/// and no total ever includes it (ARCH-NO-COUNTERS).
-pub const UNREAD_COUNT_MAX: usize = 100;
+/// The most notifications one request takes in: the count of unread ones looks at this many and
+/// shows never more, so what a person cannot see any more costs a bounded amount of reading and no
+/// total ever includes it (ARCH-NO-COUNTERS); one *Mark as read* names this many at most.
+pub const AT_ONCE_MAX: usize = 100;
 
 /// How long a notification is kept.
 #[must_use]
