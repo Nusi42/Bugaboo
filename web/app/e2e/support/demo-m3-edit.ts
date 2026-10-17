@@ -52,5 +52,8 @@ export async function twoPeopleEditTheDescription(
   await goodInFourThemes(holder, "09-compare-and-save");
   await holder.getByRole("button", { name: t("issues.compare-save-mine"), exact: true }).click();
   await expect(holder.getByText(FIRST_TEXT).first()).toBeVisible();
+  // The text shows in the comparison already, so the save is waited for: a button that is still
+  // busy is drawn lighter, and the check of the contrast would catch it half way.
+  await expect(savedNote(holder)).toBeVisible();
   await goodInFourThemes(holder, "10-the-text-is-kept");
 }
