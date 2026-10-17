@@ -3965,11 +3965,6 @@ export interface components {
       limit_bytes: number;
       /** @description Whether the reader may add files to the issue itself. */
       may_add: boolean;
-      /**
-       * Format: int64
-       * @description The most bytes one part of an upload may have.
-       */
-      part_bytes: number;
     };
     /**
      * @description Why a person follows an issue: they reported it, were assigned to it, commented on it or chose to.

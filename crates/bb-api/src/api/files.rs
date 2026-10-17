@@ -158,8 +158,6 @@ pub(crate) struct FileRulesItem {
     may_add: bool,
     /// The most bytes one file may have in the project of the issue.
     limit_bytes: u64,
-    /// The most bytes one part of an upload may have.
-    part_bytes: u64,
 }
 
 impl Masked for FileRulesItem {}
@@ -169,7 +167,6 @@ impl From<&FileRules> for FileRulesItem {
         Self {
             may_add: rules.may_add,
             limit_bytes: rules.limit_bytes,
-            part_bytes: rules.part_bytes,
         }
     }
 }

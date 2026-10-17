@@ -164,8 +164,6 @@ pub struct FileRules {
     pub may_add: bool,
     /// The most bytes one file may have in the project of the issue.
     pub limit_bytes: u64,
-    /// The most bytes one part of an upload may have.
-    pub part_bytes: u64,
 }
 
 impl Masked for FileRules {}

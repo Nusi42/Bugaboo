@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
-use bb_core::files::{Attachment, DownloadLink, LinkTarget, PART_BYTES, PreviewState, StoredFile};
+use bb_core::files::{Attachment, DownloadLink, LinkTarget, PreviewState, StoredFile};
 use bb_core::id::{AttachmentId, UserId};
 use bb_core::issue::Issue;
 use bb_core::version::{counted_up, next};
@@ -194,7 +194,6 @@ pub async fn file_rules<S: AuthStore>(
     Ok(held.authorize(FileRules {
         may_add: held.may_change_issue(issue.reported_by),
         limit_bytes: limits.max_bytes,
-        part_bytes: PART_BYTES as u64,
     }))
 }
 

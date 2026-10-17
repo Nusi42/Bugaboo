@@ -22992,7 +22992,7 @@
       "FileRulesItem": {
         "type": "object",
         "description": "What the reader may add to an issue and the limits of its project.",
-        "required": ["may_add", "limit_bytes", "part_bytes"],
+        "required": ["may_add", "limit_bytes"],
         "properties": {
           "limit_bytes": {
             "type": "integer",
@@ -23003,12 +23003,6 @@
           "may_add": {
             "type": "boolean",
             "description": "Whether the reader may add files to the issue itself."
-          },
-          "part_bytes": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The most bytes one part of an upload may have.",
-            "minimum": 0
           }
         }
       },
