@@ -261,7 +261,6 @@ test("sec_01 the start page offers looking after the server only to people who m
   await expect(
     page.getByRole("heading", { level: 1, name: t("home.title", { name: cleo.name }) }),
   ).toBeVisible();
-  await expect(page.getByText(t("home.intro"))).toBeVisible();
   await expect(page.getByText(t("home.admin"))).toHaveCount(0);
 });
 

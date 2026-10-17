@@ -1647,9 +1647,6 @@ pub const HISTORY_TITLE: MessageKey = MessageKey::new("history.title");
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 
-/// The message `home.intro`.
-pub const HOME_INTRO: MessageKey = MessageKey::new("home.intro");
-
 /// The message `invitation.ask-again`.
 pub const INVITATION_ASK_AGAIN: MessageKey = MessageKey::new("invitation.ask-again");
 
@@ -10057,10 +10054,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
-    ),
-    (
-        "home.intro",
-        "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
     ),
     ("home.title", "Welcome, {name}"),
     ("invitation.ask-again", "Ask for a new link"),

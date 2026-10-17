@@ -258,7 +258,6 @@
   "nav.status": "Server status",
   "nav.sign-out": "Sign out",
   "home.title": "Welcome, {name}",
-  "home.intro": "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
   "home.admin": "You can look after this server. Organization settings shows what you may do there.",
   "page.not-found.title": "This page does not exist",
   "page.not-found.text": "The address may be mistyped, or the page may have moved.",

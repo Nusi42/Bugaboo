@@ -56,6 +56,18 @@ test("ntf_02 e-mail is off at the start, and a test without a mail server says s
   await expect(page.getByRole("alert")).toContainText(t("error.mail.off"));
 });
 
+test("ntf_02 a refused save keeps the typed password in the box", async ({ page }) => {
+  await openMailServer(page, ada);
+  // The save of the host is refused by the server (answered here with an error).
+  await page.route("**/api/v1/settings/mail.host", (route) => route.fulfill({ status: 400 }));
+  await page.getByLabel(t("setting.mail.host.name"), { exact: true }).fill("refused.example.test");
+  const box = page.getByLabel(t("mail-server.password-new"), { exact: true });
+  await box.fill("typed-and-kept");
+  await page.getByRole("button", { name: t("mail-server.save"), exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(box).toHaveValue("typed-and-kept");
+});
+
 test("ntf_02 a wrong password is refused in words, and the button then waits", async ({
   page,
   tolerate,
