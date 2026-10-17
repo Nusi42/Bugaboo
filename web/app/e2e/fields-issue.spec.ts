@@ -82,7 +82,15 @@ async function fillIn(page: Page, critical: string): Promise<void> {
   const changes = countRequests(page, "PATCH");
   await labelled("Customer").focus();
   await page.getByRole("heading", { level: 2, name: t("issues.details") }).click();
-  await page.waitForTimeout(500);
+  await expect(labelled("Customer")).not.toBeFocused();
+  // The box sends on the turn after it was left; a request that went out is seen before the answer
+  // of a request made after it, so one round trip to the server settles the count.
+  await page.evaluate(async () => {
+    await new Promise<void>((done) => {
+      setTimeout(done, 0);
+    });
+    await fetch("/health/live");
+  });
   expect(changes()).toBe(0);
 }
 

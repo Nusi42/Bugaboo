@@ -8,7 +8,14 @@ import { MomentEditor } from "./MomentEditor.tsx";
 import { ReferenceEditor } from "./ReferenceEditor.tsx";
 import { SaveForm } from "./SaveForm.tsx";
 import { useSynced } from "./use-synced.ts";
-import { durationSeconds, isDecimalText, isWholeNumberText, textOf } from "./value-text.ts";
+import {
+  durationSeconds,
+  isDecimalText,
+  isUnchanged,
+  isWholeNumberText,
+  textOf,
+  type Kept,
+} from "./value-text.ts";
 
 export type { Sent } from "./fields.ts";
 
@@ -80,14 +87,18 @@ function TextEditor({
 }: ValueEditorProps) {
   const [text, setText] = useSynced(textOf(field, value));
   const [local, setLocal] = useState<string | undefined>();
+  const [kept, setKept] = useState<Kept | undefined>();
   const commit = (typed: string): void => {
-    // A box that is left without a change is not a change.
-    if (inRow && typed === textOf(field, value)) {
+    const shown = textOf(field, value);
+    // A box that is left without a change is not a change, also before the page has read the
+    // value it sent.
+    if (inRow && isUnchanged(typed, shown, kept)) {
       return;
     }
     const sent = sentFrom(field, typed);
     setLocal("problem" in sent ? sent.problem : undefined);
     if ("value" in sent) {
+      setKept({ from: shown, text: typed });
       onCommit(sent.value);
     }
   };
