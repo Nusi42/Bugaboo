@@ -25,3 +25,4 @@ Points found while building M4 that were accepted for later. Each names where it
 | M4-F62 | A person cannot ask for the confirmation link again | The sign-up path is rebuilt in WP-06's fixes; resending fits the screens | WP-08 |
 | M4-F63 | A job that failed for good cannot be queued again by an administrator | No screen or command for jobs yet | M9 (operations) |
 | M4-F64 | Notifications and handles point to the person without cascade, so removing a person must remove them explicitly | Nothing removes a person before M9 | M9 (*Remove a person*) |
+| M4-F65 | A change in a notification and in *History* shares the code that words it (`api/change_side.rs`), but the members of the two answer types are still declared twice (LINT-DRY exemption) | One shared flattened type changed the shape of the API and broke the safe-text mark test | Before `m4-done` (the API freeze), or as an addition after it |
