@@ -9,10 +9,14 @@ export function labelOf(field: OwnField): string {
     : field.name;
 }
 
-/** The words every box of a field carries: its name, its help text and what is wrong with it. */
-export function boxWords(field: OwnField, error?: string) {
+/**
+ * The words every box of a field carries: its name, its help text and what is wrong with it. In a
+ * row of the Details (`inRow`) the row shows the name, so the box only reads it out.
+ */
+export function boxWords(field: OwnField, error?: string, inRow = false) {
   return {
     label: labelOf(field),
+    ...(inRow ? { hideLabel: true } : {}),
     ...(field.help === "" ? {} : { description: field.help }),
     ...(error === undefined ? {} : { errorMessage: error }),
   };

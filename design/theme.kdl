@@ -1729,11 +1729,6 @@ part "name-value.reason" {
     use "quiet-text"
 }
 
-// The row shows the name of the field, so the label of the box inside it is only read, not seen.
-part "name-value.value field.label" "name-value.value choice-group.legend" {
-    use "hidden-text"
-}
-
 // *Saved* and *Undo* where the change happened (R7).
 part "name-value.saved" {
     display inline-flex

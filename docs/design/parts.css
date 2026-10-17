@@ -1202,19 +1202,6 @@ body {
   font-size: var(--fs-base);
 }
 
-[data-part="name-value.value"] [data-part="field.label"],
-[data-part="name-value.value"] [data-part="choice-group.legend"] {
-  position: absolute;
-  width: var(--border-width);
-  height: var(--border-width);
-  margin: calc(var(--border-width) * -1);
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 [data-part="name-value.saved"] {
   display: inline-flex;
   align-items: center;

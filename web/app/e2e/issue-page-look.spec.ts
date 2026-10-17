@@ -4,7 +4,13 @@ import { issueAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
-import { chooseStatus, detailRow, expectStatus, statusButton } from "./support/issues.ts";
+import {
+  chooseStatus,
+  detailRow,
+  expectStatus,
+  issueNote,
+  statusButton,
+} from "./support/issues.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
 
@@ -26,7 +32,9 @@ test("ux_4_4 the big status button shows the status with its group's icon and li
   await chooseStatus(page, t("status.in-progress"));
   await expectStatus(page, t("status.in-progress"));
   await expect(statusButton(page)).toHaveAttribute("data-variant", "in-progress");
-  // Kept: the page is read again from the server.
+  // Kept: the page is read again from the server, once the server has the change (the button shows
+  // it at once, before the answer comes).
+  await expect(issueNote(page)).toBeVisible();
   await page.reload();
   await expectStatus(page, t("status.in-progress"));
 });

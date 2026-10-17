@@ -37,6 +37,7 @@ export function AddLabel({ has, onAdd, pending }: AddLabelProps) {
       }}
     >
       <SelectField
+        hideLabel
         label={t("labels.add-label")}
         choices={[
           { value: NONE, label: t("labels.pick-label") },

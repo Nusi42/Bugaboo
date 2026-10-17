@@ -31,6 +31,12 @@ export interface TextFieldProps {
   /** A problem the server found with the value: shown under the field. */
   readonly errorMessage?: string | undefined;
   /**
+   * The name is there for screen readers and voice control only, for a field that stands in a row
+   * that already names it (a row of the Details). Never the way to save room when the name matters
+   * to everybody.
+   */
+  readonly hideLabel?: boolean;
+  /**
    * What the field holds. An `email` address: the keyboard of a phone offers the @ sign, and the
    * value is checked. A `password`: the characters are hidden. `multiline`: more than one line (for
    * lists). Plain `text` is the default.
@@ -85,6 +91,7 @@ export function TextField({
   requiredMessage,
   emailMessage,
   errorMessage,
+  hideLabel = false,
   kind = fieldKind.text,
   date,
   name = "",
@@ -105,7 +112,7 @@ export function TextField({
       {...(errorMessage === undefined ? {} : { isInvalid: true })}
       validate={(text) => problemOf(text, kind, requiredMessage, emailMessage)}
     >
-      <Label {...partOf(part.fieldLabel)}>{label}</Label>
+      <Label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)}>{label}</Label>
       {description === undefined ? null : (
         <Text slot={descriptionSlot} {...partOf(part.fieldDescription)}>
           {description}

@@ -1,5 +1,4 @@
 import { useId, useRef } from "react";
-import { VisuallyHidden } from "react-aria-components";
 
 import { partOf } from "./parts.ts";
 import { part } from "./tokens.ts";
@@ -78,8 +77,8 @@ export function SelectField<Value extends string>({
   );
   return (
     <div {...partOf(part.field)}>
-      <label {...partOf(part.fieldLabel)} htmlFor={id}>
-        {hideLabel ? <VisuallyHidden>{label}</VisuallyHidden> : label}
+      <label {...partOf(hideLabel ? part.visuallyHidden : part.fieldLabel)} htmlFor={id}>
+        {label}
       </label>
       {description === undefined ? null : (
         <span id={helpId} {...partOf(part.fieldDescription)}>

@@ -63,7 +63,7 @@ export function AddTag({ project, issueType, onAdd, pending }: AddTagProps) {
         });
       }}
     >
-      <TextField label={t("labels.add-tag")} value={text} onChange={setText} />
+      <TextField hideLabel label={t("labels.add-tag")} value={text} onChange={setText} />
       <Suggestions project={project} issueType={issueType} text={text} pick={setText} />
       <div {...partOf(part.row)}>
         <Button type={buttonType.submit} isPending={pending} isDisabled={empty}>

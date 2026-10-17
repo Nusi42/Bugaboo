@@ -113,7 +113,7 @@ function TextEditor({
       }}
     >
       <TextField
-        {...boxWords(field, local ?? problem)}
+        {...boxWords(field, local ?? problem, inRow)}
         kind={field.kind === "long-text" ? fieldKind.multiline : fieldKind.text}
         value={text}
         onChange={(typed) => {
@@ -141,7 +141,7 @@ function YesNoEditor({ field, value, onCommit, inRow = false }: ValueEditorProps
 }
 
 /** A list with the choices that are not retired, and the one the value has. */
-function PickOneEditor({ field, value, onCommit, problem }: ValueEditorProps) {
+function PickOneEditor({ field, value, onCommit, problem, inRow = false }: ValueEditorProps) {
   const current = typeof value === "string" ? value : "";
   const choices = pickable(field, current === "" ? [] : [current]).map((choice) => ({
     value: choice.id,
@@ -150,7 +150,7 @@ function PickOneEditor({ field, value, onCommit, problem }: ValueEditorProps) {
   const mayBeEmpty = field.rules.required !== true || current === "";
   return (
     <SelectField
-      {...boxWords(field, problem)}
+      {...boxWords(field, problem, inRow)}
       choices={[
         ...(mayBeEmpty ? [{ value: "", label: t("fields.nothing-picked") }] : []),
         ...choices,
@@ -164,13 +164,15 @@ function PickOneEditor({ field, value, onCommit, problem }: ValueEditorProps) {
 }
 
 /** Ticks for the choices that are not retired, and the ones the value has. */
-function PickSeveralEditor({ field, value, onCommit, problem }: ValueEditorProps) {
+function PickSeveralEditor({ field, value, onCommit, problem, inRow = false }: ValueEditorProps) {
   const current = Array.isArray(value)
     ? value.filter((each): each is string => typeof each === "string")
     : [];
   return (
     <fieldset {...partOf(part.choiceGroup)}>
-      <legend {...partOf(part.choiceGroupLegend)}>{labelOf(field)}</legend>
+      <legend {...partOf(inRow ? part.visuallyHidden : part.choiceGroupLegend)}>
+        {labelOf(field)}
+      </legend>
       {pickable(field, current).map((choice) => (
         <Checkbox
           key={choice.id}
