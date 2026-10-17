@@ -11,7 +11,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::notifications::{
-    MailPasswordQuery, NotificationItem, NotificationWhat, NotificationsQuery, ReadNotifications,
+    MailServerQuery, NotificationItem, NotificationWhat, NotificationsQuery, ReadNotifications,
     SendTestEmail, SetMailPassword, UnreadQuery, Which,
 };
 use bb_core::edit::NoticeKind;
@@ -281,14 +281,14 @@ pub(crate) struct MailPasswordBody {
     password: Option<String>,
 }
 
-/// Whether the password of the mail server is entered.
+/// What the mail server has that is no setting.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct MailPasswordStatusBody {
+pub(crate) struct MailServerStatusBody {
     /// A password is stored. The password itself is never sent.
-    set: bool,
+    password_set: bool,
 }
 
-impl Masked for MailPasswordStatusBody {}
+impl Masked for MailServerStatusBody {}
 
 /// The notifications of the person, newest first, a page at a time. A notification about an issue
 /// the person cannot see any more is not in the list.
@@ -421,13 +421,14 @@ async fn set_mail_password(
     Ok(done())
 }
 
-/// Tells whether the password of the mail server is entered, never what it is.
+/// What the page of the mail server needs to know that the settings do not hold: whether a
+/// password is entered, never what it is.
 #[utoipa::path(
     get,
-    path = "/api/v1/mail/password",
-    operation_id = "getMailPassword",
+    path = "/api/v1/mail",
+    operation_id = "getMailServer",
     tag = "notifications",
-    responses((status = 200, description = "Whether it is entered.", body = MailPasswordStatusBody), NotSignedInAnswer)
+    responses((status = 200, description = "Whether it is entered.", body = MailServerStatusBody), NotSignedInAnswer)
 )]
 async fn get_mail_password(
     State(auth): State<AuthHandle>,
@@ -436,9 +437,11 @@ async fn get_mail_password(
 ) -> Result<Response, ApiError> {
     let state = auth
         .api()?
-        .mail_password_status(info, MailPasswordQuery { session_token })
+        .mail_server_status(info, MailServerQuery { session_token })
         .await?;
-    answer_authorized(&state.map(|state| MailPasswordStatusBody { set: state.set }))
+    answer_authorized(&state.map(|state| MailServerStatusBody {
+        password_set: state.password_set,
+    }))
 }
 
 /// Sends a test e-mail to the person who asks, through the mail server as it is entered, even

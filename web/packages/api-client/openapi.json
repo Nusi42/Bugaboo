@@ -13156,11 +13156,11 @@
         "x-permission": "manage-issue-types"
       }
     },
-    "/api/v1/mail/password": {
+    "/api/v1/mail": {
       "get": {
         "tags": ["notifications"],
-        "summary": "Tells whether the password of the mail server is entered, never what it is.",
-        "operationId": "getMailPassword",
+        "summary": "What the page of the mail server needs to know that the settings do not hold: whether a\npassword is entered, never what it is.",
+        "operationId": "getMailServer",
         "responses": {
           "200": {
             "description": "Whether it is entered.",
@@ -13175,7 +13175,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MailPasswordStatusBody"
+                  "$ref": "#/components/schemas/MailServerStatusBody"
                 }
               }
             }
@@ -13242,7 +13242,9 @@
         },
         "x-never-stored": true,
         "x-permission": "change-organization-settings"
-      },
+      }
+    },
+    "/api/v1/mail/password": {
       "put": {
         "tags": ["notifications"],
         "summary": "Enters, changes or removes the password of the mail server. It is stored encrypted like other\nsecrets and never sent back.",
@@ -25345,12 +25347,12 @@
           }
         }
       },
-      "MailPasswordStatusBody": {
+      "MailServerStatusBody": {
         "type": "object",
-        "description": "Whether the password of the mail server is entered.",
-        "required": ["set"],
+        "description": "What the mail server has that is no setting.",
+        "required": ["password_set"],
         "properties": {
-          "set": {
+          "password_set": {
             "type": "boolean",
             "description": "A password is stored. The password itself is never sent."
           }

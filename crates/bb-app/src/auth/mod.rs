@@ -70,9 +70,9 @@ use crate::many_changes::{
     many_changes_run, preview_many_changes, stop_many_changes_run,
 };
 use crate::notifications::{
-    ChangeHandle, MailPasswordQuery, MailPasswordStatus, MyHandle, MyHandleQuery, NotificationPage,
+    ChangeHandle, MailServerQuery, MailServerStatus, MyHandle, MyHandleQuery, NotificationPage,
     NotificationsQuery, ReadNotifications, SendTestEmail, SetMailPassword, Unread, UnreadQuery,
-    change_handle, mail_password_status, my_handle, notifications, read_notifications,
+    change_handle, mail_server_status, my_handle, notifications, read_notifications,
     send_test_email, set_mail_password, unread_notifications,
 };
 use crate::people::{
@@ -476,7 +476,7 @@ use_cases! {
     /// Enters, changes or removes the password of the mail server.
     set_mail_password(SetMailPassword) -> Authorized<Done>;
     /// Tells whether the password of the mail server is entered.
-    mail_password_status(MailPasswordQuery) -> Authorized<MailPasswordStatus>;
+    mail_server_status(MailServerQuery) -> Authorized<MailServerStatus>;
     /// Sends a test e-mail to the person who asks.
     send_test_email(SendTestEmail) -> Authorized<Done>;
     /// Marks notifications of the person as read.

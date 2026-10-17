@@ -334,10 +334,10 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             )
             .await?;
         assert_eq!(denied.code(), "access.forbidden");
-        let unknown = bob.send("GET", "/api/v1/mail/password", None).await?;
+        let unknown = bob.send("GET", "/api/v1/mail", None).await?;
         assert_eq!(unknown.code(), "access.forbidden");
-        let before = ada.send("GET", "/api/v1/mail/password", None).await?;
-        assert_eq!(before.body, json!({"set": false}));
+        let before = ada.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(before.body, json!({"password_set": false}));
         let set = ada
             .send(
                 "PUT",
@@ -347,8 +347,8 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             .await?;
         assert_eq!(set.status, StatusCode::NO_CONTENT, "{}", set.body);
         // The page learns that a password is entered, never what it is.
-        let after = ada.send("GET", "/api/v1/mail/password", None).await?;
-        assert_eq!(after.body, json!({"set": true}));
+        let after = ada.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(after.body, json!({"password_set": true}));
         for path in ["/api/v1/settings", "/api/v1/admin/status"] {
             let shown = ada.send("GET", path, None).await?;
             assert!(!shown.body.to_string().contains(password), "{path}");
@@ -360,8 +360,8 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             .await?;
         assert_eq!(removed.status, StatusCode::NO_CONTENT);
         assert!(rig.storage.mail_password().await?.is_none());
-        let gone = ada.send("GET", "/api/v1/mail/password", None).await?;
-        assert_eq!(gone.body, json!({"set": false}));
+        let gone = ada.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(gone.body, json!({"password_set": false}));
         Ok(())
     })
     .await

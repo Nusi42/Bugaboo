@@ -492,7 +492,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
-        "getMailPassword",
+        "getMailServer",
         Declared::Permission(Permission::ChangeOrganizationSettings),
         Answer::NeverStored,
     ),

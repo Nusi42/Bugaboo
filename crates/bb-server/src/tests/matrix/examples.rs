@@ -362,7 +362,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("getUnreadNotifications"),
     Example::route("readNotifications"),
     Example::route("setMailPassword"),
-    Example::route("getMailPassword"),
+    Example::route("getMailServer"),
     Example::route("sendTestEmail"),
     Example::with("listIssueHistory", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listFollowers", &[Quirk::AnIssueOfTheTarget]),

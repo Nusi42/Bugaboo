@@ -241,7 +241,7 @@ pub(super) async fn organization_request(
             "/api/v1/mail/password".into(),
             Some(json!({"password": "a made-up mail password"})),
         ),
-        "getMailPassword" => ("GET", "/api/v1/mail/password".into(), None),
+        "getMailServer" => ("GET", "/api/v1/mail".into(), None),
         // No mail server is entered in the matrix, so the test e-mail is turned away for that.
         "sendTestEmail" => ("POST", "/api/v1/mail/test".into(), None),
         "changeOrganizationSetting" => (

@@ -26,7 +26,7 @@ pub use handles::{
 };
 pub(crate) use mail::{MailJob, send_failure_for_job};
 pub use mail_settings::{
-    MailPasswordQuery, MailPasswordStatus, SendTestEmail, SetMailPassword, mail_password_status,
+    MailServerQuery, MailServerStatus, SendTestEmail, SetMailPassword, mail_server_status,
     send_test_email, set_mail_password,
 };
 pub use read::{notifications, read_notifications, unread_notifications};

@@ -1881,6 +1881,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/mail": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the page of the mail server needs to know that the settings do not hold: whether a
+     *     password is entered, never what it is.
+     */
+    get: operations["getMailServer"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/mail/password": {
     parameters: {
       query?: never;
@@ -1888,8 +1908,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Tells whether the password of the mail server is entered, never what it is. */
-    get: operations["getMailPassword"];
+    get?: never;
     /**
      * Enters, changes or removes the password of the mail server. It is stored encrypted like other
      *     secrets and never sent back.
@@ -4869,10 +4888,10 @@ export interface components {
        */
       password?: string | null;
     };
-    /** @description Whether the password of the mail server is entered. */
-    MailPasswordStatusBody: {
+    /** @description What the mail server has that is no setting. */
+    MailServerStatusBody: {
       /** @description A password is stored. The password itself is never sent. */
-      set: boolean;
+      password_set: boolean;
     };
     /** @description What is done to every issue of the selection. */
     ManyChangeActionBody:
@@ -17596,7 +17615,7 @@ export interface operations {
       };
     };
   };
-  getMailPassword: {
+  getMailServer: {
     parameters: {
       query?: never;
       header?: never;
@@ -17613,7 +17632,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["MailPasswordStatusBody"];
+          "application/json": components["schemas"]["MailServerStatusBody"];
         };
       };
       /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */

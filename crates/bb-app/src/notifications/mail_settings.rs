@@ -29,7 +29,7 @@ pub struct SetMailPassword {
 }
 
 /// Ask whether the password of the mail server is entered.
-pub struct MailPasswordQuery {
+pub struct MailServerQuery {
     /// The secret of the session of the request.
     pub session_token: String,
 }
@@ -37,12 +37,12 @@ pub struct MailPasswordQuery {
 /// Whether a password is entered. The password itself is never given (SEC-16): the page of the mail
 /// server shows only that it is *set*.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-pub struct MailPasswordStatus {
+pub struct MailServerStatus {
     /// A password is stored.
-    pub set: bool,
+    pub password_set: bool,
 }
 
-impl Masked for MailPasswordStatus {}
+impl Masked for MailServerStatus {}
 
 /// Send an e-mail to the person who asks, through the mail server as it is entered, to try the
 /// settings. It goes even while e-mail is still off.
@@ -111,10 +111,10 @@ pub async fn set_mail_password<S: AuthStore>(
 ///
 /// # Errors
 /// `access.forbidden` without *Change organization settings*.
-pub async fn mail_password_status<S: AuthStore>(
+pub async fn mail_server_status<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MailPasswordQuery,
-) -> Result<Authorized<MailPasswordStatus>, AppError> {
+    input: MailServerQuery,
+) -> Result<Authorized<MailServerStatus>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let access = ctx
         .require(
@@ -123,13 +123,13 @@ pub async fn mail_password_status<S: AuthStore>(
             Place::Organization,
         )
         .await?;
-    let set = ctx
+    let password_set = ctx
         .store()
         .mail_password()
         .await
         .map_err(|error| internal::<S>(&error))?
         .is_some();
-    Ok(access.authorize(MailPasswordStatus { set }))
+    Ok(access.authorize(MailServerStatus { password_set }))
 }
 
 /// Sends a test e-mail to the person who asks.
