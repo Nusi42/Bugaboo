@@ -5,7 +5,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, serverKeptFollow, signIn } from "./support/flows.ts";
 import { detailRow, prepareWeb, savedNote } from "./support/issues.ts";
-import { addRelation } from "./support/relate.ts";
+import { addRelation, addSubIssue } from "./support/relate.ts";
 import { issueAddress } from "../src/shared/paths.ts";
 
 // The parts of the issue page that sub-issues, relations, comments, history and following add
@@ -22,9 +22,10 @@ test("iss_03 an issue becomes a sub-issue and the progress says how far the sub-
   await page.goto(issueAddress("WEB-1"));
   await expect(page.getByRole("heading", { name: t("sub-issues.title") })).toBeVisible();
   const parts = page.getByRole("region", { name: t("sub-issues.title") });
-  await parts.getByLabel(t("common.issue-id")).fill("WEB-2");
-  await parts.getByRole("button", { name: t("sub-issues.add-it"), exact: true }).click();
-  await expect(page.getByText(t("sub-issues.added", { key: "WEB-2" }))).toBeVisible();
+  // The form is not there until it is asked for: the block says "None yet" and offers the button.
+  await expect(parts.getByLabel(t("common.issue-id"))).toHaveCount(0);
+  await expect(parts.getByText(t("sub-issues.none"))).toBeVisible();
+  await addSubIssue(page, "WEB-2");
   await page.reload();
   await expect(parts.getByText("WEB-2", { exact: true })).toBeVisible();
   await expect(parts.getByText(t("sub-issues.progress", { done: 0, total: 1 }))).toBeVisible();

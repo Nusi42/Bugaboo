@@ -41,16 +41,22 @@ function useParentChange() {
   return { added, error, pending, put };
 }
 
-/** *Add sub-issue*: the readable ID of an issue that then sits under this one, with *Undo*. */
-function AddSubIssue({ readableId }: { readonly readableId: string }) {
+/** The small form of *Add sub-issue*: the readable ID of an issue that then sits under this one. */
+function AddSubIssueForm({
+  pending,
+  onAdd,
+  onCancel,
+}: {
+  readonly pending: boolean;
+  readonly onAdd: (child: string) => void;
+  readonly onCancel: () => void;
+}) {
   const [other, setOther] = useState("");
-  const { added, error, pending, put } = useParentChange();
   return (
     <Form
       onSubmit={() => {
-        const child = other.trim();
+        onAdd(other.trim());
         setOther("");
-        void put(child, readableId);
       }}
     >
       <TextField
@@ -61,7 +67,45 @@ function AddSubIssue({ readableId }: { readonly readableId: string }) {
       />
       <div {...partOf(part.row)}>
         <SubmitButton isPending={pending}>{t("sub-issues.add-it")}</SubmitButton>
+        <Button look={buttonLook.quiet} onPress={onCancel}>
+          {t("common.cancel")}
+        </Button>
       </div>
+    </Form>
+  );
+}
+
+/**
+ * *Add sub-issue* (UX §4.4: *Sub-issues · None yet · Add sub-issue*): a button that opens the small
+ * form, and after adding, the issue that was added with *Undo*.
+ */
+function AddSubIssue({ readableId }: { readonly readableId: string }) {
+  const [open, setOpen] = useState(false);
+  const { added, error, pending, put } = useParentChange();
+  return (
+    <>
+      {open ? (
+        <AddSubIssueForm
+          pending={pending}
+          onAdd={(child) => {
+            setOpen(false);
+            void put(child, readableId);
+          }}
+          onCancel={() => {
+            setOpen(false);
+          }}
+        />
+      ) : (
+        <div {...partOf(part.row)}>
+          <Button
+            onPress={() => {
+              setOpen(true);
+            }}
+          >
+            {t("sub-issues.add")}
+          </Button>
+        </div>
+      )}
       {error === null ? null : <Alert tone={alertTone.danger}>{messageOf(error)}</Alert>}
       {added === null ? null : (
         <Alert tone={alertTone.success}>
@@ -76,7 +120,7 @@ function AddSubIssue({ readableId }: { readonly readableId: string }) {
           </Button>
         </Alert>
       )}
-    </Form>
+    </>
   );
 }
 

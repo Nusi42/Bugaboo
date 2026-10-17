@@ -4414,6 +4414,9 @@ pub const STATUS_TESTING: MessageKey = MessageKey::new("status.testing");
 /// The message `status.wont-fix`.
 pub const STATUS_WONT_FIX: MessageKey = MessageKey::new("status.wont-fix");
 
+/// The message `sub-issues.add`.
+pub const SUB_ISSUES_ADD: MessageKey = MessageKey::new("sub-issues.add");
+
 /// The message `sub-issues.add-it`.
 pub const SUB_ISSUES_ADD_IT: MessageKey = MessageKey::new("sub-issues.add-it");
 
@@ -12047,6 +12050,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.open", "Open"),
     ("status.testing", "Testing"),
     ("status.wont-fix", "Won't fix"),
+    ("sub-issues.add", "Add sub-issue"),
     ("sub-issues.add-it", "Add"),
     ("sub-issues.added", "{key} is now a sub-issue."),
     ("sub-issues.more", "Show more sub-issues"),

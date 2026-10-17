@@ -6,7 +6,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
-import { addRelation, BLOCKS } from "./support/relate.ts";
+import { addRelation, addSubIssue, BLOCKS } from "./support/relate.ts";
 
 // The rows under the text of an issue (UX §4.4, R9, M3 WP-17): sub-issues and related issues are
 // rows like those of the list, with the same tint, and the issue under another says *Part of* with
@@ -21,9 +21,7 @@ test("ux_4_4 a sub-issue is a row like those of the list, tinted by its status g
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   const parts = page.getByRole("region", { name: t("sub-issues.title") });
-  await parts.getByLabel(t("common.issue-id")).fill("WEB-2");
-  await parts.getByRole("button", { name: t("sub-issues.add-it"), exact: true }).click();
-  await expect(page.getByText(t("sub-issues.added", { key: "WEB-2" }))).toBeVisible();
+  await addSubIssue(page, "WEB-2");
   const row = partIn(parts, "list-row").filter({ hasText: "WEB-2" });
   // The same state as the list: WEB-2 is done.
   await expect(row).toHaveAttribute("data-state", /group-done/u);
