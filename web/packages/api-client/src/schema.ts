@@ -1429,10 +1429,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * What the reader may add to the issue, and the limits of its project: how many megabytes a file
-     *     may have, the types that are never accepted and the size of a part.
-     */
+    /** What the reader may add to the issue, and the most bytes one file may have in its project. */
     get: operations["getFileRules"];
     put?: never;
     post?: never;

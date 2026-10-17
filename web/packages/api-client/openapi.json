@@ -9698,7 +9698,7 @@
     "/api/v1/issues/{issue}/file-rules": {
       "get": {
         "tags": ["files"],
-        "summary": "What the reader may add to the issue, and the limits of its project: how many megabytes a file\nmay have, the types that are never accepted and the size of a part.",
+        "summary": "What the reader may add to the issue, and the most bytes one file may have in its project.",
         "operationId": "getFileRules",
         "parameters": [
           {
