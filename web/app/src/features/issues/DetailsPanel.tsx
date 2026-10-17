@@ -15,8 +15,9 @@ export interface DetailsPanelProps {
 }
 
 /**
- * The *Details* column (UX §3.4, §4.4): the fields as name-and-value rows, then what other
- * packages put below them (the own fields of WP-05, following, labels and tags).
+ * The *Details* column (UX §3.4, §4.4): the fields as name-and-value rows of one list, the own
+ * fields, following, tags and labels among them (rows that other packages put below the built-in
+ * ones), then what cannot be a row of that list.
  */
 export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
   return (
@@ -28,8 +29,9 @@ export function DetailsPanel({ blocks, changes, stacked }: DetailsPanelProps) {
       <NameValueList>
         <ChangeableRows blocks={blocks} changes={changes} />
         <FixedRows blocks={blocks} />
+        <SlotBlocks slot={issueSlots.details} blocks={blocks} />
       </NameValueList>
-      <SlotBlocks slot={issueSlots.details} blocks={blocks} />
+      <SlotBlocks slot={issueSlots.detailSections} blocks={blocks} />
     </aside>
   );
 }

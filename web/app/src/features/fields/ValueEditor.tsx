@@ -104,6 +104,7 @@ function TextEditor({
   };
   return (
     <SaveForm
+      name={field.name}
       isPending={isPending}
       live={live}
       inRow={inRow}

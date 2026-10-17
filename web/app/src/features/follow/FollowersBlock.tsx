@@ -1,14 +1,5 @@
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  NameValueList,
-  NameValueRow,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, NameValueRow, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
@@ -76,7 +67,8 @@ function FollowButton({ issue }: { readonly issue: string }) {
 
 /**
  * The *Followers* row of the Details (ISS-07, *3 followers · Follow*): the number of followers, the button, and the
- * names when asked for. A reader who may not see followers gets neither names nor a number.
+ * names when asked for. A row of the one list of the Details; each line starts with a button that hangs back
+ * by its padding, so the text of the lines stands on one edge (R1). A reader who may not see followers gets neither names nor a number.
  * People who report, are assigned or comment follow by themselves.
  */
 export function FollowersBlock({ readableId }: { readonly readableId: string }) {
@@ -84,22 +76,22 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
   const [shown, setShown] = useState(false);
   const people = itemsOf(list.data?.pages);
   return (
-    <div {...partOf(part.stack)}>
-      <NameValueList>
-        <NameValueRow name={t("followers.name")}>
-          {people.length === 0 ? null : (
-            <Button
-              look={buttonLook.quiet}
-              onPress={() => {
-                setShown(!shown);
-              }}
-            >
-              {followerCount(people.length, list.hasNextPage)}
-            </Button>
-          )}
-          <FollowButton issue={readableId} />
-        </NameValueRow>
-      </NameValueList>
+    <NameValueRow name={t("followers.name")}>
+      {people.length === 0 ? null : (
+        <div {...partOf(part.row)}>
+          <Button
+            look={buttonLook.quiet}
+            onPress={() => {
+              setShown(!shown);
+            }}
+          >
+            {followerCount(people.length, list.hasNextPage)}
+          </Button>
+        </div>
+      )}
+      <div {...partOf(part.row)}>
+        <FollowButton issue={readableId} />
+      </div>
       {shown ? <FollowerNames people={people} /> : null}
       {shown && list.hasNextPage ? (
         <Button
@@ -111,6 +103,6 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
           {t("followers.more")}
         </Button>
       ) : null}
-    </div>
+    </NameValueRow>
   );
 }

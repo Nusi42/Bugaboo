@@ -5,5 +5,5 @@ export { FormNotice } from "./FormNotice.tsx";
 export { FormSections, type FormSectionsProps } from "./FormSections.tsx";
 export { OrganizationLayoutsScreen, ProjectLayoutsScreen } from "./LayoutsScreens.tsx";
 export type { LayoutsScreenProps, ProjectLayoutsScreenProps } from "./LayoutsScreens.tsx";
-export { onlyFields } from "./form-tabs.ts";
+export { isPlain, onlyFields } from "./form-tabs.ts";
 export { useFormLayout, type FormKind, type FormSection, type FormView } from "./layouts.ts";

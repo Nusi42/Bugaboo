@@ -203,6 +203,14 @@ export function savedNote(page: Page) {
   return page.getByText(new RegExp(`^${t("save.saved")}`, "u")).first();
 }
 
+/**
+ * The *Saved* note under the title of the issue page: the one for a change that has no row in the
+ * Details (the title, the status). A change in a row says *Saved* in its own row, not here.
+ */
+export function issueNote(page: Page) {
+  return page.locator('[data-part="issue-note"]').getByText(new RegExp(`^${t("save.saved")}`, "u"));
+}
+
 /** The name of the box of the title on the form of a new issue: every required field says so. */
 export function titleLabel(): string {
   return t("fields.label-required", { field: t("issue-field.title") });

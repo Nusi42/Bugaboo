@@ -80,6 +80,7 @@ export const messages = {
     "A retired field is no longer offered for new values. The values already set stay on the issues and projects.",
   "fields.retire": "Retire this field",
   "fields.offer-again": "Offer this field again",
+  "fields.value-of": "Value of {name}",
   "fields.project-heading": "Project fields",
   "fields.unknown-choice": "A choice that is gone",
   "fields.hidden-reference": "Not shown",

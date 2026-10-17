@@ -1,30 +1,25 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonType, Form, SelectField, partOf, part } from "@bugaboo/ui";
+import { Button, buttonType, Form, SelectField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { api } from "../../shared/api.ts";
-import { messageOf } from "../../shared/errors.ts";
-import { afterLabelsAndTags, useLabels, type Chip, type Counted } from "./labels.ts";
+import { useLabels, type Chip } from "./labels.ts";
 
 /** The choice that stands for no label picked yet. */
 const NONE = "";
 
-/** *Add a label*: one of the labels of the organization that the issue does not have yet. */
-export function AddLabel({
-  issue,
-  has,
-}: {
-  readonly issue: string;
+export interface AddLabelProps {
+  /** The labels the issue has. */
   readonly has: readonly Chip[];
-}) {
+  /** Puts the label with this ID on the issue; says whether it was put there. */
+  readonly onAdd: (label: string) => Promise<boolean>;
+  /** A change is on its way. */
+  readonly pending: boolean;
+}
+
+/** *Add a label*: one of the labels of the organization that the issue does not have yet. */
+export function AddLabel({ has, onAdd, pending }: AddLabelProps) {
   const [picked, setPicked] = useState(NONE);
   const labels = useLabels();
-  const add = api.query.useMutation("post", "/api/v1/issues/{issue}/labels", {
-    onSuccess: (labelsAndTags: Counted) => {
-      afterLabelsAndTags(issue, labelsAndTags);
-      setPicked(NONE);
-    },
-  });
   const offered = (labels.data?.labels ?? []).filter(
     (label) => !label.retired && !has.some((each) => each.id === label.id),
   );
@@ -34,7 +29,11 @@ export function AddLabel({
   return (
     <Form
       onSubmit={() => {
-        add.mutate({ params: { path: { issue } }, body: { label: picked } });
+        void onAdd(picked).then((added) => {
+          if (added) {
+            setPicked(NONE);
+          }
+        });
       }}
     >
       <SelectField
@@ -46,9 +45,8 @@ export function AddLabel({
         value={picked}
         onChange={setPicked}
       />
-      {add.isError ? <Alert tone={alertTone.danger}>{messageOf(add.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <Button type={buttonType.submit} isPending={add.isPending} isDisabled={picked === NONE}>
+        <Button type={buttonType.submit} isPending={pending} isDisabled={picked === NONE}>
           {t("labels.add-label-button")}
         </Button>
       </div>

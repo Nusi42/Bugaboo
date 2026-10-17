@@ -1,18 +1,18 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Button, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
+import { Button, buttonType, Form, TextField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { api } from "../../shared/api.ts";
-import { messageOf } from "../../shared/errors.ts";
-import { afterLabelsAndTags, useTagSuggestions, type Counted } from "./labels.ts";
+import { useTagSuggestions } from "./labels.ts";
 
 export interface AddTagProps {
-  /** The issue, by its readable ID. */
-  readonly issue: string;
   /** The project of the issue (its short name): the tags to offer are those of the project. */
   readonly project: string;
   /** The type of the issue: its level for *Tags* decides what is offered. */
   readonly issueType: string;
+  /** Adds the tag with this name; says whether it was added. */
+  readonly onAdd: (name: string) => Promise<boolean>;
+  /** A change is on its way. */
+  readonly pending: boolean;
 }
 
 interface SuggestionsProps {
@@ -50,26 +50,23 @@ function Suggestions({ project, issueType, text, pick }: SuggestionsProps) {
  * *Add a tag*: the words typed offer the tags of the project that fit; a tag that does not exist
  * yet is made by adding it (TAG-01).
  */
-export function AddTag({ issue, project, issueType }: AddTagProps) {
+export function AddTag({ project, issueType, onAdd, pending }: AddTagProps) {
   const [text, setText] = useState("");
-  const add = api.query.useMutation("post", "/api/v1/issues/{issue}/tags", {
-    onSuccess: (labelsAndTags: Counted) => {
-      afterLabelsAndTags(issue, labelsAndTags);
-      setText("");
-    },
-  });
   const empty = text.trim() === "";
   return (
     <Form
       onSubmit={() => {
-        add.mutate({ params: { path: { issue } }, body: { name: text.trim() } });
+        void onAdd(text.trim()).then((added) => {
+          if (added) {
+            setText("");
+          }
+        });
       }}
     >
       <TextField label={t("labels.add-tag")} value={text} onChange={setText} />
       <Suggestions project={project} issueType={issueType} text={text} pick={setText} />
-      {add.isError ? <Alert tone={alertTone.danger}>{messageOf(add.error)}</Alert> : null}
       <div {...partOf(part.row)}>
-        <Button type={buttonType.submit} isPending={add.isPending} isDisabled={empty}>
+        <Button type={buttonType.submit} isPending={pending} isDisabled={empty}>
           {t("labels.add-tag-button")}
         </Button>
       </div>

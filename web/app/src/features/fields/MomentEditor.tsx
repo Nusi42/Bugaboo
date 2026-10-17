@@ -35,6 +35,14 @@ function TimeBox({
   return <TextField label={t("fields.time-of-day")} value={value} onChange={onChange} />;
 }
 
+/** The day and the time of day a moment holds, each as typed so far and as saved. */
+function useMomentParts(value: unknown, withTime: boolean) {
+  const [savedDay, savedTime] = partsOf(value, withTime);
+  const [day, setDay] = useSynced(savedDay);
+  const [time, setTime] = useSynced(savedTime);
+  return { savedDay, savedTime, day, setDay, time, setTime };
+}
+
 /** A day, and for a day and time also the time of day. */
 export function MomentEditor({
   field,
@@ -46,11 +54,15 @@ export function MomentEditor({
   inRow = false,
 }: ValueEditorProps) {
   const withTime = field.kind === "date-time";
-  const [savedDay, savedTime] = partsOf(value, withTime);
-  const [day, setDay] = useSynced(savedDay);
-  const [time, setTime] = useSynced(savedTime);
+  const { savedDay, savedTime, day, setDay, time, setTime } = useMomentParts(value, withTime);
+  const sendLive = (nextDay: string, nextTime: string) => {
+    if (live) {
+      onCommit(momentOf(withTime, nextDay, nextTime));
+    }
+  };
   return (
     <SaveForm
+      name={field.name}
       isPending={isPending}
       live={live}
       inRow={inRow}
@@ -67,9 +79,7 @@ export function MomentEditor({
         value={day}
         onChange={(next) => {
           setDay(next);
-          if (live) {
-            onCommit(momentOf(withTime, next, time));
-          }
+          sendLive(next, time);
         }}
       />
       {withTime ? (
@@ -77,9 +87,7 @@ export function MomentEditor({
           value={time}
           onChange={(next) => {
             setTime(next);
-            if (live) {
-              onCommit(momentOf(withTime, day, next));
-            }
+            sendLive(day, next);
           }}
         />
       ) : null}

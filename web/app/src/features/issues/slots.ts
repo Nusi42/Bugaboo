@@ -32,8 +32,17 @@ export const issueSlots = {
   history: "history",
   /** Sections of own fields that the layout puts into the main column (WP-05). */
   ownFieldSections: "own-field-sections",
-  /** The own fields in the Details (*Details*), below the built-in ones (WP-05). */
+  /**
+   * Rows of the Details, below the built-in ones: a block draws `NameValueRow`s and the panel puts
+   * them into its one list (own fields, *Followers*, *Tags*, *Labels*), so a row is a `dt` and a
+   * `dd` of that list and a block never draws a list of its own (M3-F188).
+   */
   details: "details",
+  /**
+   * What the Details cannot hold as rows of its one list: the own fields of a layout that has
+   * titled sections or tabs. Each is a block of its own after the list (CFG-01).
+   */
+  detailSections: "detail-sections",
 } as const;
 
 /** The name of a slot. */

@@ -58,7 +58,6 @@ export const messages = {
   "labels.combine-dialog-title": "Combine {name} with {other}?",
   "labels.combine-dialog-text": "The issues that have {name} get {other}, and {name} is gone.",
   "labels.combined": "Combined.",
-  "labels.labels-and-tags-title": "Labels and tags",
   "labels.tags-heading": "Tags",
   "labels.labels-heading": "Labels",
   "labels.none-tags": "No tags.",

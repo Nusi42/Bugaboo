@@ -162,6 +162,7 @@ export interface MessageArguments {
   "fields.used-in-projects": { count: number };
   "fields.used-more": { count: number };
   "fields.used-types": { names: string | number };
+  "fields.value-of": { name: string | number };
   "files.added": { size: string | number; when: string | number; who: string | number };
   "files.delete-named": { name: string | number };
   "files.deleted": { name: string | number };
