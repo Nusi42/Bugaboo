@@ -15,6 +15,7 @@ export {
   draftTextMax,
   heartbeatSeconds,
   layoutEditPart,
+  workflowEditPart,
   leaseSeconds,
   versionsMax,
   watchSeconds,
@@ -65,6 +66,7 @@ export {
   newIssuePriority,
   priorityWords,
   statusGroupWords,
+  testWords,
 } from "./words.generated.ts";
 export {
   settingChoices,

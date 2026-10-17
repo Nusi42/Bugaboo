@@ -1,7 +1,7 @@
 import { ApiError, type ErrorCode } from "@bugaboo/api-client";
 import { describe, expect, it } from "vitest";
 
-import type { LockState } from "./layout-lock.ts";
+import type { LockState } from "./edit-lock-state.ts";
 import { shownSaveError } from "./save-error.ts";
 
 function refused(code: ErrorCode): ApiError {

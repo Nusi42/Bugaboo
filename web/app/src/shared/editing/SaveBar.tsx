@@ -1,4 +1,3 @@
-import { t } from "@bugaboo/messages";
 import {
   Alert,
   alertTone,
@@ -10,8 +9,10 @@ import {
   type SaveState,
 } from "@bugaboo/ui";
 
-import { messageOf } from "../../shared/errors.ts";
-import { saveLabels } from "../../shared/save-labels.ts";
+import { t } from "@bugaboo/messages";
+
+import { messageOf } from "../errors.ts";
+import { saveLabels } from "../save-labels.ts";
 
 export interface SaveBarProps {
   /** There are changes that are not saved. */
@@ -25,6 +26,8 @@ export interface SaveBarProps {
   readonly error: unknown;
   readonly onSave: () => void;
   readonly onDiscard: () => void;
+  /** What the main button says: it names what it does (R6). */
+  readonly saveLabel: string;
 }
 
 /** The state of the last change as the words under the buttons say it. */
@@ -35,9 +38,9 @@ function stateOf({ dirty, saved }: Pick<SaveBarProps, "dirty" | "saved">): SaveS
   return saved ? "saved" : "idle";
 }
 
-/** *Save layout* and *Throw my changes away*, with what happened to the last save. */
+/** The main button that saves and the one that throws the changes away, with what happened to the last save. */
 export function SaveBar(props: SaveBarProps) {
-  const { dirty, canSave, pending, error, onSave, onDiscard } = props;
+  const { dirty, canSave, pending, error, onSave, onDiscard, saveLabel } = props;
   return (
     <>
       {error === null || error === undefined ? null : (
@@ -50,10 +53,10 @@ export function SaveBar(props: SaveBarProps) {
           isDisabled={!dirty || !canSave}
           onPress={onSave}
         >
-          {t("layouts.save")}
+          {saveLabel}
         </Button>
         <Button isDisabled={!dirty} onPress={onDiscard}>
-          {t("layouts.draft-drop")}
+          {t("editing.changes-drop")}
         </Button>
         <SaveStatus state={stateOf(props)} labels={saveLabels()} />
       </div>

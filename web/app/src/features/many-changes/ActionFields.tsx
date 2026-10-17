@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { SelectField, TextField, partOf, part } from "@bugaboo/ui";
 
 import { ProjectsToUse } from "../fields/index.ts";
-import { priorityChoices, type StatusOption } from "../issues/index.ts";
+import { choiceIdOf, choiceLabelOf, priorityChoices, type ProjectChange } from "../issues/index.ts";
 import { useLabels } from "../labels/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
 import { manyChangeKind, type ManyChangeKind } from "./many-changes.ts";
@@ -14,8 +14,8 @@ export interface ActionFieldsProps {
   readonly onDraft: (draft: Draft) => void;
   /** The words a relation can be made with. */
   readonly relations: readonly RelationChoice[];
-  /** The statuses the issues of the project can have: the server lists them. */
-  readonly statuses: readonly StatusOption[];
+  /** The status changes the issues of the project can have, by their words: the server lists them. */
+  readonly statusChanges: readonly ProjectChange[];
 }
 
 /** What a pick of status or priority starts with: leave the field as it is. */
@@ -23,10 +23,13 @@ const keep = { value: NONE, label: t("many-changes.keep") };
 const priorityOrKeep = [keep, ...priorityChoices];
 
 /** *Change status or priority*: what to set; a field left as it is stays as it is. */
-function ChangeFields({ draft, onDraft, statuses }: ActionFieldsProps) {
+function ChangeFields({ draft, onDraft, statusChanges }: ActionFieldsProps) {
   const statusOrKeep = [
     keep,
-    ...statuses.map((status) => ({ value: status.key, label: status.name })),
+    ...statusChanges.map((change) => ({
+      value: choiceIdOf(change),
+      label: choiceLabelOf(change, statusChanges),
+    })),
   ];
   return (
     <>

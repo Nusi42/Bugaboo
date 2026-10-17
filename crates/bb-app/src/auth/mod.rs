@@ -124,10 +124,11 @@ use crate::tags::{
     tag_change_preview, tag_suggestions, tags,
 };
 use crate::workflows::{
-    CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishWorkflow,
-    Published, Tried, TryWorkflowQuery, UseWorkflow, WorkflowEditor, WorkflowEditorQuery,
-    WorkflowList, WorkflowsQuery, create_workflow, delete_workflow, project_statuses,
-    publish_workflow, try_workflow, use_workflow, workflow_editor, workflows,
+    CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishPreview,
+    PublishPreviewQuery, PublishWorkflow, Published, Tried, TryWorkflowQuery, UseWorkflow,
+    WorkflowEditor, WorkflowEditorQuery, WorkflowList, WorkflowsQuery, create_workflow,
+    delete_workflow, project_statuses, publish_preview, publish_workflow, try_workflow,
+    use_workflow, workflow_editor, workflows,
 };
 
 #[cfg(test)]
@@ -603,6 +604,8 @@ use_cases! {
     use_workflow(UseWorkflow) -> Authorized<WorkflowEditor>;
     /// Publishes a workflow under its edit lock.
     publish_workflow(PublishWorkflow) -> Authorized<Published>;
+    /// Says which statuses publishing a workflow would drop, and which issues are in them.
+    publish_preview(PublishPreviewQuery) -> Authorized<PublishPreview>;
     /// Takes a workflow away.
     delete_workflow(DeleteWorkflow) -> Done;
     /// Tells which status changes a person would get on an issue.

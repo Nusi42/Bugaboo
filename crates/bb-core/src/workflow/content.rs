@@ -65,7 +65,7 @@ pub enum Problem {
     SameStatus,
     /// Two status changes have the same start and end.
     ChangeTwice,
-    /// A rule names a built-in field that a rule cannot ask about.
+    /// A rule names a built-in field that a rule cannot ask about, or asks for the description.
     FieldNotAllowed,
 }
 
@@ -78,6 +78,14 @@ pub const fn rule_may_name(field: FieldKey) -> bool {
         FieldKey::Own(_) => true,
         FieldKey::BuiltIn(built_in) => matches!(built_in, Field::Description | Field::AssignedTo),
     }
+}
+
+/// Whether a rule may ask for the field in the small form of a status change. The description is
+/// long text with a lock of its own, which a status change cannot carry, so asking for it could
+/// never be met (it can still be required to be filled in).
+#[must_use]
+pub const fn ask_may_name(field: FieldKey) -> bool {
+    rule_may_name(field) && !matches!(field, FieldKey::BuiltIn(Field::Description))
 }
 
 fn name_problem(name: &str) -> Option<Problem> {
@@ -266,19 +274,9 @@ impl WorkflowContent {
                 group: draft.group,
             });
         }
-        let named = |text: &str| -> Option<StatusKey> {
-            let by_key = made.iter().find(|status| status.key.as_str() == text);
-            let by_name = || {
-                let wanted = text.trim().to_lowercase();
-                statuses
-                    .iter()
-                    .zip(&made)
-                    .find(|(draft, status)| {
-                        draft.key.is_none() && status.name.to_lowercase() == wanted
-                    })
-                    .map(|(_, status)| status)
-            };
-            by_key.or_else(by_name).map(|status| status.key.clone())
+        let named = |text: &str| {
+            status_named(&made, text, |status| is_new_in(statuses, status))
+                .map(|status| status.key.clone())
         };
         let mut made_changes = Vec::with_capacity(changes.len());
         for draft in changes {
@@ -322,9 +320,40 @@ impl StatusRules {
         {
             return Err(Problem::TooBig);
         }
-        if named.iter().any(|field| !rule_may_name(*field)) {
+        if named.iter().any(|field| !rule_may_name(*field))
+            || self.ask_for.iter().any(|field| !ask_may_name(*field))
+        {
             return Err(Problem::FieldNotAllowed);
         }
         Ok(())
     }
+}
+
+/// Whether a status of the content made from `drafts` is new: no draft gave it its key. The one
+/// meaning of *new* for [`status_named`], for the editor and for Publish.
+#[must_use]
+pub fn is_new_in(drafts: &[StatusDraft], status: &WorkflowStatus) -> bool {
+    !drafts
+        .iter()
+        .any(|draft| draft.key.as_ref() == Some(&status.key))
+}
+
+/// The status that a text names among `statuses`: the one with that key, else (only among the ones
+/// `is_new` accepts) the one with that name, ignoring capitals and spaces at the ends. The editor
+/// writes a status that is new by its name because it has no key yet; publishing reads the same
+/// words the same way (ADR-0031 amendment 2).
+pub fn status_named<'a>(
+    statuses: &'a [WorkflowStatus],
+    text: &str,
+    is_new: impl Fn(&WorkflowStatus) -> bool,
+) -> Option<&'a WorkflowStatus> {
+    let wanted = text.trim().to_lowercase();
+    statuses
+        .iter()
+        .find(|status| status.key.as_str() == text)
+        .or_else(|| {
+            statuses
+                .iter()
+                .find(|status| is_new(status) && status.name.trim().to_lowercase() == wanted)
+        })
 }

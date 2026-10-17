@@ -546,6 +546,9 @@ export const messages = {
   "editing.the-description": "the description",
   "editing.this-comment": "this comment",
   "editing.this-layout": "this layout",
+  "editing.this-workflow": "this workflow",
+  "editing.taking": "Getting ready to edit…",
+  "editing.changes-drop": "Throw my changes away",
   "editing.ask-to-finish": "Ask {name} to finish",
   "editing.edit-anyway": "Edit anyway",
   "editing.draft-found": "You have a draft of {thing} from {when}.",
@@ -592,6 +595,8 @@ export const messages = {
   "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
+  "workflows.nav": "Workflows",
+  "workflows.project-title": "Workflows of {project}",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
   "setting.notifications.mentioned-in-app.help":
     "Tells you under Notifications when a comment mentions you, or a group or role you are in.",

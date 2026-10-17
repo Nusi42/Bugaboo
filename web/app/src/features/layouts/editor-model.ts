@@ -1,5 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
+import { newId } from "../../shared/new-ids.ts";
+
 /** One field in the editor: its key, name (own fields), the roles it is shown to and the marks. */
 export interface Row {
   /** The key of the field: the word of a built-in field or the ID of an own field. */
@@ -34,12 +36,9 @@ export interface Target {
   readonly index: number;
 }
 
-let counter = 0;
-
 /** A key for a section that is not used by another. */
 export function nextKey(): string {
-  counter += 1;
-  return `section-${String(counter)}`;
+  return newId("section");
 }
 
 function rowOf(field: Schema<"EditorFieldBody">): Row {

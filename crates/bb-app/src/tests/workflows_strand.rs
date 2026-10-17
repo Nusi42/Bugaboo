@@ -7,7 +7,7 @@ use bb_core::access::FieldLevel;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{IssueId, ProjectId};
 use bb_core::issue::StatusGroup;
-use bb_core::workflow::starter::{DONE, IN_PROGRESS, OPEN};
+use bb_core::workflow::starter::{IN_PROGRESS, OPEN};
 use bb_core::workflow::{ChangeDraft, Condition, StatusDraft, StatusRules, Test};
 use bb_policy::StartingRole;
 
@@ -23,9 +23,8 @@ use crate::issues::{DeleteIssue, RestoreIssue, change_issue, delete_issue, resto
 use crate::projects::{MovePreviewQuery, MoveProject, move_project, preview_move};
 use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
 use crate::workflows::{
-    CreateWorkflow, DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict,
-    TryWorkflowQuery, UseWorkflow, WorkflowsQuery, create_workflow, delete_workflow, try_workflow,
-    use_workflow, workflows,
+    CreateWorkflow, DeleteWorkflow, TriedVerdict, TryWorkflowQuery, UseWorkflow, WorkflowsQuery,
+    create_workflow, delete_workflow, try_workflow, use_workflow, workflows,
 };
 
 const REVIEW: &str = "review";
@@ -131,47 +130,6 @@ async fn wf_02_taking_a_workflow_away_never_strands_an_issue() -> Outcome {
     // Once the issue is out of Review, the workflow can go.
     change_issue(&world.ctx(), change(&admin, &id.to_string(), 2, OPEN)?).await?;
     delete_workflow(&world.ctx(), away(slot)).await?;
-    Ok(())
-}
-
-#[tokio::test]
-async fn wf_02_publishing_whose_moves_would_be_skipped_publishes_nothing() -> Outcome {
-    let world = World::new().await?;
-    let project = a_project(&world, "ACME").await?;
-    let admin = world.admin.session_token.clone();
-    let id = an_issue(&world, project).await?;
-    change_issue(
-        &world.ctx(),
-        change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
-    )
-    .await?;
-    let editor = a_workflow(&world, "ACME").await?;
-    let without_progress = |sent: &mut PublishWorkflow, to: &str| {
-        sent.statuses
-            .retain(|each| each.key.as_ref() != Some(&key(IN_PROGRESS)));
-        sent.changes
-            .retain(|each| each.from != IN_PROGRESS && each.to != IN_PROGRESS);
-        sent.moves = vec![StatusMoveInput {
-            from: key(IN_PROGRESS),
-            to: key(to),
-        }];
-    };
-    // An issue only starts again in the starting status: a move to Done is not a way around the
-    // rules, and nothing is published for it.
-    let refused = published_with(&world, &editor, |sent| without_progress(sent, DONE))
-        .await
-        .err();
-    assert_eq!(refused, Some(AppError::Refused(ErrorCode::InvalidRequest)));
-    assert_eq!(status_of(&world, &admin, id).await?, IN_PROGRESS);
-    let shown = a_workflow(&world, "ACME").await?;
-    assert!(
-        shown
-            .statuses
-            .iter()
-            .any(|each| each.key == key(IN_PROGRESS))
-    );
-    published_with(&world, &editor, |sent| without_progress(sent, OPEN)).await?;
-    assert_eq!(status_of(&world, &admin, id).await?, OPEN);
     Ok(())
 }
 
@@ -447,13 +405,12 @@ async fn sec_06_try_it_names_nothing_of_a_field_the_person_trying_cannot_see() -
 }
 
 #[tokio::test]
-async fn wf_01_the_statuses_of_a_project_are_listed_once_for_the_same_key_name_and_group() -> Outcome
-{
+async fn wf_01_the_status_changes_of_a_project_name_the_status_they_lead_to_once() -> Outcome {
     let world = World::new().await?;
     a_project(&world, "ACME").await?;
     let admin = world.admin.session_token.clone();
     let listed = async |world: &World| -> Result<Vec<String>, AppError> {
-        Ok(crate::workflows::project_statuses(
+        let found = crate::workflows::project_statuses(
             &world.ctx(),
             crate::workflows::ProjectStatusesQuery {
                 session_token: world.admin.session_token.clone(),
@@ -461,12 +418,18 @@ async fn wf_01_the_statuses_of_a_project_are_listed_once_for_the_same_key_name_a
             },
         )
         .await?
-        .into_value()
-        .statuses
-        .into_iter()
-        .filter(|each| each.key == key(OPEN))
-        .map(|each| each.name)
-        .collect())
+        .into_value();
+        let mut names: Vec<String> = Vec::new();
+        for change in found
+            .changes
+            .into_iter()
+            .filter(|each| each.to.key == key(OPEN))
+        {
+            if !names.contains(&change.to.name) {
+                names.push(change.to.name);
+            }
+        }
+        Ok(names)
     };
     // The starter workflows all call their first status Open: it is listed once.
     assert_eq!(listed(&world).await?, ["Open"]);

@@ -82,6 +82,17 @@ pub(super) async fn workflow_request(
                 })),
             )
         }
+        "previewPublishWorkflow" => {
+            let (workflow, _) = a_workflow(fixture).await?;
+            (
+                "POST",
+                format!("/api/v1/workflows/{workflow}/publish-preview"),
+                Some(json!({
+                    "statuses": [{"key": "open", "name": "Open", "group": "not-started"}],
+                    "changes": [],
+                })),
+            )
+        }
         "deleteWorkflow" => {
             let (workflow, version) = a_workflow(fixture).await?;
             (

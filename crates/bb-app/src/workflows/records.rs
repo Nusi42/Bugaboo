@@ -24,7 +24,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// Whether a person may put a workflow to use at a place: the workflow sits at that place or
-    /// at one above it, so a workflow's place never moves down into a project it was not made
+    /// at one above it, so a workflow's place never moves down into a project it was not created
     /// for. One that is used nowhere is the organization's to hand out.
     pub(crate) async fn may_adopt_workflow(
         &self,

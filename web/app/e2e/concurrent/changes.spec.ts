@@ -1,5 +1,3 @@
-import { t } from "@bugaboo/messages";
-
 import { signedInAdmin } from "../support/access.ts";
 import { changesOf, changesSince, ownChoices } from "../support/crowd-checks.ts";
 import {
@@ -11,6 +9,7 @@ import {
 import { areaNames, ben, cleo, crowdEdits, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import { expect, test } from "../support/fixtures.ts";
 import { chooseStatus, issueOf, readIssue, statusButton } from "../support/issues.ts";
+import { serverWord } from "../support/server-words.ts";
 
 // Ten people at the same time, short values (architecture §11, M3 WP-10): a change that comes
 // second is told so in words and nothing is half saved; ten changes of ten fields all land.
@@ -32,8 +31,8 @@ test("iss_17_two_people_change_one_status_within_a_second_and_one_of_them_is_tol
   await Promise.all([first, second].map((page) => openIssueAndWait(page, crowdIssues.status)));
   // Both choose a different status at the same moment.
   await Promise.all([
-    chooseStatus(first, t("status.in-progress")),
-    chooseStatus(second, t("status.done")),
+    chooseStatus(first, serverWord("workflow-change.start-working")),
+    chooseStatus(second, serverWord("workflow-change.mark-as-done")),
   ]);
   // One of them won, the other reads who changed what.
   const { lost, won } = await whoWasTold(first, second);

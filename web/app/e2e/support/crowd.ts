@@ -7,6 +7,7 @@ import { countIssueIds, createIssue } from "./issues.ts";
 import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 import { inOrder } from "./sequence.ts";
+import { serverWord } from "./server-words.ts";
 
 // Ten people at the same time (architecture §11, M3 WP-10): the people, the project they work in,
 // and a browser of its own for each of them.
@@ -56,7 +57,11 @@ export interface Edit {
 
 /** Ten people, ten fields of one issue: the status, the priority and the eight areas. */
 export const crowdEdits: readonly Edit[] = [
-  { person: ada, label: t("issue-field.status"), choice: t("status.in-progress") },
+  {
+    person: ada,
+    label: t("issue-field.status"),
+    choice: serverWord("workflow-change.start-working"),
+  },
   { person: ben, label: t("issue-field.priority"), choice: t("priority.critical") },
   ...[cleo, dan, eve, finn, gus, hana, ivo, jun].map((person, at) => ({
     person,

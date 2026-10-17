@@ -6,19 +6,18 @@ import {
   sendHeartbeat,
   startHeartbeats,
   takeEditLock,
+  type EditWhat,
 } from "@bugaboo/api-client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { api } from "../../shared/api.ts";
-import type { SessionDeps } from "../../shared/editing/edit-lock-session.ts";
-import { lostReasonOf } from "../../shared/editing/index.ts";
-import { codeOf } from "../../shared/errors.ts";
-import { whatOf } from "./layouts.ts";
-import { LayoutLockController, type LockState } from "./layout-lock.ts";
+import { api } from "../api.ts";
+import { codeOf } from "../errors.ts";
+import type { SessionDeps } from "./edit-lock-session.ts";
+import { EditLockController, type LockState } from "./edit-lock-state.ts";
+import { lostReasonOf } from "./long-text-model.ts";
 
-/** The calls of the lock on one layout, with the real client behind them. */
-function depsOf(layout: string): SessionDeps {
-  const what = whatOf(layout);
+/** The calls of the lock on one thing, with the real client behind them. */
+function depsOf(what: EditWhat): SessionDeps {
   const client = api.client;
   return {
     take: (editor) => takeEditLock(client, what, editor),
@@ -32,21 +31,24 @@ function depsOf(layout: string): SessionDeps {
 }
 
 /** What a screen gets: the state, and what the person can do about somebody else's lock. */
-export interface LayoutLock {
+export interface EditLock {
   readonly state: LockState;
   readonly retry: () => void;
   /**
-   * A save of the layout is through, or was refused: a refusal for the lock's sake tells the lock
-   * first, so it is let go before it is asked for again, which both end in.
+   * A save is through, or was refused: a refusal for the lock's sake tells the lock first, so it is
+   * let go before it is asked for again, which both end in.
    */
   readonly settled: (error: unknown) => void;
   readonly editAnyway: () => void;
   readonly askToFinish: () => void;
 }
 
-/** The edit lock on a layout, held while the editor is open. */
-export function useLayoutLock(layout: string): LayoutLock {
-  const [lock] = useState(() => new LayoutLockController(depsOf(layout)));
+/**
+ * The edit lock on a layout or a workflow, held while its editor is open. `what` is the thing the
+ * lock is about; it is read once, when the editor opens.
+ */
+export function useEditLock(what: EditWhat): EditLock {
+  const [lock] = useState(() => new EditLockController(depsOf(what)));
   const state = useSyncExternalStore(lock.subscribe, lock.snapshot);
   useEffect(() => {
     lock.start();

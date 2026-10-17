@@ -46,6 +46,8 @@ export const messages = {
   "issues.side-panel-view": "Open in the side panel",
   "issues.details": "Details",
   "issues.change-status": "Change the status",
+  "issues.ask-for-intro": "Before this issue can go to {to}, fill in:",
+  "issues.ask-for-description": "Write the description of the issue first: this change needs it.",
   "issues.summary-separator": " · ",
   "issues.all-details": "All details",
   "issues.hide-details": "Hide details",
@@ -84,6 +86,7 @@ export const messages = {
   "issues.selected": "{count, plural, one {# issue is ticked} other {# issues are ticked}}",
   "issues.clear-selection": "Clear the ticks",
   "issues.changed-own": "{count, plural, one {# field changed.} other {# fields changed.}}",
+  "many-changes.change-and-status": "{button} (to {status})",
   "layouts.customize-form": "Customize this form",
 } as const;
 
