@@ -6,13 +6,15 @@
 //! through `each_database`, which runs it on SQLite and on PostgreSQL (ARCH-DB-PARITY holds the
 //! record of what ran). A test that is renamed or deleted without the list changing fails here, so
 //! the judge of a status change, the choice of the workflow of a place and the publishing of a
-//! workflow cannot lose their tests without anybody noticing.
+//! workflow cannot lose their tests without anybody noticing. The tests of where issue types and
+//! groups of labels are offered are held here too: they are found by the same walk (ADR-0027
+//! amendment, ISS-02, TAG-02, SEC-03).
 
 use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-const REQUIRED: [Required; 16] = [
+const REQUIRED: [Required; 23] = [
     Required {
         name: "wf_01_an_m3_database_keeps_every_status_after_the_upgrade",
         both_databases: true,
@@ -76,6 +78,36 @@ const REQUIRED: [Required; 16] = [
     Required {
         name: "m3_f53_who_may_change_names_the_roles_held_in_the_project_over_http",
         both_databases: true,
+    },
+    // Where an issue type or a group of labels is offered is found by the same walk as a workflow
+    // (docs/milestones/M4/WP-11-types-and-labels-per-project.md).
+    Required {
+        name: "iss_02_a_project_offers_only_its_issue_types",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_an_upgraded_database_offers_every_type_everywhere",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_a_retired_type_is_not_missing_on_a_move",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_03_a_project_lead_manages_the_types_of_their_project_only",
+        both_databases: true,
+    },
+    Required {
+        name: "tag_02_a_label_group_of_a_project_is_offered_there_and_below",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_03_check_access_names_the_level_per_issue_type",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_a_sub_project_follows_its_parent_until_it_has_its_own_row",
+        both_databases: false,
     },
 ];
 

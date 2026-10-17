@@ -200,7 +200,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
 }
 
 #[tokio::test]
-async fn iss_02_a_retired_type_is_not_missing_on_a_move() -> Outcome {
+async fn iss_02_a_move_keeps_a_retired_type_and_names_it_in_memory() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
     let (from, to) = (

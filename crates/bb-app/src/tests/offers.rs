@@ -207,7 +207,7 @@ async fn lead_of(world: &World, email: &str, project: ProjectId) -> Result<Start
 }
 
 #[tokio::test]
-async fn sec_03_a_project_lead_manages_the_types_of_their_project_only() -> Outcome {
+async fn sec_03_a_project_lead_manages_the_types_of_their_project_only_in_memory() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
     let acme = a_project(&world, "ACME").await?;
@@ -490,7 +490,7 @@ async fn label_on(
 }
 
 #[tokio::test]
-async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below() -> Outcome {
+async fn tag_02_a_label_group_of_a_project_is_offered_there_and_below_in_memory() -> Outcome {
     let Groups {
         world,
         admin,

@@ -21,7 +21,7 @@ use bb_core::ErrorCode;
 const FIELD: Field = Field::CostCenter;
 
 #[tokio::test]
-async fn sec_03_check_access_names_the_level_per_issue_type() -> Outcome {
+async fn sec_03_check_access_answers_for_one_issue_type_in_memory() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
     let acme = a_project(&world, "ACME").await?;
