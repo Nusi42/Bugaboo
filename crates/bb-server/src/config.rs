@@ -18,7 +18,7 @@ use bb_api::{
 };
 
 use bb_core::message::{self, Message};
-use bb_core::notification::mail_batch;
+use bb_core::notification::{MAIL_BATCH_SECONDS_MAX, mail_batch};
 use bb_core::settings::list_items;
 use bb_core::words;
 
@@ -499,7 +499,7 @@ fn limits_from(values: &BTreeMap<SettingName, String>) -> Result<LimitsConfig, C
 }
 
 /// How long changes to one issue wait for each other before one e-mail goes: `mail_batch_seconds`, at
-/// least 1, five minutes when it is not given.
+/// least 1 and at most a day, five minutes when it is not given.
 fn mail_batch_from(
     values: &BTreeMap<SettingName, String>,
 ) -> Result<jiff::SignedDuration, ConfigError> {
@@ -508,6 +508,12 @@ fn mail_batch_from(
         SettingName::MailBatchSeconds,
         mail_batch().as_secs().unsigned_abs(),
     )?;
+    if seconds > MAIL_BATCH_SECONDS_MAX {
+        return Err(ConfigError::NumberInvalid {
+            name: SettingName::MailBatchSeconds,
+            value: seconds.to_string(),
+        });
+    }
     i64::try_from(seconds)
         .map(jiff::SignedDuration::from_secs)
         .map_err(|_| ConfigError::NumberInvalid {
