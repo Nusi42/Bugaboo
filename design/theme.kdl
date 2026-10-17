@@ -3311,7 +3311,7 @@ part "bottom-bar.tabs" {
 part "bottom-bar.tab" {
     display flex
     flex "1 1 auto"
-    min-width 0
+    min-width min-content
 }
 
 part "bottom-bar.item" {
@@ -3321,7 +3321,7 @@ part "bottom-bar.item" {
     justify-content center
     box-sizing border-box
     min-height "$size-bar"
-    padding "$space-2"
+    padding "$space-2 $space-1"
     use "bare-button"
     color "$fg"
     font-size "$fs-base"
@@ -3341,11 +3341,12 @@ part "bottom-bar.item[focus-visible]" {
     use "ring-inside"
 }
 
-// A word that does not fit its tab (five tabs, larger text, a small phone) breaks inside the tab and
-// never reaches into the next one.
+// A word is never broken inside: a tab is at least as wide as its longest word (five tabs, larger text,
+// a small phone), and the words of a tab that has several wrap between words only.
 part "bottom-bar.label" {
     max-width "100%"
-    overflow-wrap anywhere
+    overflow-wrap normal
+    hyphens manual
     text-align center
 }
 

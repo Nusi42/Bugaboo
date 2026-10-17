@@ -2844,7 +2844,7 @@ body {
 [data-part="bottom-bar.tab"] {
   display: flex;
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: min-content;
 }
 
 [data-part="bottom-bar.item"] {
@@ -2857,7 +2857,7 @@ body {
   justify-content: center;
   box-sizing: border-box;
   min-height: var(--size-bar);
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-1);
   border: 0;
   background: transparent;
   font-family: var(--font);
@@ -2890,7 +2890,8 @@ body {
 
 [data-part="bottom-bar.label"] {
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  hyphens: manual;
   text-align: center;
 }
 
