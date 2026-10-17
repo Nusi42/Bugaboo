@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
-import { useProjectStatuses } from "../issues/index.ts";
+import { useProjectStatusChanges } from "../issues/index.ts";
 import { relationChoices } from "../relations/index.ts";
 import {
   manyChangeKind,
@@ -39,14 +39,14 @@ export function useManyChangeDialog(
   onApplied: (applied: ManyChangeApplied) => void,
 ) {
   const { draft, setDraft, relations, action, plain } = useManyChangeDraft(kind);
-  const statuses = useProjectStatuses(project).data ?? [];
+  const statusChanges = useProjectStatusChanges(project).data ?? [];
   const preview = usePreviewManyChanges();
   const apply = useApplyManyChanges(onApplied);
   const changes = preview.data === undefined ? [] : targetsOf(preview.data);
   return {
     draft,
     relations,
-    statuses,
+    statusChanges,
     preview,
     action,
     plain,

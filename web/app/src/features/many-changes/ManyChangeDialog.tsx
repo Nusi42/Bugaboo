@@ -54,7 +54,7 @@ export function ManyChangeDialog({
         kind={kind}
         draft={dialog.draft}
         relations={dialog.relations}
-        statuses={dialog.statuses}
+        statusChanges={dialog.statusChanges}
         onDraft={dialog.fill}
       />
       <div>

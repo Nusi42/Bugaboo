@@ -1,6 +1,7 @@
 import { priorityWords } from "@bugaboo/api-client";
 
 import { wordOf } from "../../shared/present.ts";
+import { statusKeyOfChoice } from "../issues/index.ts";
 import type { ProjectChoice } from "../fields/index.ts";
 import type { RelationChoice } from "../relations/index.ts";
 import { manyChangeKind, type ManyChangeKind, type NewManyChangeAction } from "./many-changes.ts";
@@ -31,7 +32,7 @@ export const emptyDraft: Draft = {
 
 /** The request of a change of status or priority; nothing while both are left as they are. */
 function changeOf(draft: Draft): NewManyChangeAction | null {
-  const status = draft.status === NONE ? undefined : draft.status;
+  const status = draft.status === NONE ? undefined : statusKeyOfChoice(draft.status);
   const priority = wordOf(priorityWords, draft.priority);
   return status === undefined && priority === undefined
     ? null
