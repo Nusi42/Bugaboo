@@ -20,9 +20,6 @@ export const issueIconWords = [
   "flame",
 ] as const;
 
-/** Every word of `Status`, in the order the server lists them. */
-export const statusWords = ["open", "in-progress", "done"] as const;
-
 /** Every word of `StatusGroup`, in the order the server lists them. */
 export const statusGroupWords = ["not-started", "in-progress", "done"] as const;
 
@@ -95,9 +92,6 @@ export const layoutKindWords = ["new-issue", "issue-page"] as const;
 
 /** Every word of `HistoryTab`, in the order the server lists them. */
 export const historyTabWords = ["everything", "comments", "changes"] as const;
-
-/** The status a new issue starts with: the server decides, the form shows it. */
-export const newIssueStatus = "open";
 
 /** The priority a new issue has when the form does not say: the server decides, the form shows it. */
 export const newIssuePriority = "normal";

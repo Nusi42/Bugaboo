@@ -195,6 +195,10 @@ pub(crate) struct Known {
     /// The names of the groups and of the roles, read once for all the handles of a request.
     pub(crate) group_names: NamesRead<bb_core::id::GroupId>,
     pub(crate) role_names: NamesRead<bb_core::id::RoleId>,
+    /// Where workflows are used and the workflows, read once for the request.
+    pub(crate) workflows: Mutex<Option<Arc<crate::workflows::WorkflowDirectory>>>,
+    /// The groups people are in, for the rule *Who can do it* of a status change.
+    pub(crate) person_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::GroupId>>>>,
 }
 
 /// The services plus the request, which is what a use case takes.

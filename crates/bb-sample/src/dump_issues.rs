@@ -122,7 +122,7 @@ impl Sample {
                     *here.by_type.entry(kind).or_default() += 1;
                     *here
                         .by_status
-                        .entry(issue.status.code().to_owned())
+                        .entry(issue.status.as_str().to_owned())
                         .or_default() += 1;
                     *here
                         .by_priority

@@ -77,6 +77,10 @@ crate::entities! {
     crate::tags::LabelGroup,
     crate::tags::Tag,
     crate::tags::TagProject,
+    crate::workflow::StoredChange,
+    crate::workflow::StoredStatus,
+    crate::workflow::Workflow,
+    crate::workflow::WorkflowUse,
 }
 
 #[cfg(test)]

@@ -919,6 +919,26 @@ pub const ERROR_SETTING_LOCKED: MessageKey = MessageKey::new("error.setting.lock
 /// The message `error.tag.not-here`.
 pub const ERROR_TAG_NOT_HERE: MessageKey = MessageKey::new("error.tag.not-here");
 
+/// The message `error.workflow.cannot-fill`.
+pub const ERROR_WORKFLOW_CANNOT_FILL: MessageKey = MessageKey::new("error.workflow.cannot-fill");
+
+/// The message `error.workflow.invalid`.
+pub const ERROR_WORKFLOW_INVALID: MessageKey = MessageKey::new("error.workflow.invalid");
+
+/// The message `error.workflow.no-such-change`.
+pub const ERROR_WORKFLOW_NO_SUCH_CHANGE: MessageKey =
+    MessageKey::new("error.workflow.no-such-change");
+
+/// The message `error.workflow.not-for-you`.
+pub const ERROR_WORKFLOW_NOT_FOR_YOU: MessageKey = MessageKey::new("error.workflow.not-for-you");
+
+/// The message `error.workflow.only-if`.
+pub const ERROR_WORKFLOW_ONLY_IF: MessageKey = MessageKey::new("error.workflow.only-if");
+
+/// The message `error.workflow.status-in-use`.
+pub const ERROR_WORKFLOW_STATUS_IN_USE: MessageKey =
+    MessageKey::new("error.workflow.status-in-use");
+
 /// The message `field-example.date`.
 pub const FIELD_EXAMPLE_DATE: MessageKey = MessageKey::new("field-example.date");
 
@@ -2311,6 +2331,9 @@ pub const MANY_CHANGES_SKIP_TAG_NOT_HERE: MessageKey =
 pub const MANY_CHANGES_SKIP_TYPE_MISSING: MessageKey =
     MessageKey::new("many-changes-skip.type-missing");
 
+/// The message `many-changes-skip.workflow`.
+pub const MANY_CHANGES_SKIP_WORKFLOW: MessageKey = MessageKey::new("many-changes-skip.workflow");
+
 /// The message `many-changes-status.done`.
 pub const MANY_CHANGES_STATUS_DONE: MessageKey = MessageKey::new("many-changes-status.done");
 
@@ -2782,6 +2805,9 @@ pub const PERMISSION_MANAGE_PEOPLE: MessageKey = MessageKey::new("permission.man
 
 /// The message `permission.manage-roles`.
 pub const PERMISSION_MANAGE_ROLES: MessageKey = MessageKey::new("permission.manage-roles");
+
+/// The message `permission.manage-workflows`.
+pub const PERMISSION_MANAGE_WORKFLOWS: MessageKey = MessageKey::new("permission.manage-workflows");
 
 /// The message `permission.move-issues`.
 pub const PERMISSION_MOVE_ISSUES: MessageKey = MessageKey::new("permission.move-issues");
@@ -4307,8 +4333,17 @@ pub const STATUS_DONE: MessageKey = MessageKey::new("status.done");
 /// The message `status.in-progress`.
 pub const STATUS_IN_PROGRESS: MessageKey = MessageKey::new("status.in-progress");
 
+/// The message `status.in-review`.
+pub const STATUS_IN_REVIEW: MessageKey = MessageKey::new("status.in-review");
+
 /// The message `status.open`.
 pub const STATUS_OPEN: MessageKey = MessageKey::new("status.open");
+
+/// The message `status.testing`.
+pub const STATUS_TESTING: MessageKey = MessageKey::new("status.testing");
+
+/// The message `status.wont-fix`.
+pub const STATUS_WONT_FIX: MessageKey = MessageKey::new("status.wont-fix");
 
 /// The message `sub-issues.add-it`.
 pub const SUB_ISSUES_ADD_IT: MessageKey = MessageKey::new("sub-issues.add-it");
@@ -4375,6 +4410,49 @@ pub const WINDOW_TALLER: MessageKey = MessageKey::new("window.taller");
 
 /// The message `window.wider`.
 pub const WINDOW_WIDER: MessageKey = MessageKey::new("window.wider");
+
+/// The message `workflow-change.ask-for-review`.
+pub const WORKFLOW_CHANGE_ASK_FOR_REVIEW: MessageKey =
+    MessageKey::new("workflow-change.ask-for-review");
+
+/// The message `workflow-change.back-to-work`.
+pub const WORKFLOW_CHANGE_BACK_TO_WORK: MessageKey =
+    MessageKey::new("workflow-change.back-to-work");
+
+/// The message `workflow-change.mark-as-done`.
+pub const WORKFLOW_CHANGE_MARK_AS_DONE: MessageKey =
+    MessageKey::new("workflow-change.mark-as-done");
+
+/// The message `workflow-change.reopen`.
+pub const WORKFLOW_CHANGE_REOPEN: MessageKey = MessageKey::new("workflow-change.reopen");
+
+/// The message `workflow-change.reopen-and-start`.
+pub const WORKFLOW_CHANGE_REOPEN_AND_START: MessageKey =
+    MessageKey::new("workflow-change.reopen-and-start");
+
+/// The message `workflow-change.send-to-testing`.
+pub const WORKFLOW_CHANGE_SEND_TO_TESTING: MessageKey =
+    MessageKey::new("workflow-change.send-to-testing");
+
+/// The message `workflow-change.start-working`.
+pub const WORKFLOW_CHANGE_START_WORKING: MessageKey =
+    MessageKey::new("workflow-change.start-working");
+
+/// The message `workflow-change.stop-working`.
+pub const WORKFLOW_CHANGE_STOP_WORKING: MessageKey =
+    MessageKey::new("workflow-change.stop-working");
+
+/// The message `workflow-change.wont-fix`.
+pub const WORKFLOW_CHANGE_WONT_FIX: MessageKey = MessageKey::new("workflow-change.wont-fix");
+
+/// The message `workflow.bug`.
+pub const WORKFLOW_BUG: MessageKey = MessageKey::new("workflow.bug");
+
+/// The message `workflow.development`.
+pub const WORKFLOW_DEVELOPMENT: MessageKey = MessageKey::new("workflow.development");
+
+/// The message `workflow.simple`.
+pub const WORKFLOW_SIMPLE: MessageKey = MessageKey::new("workflow.simple");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -8908,6 +8986,30 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "error.tag.not-here",
         "That tag is only for other projects. Choose another tag or ask who looks after tags.",
     ),
+    (
+        "error.workflow.cannot-fill",
+        "This status change needs a field that you cannot fill in.",
+    ),
+    (
+        "error.workflow.invalid",
+        "The workflow breaks a rule: check the statuses, the status changes and their names.",
+    ),
+    (
+        "error.workflow.no-such-change",
+        "The workflow of this issue has no such status change.",
+    ),
+    (
+        "error.workflow.not-for-you",
+        "You may not change the status this way.",
+    ),
+    (
+        "error.workflow.only-if",
+        "This status change is possible only when something else is true first.",
+    ),
+    (
+        "error.workflow.status-in-use",
+        "Some issues are still in a status that the workflow would no longer have. Choose where they go.",
+    ),
     ("field-example.date", "For example: Promised by"),
     ("field-example.date-time", "For example: Seen at"),
     ("field-example.decimal", "For example: Budget"),
@@ -9906,6 +10008,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "many-changes-skip.type-missing",
         "The other project does not offer its issue type",
     ),
+    (
+        "many-changes-skip.workflow",
+        "Its workflow does not allow this status change",
+    ),
     ("many-changes-status.done", "Done"),
     ("many-changes-status.failed", "Stopped"),
     ("many-changes-status.queued", "Waiting"),
@@ -10232,6 +10338,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
     ),
     ("permission.manage-roles", "Create, change and delete roles"),
+    (
+        "permission.manage-workflows",
+        "Manage workflows: change statuses and status changes, and publish them",
+    ),
     (
         "permission.move-issues",
         "Move issues into or out of the project",
@@ -11600,7 +11710,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status-group.not-started", "Not started"),
     ("status.done", "Done"),
     ("status.in-progress", "In progress"),
+    ("status.in-review", "In review"),
     ("status.open", "Open"),
+    ("status.testing", "Testing"),
+    ("status.wont-fix", "Won't fix"),
     ("sub-issues.add-it", "Add"),
     ("sub-issues.added", "{key} is now a sub-issue."),
     ("sub-issues.more", "Show more sub-issues"),
@@ -11660,4 +11773,19 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("window.size-menu", "Window size"),
     ("window.taller", "Taller"),
     ("window.wider", "Wider"),
+    ("workflow-change.ask-for-review", "Ask for review"),
+    ("workflow-change.back-to-work", "Back to work"),
+    ("workflow-change.mark-as-done", "Mark as done"),
+    ("workflow-change.reopen", "Reopen"),
+    (
+        "workflow-change.reopen-and-start",
+        "Reopen and start working",
+    ),
+    ("workflow-change.send-to-testing", "Send to testing"),
+    ("workflow-change.start-working", "Start working"),
+    ("workflow-change.stop-working", "Stop working"),
+    ("workflow-change.wont-fix", "Won't fix"),
+    ("workflow.bug", "Bug"),
+    ("workflow.development", "Development"),
+    ("workflow.simple", "Simple"),
 ];

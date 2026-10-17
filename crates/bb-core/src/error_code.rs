@@ -92,6 +92,22 @@ error_codes! {
     MovePreviewChanged => ("project.preview_changed", 409),
     /// An issue type that was retired takes no new issues (ISS-02).
     IssueTypeRetired => ("issue.type_retired", 409),
+    /// The workflow of the issue has no status change from the status the issue is in to that one
+    /// (WF-01).
+    WorkflowNoSuchChange => ("workflow.no_such_change", 409),
+    /// The person may not make this status change: *Who can do it* does not name them (WF-03).
+    WorkflowNotForYou => ("workflow.not_for_you", 403),
+    /// *Only if …* of the status change is not true (WF-03).
+    WorkflowOnlyIf => ("workflow.only_if", 409),
+    /// The status change needs a field that the person cannot fill in. It names no field: the
+    /// field may be hidden from the person (WF-04, SEC-06).
+    WorkflowCannotFill => ("workflow.cannot_fill", 403),
+    /// *Publish* would drop a status that issues are still in, and says nowhere to move them to
+    /// (WF-02).
+    WorkflowStatusInUse => ("workflow.status_in_use", 409),
+    /// A workflow breaks a rule: no status, too many, a name that is empty or too long, a status
+    /// change between statuses it does not have (WF-02).
+    WorkflowInvalid => ("workflow.invalid", 400),
     /// An issue would sit under itself or under one of its own sub-issues, or the chain of
     /// sub-issues would get too long (ISS-03).
     ParentCircle => ("issue.parent_circle", 409),

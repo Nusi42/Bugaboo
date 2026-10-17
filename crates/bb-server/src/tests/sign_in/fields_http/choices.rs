@@ -20,7 +20,7 @@ async fn cf_07_combining_two_choices_moves_every_value_and_keeps_a_record() -> T
                     "POST",
                     &acme_issues(),
                     Some(
-                        json!({"issue_type": site.bug, "title": title, "fields": { &key: choice }}),
+                        json!({"issue_type": site.kind, "title": title, "fields": { &key: choice }}),
                     ),
                 )
                 .await?)?
@@ -93,7 +93,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
             .send(
                 "POST",
                 &acme_issues(),
-                Some(json!({"issue_type": site.bug, "title": "Old", "fields": { &key: &major }})),
+                Some(json!({"issue_type": site.kind, "title": "Old", "fields": { &key: &major }})),
             )
             .await?)?
         .clone();
@@ -119,7 +119,7 @@ async fn cf_07_a_retired_choice_stays_on_old_issues_only() -> TestResult {
             .send(
                 "POST",
                 &acme_issues(),
-                Some(json!({"issue_type": site.bug, "title": "New", "fields": { &key: &major }})),
+                Some(json!({"issue_type": site.kind, "title": "New", "fields": { &key: &major }})),
             )
             .await?;
         assert_eq!(

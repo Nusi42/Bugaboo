@@ -7,13 +7,13 @@
 //! sub-issue can lie in another project, whose roles can see other fields.
 
 use bb_core::id::{IssueId, RelationId, RelationKindId};
-use bb_core::issue::{Status, StatusGroup};
 use bb_core::relation::{Direction, RelationKind};
 use bb_policy::Masked;
 use serde::Serialize;
 
 use crate::issues::IssueTypeRef;
 use crate::projects::ProjectRef;
+use crate::workflows::StatusView;
 
 /// An issue as one line of a list in the issue page: its readable ID, its title and its status.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -28,10 +28,9 @@ pub struct IssueLine {
     pub issue_type: IssueTypeRef,
     /// What it is about; left out where the viewer's role hides the field in that project.
     pub title: Option<String>,
-    /// Where it stands; left out where the viewer's role hides the field in that project.
-    pub status: Option<Status>,
-    /// The group of its status; left out with the status.
-    pub status_group: Option<StatusGroup>,
+    /// Where it stands, with its name and status group; left out where the viewer's role hides the
+    /// field in that project.
+    pub status: Option<StatusView>,
 }
 
 // The members are dropped by the line's own project, which can differ from the place of the

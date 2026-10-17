@@ -81,7 +81,7 @@ test("iss_09 the status of two ticked issues is changed and the preview names ea
   const issue = dataOf(
     await admin.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: "WEB-2" } } }),
   );
-  expect(issue.issue.status).toBe("done");
+  expect(issue.issue.status?.key).toBe("done");
   await admin.dispose();
 });
 

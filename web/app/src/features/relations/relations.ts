@@ -26,14 +26,7 @@ export function useSubIssues(issue: string) {
         params: {
           path: { issue },
           query: {
-            fields: fieldList<Schema<"IssueRef">>([
-              "id",
-              "key",
-              "issue_type",
-              "title",
-              "status",
-              "status_group",
-            ]),
+            fields: fieldList<Schema<"IssueRef">>(["id", "key", "issue_type", "title", "status"]),
             limit: pageSize.short,
             ...after,
           },

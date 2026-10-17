@@ -1,6 +1,7 @@
-import { fieldWords, priorityWords, statusWords, type Conflict } from "@bugaboo/api-client";
+import { fieldWords, type Conflict } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
+import { changeValueText } from "../change-value.ts";
 import { formatAgo } from "../format.ts";
 import { listText } from "../list-text.ts";
 import { personNameInside, someoneName } from "../person.ts";
@@ -10,13 +11,8 @@ function valueText(field: string, value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;
   }
-  if (field === "status") {
-    const status = statusWords.find((word) => word === value);
-    return status === undefined ? undefined : t(`status.${status}`);
-  }
-  if (field === "priority") {
-    const priority = priorityWords.find((word) => word === value);
-    return priority === undefined ? undefined : t(`priority.${priority}`);
+  if (field === "status" || field === "priority") {
+    return changeValueText(field, { shown: "text", text: value });
   }
   // A long text is not quoted in a sentence: *Show changes* shows it.
   return field === "description" ? undefined : value;

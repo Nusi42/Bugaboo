@@ -1,7 +1,7 @@
 import { StatusPill, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
-import { statusWordsOf } from "./ref-status.ts";
+import { statusGroupOf, statusWordsOf } from "./ref-status.ts";
 import type { ShownIssue } from "./shown-issue.ts";
 
 /**
@@ -16,7 +16,7 @@ export function IssueRefLine({
   readonly issue: ShownIssue;
   readonly children?: ReactNode;
 }) {
-  const group = issue.status_group;
+  const group = statusGroupOf(issue);
   const word = statusWordsOf(issue);
   return (
     <span {...partOf(part.issueRef)}>

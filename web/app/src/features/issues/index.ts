@@ -9,7 +9,8 @@ export { addSelectionBar, type SelectionBarProps } from "./selection-bars.ts";
 export type { IssueSelection } from "./use-selection.ts";
 export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
 export { issueCells } from "./issue-cells.tsx";
-export { priorityChoices, statusChoices } from "./issue-choices.ts";
+export { priorityChoices } from "./issue-choices.ts";
+export { useProjectStatuses, type StatusOption } from "./use-project-statuses.ts";
 export { versionCounted } from "./issue-requests.ts";
 export type { SaveLongText } from "./use-description.ts";
 export {

@@ -193,20 +193,21 @@ test("cfg_01 a field is moved and added with the keyboard alone, and its drag ha
   await expect(sectionList("2")).toBeAttached();
   // *Move to* the second section, then off the form, then *Add to* the first section.
   const moveTo = page.getByLabel(t("layouts.field-move-to", { name: dueDate }), { exact: true });
-  await chooseByTyping(page, moveTo, t("layouts.section", { number: "2" }));
+  await chooseByTyping(moveTo, t("layouts.section", { number: "2" }));
   await expect(sectionList("2").getByText(dueDate, { exact: true })).toBeVisible();
-  await sectionList("2")
+  const remove = sectionList("2")
     .getByRole("listitem")
     .filter({ hasText: dueDate })
-    .getByRole("button", { name: t("layouts.field-remove", { name: dueDate }) })
-    .focus();
-  await page.keyboard.press("Enter");
+    .getByRole("button", { name: t("layouts.field-remove", { name: dueDate }) });
+  await remove.focus();
+  await expect(remove).toBeFocused();
+  await remove.press("Enter");
   const available = page.getByRole("list", { name: t("layouts.available"), exact: true });
   await expect(available.getByText(dueDate, { exact: true })).toBeVisible();
   const addTo = available.getByLabel(t("layouts.field-add-to", { name: dueDate }), {
     exact: true,
   });
-  await chooseByTyping(page, addTo, t("layouts.section", { number: "1" }));
+  await chooseByTyping(addTo, t("layouts.section", { number: "1" }));
   await expect(sectionList("1").getByText(dueDate, { exact: true })).toBeVisible();
   await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
 });

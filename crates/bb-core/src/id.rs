@@ -300,6 +300,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a workflow (WF-01).
+    WorkflowId
+}
+
+define_ordered_id! {
     /// The ID of a comment (ISS-05).
     CommentId
 }
@@ -419,6 +424,7 @@ into_entity_id!(
     RelationKindId,
     RelationId,
     LayoutId,
+    WorkflowId,
     CommentId,
     TagId,
     LabelId,

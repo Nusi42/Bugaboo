@@ -44,7 +44,7 @@ export function IssueRow({ line, href, selected, current, phone, now, onSelect }
             key: line.key,
             title: line.title,
             group: line.group,
-            statusWord: t(`status.${line.status}`),
+            statusWord: line.status.name,
             type: line.issueType,
           },
           href,

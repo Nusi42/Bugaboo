@@ -92,12 +92,12 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
             &[Permission::SeeProjects, Permission::SeeIssues],
             &[
                 (Field::Title.into(), None, FieldLevel::CanSee),
-                (Field::Tags.into(), Some(&site.bug), FieldLevel::CanSee),
-                (Field::Labels.into(), Some(&site.bug), FieldLevel::CanSee),
+                (Field::Tags.into(), Some(&site.kind), FieldLevel::CanSee),
+                (Field::Labels.into(), Some(&site.kind), FieldLevel::CanSee),
             ],
         )
         .await?;
-        let (bug, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (bug, _) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         let (job, _) = issue_of_type(&site, &mut ada, &task, "A task").await?;
         let label = ok(&ada
             .send(
@@ -135,7 +135,7 @@ async fn sec_06_nothing_is_offered_where_the_role_hides_tags_and_none_shown_on_t
         // without a type the lowest level across types counts.
         let base = format!("{PROJECTS}/ACME/tag-suggestions?text=secret");
         let typed = hal
-            .send("GET", &format!("{base}&issue_type={}", site.bug), None)
+            .send("GET", &format!("{base}&issue_type={}", site.kind), None)
             .await?;
         assert_eq!(
             names(ok(&typed)?, "tags"),
@@ -381,14 +381,14 @@ async fn sec_06_a_tag_used_only_where_the_type_hides_tags_is_not_offered() -> Te
             ],
         )
         .await?;
-        let (bug, _) = issue_of_type(&site, &mut ada, &site.bug, "A bug").await?;
+        let (bug, _) = issue_of_type(&site, &mut ada, &site.kind, "A bug").await?;
         let (job, _) = issue_of_type(&site, &mut ada, &task, "A task").await?;
         tag(&mut ada, &bug, "shared-bug").await?;
         tag(&mut ada, &job, "shared-task").await?;
         let base = format!("{PROJECTS}/ACME/tag-suggestions?text=shared");
         // For a bug the tag of a bug is offered, and the one that only a task has is not.
         let typed = uma
-            .send("GET", &format!("{base}&issue_type={}", site.bug), None)
+            .send("GET", &format!("{base}&issue_type={}", site.kind), None)
             .await?;
         assert_eq!(names(ok(&typed)?, "tags"), ["shared-bug"], "{}", typed.body);
         // A type that does not exist is no type: the lowest level across types counts, which
@@ -402,7 +402,7 @@ async fn sec_06_a_tag_used_only_where_the_type_hides_tags_is_not_offered() -> Te
         assert!(names(ok(&none)?, "tags").is_empty(), "{}", none.body);
         // Ada sees Tags for every type and is offered both.
         let all = ada
-            .send("GET", &format!("{base}&issue_type={}", site.bug), None)
+            .send("GET", &format!("{base}&issue_type={}", site.kind), None)
             .await?;
         assert_eq!(names(ok(&all)?, "tags"), ["shared-bug", "shared-task"]);
         Ok(())

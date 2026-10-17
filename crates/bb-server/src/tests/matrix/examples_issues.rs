@@ -25,16 +25,18 @@ async fn a_type(fixture: &Fixture<'_>) -> Result<String, Failure> {
             IssueTypesQuery {
                 session_token: fixture.admin_session().to_owned(),
                 cursor: None,
-                limit: 1,
+                limit: 50,
             },
         )
         .await
         .map_err(|error| error.to_string())?
         .into_value();
+    // *Task* uses the workflow *Simple*, where a many-changes example can set any status.
     page.items
-        .first()
+        .iter()
+        .find(|found| found.name == "Task")
         .map(|found| found.id.to_string())
-        .ok_or_else(|| "the matrix has no issue type".into())
+        .ok_or_else(|| "the matrix has no issue type Task".into())
 }
 
 /// The version of an issue (for the routes that change it).

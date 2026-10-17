@@ -38,6 +38,7 @@ mod m0011_tags;
 mod m0012_layouts;
 mod m0013_job_kinds;
 mod m0014_names;
+mod m0015_workflows;
 mod m0017_notifications;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
@@ -195,8 +196,13 @@ const ALL: &[Definition] = &[
         name: "names",
         steps: || Ok(m0014_names::steps()),
     },
-    // 15 and 16 are the migrations of workflows and files (M4 WP-04, WP-05), built at the same time
-    // as this one in other folders: a number that is missing here is applied when it exists.
+    Definition {
+        version: 15,
+        name: "workflows",
+        steps: || Ok(m0015_workflows::steps()),
+    },
+    // 16 is the migration of files (M4 WP-05), built at the same time in another folder: a number
+    // that is missing here is applied when it exists.
     Definition {
         version: 17,
         name: "notifications",
@@ -414,7 +420,7 @@ mod tests {
     fn the_checksum_of_an_applied_migration_never_changes() {
         // By the number of the migration, not by place in the list: the numbers of other
         // migrations that are added later fall between these.
-        const APPLIED: [(i64, &str); 14] = [
+        const APPLIED: [(i64, &str); 15] = [
             (
                 1,
                 "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -470,6 +476,10 @@ mod tests {
             (
                 14,
                 "045061588034b6040764c6ba14cfd34631f165361100372b98f44a2812c6b790",
+            ),
+            (
+                15,
+                "16ed6f2372e8700c9a3158a53edbeb5e976ecf9737498802ee081c241ed286b2",
             ),
         ];
         for (version, wanted) in APPLIED {

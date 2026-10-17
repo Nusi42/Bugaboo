@@ -6,11 +6,12 @@
 //! of the product: `next_counting_number` raises the stored last number by one in the
 //! transaction, so two writers wait for each other and no number is skipped or given twice.
 
-use bb_app::issues::{InTrash, IssueFound, IssueStore};
+use bb_app::issues::{InTrash, IssueFound, IssueStore, MovedStatus};
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority, Status};
+use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority};
 use bb_core::readable_id::IssueCode;
+use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement, UpdateStatement};
 
@@ -81,8 +82,8 @@ pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
         code: read_code(&row.get::<String>(IssueRow::Code)?)?,
         title: row.get(IssueRow::Title)?,
         description: row.get(IssueRow::Description)?,
-        status: Status::from_code(&row.get::<String>(IssueRow::Status)?)
-            .ok_or(StoreError::Corrupt("a status"))?,
+        status: StatusKey::new(&row.get::<String>(IssueRow::Status)?)
+            .map_err(|_| StoreError::Corrupt("a status"))?,
         priority: Priority::from_code(&row.get::<String>(IssueRow::Priority)?)
             .ok_or(StoreError::Corrupt("a priority"))?,
         reported_by: row.id::<UserId>(IssueRow::ReportedBy)?,
@@ -441,7 +442,7 @@ impl IssueStore for AuthStorage {
                 Expr::val(issue.code.as_str()),
                 Expr::val(issue.title.as_str()),
                 Expr::val(issue.description.as_str()),
-                Expr::val(issue.status.code()),
+                Expr::val(issue.status.as_str()),
                 Expr::val(issue.priority.code()),
                 Expr::val(issue.reported_by.stored()),
                 Expr::val(to_micros(issue.created_at)),
@@ -466,7 +467,7 @@ impl IssueStore for AuthStorage {
             .value(IssueRow::IssueType, issue.issue_type.stored())
             .value(IssueRow::Title, issue.title.as_str())
             .value(IssueRow::Description, issue.description.as_str())
-            .value(IssueRow::Status, issue.status.code())
+            .value(IssueRow::Status, issue.status.as_str())
             .value(IssueRow::Priority, issue.priority.code())
             .value(IssueRow::ClosedAt, issue.closed_at.map(to_micros));
         counting_up(&mut update, issue.updated_at)
@@ -480,6 +481,7 @@ impl IssueStore for AuthStorage {
         id: IssueId,
         project: ProjectId,
         code: &IssueCode,
+        moved: &MovedStatus,
         version: i64,
         now: Timestamp,
     ) -> Result<bool, StoreError> {
@@ -487,7 +489,9 @@ impl IssueStore for AuthStorage {
         update
             .table(IssueRow::Table)
             .value(IssueRow::Project, project.stored())
-            .value(IssueRow::Code, code.as_str());
+            .value(IssueRow::Code, code.as_str())
+            .value(IssueRow::Status, moved.status.as_str())
+            .value(IssueRow::ClosedAt, moved.closed_at.map(to_micros));
         counting_up(&mut update, now)
             .and_where(Expr::col(IssueRow::Id).eq(id.stored()))
             .and_where(Expr::col(IssueRow::Version).eq(version))

@@ -93,10 +93,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .await?;
                 Some(ManyChangeDetail::Changes { fields })
             }
-            Planned::Relation { name, other } => self
-                .line_of(actor, maker, &other)
-                .await?
-                .map(|issue| ManyChangeDetail::Relation { name, issue }),
+            Planned::Relation { name, other } => {
+                self.line_of(actor, maker, &other)
+                    .await?
+                    .map(|issue| ManyChangeDetail::Relation {
+                        name,
+                        issue: Box::new(issue),
+                    })
+            }
             Planned::Trash => None,
         })
     }

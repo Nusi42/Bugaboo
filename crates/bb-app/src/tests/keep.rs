@@ -3,14 +3,13 @@
 
 use std::sync::{Arc, Mutex, PoisonError};
 
-use bb_core::issue::Status;
 use bb_core::job::{DEAD_PAYLOAD_KEEP_DAYS, JobState};
 use bb_core::notification::KEEP_DAYS;
 use bb_core::settings::SettingValue;
 use bb_core::time::SECONDS_PER_DAY;
 use serde_json::json;
 
-use super::notifications::{Change, Crew};
+use super::notifications::{Change, Crew, Status};
 use super::scenarios::{text, token};
 use super::world::{Outcome, World};
 use crate::jobs::{JobStore as _, kind, kind_name};

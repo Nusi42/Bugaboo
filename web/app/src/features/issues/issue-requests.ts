@@ -15,7 +15,7 @@ export async function sendChange(id: string, edit: IssueEdit): Promise<number | 
   const body = {
     version,
     ...(values.title === undefined ? {} : { title: values.title }),
-    ...(values.status === undefined ? {} : { status: values.status }),
+    ...(values.status === undefined ? {} : { status: values.status.key }),
     ...(values.priority === undefined ? {} : { priority: values.priority }),
     ...(values.assignedTo === undefined
       ? {}

@@ -152,12 +152,11 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 }
 
 /// The vocabularies the browser lists or recognizes at run time (a drop-down of icons, the words of
-/// a status or a priority that a value must be one of), by the name of their
+/// a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 11] = [
+const WORD_LISTS: [&str; 10] = [
     "IssueIcon",
-    "Status",
     "StatusGroup",
     "Priority",
     "Field",
@@ -216,13 +215,9 @@ export const {} = [{}] as const;
     };
     let _ = write!(
         out,
-        "/** The status a new issue starts with: the server decides, the form shows it. */
-export const newIssueStatus = {:?};
-
-/** The priority a new issue has when the form does not say: the server decides, the form shows it. */
+        "/** The priority a new issue has when the form does not say: the server decides, the form shows it. */
 export const newIssuePriority = {:?};
 ",
-        new_word(issues, "Status")?,
         new_word(issues, "Priority")?
     );
     Ok(out)

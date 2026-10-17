@@ -14,6 +14,7 @@ use super::types::{DeleteIssue, IssueView, RestoreIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::projects::Why;
+use crate::workflows::restart_restored_in;
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The issue a person asks to put into the trash: they see it and may delete it. What the
@@ -109,14 +110,15 @@ pub async fn restore_issue<S: AuthStore>(
     )?;
     let (why, now) = (Why::default(), ctx.now());
     let stopped = why.clone();
+    let events = ctx.event_maker(by(actor.person.id));
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                if S::set_issue_deleted(transaction, id, None, now).await? {
-                    Ok(())
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::NotFound))
+                if !S::set_issue_deleted(transaction, id, None, now).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::NotFound));
                 }
+                // An issue whose workflow lacks its status starts again, with its history.
+                restart_restored_in::<S>(transaction, &events, id, now).await
             })
         })
         .await

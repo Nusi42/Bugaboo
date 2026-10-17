@@ -26,8 +26,8 @@ use bb_policy::Authorized;
 
 use crate::access::{
     FieldPermissions, FieldPermissionsQuery, OwnLoss, OwnLossQuery, PeopleToCheckPage,
-    PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
-    people_to_check, people_visibility,
+    PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, WhoMayChange, WhoMayChangeQuery,
+    field_permissions, own_loss, people_to_check, people_visibility, who_may_change,
 };
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
@@ -115,6 +115,12 @@ use crate::tags::{
     change_tag, combine_labels, combine_tags, create_label, create_label_group,
     issue_labels_and_tags, label_change_preview, labels, remove_label, remove_tag,
     tag_change_preview, tag_suggestions, tags,
+};
+use crate::workflows::{
+    CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishWorkflow,
+    Published, Tried, TryWorkflowQuery, UseWorkflow, WorkflowEditor, WorkflowEditorQuery,
+    WorkflowList, WorkflowsQuery, create_workflow, delete_workflow, project_statuses,
+    publish_workflow, try_workflow, use_workflow, workflow_editor, workflows,
 };
 
 #[cfg(test)]
@@ -558,4 +564,22 @@ use_cases! {
     save_layout(SaveLayout) -> Authorized<LayoutEditor>;
     /// Takes the layout of a place away.
     delete_layout(DeleteLayout) -> Done;
+    /// Lists the statuses the issues of a project can have.
+    project_statuses(ProjectStatusesQuery) -> Authorized<ProjectStatuses>;
+    /// Shows the workflow that counts at a place to somebody who may change it.
+    workflow_editor(WorkflowEditorQuery) -> Authorized<WorkflowEditor>;
+    /// Lists the workflows there are, for choosing one for a place.
+    workflows(WorkflowsQuery) -> Authorized<WorkflowList>;
+    /// Creates the workflow of a place as a copy of the one that counts there.
+    create_workflow(CreateWorkflow) -> Authorized<WorkflowEditor>;
+    /// Says which workflow a place uses.
+    use_workflow(UseWorkflow) -> Authorized<WorkflowEditor>;
+    /// Publishes a workflow under its edit lock.
+    publish_workflow(PublishWorkflow) -> Authorized<Published>;
+    /// Takes a workflow away.
+    delete_workflow(DeleteWorkflow) -> Done;
+    /// Tells which status changes a person would get on an issue.
+    try_workflow(TryWorkflowQuery) -> Authorized<Tried>;
+    /// Tells which roles may change a field in the issues of a project.
+    who_may_change(WhoMayChangeQuery) -> Authorized<WhoMayChange>;
 }

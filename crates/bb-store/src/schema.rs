@@ -280,6 +280,31 @@ stored_tables! {
         Field => field,
         Role => role,
     },
+    WorkflowRow => bb_core::workflow::Workflow {
+        Id => id,
+        Name => name,
+        Version => version,
+    },
+    WorkflowStatusRow => bb_core::workflow::StoredStatus {
+        Workflow => workflow,
+        Key => key,
+        Name => name,
+        StatusGroup => group,
+        Position => position,
+    },
+    WorkflowChangeRow => bb_core::workflow::StoredChange {
+        Workflow => workflow,
+        FromStatus => from,
+        ToStatus => to,
+        Button => button,
+        Rules => rules,
+        Position => position,
+    },
+    WorkflowUseRow => bb_core::workflow::WorkflowUse {
+        Project => project,
+        IssueType => issue_type,
+        Workflow => workflow,
+    },
     RelationRow => bb_core::relation::Relation {
         Id => id,
         Kind => kind,

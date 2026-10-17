@@ -87,6 +87,7 @@ One enum, `Permission` in `bb-policy`. The four tables of this section and the n
 | `move-issues` | Issues | project | Change | Move issues into or out of the project |
 | `edit-anyway` | Issues | project | Manage | Take over text someone else is editing; their text is kept |
 | `manage-issue-types` | Work settings | project | Manage | Manage issue types, kinds of relation and layouts |
+| `manage-workflows` | Work settings | project | Manage | Manage workflows: change statuses and status changes, and publish them |
 | `manage-fields` | Work settings | organization | Manage | Create, change and retire fields |
 | `manage-labels` | Work settings | project | Manage | Manage labels and tags, also rename and combine them |
 | `decide-roles` | People | project | Manage | Decide who has which role, including No access |
@@ -156,6 +157,7 @@ Made once at the first start from one Rust definition in `bb-policy` (ADR-0025, 
 | Move issues into or out of the project | ✓ | ✓ | ✓ | – | – | – |
 | Take over text someone else is editing; their text is kept | ✓ | ✓ | – | – | – | – |
 | Manage issue types, kinds of relation and layouts | ✓ | ✓ | – | – | – | – |
+| Manage workflows: change statuses and status changes, and publish them | ✓ | ✓ | – | – | – | – |
 | Create, change and retire fields | ✓ | – | – | – | – | – |
 | Manage labels and tags, also rename and combine them | ✓ | ✓ | – | – | – | – |
 | Decide who has which role, including No access | ✓ | ✓ | – | – | – | – |

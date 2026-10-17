@@ -73,11 +73,11 @@ async fn cf_06_the_list_for_a_field_follows_its_level_for_the_issue_type() -> Te
             &CHANGER,
             &[
                 (&tester, None, FieldLevel::CanChange),
-                (&tester, Some(&site.bug), FieldLevel::Hidden),
+                (&tester, Some(&site.kind), FieldLevel::Hidden),
             ],
         )
         .await?;
-        let query = format!("field={tester}&issue_type={}", site.bug);
+        let query = format!("field={tester}&issue_type={}", site.kind);
         let for_bug = people_for(&mut tim, &site, &query).await?;
         assert_eq!(
             outcome(&for_bug),
@@ -124,11 +124,11 @@ async fn cf_06_a_project_field_is_not_opened_by_an_issue_type() -> TestResult {
             &[Permission::SeeProjects, Permission::ChangeProjectSettings],
             &[
                 (&sponsor, None, FieldLevel::CanChange),
-                (&sponsor, Some(&site.bug), FieldLevel::Hidden),
+                (&sponsor, Some(&site.kind), FieldLevel::Hidden),
             ],
         )
         .await?;
-        let query = format!("field={sponsor}&issue_type={}", site.bug);
+        let query = format!("field={sponsor}&issue_type={}", site.kind);
         let listed = people_for(&mut tim, &site, &query).await?;
         assert_eq!(outcome(&listed), (StatusCode::OK, ""), "{}", listed.body);
         Ok(())

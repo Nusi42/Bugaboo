@@ -448,7 +448,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bb_core::issue::{IssueIcon, Status, StatusGroup};
+    use bb_core::issue::IssueIcon;
 
     use super::*;
     use crate::api::issues::IssueTypeRef;
@@ -471,8 +471,7 @@ mod tests {
                 retired: false,
             },
             title: None,
-            status: Some(Status::Open),
-            status_group: Some(StatusGroup::NotStarted),
+            status: Some(crate::api::workflows::StatusRef::blank()),
         };
         let project = || ProjectRef {
             id: String::new(),

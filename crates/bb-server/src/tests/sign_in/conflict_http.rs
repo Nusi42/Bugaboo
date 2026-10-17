@@ -18,7 +18,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 25] = [
+const VERSIONED: [&str; 27] = [
     "changeSignUpPolicy",
     "saveComment",
     "changeField",
@@ -38,6 +38,8 @@ const VERSIONED: [&str; 25] = [
     "combineLabels",
     "saveLayout",
     "deleteLayout",
+    "publishWorkflow",
+    "deleteWorkflow",
     "changeProject",
     "changeRelationKind",
     "changeRole",
@@ -112,6 +114,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
             prepare_labels(id, site, ada).await
         }
         "saveLayout" | "deleteLayout" => prepare_layout(id, ada).await,
+        "publishWorkflow" | "deleteWorkflow" => prepare_workflow(id, ada).await,
         "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
         }
@@ -440,6 +443,44 @@ async fn prepare_layout(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
             )?
             .under_lock(&json!({"kind": "layout", "id": layout}), "layout"))
         }
+        other => Err(format!("no row for {other}").into()),
+    }
+}
+
+async fn prepare_workflow(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
+    let short_name = if id == "deleteWorkflow" {
+        "FLOWD"
+    } else {
+        "FLOWP"
+    };
+    let project = made(
+        ada,
+        PROJECTS,
+        json!({"short_name": short_name, "name": short_name}),
+    )
+    .await?;
+    let editor = made(
+        ada,
+        "/api/v1/workflows",
+        json!({"project": text_in(&project, "id")?}),
+    )
+    .await?;
+    let workflow = text_in(&editor["workflow"], "id")?;
+    let path = format!("/api/v1/workflows/{workflow}");
+    let version = &editor["workflow"]["version"];
+    match id {
+        "deleteWorkflow" => Ok(Save::new("DELETE", path, Value::Null, version)?.in_the_query()),
+        "publishWorkflow" => Ok(Save::new(
+            "PUT",
+            path,
+            json!({
+                "name": "Simple",
+                "statuses": [{"key": "open", "name": "Open", "group": "not-started"}],
+                "changes": [],
+            }),
+            version,
+        )?
+        .under_lock(&json!({"kind": "workflow", "id": workflow}), "workflow")),
         other => Err(format!("no row for {other}").into()),
     }
 }

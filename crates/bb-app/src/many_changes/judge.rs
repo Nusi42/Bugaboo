@@ -97,6 +97,10 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::Forbidden => SkipReason::NotAllowed,
             ErrorCode::IssueTypeRetired => SkipReason::TypeMissing,
             ErrorCode::FieldNotHere => SkipReason::FieldMissing,
+            ErrorCode::WorkflowNoSuchChange
+            | ErrorCode::WorkflowNotForYou
+            | ErrorCode::WorkflowOnlyIf
+            | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
@@ -133,6 +137,8 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::MovePreviewChanged
             | ErrorCode::ParentCircle
             | ErrorCode::PickOneConflict
+            | ErrorCode::WorkflowStatusInUse
+            | ErrorCode::WorkflowInvalid
             | ErrorCode::FieldRequired
             | ErrorCode::FieldTooShort
             | ErrorCode::FieldTooLong
@@ -233,7 +239,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             version: issue.version,
             issue_type: None,
             title: None,
-            status: change.status,
+            status: change.status.clone(),
             priority: change.priority,
             assigned_to: change.assigned_to.clone(),
             fields: change.fields.clone(),
@@ -264,12 +270,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         if plan.already_there {
             return Ok(Judged::Skip(SkipReason::NothingToChange));
         }
+        let mut changes = vec![FieldChange {
+            field: member::PROJECT.to_owned(),
+            before: Some(json!(plan.issue.project.to_string())),
+            after: Some(json!(plan.target_id().to_string())),
+        }];
+        changes.extend(plan.status_change());
         Ok(Judged::Change(Planned::Fields(Box::new(FieldsPlan {
-            changes: vec![FieldChange {
-                field: member::PROJECT.to_owned(),
-                before: Some(json!(plan.issue.project.to_string())),
-                after: Some(json!(plan.target_id().to_string())),
-            }],
+            changes,
             issue: plan.issue,
             held,
         }))))

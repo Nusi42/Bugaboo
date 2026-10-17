@@ -10,6 +10,7 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
+use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
 
 use crate::projects::ProjectStore;
@@ -22,6 +23,16 @@ pub enum InTrash {
     NotFound,
     /// The issue is counted up like any other.
     Counted,
+}
+
+/// The status an issue has after a move into another project, and the closed date that goes with
+/// it.
+#[derive(Clone, Debug)]
+pub struct MovedStatus {
+    /// The status.
+    pub status: StatusKey,
+    /// When the issue was closed, if it is in a status of the group *Done*.
+    pub closed_at: Option<Timestamp>,
 }
 
 /// An issue found by a readable ID: the issue, and whether the code was an old one of it.
@@ -83,13 +94,15 @@ pub trait IssueStore: ProjectStore + 'static {
         /// Writes the type, title, description, status, priority, update date and closed date of
         /// `issue`, counts its version up, and says whether it was still at `version`.
         fn update_issue(issue: &Issue, version: i64) -> bool;
-        /// Puts an issue into another project with a code of that project, sets the date it
-        /// changed, counts its version up, and says whether the issue was still at `version`. The
-        /// old code is kept with `insert_issue_alias`.
+        /// Puts an issue into another project with a code of that project and the status and
+        /// closed date it has there, sets the date it changed, counts its version up, and says
+        /// whether the issue was still at `version`. The old code is kept with
+        /// `insert_issue_alias`.
         fn move_issue(
             id: IssueId,
             project: ProjectId,
             code: &IssueCode,
+            moved: &MovedStatus,
             version: i64,
             now: Timestamp
         ) -> bool;

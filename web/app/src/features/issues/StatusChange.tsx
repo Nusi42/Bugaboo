@@ -1,10 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { StatusButton, StatusMenu, partOf, part } from "@bugaboo/ui";
 
-import { known } from "../../shared/present.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
 import { openStatusMenu, statusId } from "./bar-targets.ts";
-import { statusChoices } from "./issue-choices.ts";
 import { readOnlyReason } from "./read-only.ts";
 import type { IssueBlockProps } from "./slots.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
@@ -21,13 +19,13 @@ export interface StatusChangeProps {
  */
 export function StatusChange({ blocks, changes }: StatusChangeProps) {
   const { issue, mask, form } = blocks;
-  const [status, group] = [known(issue.status), known(issue.status_group)];
+  const { status } = issue;
   const canChange = mask.changes("status");
   useShortcuts(canChange ? { "change-status": openStatusMenu } : {});
-  if (status === undefined || group === undefined || !form.shows("status")) {
+  if (status === undefined || status === null || !form.shows("status")) {
     return null;
   }
-  const word = t(`status.${status}`);
+  const { name: word, group } = status;
   if (!canChange) {
     return (
       <div {...partOf(part.issueStatusLine)}>
@@ -49,15 +47,13 @@ export function StatusChange({ blocks, changes }: StatusChangeProps) {
         label={word}
         id={statusId}
         menuLabel={t("issues.change-status")}
-        choices={statusChoices
-          .filter((choice) => choice.value !== status)
-          .map((choice) => ({
-            id: choice.value,
-            label: choice.label,
-            onAction: () => {
-              changes.change({ status: choice.value });
-            },
-          }))}
+        choices={(issue.status_changes ?? []).map((change) => ({
+          id: change.to.key,
+          label: change.to.name,
+          onAction: () => {
+            changes.change({ status: change.to });
+          },
+        }))}
       />
     </div>
   );

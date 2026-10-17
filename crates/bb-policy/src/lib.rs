@@ -11,6 +11,7 @@
 #![forbid(unsafe_code)]
 
 mod catalogue;
+mod changers;
 mod evaluate;
 mod explain;
 pub mod guards;
@@ -26,6 +27,7 @@ mod tree;
 
 pub use bb_macros::Masked;
 pub use catalogue::{Counts, Kind, NOT_FOR_KEYS, Permission, PermissionBits, Topic};
+pub use changers::{Changer, roles_that_change};
 pub use evaluate::{
     Evaluation, HeldRole, Inputs, Place, RoleData, Row, RowStatus, RowTrace, Who, evaluate,
     row_reaches,

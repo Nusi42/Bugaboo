@@ -73,7 +73,7 @@ async fn sec_06_the_description_makes_a_chip_only_of_what_the_reader_may_see() -
                 "POST",
                 &format!("/api/v1/projects/{}/issues", site.acme),
                 Some(json!({
-                    "issue_type": site.bug,
+                    "issue_type": site.kind,
                     "title": "Gus's problem",
                     "description": format!("See {secret} and {own}."),
                 })),

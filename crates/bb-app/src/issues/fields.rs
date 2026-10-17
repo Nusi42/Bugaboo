@@ -2,8 +2,10 @@
 //! text is, the people have to be members of the project, and every field the person touches has to be one they may
 //! change (the mask of their roles, SEC-04).
 
+use std::collections::BTreeSet;
+
 use bb_core::ErrorCode;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNED_PEOPLE_MAX;
 use bb_core::text::TITLE_MAX;
@@ -95,6 +97,18 @@ impl Given {
     }
 }
 
+impl Given {
+    /// The keys of the fields a request carries, for the judge of a status change: the fields of
+    /// the catalogue that are given and the own fields named by their keys.
+    pub(crate) fn keys<'a>(self, own: impl Iterator<Item = &'a String>) -> BTreeSet<FieldKey> {
+        self.fields()
+            .into_iter()
+            .map(FieldKey::from)
+            .chain(own.filter_map(|key| FieldKey::from_code(key)))
+            .collect()
+    }
+}
+
 impl From<&ChangeIssue> for Given {
     fn from(input: &ChangeIssue) -> Self {
         // Title, description (saved under its lock, never here), status, priority, assigned to.
@@ -125,7 +139,19 @@ impl From<&CreateIssue> for Given {
 /// reads: defined once, here. A field of the catalogue has the word of the catalogue
 /// (`Field::code`), so History filters by one mapping.
 pub(crate) mod member {
+    use bb_core::event::FieldChange;
     use bb_core::fields::Field;
+    use bb_core::workflow::StatusKey;
+    use serde_json::json;
+
+    /// The change of the status of an issue, as its history shows it: the one place that builds it.
+    pub(crate) fn status_change(before: &StatusKey, after: &StatusKey) -> FieldChange {
+        FieldChange {
+            field: STATUS.to_owned(),
+            before: Some(json!(before.as_str())),
+            after: Some(json!(after.as_str())),
+        }
+    }
 
     pub(crate) const PROJECT: &str = "project";
     pub(crate) const ISSUE_TYPE: &str = "issue-type";

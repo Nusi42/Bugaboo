@@ -125,6 +125,8 @@ pub(crate) struct State {
     pub(crate) jobs: Vec<bb_core::job::Job>,
     pub(crate) many_changes_runs: Vec<bb_core::many_changes::ManyChangeRun>,
     pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,
+    pub(crate) workflows: Vec<bb_core::workflow::StoredWorkflow>,
+    pub(crate) workflow_uses: Vec<bb_core::workflow::WorkflowUse>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

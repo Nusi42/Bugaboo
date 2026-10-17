@@ -34,7 +34,7 @@ export function SlimIssueList({ lines, open }: SlimIssueListProps) {
                 key: line.key,
                 title: line.title,
                 group: line.group,
-                statusWord: t(`status.${line.status}`),
+                statusWord: line.status.name,
                 type: line.issueType,
               },
               issueAddress(line.key),

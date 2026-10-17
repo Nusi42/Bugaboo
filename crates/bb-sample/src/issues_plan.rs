@@ -13,7 +13,7 @@
 
 use std::collections::BTreeMap;
 
-use bb_core::issue::{IssueIcon, Priority, STARTING_ISSUE_TYPES, Status};
+use bb_core::issue::{IssueIcon, Priority, STARTING_ISSUE_TYPES, StatusGroup};
 use bb_core::message::Message;
 use bb_dev_words::sample::{IssuePlan, TypeShare};
 
@@ -74,6 +74,24 @@ pub(crate) struct PlannedIssue {
     pub(crate) labels: Vec<usize>,
 }
 
+/// How far an issue got, as a status group: the sample walks the status changes of the workflow of
+/// the issue until it stands in the group.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Reached {
+    InProgress,
+    Done,
+}
+
+impl Reached {
+    /// The status group it stands for.
+    pub(crate) const fn group(self) -> StatusGroup {
+        match self {
+            Self::InProgress => StatusGroup::InProgress,
+            Self::Done => StatusGroup::Done,
+        }
+    }
+}
+
 /// What happens at a step.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Action {
@@ -81,7 +99,7 @@ pub(crate) enum Action {
     Parent(usize),
     Tag(usize, usize),
     Label(usize, usize),
-    Status(usize, Status),
+    Status(usize, Reached),
     Comment(usize),
     Edit(usize),
     Relate(usize),
@@ -362,21 +380,21 @@ impl Plan {
                     let started = when + 30 + random.skewed(room.min(3 * WORK_DAY));
                     push(
                         started - when,
-                        Action::Status(at, Status::InProgress),
+                        Action::Status(at, Reached::InProgress),
                         random,
                     );
                     let after = (end - started - 60).clamp(0, 20 * WORK_DAY);
                     let done = started + 60 + random.skewed(after);
-                    push(done - when, Action::Status(at, Status::Done), random);
+                    push(done - when, Action::Status(at, Reached::Done), random);
                 } else {
                     let done = when + 30 + random.skewed(room.min(20 * WORK_DAY));
-                    push(done - when, Action::Status(at, Status::Done), random);
+                    push(done - when, Action::Status(at, Reached::Done), random);
                 }
             } else if roll < 35 + age {
                 let started = when + 30 + random.skewed(room.min(5 * WORK_DAY));
                 push(
                     started - when,
-                    Action::Status(at, Status::InProgress),
+                    Action::Status(at, Reached::InProgress),
                     random,
                 );
             }

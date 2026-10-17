@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import { groupByStatus } from "./issue-groups.ts";
 import type { IssueLine } from "./issues.ts";
 
-/** The status each group has in the starting workflow. */
-const statusOf = { "not-started": "open", "in-progress": "in-progress", done: "done" } as const;
+/** The status each group has in the starting workflow, as the server sends it. */
+const statusOf = {
+  "not-started": { key: "open", name: "Open", group: "not-started" },
+  "in-progress": { key: "in-progress", name: "In progress", group: "in-progress" },
+  done: { key: "done", name: "Done", group: "done" },
+} as const;
 
 /** A line of a list with only what grouping reads; the rest is the same for all. */
 function line(key: string, group: IssueLine["group"]): IssueLine {

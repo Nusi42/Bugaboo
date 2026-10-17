@@ -20,7 +20,7 @@ use serde_json::{Value, json};
 use super::read::{Where, offered_roles};
 use super::types::{CreateLayout, DeleteLayout, LayoutEditor, SaveLayout, SectionInput};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
-use crate::editing::{TextSave, Written};
+use crate::editing::{TextSave, Written, let_go_for_delete};
 use crate::member::layout as member;
 use crate::projects::Why;
 
@@ -414,15 +414,7 @@ pub async fn delete_layout<S: AuthStore>(
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
-                match S::edit_lock_in(transaction, what.clone()).await? {
-                    Some(lock) if lock.holder != me && !lock.has_expired(now) => {
-                        return Err(stopped.stop::<S>(ErrorCode::EditInProgress));
-                    }
-                    Some(_) => {
-                        S::remove_edit_lock(transaction, &what).await?;
-                    }
-                    None => {}
-                }
+                let_go_for_delete::<S>(transaction, &what, me, now, &stopped).await?;
                 if S::delete_layout(transaction, id, version).await? {
                     Ok(())
                 } else {

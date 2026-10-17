@@ -41,6 +41,7 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
 use crate::preview::PreviewSummary;
+use crate::workflows::restart_moved_in;
 
 /// The version of a preview: it names the project, both parents and what the move would change,
 /// so it is another one as soon as one of them changes. A digest, not a secret: the server makes
@@ -399,6 +400,7 @@ pub async fn move_project<S: AuthStore>(
     )?;
     let why = Why::default();
     let stopped = why.clone();
+    let (events, now_at) = (ctx.event_maker(by(person)), ctx.now());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -427,11 +429,12 @@ pub async fn move_project<S: AuthStore>(
                 if judged.version != expected {
                     return Err(stopped.stop::<S>(ErrorCode::MovePreviewChanged));
                 }
-                if S::move_project(transaction, id, to, now.version).await? {
-                    Ok(())
-                } else {
-                    Err(stopped.stop::<S>(ErrorCode::VersionChanged))
+                if !S::move_project(transaction, id, to, now.version).await? {
+                    return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
+                // The issues in it now follow another workflow: those whose status it lacks
+                // start again in its starting status, with their history.
+                restart_moved_in::<S>(transaction, &events, id, now_at).await
             })
         })
         .await

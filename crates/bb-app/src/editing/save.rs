@@ -33,6 +33,9 @@ pub enum Written<T> {
     Saved(T),
     /// The record was changed since: nothing is written, and the save is a stale one.
     Stale,
+    /// The write found a reason of its own to refuse (a check inside the change failed): nothing
+    /// is written, and the save is answered with this code.
+    Refused(ErrorCode),
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -106,8 +109,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                         }
                         _ => return Err(stopped.stop::<S>(ErrorCode::EditLockLost)),
                     }
-                    let Written::Saved(done) = write(transaction).await? else {
-                        return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                    let done = match write(transaction).await? {
+                        Written::Saved(done) => done,
+                        Written::Stale => {
+                            return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
+                        }
+                        Written::Refused(code) => return Err(stopped.stop::<S>(code)),
                     };
                     S::remove_edit_lock_held(transaction, &what, hold).await?;
                     S::delete_draft_in(transaction, me, &DraftTarget::Editing(what)).await?;

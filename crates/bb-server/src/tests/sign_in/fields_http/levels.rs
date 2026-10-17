@@ -23,7 +23,7 @@ async fn cf_06_an_own_field_follows_its_level_per_role_and_per_issue_type() -> T
             &see,
             &[
                 (&key, None, FieldLevel::CanChange),
-                (&key, Some(&site.bug), FieldLevel::Hidden),
+                (&key, Some(&site.kind), FieldLevel::Hidden),
             ],
         )
         .await?;
@@ -152,7 +152,7 @@ async fn cf_06_a_hidden_own_field_never_leaves_in_any_answer_or_history() -> Tes
                 "POST",
                 &acme_issues(),
                 Some(json!({
-                    "issue_type": site.bug,
+                    "issue_type": site.kind,
                     "title": "Secret",
                     "fields": { &key: &major, &notes: "Hidden **words**" },
                 })),

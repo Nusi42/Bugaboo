@@ -18,7 +18,7 @@ use bb_app::many_changes::{
     ManyChangeRunStatus, ManyChangeRunView, ManyChangeSkipped, ManyChangeTarget,
 };
 use bb_core::id::{LabelId, ManyChangeRunId, RelationKindId, UserId};
-use bb_core::issue::{Priority, Status};
+use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
@@ -36,14 +36,16 @@ use super::auth::{
 use super::previews::PreviewSummaryBody;
 use super::projects::ProjectRef;
 use super::relations::IssueRef;
+use super::workflows::status_in;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath};
 
 /// What a person asks for in the fields of many issues: what is left out stays as it is.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ManyChangeBody {
-    /// A new status.
-    status: Option<Status>,
+    /// The key of a new status. Each issue is judged by its own workflow, and an issue whose
+    /// workflow does not allow the change is skipped.
+    status: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
     /// The IDs of the people the issues are assigned to from now on: all of them, not the ones to
@@ -92,7 +94,7 @@ impl ManyChangeActionBody {
         Ok(match self {
             Self::Change { change } => ManyChangeAction::Change {
                 change: ManyChange {
-                    status: change.status,
+                    status: status_in(change.status.as_deref())?,
                     priority: change.priority,
                     assigned_to: change
                         .assigned_to
@@ -266,7 +268,7 @@ impl From<&ManyChangeDetail> for ManyChangeDetailBody {
             },
             ManyChangeDetail::Relation { name, issue } => Self::Relation {
                 name: name.clone(),
-                issue: Box::new(IssueRef::from(issue)),
+                issue: Box::new(IssueRef::from(&**issue)),
             },
         }
     }

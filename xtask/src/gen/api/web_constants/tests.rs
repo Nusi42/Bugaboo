@@ -264,14 +264,11 @@ fn the_words_of_a_vocabulary_come_from_the_api_description_in_their_order() {
     let spec = format!(r#"{{"components":{{"schemas":{{{schemas}}}}}}}"#);
     let issues = (
         ISSUE_SOURCE.to_owned(),
-        "impl Status { pub const NEW: Self = Self::Open; }
-impl Priority { pub const NEW: Self = Self::Normal; }
-words! { pub enum Status { Open => \"open\", Done => \"done\" } }
+        "impl Priority { pub const NEW: Self = Self::Normal; }
 words! { pub enum Priority { Low => \"low\", Normal => \"normal\" } }"
             .to_owned(),
     );
     let text = words(&spec, std::slice::from_ref(&issues)).unwrap();
-    assert!(text.contains("newIssueStatus = \"open\";"), "{text}");
     assert!(text.contains("newIssuePriority = \"normal\";"), "{text}");
     assert!(
         text.contains("export const issueIconWords = [\"bug\", \"flag\"] as const;"),

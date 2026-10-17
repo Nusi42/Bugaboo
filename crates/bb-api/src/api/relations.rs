@@ -13,7 +13,6 @@ use bb_app::relations::{
     RemoveRelation, SetParent, SubIssuesQuery,
 };
 use bb_core::id::{RelationId, RelationKindId};
-use bb_core::issue::{Status, StatusGroup};
 use bb_core::relation::Direction;
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
@@ -28,20 +27,20 @@ use super::auth::{
 };
 use super::issues::IssueTypeRef;
 use super::projects::ProjectRef;
+use super::workflows::StatusRef;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list of sub-issues, and which of them a list holds when the request
 /// names none.
-const ISSUE_REF_FIELDS: [FieldSpec; 7] = [
+const ISSUE_REF_FIELDS: [FieldSpec; 6] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("key"),
     FieldSpec::on_request("project"),
     FieldSpec::by_default("issue_type"),
     FieldSpec::by_default("title"),
     FieldSpec::by_default("status"),
-    FieldSpec::on_request("status_group"),
 ];
 const SUB_ISSUES_LIST: &str = "sub-issues";
 
@@ -80,12 +79,9 @@ pub(crate) struct IssueRef {
     /// What it is about.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) title: Option<String>,
-    /// Where it stands in the workflow.
+    /// Where it stands in its workflow: the key, the name and the status group.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) status: Option<Status>,
-    /// The group of its status.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) status_group: Option<StatusGroup>,
+    pub(crate) status: Option<StatusRef>,
 }
 
 // The members were dropped for the viewer in the project of the issue, which can differ from the
@@ -100,8 +96,7 @@ impl From<&IssueLine> for IssueRef {
             project: ProjectRef::from(&line.project),
             issue_type: IssueTypeRef::from(&line.issue_type),
             title: line.title.clone(),
-            status: line.status,
-            status_group: line.status_group,
+            status: line.status.as_ref().map(StatusRef::from),
         }
     }
 }
@@ -640,8 +635,7 @@ mod tests {
                 retired: false,
             },
             title: Some(String::new()),
-            status: Some(Status::Open),
-            status_group: Some(StatusGroup::NotStarted),
+            status: Some(StatusRef::blank()),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_REF_FIELDS, &line);
         let kind = RelationKindItem {

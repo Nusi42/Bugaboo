@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, UserId};
-use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
+use bb_core::issue::{IssueIcon, Priority};
 use bb_core::own_fields_value::OwnValues;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,7 @@ use super::auth::{
 use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::projects::ProjectRef;
+use super::workflows::{StatusChangeRef, StatusRef, status_in};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -47,7 +48,7 @@ const ISSUE_FIELDS: [FieldSpec; 16] = [
     FieldSpec::by_default("title"),
     FieldSpec::on_request("description"),
     FieldSpec::by_default("status"),
-    FieldSpec::on_request("status_group"),
+    FieldSpec::on_request("status_changes"),
     FieldSpec::by_default("priority"),
     FieldSpec::on_request("reported_by"),
     FieldSpec::on_request("assigned_to"),
@@ -120,14 +121,15 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "description")]
     description: Option<String>,
-    /// Where it stands in the workflow.
+    /// Where it stands in its workflow: the key, the name and the status group.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "status")]
-    status: Option<Status>,
-    /// The group of its status.
+    status: Option<StatusRef>,
+    /// The status changes the person may make now, with the text of each button and the fields it
+    /// still needs. Empty when they may not change the issue. Hidden with the status.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "status")]
-    status_group: Option<StatusGroup>,
+    status_changes: Option<Vec<StatusChangeRef>>,
     /// How important it is.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "priority")]
@@ -172,8 +174,14 @@ impl From<&IssueView> for IssueItem {
             issue_type: Some(IssueTypeRef::from(&issue.issue_type)),
             title: Some(issue.title.clone()),
             description: Some(issue.description.clone()),
-            status: Some(issue.status),
-            status_group: Some(issue.status_group),
+            status: Some(StatusRef::from(&issue.status)),
+            status_changes: Some(
+                issue
+                    .status_changes
+                    .iter()
+                    .map(StatusChangeRef::from)
+                    .collect(),
+            ),
             priority: Some(issue.priority),
             reported_by: Some(issue.reported_by.clone()),
             assigned_to: Some(issue.assigned_to.clone()),
@@ -253,8 +261,9 @@ pub(crate) struct NewIssueBody {
     title: String,
     /// The long text, in Markdown. Empty when left out.
     description: Option<String>,
-    /// Where it starts. The first status of the starting workflow when left out.
-    status: Option<Status>,
+    /// The key of the status it starts in. The first status of its workflow when left out; another
+    /// one is judged as a status change from the first.
+    status: Option<String>,
     /// How important it is. *Normal* when left out.
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to. Nobody when left out.
@@ -275,8 +284,9 @@ pub(crate) struct ChangeIssueBody {
     issue_type: Option<String>,
     /// A new title.
     title: Option<String>,
-    /// A new status. Entering the group *Done* sets the closed date; leaving it clears it.
-    status: Option<Status>,
+    /// The key of a new status: judged by the workflow of the issue. Entering the group *Done* sets
+    /// the closed date; leaving it clears it.
+    status: Option<String>,
     /// A new priority.
     priority: Option<Priority>,
     /// The IDs of the people it is assigned to from now on: all of them, not the ones to add.
@@ -456,7 +466,7 @@ async fn create_issue(
                 issue_type,
                 title: body.title,
                 description: body.description,
-                status: body.status,
+                status: status_in(body.status.as_deref())?,
                 priority: body.priority,
                 assigned_to,
                 fields: body.fields,
@@ -534,7 +544,7 @@ async fn change_issue(
                 version: body.version,
                 issue_type,
                 title: body.title,
-                status: body.status,
+                status: status_in(body.status.as_deref())?,
                 priority: body.priority,
                 assigned_to,
                 fields: body.fields,
@@ -744,8 +754,8 @@ mod tests {
             }),
             title: Some(String::new()),
             description: Some(String::new()),
-            status: Some(Status::Open),
-            status_group: Some(StatusGroup::NotStarted),
+            status: Some(StatusRef::blank()),
+            status_changes: Some(Vec::new()),
             priority: Some(Priority::Normal),
             reported_by: Some(PersonRef::Someone),
             assigned_to: Some(Vec::new()),

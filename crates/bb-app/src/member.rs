@@ -35,6 +35,17 @@ pub(crate) mod layout {
     pub(crate) const SECTIONS: &str = "sections";
 }
 
+/// The members of a workflow.
+pub(crate) mod workflow {
+    pub(crate) const NAME: &str = "name";
+    pub(crate) const STATUSES: &str = "statuses";
+    pub(crate) const CHANGES: &str = "changes";
+    /// The places the workflow is used at.
+    pub(crate) const USES: &str = "uses";
+    /// The list of the workflows the first start made.
+    pub(crate) const STARTING: &str = "workflows";
+}
+
 /// The members of a kind of relation.
 pub(crate) mod relation_kind {
     pub(crate) const FORWARD: &str = "forward";
