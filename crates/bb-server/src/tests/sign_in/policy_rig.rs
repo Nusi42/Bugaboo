@@ -270,6 +270,7 @@ impl<'a> Org<'a> {
             .check_access(
                 Rig::info(),
                 CheckAccessQuery {
+                    issue_type: None,
                     session_token: by.session.clone(),
                     person,
                     place,

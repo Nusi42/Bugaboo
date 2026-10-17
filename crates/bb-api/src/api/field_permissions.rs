@@ -48,7 +48,7 @@ impl PlaceParams {
     }
 }
 
-/// Which place and which issue type a table or a change is about (field permissions only).
+/// Which place and which issue type a table, a change or a check of access is about.
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
 pub(crate) struct TypeParams {
@@ -62,7 +62,7 @@ pub(crate) struct TypeParams {
 
 impl TypeParams {
     /// The project, if one is named; a text that is no ID names a project that is not there.
-    fn project(&self) -> Result<Option<ProjectId>, ApiError> {
+    pub(super) fn project(&self) -> Result<Option<ProjectId>, ApiError> {
         self.project
             .as_deref()
             .map(path_id::<ProjectId>)
@@ -70,7 +70,7 @@ impl TypeParams {
     }
 
     /// The issue type, if one is named; a text that is no ID names a type that is not there.
-    fn issue_type(&self) -> Result<Option<IssueTypeId>, ApiError> {
+    pub(super) fn issue_type(&self) -> Result<Option<IssueTypeId>, ApiError> {
         self.issue_type
             .as_deref()
             .map(path_id::<IssueTypeId>)

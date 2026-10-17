@@ -9,16 +9,18 @@ use bb_core::ErrorCode;
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::FieldKey;
 use bb_core::id::{AssignmentId, ProjectId};
+use bb_core::issue::IssueType;
 use bb_core::people_kinds::PeopleKind;
 use bb_policy::{
-    AccessReport, Authorized, LevelDecision, LevelSource, LevelSubject, Masked, PeopleContext,
-    Permission, PersonRef, Place, Reason, ReasonRow, Who,
+    AccessReport, Authorized, Evaluation, LevelDecision, LevelSource, LevelSubject, Masked,
+    PeopleContext, Permission, PersonRef, Place, Reason, ReasonRow, Who,
 };
 use serde::Serialize;
 
 use super::types::{CheckAccessQuery, RoleRef};
 use crate::access::{Actor, ProjectLabel};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::issues::IssueTypeRef;
 use crate::people::GroupView;
 
 /// Whom a row of a reason was for.
@@ -158,6 +160,11 @@ pub struct AccessAnswer {
     pub fields: Vec<LevelAnswer<FieldKey, FieldLevel>>,
     /// Every kind of people information.
     pub kinds: Vec<LevelAnswer<PeopleKind, PeopleLevel>>,
+    /// The issue type the field levels are for; none for all types.
+    pub issue_type: Option<IssueTypeRef>,
+    /// Whether the field levels of the person differ by issue type: some type has a level for some
+    /// field that the others do not. The screen asks *"Which issue type?"* only then.
+    pub differs_by_type: bool,
 }
 
 impl Masked for AccessAnswer {}
@@ -273,6 +280,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         report: &AccessReport,
         person: PersonRef,
         own_names: &std::collections::HashMap<FieldKey, String>,
+        by_type: (Option<IssueTypeRef>, bool),
     ) -> Result<AccessAnswer, AppError> {
         let mut permissions = Vec::with_capacity(report.permissions.len());
         for decision in &report.permissions {
@@ -307,7 +315,32 @@ impl<S: AuthStore> Ctx<'_, S> {
             permissions,
             fields,
             kinds,
+            issue_type: by_type.0,
+            differs_by_type: by_type.1,
         })
+    }
+
+    /// Whether the person's field levels differ by issue type, among the fields the checker may
+    /// know: some type has another level for some field than the answer for all types gives.
+    fn levels_differ_by_type(
+        theirs: &Evaluation,
+        types: &[IssueType],
+        own_names: &std::collections::HashMap<FieldKey, String>,
+    ) -> bool {
+        if !theirs.has_levels_per_issue_type() {
+            return false;
+        }
+        let all = theirs.report();
+        all.fields
+            .iter()
+            .filter(|decision| {
+                decision.subject.own().is_none() || own_names.contains_key(&decision.subject)
+            })
+            .any(|decision| {
+                types.iter().any(|found| {
+                    theirs.field_level_for(Some(found.id), decision.subject) != decision.level
+                })
+            })
     }
 }
 
@@ -345,8 +378,32 @@ pub async fn check_access<S: AuthStore>(
         )
         .await?;
     let own_names = ctx.known_field_names(&actor, &checker, input.place).await?;
+    let types = ctx
+        .store()
+        .issue_types()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    let asked = input
+        .issue_type
+        .map(|wanted| {
+            types
+                .iter()
+                .find(|found| found.id == wanted)
+                .ok_or(AppError::Refused(ErrorCode::NotFound))
+        })
+        .transpose()?;
+    let by_type = (
+        asked.map(IssueTypeRef::from),
+        Ctx::<S>::levels_differ_by_type(&theirs, &types, &own_names),
+    );
     let answer = ctx
-        .access_answer(&actor, &theirs.report(), person, &own_names)
+        .access_answer(
+            &actor,
+            &theirs.report_for(asked.map(|found| found.id)),
+            person,
+            &own_names,
+            by_type,
+        )
         .await?;
     Ok(checker.authorize(answer))
 }

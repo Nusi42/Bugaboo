@@ -18,6 +18,7 @@ mod access_screens;
 mod access_screens_review;
 mod assignments_http;
 mod caching;
+mod check_access_types_http;
 mod comments_http;
 mod concurrent;
 mod conflict_http;

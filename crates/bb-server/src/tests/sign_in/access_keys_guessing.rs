@@ -28,6 +28,7 @@ async fn probe_from(rig: &Rig, network: &str, credential: &str) -> Result<(), Ap
         .check_access(
             from,
             CheckAccessQuery {
+                issue_type: None,
                 session_token: credential.to_owned(),
                 person: ada,
                 place: None,

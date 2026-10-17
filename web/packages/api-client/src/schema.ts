@@ -709,7 +709,8 @@ export interface paths {
     /**
      * What a person can do in a project, or in the whole organization when no project is named:
      *     every permission with *yes* or *no*, every field with its level and how the person sees
-     *     people, each with the reasons. Needs the permission *Check what other people can do, and why*
+     *     people, each with the reasons. With an issue type, the field levels are those for issues of that
+     *     type; `differs_by_type` says whether they differ by type at all. Needs the permission *Check what other people can do, and why*
      *     in the place.
      */
     get: operations["checkAccess"];
@@ -3747,8 +3748,14 @@ export interface components {
     };
     /** @description What a person can do in a place, and why. */
     CheckAccessBody: {
+      /**
+       * @description Whether the field levels differ by issue type, so the screen asks which type is meant. A
+       *     person whose levels are the same for every type is asked nothing.
+       */
+      differs_by_type: boolean;
       /** @description Every field of the catalogue. */
       fields: components["schemas"]["LevelAnswerBody_FieldKey_FieldLevel"][];
+      issue_type?: components["schemas"]["IssueTypeRef"] | null;
       /** @description Every kind of people information. */
       kinds: components["schemas"]["LevelAnswerBody_PeopleKind_PeopleLevel"][];
       /** @description Every permission that counts here. */
@@ -11272,6 +11279,11 @@ export interface operations {
          *     each role has of its own.
          */
         project?: string;
+        /**
+         * @description The ID of an issue type: the levels that count for issues of this type (ADR-0027).
+         *     Without it the answer is about all issue types.
+         */
+        issue_type?: string;
       };
       header?: never;
       path: {

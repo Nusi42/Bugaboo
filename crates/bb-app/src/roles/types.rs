@@ -237,6 +237,8 @@ pub struct CheckAccessQuery {
     pub person: UserId,
     /// The project, or `None` for the whole organization.
     pub place: Option<ProjectId>,
+    /// The issue type whose field levels are wanted (M3-F44); the levels for all types when none.
+    pub issue_type: Option<IssueTypeId>,
 }
 
 /// A role as it is shown.

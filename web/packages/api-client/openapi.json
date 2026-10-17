@@ -4184,7 +4184,7 @@
     "/api/v1/check-access/people/{person}": {
       "get": {
         "tags": ["access"],
-        "summary": "What a person can do in a project, or in the whole organization when no project is named:\nevery permission with *yes* or *no*, every field with its level and how the person sees\npeople, each with the reasons. Needs the permission *Check what other people can do, and why*\nin the place.",
+        "summary": "What a person can do in a project, or in the whole organization when no project is named:\nevery permission with *yes* or *no*, every field with its level and how the person sees\npeople, each with the reasons. With an issue type, the field levels are those for issues of that\ntype; `differs_by_type` says whether they differ by type at all. Needs the permission *Check what other people can do, and why*\nin the place.",
         "operationId": "checkAccess",
         "parameters": [
           {
@@ -4200,6 +4200,15 @@
             "name": "project",
             "in": "query",
             "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of an issue type: the levels that count for issues of this type (ADR-0027).\nWithout it the answer is about all issue types.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24246,14 +24255,29 @@
       "CheckAccessBody": {
         "type": "object",
         "description": "What a person can do in a place, and why.",
-        "required": ["person", "permissions", "fields", "kinds"],
+        "required": ["person", "permissions", "fields", "kinds", "differs_by_type"],
         "properties": {
+          "differs_by_type": {
+            "type": "boolean",
+            "description": "Whether the field levels differ by issue type, so the screen asks which type is meant. A\nperson whose levels are the same for every type is asked nothing."
+          },
           "fields": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LevelAnswerBody_FieldKey_FieldLevel"
             },
             "description": "Every field of the catalogue."
+          },
+          "issue_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueTypeRef",
+                "description": "The issue type the field levels are for; left out for all types."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "kinds": {
             "type": "array",
