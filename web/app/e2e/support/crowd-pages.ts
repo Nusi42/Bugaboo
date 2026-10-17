@@ -5,7 +5,7 @@ import { type Person, signInThroughApi } from "./accounts.ts";
 import { saveButton } from "./description.ts";
 import { crowd, crowdSize, type Edit } from "./crowd.ts";
 import { openIssueWithDetails } from "./flows.ts";
-import { changeField, savedNote, statusButton } from "./issues.ts";
+import { changeField, statusButton, savedNote } from "./issues.ts";
 import { type Instance } from "./server.ts";
 
 // The pages of ten people at the same time (architecture §11, M3 WP-10).

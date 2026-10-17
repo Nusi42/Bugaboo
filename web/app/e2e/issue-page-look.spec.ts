@@ -8,8 +8,8 @@ import {
   chooseStatus,
   detailRow,
   expectStatus,
-  issueNote,
   statusButton,
+  issueNote,
 } from "./support/issues.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";

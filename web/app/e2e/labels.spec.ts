@@ -6,7 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { chooseStatus, detailRow, expectStatus, issueNote, prepareWeb } from "./support/issues.ts";
+import { chooseStatus, detailRow, expectStatus, prepareWeb, issueNote } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 

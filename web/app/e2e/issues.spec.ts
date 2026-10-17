@@ -16,7 +16,8 @@ import {
   openIssuesIn,
   prepareWeb,
   webIssues,
-  savedNote,
+  issueNote,
+  rowSaved,
 } from "./support/issues.ts";
 import { onThisLayout } from "./support/layout.ts";
 import { issueAddress, projectIssuesAddress } from "../src/shared/paths.ts";
@@ -60,12 +61,12 @@ test("iss_01 status and priority change in place and say Saved", async ({ page }
   await page.goto(issueAddress("WEB-1"));
   await expect(loginHeading(page)).toBeVisible();
   await chooseStatus(page, t("status.in-progress"));
-  await expect(savedNote(page)).toBeVisible();
+  await expect(issueNote(page)).toBeVisible();
   await openIssueWithDetails(page, "WEB-1");
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({
     label: t("priority.high"),
   });
-  await expect(savedNote(page)).toBeVisible();
+  await expect(rowSaved(page, t("issue-field.priority"))).toBeVisible();
   // Kept: the page is read again from the server.
   await openIssueWithDetails(page, "WEB-1");
   await expectStatus(page, t("status.in-progress"));

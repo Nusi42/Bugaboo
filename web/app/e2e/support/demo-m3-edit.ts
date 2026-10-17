@@ -1,9 +1,9 @@
 import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
+import { savedNote } from "./issues.ts";
 
 import { lostEditNotice, signedInPage, type ScreenLook } from "./crowd-pages.ts";
 import { goodInFourThemes } from "./demo.ts";
-import { savedNote } from "./issues.ts";
 import { made, theTwo } from "./demo-m3-state.ts";
 import {
   descriptionBox,
