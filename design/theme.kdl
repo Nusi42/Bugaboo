@@ -11159,6 +11159,7 @@ part "workflow-change.to" {
 }
 
 part "workflow-add" {
+    use "fieldset-reset"
     display flex
     flex-wrap wrap
     align-items flex-end
@@ -11203,9 +11204,10 @@ part "workflow-drawing" {
 }
 
 part "drawing-columns" {
+    position relative
     display grid
     grid-template-columns "repeat(3, minmax(0, 1fr))"
-    gap "$space-6"
+    gap "$space-7"
 }
 
 part "drawing-column" {
@@ -11218,13 +11220,26 @@ part "drawing-column" {
 
 part "drawing-box" {
     display flex
-    align-items center
+    flex-direction column
     gap "$space-2"
     padding "$space-3"
     border "$border-width solid currentColor"
     border-radius "$r-ctl"
-    font-weight "$weight-bold"
     overflow-wrap anywhere
+}
+
+part "drawing-box.name" {
+    display flex
+    align-items center
+    gap "$space-2"
+    font-weight "$weight-bold"
+}
+
+part "drawing-box.changes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    align-items flex-start
 }
 
 part "drawing-box[variant=not-started]" {

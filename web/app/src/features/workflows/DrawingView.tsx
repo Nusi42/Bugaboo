@@ -3,8 +3,14 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, partOf, part, StatusIcon } from "@bugaboo/ui";
 import { useId, useMemo, useState } from "react";
 
-import { setRules, type Draft, type DraftChange } from "./draft-model.ts";
-import { arrowHead, arrowOf, labelBox, type Arrow } from "./drawing-layout.ts";
+import {
+  changesFrom,
+  setRules,
+  type Draft,
+  type DraftChange,
+  type DraftStatus,
+} from "./draft-model.ts";
+import { arrowHead, arrowOf, type Arrow } from "./drawing-layout.ts";
 import { boxId, useBoxes, type Placed } from "./use-boxes.ts";
 import { RulesWindow } from "./RulesWindow.tsx";
 import type { Edit } from "./use-draft-workflow.ts";
@@ -30,23 +36,67 @@ function laneOf(draft: Draft, change: DraftChange): number {
   return change.from < change.to ? 1 : -1;
 }
 
-/** An arrow with the status change it stands for. */
-interface Drawn extends Arrow {
-  readonly change: DraftChange;
-}
-
-/** The arrows of the status changes whose two boxes are placed. */
-function arrowsOf(draft: Draft, placed: Placed): readonly Drawn[] {
+/** The arrows of the status changes whose two boxes are placed, each with its ID. */
+function arrowsOf(draft: Draft, placed: Placed): readonly (Arrow & { readonly id: string })[] {
   return draft.changes.flatMap((change) => {
     const [from, to] = [placed[change.from], placed[change.to]];
     return from === undefined || to === undefined
       ? []
-      : [{ ...arrowOf(from, to, laneOf(draft, change)), change }];
+      : [{ ...arrowOf(from, to, laneOf(draft, change)), id: change.id }];
   });
 }
 
+/** One status as a box: its name with the icon of its group, and a button for each way out of it. */
+function Box({
+  draft,
+  status,
+  prefix,
+  onOpen,
+}: {
+  readonly draft: Draft;
+  readonly status: DraftStatus;
+  readonly prefix: string;
+  readonly onOpen: (change: string) => void;
+}) {
+  return (
+    <li id={boxId(prefix, status.id)} {...partOf(part.drawingBox, { variants: [status.group] })}>
+      <span {...partOf(part.drawingBoxName)}>
+        <StatusIcon group={status.group} />
+        {status.name}
+      </span>
+      <ul {...partOf(part.drawingBoxChanges)}>
+        {changesFrom(draft, status.id).map((change) => (
+          <li key={change.id}>
+            <Button
+              look={buttonLook.quiet}
+              aria-label={t("workflows.arrow-label", {
+                from: status.name,
+                to: nameOf(draft, change.to),
+                button: change.button,
+              })}
+              onPress={() => {
+                onOpen(change.id);
+              }}
+            >
+              {change.button}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </li>
+  );
+}
+
 /** The boxes: a column for each status group, with the statuses of the group in it. */
-function Columns({ draft, prefix }: { readonly draft: Draft; readonly prefix: string }) {
+function Columns({
+  draft,
+  prefix,
+  onOpen,
+}: {
+  readonly draft: Draft;
+  readonly prefix: string;
+  readonly onOpen: (change: string) => void;
+}) {
   return (
     <div {...partOf(part.drawingColumns)}>
       {statusGroupWords.map((group) => (
@@ -54,14 +104,7 @@ function Columns({ draft, prefix }: { readonly draft: Draft; readonly prefix: st
           {draft.statuses
             .filter((status) => status.group === group)
             .map((status) => (
-              <li
-                key={status.id}
-                id={boxId(prefix, status.id)}
-                {...partOf(part.drawingBox, { variants: [group] })}
-              >
-                <StatusIcon group={group} />
-                {status.name}
-              </li>
+              <Box key={status.id} draft={draft} status={status} prefix={prefix} onOpen={onOpen} />
             ))}
         </ul>
       ))}
@@ -69,89 +112,27 @@ function Columns({ draft, prefix }: { readonly draft: Draft; readonly prefix: st
   );
 }
 
-/** The head of an arrow, drawn once and used by every line. */
-function ArrowHead({ id }: { readonly id: string }) {
-  return (
-    <defs>
-      <marker
-        id={id}
-        viewBox={arrowHead.viewBox}
-        refX={arrowHead.refX}
-        refY={arrowHead.refY}
-        markerWidth={arrowHead.markerWidth}
-        markerHeight={arrowHead.markerHeight}
-        orient={arrowHead.orient}
-      >
-        <path {...partOf(part.drawingHead)} d={arrowHead.path} />
-      </marker>
-    </defs>
-  );
-}
-
-/** The words of an arrow as a button over it, which opens the rules of the status change. */
-function ArrowLabel({
-  draft,
-  arrow,
-  onOpen,
-}: {
-  readonly draft: Draft;
-  readonly arrow: Drawn;
-  readonly onOpen: (change: string) => void;
-}) {
-  const { change, middle } = arrow;
-  return (
-    <foreignObject
-      {...partOf(part.drawingArrow)}
-      x={middle.x - labelBox.width / 2}
-      y={middle.y - labelBox.height / 2}
-      width={labelBox.width}
-      height={labelBox.height}
-    >
-      <Button
-        look={buttonLook.quiet}
-        aria-label={t("workflows.arrow-label", {
-          from: nameOf(draft, change.from),
-          to: nameOf(draft, change.to),
-          button: change.button,
-        })}
-        onPress={() => {
-          onOpen(change.id);
-        }}
-      >
-        {change.button}
-      </Button>
-    </foreignObject>
-  );
-}
-
-/** The lines of the arrows with their heads; the words of each arrow are buttons over them. */
-function Arrows({
-  draft,
-  placed,
-  onOpen,
-}: {
-  readonly draft: Draft;
-  readonly placed: Placed;
-  readonly onOpen: (change: string) => void;
-}) {
+/** The lines of the arrows with their heads, drawn behind the boxes. */
+function Lines({ arrows }: { readonly arrows: readonly (Arrow & { readonly id: string })[] }) {
   const head = useId().replaceAll(/[^a-z0-9]/giu, "");
   const markerEnd = `url(#${head})`;
-  const arrows = arrowsOf(draft, placed);
   return (
-    <svg {...partOf(part.drawingArrows)}>
-      <ArrowHead id={head} />
-      <g aria-hidden>
-        {arrows.map((arrow) => (
-          <path
-            key={arrow.change.id}
-            d={arrow.path}
-            markerEnd={markerEnd}
-            {...partOf(part.drawingLine)}
-          />
-        ))}
-      </g>
+    <svg aria-hidden {...partOf(part.drawingArrows)}>
+      <defs>
+        <marker
+          id={head}
+          viewBox={arrowHead.viewBox}
+          refX={arrowHead.refX}
+          refY={arrowHead.refY}
+          markerWidth={arrowHead.markerWidth}
+          markerHeight={arrowHead.markerHeight}
+          orient={arrowHead.orient}
+        >
+          <path {...partOf(part.drawingHead)} d={arrowHead.path} />
+        </marker>
+      </defs>
       {arrows.map((arrow) => (
-        <ArrowLabel key={arrow.change.id} draft={draft} arrow={arrow} onOpen={onOpen} />
+        <path key={arrow.id} d={arrow.path} markerEnd={markerEnd} {...partOf(part.drawingLine)} />
       ))}
     </svg>
   );
@@ -159,8 +140,9 @@ function Arrows({
 
 /**
  * The drawing (UX §5.4, a computer only): the statuses as boxes in a column for each status group
- * and the status changes as arrows. The words of an arrow are a button that opens the rules of its
- * status change, so the keyboard reaches every arrow; everything else is done in the plain list.
+ * and the status changes as arrows between them. The words of each way out of a box are a button
+ * in the box that opens the rules of that status change, so the keyboard reaches every one;
+ * everything else is done in the plain list.
  */
 export function DrawingView({ editor, draft, edit }: DrawingViewProps) {
   const prefix = useId();
@@ -170,8 +152,8 @@ export function DrawingView({ editor, draft, edit }: DrawingViewProps) {
   const opened = draft.changes.find((each) => each.id === open);
   return (
     <div ref={frame} {...partOf(part.workflowDrawing)}>
-      <Columns draft={draft} prefix={prefix} />
-      <Arrows draft={draft} placed={placed} onOpen={setOpen} />
+      <Lines arrows={arrowsOf(draft, placed)} />
+      <Columns draft={draft} prefix={prefix} onOpen={setOpen} />
       {opened === undefined ? null : (
         <RulesWindow
           isOpen

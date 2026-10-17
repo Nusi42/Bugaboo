@@ -7,15 +7,14 @@ export interface Box {
 }
 
 /** A point of the drawing. */
-export interface Point {
+interface Point {
   readonly x: number;
   readonly y: number;
 }
 
-/** An arrow: the path to draw and the middle of it, where its label sits. */
+/** An arrow: the path to draw. */
 export interface Arrow {
   readonly path: string;
-  readonly middle: Point;
 }
 
 /** The head of an arrow: a small triangle that the line ends in (the words of the SVG standard). */
@@ -28,9 +27,6 @@ export const arrowHead = {
   orient: "auto",
   path: "M 0 0 L 10 5 L 0 10 z",
 } as const;
-
-/** The room a label takes on an arrow: the button with the words of the status change. */
-export const labelBox = { width: 160, height: 40 } as const;
 
 /** How far an arrow between two boxes of one column bulges out to the side, in the units of the drawing. */
 export const BULGE = 40;
@@ -60,7 +56,6 @@ function acrossColumns(from: Box, to: Box, lane: number): Arrow {
   const bend = Math.abs(end.x - start.x) * BEND_SHARE * (toTheRight ? 1 : -1);
   return {
     path: `M ${start.x} ${start.y} C ${start.x + bend} ${start.y} ${end.x - bend} ${end.y} ${end.x} ${end.y}`,
-    middle: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
   };
 }
 
@@ -71,7 +66,6 @@ function withinColumn(from: Box, to: Box, lane: number): Arrow {
   const out = Math.max(start.x, end.x) + BULGE;
   return {
     path: `M ${start.x} ${start.y} C ${out} ${start.y} ${out} ${end.y} ${end.x} ${end.y}`,
-    middle: { x: out - BULGE / 4, y: (start.y + end.y) / 2 },
   };
 }
 

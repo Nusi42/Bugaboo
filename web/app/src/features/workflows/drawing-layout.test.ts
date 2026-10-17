@@ -34,9 +34,4 @@ describe("wf_02 the drawing of a workflow joins the boxes with arrows", () => {
     expect(there[1]).toBe(20 + LANE_GAP);
     expect(back[1]).toBe(20 - LANE_GAP);
   });
-
-  it("puts the middle of an arrow between the boxes", () => {
-    const { middle } = arrowOf(open, progress);
-    expect(middle).toEqual({ x: 150, y: 20 });
-  });
 });

@@ -4368,6 +4368,10 @@ body {
 }
 
 [data-part="workflow-add"] {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -4420,9 +4424,10 @@ body {
 }
 
 [data-part="drawing-columns"] {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-6);
+  gap: var(--space-7);
 }
 
 [data-part="drawing-column"] {
@@ -4437,13 +4442,28 @@ body {
 
 [data-part="drawing-box"] {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
   border: var(--border-width) solid currentColor;
   border-radius: var(--r-ctl);
-  font-weight: var(--weight-bold);
   overflow-wrap: anywhere;
+}
+
+[data-part="drawing-box.name"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-bold);
+}
+
+[data-part="drawing-box.changes"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 [data-part="drawing-box"][data-variant~="not-started"] {

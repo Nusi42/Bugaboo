@@ -142,7 +142,10 @@ export async function createBug(admin: ApiSession, title: string): Promise<MadeI
 }
 
 /** Puts the issues in the status *In progress*, one after the other. */
-async function startWorkingOn(admin: ApiSession, issues: readonly MadeIssue[]): Promise<void> {
+export async function startWorkingOn(
+  admin: ApiSession,
+  issues: readonly MadeIssue[],
+): Promise<void> {
   await inOrder(
     issues.map((issue) => async () => {
       await setStatusAndPriority(admin, issue, await versionOf(admin, issue), {
