@@ -92,6 +92,10 @@ tokens {
     size "size-code" "220px"
     // The square in the row of a file: its preview, or the sign of its type (M4 WP-05).
     size "size-file-tile" "64px" phone="56px"
+    // *Download* and *Delete* sit under the name on a phone, a quiet button each: they hang back by the
+    // padding of a button, so their text stands on the start edge of the tile above (R1). Beside the
+    // name, on a computer, nothing hangs back.
+    size "size-file-actions-hang" "0px" phone="calc(-1 * $pad-control)"
     // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
     // least, so no control is smaller (a test holds the tokens to it).
     size "size-target-least" "24px"
@@ -4398,6 +4402,7 @@ part "files.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+    margin-inline-start "$size-file-actions-hang"
 }
 
 // The larger preview: as big as it is, never wider than the window.

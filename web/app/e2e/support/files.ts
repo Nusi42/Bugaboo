@@ -1,6 +1,11 @@
 import { crc32, deflateSync } from "node:zlib";
 
-import type { Locator, Page, Request } from "@playwright/test";
+import { t } from "@bugaboo/messages";
+import { expect, type Locator, type Page, type Request } from "@playwright/test";
+
+import { onThisLayout } from "./layout.ts";
+import { partIn } from "./parts.ts";
+import { boxOf } from "./windows.ts";
 
 /** A file of the tests: what a person has on their device, with the type the device says. */
 export interface Pictured {
@@ -244,4 +249,36 @@ export async function holdSecondPart(page: Page): Promise<Hold> {
     await route.continue();
   });
   return { release };
+}
+
+/** The step of a layout where there is nothing to look at. */
+const nothing = () => Promise.resolve();
+
+/** The border of a quiet button, transparent: the text of every button that hangs back is this far in. */
+const QUIET_BORDER_PX = 1;
+
+/**
+ * On a phone, *Download* sits under the name and its text starts on the edge of the tile above
+ * (R1). On a computer the buttons are beside the name and are on the edge of nothing.
+ */
+export async function expectActionsOnTileEdge(
+  page: Page,
+  row: Locator,
+  name: string,
+): Promise<void> {
+  await onThisLayout(page, {
+    computer: nothing,
+    tablet: nothing,
+    phone: async () => {
+      const tile = await boxOf(partIn(row, "files.tile"));
+      const download = row.getByRole("button", { name: t("files.download-named", { name }) });
+      // The text of a button starts after its own padding: that is the edge that has to line up.
+      const textStart = await download.evaluate((button) => {
+        const range = document.createRange();
+        range.selectNodeContents(button);
+        return range.getBoundingClientRect().left;
+      });
+      expect(Math.abs(textStart - tile.x)).toBeLessThanOrEqual(QUIET_BORDER_PX);
+    },
+  });
 }

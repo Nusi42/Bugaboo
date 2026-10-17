@@ -4028,6 +4028,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  margin-inline-start: var(--size-file-actions-hang);
 }
 
 [data-part="files.large"] {
