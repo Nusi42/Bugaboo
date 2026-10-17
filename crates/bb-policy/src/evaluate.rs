@@ -459,6 +459,13 @@ impl Evaluation {
         self.level(field.into())
     }
 
+    /// Whether any role set a field level for one issue type: while none did, the level of a field
+    /// is the same for every type.
+    #[must_use]
+    pub fn has_levels_per_issue_type(&self) -> bool {
+        !self.type_rules.typed.is_empty()
+    }
+
     /// The level of a field on an item of one issue type (ADR-0027): for each role that counts, the
     /// nearest place with a level wins, and at one place a level for the issue type wins over a
     /// level for all types; the level is the highest of the roles. Without an issue type, or while
@@ -470,7 +477,7 @@ impl Evaluation {
         field: impl Into<FieldKey>,
     ) -> FieldLevel {
         let key = field.into();
-        let Some(issue_type) = issue_type.filter(|_| !self.type_rules.typed.is_empty()) else {
+        let Some(issue_type) = issue_type.filter(|_| self.has_levels_per_issue_type()) else {
             return self.field_level(key);
         };
         let mut top = FieldLevel::Hidden;
