@@ -80,9 +80,9 @@ words! {
         /// A wrong setup code was tried.
         SetupFailed => "setup.failed",
         /// The starting roles were made (once, at the first start).
-        StartingRolesMade => "starting_roles.made",
+        StartingRolesCreated => "starting_roles.created",
         /// A role was made.
-        RoleMade => "role.made",
+        RoleCreated => "role.created",
         /// A role was changed: its name, its permissions or its two-step switch.
         RoleChanged => "role.changed",
         /// A role was deleted.
@@ -90,7 +90,7 @@ words! {
         /// A starting role got its starting permissions back.
         RoleReset => "role.reset",
         /// A group was made.
-        GroupMade => "group.made",
+        GroupCreated => "group.created",
         /// A group was renamed.
         GroupRenamed => "group.renamed",
         /// A group was deleted.
@@ -100,7 +100,7 @@ words! {
         /// A person was taken out of a group.
         GroupMemberRemoved => "group.member_removed",
         /// A role, or *No access*, was given to a person or a group.
-        AssignmentMade => "assignment.made",
+        AssignmentCreated => "assignment.created",
         /// A role, or *No access*, was taken away.
         AssignmentRemoved => "assignment.removed",
         /// The level of a field for a role was changed.
@@ -108,7 +108,7 @@ words! {
         /// How a role sees one kind of people information was changed.
         PeopleLevelChanged => "people_level.changed",
         /// A project was made.
-        ProjectMade => "project.made",
+        ProjectCreated => "project.created",
         /// A setting that touches security was changed.
         SettingChanged => "setting.changed",
         /// A setting that touches security went back to its default.
@@ -118,7 +118,7 @@ words! {
         /// An administrator unlocked a setting that touches security.
         SettingUnlocked => "setting.unlocked",
         /// A person made an access key.
-        AccessKeyMade => "access_key.made",
+        AccessKeyCreated => "access_key.created",
         /// A person deleted an access key.
         AccessKeyDeleted => "access_key.deleted",
         /// An access key was turned away: it does not work, or it was used where no key may go.
@@ -132,6 +132,31 @@ words! {
         /// Somebody with *Edit anyway* released an edit lock that another person held.
         EditLockReleased => "edit_lock.released",
     }
+}
+
+/// The codes that entries written before M4 hold, and the codes that stand for them now.
+///
+/// The security log is a hash chain: an entry is never rewritten, because every entry holds the
+/// hash of the one before it and a rewritten action would break the chain. So the entries of an
+/// older program keep their words in the database, and whoever shows the log (the API, the
+/// screen, an export) reads them through [`shown_code`]. This table is the only place the old
+/// words stand in the code; new entries are written with the new ones.
+pub const FORMER_CODES: [(&str, &str); 6] = [
+    ("role.made", "role.created"),
+    ("group.made", "group.created"),
+    ("assignment.made", "assignment.created"),
+    ("project.made", "project.created"),
+    ("starting_roles.made", "starting_roles.created"),
+    ("access_key.made", "access_key.created"),
+];
+
+/// The code to show for a stored one: the new code for an old one, the code itself otherwise.
+#[must_use]
+pub fn shown_code(stored: &str) -> &str {
+    FORMER_CODES
+        .iter()
+        .find(|(old, _)| *old == stored)
+        .map_or(stored, |(_, new)| new)
 }
 
 /// The password of a person, as a PHC string (Argon2id with its parameters and salt).

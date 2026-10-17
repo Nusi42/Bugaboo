@@ -33,8 +33,8 @@ async fn sec_08_the_rows_made_for_a_replacement_are_each_in_the_security_log() -
         assert_eq!(
             actions,
             [
-                SecurityAction::AssignmentMade.code(),
-                SecurityAction::AssignmentMade.code(),
+                SecurityAction::AssignmentCreated.code(),
+                SecurityAction::AssignmentCreated.code(),
                 SecurityAction::RoleDeleted.code(),
             ]
         );

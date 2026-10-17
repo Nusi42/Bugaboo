@@ -359,7 +359,7 @@ pub async fn create_access_key<S: AuthStore>(
         }
     };
     ctx.note(
-        SecurityAction::AccessKeyMade,
+        SecurityAction::AccessKeyCreated,
         Some(owner),
         Some(entity(RecordKind::AccessKey, stored.key.id)),
     )

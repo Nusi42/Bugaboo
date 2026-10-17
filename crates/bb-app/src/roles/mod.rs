@@ -169,7 +169,7 @@ pub async fn create_role<S: AuthStore>(
             )
         })?;
     ctx.note(
-        SecurityAction::RoleMade,
+        SecurityAction::RoleCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Role, role.id)),
     )
@@ -356,7 +356,7 @@ pub async fn delete_role<S: AuthStore>(
     // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
     for row in &made {
         ctx.note(
-            SecurityAction::AssignmentMade,
+            SecurityAction::AssignmentCreated,
             Some(actor.person.id),
             Some(entity(RecordKind::Assignment, row.id)),
         )

@@ -168,15 +168,15 @@ async fn every_sample_change_has_its_event_and_the_security_log_verifies() -> Te
         assert_eq!(count(SecurityAction::InvitationCreated), PEOPLE - 1);
         assert_eq!(count(SecurityAction::InvitationAccepted), PEOPLE - 1);
         assert_eq!(count(SecurityAction::TwoStepEnabled), 5);
-        assert_eq!(count(SecurityAction::StartingRolesMade), 1);
+        assert_eq!(count(SecurityAction::StartingRolesCreated), 1);
         // The organization came from the same use cases: a security-log entry for each.
-        assert_eq!(count(SecurityAction::GroupMade), 8);
-        assert_eq!(count(SecurityAction::ProjectMade), 8);
-        assert_eq!(count(SecurityAction::RoleMade), 2);
+        assert_eq!(count(SecurityAction::GroupCreated), 8);
+        assert_eq!(count(SecurityAction::ProjectCreated), 8);
+        assert_eq!(count(SecurityAction::RoleCreated), 2);
         assert_eq!(
             dump.security_log_actions().take(2).collect::<Vec<_>>(),
             [
-                SecurityAction::StartingRolesMade.code(),
+                SecurityAction::StartingRolesCreated.code(),
                 SecurityAction::SetupCompleted.code(),
             ],
             "the starting roles, then the first administrator, come first"

@@ -110,7 +110,7 @@ pub async fn copy_role<S: AuthStore>(
             )
         })?;
     ctx.note(
-        SecurityAction::RoleMade,
+        SecurityAction::RoleCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Role, role.id)),
     )

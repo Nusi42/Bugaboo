@@ -78,7 +78,7 @@ async fn sec_08_two_servers_starting_together_create_the_starting_roles_once() -
             .security_log_entries(0, 10_000)
             .await?
             .iter()
-            .filter(|entry| entry.action.as_str() == SecurityAction::StartingRolesMade.code())
+            .filter(|entry| entry.action.as_str() == SecurityAction::StartingRolesCreated.code())
             .count();
         assert_eq!(entries, 1, "the log says it once");
         Ok(())

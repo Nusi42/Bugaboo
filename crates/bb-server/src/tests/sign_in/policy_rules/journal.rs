@@ -65,7 +65,7 @@ async fn projects_and_groups(org: &Org<'_>, journal: &Journal<'_>, bea: &Member)
     let acme = org.project(None, "ACME").await?.id;
     writes_one!(
         journal,
-        SecurityAction::ProjectMade,
+        SecurityAction::ProjectCreated,
         api.create_project(
             Rig::info(),
             bb_app::projects::CreateProject {
@@ -78,7 +78,7 @@ async fn projects_and_groups(org: &Org<'_>, journal: &Journal<'_>, bea: &Member)
     );
     let group = writes_one!(
         journal,
-        SecurityAction::GroupMade,
+        SecurityAction::GroupCreated,
         api.create_group(
             Rig::info(),
             CreateGroup {
@@ -145,7 +145,7 @@ async fn roles_of_the_organization(org: &Org<'_>, journal: &Journal<'_>) -> Run<
     let (api, session) = (org.rig.api(), org.admin.session.clone());
     let made = writes_one!(
         journal,
-        SecurityAction::RoleMade,
+        SecurityAction::RoleCreated,
         api.create_role(
             Rig::info(),
             CreateRole {
@@ -199,7 +199,7 @@ async fn rows_and_levels(
     let shop = org.project(None, "SHOP").await?.id;
     let row = writes_one!(
         journal,
-        SecurityAction::AssignmentMade,
+        SecurityAction::AssignmentCreated,
         api.assign_role(
             Rig::info(),
             bb_app::roles::AssignRole {

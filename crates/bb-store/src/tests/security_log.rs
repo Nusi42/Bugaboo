@@ -96,6 +96,57 @@ async fn sec_15_entries_are_chained_and_verify() -> TestResult {
 }
 
 #[tokio::test]
+async fn sec_15_an_entry_with_a_former_code_verifies_and_is_shown_with_the_new_one() -> TestResult {
+    each_database("sec_15_former_codes", async |db| {
+        let database = open(db).await?;
+        let (_folder, seal) = new_seal();
+        // The log of M3: the entries hold the words of that time.
+        let former = bb_core::sign_in::FORMER_CODES;
+        for (number, (old, _)) in (1..).zip(former) {
+            database
+                .append_security_log(&seal, &new_entry(number, old))
+                .await?;
+        }
+        database
+            .append_security_log(&seal, &new_entry(10, "sign_in.succeeded"))
+            .await?;
+        // The chain still verifies: no entry was rewritten.
+        assert!(matches!(
+            database.verify_security_log(&seal).await?,
+            Verification::Valid { entries: 7, .. }
+        ));
+        // It is read back with the new codes, and the other codes stay as they are.
+        let shown: Vec<String> = database
+            .security_log_entries(0, 20)
+            .await?
+            .iter()
+            .map(|entry| entry.action.as_str().to_owned())
+            .collect();
+        let wanted: Vec<&str> = former
+            .iter()
+            .map(|(_, new)| *new)
+            .chain(["sign_in.succeeded"])
+            .collect();
+        assert_eq!(shown, wanted);
+        // The database still holds the old words, which the hashes were made from.
+        let mut select = Query::select();
+        select
+            .column(Columns::Action)
+            .from(Columns::Table)
+            .order_by(Columns::Seq, sea_query::Order::Asc);
+        let rows = database.fetch_all(&select).await?;
+        assert_eq!(rows[0].get::<String>(Columns::Action)?, "role.made");
+        // Running the check again changes nothing.
+        assert!(matches!(
+            database.verify_security_log(&seal).await?,
+            Verification::Valid { entries: 7, .. }
+        ));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn bad_example_a_changed_row_is_found_in_every_column() -> TestResult {
     each_database("sec_15_tampering", async |db| {
         let database = open(db).await?;

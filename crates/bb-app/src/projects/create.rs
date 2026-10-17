@@ -121,7 +121,7 @@ pub async fn create_project<S: AuthStore>(
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
     ctx.note(
-        SecurityAction::ProjectMade,
+        SecurityAction::ProjectCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Project, project.id)),
     )

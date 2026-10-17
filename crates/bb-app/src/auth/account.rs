@@ -234,7 +234,7 @@ pub async fn complete_setup<S: AuthStore>(
     )
     .await;
     ctx.note(
-        SecurityAction::AssignmentMade,
+        SecurityAction::AssignmentCreated,
         Some(person.id),
         Some(entity(RecordKind::Assignment, assignment_id)),
     )

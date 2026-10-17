@@ -140,7 +140,7 @@ pub async fn create_starting_roles<S: AuthStore>(
         match made_now {
             Ok(_) => {
                 ctx.note(
-                    SecurityAction::StartingRolesMade,
+                    SecurityAction::StartingRolesCreated,
                     None,
                     Some(fixed_entity(RecordKind::StartingRoles, "made")?),
                 )
@@ -193,7 +193,7 @@ async fn role_of<S: AuthStore>(
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
-        SecurityAction::RoleMade,
+        SecurityAction::RoleCreated,
         None,
         Some(entity(RecordKind::Role, id)),
     )
@@ -253,7 +253,7 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
             .await
             .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
         ctx.note(
-            SecurityAction::AssignmentMade,
+            SecurityAction::AssignmentCreated,
             None,
             Some(entity(RecordKind::Assignment, id)),
         )

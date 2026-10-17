@@ -97,7 +97,7 @@ async fn sec_15_making_and_deleting_keys_is_in_the_security_log() -> TestResult 
         assert_eq!(
             actions,
             [
-                SecurityAction::AccessKeyMade.code(),
+                SecurityAction::AccessKeyCreated.code(),
                 SecurityAction::AccessKeyDeleted.code(),
                 SecurityAction::AccessKeyRefused.code(),
                 SecurityAction::AccessKeyRefused.code(),

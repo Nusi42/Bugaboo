@@ -92,7 +92,7 @@ async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -
         let entries = rig.database.security_log_entries(0, 100).await?;
         let made = entries
             .iter()
-            .filter(|entry| entry.action.as_str() == SecurityAction::AssignmentMade.code())
+            .filter(|entry| entry.action.as_str() == SecurityAction::AssignmentCreated.code())
             .count();
         assert_eq!(made, 2);
         // Another start gives nobody anything again.

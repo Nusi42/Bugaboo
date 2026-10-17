@@ -26,7 +26,7 @@ test.describe.configure({ mode: "serial" });
 
 /** What every step wrote into the security log, in the order of the steps (`security-log.*`). */
 const entriesAfter = {
-  /** `starting_roles.made`, `setup.completed`, `assignment.made` (the Administrator role), then `passkey_added`. */
+  /** `starting_roles.created`, `setup.completed`, `assignment.created` (the Administrator role), then `passkey_added`. */
   setupWithPasskey: 4,
   /** `two_step_enabled`. */
   codeApp: 5,

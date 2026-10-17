@@ -218,7 +218,7 @@ pub async fn create_group<S: AuthStore>(
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NameTaken)))?;
     ctx.note(
-        SecurityAction::GroupMade,
+        SecurityAction::GroupCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Group, group.id)),
     )
