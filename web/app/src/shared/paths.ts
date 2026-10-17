@@ -27,6 +27,7 @@ export const paths = {
   groups: "/settings/groups",
   issueTypes: "/settings/issue-types",
   layouts: "/settings/layouts",
+  workflows: "/settings/workflows",
   relationKinds: "/settings/relation-kinds",
   labels: "/settings/labels",
   fields: "/settings/fields",
@@ -46,6 +47,7 @@ export const paths = {
   projectRoles: "/p/$project/settings/roles",
   projectFields: "/p/$project/settings/fields",
   projectLayouts: "/p/$project/settings/layouts",
+  projectWorkflows: "/p/$project/settings/workflows",
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
@@ -129,6 +131,21 @@ export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen 
 export interface LayoutsOpen {
   readonly form?: string | undefined;
   readonly type?: string | undefined;
+}
+
+/** What is open in the editor of workflows: the ID of the issue type; none for all issue types. */
+export interface WorkflowsOpen {
+  readonly type?: string | undefined;
+}
+
+/**
+ * The address of the editor of workflows: of a project, or of the whole organization without one,
+ * with the issue type that is open (`?type=<ID>`).
+ */
+export function workflowsAddress(shortName: string | undefined, open: WorkflowsOpen = {}): string {
+  const base =
+    shortName === undefined ? paths.workflows : addressInProject(paths.projectWorkflows, shortName);
+  return open.type === undefined ? base : `${base}?type=${encodeURIComponent(open.type)}`;
 }
 
 /** The address of the page of an own field, `/settings/fields/<ID>`. */

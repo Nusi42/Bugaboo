@@ -4460,6 +4460,187 @@ pub const WORKFLOW_DEVELOPMENT: MessageKey = MessageKey::new("workflow.developme
 /// The message `workflow.simple`.
 pub const WORKFLOW_SIMPLE: MessageKey = MessageKey::new("workflow.simple");
 
+/// The message `workflows.add-change-button`.
+pub const WORKFLOWS_ADD_CHANGE_BUTTON: MessageKey = MessageKey::new("workflows.add-change-button");
+
+/// The message `workflows.add-change-do`.
+pub const WORKFLOWS_ADD_CHANGE_DO: MessageKey = MessageKey::new("workflows.add-change-do");
+
+/// The message `workflows.add-change-to`.
+pub const WORKFLOWS_ADD_CHANGE_TO: MessageKey = MessageKey::new("workflows.add-change-to");
+
+/// The message `workflows.add-condition`.
+pub const WORKFLOWS_ADD_CONDITION: MessageKey = MessageKey::new("workflows.add-condition");
+
+/// The message `workflows.add-status`.
+pub const WORKFLOWS_ADD_STATUS: MessageKey = MessageKey::new("workflows.add-status");
+
+/// The message `workflows.ask-for`.
+pub const WORKFLOWS_ASK_FOR: MessageKey = MessageKey::new("workflows.ask-for");
+
+/// The message `workflows.ask-for-help`.
+pub const WORKFLOWS_ASK_FOR_HELP: MessageKey = MessageKey::new("workflows.ask-for-help");
+
+/// The message `workflows.customize-organization`.
+pub const WORKFLOWS_CUSTOMIZE_ORGANIZATION: MessageKey =
+    MessageKey::new("workflows.customize-organization");
+
+/// The message `workflows.draft-changed`.
+pub const WORKFLOWS_DRAFT_CHANGED: MessageKey = MessageKey::new("workflows.draft-changed");
+
+/// The message `workflows.draft-drop`.
+pub const WORKFLOWS_DRAFT_DROP: MessageKey = MessageKey::new("workflows.draft-drop");
+
+/// The message `workflows.draft-note`.
+pub const WORKFLOWS_DRAFT_NOTE: MessageKey = MessageKey::new("workflows.draft-note");
+
+/// The message `workflows.draft-restore`.
+pub const WORKFLOWS_DRAFT_RESTORE: MessageKey = MessageKey::new("workflows.draft-restore");
+
+/// The message `workflows.has-rules`.
+pub const WORKFLOWS_HAS_RULES: MessageKey = MessageKey::new("workflows.has-rules");
+
+/// The message `workflows.intro`.
+pub const WORKFLOWS_INTRO: MessageKey = MessageKey::new("workflows.intro");
+
+/// The message `workflows.lost`.
+pub const WORKFLOWS_LOST: MessageKey = MessageKey::new("workflows.lost");
+
+/// The message `workflows.must-fill`.
+pub const WORKFLOWS_MUST_FILL: MessageKey = MessageKey::new("workflows.must-fill");
+
+/// The message `workflows.must-fill-help`.
+pub const WORKFLOWS_MUST_FILL_HELP: MessageKey = MessageKey::new("workflows.must-fill-help");
+
+/// The message `workflows.name`.
+pub const WORKFLOWS_NAME: MessageKey = MessageKey::new("workflows.name");
+
+/// The message `workflows.nav`.
+pub const WORKFLOWS_NAV: MessageKey = MessageKey::new("workflows.nav");
+
+/// The message `workflows.new-status`.
+pub const WORKFLOWS_NEW_STATUS: MessageKey = MessageKey::new("workflows.new-status");
+
+/// The message `workflows.new-status-group`.
+pub const WORKFLOWS_NEW_STATUS_GROUP: MessageKey = MessageKey::new("workflows.new-status-group");
+
+/// The message `workflows.no-changes`.
+pub const WORKFLOWS_NO_CHANGES: MessageKey = MessageKey::new("workflows.no-changes");
+
+/// The message `workflows.only-if`.
+pub const WORKFLOWS_ONLY_IF: MessageKey = MessageKey::new("workflows.only-if");
+
+/// The message `workflows.only-if-field`.
+pub const WORKFLOWS_ONLY_IF_FIELD: MessageKey = MessageKey::new("workflows.only-if-field");
+
+/// The message `workflows.only-if-help`.
+pub const WORKFLOWS_ONLY_IF_HELP: MessageKey = MessageKey::new("workflows.only-if-help");
+
+/// The message `workflows.only-if-test`.
+pub const WORKFLOWS_ONLY_IF_TEST: MessageKey = MessageKey::new("workflows.only-if-test");
+
+/// The message `workflows.organization-title`.
+pub const WORKFLOWS_ORGANIZATION_TITLE: MessageKey =
+    MessageKey::new("workflows.organization-title");
+
+/// The message `workflows.publish`.
+pub const WORKFLOWS_PUBLISH: MessageKey = MessageKey::new("workflows.publish");
+
+/// The message `workflows.publish-text`.
+pub const WORKFLOWS_PUBLISH_TEXT: MessageKey = MessageKey::new("workflows.publish-text");
+
+/// The message `workflows.publish-title`.
+pub const WORKFLOWS_PUBLISH_TITLE: MessageKey = MessageKey::new("workflows.publish-title");
+
+/// The message `workflows.rules-done`.
+pub const WORKFLOWS_RULES_DONE: MessageKey = MessageKey::new("workflows.rules-done");
+
+/// The message `workflows.rules-link`.
+pub const WORKFLOWS_RULES_LINK: MessageKey = MessageKey::new("workflows.rules-link");
+
+/// The message `workflows.starts-here`.
+pub const WORKFLOWS_STARTS_HERE: MessageKey = MessageKey::new("workflows.starts-here");
+
+/// The message `workflows.status-group`.
+pub const WORKFLOWS_STATUS_GROUP: MessageKey = MessageKey::new("workflows.status-group");
+
+/// The message `workflows.status-name`.
+pub const WORKFLOWS_STATUS_NAME: MessageKey = MessageKey::new("workflows.status-name");
+
+/// The message `workflows.statuses`.
+pub const WORKFLOWS_STATUSES: MessageKey = MessageKey::new("workflows.statuses");
+
+/// The message `workflows.statuses-help`.
+pub const WORKFLOWS_STATUSES_HELP: MessageKey = MessageKey::new("workflows.statuses-help");
+
+/// The message `workflows.taking`.
+pub const WORKFLOWS_TAKING: MessageKey = MessageKey::new("workflows.taking");
+
+/// The message `workflows.test-empty`.
+pub const WORKFLOWS_TEST_EMPTY: MessageKey = MessageKey::new("workflows.test-empty");
+
+/// The message `workflows.test-filled`.
+pub const WORKFLOWS_TEST_FILLED: MessageKey = MessageKey::new("workflows.test-filled");
+
+/// The message `workflows.try-allowed`.
+pub const WORKFLOWS_TRY_ALLOWED: MessageKey = MessageKey::new("workflows.try-allowed");
+
+/// The message `workflows.try-go`.
+pub const WORKFLOWS_TRY_GO: MessageKey = MessageKey::new("workflows.try-go");
+
+/// The message `workflows.try-none`.
+pub const WORKFLOWS_TRY_NONE: MessageKey = MessageKey::new("workflows.try-none");
+
+/// The message `workflows.try-text`.
+pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text");
+
+/// The message `workflows.try-title`.
+pub const WORKFLOWS_TRY_TITLE: MessageKey = MessageKey::new("workflows.try-title");
+
+/// The message `workflows.type`.
+pub const WORKFLOWS_TYPE: MessageKey = MessageKey::new("workflows.type");
+
+/// The message `workflows.type-all`.
+pub const WORKFLOWS_TYPE_ALL: MessageKey = MessageKey::new("workflows.type-all");
+
+/// The message `workflows.use-inherited`.
+pub const WORKFLOWS_USE_INHERITED: MessageKey = MessageKey::new("workflows.use-inherited");
+
+/// The message `workflows.use-inherited-text`.
+pub const WORKFLOWS_USE_INHERITED_TEXT: MessageKey =
+    MessageKey::new("workflows.use-inherited-text");
+
+/// The message `workflows.use-inherited-title`.
+pub const WORKFLOWS_USE_INHERITED_TITLE: MessageKey =
+    MessageKey::new("workflows.use-inherited-title");
+
+/// The message `workflows.view`.
+pub const WORKFLOWS_VIEW: MessageKey = MessageKey::new("workflows.view");
+
+/// The message `workflows.view-drawing`.
+pub const WORKFLOWS_VIEW_DRAWING: MessageKey = MessageKey::new("workflows.view-drawing");
+
+/// The message `workflows.view-list`.
+pub const WORKFLOWS_VIEW_LIST: MessageKey = MessageKey::new("workflows.view-list");
+
+/// The message `workflows.who`.
+pub const WORKFLOWS_WHO: MessageKey = MessageKey::new("workflows.who");
+
+/// The message `workflows.who-assigned`.
+pub const WORKFLOWS_WHO_ASSIGNED: MessageKey = MessageKey::new("workflows.who-assigned");
+
+/// The message `workflows.who-groups`.
+pub const WORKFLOWS_WHO_GROUPS: MessageKey = MessageKey::new("workflows.who-groups");
+
+/// The message `workflows.who-help`.
+pub const WORKFLOWS_WHO_HELP: MessageKey = MessageKey::new("workflows.who-help");
+
+/// The message `workflows.who-reporter`.
+pub const WORKFLOWS_WHO_REPORTER: MessageKey = MessageKey::new("workflows.who-reporter");
+
+/// The message `workflows.who-roles`.
+pub const WORKFLOWS_WHO_ROLES: MessageKey = MessageKey::new("workflows.who-roles");
+
 /// The message `access-keys.delete-name`.
 #[must_use]
 pub fn access_keys_delete_name(name: impl std::fmt::Display) -> Message {
@@ -8099,6 +8280,299 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
             ("path", Value::Text(path.to_string())),
             ("reason", Value::Text(reason.to_string())),
         ],
+    )
+}
+
+/// The message `workflows.add-change`.
+#[must_use]
+pub fn workflows_add_change(from: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.add-change"),
+        vec![("from", Value::Text(from.to_string()))],
+    )
+}
+
+/// The message `workflows.arrow-label`.
+#[must_use]
+pub fn workflows_arrow_label(
+    button: impl std::fmt::Display,
+    from: impl std::fmt::Display,
+    to: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.arrow-label"),
+        vec![
+            ("button", Value::Text(button.to_string())),
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.button-text`.
+#[must_use]
+pub fn workflows_button_text(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.button-text"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.change-remove`.
+#[must_use]
+pub fn workflows_change_remove(
+    from: impl std::fmt::Display,
+    to: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.change-remove"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.customize-project`.
+#[must_use]
+pub fn workflows_customize_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.customize-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `workflows.delete-held`.
+#[must_use]
+pub fn workflows_delete_held(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.delete-held"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.from`.
+#[must_use]
+pub fn workflows_from(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.from"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.project-title`.
+#[must_use]
+pub fn workflows_project_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.project-title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `workflows.publish-blocked`.
+#[must_use]
+pub fn workflows_publish_blocked(count: i64, status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-blocked"),
+        vec![
+            ("count", Value::Number(count)),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.publish-go`.
+#[must_use]
+pub fn workflows_publish_go(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-go"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `workflows.publish-too-many`.
+#[must_use]
+pub fn workflows_publish_too_many(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-too-many"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `workflows.publish-unseen`.
+#[must_use]
+pub fn workflows_publish_unseen(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-unseen"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `workflows.publish-where`.
+#[must_use]
+pub fn workflows_publish_where(count: i64, status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-where"),
+        vec![
+            ("count", Value::Number(count)),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.remove-condition`.
+#[must_use]
+pub fn workflows_remove_condition(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.remove-condition"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `workflows.rules-intro`.
+#[must_use]
+pub fn workflows_rules_intro(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.rules-intro"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.rules-open`.
+#[must_use]
+pub fn workflows_rules_open(button: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.rules-open"),
+        vec![("button", Value::Text(button.to_string()))],
+    )
+}
+
+/// The message `workflows.rules-title`.
+#[must_use]
+pub fn workflows_rules_title(button: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.rules-title"),
+        vec![("button", Value::Text(button.to_string()))],
+    )
+}
+
+/// The message `workflows.status-down`.
+#[must_use]
+pub fn workflows_status_down(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.status-down"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.status-remove`.
+#[must_use]
+pub fn workflows_status_remove(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.status-remove"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.status-up`.
+#[must_use]
+pub fn workflows_status_up(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.status-up"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.try-in`.
+#[must_use]
+pub fn workflows_try_in(key: impl std::fmt::Display, status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.try-in"),
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.try-needs`.
+#[must_use]
+pub fn workflows_try_needs(fields: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.try-needs"),
+        vec![("fields", Value::Text(fields.to_string()))],
+    )
+}
+
+/// The message `workflows.try-on-field`.
+#[must_use]
+pub fn workflows_try_on_field(
+    field: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.try-on-field"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.uses-hidden`.
+#[must_use]
+pub fn workflows_uses_hidden(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-hidden"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.uses-organization`.
+#[must_use]
+pub fn workflows_uses_organization(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-organization"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.uses-project`.
+#[must_use]
+pub fn workflows_uses_project(
+    name: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-project"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.uses-starting`.
+#[must_use]
+pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-starting"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.uses-type`.
+#[must_use]
+pub fn workflows_uses_type(type_: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-type"),
+        vec![("type", Value::Text(type_.to_string()))],
     )
 }
 
@@ -11812,4 +12286,181 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflow.bug", "Bug"),
     ("workflow.development", "Development"),
     ("workflow.simple", "Simple"),
+    ("workflows.add-change", "Add a status change from {from}"),
+    ("workflows.add-change-button", "Button text"),
+    ("workflows.add-change-do", "Add status change"),
+    ("workflows.add-change-to", "Go to"),
+    ("workflows.add-condition", "Add a field to check"),
+    ("workflows.add-status", "Add a status"),
+    (
+        "workflows.arrow-label",
+        "From {from} to {to}: {button}. Open its rules.",
+    ),
+    ("workflows.ask-for", "Ask for"),
+    (
+        "workflows.ask-for-help",
+        "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is long text with a lock of its own.",
+    ),
+    ("workflows.button-text", "Button text from {from} to {to}"),
+    (
+        "workflows.change-remove",
+        "Remove the status change from {from} to {to}",
+    ),
+    (
+        "workflows.customize-organization",
+        "Customize for the whole organization",
+    ),
+    ("workflows.customize-project", "Customize for {project}"),
+    (
+        "workflows.delete-held",
+        "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
+    ),
+    (
+        "workflows.draft-changed",
+        "This workflow changed while you were editing, and you see it as it is now. Your changes are kept.",
+    ),
+    ("workflows.draft-drop", "Throw my changes away"),
+    (
+        "workflows.draft-note",
+        "These changes are a draft: they count only after you publish them.",
+    ),
+    ("workflows.draft-restore", "Put my changes back"),
+    ("workflows.from", "From {name} you can go to:"),
+    ("workflows.has-rules", "Has rules"),
+    (
+        "workflows.intro",
+        "A workflow says which statuses an issue can have and which status changes are allowed between them. Change it as a draft, try it, and publish it when it is right.",
+    ),
+    (
+        "workflows.lost",
+        "Not published yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to publish them.",
+    ),
+    ("workflows.must-fill", "Must be filled in"),
+    (
+        "workflows.must-fill-help",
+        "These fields need a value before the change can happen.",
+    ),
+    ("workflows.name", "Name of the workflow"),
+    ("workflows.nav", "Workflows"),
+    ("workflows.new-status", "Name of the new status"),
+    ("workflows.new-status-group", "Group of the new status"),
+    ("workflows.no-changes", "No status change starts here yet."),
+    ("workflows.only-if", "Only if …"),
+    ("workflows.only-if-field", "Field"),
+    (
+        "workflows.only-if-help",
+        "Everything listed here must be true before the change can happen.",
+    ),
+    ("workflows.only-if-test", "What must be true"),
+    (
+        "workflows.organization-title",
+        "Workflows of the whole organization",
+    ),
+    ("workflows.project-title", "Workflows of {project}"),
+    ("workflows.publish", "Publish"),
+    (
+        "workflows.publish-blocked",
+        "{count, plural, one {# issue} other {# issues}} in {status} cannot be moved by you, so this workflow cannot be published yet.",
+    ),
+    (
+        "workflows.publish-go",
+        "Publish and move {count, plural, one {# issue} other {# issues}}",
+    ),
+    (
+        "workflows.publish-text",
+        "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
+    ),
+    ("workflows.publish-title", "Where do the issues go?"),
+    (
+        "workflows.publish-too-many",
+        "More than {limit} issues are in the statuses you removed. Move some of them first, then publish.",
+    ),
+    (
+        "workflows.publish-unseen",
+        "{count, plural, one {# of them is an issue} other {# of them are issues}} that you cannot see.",
+    ),
+    (
+        "workflows.publish-where",
+        "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
+    ),
+    ("workflows.remove-condition", "Stop checking {field}"),
+    ("workflows.rules-done", "Done"),
+    (
+        "workflows.rules-intro",
+        "From {from} to {to}. A rule that is left empty does not apply.",
+    ),
+    ("workflows.rules-link", "Rules"),
+    ("workflows.rules-open", "Rules for {button}"),
+    ("workflows.rules-title", "Rules for “{button}”"),
+    ("workflows.starts-here", "New issues start here"),
+    ("workflows.status-down", "Move {name} down"),
+    ("workflows.status-group", "Status group"),
+    ("workflows.status-name", "Name of the status"),
+    ("workflows.status-remove", "Remove {name}"),
+    ("workflows.status-up", "Move {name} up"),
+    ("workflows.statuses", "Statuses"),
+    (
+        "workflows.statuses-help",
+        "New issues start in the first status. Renaming a status does not move the issues that are in it.",
+    ),
+    ("workflows.taking", "Getting ready to edit…"),
+    ("workflows.test-empty", "has no value"),
+    ("workflows.test-filled", "has a value"),
+    ("workflows.try-allowed", "Allowed."),
+    ("workflows.try-go", "Show the status changes"),
+    ("workflows.try-in", "{key} is in {status}."),
+    (
+        "workflows.try-needs",
+        "Possible once these fields have a value: {fields}.",
+    ),
+    ("workflows.try-none", "No status change starts here."),
+    ("workflows.try-on-field", "{reason} Field: {field}."),
+    (
+        "workflows.try-text",
+        "Pick an issue and a person to see which status changes they would get, and why.",
+    ),
+    ("workflows.try-title", "Try it"),
+    ("workflows.type", "Issue type"),
+    ("workflows.type-all", "All issue types"),
+    (
+        "workflows.use-inherited",
+        "Use the inherited workflow again",
+    ),
+    (
+        "workflows.use-inherited-text",
+        "The workflow of this place is taken away, and the place follows its parent again. This is refused while an issue would be left in a status that the inherited workflow does not have. It cannot be undone.",
+    ),
+    (
+        "workflows.use-inherited-title",
+        "Use the inherited workflow again?",
+    ),
+    (
+        "workflows.uses-hidden",
+        "These issues use the workflow {name}, which is set higher up.",
+    ),
+    (
+        "workflows.uses-organization",
+        "These issues use the workflow {name} of the whole organization.",
+    ),
+    (
+        "workflows.uses-project",
+        "These issues use the workflow {name} of {project}.",
+    ),
+    (
+        "workflows.uses-starting",
+        "These issues use the starting workflow {name}.",
+    ),
+    ("workflows.uses-type", "It is only for {type}."),
+    ("workflows.view", "View"),
+    ("workflows.view-drawing", "Drawing"),
+    ("workflows.view-list", "List"),
+    ("workflows.who", "Who can do it"),
+    ("workflows.who-assigned", "The person it is assigned to"),
+    ("workflows.who-groups", "Groups"),
+    (
+        "workflows.who-help",
+        "Name nobody and everybody who may change the issue can do it. A rule only narrows who can do it: it never gives a right that the person does not have.",
+    ),
+    ("workflows.who-reporter", "The person who reported it"),
+    ("workflows.who-roles", "Roles"),
 ];

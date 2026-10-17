@@ -84,6 +84,15 @@ export const projectPages = {
     needs: "manage-issue-types",
     title: (project) => t("layouts.project-title", { project }),
   },
+  workflows: {
+    path: paths.projectWorkflows,
+    name: "workflows.nav",
+    icon: iconName.status,
+    parent: paths.projectSettings,
+    tab: "workflows.nav",
+    needs: "manage-workflows",
+    title: (project) => t("workflows.project-title", { project }),
+  },
   people: {
     path: paths.projectPeople,
     name: "nav.people-visibility",
@@ -110,6 +119,7 @@ export const settingsTabs: readonly ProjectPage[] = [
   projectPages.roles,
   projectPages.fields,
   projectPages.layouts,
+  projectPages.workflows,
   projectPages.people,
   projectPages.check,
 ];

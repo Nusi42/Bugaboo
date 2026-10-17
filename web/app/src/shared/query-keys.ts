@@ -53,6 +53,10 @@ export const queryKeys = {
     /** Who is editing a layout now. */
     editing: (layout: string) => ["layouts", "editing", layout],
   },
+  workflows: {
+    /** Who is editing a workflow now. */
+    editing: (workflow: string) => ["workflows", "editing", workflow],
+  },
   issueTypes: {
     all: ["issue-types"],
     list: () => ["issue-types", "list"],
@@ -203,6 +207,19 @@ export function refreshLayoutDraft(layout: string): void {
   reread({
     queryKey: queryKeys.layouts.draft(layout),
   });
+}
+
+/** The answers that show a workflow: the editor, the lists of workflows and what an issue can change to. */
+const WORKFLOW_READS = [
+  "/api/v1/workflows/editor",
+  "/api/v1/workflows",
+  "/api/v1/projects/{project}/statuses",
+] as const;
+
+/** A workflow was made, published or taken away: the editor and what issues offer are read again. */
+export function refreshWorkflows(): void {
+  refreshReads(WORKFLOW_READS);
+  refreshIssues();
 }
 
 /** An issue type was made or changed: the list of types is read again. */

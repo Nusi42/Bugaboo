@@ -23,7 +23,11 @@ export function useAskFor(
   const field = fieldOf(refused);
   return {
     values,
-    setValues,
+    /** A new value takes back the refusal that was about the old one. */
+    fill: (next: NewIssueValues): void => {
+      setValues(next);
+      setRefused(undefined);
+    },
     pending,
     asked,
     refused,

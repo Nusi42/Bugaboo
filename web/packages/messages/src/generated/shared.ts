@@ -579,6 +579,8 @@ export const messages = {
   "preview.nothing": "None of the issues would change.",
   "layouts.nav": "Layouts",
   "layouts.project-title": "Layouts of {project}",
+  "workflows.nav": "Workflows",
+  "workflows.project-title": "Workflows of {project}",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
   "setting.notifications.mentioned-in-app.help":
     "Tells you under Notifications when a comment mentions you, or a group or role you are in.",

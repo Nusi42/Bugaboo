@@ -5021,3 +5021,192 @@ body {
   font-size: var(--fs-md);
   font-weight: var(--weight-bold);
 }
+
+[data-part="workflow-editor"] {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+[data-part="workflow-statuses"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+[data-part="workflow-status"] {
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+[data-part="workflow-status.head"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+[data-part="workflow-status.name"] {
+  margin: 0;
+  color: var(--fg);
+  font-size: var(--fs-md);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+[data-part="workflow-changes"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+[data-part="workflow-change"] {
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-sunken);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+[data-part="workflow-change.to"] {
+  min-width: var(--size-name);
+  font-weight: var(--weight-bold);
+  line-height: var(--size-control);
+  overflow-wrap: anywhere;
+}
+
+[data-part="workflow-add"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+[data-part="workflow-rules"] {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+[data-part="workflow-condition"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+[data-part="workflow-tried"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+[data-part="workflow-try"] {
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--r-ctl);
+  background: var(--bg-sunken);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3);
+}
+
+[data-part="workflow-drawing"] {
+  position: relative;
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--r-ctl);
+  background: var(--bg-surface);
+}
+
+[data-part="drawing-columns"] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+
+[data-part="drawing-column"] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-content: flex-start;
+  gap: var(--space-5);
+}
+
+[data-part="drawing-box"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid currentColor;
+  border-radius: var(--r-ctl);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+[data-part="drawing-box"][data-variant~="not-started"] {
+  background: var(--st-ns-soft);
+  color: var(--st-ns);
+}
+
+[data-part="drawing-box"][data-variant~="in-progress"] {
+  background: var(--st-ip-soft);
+  color: var(--st-ip);
+}
+
+[data-part="drawing-box"][data-variant~="done"] {
+  background: var(--st-done-soft);
+  color: var(--st-done);
+}
+
+[data-part="drawing-arrows"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+[data-part="drawing-arrow"] {
+  pointer-events: auto;
+}
+
+[data-part="drawing-line"] {
+  stroke: var(--fg-muted);
+  stroke-width: var(--border-width);
+  fill: none;
+}
+
+[data-part="drawing-head"] {
+  fill: var(--fg-muted);
+}

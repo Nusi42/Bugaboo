@@ -72,7 +72,7 @@ export function AskFor({ issue, change, changes, onClose }: AskForProps) {
               values={form.values}
               project={issue.project?.short_name ?? ""}
               problem={form.refusedField === askKeyOf(each) ? messageOf(form.refused) : undefined}
-              onChange={form.setValues}
+              onChange={form.fill}
             />
           ),
         )}
