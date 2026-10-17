@@ -64,6 +64,8 @@ for (const theme of themes) {
     await signIn(page, ada);
     await page.goto(issueAddress("WEB-1"));
     await expect(page.getByRole("listitem").filter({ hasText: "crash.log" })).toBeVisible();
+    // The refusal is on the page for this look: a refusal does not outlive the page.
+    await refuseBigFile(page);
     await chooseTheme(page, theme);
     await shotWholeAs(page, `files-${info.project.name}`, MILESTONE, theme.id);
   });

@@ -4380,6 +4380,15 @@ part "files.meta" {
     use "quiet-text"
 }
 
+// The words of a refusal and its buttons: on one line, the buttons at the end, like the rows of files.
+part "files.refusal" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2 $space-4"
+}
+
 part "files.actions" {
     display flex
     flex-wrap wrap

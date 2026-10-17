@@ -568,6 +568,7 @@ export const part = {
   filesInfo: "files.info",
   filesName: "files.name",
   filesMeta: "files.meta",
+  filesRefusal: "files.refusal",
   filesActions: "files.actions",
   filesLarge: "files.large",
   fieldBadge: "field-badge",
@@ -939,6 +940,7 @@ export const partWords = {
   "files.info": { variant: [], state: [] },
   "files.name": { variant: [], state: [] },
   "files.meta": { variant: [], state: [] },
+  "files.refusal": { variant: [], state: [] },
   "files.actions": { variant: [], state: [] },
   "files.large": { variant: [], state: [] },
   "field-badge": {

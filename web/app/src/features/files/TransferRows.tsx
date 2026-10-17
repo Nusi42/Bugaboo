@@ -37,31 +37,33 @@ function Sending({ transfer }: { readonly transfer: Transfer }) {
 function NotAdded({ transfer }: { readonly transfer: Transfer }) {
   return (
     <Alert tone={alertTone.danger}>
-      <span>
-        {t("files.not-added", {
-          name: transfer.name,
-          reason: transfer.message ?? "",
-        })}
-      </span>
-      <div {...partOf(part.filesActions)}>
-        {transfer.canRetry ? (
+      <div {...partOf(part.filesRefusal)}>
+        <span>
+          {t("files.not-added", {
+            name: transfer.name,
+            reason: transfer.message ?? "",
+          })}
+        </span>
+        <div {...partOf(part.filesActions)}>
+          {transfer.canRetry ? (
+            <Button
+              look={buttonLook.plain}
+              onPress={() => {
+                transfers.retry(transfer.id);
+              }}
+            >
+              {t("common.try-again")}
+            </Button>
+          ) : null}
           <Button
-            look={buttonLook.quiet}
+            look={buttonLook.plain}
             onPress={() => {
-              transfers.retry(transfer.id);
+              transfers.dismiss(transfer.id);
             }}
           >
-            {t("common.try-again")}
+            {t("common.close")}
           </Button>
-        ) : null}
-        <Button
-          look={buttonLook.quiet}
-          onPress={() => {
-            transfers.dismiss(transfer.id);
-          }}
-        >
-          {t("common.close")}
-        </Button>
+        </div>
       </div>
     </Alert>
   );
