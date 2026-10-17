@@ -347,6 +347,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
     Example::route("listMentions"),
     Example::route("readMentions"),
+    Example::route("confirmAddress"),
     Example::route("getMyHandle"),
     Example::route("changeMyHandle"),
     Example::route("listNotifications"),

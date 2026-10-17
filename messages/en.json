@@ -1730,5 +1730,7 @@
   "setting.logs.server-log-megabytes.name": "Size of the server log file",
   "setting.logs.server-log-megabytes.help": "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
   "setting.logs.server-log-files.name": "Old server log files to keep",
-  "setting.logs.server-log-files.help": "How many old files of the server log are kept next to the current one. Older ones are deleted."
+  "setting.logs.server-log-files.help": "How many old files of the server log are kept next to the current one. Older ones are deleted.",
+  "mail.confirm-subject": "Bugaboo: confirm your e-mail address",
+  "mail.confirm-text": "Open this address to confirm your e-mail address and finish creating your account. It works for 24 hours.\n\n{address}\n\nIf you did not sign up, you do not need to do anything."
 }

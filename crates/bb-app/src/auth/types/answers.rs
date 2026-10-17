@@ -48,6 +48,16 @@ pub struct Started {
     pub second_step_needed: Option<SecondStepMethods>,
 }
 
+/// What signing up on one's own comes to.
+#[derive(Clone, Debug)]
+pub enum SignedUp {
+    /// The account works and the person is signed in.
+    SignedIn(Started),
+    /// E-mail is on, so the account works only after the person opened the link in the e-mail that
+    /// was sent to the address; no session was made (M1-F38).
+    ConfirmationNeeded,
+}
+
 /// Which ways there are to finish signing in when the password was right.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SecondStepMethods {

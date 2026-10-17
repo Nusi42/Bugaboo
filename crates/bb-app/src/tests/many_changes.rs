@@ -404,8 +404,9 @@ async fn iss_09_more_than_a_thousand_run_as_a_job() -> Outcome {
     assert_eq!(finished.status, ManyChangeStatus::Done);
     assert_eq!((finished.done, finished.changed), (1001, 1001));
     assert_eq!(finished.skipped_count, 0);
-    // One event for each issue, and the one of the run.
-    assert_eq!(world.store.event_count(), events_before + 1 + 1001);
+    // One event for each issue, the one that makes the run, and the one that says it is done (the
+    // person who asked is told by it, M3-F125).
+    assert_eq!(world.store.event_count(), events_before + 1 + 1001 + 1);
     // Steps of a hundred: eleven of them.
     assert_eq!(rounds, 11);
     Ok(())
@@ -583,7 +584,7 @@ async fn iss_09_a_selection_of_nothing_or_of_too_many_is_refused() -> Outcome {
 }
 
 /// A run of three issues that waits for its first step, with that step in the queue.
-async fn run_with_a_step_waiting(
+pub(super) async fn run_with_a_step_waiting(
     world: &World,
 ) -> Result<bb_core::many_changes::ManyChangeRun, Box<dyn std::error::Error + Send + Sync>> {
     use bb_core::id::{JobId, ManyChangeRunId};

@@ -341,6 +341,36 @@ pub(crate) async fn renew_or_queue_in<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The renewal of the IDs of a project gave up (its job is on the dead-letter list): the issues
+    /// keep the IDs they have, and the person who changed the mode is told by a notification
+    /// (M3-F150). Written as an event of the project, which the notifications reader turns into the
+    /// note for that person.
+    ///
+    /// # Errors
+    /// The error of the store.
+    pub(crate) async fn renewal_gave_up(&self, payload: &Value) -> Result<(), AppError> {
+        let named = |key: &str| payload.get(key).and_then(Value::as_str);
+        let (Some(project), Some(person)) = (
+            named(PROJECT_KEY).and_then(|text| text.parse::<ProjectId>().ok()),
+            named(PERSON_KEY).and_then(|text| text.parse::<UserId>().ok()),
+        ) else {
+            return Ok(());
+        };
+        let event = self.event(
+            Actor::System,
+            entity(RecordKind::Project, project),
+            vec![FieldChange {
+                field: member::ISSUE_IDS_FAILED.to_owned(),
+                before: None,
+                after: Some(serde_json::json!(person.to_string())),
+            }],
+        )?;
+        self.store()
+            .record_change(&event, |_| Box::pin(async { Ok(()) }))
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
+
     /// Does the next step of the renewal of the IDs of a project, as the job of the queue says: the
     /// issues that do not have a code of the mode the project has now, a hundred at a time, and
     /// when some are left the next step is queued. A project whose mode changed again meanwhile is

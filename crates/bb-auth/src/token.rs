@@ -34,6 +34,8 @@ pub enum Purpose {
     BackupCode,
     /// The secret of an access key.
     AccessKey,
+    /// The secret in the link that confirms an e-mail address.
+    AddressConfirmation,
 }
 
 impl Purpose {
@@ -44,6 +46,7 @@ impl Purpose {
             Self::SetupCode => b"bugaboo.setup-code.v1",
             Self::BackupCode => b"bugaboo.backup-code.v1",
             Self::AccessKey => b"bugaboo.access-key.v1",
+            Self::AddressConfirmation => b"bugaboo.address-confirmation.v1",
         }
     }
 

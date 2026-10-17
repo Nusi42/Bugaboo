@@ -11,6 +11,7 @@
 
 mod build;
 mod compose;
+mod confirm;
 mod handles;
 mod mail;
 mod mail_settings;
@@ -21,11 +22,14 @@ mod retention;
 mod store;
 mod types;
 
+pub(crate) use confirm::waiting_account;
+pub use confirm::{ConfirmAddress, ConfirmationStore, confirm_address};
 pub(crate) use handles::give_handle;
 pub use handles::{
     ChangeHandle, CreateMissingHandles, HandleStore, MyHandle, MyHandleQuery, change_handle,
     create_missing_handles, my_handle,
 };
+pub(crate) use mail::MailJob;
 pub use mail_settings::{SendTestEmail, SetMailPassword, send_test_email, set_mail_password};
 pub use read::{notifications, read_notifications, unread_notifications};
 pub use store::NotificationStore;

@@ -2241,6 +2241,9 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
 
+/// The message `mail.confirm-subject`.
+pub const MAIL_CONFIRM_SUBJECT: MessageKey = MessageKey::new("mail.confirm-subject");
+
 /// The message `mail.footer`.
 pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
 
@@ -6375,6 +6378,15 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `mail.confirm-text`.
+#[must_use]
+pub fn mail_confirm_text(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.confirm-text"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
 /// The message `mail.line-assigned`.
 #[must_use]
 pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
@@ -9797,6 +9809,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    (
+        "mail.confirm-subject",
+        "Bugaboo: confirm your e-mail address",
+    ),
+    (
+        "mail.confirm-text",
+        "Open this address to confirm your e-mail address and finish creating your account. It works for 24 hours.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
+    ),
     (
         "mail.footer",
         "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",

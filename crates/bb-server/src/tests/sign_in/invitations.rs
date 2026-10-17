@@ -309,7 +309,8 @@ async fn sign_up(
     email: &str,
     password: &str,
 ) -> Result<bb_app::auth::Started, bb_app::auth::AppError> {
-    rig.api()
+    match rig
+        .api()
         .sign_up(
             Rig::info(),
             SignUp {
@@ -319,7 +320,13 @@ async fn sign_up(
                 previous_session: None,
             },
         )
-        .await
+        .await?
+    {
+        bb_app::auth::SignedUp::SignedIn(started) => Ok(started),
+        bb_app::auth::SignedUp::ConfirmationNeeded => Err(bb_app::auth::AppError::Internal(
+            "these tests run with e-mail off".to_owned(),
+        )),
+    }
 }
 
 async fn policy(rig: &Rig, session: &str) -> Result<SignUpPolicy, bb_app::auth::AppError> {

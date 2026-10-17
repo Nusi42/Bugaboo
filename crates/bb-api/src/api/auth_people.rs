@@ -2,11 +2,13 @@
 //! the rule for who may sign up.
 
 use axum::extract::State;
-use axum::response::Response;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse as _, Response};
 use bb_app::auth::{
     AcceptInvitation, ChangeSignUpPolicy, CompleteSetup, CreateInvitation, InvitationLookupQuery,
-    InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery,
+    InvitationsQuery, RevokeInvitation, SignUp, SignUpPolicy, SignUpPolicyQuery, SignedUp,
 };
+use bb_app::notifications::ConfirmAddress;
 use bb_core::id::InvitationId;
 use bb_policy::{Authorized, Masked};
 use serde::{Deserialize, Serialize};
@@ -208,7 +210,17 @@ async fn complete_setup(
     signed_in(&started)
 }
 
-/// Creates an account without an invitation, when an administrator allows it.
+/// What signing up comes to when e-mail is on: the account waits for its address.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct ConfirmationNeededBody {
+    /// Always `true`: the account works only after the link in the e-mail sent to the address is
+    /// opened. The person is not signed in.
+    confirmation_needed: bool,
+}
+
+/// Creates an account without an invitation, when an administrator allows it. When e-mail is on,
+/// the account works only after the person has opened the link in the e-mail that goes to the
+/// address (24 hours), and the answer is `202` without a session.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/sign-up",
@@ -217,6 +229,7 @@ async fn complete_setup(
     request_body = SignUpBody,
     responses(
         (status = 200, description = "The account was made and is signed in.", body = SignedInBody),
+        (status = 202, description = "The account was made and waits for its address to be confirmed; the person is not signed in.", body = ConfirmationNeededBody),
         InvalidAnswer,
         (status = 403, description = "Signing up is not possible here (auth.sign_up_refused).", body = bb_core::Problem)
     )
@@ -227,7 +240,7 @@ async fn sign_up(
     PreviousSession(previous_session): PreviousSession,
     ApiJson(body): ApiJson<SignUpBody>,
 ) -> Result<Response, ApiError> {
-    let started = auth
+    let signed_up = auth
         .api()?
         .sign_up(
             info,
@@ -239,7 +252,46 @@ async fn sign_up(
             },
         )
         .await?;
-    signed_in(&started)
+    match signed_up {
+        SignedUp::SignedIn(started) => signed_in(&started),
+        SignedUp::ConfirmationNeeded => Ok((
+            StatusCode::ACCEPTED,
+            axum::Json(ConfirmationNeededBody {
+                confirmation_needed: true,
+            }),
+        )
+            .into_response()),
+    }
+}
+
+/// Confirms the e-mail address of an account made by signing up, with the secret of the link in
+/// the e-mail. It is a `POST` so the secret is in the body, not in an address that logs and browser
+/// history keep. The person signs in afterwards.
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/address/confirm",
+    operation_id = "confirmAddress",
+    tag = "auth",
+    request_body = SecretBody,
+    responses(
+        (status = 204, description = "The address is confirmed; the account works."),
+        InvalidAnswer
+    )
+)]
+async fn confirm_address(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    ApiJson(body): ApiJson<SecretBody>,
+) -> Result<Response, ApiError> {
+    auth.api()?
+        .confirm_address(
+            info,
+            ConfirmAddress {
+                secret: body.secret,
+            },
+        )
+        .await?;
+    Ok(done())
 }
 
 /// Shows which address an invitation is for. It is a `POST` so the secret is in the body, not in
@@ -488,6 +540,7 @@ where
     OpenApiRouter::new()
         .routes(routes!(complete_setup))
         .routes(routes!(sign_up))
+        .routes(routes!(confirm_address))
         .routes(routes!(look_up_invitation))
         .routes(routes!(accept_invitation))
 }

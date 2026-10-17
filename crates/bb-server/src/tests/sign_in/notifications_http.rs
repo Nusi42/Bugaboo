@@ -277,3 +277,127 @@ async fn adr_0017_every_keep_and_delete_job_runs_again_with_nothing_more_to_dele
     })
     .await
 }
+
+/// Switches e-mail on with a mail server, and signing up on.
+async fn mail_and_sign_up_on(rig: &Rig, ada: &mut Browser) -> Result<(), Failure> {
+    for (key, value) in [
+        ("mail.host", json!("mail.example.test")),
+        ("mail.from", json!("bugaboo@example.test")),
+    ] {
+        let put = ada
+            .send(
+                "PUT",
+                &format!("/api/v1/settings/{key}"),
+                Some(json!({"value": value})),
+            )
+            .await?;
+        assert_eq!(put.status, StatusCode::OK, "{key}: {}", put.body);
+    }
+    rig.set_organization_switch("mail.enabled", true).await?;
+    rig.set_organization_switch("auth.sign-up-enabled", true)
+        .await?;
+    Ok(())
+}
+
+const EVE: &str = "eve@example.test";
+
+fn sign_up_body() -> Value {
+    json!({"email": EVE, "display_name": "Eve Evans", "password": super::rig::PASSWORD})
+}
+
+/// The secret in the link of the last e-mail.
+fn secret_of_the_last_e_mail(rig: &Rig) -> Result<String, Failure> {
+    let mails = rig.mailer.messages();
+    let mail = mails.last().ok_or("no e-mail went")?;
+    let (_, secret) = mail
+        .text
+        .split_once("/confirm-address#")
+        .ok_or("no link in the e-mail")?;
+    Ok(secret
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .to_owned())
+}
+
+#[tokio::test]
+async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() -> TestResult {
+    each_database("auth_confirm_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        mail_and_sign_up_on(&rig, &mut ada).await?;
+        let mut eve = Browser::new(&app, &super::http::called());
+        let made = eve
+            .send("POST", "/api/v1/auth/sign-up", Some(sign_up_body()))
+            .await?;
+        assert_eq!(made.status, StatusCode::ACCEPTED, "{}", made.body);
+        assert_eq!(made.body["confirmation_needed"], true);
+        assert!(made.headers.get("set-cookie").is_none(), "no session");
+        let refused = eve.sign_in(EVE, super::rig::PASSWORD).await?;
+        assert_eq!(refused.code(), "auth.address_not_confirmed");
+        run_jobs(&rig).await?;
+        let secret = secret_of_the_last_e_mail(&rig)?;
+        assert_eq!(rig.mailer.messages()[0].to, EVE);
+        let confirmed = eve
+            .send(
+                "POST",
+                "/api/v1/auth/address/confirm",
+                Some(json!({"secret": secret})),
+            )
+            .await?;
+        assert_eq!(
+            confirmed.status,
+            StatusCode::NO_CONTENT,
+            "{}",
+            confirmed.body
+        );
+        let signed = eve.sign_in(EVE, super::rig::PASSWORD).await?;
+        assert_eq!(signed.status, StatusCode::OK, "{}", signed.body);
+        let again = eve
+            .send(
+                "POST",
+                "/api/v1/auth/address/confirm",
+                Some(json!({"secret": secret})),
+            )
+            .await?;
+        assert_eq!(again.code(), "auth.confirmation_invalid");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
+    each_database("auth_confirm_expiry_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, mut ada) = Site::start(&rig, &app).await?;
+        mail_and_sign_up_on(&rig, &mut ada).await?;
+        let mut eve = Browser::new(&app, &super::http::called());
+        eve.send("POST", "/api/v1/auth/sign-up", Some(sign_up_body()))
+            .await?;
+        run_jobs(&rig).await?;
+        let secret = secret_of_the_last_e_mail(&rig)?;
+        rig.clock.advance(24 * 3600 + 1);
+        let late = eve
+            .send(
+                "POST",
+                "/api/v1/auth/address/confirm",
+                Some(json!({"secret": secret})),
+            )
+            .await?;
+        assert_eq!(late.code(), "auth.confirmation_invalid");
+        // The job that clears sessions removes the account, and the address is free again.
+        rig.services
+            .ctx(RequestInfo::default())
+            .start_daily_jobs()
+            .await
+            .map_err(|error| error.to_string())?;
+        run_jobs(&rig).await?;
+        let again = eve
+            .send("POST", "/api/v1/auth/sign-up", Some(sign_up_body()))
+            .await?;
+        assert_eq!(again.status, StatusCode::ACCEPTED, "{}", again.body);
+        Ok(())
+    })
+    .await
+}

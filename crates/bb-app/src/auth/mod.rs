@@ -69,9 +69,10 @@ use crate::many_changes::{
     many_changes_run, preview_many_changes, stop_many_changes_run,
 };
 use crate::notifications::{
-    ChangeHandle, MyHandle, MyHandleQuery, NotificationPage, NotificationsQuery, ReadNotifications,
-    SendTestEmail, SetMailPassword, Unread, UnreadQuery, change_handle, my_handle, notifications,
-    read_notifications, send_test_email, set_mail_password, unread_notifications,
+    ChangeHandle, ConfirmAddress, MyHandle, MyHandleQuery, NotificationPage, NotificationsQuery,
+    ReadNotifications, SendTestEmail, SetMailPassword, Unread, UnreadQuery, change_handle,
+    confirm_address, my_handle, notifications, read_notifications, send_test_email,
+    set_mail_password, unread_notifications,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
@@ -285,7 +286,9 @@ use_cases! {
     /// Creates an account from an invitation.
     accept_invitation(AcceptInvitation) -> Started;
     /// Creates an account without an invitation.
-    sign_up(SignUp) -> Started;
+    sign_up(SignUp) -> SignedUp;
+    /// Confirms the e-mail address of an account made by signing up.
+    confirm_address(ConfirmAddress) -> Done;
     /// Who may sign up on their own.
     sign_up_policy(SignUpPolicyQuery) -> Authorized<SignUpPolicy>;
     /// Changes who may sign up on their own.

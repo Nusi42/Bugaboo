@@ -282,13 +282,13 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// What happens when a job is on the dead-letter list: the work that people can see ends in
     /// a state they can see. A change to many issues ends as failed with what it did so far; the
-    /// renewal of issue IDs has no record of its own, so its death is only logged (M3-F150).
+    /// renewal of issue IDs has no record of its own, so its death is an event of the project that the person who asked is told of (M3-F150).
     async fn job_gave_up(&self, job: &Job) {
         let ended = match job.kind.as_str() {
             kind::MANY_CHANGES_STEP => self.fail_many_changes_run(&job.payload).await,
             kind::RENEW_IDS => {
                 tracing::error!("renewing issue IDs gave up; the job is on the dead-letter list");
-                Ok(())
+                self.renewal_gave_up(&job.payload).await
             }
             kind::MAIL_SEND => self.mail_job_gave_up(&job.payload).await,
             _ => Ok(()),

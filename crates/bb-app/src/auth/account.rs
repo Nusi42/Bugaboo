@@ -7,7 +7,7 @@ use bb_auth::{
 };
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, RecordKind};
-use bb_core::id::{SessionId, UserId};
+use bb_core::id::{JobId, SessionId, UserId};
 use bb_core::many_changes::{ManyChangeStatus, RunsToEnd};
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
@@ -20,10 +20,11 @@ use super::events::{by, changed, entity, fixed_entity, set_to};
 use super::request_session::NewSession;
 use super::store::AuthStore;
 use super::types::{
-    AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
+    AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, SignedUp, Started,
 };
 use crate::input::clean_name;
-use crate::notifications::give_handle;
+use crate::jobs::{kind, kind_name};
+use crate::notifications::{MailJob, give_handle, waiting_account};
 
 /// The password as a new password: the rules of AUTH-01, as the error a person can read.
 pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
@@ -244,13 +245,15 @@ pub async fn complete_setup<S: AuthStore>(
     ctx.started(&new, &person, &settings, None)
 }
 
-/// Creates an account without an invitation, when an administrator allows it, and signs the
-/// person in.
+/// Creates an account without an invitation, when an administrator allows it. The person is
+/// signed in, unless e-mail is on: then the account works only after the link in the e-mail that
+/// goes to the address is opened (M1-F38). An account that waited for its link and ran out of time
+/// is replaced, so nobody holds an address by signing up for it.
 ///
 /// # Errors
 /// `auth.sign_up_refused` when signing up is off, when the domain of the address is not on the
 /// list, and when the address has an account already (it does not say which).
-pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<Started, AppError> {
+pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<SignedUp, AppError> {
     let refused = || AppError::Refused(ErrorCode::SignUpRefused);
     let settings = ctx.settings().await?;
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
@@ -260,6 +263,8 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         ctx.note(SecurityAction::SignUpRefused, None, None).await;
         return Err(refused());
     }
+    let confirming = ctx.confirming_sign_ups().await?;
+    let stale = ctx.stale_sign_up_of(email.as_str()).await?;
     let NewAccount {
         person,
         hash,
@@ -273,6 +278,16 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
             input.previous_session.as_deref(),
         )
         .await?;
+    let waiting = if confirming {
+        Some(waiting_account(person.id, ctx.now())?)
+    } else {
+        None
+    };
+    let mail_job = (
+        JobId::generate(&mut ctx.ids()).map_err(|error| AppError::Internal(error.to_string()))?,
+        kind_name(kind::MAIL_SEND)?,
+        MailJob::Confirm { person: person.id }.to_value(),
+    );
     let event = ctx.event(
         by(person.id),
         entity(RecordKind::Person, person.id),
@@ -280,15 +295,26 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     )?;
     let (store, stored_person, session, now) =
         (ctx.store(), person.clone(), new.session.clone(), ctx.now());
+    let confirmation = waiting.clone();
     let result = store
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if let Some(old) = old {
                     S::delete_session(transaction, old).await?;
                 }
+                if let Some(stale) = stale {
+                    S::delete_unconfirmed_person(transaction, stale).await?;
+                }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
                 give_handle::<S>(transaction, &stored_person, now).await?;
-                S::insert_session(transaction, &session).await
+                match confirmation {
+                    Some(confirmation) => {
+                        S::put_address_confirmation(transaction, &confirmation).await?;
+                        let (id, kind, payload) = &mail_job;
+                        S::enqueue_job(transaction, *id, kind, payload, now, now).await
+                    }
+                    None => S::insert_session(transaction, &session).await,
+                }
             })
         })
         .await;
@@ -305,7 +331,11 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
         Some(entity(RecordKind::Person, person.id)),
     )
     .await;
+    if waiting.is_some() {
+        return Ok(SignedUp::ConfirmationNeeded);
+    }
     ctx.started(&new, &person, &settings, None)
+        .map(SignedUp::SignedIn)
 }
 
 /// Creates an account from an invitation link and signs the person in. The invitation is used up

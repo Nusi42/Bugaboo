@@ -36,6 +36,12 @@ pub(crate) enum MailJob {
         /// The issue; none for the notifications that are about no issue.
         issue: Option<IssueId>,
     },
+    /// The e-mail with the link that confirms the address of an account made by signing up
+    /// (M1-F38). The link is made when the job runs, so it is in no payload.
+    Confirm {
+        /// The person whose address waits.
+        person: UserId,
+    },
 }
 
 impl MailJob {
@@ -111,6 +117,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(MailJob::Changes { recipient, issue }) => {
                 self.send_changes(recipient, issue).await
             }
+            Some(MailJob::Confirm { person }) => self.send_confirmation(person).await,
             None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
         }
     }
@@ -124,6 +131,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
         }
+        // A confirmation that did not go leaves the account waiting until its time runs out.
         Ok(())
     }
 

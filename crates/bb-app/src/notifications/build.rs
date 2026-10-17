@@ -35,7 +35,7 @@ use super::prefs::wants;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, entity, internal};
 use crate::history::{issue_in, visible_changes};
-use crate::issues::Where;
+use crate::issues::{Where, member as issue_member};
 use crate::jobs::{QueuedJob, kind, kind_name};
 use crate::member::{comment, follower};
 
@@ -230,7 +230,36 @@ impl<S: AuthStore> Ctx<'_, S> {
         if kind_is(RecordKind::ChangeRun) {
             return self.run_event(round, event).await;
         }
+        if kind_is(RecordKind::Project) {
+            return self.renewal_event(round, event).await;
+        }
         Ok(())
+    }
+
+    /// The renewal of the issue IDs of a project gave up: the person who asked for the new mode is
+    /// told (M3-F150).
+    async fn renewal_event(&self, round: &mut Round, event: &DomainEvent) -> Result<(), AppError> {
+        let Some(person) = event
+            .changes
+            .iter()
+            .find(|change| change.field == issue_member::ISSUE_IDS_FAILED)
+            .and_then(|change| change.after.as_ref()?.as_str()?.parse::<UserId>().ok())
+        else {
+            return Ok(());
+        };
+        let subject = Subject {
+            event,
+            issue: None,
+            record: Some(event.entity.id),
+            keeps: Keeps::All,
+        };
+        let hears = vec![Hears {
+            person,
+            kinds: vec![Some(NotificationKind::RunEnded)],
+            follows: false,
+            once: Once::Event(event.id),
+        }];
+        self.deliver(round, &subject, hears).await
     }
 
     /// A change to an issue: the people it was assigned to, and the people who follow it.

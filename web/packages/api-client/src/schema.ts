@@ -160,6 +160,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/auth/address/confirm": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirms the e-mail address of an account made by signing up, with the secret of the link in
+     *     the e-mail. It is a `POST` so the secret is in the body, not in an address that logs and browser
+     *     history keep. The person signs in afterwards.
+     */
+    post: operations["confirmAddress"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/invitation/accept": {
     parameters: {
       query?: never;
@@ -506,7 +527,11 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Creates an account without an invitation, when an administrator allows it. */
+    /**
+     * Creates an account without an invitation, when an administrator allows it. When e-mail is on,
+     *     the account works only after the person has opened the link in the e-mail that goes to the
+     *     address (24 hours), and the answer is `202` without a session.
+     */
     post: operations["signUp"];
     delete?: never;
     options?: never;
@@ -3428,6 +3453,14 @@ export interface components {
       code: string;
       /** @description The password. */
       password: string;
+    };
+    /** @description What signing up comes to when e-mail is on: the account waits for its address. */
+    ConfirmationNeededBody: {
+      /**
+       * @description Always `true`: the account works only after the link in the e-mail sent to the address is
+       *     opened. The person is not signed in.
+       */
+      confirmation_needed: boolean;
     };
     /** @description What changed a record since the person looked at it. */
     ConflictBody: {
@@ -7872,6 +7905,66 @@ export interface operations {
       };
     };
   };
+  confirmAddress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SecretBody"];
+      };
+    };
+    responses: {
+      /** @description The address is confirmed; the account works. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   acceptInvitation: {
     parameters: {
       query?: never;
@@ -9386,6 +9479,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SignedInBody"];
+        };
+      };
+      /** @description The account was made and waits for its address to be confirmed; the person is not signed in. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConfirmationNeededBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */

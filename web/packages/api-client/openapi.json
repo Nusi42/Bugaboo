@@ -1155,6 +1155,77 @@
         "x-permission": "decide-roles"
       }
     },
+    "/api/v1/auth/address/confirm": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Confirms the e-mail address of an account made by signing up, with the secret of the link in\nthe e-mail. It is a `POST` so the secret is in the body, not in an address that logs and browser\nhistory keep. The person signs in afterwards.",
+        "operationId": "confirmAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecretBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The address is confirmed; the account works."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "public"
+      }
+    },
     "/api/v1/auth/invitation/accept": {
       "post": {
         "tags": ["auth"],
@@ -3002,7 +3073,7 @@
     "/api/v1/auth/sign-up": {
       "post": {
         "tags": ["auth"],
-        "summary": "Creates an account without an invitation, when an administrator allows it.",
+        "summary": "Creates an account without an invitation, when an administrator allows it. When e-mail is on,\nthe account works only after the person has opened the link in the e-mail that goes to the\naddress (24 hours), and the answer is `202` without a session.",
         "operationId": "signUp",
         "requestBody": {
           "content": {
@@ -3021,6 +3092,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignedInBody"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "The account was made and waits for its address to be confirmed; the person is not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationNeededBody"
                 }
               }
             }
@@ -21550,6 +21631,17 @@
           "password": {
             "type": "string",
             "description": "The password."
+          }
+        }
+      },
+      "ConfirmationNeededBody": {
+        "type": "object",
+        "description": "What signing up comes to when e-mail is on: the account waits for its address.",
+        "required": ["confirmation_needed"],
+        "properties": {
+          "confirmation_needed": {
+            "type": "boolean",
+            "description": "Always `true`: the account works only after the link in the e-mail sent to the address is\nopened. The person is not signed in."
           }
         }
       },

@@ -70,7 +70,7 @@ impl AuthStorage {
 }
 
 /// The hash stored in a row, or the report that it is not one.
-pub(super) fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {
+pub(crate) fn digest(bytes: &[u8]) -> Result<Digest, StoreError> {
     Digest::from_slice(bytes).ok_or(StoreError::Corrupt("a hash"))
 }
 

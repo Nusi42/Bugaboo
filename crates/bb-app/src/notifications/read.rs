@@ -139,9 +139,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             NotificationKind::RunEnded => Ok(row.record.map(|run| NotificationWhat::RunEnded {
                 run,
-                done: !row.changes.iter().any(|change| {
-                    change.after.as_ref().and_then(serde_json::Value::as_str)
-                        == Some(ManyChangeStatus::Failed.code())
+                // Only a run that says it is done ended well: one that failed, one that was
+                // stopped and work that gave up are not.
+                done: row.changes.iter().any(|change| {
+                    change.field == "status"
+                        && change.after.as_ref().and_then(serde_json::Value::as_str)
+                            == Some(ManyChangeStatus::Done.code())
                 }),
             })),
             NotificationKind::Mentioned

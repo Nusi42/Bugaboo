@@ -48,6 +48,11 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
             "/api/v1/auth/sign-in".into(),
             Some(json!({"email": "nobody@example.test", "password": wrong})),
         ),
+        "confirmAddress" => (
+            "POST",
+            "/api/v1/auth/address/confirm".into(),
+            Some(json!({"secret": "not a secret"})),
+        ),
         "signUp" => (
             "POST",
             "/api/v1/auth/sign-up".into(),

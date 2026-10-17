@@ -13,7 +13,15 @@ export function SignUpForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const signUp = api.query.useMutation("post", "/api/v1/auth/sign-up", { onSuccess: afterSignIn });
+  const signUp = api.query.useMutation("post", "/api/v1/auth/sign-up", {
+    onSuccess: (answer) => {
+      // With e-mail on, the account waits for the link in the e-mail and nobody is signed in. The
+      // screen that says so comes with the e-mail screens (M4 WP-08).
+      if (!("confirmation_needed" in answer)) {
+        afterSignIn(answer);
+      }
+    },
+  });
   const tooWeak = isPasswordProblem(signUp.error);
   return (
     <Form
