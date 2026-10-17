@@ -216,6 +216,7 @@ pub const DRAFT_TEXT_MAX: usize = 100_000;
 pub const VERSIONS_MAX: u32 = 50;
 pub const DRAFT_KEPT_BY: [ErrorCode; 2] = [ErrorCode::EditLockLost, ErrorCode::VersionChanged];
 pub const LAYOUT_PART: &str = \"layout\";
+pub const WORKFLOW_PART: &str = \"workflow\";
 pub const DESCRIPTION_PART: &str = \"description\";
 "
         .to_owned(),
@@ -244,6 +245,7 @@ pub const DESCRIPTION_PART: &str = \"description\";
         "{text}"
     );
     assert!(text.contains("layoutEditPart = \"layout\";"), "{text}");
+    assert!(text.contains("workflowEditPart = \"workflow\";"), "{text}");
     assert!(
         text.contains("descriptionEditPart = \"description\";"),
         "{text}"

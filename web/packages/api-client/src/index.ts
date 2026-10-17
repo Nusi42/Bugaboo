@@ -15,6 +15,7 @@ export {
   draftTextMax,
   heartbeatSeconds,
   layoutEditPart,
+  workflowEditPart,
   leaseSeconds,
   versionsMax,
   watchSeconds,
