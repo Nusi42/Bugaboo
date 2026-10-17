@@ -205,12 +205,12 @@ test("ux_6_3 the form follows the width of its window: one column below 880, the
     .toBeGreaterThan(100);
 });
 
-test("ux_6_3 the footer has two rows: the hint, then the buttons in one row with Create last, also at the smallest size", async ({
+test("ux_6_3 the footer has two rows: the buttons in one row with Create last, then the note below them (UX §4.5), also at the smallest size", async ({
   page,
 }) => {
   await openIt(page);
   const usual = await footerButtons(page);
-  expect(usual.create.y).toBeGreaterThan(usual.note.y);
+  expect(usual.note.y).toBeGreaterThan(usual.create.y);
   expect(Math.abs(usual.create.y - usual.cancel.y)).toBeLessThanOrEqual(2);
   expect(Math.abs(usual.create.y - usual.another.y)).toBeLessThanOrEqual(2);
   expect(usual.create.x).toBeGreaterThan(usual.another.x);

@@ -1923,8 +1923,8 @@ part "window.body" {
     overflow-y auto
 }
 
-// Two rows: the hint (and what belongs to the form) on its own line, then the buttons in one row
-// at the right, the main one last (R6).
+// Rows: what is missing (it comes and goes), the buttons in one row at the right, the main one last
+// (R6), then the note below them (that the draft is kept, and what belongs to the form; UX §4.5).
 part "window.footer" {
     display flex
     flex none
