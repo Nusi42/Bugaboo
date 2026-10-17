@@ -463,7 +463,8 @@ settings! {
         lockable: true,
     }
 
-    /// Whether the person is told in the app when a status change, a comment or a file on an issue they follow.
+    /// Whether the person is told in the app when a status change, a comment or a file on an issue
+    /// they follow.
     NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP: Bool = {
         key: "notifications.followed-activity-in-app",
         name: message::SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_NAME,
@@ -474,7 +475,8 @@ settings! {
         lockable: true,
     }
 
-    /// Whether the person is told by e-mail when a status change, a comment or a file on an issue they follow.
+    /// Whether the person is told by e-mail when a status change, a comment or a file on an issue
+    /// they follow.
     NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL: Bool = {
         key: "notifications.followed-activity-by-mail",
         name: message::SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_NAME,
@@ -529,7 +531,8 @@ settings! {
         lockable: true,
     }
 
-    /// Whether the person is told in the app when somebody asks them to finish editing, or takes their editing over.
+    /// Whether the person is told in the app when somebody asks them to finish editing, or takes
+    /// their editing over.
     NOTIFICATIONS_EDIT_NOTICE_IN_APP: Bool = {
         key: "notifications.edit-notice-in-app",
         name: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_NAME,
@@ -540,7 +543,8 @@ settings! {
         lockable: true,
     }
 
-    /// Whether the person is told by e-mail when somebody asks them to finish editing, or takes their editing over.
+    /// Whether the person is told by e-mail when somebody asks them to finish editing, or takes
+    /// their editing over.
     NOTIFICATIONS_EDIT_NOTICE_BY_MAIL: Bool = {
         key: "notifications.edit-notice-by-mail",
         name: message::SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_NAME,
@@ -600,7 +604,8 @@ settings! {
         format: Format::Choices(MAIL_SECURITY_CHOICES),
     }
 
-    /// The user name Bugaboo signs in to the mail server with; empty for a server that asks for none.
+    /// The user name Bugaboo signs in to the mail server with; empty for a server that asks for
+    /// none.
     MAIL_USERNAME: Text = {
         key: "mail.username",
         name: message::SETTING_MAIL_USERNAME_NAME,

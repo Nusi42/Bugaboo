@@ -63,8 +63,8 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
         /// The password of the mail server, stored encrypted (SEC-16). The bytes are wiped from
         /// memory when dropped.
         fn mail_password() -> Option<Zeroizing<Vec<u8>>>;
-        /// Stores the password of the mail server, replacing the one there. Bookkeeping of a secret,
-        /// not a domain change: the use case writes the event of it.
+        /// Stores the password of the mail server, replacing the one there. Bookkeeping of a
+        /// secret, not a domain change: the use case writes the event of it.
         fn put_mail_password(secret: &[u8], at: Timestamp) -> ();
         /// Deletes the password of the mail server.
         fn delete_mail_password() -> ();

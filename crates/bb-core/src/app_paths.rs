@@ -1,7 +1,7 @@
 //! The addresses of the pages of the browser app that the server links to (invitations, e-mails),
 //! written once. The app's own list of addresses (`web/app/src/shared/paths.ts`) takes these from
-//! the file that `cargo xtask gen api` writes (`appPaths.generated.ts`), so the link in an e-mail and
-//! the page it opens cannot differ (ODR).
+//! the file that `cargo xtask gen api` writes (`app-paths.generated.ts`), so the link in an e-mail
+//! and the page it opens cannot differ (ODR).
 
 /// The name of the changing part of [`ISSUE`].
 pub const ISSUE_PARAM: &str = "issue";

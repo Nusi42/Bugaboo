@@ -43,8 +43,8 @@ pub mod kind {
     /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21). It
     /// comes back every day.
     pub const PRUNE_SECURITY_LOG: &str = "security-log.prune";
-    /// Deleting the sessions nobody can use any more and the links of finished sign-ups (M1-F43). It
-    /// comes back every day.
+    /// Deleting the sessions nobody can use any more and the links of finished sign-ups (M1-F43).
+    /// It comes back every day.
     pub const PURGE_SESSIONS: &str = "sessions.purge";
     /// Starting a new file of the log of a server that has no console (M1-F61). It comes back
     /// every day.
@@ -282,7 +282,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// What happens when a job is on the dead-letter list: the work that people can see ends in
     /// a state they can see. A change to many issues ends as failed with what it did so far; the
-    /// renewal of issue IDs has no record of its own, so its death is an event of the project that the person who asked is told of (M3-F150).
+    /// renewal of issue IDs has no record of its own, so its death is an event of the project that
+    /// the person who asked is told of (M3-F150).
     async fn job_gave_up(&self, job: &Job) {
         let ended = match job.kind.as_str() {
             kind::MANY_CHANGES_STEP => self.fail_many_changes_run(&job.payload).await,
@@ -351,7 +352,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// The error of the store while jobs are taken.
     pub async fn run_due_jobs(&self) -> Result<usize, AppError> {
-        // The notifications come first, so the e-mail they make is queued before the jobs are taken.
+        // The notifications come first, so the e-mail they make is queued before the jobs are
+        // taken.
         if let Err(error) = self.catch_up_notifications().await {
             tracing::warn!(cause = %error, "the notifications could not catch up");
         }

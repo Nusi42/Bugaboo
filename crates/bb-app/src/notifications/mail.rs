@@ -1,5 +1,5 @@
-//! The job `mail.send` (NTF-02, PRIV-08, SEC-16, ADR-0033 §3): one e-mail, made when the job runs and
-//! checked again as it is made.
+//! The job `mail.send` (NTF-02, PRIV-08, SEC-16, ADR-0033 §3): one e-mail, made when the job runs
+//! and checked again as it is made.
 //!
 //! The payload names who and about what, never a text. When the job runs, e-mail must still be on,
 //! the person must still want this kind of e-mail, may still see the issue, and sees only the

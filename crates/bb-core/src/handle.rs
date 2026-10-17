@@ -63,7 +63,8 @@ pub struct PersonHandle {
     /// The person.
     #[personal(category = "identity", basis = "contract")]
     pub person: UserId,
-    /// The handle, unique among all handles, former ones included. Made from the name, so it can hold the name.
+    /// The handle, unique among all handles, former ones included. Made from the name, so it can
+    /// hold the name.
     #[personal(category = "identity", basis = "contract")]
     pub handle: String,
     /// When it was made or last taken up.

@@ -1,5 +1,5 @@
-//! The text of an e-mail (NTF-02, ADR-0033 §3): what the notifications of one person about one issue
-//! say, worded from the message catalog, and nothing else.
+//! The text of an e-mail (NTF-02, ADR-0033 §3): what the notifications of one person about one
+//! issue say, worded from the message catalog, and nothing else.
 //!
 //! The notifications were shaped for the recipient a moment before (`read.rs`), so the names,
 //! fields and comments in them are what the person may see now. An e-mail is plain text: nothing is

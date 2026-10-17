@@ -1,5 +1,6 @@
 //! The two sides of a changed field, worded for the reader: the same words in the history of an
-//! issue and in a notification, so a person is a `PersonRef` (and *Someone* stays *Someone*) in both.
+//! issue and in a notification, so a person is a `PersonRef` (and *Someone* stays *Someone*) in
+//! both.
 
 use bb_app::history::{ChangeValue, FieldChangeView};
 use bb_core::own_fields::FieldType;

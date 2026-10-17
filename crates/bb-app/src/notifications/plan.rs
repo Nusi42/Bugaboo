@@ -188,9 +188,10 @@ mod tests {
         let asked = change(
             edit_lock::FIELD,
             None,
-            Some(
-                json!({ edit_lock::ASKED_TO_FINISH: "description", edit_lock::PERSON: person.to_string() }),
-            ),
+            Some(json!({
+                edit_lock::ASKED_TO_FINISH: "description",
+                edit_lock::PERSON: person.to_string(),
+            })),
         );
         let note = edit_note_of(&[asked]).unwrap();
         assert_eq!(

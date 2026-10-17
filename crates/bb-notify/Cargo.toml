@@ -1,6 +1,6 @@
 [package]
 name = "bb-notify"
-description = "Delivery of in-app notifications, e-mail and webhooks."
+description = "Delivery adapters: e-mail over SMTP, and webhooks later."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

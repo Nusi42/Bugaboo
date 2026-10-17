@@ -28,8 +28,7 @@ use bb_policy::{Evaluation, PeopleContext, row_reaches};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
-/// The most people a search for the person behind a handle reads: names that share the first word
-/// beyond this many are not told apart.
+/// The most people a search for the people to offer after `@` reads (`mention_choices`).
 pub(super) const PEOPLE_LOOK_AT: u64 = 100;
 
 /// What a handle names.

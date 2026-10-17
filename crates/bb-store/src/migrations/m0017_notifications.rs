@@ -4,8 +4,8 @@
 //! `notification` has one row for each person and event (or comment, for a mention): the unique key
 //! `(recipient, once)` is what keeps a reader that reads an event again from making it twice. The
 //! row keeps the fields the person could see when it was built, and where its e-mail is. The table
-//! has no cascade: the rows of a person who is removed are deleted by the removal (M9, PRIV-04), and
-//! all of them go after 90 days anyway. `person_handle` has one row for each handle a person has or
+//! has no cascade: the rows of a person who is removed are deleted by the removal (M9, PRIV-04),
+//! and all of them go after 90 days anyway. `person_handle` has one row for each handle a person has or
 //! had, and a handle names one person for good. `sign_up_invitation` has one row for each link a
 //! sign-up on one's own made: an invitation with nobody who invited.
 

@@ -1,7 +1,7 @@
-//! Signing up on one's own (AUTH-06, M1-F38, ADR-0033 §3): the person gives only an address. Bugaboo
-//! sends a link to it, and the link is an invitation like the one an administrator makes: opening it
-//! asks for a name and a password and makes the account. So nobody can make an account on an
-//! address they cannot read, and there is one way to join.
+//! Signing up on one's own (AUTH-06, M1-F38, ADR-0033 §3): the person gives only an address.
+//! Bugaboo sends a link to it, and the link is an invitation like the one an administrator makes:
+//! opening it asks for a name and a password and makes the account. So nobody can make an account
+//! on an address they cannot read, and there is one way to join.
 
 use jiff::{SignedDuration, Timestamp};
 

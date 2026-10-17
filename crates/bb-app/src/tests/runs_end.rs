@@ -36,9 +36,10 @@ async fn ntf_01_a_run_of_many_changes_that_is_done_tells_the_person_who_asked() 
     let told = heard(&world).await?;
     assert_eq!(told.len(), 1, "{told:?}");
     assert_eq!(told[0].kind, NotificationKind::RunEnded);
-    assert!(
-        matches!(&told[0].what, NotificationWhat::RunEnded { run: id, done: true } if *id == run.id.into())
-    );
+    let NotificationWhat::RunEnded { run: id, done } = &told[0].what else {
+        return Err("no end of a run".into());
+    };
+    assert!(*done && *id == run.id.into());
     assert!(told[0].issue.is_none());
     Ok(())
 }
