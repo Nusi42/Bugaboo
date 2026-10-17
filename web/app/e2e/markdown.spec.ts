@@ -4,6 +4,7 @@ import { type Page } from "@playwright/test";
 import { ada } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
+import { untilTheLockIsLetGo } from "./support/description.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
@@ -15,9 +16,12 @@ test.describe.configure({ mode: "serial" });
 const pasted = "<script>window.attacked = true</script>";
 
 /** Opens the description of an issue for editing, and returns the text box. */
+/** The issue the tests of the editor write the description of. */
+const ISSUE = "WEB-2";
+
 async function openEditor(page: Page) {
   await signIn(page, ada);
-  await page.goto(issueAddress("WEB-2"));
+  await page.goto(issueAddress(ISSUE));
   await page.getByRole("button", { name: t("issues.description.edit"), exact: true }).click();
   const box = page.getByRole("textbox", {
     name: t("issue-field.description"),
@@ -35,6 +39,7 @@ test.afterEach(async ({ page }) => {
     await cancel.click();
     await expect(cancel).toBeHidden();
   }
+  await untilTheLockIsLetGo(page, ISSUE);
 });
 
 async function openPreview(page: Page): Promise<void> {
