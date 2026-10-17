@@ -116,7 +116,16 @@ export function useLongText(options: LongTextOptions): LongText {
   useEffect(() => {
     editor.setSource({ saved, version });
   }, [editor, saved, version]);
-  useEffect(() => editor.dispose, [editor]);
+  useEffect(() => {
+    // A window that is closed or reloaded runs no cleanup of the screen, so the lock is let go as
+    // the page is hidden; the release is a `keepalive` request that the browser still sends
+    // (M3-F105, M4-F26).
+    window.addEventListener("pagehide", editor.dispose);
+    return () => {
+      window.removeEventListener("pagehide", editor.dispose);
+      editor.dispose();
+    };
+  }, [editor]);
   return {
     ...state,
     open: editor.open,

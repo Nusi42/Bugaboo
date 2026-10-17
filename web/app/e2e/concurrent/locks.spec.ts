@@ -103,6 +103,27 @@ test("iss_17_three_people_edit_one_description_and_the_first_text_is_kept", asyn
   await expect(watcher.getByText("Ben's text, written first").first()).toBeVisible();
 });
 
+/** How long a second person may take to get the lock after the first one left: a second, not the lease. */
+const SECOND_MS = 1000;
+
+test("iss_05_closing_a_window_frees_the_lock_at_once_so_a_second_person_can_edit_within_a_second", async ({
+  browser,
+  server,
+  viewport,
+  hasTouch,
+}) => {
+  const look = { viewport, hasTouch };
+  const holder = await signedInPage(browser, server, ben, look);
+  const next = await signedInPage(browser, server, cleo, look);
+  await startEditing(holder, crowdIssues.fields);
+  await typeUnderLock(holder, "Ben's words, typed before the window closed");
+  // The window goes away (the page is hidden) without leaving the editor, and nothing is saved.
+  await holder.goto("about:blank");
+  await openEditing(next, crowdIssues.fields);
+  await expect(descriptionBox(next)).toBeVisible({ timeout: SECOND_MS });
+  await expect(isEditing(next, ben.name)).toHaveCount(0);
+});
+
 test("iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_and_save", async ({
   browser,
   server,
