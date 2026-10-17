@@ -642,6 +642,7 @@ mod tests {
             },
             title: Some(String::new()),
             status: Some(StatusRef::blank()),
+            priority: Some(Priority::Normal),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_REF_FIELDS, &line);
         let kind = RelationKindItem {

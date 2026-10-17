@@ -361,6 +361,7 @@ mod tests {
             },
             title: None,
             status: Some(StatusRef::blank()),
+            priority: Some(bb_core::issue::Priority::Normal),
         };
         let item = HistoryEntryItem {
             event: String::new(),
@@ -392,6 +393,8 @@ mod tests {
             relation: Some(String::new()),
             direction: Some(Direction::Forward),
             issue: Some(line()),
+            file_event: Some(String::new()),
+            file_name: Some(String::new()),
         };
         crate::lean::assert_fields_are_the_keys_of(&HISTORY_FIELDS, &item);
     }

@@ -191,7 +191,8 @@ mod tests {
                 set("description", &json!("")),
             ],
         );
-        let fields: Vec<_> = rows_of(1, &made)[0]
+        let rows = rows_of(1, &made);
+        let fields: Vec<_> = rows[0]
             .changes
             .iter()
             .map(|change| change.field.as_str())
