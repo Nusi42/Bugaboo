@@ -119,16 +119,16 @@ fn set_of(permissions: &[Permission]) -> BTreeSet<Permission> {
     permissions.iter().copied().collect()
 }
 
-/// Makes a role. A new role has no field levels and no people levels: everything is hidden until
+/// Creates a role. A new role has no field levels and no people levels: everything is hidden until
 /// somebody decides otherwise (default deny).
 ///
 /// # Errors
 /// `access.forbidden` without *Manage roles*, `request.invalid` for a name that cannot be one,
 /// `name.taken` when another role has the name, `access.too_much` when the role holds a
 /// permission the person who makes it does not hold.
-pub async fn make_role<S: AuthStore>(
+pub async fn create_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeRole,
+    input: CreateRole,
 ) -> Result<Authorized<RoleView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let access = ctx
@@ -169,7 +169,7 @@ pub async fn make_role<S: AuthStore>(
             )
         })?;
     ctx.note(
-        SecurityAction::RoleMade,
+        SecurityAction::RoleCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Role, role.id)),
     )
@@ -356,7 +356,7 @@ pub async fn delete_role<S: AuthStore>(
     // Every row that the replacement made is a permission change of its own (ADR-0025, decision 9).
     for row in &made {
         ctx.note(
-            SecurityAction::AssignmentMade,
+            SecurityAction::AssignmentCreated,
             Some(actor.person.id),
             Some(entity(RecordKind::Assignment, row.id)),
         )

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { chooseGoHomeKeys, signIn } from "./support/flows.ts";
 import { screenshotFolder, shot, shotWhole } from "./support/screenshots.ts";
@@ -20,7 +20,7 @@ const MILESTONE = "M2";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

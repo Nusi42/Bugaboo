@@ -17,8 +17,8 @@ const GROUPS: &str = "/api/v1/label-groups";
 const TAGS: &str = "/api/v1/tags";
 
 /// The names in a list of tags or labels of an issue.
-fn names(sorting: &Value, member: &str) -> Vec<String> {
-    sorting[member]
+fn names(labels_and_tags: &Value, member: &str) -> Vec<String> {
+    labels_and_tags[member]
         .as_array()
         .map(|items| {
             items
@@ -67,7 +67,7 @@ async fn tag_01_autocomplete_never_offers_a_tag_only_used_in_a_hidden_project() 
             )
             .await?)?;
         // And an open one, used in ACME.
-        let open = key_of(&site.make(&mut ada, "Something open").await?)?;
+        let open = key_of(&site.create(&mut ada, "Something open").await?)?;
         ok(&ada
             .send(
                 "POST",
@@ -117,7 +117,7 @@ async fn tag_02_a_pick_one_group_keeps_one_label_per_issue() -> TestResult {
     each_database("tag_02_pick_one", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Login fails").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Login fails").await?)?;
         let group = id_of(
             &ada.send(
                 "POST",
@@ -139,11 +139,11 @@ async fn tag_02_a_pick_one_group_keeps_one_label_per_issue() -> TestResult {
                 .await?;
             ok(&put)?;
         }
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
         // The clock of the rig stands still, so the order they came in is not told by the time.
-        let mut held = names(ok(&sorting)?, "labels");
+        let mut held = names(ok(&labels_and_tags)?, "labels");
         held.sort();
         assert_eq!(held, vec!["billing".to_owned(), "urgent".to_owned()]);
         // A group cannot become a Pick one group while an issue has two of its labels.
@@ -213,8 +213,8 @@ async fn tag_03_combining_two_labels_changes_every_issue_once_and_records_it() -
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (only_old, both) = (
-            key_of(&site.make(&mut ada, "Only the old label").await?)?,
-            key_of(&site.make(&mut ada, "Both labels").await?)?,
+            key_of(&site.create(&mut ada, "Only the old label").await?)?,
+            key_of(&site.create(&mut ada, "Both labels").await?)?,
         );
         let (old, new) = (
             a_label(&mut ada, "login", None).await?,
@@ -248,10 +248,13 @@ async fn tag_03_combining_two_labels_changes_every_issue_once_and_records_it() -
             .await?;
         assert_eq!(ok(&combined)?["name"], "sign-in");
         for issue in [&only_old, &both] {
-            let sorting = ada
-                .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+            let labels_and_tags = ada
+                .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
                 .await?;
-            assert_eq!(names(ok(&sorting)?, "labels"), vec!["sign-in".to_owned()]);
+            assert_eq!(
+                names(ok(&labels_and_tags)?, "labels"),
+                vec!["sign-in".to_owned()]
+            );
             // The history of the issue says so, once.
             let history = ada
                 .send(
@@ -291,7 +294,7 @@ async fn tag_03_renaming_a_tag_asks_for_the_version_and_changes_every_issue() ->
     each_database("tag_03_rename_tag", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Slow page").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Slow page").await?)?;
         let put = ada
             .send(
                 "POST",
@@ -321,10 +324,13 @@ async fn tag_03_renaming_a_tag_asks_for_the_version_and_changes_every_issue() ->
             )
             .await?;
         assert_eq!(ok(&renamed)?["name"], "sluggish");
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
-        assert_eq!(names(ok(&sorting)?, "tags"), vec!["sluggish".to_owned()]);
+        assert_eq!(
+            names(ok(&labels_and_tags)?, "tags"),
+            vec!["sluggish".to_owned()]
+        );
         // A person without the right to look after tags is refused.
         let (mut gus, _) = site.person(StartingRole::TeamMember, "gus").await?;
         let refused = gus
@@ -370,7 +376,7 @@ async fn adr_0017_two_people_taking_tags_off_at_the_same_moment_both_succeed() -
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut ben, _) = site.person_in_acme(StartingRole::TeamMember, "ben").await?;
-        let issue = key_of(&site.make(&mut ada, "Crowded").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Crowded").await?)?;
         let mut tags = Vec::new();
         for name in ["one", "two", "three", "four"] {
             let put = ada
@@ -415,10 +421,10 @@ async fn adr_0017_two_people_taking_tags_off_at_the_same_moment_both_succeed() -
             (2..=before + 4).collect::<Vec<_>>(),
             "one event for each version, in a row"
         );
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
-        assert!(names(ok(&sorting)?, "tags").is_empty());
+        assert!(names(ok(&labels_and_tags)?, "tags").is_empty());
         Ok(())
     })
     .await
@@ -431,7 +437,7 @@ async fn adr_0017_a_tag_added_while_the_title_is_saved_lands_and_the_version_agr
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut ben, _) = site.person_in_acme(StartingRole::TeamMember, "ben").await?;
-        let issue = key_of(&site.make(&mut ada, "Old title").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Old title").await?)?;
         let entity = entity_of(&mut ada, &issue).await?;
         let before = version_of(&mut ada, &issue).await?;
         let (tags_path, issue_path) = (
@@ -467,10 +473,13 @@ async fn adr_0017_a_tag_added_while_the_title_is_saved_lands_and_the_version_agr
         assert_eq!(version_of(&mut ada, &issue).await?, before + 2);
         let read = ada.send("GET", &format!("{ISSUES}/{issue}"), None).await?;
         assert_eq!(ok(&read)?["issue"]["title"], "New title");
-        let sorting = ada
-            .send("GET", &format!("{ISSUES}/{issue}/sorting"), None)
+        let labels_and_tags = ada
+            .send("GET", &format!("{ISSUES}/{issue}/labels-and-tags"), None)
             .await?;
-        assert_eq!(names(ok(&sorting)?, "tags"), vec!["urgent".to_owned()]);
+        assert_eq!(
+            names(ok(&labels_and_tags)?, "tags"),
+            vec!["urgent".to_owned()]
+        );
         assert_eq!(
             counted_versions(&rig, &entity).await?,
             (2..=before + 2).collect::<Vec<_>>(),
@@ -486,7 +495,7 @@ async fn adr_0017_tags_and_labels_of_an_issue_in_the_trash_are_not_found() -> Te
     each_database("adr_0017_trash", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let issue = key_of(&site.make(&mut ada, "Soon gone").await?)?;
+        let issue = key_of(&site.create(&mut ada, "Soon gone").await?)?;
         let label = a_label(&mut ada, "bug", None).await?;
         let trashed = ada
             .send("DELETE", &format!("{ISSUES}/{issue}"), None)

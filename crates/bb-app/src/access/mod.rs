@@ -31,7 +31,7 @@ pub use bb_policy::{
 pub(crate) use candidates::Members;
 pub use candidates::{PeopleToCheckPage, PeopleToCheckQuery, people_to_check};
 pub use own_loss::{OwnChange, OwnLoss, OwnLossQuery, own_loss};
-pub use starting::{MakeStartingRoles, make_starting_roles};
+pub use starting::{CreateStartingRoles, create_starting_roles};
 pub use store::{PlaceLevels, PolicyStore, RoleRecord};
 pub use visibility::{
     FieldPermissions, FieldPermissionsQuery, LevelCell, LevelOrigin, LevelRow, LevelTable,

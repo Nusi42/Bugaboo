@@ -1,8 +1,10 @@
 # Places where a word of the glossary's "Don't say" column is right, because it is used in its
 # ordinary sense and not in the sense the glossary forbids (TXT-TERMS, glossary rule 4). The term
 # is written as in the glossary; `at` names the places (`messages/en.json#key`,
-# `userDocs/file.md`, `api:property Schema.name`; `*` matches anything); the reason says which
-# sense is meant. An entry that matches nothing fails, so the file cannot go stale.
+# `userDocs/file.md`, `api:property Schema.name`, and for a name the code declares
+# `crates/bb-app/src/file.rs#fn name` or `web/app/src/file.ts#function name`; `*` matches anything);
+# the reason says which sense is meant. An entry that matches nothing fails, so the file cannot go
+# stale.
 
 [[allow]]
 term = "link"

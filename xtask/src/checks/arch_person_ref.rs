@@ -488,14 +488,14 @@ mod tests {
     #[test]
     fn bad_example_a_name_and_an_address_in_a_view_and_in_the_description() {
         let sources = api_source(
-            "#[derive(Serialize, ToSchema)]\npub(crate) struct AssigneeBody {\n    display_name: String,\n    pub email: String,\n}\n",
+            "#[derive(Serialize, ToSchema)]\npub(crate) struct AssignedPersonBody {\n    display_name: String,\n    pub email: String,\n}\n",
         );
         let spec = json!({
             "paths": {"/a": {"get": {"responses": {"200": {"content": {"application/json": {"schema": {
-                "properties": {"inner": {"$ref": "#/components/schemas/AssigneeBody"}}
+                "properties": {"inner": {"$ref": "#/components/schemas/AssignedPersonBody"}}
             }}}}}}}},
             "components": {"schemas": {
-                "AssigneeBody": {"properties": {"display_name": {}, "email": {}}},
+                "AssignedPersonBody": {"properties": {"display_name": {}, "email": {}}},
             }},
         });
         let findings = evaluate(&sources, &spec, &[]);

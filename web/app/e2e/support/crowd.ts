@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
 
-import { makePeopleWithRoles, roleName } from "./access.ts";
-import { ada, makeAdmin, type Person } from "./accounts.ts";
-import { makeOwnField } from "./fields.ts";
-import { countIssueIds, makeIssue } from "./issues.ts";
-import { makeProject } from "./projects.ts";
+import { createPeopleWithRoles, roleName } from "./access.ts";
+import { ada, createAdmin, type Person } from "./accounts.ts";
+import { createOwnField } from "./fields.ts";
+import { countIssueIds, createIssue } from "./issues.ts";
+import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 import { inOrder } from "./sequence.ts";
 
@@ -71,8 +71,8 @@ export const crowdIssues = {
   status: "WEB-2",
   fields: "WEB-3",
   network: "WEB-4",
-  bulk: ["WEB-5", "WEB-6", "WEB-7", "WEB-8"],
-  bulkEditing: ["WEB-9", "WEB-10", "WEB-11", "WEB-12"],
+  manyChanges: ["WEB-5", "WEB-6", "WEB-7", "WEB-8"],
+  manyChangeEditing: ["WEB-9", "WEB-10", "WEB-11", "WEB-12"],
 } as const;
 
 /** The titles of the issues, in the order they are made. */
@@ -96,16 +96,18 @@ const titles = [
  * own fields of two choices, and nine Team members next to the administrator.
  */
 export async function prepareCrowd(server: Instance): Promise<void> {
-  const admin = await makeAdmin(server);
+  const admin = await createAdmin(server);
   await countIssueIds(admin);
-  await makeProject(admin, "WEB", "Website");
-  await inOrder(areaNames.map((name) => () => makeOwnField(admin, name, "pick-one", areaChoices)));
+  await createProject(admin, "WEB", "Website");
+  await inOrder(
+    areaNames.map((name) => () => createOwnField(admin, name, "pick-one", areaChoices)),
+  );
   await inOrder(
     titles.map((title) => async () => {
-      await makeIssue(admin, "WEB", title, `The text of: ${title}`);
+      await createIssue(admin, "WEB", title, `The text of: ${title}`);
     }),
   );
-  await makePeopleWithRoles(
+  await createPeopleWithRoles(
     server,
     admin,
     crowd.slice(1).map((person) => ({ person, role: roleName.teamMember, project: "WEB" })),

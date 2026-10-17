@@ -16,7 +16,7 @@ use crate::docs::text::has_extension;
 use crate::generate::icu::{Placeholders, placeholders};
 use crate::generate::made_keys::{Made, made_keys};
 use crate::generate::messages::{
-    FEATURES_FOLDER, PART_IMPORT, SHARED, SOURCE_LOCALE_PATH, feature_entries,
+    FEATURES_FOLDER, PART_IMPORT, Quotes, SHARED, SOURCE_LOCALE_PATH, feature_entries,
     features_without_part, is_generated_catalog, is_server_only, is_test_or_generated, parse_pairs,
     parts_of, string_literals,
 };
@@ -136,7 +136,7 @@ fn check_parts(
         .iter()
         .filter(|file| !is_generated_catalog(&file.path))
     {
-        for literal in string_literals(&file.text, false) {
+        for literal in string_literals(&file.text, Quotes::DoubleAndSingle) {
             let Some(part) = literal.strip_prefix(PART_IMPORT) else {
                 continue;
             };
@@ -160,7 +160,7 @@ fn starts_with_import(text: &str, module: &str) -> bool {
     first
         .strip_prefix("import")
         .is_some_and(|rest| rest.trim_start().starts_with(['"', '\'']))
-        && string_literals(first, false) == [module]
+        && string_literals(first, Quotes::DoubleAndSingle) == [module]
 }
 
 /// Parses one catalog; returns its keys with their placeholders and the problems found inside.
@@ -274,7 +274,14 @@ fn check_usage(
         } else {
             strip_web_comments(&file.text)
         };
-        for literal in string_literals(&text, is_rust(&file.path)) {
+        for literal in string_literals(
+            &text,
+            if is_rust(&file.path) {
+                Quotes::Double
+            } else {
+                Quotes::DoubleAndSingle
+            },
+        ) {
             if !is_test && let Some((key, _)) = source.get_key_value(literal.as_str()) {
                 used.insert(key.as_str());
             }

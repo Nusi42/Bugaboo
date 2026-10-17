@@ -7,7 +7,7 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{make_field, reader_of, severity};
+use super::fields_http::{create_field, reader_of, severity};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_in, ok};
 
@@ -27,7 +27,7 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
             id_in(&level["choices"][0])?,
             id_in(&level["choices"][2])?,
         );
-        let salary = make_field(
+        let salary = create_field(
             &mut ada,
             json!({"name": "Salary band", "kind": "text", "applies_to": "issues"}),
         )
@@ -104,7 +104,7 @@ async fn iss_06_history_shows_an_own_field_by_the_mask_of_the_reader() -> TestRe
     .await
 }
 
-/// Makes a second issue type, *Question*; its ID.
+/// Creates a second issue type, *Question*; its ID.
 async fn question_type(ada: &mut Browser) -> Result<String, Failure> {
     let made = ada
         .send(
@@ -153,14 +153,14 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let centre = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Cost centre", "kind": "text", "applies_to": "issues"}),
             )
             .await?,
         )?;
         let approved = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Approved", "kind": "yes-no", "applies_to": "issues"}),
             )
@@ -182,7 +182,7 @@ async fn iss_06_history_follows_a_level_that_hides_a_field_for_one_issue_type_on
             ],
         )
         .await?;
-        let in_bug = key_in(ok(&site.make(&mut ada, "A bug").await?)?)?;
+        let in_bug = key_in(ok(&site.create(&mut ada, "A bug").await?)?)?;
         let made = ada
             .send(
                 "POST",
@@ -273,7 +273,7 @@ fn assert_twin_is_not_there(items: &[Value], twin: &str, secrets: &[&str]) {
 
 /// Makes one field of each kind the history words by itself; their IDs, in this order: yes-no,
 /// duration, whole number, decimal, date, person, people, group, issue.
-async fn make_value_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
+async fn create_value_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
     let mut fields = Vec::new();
     for (name, kind) in [
         ("Billable", "yes-no"),
@@ -286,7 +286,7 @@ async fn make_value_fields(ada: &mut Browser) -> Result<Vec<String>, Failure> {
         ("Team", "group"),
         ("Twin", "issue"),
     ] {
-        let made = make_field(
+        let made = create_field(
             ada,
             json!({"name": name, "kind": kind, "applies_to": "issues"}),
         )
@@ -302,7 +302,7 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
     each_database("iss_06_own_fields_values", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let fields = make_value_fields(&mut ada).await?;
+        let fields = create_value_fields(&mut ada).await?;
         let [
             billable,
             effort,
@@ -335,17 +335,17 @@ async fn iss_06_history_words_values_as_the_issue_page_does_and_hides_what_canno
             "max@example.test",
             &[
                 Permission::SeeProjects,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
                 Permission::ChangeOwnIssues,
             ],
             &levels,
         )
         .await?;
-        let theirs = key_in(ok(&site.make(&mut max, "Max found it").await?)?)?;
-        let hidden = ok(&site.make(&mut ada, "Only Ada sees it").await?)?.clone();
+        let theirs = key_in(ok(&site.create(&mut max, "Max found it").await?)?)?;
+        let hidden = ok(&site.create(&mut ada, "Only Ada sees it").await?)?.clone();
         let hidden_key = key_in(&hidden)?;
         let hidden_id = hidden["id"].as_str().ok_or("no id")?.to_owned();
-        let issue = key_in(ok(&site.make(&mut ada, "Everyone sees it").await?)?)?;
+        let issue = key_in(ok(&site.create(&mut ada, "Everyone sees it").await?)?)?;
         let values = json!({
             billable: true,
             effort: 5400,

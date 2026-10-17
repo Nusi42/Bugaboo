@@ -83,7 +83,9 @@ export async function readPage(
         session.client.GET("/api/v1/issues/{issue}/related-issues", { params }),
       ),
       read("history", () => session.client.GET("/api/v1/issues/{issue}/history", { params })),
-      read("sorting", () => session.client.GET("/api/v1/issues/{issue}/sorting", { params })),
+      read("labels-and-tags", () =>
+        session.client.GET("/api/v1/issues/{issue}/labels-and-tags", { params }),
+      ),
       read("follow", () => session.client.GET("/api/v1/issues/{issue}/follow", { params })),
       read("followers", () => session.client.GET("/api/v1/issues/{issue}/followers", { params })),
     ]),

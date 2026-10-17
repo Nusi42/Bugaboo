@@ -78,8 +78,8 @@ export function tagLinesOf(pages: readonly Schema<"Page_TagItem">[] | undefined)
 }
 
 /** The tags and labels of one issue, and what the person may do with them. */
-export function useIssueSorting(issue: string) {
-  return api.query.useQuery("get", "/api/v1/issues/{issue}/sorting", {
+export function useIssueLabelsAndTags(issue: string) {
+  return api.query.useQuery("get", "/api/v1/issues/{issue}/labels-and-tags", {
     params: { path: { issue } },
   });
 }
@@ -114,7 +114,7 @@ export interface Counted {
  * A tag or label was put on an issue or taken off: the page writes the version the issue counted
  * up to into what it knows, so a change made right after does not conflict, and shows the rest again.
  */
-export function afterSorting(issue: string, { version }: Counted): void {
+export function afterLabelsAndTags(issue: string, { version }: Counted): void {
   versionCounted(issue, version);
   refreshLabels();
 }
@@ -127,7 +127,7 @@ export function groupChoices(
   groups: readonly LabelGroup[],
 ): readonly { readonly value: string; readonly label: string }[] {
   return [
-    { value: NO_GROUP, label: t("labels.no-group") },
+    { value: NO_GROUP, label: t("labels.no-label-group") },
     ...groups
       .filter((group) => !group.retired)
       .map((group) => ({ value: group.id, label: group.name })),

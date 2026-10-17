@@ -145,7 +145,7 @@ export function useLayoutEditor({ project, issueType, kind }: EditorQuery) {
 }
 
 /** *Customize this form*: makes the layout of the place as a copy of the one that counts there. */
-export function useMakeLayout({ project, issueType, kind }: EditorQuery) {
+export function useCreateLayout({ project, issueType, kind }: EditorQuery) {
   return useMutation({
     mutationFn: async () =>
       dataOf(

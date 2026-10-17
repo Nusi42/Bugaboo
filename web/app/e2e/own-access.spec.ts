@@ -2,12 +2,12 @@ import { addressInProject, paths } from "../src/shared/paths.ts";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { rowOfPerson } from "./support/rows.ts";
-import { addToGroup, giveGroupRole, giveRole, makeGroup, roleName } from "./support/access.ts";
+import { addToGroup, giveGroupRole, giveRole, createGroup, roleName } from "./support/access.ts";
 
 // The question before a change takes away a person's own way to manage roles (SEC-08, WP-11 review):
 // it comes exactly when the engine says so, for every way of losing it. Ada is an administrator only
@@ -16,16 +16,16 @@ import { addToGroup, giveGroupRole, giveRole, makeGroup, roleName } from "./supp
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
+      const admin = await createAdmin(server);
       const adaId = await ownId(admin);
-      const bobSession = await makePerson(server, admin, bob);
+      const bobSession = await createPerson(server, admin, bob);
       const bobId = await ownId(bobSession);
-      const cleoSession = await makePerson(server, admin, cleo);
+      const cleoSession = await createPerson(server, admin, cleo);
       const cleoId = await ownId(cleoSession);
       await cleoSession.dispose();
       // Bob is an administrator by himself, so Ada can let go of her own row.
       await giveRole(admin, bobId, roleName.administrator, null);
-      const admins = await makeGroup(admin, "Admins");
+      const admins = await createGroup(admin, "Admins");
       await addToGroup(admin, admins, adaId);
       await giveGroupRole(admin, admins, roleName.administrator, null);
       const adasRow = await rowOfPerson(bobSession, adaId);
@@ -33,8 +33,8 @@ test.use({
         params: { path: { assignment_id: adasRow ?? "" } },
       });
       await bobSession.dispose();
-      await makeProject(admin, "ACME", "Acme");
-      const leads = await makeGroup(admin, "Leads");
+      await createProject(admin, "ACME", "Acme");
+      const leads = await createGroup(admin, "Leads");
       await addToGroup(admin, leads, cleoId);
       await giveGroupRole(admin, leads, roleName.projectLead, "ACME");
       await admin.dispose();

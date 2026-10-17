@@ -79,18 +79,18 @@ macro_rules! permissions {
 permissions! {
     /// See the project and what is in it.
     SeeProjects => ("see-projects", Projects, Project, See),
-    /// Make projects at the top level.
-    MakeProjects => ("make-projects", Projects, Organization, Change),
-    /// Make sub-projects inside the project.
-    MakeSubProjects => ("make-sub-projects", Projects, Project, Change),
+    /// Create projects at the top level.
+    CreateProjects => ("create-projects", Projects, Organization, Change),
+    /// Create sub-projects inside the project.
+    CreateSubProjects => ("create-sub-projects", Projects, Project, Change),
     /// Move sub-projects into or out of the project.
     MoveProjects => ("move-projects", Projects, Project, Change),
     /// Change the project's name, short name and settings.
     ChangeProjectSettings => ("change-project-settings", Projects, Project, Manage),
     /// See every issue of the project; without it, only the issues the person reported.
     SeeIssues => ("see-issues", Issues, Project, See),
-    /// Make issues in the project.
-    MakeIssues => ("make-issues", Issues, Project, Change),
+    /// Create issues in the project.
+    CreateIssues => ("create-issues", Issues, Project, Change),
     /// Change anybody's issues, in the fields the person may change.
     ChangeIssues => ("change-issues", Issues, Project, Change),
     /// Change the issues the person reported, in the fields they may change.
@@ -105,7 +105,7 @@ permissions! {
     EditAnyway => ("edit-anyway", Issues, Project, Manage),
     /// Manage issue types, kinds of relation and layouts.
     ManageIssueTypes => ("manage-issue-types", WorkSettings, Project, Manage),
-    /// Make, change and retire fields.
+    /// Create, change and retire fields.
     ManageFields => ("manage-fields", WorkSettings, Organization, Manage),
     /// Manage labels and tags, also renaming and combining them.
     ManageLabels => ("manage-labels", WorkSettings, Project, Manage),
@@ -119,9 +119,9 @@ permissions! {
     ManagePeople => ("manage-people", People, Organization, Manage),
     /// Invite people and take invitations back.
     ManageInvitations => ("manage-invitations", People, Organization, Manage),
-    /// Make, rename and delete groups and change who is in them.
+    /// Create, rename and delete groups and change who is in them.
     ManageGroups => ("manage-groups", People, Organization, Manage),
-    /// Make, change and delete roles.
+    /// Create, change and delete roles.
     ManageRoles => ("manage-roles", People, Organization, Manage),
     /// Change organization settings.
     ChangeOrganizationSettings => ("change-organization-settings", Settings, Organization, Manage),

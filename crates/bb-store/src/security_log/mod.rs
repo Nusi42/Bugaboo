@@ -130,7 +130,10 @@ impl Database {
         Ok(entry)
     }
 
-    /// Up to `limit` entries after place `after_seq`, oldest first (0 for the start).
+    /// Up to `limit` entries after place `after_seq`, oldest first (0 for the start). This is the
+    /// reader for showing the log: an entry written with a former code has the code that stands
+    /// for it now ([`bb_core::sign_in::shown_code`]). The entry is not verifiable like this (its
+    /// hash was made from the stored code); verifying reads the stored entries.
     ///
     /// # Errors
     /// Fails when the database fails or an entry is unreadable.
@@ -139,12 +142,27 @@ impl Database {
         after_seq: i64,
         limit: u64,
     ) -> Result<Vec<SecurityLogEntry>, StoreError> {
-        self.fetch_all(&entries_after(after_seq, limit))
+        let mut entries: Vec<SecurityLogEntry> = self
+            .fetch_all(&entries_after(after_seq, limit))
             .await?
             .iter()
             .map(read_entry)
-            .collect()
+            .collect::<Result<_, _>>()?;
+        for entry in &mut entries {
+            if let Some(shown) = shown_action(&entry.action) {
+                entry.action = shown;
+            }
+        }
+        Ok(entries)
     }
+}
+
+/// The action to show for a stored one, when it is a former code.
+fn shown_action(stored: &TechnicalName) -> Option<TechnicalName> {
+    let shown = bb_core::sign_in::shown_code(stored.as_str());
+    (shown != stored.as_str())
+        .then(|| TechnicalName::new(shown).ok())
+        .flatten()
 }
 
 #[cfg(test)]

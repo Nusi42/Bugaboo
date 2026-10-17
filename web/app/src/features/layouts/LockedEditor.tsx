@@ -2,7 +2,7 @@ import type { Schema } from "@bugaboo/api-client";
 import { useState } from "react";
 
 import { DraftEditor } from "./DraftEditor.tsx";
-import { LockNotes } from "./LockNotes.tsx";
+import { EditNotices } from "./EditNotices.tsx";
 import { useLayoutLock } from "./use-layout-lock.ts";
 
 /**
@@ -23,7 +23,7 @@ export function LockedEditor({
   const version = editor.layout?.version;
   return (
     <>
-      <LockNotes lock={lock} />
+      <EditNotices lock={lock} />
       <DraftEditor
         key={version}
         editor={editor}

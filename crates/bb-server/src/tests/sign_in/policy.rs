@@ -60,17 +60,17 @@ async fn sec_01_a_person_without_a_role_can_do_nothing_and_sees_no_project() -> 
         }
         // And she cannot do anything herself.
         assert_eq!(
-            refused(org.make_role(&bea, "Mine", &VIEW).await),
+            refused(org.create_role(&bea, "Mine", &VIEW).await),
             Some(ErrorCode::Forbidden)
         );
-        let make = |parent| {
+        let create = |parent| {
             let session = bea.session.clone();
             async move {
                 org.rig
                     .api()
-                    .make_project(
+                    .create_project(
                         Rig::info(),
-                        bb_app::projects::MakeProject {
+                        bb_app::projects::CreateProject {
                             session_token: session,
                             parent,
                             short_name: "MINE".to_owned(),
@@ -80,11 +80,11 @@ async fn sec_01_a_person_without_a_role_can_do_nothing_and_sees_no_project() -> 
                     .await
             }
         };
-        assert_eq!(refused(make(None).await), Some(ErrorCode::Forbidden));
+        assert_eq!(refused(create(None).await), Some(ErrorCode::Forbidden));
         // A project that exists but that she may not know about answers like one that does not
         // exist: the same code, the same everything.
-        let hidden = refused(make(Some(projects.acme)).await);
-        let missing = refused(make(Some(unknown_project())).await);
+        let hidden = refused(create(Some(projects.acme)).await);
+        let missing = refused(create(Some(unknown_project())).await);
         assert_eq!(hidden, Some(ErrorCode::NotFound));
         assert_eq!(hidden, missing);
         Ok(())
@@ -152,7 +152,7 @@ async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> Test
         let projects = tree(&org).await?;
         let bea = org.person().await?;
         let member = org.role("Looker", &VIEW).await?;
-        let other_role = org.role("Helper", &[Permission::MakeSubProjects]).await?;
+        let other_role = org.role("Helper", &[Permission::CreateSubProjects]).await?;
         let from_above = org.give(&bea, member.id, projects.acme).await?;
         let no_access = org.forbid(&bea, projects.web).await?;
         assert!(org.can(&bea, Permission::SeeProjects, Some(projects.acme)).await?);
@@ -171,7 +171,7 @@ async fn sec_03_no_access_on_a_sub_project_wins_over_a_role_from_above() -> Test
         );
         // The nearer row decides: a role given lower down counts again.
         org.give(&bea, other_role.id, projects.api).await?;
-        assert!(org.can(&bea, Permission::MakeSubProjects, Some(projects.api)).await?);
+        assert!(org.can(&bea, Permission::CreateSubProjects, Some(projects.api)).await?);
         assert!(!org.can(&bea, Permission::SeeProjects, Some(projects.api)).await?);
         Ok(())
     })
@@ -185,7 +185,7 @@ async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> TestRes
         let org = Org::start(&rig).await?;
         let projects = tree(&org).await?;
         let member = org.role("Looker", &VIEW).await?;
-        let direct = org.role("Helper", &[Permission::MakeSubProjects]).await?;
+        let direct = org.role("Helper", &[Permission::CreateSubProjects]).await?;
         let on_web = |subject, given| {
             org.assign(
                 &org.admin,
@@ -225,7 +225,7 @@ async fn sec_03_the_same_project_rules_of_m2_q1_person_before_group() -> TestRes
         );
         org.give(&cy, direct.id, projects.web).await?;
         assert!(
-            org.can(&cy, Permission::MakeSubProjects, Some(projects.web))
+            org.can(&cy, Permission::CreateSubProjects, Some(projects.web))
                 .await?
         );
         assert!(

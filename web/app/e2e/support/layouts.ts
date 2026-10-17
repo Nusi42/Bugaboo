@@ -4,7 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { addressInProject, paths, projectIssuesAddress } from "../../src/shared/paths.ts";
 import { roleId, roleName, setFieldLevel, signedInAdmin } from "./access.ts";
-import { makeOwnField } from "./fields.ts";
+import { createOwnField } from "./fields.ts";
 import { firstIssueType, newIssueDialog, openNewIssueDialog, prepareWeb } from "./issues.ts";
 import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
@@ -20,7 +20,7 @@ export const dueDate = "Due date";
 export async function prepareLayouts(server: Instance): Promise<void> {
   await prepareWeb(server);
   const admin = await signedInAdmin(server);
-  const made = await makeOwnField(admin, dueDate, "date");
+  const made = await createOwnField(admin, dueDate, "date");
   await setFieldLevel(
     admin,
     { role: await roleId(admin, roleName.guest), field: made.id },

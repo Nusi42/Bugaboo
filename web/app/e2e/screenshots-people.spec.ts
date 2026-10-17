@@ -7,16 +7,16 @@ import {
   personAddress,
   roleAddress,
 } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin, makePerson, ownId } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin, createPerson, ownId } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
 import {
   addToGroup,
   giveGroupRole,
   giveRole,
-  makeGroup,
+  createGroup,
   roleIds,
   roleName,
 } from "./support/access.ts";
@@ -40,15 +40,15 @@ let roleId = "";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const bobSession = await makePerson(server, admin, bob);
+      const admin = await createAdmin(server);
+      const bobSession = await createPerson(server, admin, bob);
       bobId = await ownId(bobSession);
       await bobSession.dispose();
-      await (await makePerson(server, admin, cleo)).dispose();
-      const acme = await makeProject(admin, "ACME", "Acme");
-      await makeProject(admin, "WEB", "Website", acme);
-      groupId = await makeGroup(admin, "Backend");
-      await makeGroup(admin, "Design");
+      await (await createPerson(server, admin, cleo)).dispose();
+      const acme = await createProject(admin, "ACME", "Acme");
+      await createProject(admin, "WEB", "Website", acme);
+      groupId = await createGroup(admin, "Backend");
+      await createGroup(admin, "Design");
       await addToGroup(admin, groupId, bobId);
       roleId = (await roleIds(admin)).get(roleName.teamMember) ?? "";
       // The group has Team member on Acme and its sub-projects; on Website it has No access.

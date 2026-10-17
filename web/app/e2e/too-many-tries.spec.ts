@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, sendPassword } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
@@ -10,7 +10,7 @@ test.use({
   serverSettings: { BUGABOO_SIGN_IN_FAILURES_PER_MINUTE: "3" },
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

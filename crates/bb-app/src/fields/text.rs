@@ -219,11 +219,11 @@ pub async fn save_field_text<S: AuthStore>(
     saved.updated_at = at;
     let assigned: Vec<bb_core::id::UserId> = ctx
         .store()
-        .assignees(saved.id)
+        .assigned_people(saved.id)
         .await
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
-        .map(|assignee| assignee.person)
+        .map(|assigned_person| assigned_person.person)
         .collect();
     let view = ctx.issue_view(&mut views, &saved, &assigned).await?;
     Ok(held.authorize(view))

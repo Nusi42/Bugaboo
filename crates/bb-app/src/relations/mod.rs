@@ -16,7 +16,7 @@ mod store;
 mod types;
 
 pub use kinds::{
-    change_relation_kind, make_relation_kind, make_starting_relation_kinds, relation_kinds,
+    change_relation_kind, create_relation_kind, create_starting_relation_kinds, relation_kinds,
 };
 pub use parents::set_parent;
 pub use read::{issue_relations, related_issues, sub_issues};

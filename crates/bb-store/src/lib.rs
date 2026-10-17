@@ -10,7 +10,6 @@
 mod access_keys;
 mod anchor;
 mod auth;
-mod bulk;
 mod chain;
 mod comments;
 mod db;
@@ -25,6 +24,7 @@ mod jobs;
 mod keys;
 mod layout;
 mod layouts;
+mod many_changes;
 mod migrations;
 mod paging;
 mod policy;
@@ -44,7 +44,7 @@ pub use chain::{BreakReason, Verification};
 pub use db::{Database, Dialect, Transaction};
 pub use error::{SecretProblem, SettingProblem, StoreError};
 pub use jobs::{NewJob, backoff};
-pub use keys::{KeyRing, MASTER_KEY_FILE, MasterKey, SigningKey};
+pub use keys::{KeyRing, MASTER_KEY_FILE, MasterKey, OpenMode, SigningKey};
 pub use layout::{DATABASE_FILE, KEYS_FOLDER, LOGS_FOLDER, SECURITY_LOG_ANCHOR_FILE};
 pub use migrations::latest_version;
 pub use schema::{StoredTable, tables};
@@ -71,8 +71,8 @@ mod test_support {
     use bb_app::ports::ChangeStore;
     use bb_core::id::{IssueId, IssueTypeId, ProjectId};
     use bb_core::issue::{Issue, IssueIcon, IssueType, Priority, Status};
-    use bb_core::issue_key::IssueCode;
     use bb_core::project::{Project, ShortName};
+    use bb_core::readable_id::IssueCode;
     use bb_core::version::FIRST_VERSION;
 
     use crate::{AuthStorage, Database, LogSeal};

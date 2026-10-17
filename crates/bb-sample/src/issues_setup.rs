@@ -10,12 +10,14 @@ use std::str::FromStr;
 
 use bb_app::access::{Authorized, Masked};
 use bb_app::auth::AppError;
-use bb_app::fields::{MakeField, NewChoice, make_field};
+use bb_app::fields::{CreateField, NewChoice, create_field};
 use bb_app::issues::{IssueTypesQuery, issue_types};
 use bb_app::projects::ProjectStore as _;
 use bb_app::relations::{RelationKindsQuery, relation_kinds};
 use bb_app::settings::{ChangeSetting, SettingsScope, change_setting};
-use bb_app::tags::{MakeLabel, MakeLabelGroup, TagStore as _, make_label, make_label_group};
+use bb_app::tags::{
+    CreateLabel, CreateLabelGroup, TagStore as _, create_label, create_label_group,
+};
 use bb_core::id::{ChoiceId, FieldId, IssueTypeId, LabelId, ProjectId, RelationKindId};
 use bb_core::own_fields::{FieldFor, FieldType, Rules, Scope};
 use bb_core::paging::PAGE_SIZE_MAX;
@@ -69,7 +71,7 @@ pub(crate) fn id_in<T: FromStr>(value: &Value, member: &str) -> Result<T, Sample
 
 impl Setup {
     /// Sets up what the issues stand on, as the administrator whose session is `token`.
-    pub(crate) async fn make(
+    pub(crate) async fn create(
         world: &World<'_>,
         token: &str,
         names: &IssuePlan,
@@ -136,9 +138,9 @@ impl Setup {
         let mut fields = Vec::new();
         for plan in &names.fields {
             world.tick();
-            fields.push(make_one_field(world, token, plan, names, &types, &projects).await?);
+            fields.push(create_one_field(world, token, plan, names, &types, &projects).await?);
         }
-        let labels = make_labels(world, token, names).await?;
+        let labels = create_labels(world, token, names).await?;
         Ok(Self {
             types,
             kinds,
@@ -160,7 +162,7 @@ async fn project_ids(world: &World<'_>) -> Result<BTreeMap<String, ProjectId>, S
 }
 
 /// Makes one own field for issues, used where the plan says.
-async fn make_one_field(
+async fn create_one_field(
     world: &World<'_>,
     token: &str,
     plan: &FieldPlan,
@@ -187,9 +189,9 @@ async fn make_one_field(
         scope.projects.push(*project);
     }
     let made = json(
-        make_field(
+        create_field(
             &world.services.ctx(world.request()),
-            MakeField {
+            CreateField {
                 session_token: token.to_owned(),
                 name: plan.name.clone(),
                 help: None,
@@ -229,7 +231,7 @@ async fn make_one_field(
 
 /// Makes the groups of labels and the labels, in the order of [`crate::fields::labels`]. The
 /// answers of these use cases are not masked views, so the IDs are looked up by name.
-async fn make_labels(
+async fn create_labels(
     world: &World<'_>,
     token: &str,
     names: &IssuePlan,
@@ -238,9 +240,9 @@ async fn make_labels(
     let step = |error: AppError| SampleError::step(Step::Labels, &error);
     for group in &names.label_groups {
         world.tick();
-        make_label_group(
+        create_label_group(
             &ctx,
-            MakeLabelGroup {
+            CreateLabelGroup {
                 session_token: token.to_owned(),
                 name: group.name.clone(),
                 pick_one: group.pick_one,
@@ -256,9 +258,9 @@ async fn make_labels(
             .ok_or_else(|| SampleError::NotMade(group.name.clone()))?;
         for label in &group.labels {
             world.tick();
-            make_label(
+            create_label(
                 &ctx,
-                MakeLabel {
+                CreateLabel {
                     session_token: token.to_owned(),
                     name: label.clone(),
                     color: None,
@@ -271,9 +273,9 @@ async fn make_labels(
     }
     for label in &names.labels {
         world.tick();
-        make_label(
+        create_label(
             &ctx,
-            MakeLabel {
+            CreateLabel {
                 session_token: token.to_owned(),
                 name: label.clone(),
                 color: None,

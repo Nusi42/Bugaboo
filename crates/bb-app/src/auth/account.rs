@@ -6,9 +6,9 @@ use bb_auth::{
     domain_is_listed, same_digest,
 };
 use bb_core::ErrorCode;
-use bb_core::bulk::{BulkStatus, RunsToEnd};
 use bb_core::event::{Actor, RecordKind};
 use bb_core::id::{SessionId, UserId};
+use bb_core::many_changes::{ManyChangeStatus, RunsToEnd};
 use bb_core::person::Person;
 use bb_core::sign_in::{SecurityAction, SessionStage, SetupCode};
 use serde_json::json;
@@ -131,7 +131,7 @@ pub async fn issue_setup_code<S: AuthStore>(
     Ok(code)
 }
 
-/// Makes the first administrator with the setup code and signs them in. The setup code is used
+/// Creates the first administrator with the setup code and signs them in. The setup code is used
 /// up in the same change, so it works once, and setup is closed for good afterwards.
 ///
 /// # Errors
@@ -234,7 +234,7 @@ pub async fn complete_setup<S: AuthStore>(
     )
     .await;
     ctx.note(
-        SecurityAction::AssignmentMade,
+        SecurityAction::AssignmentCreated,
         Some(person.id),
         Some(entity(RecordKind::Assignment, assignment_id)),
     )
@@ -242,7 +242,7 @@ pub async fn complete_setup<S: AuthStore>(
     ctx.started(&new, &person, &settings, None)
 }
 
-/// Makes an account without an invitation, when an administrator allows it, and signs the
+/// Creates an account without an invitation, when an administrator allows it, and signs the
 /// person in.
 ///
 /// # Errors
@@ -305,7 +305,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
     ctx.started(&new, &person, &settings, None)
 }
 
-/// Makes an account from an invitation link and signs the person in. The invitation is used up
+/// Creates an account from an invitation link and signs the person in. The invitation is used up
 /// in the same change.
 ///
 /// # Errors
@@ -422,10 +422,10 @@ pub async fn change_password<S: AuthStore>(
                 S::set_password(transaction, person_id, &hash, now).await?;
                 S::delete_sessions_of(transaction, person_id, None).await?;
                 // What the person started in the background does not go on after a new password.
-                S::end_bulk_runs(
+                S::end_many_changes_runs(
                     transaction,
                     &RunsToEnd::OfPerson(person_id),
-                    BulkStatus::Stopped,
+                    ManyChangeStatus::Stopped,
                     now,
                 )
                 .await?;

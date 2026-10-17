@@ -166,7 +166,7 @@ export function refreshFields(): void {
 /** The answers that show the tags and labels of an issue or the lists of them. */
 const LABEL_READS = [
   "/api/v1/labels",
-  "/api/v1/issues/{issue}/sorting",
+  "/api/v1/issues/{issue}/labels-and-tags",
   "/api/v1/projects/{project}/tag-suggestions",
   "/api/v1/issues/{issue}/history",
 ] as const;

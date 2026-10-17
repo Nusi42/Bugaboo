@@ -12,7 +12,7 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
 use super::exit_masks::{issue_of_type, person_with_levels};
-use super::fields_http::make_field;
+use super::fields_http::create_field;
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, id_in, ok};
 
@@ -63,7 +63,7 @@ async fn sec_06_a_lock_or_draft_is_only_for_a_part_the_record_has_and_the_role_l
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let notes = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Notes", "kind": "long-text", "applies_to": "issues"}),
             )

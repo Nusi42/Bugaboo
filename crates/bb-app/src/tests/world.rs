@@ -9,7 +9,7 @@ use bb_core::id::UserId;
 use jiff::Timestamp;
 
 use super::fake::FakeStore;
-use crate::access::{MakeStartingRoles, make_starting_roles};
+use crate::access::{CreateStartingRoles, create_starting_roles};
 use crate::auth::{
     AcceptInvitation, AppError, AuthServices, CompleteSetup, CreateInvitation, Ctx, IssueSetupCode,
     NoFailureLimit, RequestInfo, Started, accept_invitation, complete_setup, create_invitation,
@@ -105,7 +105,7 @@ impl World {
     pub(crate) async fn new_without_issue_types() -> Result<Self, String> {
         let mut world = Self::bare()?;
         let ctx = world.ctx();
-        make_starting_roles(&ctx, MakeStartingRoles)
+        create_starting_roles(&ctx, CreateStartingRoles)
             .await
             .map_err(text)?;
         let code = issue_setup_code(&ctx, IssueSetupCode)

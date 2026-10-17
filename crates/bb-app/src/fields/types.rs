@@ -28,7 +28,7 @@ pub struct NewChoice {
 }
 
 /// Make an own field.
-pub struct MakeField {
+pub struct CreateField {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What it is called, as typed.

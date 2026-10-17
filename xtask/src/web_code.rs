@@ -42,6 +42,24 @@ fn starts_regex(before: &str) -> bool {
 /// ([`starts_regex`]); after a `)` or a `}` it counts as a division. New lines stay,
 /// so line numbers still fit.
 pub(crate) fn strip_comments(text: &str) -> String {
+    blank_out(text, Strings::Keep)
+}
+
+/// The code without its comments and without what is inside strings, template literals and
+/// regular expression literals (their quotes stay): what is left is only code, for the checks
+/// that read the names it declares.
+pub(crate) fn strip(text: &str) -> String {
+    blank_out(text, Strings::Blank)
+}
+
+/// What [`blank_out`] does with the inside of strings, template literals and regular expressions.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Strings {
+    Keep,
+    Blank,
+}
+
+fn blank_out(text: &str, strings: Strings) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
     let mut inside = Inside::Code;
@@ -49,6 +67,7 @@ pub(crate) fn strip_comments(text: &str) -> String {
     while at < chars.len() {
         let c = chars[at];
         let next = chars.get(at + 1).copied();
+        let before = inside;
         match inside {
             Inside::Code if c == '/' && next == Some('/') => {
                 while at < chars.len() && chars[at] != '\n' {
@@ -81,8 +100,9 @@ pub(crate) fn strip_comments(text: &str) -> String {
                 };
             }
             Inside::Quoted(_) | Inside::Template | Inside::Regex { .. } if c == '\\' => {
-                out.push(c);
-                out.extend(next);
+                let blanked = strings == Strings::Blank;
+                out.push(if blanked { ' ' } else { c });
+                out.extend(next.map(|n| if blanked && n != '\n' { ' ' } else { n }));
                 at += 2;
                 continue;
             }
@@ -97,7 +117,13 @@ pub(crate) fn strip_comments(text: &str) -> String {
             }
             Inside::Quoted(_) | Inside::Template | Inside::Regex { .. } => {}
         }
-        out.push(c);
+        // Inside a string that goes on, the characters are blanked; its quotes stay.
+        let inside_string = before != Inside::Code && inside != Inside::Code;
+        out.push(if strings == Strings::Blank && inside_string && c != '\n' {
+            ' '
+        } else {
+            c
+        });
         at += 1;
     }
     out
@@ -117,6 +143,17 @@ mod tests {
         assert!(out.contains("\"x.y\"") && out.contains("'g.h'"));
         assert!(!out.contains("c.d") && !out.contains("e.f") && !out.contains("still"));
         assert!(out.contains("\"http://z\"") && out.contains("`//k`"));
+    }
+
+    #[test]
+    fn strip_leaves_only_code() {
+        let code =
+            "const a = \"function x() {}\"; // c\nlet b = `t ${1} \\` more`; let r = /ab\\//;";
+        let out = strip(code);
+        assert_eq!(out.len(), code.len());
+        assert!(out.contains("const a = \"") && out.contains("let b = `"));
+        assert!(!out.contains("function") && !out.contains("more") && !out.contains("// c"));
+        assert!(out.contains("let r = /"));
     }
 
     #[test]

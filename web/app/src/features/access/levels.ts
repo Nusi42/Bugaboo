@@ -6,7 +6,7 @@ export type FieldLevelCode = Schema<"FieldLevel">;
 export type PeopleKindKey = Schema<"PeopleKind">;
 export type PeopleLevelCode = Schema<"PeopleLevel">;
 /** A project as a name in a sentence, or *a project you cannot see*. */
-export type ProjectLabel = Schema<"KeyProjectRef">;
+export type ProjectLabel = Schema<"ProjectLabelBody">;
 /** A role as a column of a table. */
 export type RoleColumn = Schema<"RoleRefBody">;
 /** Where the level of a cell was set. */

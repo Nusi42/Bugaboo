@@ -23,7 +23,7 @@ use crate::auth::{
 
 /// Makes the starting roles if they were not made yet, and gives the people who were
 /// administrators in M1 their role. There is nothing to say: it only does what is left.
-pub struct MakeStartingRoles;
+pub struct CreateStartingRoles;
 
 /// The role of a starting role, ready to be stored: the role, with the levels it starts with.
 pub(crate) struct NewRole {
@@ -73,7 +73,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         person: bb_core::id::UserId,
     ) -> Result<Assignment, AppError> {
-        make_starting_roles(self, MakeStartingRoles).await?;
+        create_starting_roles(self, CreateStartingRoles).await?;
         let administrator = role_of(self, StartingRole::Administrator).await?;
         Ok(Assignment {
             id: AssignmentId::generate(&mut self.ids())
@@ -92,9 +92,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// Fails when the store fails.
-pub async fn make_starting_roles<S: AuthStore>(
+pub async fn create_starting_roles<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    _input: MakeStartingRoles,
+    _input: CreateStartingRoles,
 ) -> Result<(), AppError> {
     let store = ctx.store();
     let made = store
@@ -140,7 +140,7 @@ pub async fn make_starting_roles<S: AuthStore>(
         match made_now {
             Ok(_) => {
                 ctx.note(
-                    SecurityAction::StartingRolesMade,
+                    SecurityAction::StartingRolesCreated,
                     None,
                     Some(fixed_entity(RecordKind::StartingRoles, "made")?),
                 )
@@ -193,7 +193,7 @@ async fn role_of<S: AuthStore>(
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
     ctx.note(
-        SecurityAction::RoleMade,
+        SecurityAction::RoleCreated,
         None,
         Some(entity(RecordKind::Role, id)),
     )
@@ -253,7 +253,7 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
             .await
             .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
         ctx.note(
-            SecurityAction::AssignmentMade,
+            SecurityAction::AssignmentCreated,
             None,
             Some(entity(RecordKind::Assignment, id)),
         )

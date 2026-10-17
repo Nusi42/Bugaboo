@@ -376,7 +376,7 @@ select.look {
   display: none;
 }
 
-.bulkbar {
+.many-change-bar {
   position: sticky;
   bottom: var(--space-3);
   margin: var(--space-3) auto 0;

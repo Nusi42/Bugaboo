@@ -6,14 +6,14 @@ export const messages = {
   "fields.intro":
     "Fields are the pieces of information on an issue or a project. Add the fields your organization needs, and decide who sees and fills in each one under Field permissions.",
   "fields.list": "Fields",
-  "fields.nothing": "There are no fields of your own yet. Make one below.",
+  "fields.nothing": "There are no fields of your own yet. Create one below.",
   "fields.retired": "Retired",
   "fields.scope-everywhere": "Everywhere",
   "fields.scope-projects": "{count, plural, one {In 1 project} other {In # projects}}",
   "fields.back": "Back to all fields",
   "fields.not-found": "This field is not here.",
-  "fields.make-title": "Make a field",
-  "fields.make-intro":
+  "fields.create-title": "Create a field",
+  "fields.create-intro":
     "Start with what kind of information the field holds. You can change everything else later, except the kind.",
   "fields.kind-question": "What kind of information?",
   "fields.for-question": "What is it for?",
@@ -23,7 +23,7 @@ export const messages = {
   "fields.field-choices-help":
     "One choice on each line. You can change names, colors and icons on the field page.",
   "fields.field-required": "Must be filled in",
-  "fields.make": "Make the field",
+  "fields.create": "Create the field",
   "fields.basics": "Basics",
   "fields.never-to-assistant": "Never send this field to the assistant",
   "fields.default-help": "The value a new issue or project starts with. Leave it empty for none.",

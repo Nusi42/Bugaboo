@@ -21,7 +21,7 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{make_field, set_levels};
+use super::fields_http::{create_field, set_levels};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{PROJECTS, Site, id_in, ok};
 
@@ -45,7 +45,7 @@ pub(super) async fn editor_of(browser: &mut Browser, project: &str) -> Result<Va
     Ok(ok(&editor)?.clone())
 }
 
-/// Makes the layout of the new-issue form of a project (*Customize this form*); the editor view.
+/// Creates the layout of the new-issue form of a project (*Customize this form*); the editor view.
 pub(super) async fn customize(browser: &mut Browser, project: &str) -> Result<Value, Failure> {
     let made = browser
         .send(
@@ -141,7 +141,7 @@ async fn cfg_01_a_guest_gets_the_short_form_and_a_team_member_the_full_one() -> 
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let due = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Due date", "kind": "date", "applies_to": "issues"}),
             )
@@ -227,7 +227,7 @@ async fn cfg_01_a_layout_never_shows_a_field_the_role_cannot_see_and_the_editor_
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let cost = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Cost center", "kind": "text", "applies_to": "issues"}),
             )

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
-import { ada, bob, makeAdmin } from "./support/accounts.ts";
+import { ada, bob, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { expectHome, openFromMenu, signIn, signOut } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
@@ -9,7 +9,7 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });
@@ -48,7 +48,7 @@ test("auth_06 signing up is off by default: the page says so and the sign-in pag
 }) => {
   await page.goto(paths.signIn);
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
-  await expect(page.getByRole("link", { name: t("sign-in.make-account") })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: t("sign-in.create-account") })).toHaveCount(0);
   await page.goto(paths.signUp);
   await expect(page.getByText(t("sign-up.closed"))).toBeVisible();
   await expect(page.getByLabel(t("field.email"))).toHaveCount(0);
@@ -79,7 +79,7 @@ test("auth_06 people of the listed domain make their own account, and others are
   page,
 }) => {
   await page.goto(paths.signIn);
-  await page.getByRole("link", { name: t("sign-in.make-account") }).click();
+  await page.getByRole("link", { name: t("sign-in.create-account") }).click();
   await expect(page.getByRole("heading", { level: 1, name: t("sign-up.title") })).toBeVisible();
 
   await sendSignUp(page, "Mallory", "mallory@elsewhere.test", "Maple-Harvest-Quartz-2291");
@@ -95,5 +95,5 @@ test("auth_06 an administrator can switch it off again", async ({ page }) => {
   await policy.getByRole("button", { name: t("common.save") }).click();
   await expect(policy.getByText(t("save.saved"))).toBeVisible();
   await signOut(page);
-  await expect(page.getByRole("link", { name: t("sign-in.make-account") })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: t("sign-in.create-account") })).toHaveCount(0);
 });

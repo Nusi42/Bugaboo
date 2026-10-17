@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Form, SubmitButton, TextField, partOf, part } from "@bugaboo/ui";
 
 import { ColorChoice } from "../../shared/ColorChoice.tsx";
-import { sortingKind } from "./change-preview.ts";
+import { labelsAndTagsKind } from "./change-preview.ts";
 import { ShowChanges } from "./ChangePreview.tsx";
 import type { TagLine } from "./labels.ts";
 import { SavedNote } from "./SavedNote.tsx";
@@ -44,7 +44,7 @@ export function TagForm({ tag }: { readonly tag: TagLine }) {
       </Form>
       <ShowChanges
         key={draft.name.trim()}
-        kind={sortingKind.tag}
+        kind={labelsAndTagsKind.tag}
         id={tag.id}
         button={t("labels.show-changes")}
         asked={renamed ? { name: draft.name.trim() } : null}

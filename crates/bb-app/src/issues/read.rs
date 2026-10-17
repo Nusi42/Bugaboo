@@ -10,8 +10,8 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, UserId};
-use bb_core::issue_key::IssueKey;
 use bb_core::paging::{Cut, page_len, read_len};
+use bb_core::readable_id::ReadableId;
 use bb_policy::{Authorized, Permission, Place};
 use jiff::Timestamp;
 
@@ -30,7 +30,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let store = self.store();
         let nowhere = IssueId::from_parts(Timestamp::UNIX_EPOCH, [0; 10])
             .map_err(|error| AppError::Internal(error.to_string()))?;
-        if let Ok(key) = address.parse::<IssueKey>() {
+        if let Ok(key) = address.parse::<ReadableId>() {
             let Some(project) = store
                 .project_by_address(&key.short_name)
                 .await
@@ -74,11 +74,11 @@ pub async fn issue<S: AuthStore>(
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     let assigned_to: Vec<UserId> = ctx
         .store()
-        .assignees(issue.id)
+        .assigned_people(issue.id)
         .await
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
-        .map(|assignee| assignee.person)
+        .map(|assigned_person| assigned_person.person)
         .collect();
     let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &issue, &assigned_to).await?;
@@ -154,10 +154,10 @@ pub async fn issues<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?;
     let page = Cut::of(found, limit);
     let next_cursor = page.next_cursor(write_cursor);
-    let assignees = if input.assigned_to {
+    let assigned_people = if input.assigned_to {
         let ids: Vec<IssueId> = page.items.iter().map(|issue| issue.id).collect();
         ctx.store()
-            .assignees_of(&ids)
+            .assigned_people_of(&ids)
             .await
             .map_err(|error| internal::<S>(&error))?
     } else {
@@ -168,10 +168,10 @@ pub async fn issues<S: AuthStore>(
     ctx.preload_values(&mut views, &shown).await?;
     let mut items = Vec::with_capacity(page.items.len());
     for issue in &page.items {
-        let people: Vec<UserId> = assignees
+        let people: Vec<UserId> = assigned_people
             .iter()
-            .filter(|assignee| assignee.issue == issue.id)
-            .map(|assignee| assignee.person)
+            .filter(|assigned_person| assigned_person.issue == issue.id)
+            .map(|assigned_person| assigned_person.person)
             .collect();
         items.push(ctx.issue_view(&mut views, issue, &people).await?);
     }

@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { type Browser, expect } from "@playwright/test";
 
 import { paths } from "../../src/shared/paths.ts";
-import { ada, addCodeApp, makePerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
+import { ada, addCodeApp, createPerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
 import { giveRole, roleName, signedInAdmin } from "./access.ts";
 import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
@@ -28,7 +28,7 @@ async function keeperOf(server: Instance): Promise<ApiSession> {
     return known;
   }
   const admin = await signedInAdmin(server);
-  const made = await makePerson(server, admin, keeper);
+  const made = await createPerson(server, admin, keeper);
   await giveRole(admin, await ownId(made), roleName.administrator, null);
   const { app } = await addCodeApp(made, keeper.password);
   await made.dispose();

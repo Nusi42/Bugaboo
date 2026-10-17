@@ -48,7 +48,6 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
-mod bulk;
 mod check_access;
 mod comments;
 mod editing;
@@ -60,6 +59,7 @@ mod history;
 mod issue_types;
 mod issues;
 mod layouts;
+mod many_changes;
 mod own_access;
 mod people;
 mod people_visibility;
@@ -160,7 +160,7 @@ where
         .merge(issues::routes())
         .merge(relations::routes())
         .merge(tags::routes())
-        .merge(bulk::routes())
+        .merge(many_changes::routes())
         .merge(comments::routes())
         .merge(history::routes())
         .merge(follow::routes())

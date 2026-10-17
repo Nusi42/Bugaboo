@@ -9,12 +9,12 @@ import { RelatedLine } from "./RelatedLine.tsx";
 import { useIssueRelations, useRelatedIssues, type BlockProps } from "./relations.ts";
 
 /** *Add relation*, and the three steps behind it once it is pressed. */
-function Adding({ issueKey }: BlockProps) {
+function Adding({ readableId }: BlockProps) {
   const [adding, setAdding] = useState(false);
   if (adding) {
     return (
       <AddRelation
-        issueKey={issueKey}
+        readableId={readableId}
         onClose={() => {
           setAdding(false);
         }}
@@ -38,10 +38,10 @@ function Adding({ issueKey }: BlockProps) {
  * *Related issues* (ISS-04): each relation in the words of this issue's end (*blocks*, *is blocked
  * by*), only where the viewer may see the issue at the other end, with *Add relation*.
  */
-export function RelatedIssuesBlock({ issueKey }: BlockProps) {
+export function RelatedIssuesBlock({ readableId }: BlockProps) {
   const heading = useId();
-  const header = useIssueRelations(issueKey);
-  const list = useRelatedIssues(issueKey);
+  const header = useIssueRelations(readableId);
+  const list = useRelatedIssues(readableId);
   const related = itemsOf(list.data?.pages);
   const mayChange = header.data?.may_change === true;
   return (
@@ -69,7 +69,7 @@ export function RelatedIssuesBlock({ issueKey }: BlockProps) {
           {t("related-issues.more")}
         </Button>
       ) : null}
-      {mayChange ? <Adding issueKey={issueKey} /> : null}
+      {mayChange ? <Adding readableId={readableId} /> : null}
     </section>
   );
 }

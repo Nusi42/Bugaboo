@@ -13,8 +13,8 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{Issue, IssueAlias};
-use bb_core::issue_key::{IssueCode, IssueKey};
 use bb_core::project::{Project, ShortName};
+use bb_core::readable_id::{IssueCode, ReadableId};
 use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -216,11 +216,11 @@ pub async fn move_issue<S: AuthStore>(
     };
     let assigned: Vec<UserId> = ctx
         .store()
-        .assignees(moved.id)
+        .assigned_people(moved.id)
         .await
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
-        .map(|assignee| assignee.person)
+        .map(|assigned_person| assigned_person.person)
         .collect();
     let mut views = ctx.issue_views(&actor, held.clone(), target).await?;
     let view = ctx.issue_view(&mut views, &moved, &assigned).await?;
@@ -280,10 +280,10 @@ impl MoveWrite {
             .ok_or_else(S::aborted)?
             .short_name;
         let key = |short_name: &ShortName, code: &IssueCode| {
-            json!(IssueKey::new(short_name.clone(), code.clone()).to_string())
+            json!(ReadableId::new(short_name.clone(), code.clone()).to_string())
         };
         let followed = events
-            .make(
+            .create(
                 entity(RecordKind::Issue, self.id),
                 vec![FieldChange {
                     field: member::KEY.to_owned(),

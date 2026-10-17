@@ -5,7 +5,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
 use bb_core::fields::Field;
 use bb_core::id::{IssueTypeId, UserId};
-use bb_core::issue::{Issue, IssueAssignee};
+use bb_core::issue::{AssignedPerson, Issue};
 use bb_core::version::{counted_up, next as next_version};
 use bb_policy::{Authorized, Evaluation, Place};
 use serde_json::{Value, json};
@@ -136,15 +136,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         )?;
         let assigned_now: Vec<UserId> = self
             .store()
-            .assignees(current.id)
+            .assigned_people(current.id)
             .await
             .map_err(|error| internal::<S>(&error))?
             .into_iter()
-            .map(|assignee| assignee.person)
+            .map(|assigned_person| assigned_person.person)
             .collect();
         let assigned_next = match &input.assigned_to {
             Some(people) => {
-                self.clean_assignees(
+                self.clean_assigned_people(
                     actor.person.id,
                     &held,
                     current.project,
@@ -270,9 +270,9 @@ pub async fn change_issue<S: AuthStore>(
         actor.person.id,
     );
     let event = ctx.event(by(actor.person.id), record.clone(), field_changes)?;
-    let people: Vec<IssueAssignee> = assigned_next
+    let people: Vec<AssignedPerson> = assigned_next
         .iter()
-        .map(|person| IssueAssignee {
+        .map(|person| AssignedPerson {
             issue: id,
             person: *person,
             added_at: now,
@@ -314,7 +314,7 @@ pub async fn change_issue<S: AuthStore>(
                 if !S::update_issue(transaction, &written, version).await? {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
-                S::replace_assignees(transaction, id, &new_people).await?;
+                S::replace_assigned_people(transaction, id, &new_people).await?;
                 for (field, cells) in &own_writes {
                     S::put_field_value(transaction, kind.clone(), id.into(), *field, cells).await?;
                 }

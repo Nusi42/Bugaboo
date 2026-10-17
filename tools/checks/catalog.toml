@@ -187,7 +187,7 @@ status = "active"
 
 [[check]]
 id = "TXT-TERMS"
-title = "No words from the glossary's 'Don't say' column in UI text, user docs or API names"
+title = "No words from the glossary's 'Don't say' column in UI text, user docs, API names or the names the code declares"
 rule = "glossary.md"
 tool = "xtask (reads glossary tables)"
 when = ["edit", "commit", "ci"]
@@ -195,7 +195,9 @@ files = [
   "docs/glossary.md",
   "messages/**",
   "userDocs/**",
-  "crates/bb-api/**",
+  "crates/**/*.rs",
+  "xtask/**/*.rs",
+  "web/**/*.{ts,tsx}",
   "web/packages/api-client/openapi.json",
   "tools/checks/terms-exemptions.toml",
 ]

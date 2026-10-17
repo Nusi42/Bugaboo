@@ -16,7 +16,7 @@ use bb_core::person::Person;
 use bb_core::security_log::Digest;
 use bb_core::settings::SettingValue;
 use bb_core::sign_in::{
-    Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TwoStep,
+    Invitation, SecurityAction, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
 use bb_policy::Permission;
 use jiff::Timestamp;
@@ -24,7 +24,6 @@ use zeroize::Zeroizing;
 
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
-use crate::bulk::BulkStore;
 use crate::comments::CommentStore;
 use crate::editing::EditStore;
 use crate::fields::FieldStore;
@@ -32,6 +31,7 @@ use crate::follow::FollowStore;
 use crate::history::HistoryStore;
 use crate::issues::IssueStore;
 use crate::layouts::LayoutStore;
+use crate::many_changes::ManyChangeStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -231,7 +231,7 @@ pub trait SecondStepStore: ChangeStore + 'static {
         fn delete_two_step(person: UserId) -> ();
         /// Remembers that a code for `step` was used, if that is newer than the newest step used
         /// before. `false` means the code was used already (or the code app is not set up).
-        fn accept_totp_step(person: UserId, step: i64) -> bool;
+        fn accept_totp_step(person: UserId, step: TotpStep) -> bool;
         /// Replaces the backup codes of a person with new ones.
         fn replace_backup_codes(person: UserId, hashes: &[Digest]) -> ();
         /// Uses up a backup code; `false` if there is no such unused code.
@@ -322,7 +322,7 @@ pub trait AuthStore:
     + IssueStore
     + RelationStore
     + TagStore
-    + BulkStore
+    + ManyChangeStore
     + CommentStore
     + FollowStore
     + HistoryStore

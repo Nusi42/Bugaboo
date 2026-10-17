@@ -36,7 +36,7 @@ fn view(invitation: &Invitation) -> InvitationView {
     }
 }
 
-/// Makes an invitation. The link with its secret is returned once; only a hash is kept.
+/// Creates an invitation. The link with its secret is returned once; only a hash is kept.
 ///
 /// # Errors
 /// `access.forbidden` without *Invite people*, `request.invalid` for an address that cannot be one

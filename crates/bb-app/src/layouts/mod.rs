@@ -20,4 +20,4 @@ mod write;
 pub use read::{form_layout, layout_editor};
 pub use store::LayoutStore;
 pub use types::*;
-pub use write::{delete_layout, make_layout, save_layout};
+pub use write::{create_layout, delete_layout, save_layout};

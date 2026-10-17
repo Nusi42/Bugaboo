@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
@@ -14,8 +14,8 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
       await admin.dispose();
     },
   },
@@ -62,12 +62,12 @@ test("iss_04 a kind is made, its words are changed, and it is retired and offere
   await page.goto(paths.relationKinds);
   await page.getByLabel(t("relation-kinds.field-forward"), { exact: true }).fill("precedes");
   await page.getByLabel(t("relation-kinds.field-backward"), { exact: true }).fill("follows");
-  await page.getByRole("button", { name: t("relation-kinds.make"), exact: true }).click();
-  await expect(page.getByText(t("relation-kinds.made", { name: "precedes" }))).toBeVisible();
+  await page.getByRole("button", { name: t("relation-kinds.create"), exact: true }).click();
+  await expect(page.getByText(t("relation-kinds.created", { name: "precedes" }))).toBeVisible();
   // A name that another kind has, in either direction, is taken.
   await page.getByLabel(t("relation-kinds.field-forward"), { exact: true }).fill("Follows");
   await page.getByLabel(t("relation-kinds.field-backward"), { exact: true }).fill("comes before");
-  await page.getByRole("button", { name: t("relation-kinds.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("relation-kinds.create"), exact: true }).click();
   await expect(page.getByText(t("error.name.taken"))).toBeVisible();
   const list = kindList(page);
   await expect(list.getByRole("listitem")).toHaveCount(5);

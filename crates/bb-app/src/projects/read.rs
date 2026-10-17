@@ -49,18 +49,18 @@ impl<S: AuthStore> Ctx<'_, S> {
             }))
     }
 
-    /// Whether the actor may make projects where the project sits: *Make projects* for the whole
-    /// organization at the top level, *Make sub-projects* in the parent below it. Whoever may is
+    /// Whether the actor may create projects where the project sits: *Create projects* for the whole
+    /// organization at the top level, *Create sub-projects* in the parent below it. Whoever may is
     /// told that a short name is taken; nobody else is (ADR-0025, decision 13).
-    pub(crate) async fn may_make_projects_beside(
+    pub(crate) async fn may_create_projects_beside(
         &self,
         actor: &Actor,
         parent: Option<ProjectId>,
     ) -> Result<bool, AppError> {
-        let (permission, place) = parent
-            .map_or((Permission::MakeProjects, Place::Organization), |parent| {
-                (Permission::MakeSubProjects, Place::Project(parent))
-            });
+        let (permission, place) = parent.map_or(
+            (Permission::CreateProjects, Place::Organization),
+            |parent| (Permission::CreateSubProjects, Place::Project(parent)),
+        );
         // A parent that is gone holds nobody back from nothing: it is not one they may make in.
         Ok(if_there(self.evaluation_of(actor, place).await)?
             .is_some_and(|held| held.allows(permission)))
@@ -99,7 +99,7 @@ pub async fn project<S: AuthStore>(
         MoveRight::Nowhere
     } else if project.parent.is_some()
         && organization.allows(Permission::MoveProjects)
-        && organization.allows(Permission::MakeProjects)
+        && organization.allows(Permission::CreateProjects)
     {
         MoveRight::IntoProjectsOrTop
     } else {
@@ -139,7 +139,9 @@ pub async fn project<S: AuthStore>(
         truncated,
         permissions: held.permissions().iter().copied().collect(),
         may_change_short_name: held.allows(Permission::ChangeProjectSettings)
-            && ctx.may_make_projects_beside(&actor, project.parent).await?,
+            && ctx
+                .may_create_projects_beside(&actor, project.parent)
+                .await?,
         may_move,
         project: ProjectView {
             id: project.id,

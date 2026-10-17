@@ -12,16 +12,16 @@ use super::scenarios_issues::an_issue;
 use super::scenarios_tags::tagged;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
-use crate::roles::{AssignRole, Given, MakeRole, Subject, assign_role, make_role};
+use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 use crate::tags::{ChangeTag, TagView, TagsQuery, change_tag, tags};
 
 /// Bob looks after tags and sees every project and its issues but `secret`, which has *No access*
 /// for him.
 async fn blind_manager(world: &World, secret: ProjectId) -> Result<String, String> {
     let admin = token(world);
-    let role = make_role(
+    let role = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: admin.clone(),
             name: "Tag keeper".to_owned(),
             permissions: vec![
@@ -176,8 +176,8 @@ async fn tag_01_saving_the_projects_keeps_the_limits_on_projects_the_person_cann
 }
 
 #[tokio::test]
-async fn tag_01_an_empty_list_from_such_a_person_does_not_make_the_tag_organization_wide() -> Outcome
-{
+async fn tag_01_an_empty_list_from_such_a_person_does_not_create_the_tag_organization_wide()
+-> Outcome {
     let world = World::new().await?;
     let (open, secret) = (
         a_project(&world, "OPEN").await?,

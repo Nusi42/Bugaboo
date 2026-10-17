@@ -44,9 +44,10 @@ const TABLE_NAME_CALLS: [&str; 6] = [
     "Iden",
 ];
 /// The files that may name the table: the repository, the schema and the migrations.
-const STORAGE_FILES: [&str; 3] = [
+const STORAGE_FILES: [&str; 4] = [
     "crates/bb-store/src/settings.rs",
     "crates/bb-store/src/schema.rs",
+    "crates/bb-store/src/schema/",
     "crates/bb-store/src/migrations/",
 ];
 

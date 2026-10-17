@@ -10,12 +10,12 @@
 //! gets a code of the new mode in the same change, and the old code stays with the issue.
 
 use bb_core::ErrorCode;
-use bb_core::bulk::{BULK_JOB_ABOVE, BULK_STEP};
 use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::{IdSource, JobId, ProjectId, UserId};
 use bb_core::issue::IssueAlias;
-use bb_core::issue_key::{IdMode, IssueCode, IssueKey, code_length, longest_code};
+use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, MANY_CHANGES_STEP};
 use bb_core::project::ShortName;
+use bb_core::readable_id::{IdMode, IssueCode, ReadableId, code_length, longest_code};
 use bb_core::settings::{
     ISSUES_ID_LENGTH, ISSUES_ID_MODE, Layers, Scope, SettingDefinition, SettingValue,
 };
@@ -268,10 +268,10 @@ pub(crate) async fn renew_step_in<S: AuthStore>(
             .await?
             .map_or(FIRST_VERSION, |found| found.version);
         let key = |code: IssueCode| {
-            serde_json::json!(IssueKey::new(renewal.short_name.clone(), code).to_string())
+            serde_json::json!(ReadableId::new(renewal.short_name.clone(), code).to_string())
         };
         let event = events
-            .make(
+            .create(
                 entity(RecordKind::Issue, issue),
                 vec![
                     FieldChange {
@@ -314,7 +314,7 @@ const PERSON_KEY: &str = "by";
 
 /// Renews the IDs of the issues of a project after its mode changed, inside the change that changed
 /// it: all of them when the project has no more issues than a change to many issues waits for
-/// (`BULK_JOB_ABOVE`), and otherwise a first step, with a job that goes on with the rest a step at
+/// (`MANY_CHANGES_JOB_ABOVE`), and otherwise a first step, with a job that goes on with the rest a step at
 /// a time (M3-F27). Issues made meanwhile already get codes of the new mode.
 ///
 /// # Errors
@@ -327,10 +327,10 @@ pub(crate) async fn renew_or_queue_in<S: AuthStore>(
     person: UserId,
     at: Timestamp,
 ) -> Result<(), S::Error> {
-    if still_to_renew_in::<S>(transaction, renewal).await? <= BULK_JOB_ABOVE {
+    if still_to_renew_in::<S>(transaction, renewal).await? <= MANY_CHANGES_JOB_ABOVE {
         return renew_in::<S>(transaction, renewal, source, events, at).await;
     }
-    renew_step_in::<S>(transaction, renewal, source, events, at, BULK_STEP).await?;
+    renew_step_in::<S>(transaction, renewal, source, events, at, MANY_CHANGES_STEP).await?;
     let job = JobId::generate(source).map_err(|_| S::aborted())?;
     let name = kind_name(kind::RENEW_IDS).map_err(|_| S::aborted())?;
     let payload = serde_json::json!({
@@ -387,7 +387,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         // The project says once that its IDs were renewed, in the step that renews the last; the
         // steps before write the events of the issues they renew and nothing else.
-        let finishing = left <= BULK_STEP;
+        let finishing = left <= MANY_CHANGES_STEP;
         let said = if finishing {
             vec![self.event(
                 Actor::Person(person),
@@ -410,9 +410,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             .record_changes(&said, move |transaction| {
                 Box::pin(async move {
                     S::lock_issue_codes(transaction, renewal.project).await?;
-                    renew_step_in::<S>(transaction, &renewal, &mut source, &events, now, BULK_STEP)
-                        .await
-                        .map(drop)
+                    renew_step_in::<S>(
+                        transaction,
+                        &renewal,
+                        &mut source,
+                        &events,
+                        now,
+                        MANY_CHANGES_STEP,
+                    )
+                    .await
+                    .map(drop)
                 })
             })
             .await

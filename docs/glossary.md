@@ -14,9 +14,13 @@ Rules:
    (coding-standards §7). Those words fail the check when they appear in the message catalog,
    in the user docs or in API names (paths, schema names, property names, enum values, operation IDs, parameter names); a word inside a
    longer word does not count. A bracket at the end of a cell says where an entry applies:
-   `(in UI)` and its kind are checked, the others (`(as object)`) are left to review. A word
-   that is right in another sense gets a reason in `tools/checks/terms-exemptions.toml`.
-   Enforced by: TXT-TERMS.
+   `(in UI)` and its kind are checked, the others (`(as object)`) are left to review. Code names
+   (the types, functions, constants, modules, enum variants, files and folders that Rust and
+   TypeScript declare here, and the message keys) are read for an entry only when its bracket says
+   `code` (`(in UI and code)`), because most entries are ordinary words of programming (*state*,
+   *token*, *link*) that are right in code; a name is cut into words (`ManyChangeRun` reads *many
+   change run*). A word that is right in another sense gets a reason in
+   `tools/checks/terms-exemptions.toml`. Enforced by: TXT-TERMS.
 
 ---
 
@@ -25,7 +29,7 @@ Rules:
 | Say (UI term)            | Meaning                                                            | Don't say                          |
 |--------------------------|--------------------------------------------------------------------|------------------------------------|
 | **Issue**                | Anything being tracked: a bug, a task, an idea                     | ticket, work item                  |
-| **Issue ID**             | The readable ID of an issue: the project's short name plus a counting number (`WEB-142`) or a random code (`WEB-K7Q2X`), chosen per project | issue key, ticket number |
+| **Issue ID**             | The readable ID of an issue: the project's short name plus a counting number (`WEB-142`) or a random code (`WEB-K7Q2X`), chosen per project | issue key, ticket number (in UI and code) |
 | **Counting / Random IDs**| The two ways a project gives out issue IDs. Random IDs don't reveal how many issues exist | sequence, auto-increment (in UI) |
 | **Sub-project**          | A project inside another project; it inherits settings and permissions unless changed | child project, component, space |
 | **Short name**           | The letters that start a project's issue IDs and its address (`WEB`, `/p/WEB`): 2 to 10 capital letters or digits, starting with a letter, unique in the organization. It can be changed; the old one keeps working and stays with the project | project key |
@@ -45,7 +49,7 @@ Rules:
 | **Kind of relation**     | What the connection means. Each kind has a name for both directions: *blocks* / *is blocked by*, *duplicate of* / *has duplicate*, *causes* / *is caused by*, *related to* | link type |
 | **Relation map**         | A picture of everything connected to an issue, step by step        | graph, network, link cloud, dependency graph |
 | **Steps away**           | How many relations lie between two issues on the map               | depth, hops, degrees               |
-| **Assigned to**          | Who is working on it                                               | assignee                           |
+| **Assigned to**          | Who is working on it                                               | assignee (in UI and code)          |
 | **Reported by**          | Who created it                                                     | reporter                           |
 | **Follow / followers**   | Get notified about changes to an issue or document                 | watch, watchers                    |
 | **Release**              | A planned version of the product, e.g. *2.4*                       | fix version, version (as object)   |
@@ -64,7 +68,7 @@ Rules:
 | **Comment**              | What people write under an issue; it can be changed later, and its earlier versions are kept | note (for this), reply |
 | **Mention**              | Naming a person, group or role in a text with `@`, so they find it under *Mentions* | ping, tag (for people) |
 | **History** (of an issue) | The comments and changes of an issue in time order, with the tabs *Everything · Comments · Changes*; changes to fields you can't see are left out | activity (for this), audit log (in UI), timeline (for this) |
-| **Change many issues**   | Select several issues and change them together, after a preview that says what happens to each one | bulk edit, mass update |
+| **Change many issues**   | Select several issues and change them together, after a preview that says what happens to each one | bulk, bulk edit, mass update (in UI and code) |
 | **Add a field**          | The quiet line on an issue that offers the fields you may fill in that are still empty | — |
 
 ## Statuses and workflows
@@ -174,7 +178,7 @@ Rules:
 | **See as …**             | Look at Bugaboo as another person or role sees it                  | impersonate, preview as            |
 | **Agent**                | An account that works on its own and is not a person: an AI app or a script. It has one responsible person and can do at most what that person can. Shown as *"Fixer, agent of Ada Brandt"* | bot, bot account, service account, AI worker (in UI) |
 | **Agent key**            | The access key an agent signs in with; it belongs to the agent and always runs out | bot token, service token (in UI) |
-| **Make agents that work for you** | The permission to make agents of your own                 | — |
+| **Create agents that work for you** | The permission to create agents of your own                 | — |
 | **Agents of the organization** (later) | Agents whose responsible party is the organization, with a role; webhooks and imports run as one | system bot (in UI) |
 | **Access key**           | A secret for scripts and apps to sign in as you. It can do at most what you can, and it always runs out | personal access token, PAT |
 | **See only / See and change / Everything I can do** | The three choices of what an access key may do; single permissions sit under *More options* | read-only, read-write, full access (in UI) |
@@ -236,7 +240,7 @@ Rules:
 | **Region**               | The choices about where you are: time zone, date format, number format and first day of the week | locale, localization, i18n (in UI) |
 | **Start page**           | The page Bugaboo opens after you sign in                           | landing page, home screen (in UI)  |
 | **Sign-in rules**        | The organization settings for how long people stay signed in and who must use two-step sign-in | authentication policy, session policy (in UI) |
-| **Create**               | The verb for bringing something new into Bugaboo, on every button and form: *Create issue*, *Create project*, *Create role* | make, add new (for something new) |
+| **Create**               | The verb for bringing something new into Bugaboo, on every button and form: *Create issue*, *Create project*, *Create role* | made (in UI), making (in UI), make, add new (in UI and code) |
 | **Undo**                 | Taking back what was just done; offered for 10 seconds after an action that can be reversed | revert, rollback (in UI) |
 | **Theme**                | Colors and fonts. Built in: *Daylight* and *Paper* (light), *Dusk* and *Midnight* (dark). *Match my device* uses your light or dark choice depending on the device setting | skin |
 | **Assistant**            | The built-in AI helper. Not an agent: it only proposes, and only to the person using it | copilot (in UI) |

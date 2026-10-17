@@ -5,17 +5,23 @@
 //! change). The only counter in the product is `issue_counter`, the last counting code a project
 //! gave out (ADR-0021, `tools/checks/counter-exemptions.toml`).
 
-use sea_query::{ColumnDef, ForeignKey, Index, Table};
+use sea_query::{Alias, ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
-use crate::schema::{
-    IssueAliasRow, IssueAssigneeRow, IssueCounterRow, IssueRow, IssueTypeRow, ProjectRow,
-};
+use crate::schema::{IssueAliasRow, IssueCounterRow, IssueRow, IssueTypeRow, ProjectRow};
+
+/// The table of the people an issue is assigned to, as this migration made it. Migration 14 gives it
+/// its present name (`assigned_person`), which is the one the schema knows; this migration keeps
+/// the old names, because a changed migration is refused (its checksum is recorded).
+const ASSIGNED_TABLE: &str = "issue_assignee";
+const ASSIGNED_ISSUE: &str = "issue";
+const ASSIGNED_PERSON: &str = "person";
+const ASSIGNED_ADDED_AT: &str = "added_at";
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = types();
     steps.extend(issues());
-    steps.extend(assignees_and_codes());
+    steps.extend(assigned_people_and_codes());
     steps
 }
 
@@ -120,26 +126,30 @@ fn issues() -> Vec<Step> {
     ]
 }
 
-fn assignees_and_codes() -> Vec<Step> {
+fn assigned_people_and_codes() -> Vec<Step> {
     vec![
         Step::Table(
             Table::create()
-                .table(IssueAssigneeRow::Table)
-                .col(ColumnDef::new(IssueAssigneeRow::Issue).blob().not_null())
-                .col(ColumnDef::new(IssueAssigneeRow::Person).blob().not_null())
+                .table(Alias::new(ASSIGNED_TABLE))
+                .col(ColumnDef::new(Alias::new(ASSIGNED_ISSUE)).blob().not_null())
                 .col(
-                    ColumnDef::new(IssueAssigneeRow::AddedAt)
+                    ColumnDef::new(Alias::new(ASSIGNED_PERSON))
+                        .blob()
+                        .not_null(),
+                )
+                .col(
+                    ColumnDef::new(Alias::new(ASSIGNED_ADDED_AT))
                         .big_integer()
                         .not_null(),
                 )
                 .primary_key(
                     Index::create()
-                        .col(IssueAssigneeRow::Issue)
-                        .col(IssueAssigneeRow::Person),
+                        .col(Alias::new(ASSIGNED_ISSUE))
+                        .col(Alias::new(ASSIGNED_PERSON)),
                 )
                 .foreign_key(
                     ForeignKey::create()
-                        .from(IssueAssigneeRow::Table, IssueAssigneeRow::Issue)
+                        .from(Alias::new(ASSIGNED_TABLE), Alias::new(ASSIGNED_ISSUE))
                         .to(IssueRow::Table, IssueRow::Id),
                 )
                 .to_owned(),

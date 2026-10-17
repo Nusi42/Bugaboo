@@ -5,11 +5,11 @@
 use bb_core::ErrorCode;
 use bb_core::fields::Field;
 use bb_core::id::{ProjectId, UserId};
-use bb_core::issue::ASSIGNEES_MAX;
+use bb_core::issue::ASSIGNED_PEOPLE_MAX;
 use bb_core::text::TITLE_MAX;
 use bb_policy::{Evaluation, FieldMask};
 
-use super::types::{ChangeIssue, MakeIssue};
+use super::types::{ChangeIssue, CreateIssue};
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::fields::is_kept;
 use crate::input::clean_text;
@@ -36,7 +36,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// assigned already stay, whatever happened to their access since, so an issue stays
     /// changeable. `request.invalid` otherwise, the same for a person who does not exist and for
     /// one who may not see the issue, so the answer is no way to find out who exists.
-    pub(crate) async fn clean_assignees(
+    pub(crate) async fn clean_assigned_people(
         &self,
         actor: UserId,
         viewer: &Evaluation,
@@ -51,7 +51,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 distinct.push(*person);
             }
         }
-        if distinct.len() > ASSIGNEES_MAX {
+        if distinct.len() > ASSIGNED_PEOPLE_MAX {
             return Err(ErrorCode::InvalidRequest.into());
         }
         for person in distinct.iter().filter(|person| !is_kept(already, person)) {
@@ -108,8 +108,8 @@ impl From<&ChangeIssue> for Given {
     }
 }
 
-impl From<&MakeIssue> for Given {
-    fn from(input: &MakeIssue) -> Self {
+impl From<&CreateIssue> for Given {
+    fn from(input: &CreateIssue) -> Self {
         Self([
             // The title is always there.
             true,

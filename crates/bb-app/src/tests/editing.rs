@@ -17,10 +17,10 @@ use crate::editing::testing::TestNotes;
 use super::world::{Outcome, World};
 use crate::context::Clock as _;
 use crate::editing::Stale;
-use crate::projects::{MakeProject, make_project};
+use crate::projects::{CreateProject, create_project};
 use crate::roles::{
-    AssignRole, Given, MakeRole, SetFieldLevel, SetPeopleLevel, Subject, assign_role, make_role,
-    set_level,
+    AssignRole, CreateRole, Given, SetFieldLevel, SetPeopleLevel, Subject, assign_role,
+    create_role, set_level,
 };
 use bb_core::access::PeopleLevel;
 use bb_core::people_kinds::PeopleKind;
@@ -60,9 +60,9 @@ async fn iss_17_the_conflict_leaves_out_what_the_reader_may_not_see() -> Outcome
     let record = changed_by_ada(&world, &notes)?;
     // Bob may see the status, not the cost center, and sees names in *Last changed by*.
     let bob = world.person("bob@example.test").await?;
-    let role = make_role(
+    let role = create_role(
         &world.ctx(),
-        MakeRole {
+        CreateRole {
             session_token: world.admin.session_token.clone(),
             name: "Reader".to_owned(),
             permissions: vec![bb_policy::Permission::SeeProjects],
@@ -101,9 +101,9 @@ async fn iss_17_the_conflict_leaves_out_what_the_reader_may_not_see() -> Outcome
         },
     )
     .await?;
-    let project = make_project(
+    let project = create_project(
         &world.ctx(),
-        MakeProject {
+        CreateProject {
             session_token: world.admin.session_token.clone(),
             parent: None,
             short_name: "ACME".to_owned(),

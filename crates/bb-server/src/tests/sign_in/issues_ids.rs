@@ -6,12 +6,12 @@ use std::collections::BTreeSet;
 use axum::http::StatusCode;
 use bb_app::auth::AuthApi as _;
 use bb_app::context::SystemIds;
-use bb_app::issues::MakeIssue;
+use bb_app::issues::CreateIssue;
 use bb_app::jobs::JobStore as _;
-use bb_core::bulk::{BULK_JOB_ABOVE, BULK_STEP};
 use bb_core::event::{Actor, EntityKind, RecordKind};
 use bb_core::id::JobId;
-use bb_core::issue_key::IssueKey;
+use bb_core::many_changes::{MANY_CHANGES_JOB_ABOVE, MANY_CHANGES_STEP};
+use bb_core::readable_id::ReadableId;
 use bb_core::technical::TechnicalName;
 use bb_core::text::CROCKFORD;
 use bb_testing::{Failure, TestResult, each_database};
@@ -39,7 +39,7 @@ async fn mode(ada: &mut Browser, value: Option<&str>) -> Result<(), Failure> {
 
 /// The code of an issue ID (`ACME-142` is `142`).
 fn code_of(key: &Value) -> Result<String, Failure> {
-    let key: IssueKey = key.as_str().ok_or("no issue ID")?.parse()?;
+    let key: ReadableId = key.as_str().ok_or("no issue ID")?.parse()?;
     Ok(key.code.to_string())
 }
 
@@ -74,9 +74,9 @@ async fn iss_01a_counting_ids_count_per_project_without_gaps_under_ten_writers()
             );
             writers.push(tokio::spawn(async move {
                 services
-                    .make_issue(
+                    .create_issue(
                         Rig::info(),
-                        MakeIssue {
+                        CreateIssue {
                             session_token: session,
                             project,
                             issue_type: issue_type.parse().map_err(|_| "no type")?,
@@ -119,7 +119,7 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut first_keys = Vec::new();
         for title in ["One", "Two", "Three"] {
-            let made = site.make(&mut ada, title).await?;
+            let made = site.create(&mut ada, title).await?;
             first_keys.push(ok(&made)?["key"].as_str().ok_or("no key")?.to_owned());
         }
         // The organization starts as Random: the codes are letters and digits, not 1, 2, 3.
@@ -142,7 +142,7 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
         }
         assert_eq!(counted, BTreeSet::from(["1", "2", "3"].map(str::to_owned)));
         // A new issue continues the count.
-        let fourth = site.make(&mut ada, "Four").await?;
+        let fourth = site.create(&mut ada, "Four").await?;
         assert_eq!(ok(&fourth)?["key"], "ACME-4");
         // Back to the default of the organization (Random): all the IDs of the past still work, and
         // the numbers 1 to 4 are not given to anybody else when the project counts again.
@@ -151,7 +151,7 @@ async fn iss_01a_an_old_id_redirects_after_the_mode_changes() -> TestResult {
         assert_eq!(ok(&renamed)?["issue"]["title"], "Four");
         assert_ne!(renamed.body["issue"]["key"], "ACME-4");
         mode(&mut ada, Some("counting")).await?;
-        let fifth = site.make(&mut ada, "Five").await?;
+        let fifth = site.create(&mut ada, "Five").await?;
         let code: u32 = code_of(&ok(&fifth)?["key"])?.parse()?;
         assert!(code > 4, "{code} was given out before");
         for key in &first_keys {
@@ -189,7 +189,7 @@ async fn iss_01a_an_old_id_keeps_working_after_the_issue_moves() -> TestResult {
     each_database("iss_01a_old_id_after_move", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let made = site.make(&mut ada, "Moves twice").await?;
+        let made = site.create(&mut ada, "Moves twice").await?;
         let (first, version) = (key_in(ok(&made)?)?, made.body["version"].clone());
         let other =
             |short_name: &'static str| json!({"short_name": short_name, "name": short_name});
@@ -237,7 +237,7 @@ async fn iss_01a_random_ids_made_in_a_project_never_repeat() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut keys = BTreeSet::new();
         for number in 0..60 {
-            let made = site.make(&mut ada, &format!("Issue {number}")).await?;
+            let made = site.create(&mut ada, &format!("Issue {number}")).await?;
             assert!(keys.insert(ok(&made)?["key"].to_string()), "an ID twice");
         }
         // A longer code is used when the organization asks for one.
@@ -249,7 +249,7 @@ async fn iss_01a_random_ids_made_in_a_project_never_repeat() -> TestResult {
             )
             .await?;
         assert_eq!(length.status, StatusCode::OK, "{}", length.body);
-        let long = site.make(&mut ada, "A long one").await?;
+        let long = site.create(&mut ada, "A long one").await?;
         let key = ok(&long)?["key"].as_str().ok_or("no key")?.to_owned();
         assert_eq!(key.len(), "ACME-".len() + 8, "{key}");
         let too_long = ada
@@ -270,15 +270,15 @@ async fn iss_01a_a_trashed_issue_is_renewed_too_and_never_blocks_making_issues()
     each_database("iss_01a_trashed_renewed", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let kept = key_in(ok(&site.make(&mut ada, "Kept").await?)?)?;
-        let trashed = key_in(ok(&site.make(&mut ada, "Trashed").await?)?)?;
+        let kept = key_in(ok(&site.create(&mut ada, "Kept").await?)?)?;
+        let trashed = key_in(ok(&site.create(&mut ada, "Trashed").await?)?)?;
         let gone = ada
             .send("DELETE", &format!("{ISSUES}/{trashed}"), None)
             .await?;
         assert_eq!(gone.status, StatusCode::NO_CONTENT);
         mode(&mut ada, Some("counting")).await?;
         // The issue in the trash got a number as well, so no number it holds is given again.
-        let fresh = site.make(&mut ada, "Fresh").await?;
+        let fresh = site.create(&mut ada, "Fresh").await?;
         assert_eq!(ok(&fresh)?["key"], "ACME-3");
         // Taken out of the trash by the code it had, it comes back under its number.
         let back = ada
@@ -292,7 +292,7 @@ async fn iss_01a_a_trashed_issue_is_renewed_too_and_never_blocks_making_issues()
         // A random code, drawn when the project goes back to random, never looks like a number,
         // so it cannot meet a counting code of the past.
         mode(&mut ada, None).await?;
-        let random = site.make(&mut ada, "Random again").await?;
+        let random = site.create(&mut ada, "Random again").await?;
         let code = code_of(&ok(&random)?["key"])?;
         assert!(code.parse::<u64>().is_err(), "{code}");
         Ok(())
@@ -307,7 +307,7 @@ async fn iss_01a_a_change_of_the_mode_writes_one_event_for_each_issue_it_renews(
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut before = BTreeSet::new();
         for title in ["One", "Two", "Three"] {
-            before.insert(key_in(ok(&site.make(&mut ada, title).await?)?)?);
+            before.insert(key_in(ok(&site.create(&mut ada, title).await?)?)?);
         }
         // One of them is in the trash: it is renewed as well.
         let trashed = before.iter().next().ok_or("no issue")?.clone();
@@ -383,10 +383,10 @@ async fn iss_01a_makes_and_changes_at_the_moment_of_a_mode_change_finish_in_one_
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let mut paths = Vec::new();
         for number in 0..4 {
-            let made = site.make(&mut ada, &format!("Before {number}")).await?;
+            let made = site.create(&mut ada, &format!("Before {number}")).await?;
             paths.push(format!("{ISSUES}/{}", key_in(ok(&made)?)?));
         }
-        // Four people change an issue each, four make issues, and the mode changes, all at once.
+        // Four people change an issue each, four create issues, and the mode changes, all at once.
         let email = ADA_EMAIL;
         let (mut c0, mut c1, mut c2, mut c3) = (
             Browser::signed_in_as(&app, email).await?,
@@ -405,10 +405,10 @@ async fn iss_01a_makes_and_changes_at_the_moment_of_a_mode_change_finish_in_one_
             retitle(&mut c1, &paths[1]),
             retitle(&mut c2, &paths[2]),
             retitle(&mut c3, &paths[3]),
-            site.make(&mut m0, "During 0"),
-            site.make(&mut m1, "During 1"),
-            site.make(&mut m2, "During 2"),
-            site.make(&mut m3, "During 3"),
+            site.create(&mut m0, "During 0"),
+            site.create(&mut m1, "During 1"),
+            site.create(&mut m2, "During 2"),
+            site.create(&mut m3, "During 3"),
             mode(&mut ada, Some("counting")),
         );
         switched?;
@@ -448,16 +448,16 @@ async fn iss_01a_a_second_switch_to_counting_continues_the_counter() -> TestResu
     each_database("iss_01a_second_switch", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let first = key_in(ok(&site.make(&mut ada, "First").await?)?)?;
+        let first = key_in(ok(&site.create(&mut ada, "First").await?)?)?;
         mode(&mut ada, Some("counting")).await?;
         let opened = ada.send("GET", &format!("{ISSUES}/ACME-1"), None).await?;
         assert_eq!(ok(&opened)?["issue"]["title"], "First");
-        let second = site.make(&mut ada, "Second").await?;
+        let second = site.create(&mut ada, "Second").await?;
         assert_eq!(ok(&second)?["key"], "ACME-2");
         mode(&mut ada, None).await?;
         mode(&mut ada, Some("counting")).await?;
         // The counter continues; the first issue keeps being found by every ID it ever had.
-        let third = site.make(&mut ada, "Third").await?;
+        let third = site.create(&mut ada, "Third").await?;
         let number: u32 = code_of(&ok(&third)?["key"])?.parse()?;
         assert!(number >= 3, "{number}");
         for address in ["ACME-1", &first] {
@@ -546,14 +546,14 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         mode(&mut ada, Some("counting")).await?;
-        let total = BULK_JOB_ABOVE + 101;
+        let total = MANY_CHANGES_JOB_ABOVE + 101;
         let mut old = Vec::new();
         for number in 0..total {
             let made = rig
                 .api()
-                .make_issue(
+                .create_issue(
                     Rig::info(),
-                    MakeIssue {
+                    CreateIssue {
                         session_token: site.org.admin.session.clone(),
                         project: site.acme.clone(),
                         issue_type: site.bug.parse().map_err(|_| "no type")?,
@@ -581,7 +581,7 @@ async fn iss_01a_a_big_project_gets_new_ids_a_step_at_a_time_in_the_background()
         let counting = counting_ids(&mut ada).await?;
         assert_eq!(
             counting,
-            total - BULK_STEP,
+            total - MANY_CHANGES_STEP,
             "a step is renewed in the change itself"
         );
         // The job goes on until none is left.

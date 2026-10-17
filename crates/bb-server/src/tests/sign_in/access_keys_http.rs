@@ -7,7 +7,7 @@ use bb_api::LimitsConfig;
 use bb_api::openapi::operations;
 use bb_api::permissions::Declared;
 use bb_app::access::Permission;
-use bb_app::auth::{DeleteAccessKey, MakeAccessKey};
+use bb_app::auth::{CreateAccessKey, DeleteAccessKey};
 use bb_auth::AccessKeySecret;
 use bb_core::access_key::KeyChoice;
 use bb_core::sign_in::SecurityAction;
@@ -280,7 +280,7 @@ const MY_SETTINGS: [&str; 11] = [
     "listRelationKinds",
     "listFields",
     "getField",
-    "getBulkRun",
+    "getManyChangeRun",
     "listLabels",
 ];
 
@@ -369,10 +369,10 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult
         Org::start(&rig).await?;
         let app = app_with_probe(&rig, None);
         let mut ada = ada_in_a_browser(&app).await?;
-        let make = |name: &str| json!({"password": PASSWORD, "name": name, "choice": "see-only"});
+        let create = |name: &str| json!({"password": PASSWORD, "name": name, "choice": "see-only"});
         // The answer that makes a key holds its secret once, and it is never stored.
         let first = ada
-            .send("POST", "/api/v1/access-keys", Some(make("First")))
+            .send("POST", "/api/v1/access-keys", Some(create("First")))
             .await?;
         assert_eq!(first.status, StatusCode::OK, "{:?}", first.body);
         let secret = first.body["secret"].as_str().ok_or("no secret")?.to_owned();
@@ -384,7 +384,7 @@ async fn auth_07_a_person_makes_lists_and_deletes_keys_over_http() -> TestResult
             // Each key is made a moment after the one before, so "newest first" has an answer.
             rig.clock.advance(1);
             let reply = ada
-                .send("POST", "/api/v1/access-keys", Some(make(name)))
+                .send("POST", "/api/v1/access-keys", Some(create(name)))
                 .await?;
             assert_eq!(reply.status, StatusCode::OK);
         }
@@ -515,9 +515,9 @@ async fn auth_07_a_key_that_may_see_the_status_reads_it_and_no_other_key_does() 
             let org = &org;
             async move {
                 rig.api()
-                    .make_access_key(
+                    .create_access_key(
                         Rig::info(),
-                        MakeAccessKey {
+                        CreateAccessKey {
                             session_token: org.admin.session.clone(),
                             password: PASSWORD.to_owned(),
                             name: "Status".to_owned(),

@@ -8,7 +8,7 @@ import { ada, bob, ownId, signInThroughApi } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
 import { fieldNamed, prepareFieldsIssue } from "./support/fields.ts";
-import { makeIssue, savedNote } from "./support/issues.ts";
+import { createIssue, savedNote } from "./support/issues.ts";
 
 // Own fields on the issue page (CF-01, CF-06, M3 WP-05 with WP-06): the fields are filled in on
 // the page, a long text is edited under its lock, and a field that is hidden from a Guest is not on
@@ -105,7 +105,7 @@ test("cf_06 fields are filled on the issue page and Severity is hidden from a Gu
     "hidden",
   );
   // The Guest reports an issue; an administrator fills in the fields on the page.
-  const made = await makeIssue(guest, "WEB", "Crash on start");
+  const made = await createIssue(guest, "WEB", "Crash on start");
   await openIssueWithDetails(page, made.key);
   await fillIn(page, choiceNamed(severity, "Critical"));
   const path = { params: { path: { issue: made.key } } };
@@ -131,7 +131,7 @@ test("cf_01 a long text own field is edited under the lock and shown as the serv
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  const made = await makeIssue(admin, "WEB", "Needs notes");
+  const made = await createIssue(admin, "WEB", "Needs notes");
   await signIn(page, ada);
   await openIssueWithDetails(page, made.key);
   const section = page.getByRole("region", { name: "Notes", exact: true });

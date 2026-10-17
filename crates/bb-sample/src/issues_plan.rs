@@ -63,7 +63,7 @@ pub(crate) struct PlannedIssue {
     pub(crate) description: String,
     pub(crate) priority: Priority,
     /// Who it is assigned to, as picks that the maker turns into people.
-    pub(crate) assignees: Vec<u32>,
+    pub(crate) assigned_people: Vec<u32>,
     /// The value for each own field of the plan, in its order.
     pub(crate) fields: Vec<Option<FieldPick>>,
     /// The goal it is a sub-issue of.
@@ -77,7 +77,7 @@ pub(crate) struct PlannedIssue {
 /// What happens at a step.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Action {
-    Make(usize),
+    Create(usize),
     Parent(usize),
     Tag(usize, usize),
     Label(usize, usize),
@@ -217,7 +217,7 @@ impl Plan {
                     title: String::new(),
                     description: String::new(),
                     priority: Priority::NEW,
-                    assignees: Vec::new(),
+                    assigned_people: Vec::new(),
                     fields: Vec::new(),
                     parent: None,
                     tags: Vec::new(),
@@ -273,7 +273,7 @@ impl Plan {
             issue.title = words.fill(&title, &issue.area, random);
             issue.description = describe(words, templates, bug, &issue.area, random);
             issue.priority = priority(bug, random);
-            issue.assignees = match random.below(100) {
+            issue.assigned_people = match random.below(100) {
                 0..=74 => vec![pick(random)],
                 75..=84 => vec![pick(random), pick(random)],
                 _ => Vec::new(),
@@ -340,7 +340,7 @@ impl Plan {
                     action,
                 });
             };
-            push(offset, Action::Make(at), random);
+            push(offset, Action::Create(at), random);
             if issue.parent.is_some() {
                 offset += 1;
                 push(offset, Action::Parent(at), random);

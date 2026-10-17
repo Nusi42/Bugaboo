@@ -4,7 +4,7 @@ import { Alert, alertTone, Button, Card, partOf, part } from "@bugaboo/ui";
 import { messageOf } from "../../shared/errors.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
-import { MakeProjectForm } from "./MakeProjectForm.tsx";
+import { CreateProjectForm } from "./CreateProjectForm.tsx";
 import { ProjectEditor } from "./ProjectEditor.tsx";
 import { linesOf, useProjectList, type ProjectLine } from "./use-projects.ts";
 
@@ -71,9 +71,9 @@ export function ProjectsPage({ open, onOpen, onClose }: ProjectsPageProps) {
           </Button>
         ) : null}
       </Card>
-      <Card heading={t("projects.make-title")}>
-        <p {...partOf(part.text)}>{t("projects.make-intro")}</p>
-        <MakeProjectForm />
+      <Card heading={t("projects.create-title")}>
+        <p {...partOf(part.text)}>{t("projects.create-intro")}</p>
+        <CreateProjectForm />
       </Card>
     </div>
   );

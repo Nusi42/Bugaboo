@@ -11,10 +11,10 @@ use bb_core::id::ProjectId;
 
 use super::world::{Outcome, PASSWORD, World};
 use crate::access::ProjectLabel;
-use crate::auth::{AppError, MakeAccessKey, make_access_key};
+use crate::auth::{AppError, CreateAccessKey, create_access_key};
 use crate::projects::{
-    ChangeProject, MakeProject, MovePreviewQuery, MoveProject, ProjectItem, ProjectQuery,
-    ProjectsQuery, change_project, make_project, move_project, preview_move, project, projects,
+    ChangeProject, CreateProject, MovePreviewQuery, MoveProject, ProjectItem, ProjectQuery,
+    ProjectsQuery, change_project, create_project, move_project, preview_move, project, projects,
 };
 
 /// ```text
@@ -30,10 +30,10 @@ struct Tree {
 }
 
 async fn tree(world: &World) -> Result<Tree, Box<dyn std::error::Error + Send + Sync>> {
-    let make = async |parent: Option<ProjectId>, short: &str| -> Result<ProjectId, AppError> {
-        Ok(make_project(
+    let create = async |parent: Option<ProjectId>, short: &str| -> Result<ProjectId, AppError> {
+        Ok(create_project(
             &world.ctx(),
-            MakeProject {
+            CreateProject {
                 session_token: world.admin.session_token.clone(),
                 parent,
                 short_name: short.to_owned(),
@@ -44,11 +44,11 @@ async fn tree(world: &World) -> Result<Tree, Box<dyn std::error::Error + Send + 
         .into_value()
         .id)
     };
-    let acme = make(None, "ACME").await?;
-    let web = make(Some(acme), "WEB").await?;
-    let api = make(Some(web), "API").await?;
-    let sub = make(Some(web), "SUB").await?;
-    let other = make(None, "OTHER").await?;
+    let acme = create(None, "ACME").await?;
+    let web = create(Some(acme), "WEB").await?;
+    let api = create(Some(web), "API").await?;
+    let sub = create(Some(web), "SUB").await?;
+    let other = create(None, "OTHER").await?;
     Ok(Tree {
         acme,
         web,
@@ -61,9 +61,9 @@ async fn tree(world: &World) -> Result<Tree, Box<dyn std::error::Error + Send + 
 /// A key of the administrator for one project and everything inside it: its secret, which is what
 /// a script sends in place of a session.
 async fn key_for(world: &World, project: ProjectId, choice: KeyChoice) -> Result<String, AppError> {
-    Ok(make_access_key(
+    Ok(create_access_key(
         &world.ctx(),
-        MakeAccessKey {
+        CreateAccessKey {
             session_token: world.admin.session_token.clone(),
             password: PASSWORD.to_owned(),
             name: "For one project".to_owned(),

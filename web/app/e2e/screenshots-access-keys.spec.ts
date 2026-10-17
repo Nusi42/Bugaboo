@@ -2,7 +2,7 @@ import { settingKeys } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, cleo, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, cleo, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
 import { sendPassword, signIn, signOut } from "./support/flows.ts";
@@ -19,8 +19,8 @@ const MILESTONE = "M2";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, cleo)).dispose();
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, cleo)).dispose();
       // Two keys that were made earlier, so the list has something to show.
       await admin.client.POST("/api/v1/access-keys", {
         body: { password: ada.password, name: "Nightly report", choice: "see-only" },
@@ -45,8 +45,8 @@ async function theKeysAndTheForm(page: Page): Promise<void> {
   await expect(page.getByText("Nightly report")).toBeVisible();
   await shot(page, "40-access-keys", MILESTONE);
 
-  await page.getByRole("button", { name: t("access-keys.make"), exact: true }).click();
-  const form = page.getByRole("region", { name: t("access-keys.make"), exact: true });
+  await page.getByRole("button", { name: t("access-keys.create"), exact: true }).click();
+  const form = page.getByRole("region", { name: t("access-keys.create"), exact: true });
   await form.getByLabel(t("access-keys.name")).fill("Backup script");
   await form.getByRole("radio", { name: t("access-keys.choice.see-and-change") }).check();
   await form.getByLabel(t("field.confirm-password"), { exact: true }).fill(ada.password);

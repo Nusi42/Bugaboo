@@ -1,8 +1,8 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
-import { giveRole, makeGroup, roleName } from "./access.ts";
-import { bob, makeAdmin, makePerson, ownId } from "./accounts.ts";
+import { giveRole, createGroup, roleName } from "./access.ts";
+import { bob, createAdmin, createPerson, ownId } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
-import { makeProject } from "./projects.ts";
+import { createProject } from "./projects.ts";
 import { inOrder } from "./sequence.ts";
 import { type Instance } from "./server.ts";
 
@@ -24,7 +24,7 @@ export async function fieldOf(session: ApiSession, name: string): Promise<Schema
 }
 
 /** Makes an own field for issues, through the API; the field as the server made it. */
-export async function makeOwnField(
+export async function createOwnField(
   admin: ApiSession,
   name: string,
   kind: Schema<"FieldType">,
@@ -48,14 +48,14 @@ export async function makeOwnField(
  * (long text) for issues.
  */
 export async function prepareFieldsIssue(server: Instance): Promise<void> {
-  const admin = await makeAdmin(server);
-  await (await makePerson(server, admin, bob)).dispose();
-  await makeProject(admin, "WEB", "Website");
+  const admin = await createAdmin(server);
+  await (await createPerson(server, admin, bob)).dispose();
+  await createProject(admin, "WEB", "Website");
   await inOrder([
-    () => makeOwnField(admin, "Severity", "pick-one", ["Minor", "Critical"]),
-    () => makeOwnField(admin, "Platforms", "pick-several", ["Windows", "Mac"]),
-    () => makeOwnField(admin, "Customer", "text"),
-    () => makeOwnField(admin, "Notes", "long-text"),
+    () => createOwnField(admin, "Severity", "pick-one", ["Minor", "Critical"]),
+    () => createOwnField(admin, "Platforms", "pick-several", ["Windows", "Mac"]),
+    () => createOwnField(admin, "Customer", "text"),
+    () => createOwnField(admin, "Notes", "long-text"),
   ]);
   await admin.dispose();
 }
@@ -68,17 +68,17 @@ export const pickableGroup = "Core team";
  * the fields Tester (person), Team (group), Duplicate of (issue) and Notes (long text).
  */
 export async function preparePickers(server: Instance): Promise<void> {
-  const admin = await makeAdmin(server);
-  const person = await makePerson(server, admin, bob);
+  const admin = await createAdmin(server);
+  const person = await createPerson(server, admin, bob);
   await giveRole(admin, await ownId(person), roleName.teamMember, null);
   await person.dispose();
-  await makeProject(admin, "WEB", "Website");
-  await makeGroup(admin, pickableGroup);
+  await createProject(admin, "WEB", "Website");
+  await createGroup(admin, pickableGroup);
   await inOrder([
-    () => makeOwnField(admin, "Tester", "person"),
-    () => makeOwnField(admin, "Team", "group"),
-    () => makeOwnField(admin, "Duplicate of", "issue"),
-    () => makeOwnField(admin, "Notes", "long-text"),
+    () => createOwnField(admin, "Tester", "person"),
+    () => createOwnField(admin, "Team", "group"),
+    () => createOwnField(admin, "Duplicate of", "issue"),
+    () => createOwnField(admin, "Notes", "long-text"),
   ]);
   await admin.dispose();
 }

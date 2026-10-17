@@ -2,7 +2,7 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { ada, makePerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
+import { ada, createPerson, ownId, type Person, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { type Instance } from "./server.ts";
 import { layoutOf } from "./layout.ts";
@@ -46,7 +46,7 @@ export async function roleId(admin: ApiSession, name: string): Promise<string> {
 }
 
 /** Makes a group through the API and returns its ID. */
-export async function makeGroup(admin: ApiSession, name: string): Promise<string> {
+export async function createGroup(admin: ApiSession, name: string): Promise<string> {
   return dataOf(await admin.client.POST("/api/v1/groups", { body: { name } })).id;
 }
 
@@ -178,14 +178,14 @@ export interface WithRole {
 }
 
 /** Makes an account for each person and gives each the role they are named with (M2-F92). */
-export async function makePeopleWithRoles(
+export async function createPeopleWithRoles(
   server: Instance,
   admin: ApiSession,
   who: readonly WithRole[],
 ): Promise<void> {
   await inOrder(
     who.map(({ person, role, project }) => async () => {
-      const session = await makePerson(server, admin, person);
+      const session = await createPerson(server, admin, person);
       await giveRole(admin, await ownId(session), role, project);
       await session.dispose();
     }),

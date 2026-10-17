@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { DraftOffered } from "../../shared/editing/DraftOffered.tsx";
 import { editedThing } from "../../shared/editing/edited-thing.ts";
-import { HeldNote } from "../../shared/editing/HeldNote.tsx";
+import { HeldEditNotice } from "../../shared/editing/HeldEditNotice.tsx";
 import { useNow } from "../../shared/use-now.ts";
 import { CommentBox, KeptText } from "./CommentBox.tsx";
 import { useCommentText, type CommentSource } from "./use-comment-text.ts";
@@ -40,9 +40,9 @@ export function CommentEditor({ reading, onClose, ...source }: CommentEditorProp
       {phase.kind === "held" ? (
         <>
           {reading}
-          <HeldNote held={phase.lock} thing={editedThing.comment}>
+          <HeldEditNotice held={phase.lock} thing={editedThing.comment}>
             <Button onPress={onClose}>{t("common.close")}</Button>
-          </HeldNote>
+          </HeldEditNotice>
           {long.text === source.text ? null : <KeptText text={long.text} />}
           <p {...partOf(part.muted)}>{t("editing.text-kept-on-close")}</p>
         </>

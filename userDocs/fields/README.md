@@ -7,9 +7,9 @@ A **field** is one piece of information on an issue or on a project: the title, 
 - [Rules](rules.md): required, ranges, lengths and patterns, and what you are told when a value is not allowed
 - [Who sees a field](who-sees-a-field.md): the levels of each role, also for one issue type
 
-## Making a field
+## Creating a field
 
-*Organization settings › Fields* lists the fields. It is for people who hold the permission "Manage fields", which administrators have at the start. Below the list, **Make a field** starts with the question *What kind of information?*. Choose a kind, say whether the field is for issues or for projects, give it a name, and, for a field with choices, type one choice on each line. The page of the new field has the rest.
+*Organization settings › Fields* lists the fields. It is for people who hold the permission "Manage fields", which administrators have at the start. Below the list, **Create a field** starts with the question *What kind of information?*. Choose a kind, say whether the field is for issues or for projects, give it a name, and, for a field with choices, type one choice on each line. The page of the new field has the rest.
 
 A field page has these sections: **Basics** (name, help text, whether it has to be filled in, the value a new issue starts with, and the mark that keeps the field from the assistant), **Choices**, **Rules**, **Look**, **Where it is used**, **Who can see it** and **Retire the field**.
 
@@ -25,4 +25,4 @@ A field is used in the whole organization, or only in some projects (with their 
 
 ## Own fields on projects
 
-A field made for **projects** is shown on the overview of each project it is used in, and people who may change the project's settings fill it in there.
+A field created for **projects** is shown on the overview of each project it is used in, and people who may change the project's settings fill it in there.

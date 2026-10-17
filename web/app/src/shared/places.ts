@@ -177,7 +177,7 @@ const organizationTopics: readonly Place[] = [
     name: "nav.projects",
     icon: iconName.projects,
     parent: paths.organizationSettings,
-    anyOf: ["make-projects"],
+    anyOf: ["create-projects"],
     group: "nav.group.work",
     listed: true,
   },

@@ -15,9 +15,9 @@ use std::sync::Arc;
 
 use bb_app::access::{Authorized, Masked};
 use bb_app::auth::{
-    AcceptInvitation, AuthApi, AuthServices, CompleteSetup, ConfirmCodeApp, CreateInvitation,
-    CreatedInvitation, MakeAccessKey, NoFailureLimit, RequestInfo, SecondStepStore as _, SignOut,
-    StartCodeApp, Started, make_access_key,
+    AcceptInvitation, AuthApi, AuthServices, CompleteSetup, ConfirmCodeApp, CreateAccessKey,
+    CreateInvitation, CreatedInvitation, NoFailureLimit, RequestInfo, SecondStepStore as _,
+    SignOut, StartCodeApp, Started, create_access_key,
 };
 use bb_app::context::Clock as _;
 use bb_app::first_start::first_start;
@@ -259,7 +259,7 @@ fn request() -> RequestInfo {
 ///
 /// # Errors
 /// [`SampleError`] for a folder or database that fails and for a use case that refuses a step.
-pub async fn make<L: Later>(
+pub async fn create<L: Later>(
     options: &Options,
     data_folder: &Path,
     target: &Target,
@@ -364,7 +364,7 @@ pub async fn make<L: Later>(
     })
 }
 
-/// Makes the first administrator with the setup code.
+/// Creates the first administrator with the setup code.
 async fn first_administrator(
     services: &AuthServices<AuthStorage>,
     person: &SamplePerson,
@@ -391,7 +391,7 @@ async fn first_administrator(
     .map_err(|error| SampleError::step(Step::FirstAdministrator, &error))
 }
 
-/// Makes a person as the administrator does: an invitation, and the person accepting it.
+/// Creates a person as the administrator does: an invitation, and the person accepting it.
 async fn invited(
     api: &dyn AuthApi,
     administrator_session: &str,
@@ -479,7 +479,7 @@ async fn choose_region(
     Ok(())
 }
 
-/// Makes an access key as the person does (the password is asked again) and returns the key.
+/// Creates an access key as the person does (the password is asked again) and returns the key.
 async fn add_access_key(
     services: &AuthServices<AuthStorage>,
     session: &str,
@@ -487,9 +487,9 @@ async fn add_access_key(
     name: &str,
     choice: KeyChoice,
 ) -> Result<String, SampleError> {
-    let made = make_access_key(
+    let made = create_access_key(
         &services.ctx(request()),
-        MakeAccessKey {
+        CreateAccessKey {
             session_token: session.to_owned(),
             password: password.to_owned(),
             name: name.to_owned(),

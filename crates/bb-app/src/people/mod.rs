@@ -41,7 +41,7 @@ use crate::member;
 use crate::projects::Why;
 
 /// Make a group.
-pub struct MakeGroup {
+pub struct CreateGroup {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What the group is called.
@@ -185,14 +185,14 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Makes a group.
+/// Creates a group.
 ///
 /// # Errors
 /// `access.forbidden` without *Manage groups*, `request.invalid` for a name that cannot be one,
 /// `name.taken` when another group has the name.
-pub async fn make_group<S: AuthStore>(
+pub async fn create_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeGroup,
+    input: CreateGroup,
 ) -> Result<Authorized<GroupView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let access = ctx
@@ -218,7 +218,7 @@ pub async fn make_group<S: AuthStore>(
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NameTaken)))?;
     ctx.note(
-        SecurityAction::GroupMade,
+        SecurityAction::GroupCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Group, group.id)),
     )

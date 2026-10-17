@@ -8,8 +8,8 @@ use std::future::Future;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType};
-use bb_core::issue_key::IssueCode;
+use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
+use bb_core::readable_id::IssueCode;
 use jiff::Timestamp;
 
 use crate::projects::ProjectStore;
@@ -45,7 +45,7 @@ pub trait IssueStore: ProjectStore + 'static {
         /// Whether a code is given out in the project: an issue has it, or had it once.
         fn issue_code_taken(project: ProjectId, code: IssueCode) -> bool = issue_code_taken_in;
         /// The people an issue is assigned to, in the order they were put there.
-        fn assignees(issue: IssueId) -> Vec<IssueAssignee> = assignees_in;
+        fn assigned_people(issue: IssueId) -> Vec<AssignedPerson> = assigned_people_in;
         /// Every issue of a project, also those in the trash, with their IDs and codes.
         fn issue_codes(project: ProjectId) -> Vec<(IssueId, IssueCode)> = issue_codes_in;
     }
@@ -63,7 +63,7 @@ pub trait IssueStore: ProjectStore + 'static {
             limit: u64
         ) -> Vec<Issue>;
         /// The people the issues are assigned to, for a page of issues at once.
-        fn assignees_of(issues: &[IssueId]) -> Vec<IssueAssignee>;
+        fn assigned_people_of(issues: &[IssueId]) -> Vec<AssignedPerson>;
     }
 
     writes! {
@@ -79,7 +79,7 @@ pub trait IssueStore: ProjectStore + 'static {
             version: i64
         ) -> bool;
         /// Adds an issue with the people it is assigned to.
-        fn insert_issue(issue: &Issue, assignees: &[IssueAssignee]) -> ();
+        fn insert_issue(issue: &Issue, assigned_people: &[AssignedPerson]) -> ();
         /// Writes the type, title, description, status, priority, update date and closed date of
         /// `issue`, counts its version up, and says whether it was still at `version`.
         fn update_issue(issue: &Issue, version: i64) -> bool;
@@ -94,7 +94,7 @@ pub trait IssueStore: ProjectStore + 'static {
             now: Timestamp
         ) -> bool;
         /// Replaces the people an issue is assigned to.
-        fn replace_assignees(issue: IssueId, assignees: &[IssueAssignee]) -> ();
+        fn replace_assigned_people(issue: IssueId, assigned_people: &[AssignedPerson]) -> ();
         /// Puts an issue into the trash (a date) or takes it out (`None`), counts its version up
         /// and sets the date it changed (see [`Self::count_issue_up`]), and says whether the issue
         /// was there.

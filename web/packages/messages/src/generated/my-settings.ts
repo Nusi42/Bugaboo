@@ -15,10 +15,10 @@ export const messages = {
     "Your device may already ask for less motion or more contrast. Bugaboo follows both. Your choices are kept with you, so they follow you to every browser you sign in from.",
   "access-keys.title": "Access keys",
   "access-keys.intro":
-    "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you make it.",
+    "An access key lets a script or an app work as you. It can do at most what you can do, and it always runs out. You see a key once, when you create it.",
   "access-keys.list": "Your access keys",
   "access-keys.empty": "You have no access keys yet.",
-  "access-keys.make": "Make an access key",
+  "access-keys.create": "Create an access key",
   "access-keys.name": "Name",
   "access-keys.name-help": "What the key is for, like “Nightly report”.",
   "access-keys.may": "What it may do",
@@ -42,7 +42,7 @@ export const messages = {
   "access-keys.expires": "Runs out on",
   "access-keys.expires-help":
     "Without another day, the key runs out in {days, plural, one {# day} other {# days}}. The latest day is {latest}.",
-  "access-keys.submit": "Make the key",
+  "access-keys.submit": "Create the key",
   "access-keys.shown-title": "Your new access key",
   "access-keys.shown-once":
     "Copy the key now and keep it safe. Bugaboo shows it only this once and cannot show it again.",

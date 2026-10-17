@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { namedPerson, personName } from "../../shared/person.ts";
 import { useShortcuts } from "../../shared/use-shortcuts.ts";
-import { AssigneePicker } from "./AssigneePicker.tsx";
+import { AssignedPicker } from "./AssignedPicker.tsx";
 import { DetailRow } from "./DetailRow.tsx";
 import type { IssueValues } from "./issue-values.ts";
 import { readOnlyReason } from "./read-only.ts";
@@ -78,7 +78,7 @@ export function AssignedRow({ issue, mask, status, onChange }: AssignedRowProps)
           />
         ) : null}
       </DetailRow>
-      <AssigneePicker
+      <AssignedPicker
         isOpen={picking}
         onClose={() => {
           setPicking(false);

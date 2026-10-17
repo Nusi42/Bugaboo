@@ -131,16 +131,16 @@ reason = "A tag or a label is put on an issue and taken off one at a time, like 
 routes = [
   "POST /api/v1/tags/{tag}/preview",
   "POST /api/v1/labels/{label}/preview",
-  "POST /api/v1/bulk/preview",
+  "POST /api/v1/many-changes/preview",
 ]
 reason = "Changes nothing: it only says what a rename, a combine or a change to many issues would do, and the change that follows takes the versions the preview read (M3 WP-08)."
 
 [[exempt]]
-routes = ["POST /api/v1/bulk/changes"]
+routes = ["POST /api/v1/many-changes"]
 reason = "Every issue of the change has its own version in the body (`issues[].version`), which a list of many changes needs and a single `version` cannot say (ADR-0019, M3 WP-08)."
 
 [[exempt]]
-routes = ["POST /api/v1/bulk/runs/{run}/cancel"]
+routes = ["POST /api/v1/many-changes/runs/{run}/stop"]
 reason = "Stops a run that goes on in the background and changes no record of its own: the run has no version, and stopping a run that is over changes nothing (M3 WP-12)."
 
 [[exempt]]

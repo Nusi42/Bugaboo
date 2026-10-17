@@ -253,9 +253,9 @@ async fn sec_15_the_security_log_of_signing_in_verifies_and_names_what_happened(
         assert_eq!(
             actions,
             [
-                "starting_roles.made",
+                "starting_roles.created",
                 "setup.completed",
-                "assignment.made",
+                "assignment.created",
                 "sign_in.failed",
                 "sign_in.failed",
                 "sign_in.succeeded"

@@ -52,8 +52,8 @@ async fn sec_08_the_permission_catalogue_names_every_permission_and_where_it_cou
                 .cloned()
                 .unwrap_or_default()
         };
-        assert_eq!(of("make-projects")["scope"], "organization");
-        assert_eq!(of("make-projects")["topic"], "projects");
+        assert_eq!(of("create-projects")["scope"], "organization");
+        assert_eq!(of("create-projects")["topic"], "projects");
         assert_eq!(of("see-projects")["scope"], "project");
         assert_eq!(of("manage-roles")["topic"], "people");
         Ok(())
@@ -215,7 +215,7 @@ async fn sec_08_a_changed_starting_role_can_be_reset() -> TestResult {
                 Some(json!({
                     "version": 1,
                     "name": "Lookers",
-                    "permissions": ["see-projects", "make-projects", "see-status"],
+                    "permissions": ["see-projects", "create-projects", "see-status"],
                     "two_step": true
                 })),
             )
@@ -255,21 +255,21 @@ async fn sec_08_a_role_in_use_is_deleted_only_with_a_replacement() -> TestResult
         let viewer = org.role_named("Viewer").await?;
         let contributor = org.role_named("Contributor").await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
-        let group = org.make("/api/v1/groups", json!({"name": "Backend"})).await?;
+        let group = org.create("/api/v1/groups", json!({"name": "Backend"})).await?;
         let used = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Used", "permissions": ["see-projects"], "two_step": false}),
             )
             .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": bob_id}, "role": used, "applies_to": "project-and-sub-projects"}),
         )
         .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"group": group}, "role": used}),
         )
@@ -365,29 +365,29 @@ async fn sec_08_nobody_gives_a_replacement_with_more_than_they_hold() -> TestRes
         let (mut dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
         // Dana manages roles and decides who has them, and holds nothing else.
         let keeper = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Keeper", "permissions": ["manage-roles", "decide-roles", "see-projects"], "two_step": false}),
             )
             .await?;
         let strong = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Strong", "permissions": ["see-projects", "see-status"], "two_step": false}),
             )
             .await?;
         let weak = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Weak", "permissions": ["see-projects"], "two_step": false}),
             )
             .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": dana_id}, "role": keeper}),
         )
         .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": bob_id}, "role": weak}),
         )

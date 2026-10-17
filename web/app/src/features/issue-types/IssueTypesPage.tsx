@@ -6,7 +6,7 @@ import { usePageTitle } from "../../shared/use-page.ts";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditIssueType } from "./EditIssueType.tsx";
 import { issueTypeLinesOf, useIssueTypes, type IssueTypeLine } from "./issue-types.ts";
-import { MakeIssueTypeForm } from "./MakeIssueTypeForm.tsx";
+import { CreateIssueTypeForm } from "./CreateIssueTypeForm.tsx";
 import { RetireIssueType } from "./RetireIssueType.tsx";
 
 export interface IssueTypesPageProps {
@@ -68,9 +68,9 @@ export function IssueTypesPage({ open, onOpen, onClose }: IssueTypesPageProps) {
           </Button>
         ) : null}
       </Card>
-      <Card heading={t("issue-types.make-title")}>
-        <p {...partOf(part.text)}>{t("issue-types.make-intro")}</p>
-        <MakeIssueTypeForm />
+      <Card heading={t("issue-types.create-title")}>
+        <p {...partOf(part.text)}>{t("issue-types.create-intro")}</p>
+        <CreateIssueTypeForm />
       </Card>
     </div>
   );

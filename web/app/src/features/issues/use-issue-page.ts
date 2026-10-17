@@ -37,7 +37,7 @@ export function useIssuePage(detail: IssueDetail, address: string): IssuePageSta
     blocks: {
       issue,
       address,
-      issueKey: key,
+      readableId: key,
       ownFieldsHtml: detail.own_fields_html ?? [],
       mask: maskOf(detail),
       form,

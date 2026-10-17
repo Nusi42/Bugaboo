@@ -184,7 +184,7 @@ pub struct RelationKindsQuery {
 }
 
 /// Make a kind of relation.
-pub struct MakeRelationKind {
+pub struct CreateRelationKind {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What the issue it starts from reads, as typed.
@@ -250,4 +250,4 @@ pub struct RelationKindPage {
 impl Masked for RelationKindPage {}
 
 /// Makes the kinds of relation of the first start if there are none yet.
-pub struct MakeStartingRelationKinds;
+pub struct CreateStartingRelationKinds;

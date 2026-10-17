@@ -1,6 +1,6 @@
 # Kinds of information
 
-When you make a field you choose what kind of information it holds. The kind cannot be changed afterwards.
+When you create a field you choose what kind of information it holds. The kind cannot be changed afterwards.
 
 | Kind | What it holds | Example |
 |------|---------------|---------|

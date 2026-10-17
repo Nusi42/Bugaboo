@@ -168,7 +168,7 @@ pub async fn assign_role<S: AuthStore>(
         .await
         .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::AssignmentConflict)))?;
     ctx.note(
-        SecurityAction::AssignmentMade,
+        SecurityAction::AssignmentCreated,
         Some(actor.person.id),
         Some(entity(RecordKind::Assignment, row.id)),
     )

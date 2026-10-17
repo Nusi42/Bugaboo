@@ -61,7 +61,7 @@ pub struct MoveRequest<'a> {
 /// Whether the person may ask for this move at all: the one set of rules the preview and the move
 /// both stand on, judged on the tree and on who has which role as they are given. They see the
 /// project; they may move projects in the new and in the old parent (a move to or from the top
-/// level takes the permission for the whole organization, and to the top level also *Make
+/// level takes the permission for the whole organization, and to the top level also *Create
 /// projects*); the project does not go inside itself, nor where it is already, nor deeper than a
 /// tree may go.
 ///
@@ -97,7 +97,7 @@ pub fn check_move(
     }
     // The top level is the organization: a project that goes there is made there.
     if to.is_none()
-        && !held(Place::Organization).is_some_and(|whole| whole.allows(Permission::MakeProjects))
+        && !held(Place::Organization).is_some_and(|whole| whole.allows(Permission::CreateProjects))
     {
         return Err(MoveRefusal::Forbidden);
     }

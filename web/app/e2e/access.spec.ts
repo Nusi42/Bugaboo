@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { addressInProject, paths } from "../src/shared/paths.ts";
-import { ada, bob, cleo, makeAdmin } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin } from "./support/accounts.ts";
 import {
   ana,
   around,
@@ -10,7 +10,7 @@ import {
   forgetFieldLevel,
   lea,
   levelList,
-  makePeopleWithRoles,
+  createPeopleWithRoles,
   pickLevel,
   projectIdOf,
   roleId,
@@ -21,7 +21,7 @@ import {
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { inOrder } from "./support/sequence.ts";
 
 // What roles see (SEC-04, PRIV-12) and what a person can do and why (SEC-03), on a computer and on
@@ -31,11 +31,11 @@ import { inOrder } from "./support/sequence.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const acme = await makeProject(admin, "ACME", "Acme Corporation");
-      const website = await makeProject(admin, "WEB", "Website", acme);
-      await makeProject(admin, "DOCS", "Documents", website);
-      await makePeopleWithRoles(server, admin, [
+      const admin = await createAdmin(server);
+      const acme = await createProject(admin, "ACME", "Acme Corporation");
+      const website = await createProject(admin, "WEB", "Website", acme);
+      await createProject(admin, "DOCS", "Documents", website);
+      await createPeopleWithRoles(server, admin, [
         { person: bob, role: roleName.contributor, project: "ACME" },
         { person: cleo, role: roleName.guest, project: "ACME" },
         { person: ana, role: roleName.teamMember, project: "ACME" },

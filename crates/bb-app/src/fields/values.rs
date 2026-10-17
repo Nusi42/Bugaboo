@@ -421,7 +421,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             (FieldType::Issue, Value::String(id)) => {
                 let key = match id.parse::<IssueId>() {
-                    Ok(issue) => self.issue_key_for(actor, issue).await?,
+                    Ok(issue) => self.readable_id_for(actor, issue).await?,
                     Err(_) => None,
                 };
                 Ok(key.map_or(
@@ -461,7 +461,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The readable ID of an issue, when the actor sees the issue.
-    async fn issue_key_for(
+    async fn readable_id_for(
         &self,
         actor: &Actor,
         issue: IssueId,
@@ -478,7 +478,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(None);
         };
         Ok(Some(
-            bb_core::issue_key::IssueKey::new(project.short_name, found.code).to_string(),
+            bb_core::readable_id::ReadableId::new(project.short_name, found.code).to_string(),
         ))
     }
 

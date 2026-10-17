@@ -570,7 +570,7 @@ mod tests {
 
     #[tokio::test]
     async fn adr_0007_many_follow_up_events_get_one_position_each_in_order() -> TestResult {
-        each_database("adr_0007_follow_ups_in_bulk", async |db| {
+        each_database("adr_0007_follow_ups_in_many_changes", async |db| {
             let database = open(db).await?;
             let mut ids = ids();
             let event = event(&mut ids, 5);

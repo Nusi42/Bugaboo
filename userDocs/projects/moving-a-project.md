@@ -17,7 +17,7 @@ Pick where the project goes. Before anything happens, Bugaboo tells you in plain
 
 Moving a project changes who has a role in it, because it changes which projects are above it. The list holds only projects you can see. People may also be affected in projects you cannot see, and the list says so in one sentence, without a number.
 
-When you press "Move the project", Bugaboo checks that nothing the preview was made from has changed since you read it: the projects, who has which role, or the levels the roles set. If something changed, you are asked to look at the preview again.
+When you press "Move the project", Bugaboo checks that nothing the preview was created from has changed since you read it: the projects, who has which role, or the levels the roles set. If something changed, you are asked to look at the preview again.
 
 A project cannot be moved into itself or into one of its own sub-projects.
 

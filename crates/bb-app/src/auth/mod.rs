@@ -28,10 +28,6 @@ use crate::access::{
     PeopleToCheckQuery, PeopleVisibility, PeopleVisibilityQuery, field_permissions, own_loss,
     people_to_check, people_visibility,
 };
-use crate::bulk::{
-    ApplyBulk, BulkPreview, BulkPreviewQuery, BulkResult, BulkRunQuery, BulkRunStatus, BulkRunView,
-    apply_bulk, bulk_run, cancel_bulk_run, preview_bulk,
-};
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
     MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
@@ -46,10 +42,10 @@ use crate::editing::{
     release_stuck_lock, save_draft, take_lock, throw_away_draft,
 };
 use crate::fields::{
-    AddChoice, ChangeChoice, ChangeField, CombineChoices, FieldPage, FieldQuery, FieldTypePage,
-    FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, MakeField, ReorderChoices, SaveFieldText,
-    add_choice, change_choice, change_field, combine_choices, field, field_types, field_usage,
-    fields, make_field, reorder_choices, save_field_text,
+    AddChoice, ChangeChoice, ChangeField, CombineChoices, CreateField, FieldPage, FieldQuery,
+    FieldTypePage, FieldTypesQuery, FieldUsage, FieldView, FieldsQuery, ReorderChoices,
+    SaveFieldText, add_choice, change_choice, change_field, combine_choices, create_field, field,
+    field_types, field_usage, fields, reorder_choices, save_field_text,
 };
 use crate::follow::{
     FollowIssue, Followers, FollowersQuery, FollowingQuery, FollowingState, UnfollowIssue,
@@ -57,41 +53,46 @@ use crate::follow::{
 };
 use crate::history::{HistoryPage, HistoryQuery, history};
 use crate::issues::{
-    AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, DeleteIssue,
-    IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView, IssueTypesQuery, IssueView,
-    IssuesQuery, MakeIssue, MakeIssueType, MoveIssue, RestoreIssue, SaveDescription,
-    assignable_people, change_issue, change_issue_type, delete_issue, issue, issue_types, issues,
-    make_issue, make_issue_type, move_issue, restore_issue, save_description,
+    AssignablePeoplePage, AssignablePeopleQuery, ChangeIssue, ChangeIssueType, CreateIssue,
+    CreateIssueType, DeleteIssue, IssueDetail, IssuePage, IssueQuery, IssueTypePage, IssueTypeView,
+    IssueTypesQuery, IssueView, IssuesQuery, MoveIssue, RestoreIssue, SaveDescription,
+    assignable_people, change_issue, change_issue_type, create_issue, create_issue_type,
+    delete_issue, issue, issue_types, issues, move_issue, restore_issue, save_description,
 };
 use crate::layouts::{
-    DeleteLayout, FormLayout, FormLayoutQuery, LayoutEditor, LayoutEditorQuery, MakeLayout,
-    SaveLayout, delete_layout, form_layout, layout_editor, make_layout, save_layout,
+    CreateLayout, DeleteLayout, FormLayout, FormLayoutQuery, LayoutEditor, LayoutEditorQuery,
+    SaveLayout, create_layout, delete_layout, form_layout, layout_editor, save_layout,
+};
+use crate::many_changes::{
+    ApplyManyChanges, ManyChangePreview, ManyChangePreviewQuery, ManyChangeResult,
+    ManyChangeRunQuery, ManyChangeRunStatus, ManyChangeRunView, apply_many_changes,
+    many_changes_run, preview_many_changes, stop_many_changes_run,
 };
 use crate::people::{
-    AddGroupMember, AssignmentChoicesQuery, ChoicePage, DeleteGroup, GroupDetail, GroupList,
-    GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery, MakeGroup,
+    AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
+    GroupList, GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery,
     MemberChoicesQuery, PeopleQuery, PersonDetail, PersonPage, PersonQuery, RemoveGroupMember,
-    RenameGroup, add_group_member, delete_group, group, group_members, groups, make_group,
+    RenameGroup, add_group_member, create_group, delete_group, group, group_members, groups,
     member_choices, people, person, remove_group_member, rename_group,
 };
 use crate::projects::{
-    ChangeProject, MakeProject, MovePreview, MovePreviewQuery, MoveProject, ProjectDetail,
-    ProjectPage, ProjectQuery, ProjectView, ProjectsQuery, change_project, make_project,
+    ChangeProject, CreateProject, MovePreview, MovePreviewQuery, MoveProject, ProjectDetail,
+    ProjectPage, ProjectQuery, ProjectView, ProjectsQuery, change_project, create_project,
     move_project, preview_move, project, projects,
 };
 use crate::relations::{
-    AddRelation, ChangeRelationKind, IssueRelations, IssueRelationsQuery, MakeRelationKind,
+    AddRelation, ChangeRelationKind, CreateRelationKind, IssueRelations, IssueRelationsQuery,
     RelatedIssuePage, RelatedIssuesQuery, RelationKindPage, RelationKindView, RelationKindsQuery,
     RelationView, RemoveRelation, SetParent, SubIssuePage, SubIssuesQuery, add_relation,
-    change_relation_kind, issue_relations, make_relation_kind, related_issues, relation_kinds,
+    change_relation_kind, create_relation_kind, issue_relations, related_issues, relation_kinds,
     remove_relation, set_parent, sub_issues,
 };
 use crate::roles::{
     AccessAnswer, AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, ChangeRole,
-    CheckAccessQuery, CopyRole, DeleteRole, Levels, LevelsQuery, MakeRole, PermissionCatalogue,
+    CheckAccessQuery, CopyRole, CreateRole, DeleteRole, Levels, LevelsQuery, PermissionCatalogue,
     PermissionsQuery, RemoveAssignment, ResetRole, RoleDetail, RoleList, RoleQuery, RoleView,
     RolesQuery, SetFieldLevel, SetPeopleLevel, assign_role, assignment_choices, assignments,
-    change_role, check_access, copy_role, delete_role, make_role, permissions, remove_assignment,
+    change_role, check_access, copy_role, create_role, delete_role, permissions, remove_assignment,
     reset_role, role, role_levels, roles, set_level,
 };
 use crate::settings::{
@@ -101,18 +102,19 @@ use crate::settings::{
 };
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
-    IssueSorting, IssueSortingQuery, LabelChangePreviewQuery, LabelGroupView, LabelView, Labels,
-    LabelsQuery, MakeLabel, MakeLabelGroup, RemoveLabel, RemoveTag, TagChangePreview,
-    TagChangePreviewQuery, TagPage, TagSuggestions, TagSuggestionsQuery, TagView, TagsQuery,
-    add_label, add_tag, change_label, change_label_group, change_tag, combine_labels, combine_tags,
-    issue_sorting, label_change_preview, labels, make_label, make_label_group, remove_label,
-    remove_tag, tag_change_preview, tag_suggestions, tags,
+    CreateLabel, CreateLabelGroup, IssueLabelsAndTags, IssueLabelsAndTagsQuery,
+    LabelChangePreviewQuery, LabelGroupView, LabelView, Labels, LabelsQuery, RemoveLabel,
+    RemoveTag, TagChangePreview, TagChangePreviewQuery, TagPage, TagSuggestions,
+    TagSuggestionsQuery, TagView, TagsQuery, add_label, add_tag, change_label, change_label_group,
+    change_tag, combine_labels, combine_tags, create_label, create_label_group,
+    issue_labels_and_tags, label_change_preview, labels, remove_label, remove_tag,
+    tag_change_preview, tag_suggestions, tags,
 };
 
 #[cfg(test)]
 pub(crate) use access_keys::narrowing_of;
 pub use access_keys::{
-    access_key_rules, access_keys, delete_access_key, make_access_key, project_choices,
+    access_key_rules, access_keys, create_access_key, delete_access_key, project_choices,
     require_session, see_server_status,
 };
 pub use account::{accept_invitation, change_password, complete_setup, issue_setup_code, sign_up};
@@ -242,7 +244,7 @@ use_cases! {
     confirm_code_app(ConfirmCodeApp) -> BackupCodes;
     /// Switches the code app off.
     remove_code_app(RemoveCodeApp) -> Done;
-    /// Makes new backup codes.
+    /// Creates new backup codes.
     renew_backup_codes(RenewBackupCodes) -> BackupCodes;
     /// Starts adding a passkey.
     passkey_registration_options(PasskeyRegistrationQuery) -> PasskeyChallenge;
@@ -254,8 +256,8 @@ use_cases! {
     require_session(RequireSessionQuery) -> Done;
     /// Whether the person (or the access key) may see how the server is doing.
     see_server_status(SeeServerStatusQuery) -> Authorized<Done>;
-    /// Makes an access key.
-    make_access_key(MakeAccessKey) -> Authorized<CreatedAccessKey>;
+    /// Creates an access key.
+    create_access_key(CreateAccessKey) -> Authorized<CreatedAccessKey>;
     /// Deletes an access key.
     delete_access_key(DeleteAccessKey) -> Done;
     /// Lists the access keys of the person.
@@ -266,7 +268,7 @@ use_cases! {
     project_choices(ProjectChoicesQuery) -> Authorized<ProjectChoicePage>;
     /// How many people with a role have no second step yet.
     second_step_gap(SecondStepGapQuery) -> Authorized<SecondStepGap>;
-    /// Makes an invitation.
+    /// Creates an invitation.
     create_invitation(CreateInvitation) -> Authorized<CreatedInvitation>;
     /// Takes an invitation back.
     revoke_invitation(RevokeInvitation) -> Done;
@@ -274,18 +276,18 @@ use_cases! {
     invitations(InvitationsQuery) -> Authorized<InvitationPage>;
     /// Shows which address an invitation is for.
     invitation_lookup(InvitationLookupQuery) -> InvitationLookup;
-    /// Makes an account from an invitation.
+    /// Creates an account from an invitation.
     accept_invitation(AcceptInvitation) -> Started;
-    /// Makes an account without an invitation.
+    /// Creates an account without an invitation.
     sign_up(SignUp) -> Started;
     /// Who may sign up on their own.
     sign_up_policy(SignUpPolicyQuery) -> Authorized<SignUpPolicy>;
     /// Changes who may sign up on their own.
     change_sign_up_policy(ChangeSignUpPolicy) -> Authorized<SignUpPolicy>;
-    /// Makes the first administrator with the setup code.
+    /// Creates the first administrator with the setup code.
     complete_setup(CompleteSetup) -> Started;
-    /// Makes a group.
-    make_group(MakeGroup) -> Authorized<GroupView>;
+    /// Creates a group.
+    create_group(CreateGroup) -> Authorized<GroupView>;
     /// Renames a group.
     rename_group(RenameGroup) -> Authorized<GroupView>;
     /// Deletes a group.
@@ -308,13 +310,13 @@ use_cases! {
     member_choices(MemberChoicesQuery) -> Authorized<ChoicePage>;
     /// Lists the people, groups or roles a row of *Who has which role* can be made from.
     assignment_choices(AssignmentChoicesQuery) -> Authorized<ChoicePage>;
-    /// Makes a role.
-    make_role(MakeRole) -> Authorized<RoleView>;
+    /// Creates a role.
+    create_role(CreateRole) -> Authorized<RoleView>;
     /// Changes a role.
     change_role(ChangeRole) -> Authorized<RoleView>;
     /// Deletes a role.
     delete_role(DeleteRole) -> Done;
-    /// Makes a role from a copy of another.
+    /// Creates a role from a copy of another.
     copy_role(CopyRole) -> Authorized<RoleView>;
     /// Shows one role with what it is used for.
     role(RoleQuery) -> Authorized<RoleDetail>;
@@ -346,8 +348,8 @@ use_cases! {
     people_to_check(PeopleToCheckQuery) -> Authorized<PeopleToCheckPage>;
     /// Says what a change of who has which role would take away from the person who makes it.
     own_loss(OwnLossQuery) -> Authorized<OwnLoss>;
-    /// Makes a project.
-    make_project(MakeProject) -> Authorized<ProjectView>;
+    /// Creates a project.
+    create_project(CreateProject) -> Authorized<ProjectView>;
     /// Lists the settings of the organization, of a project or of the person who asks.
     settings(SettingsQuery) -> Authorized<SettingList>;
     /// Changes the value of a setting on one scope.
@@ -390,16 +392,16 @@ use_cases! {
     check_versions(CheckVersionsQuery) -> Authorized<Versions>;
     /// Lists the issue types.
     issue_types(IssueTypesQuery) -> Authorized<IssueTypePage>;
-    /// Makes an issue type.
-    make_issue_type(MakeIssueType) -> Authorized<IssueTypeView>;
+    /// Creates an issue type.
+    create_issue_type(CreateIssueType) -> Authorized<IssueTypeView>;
     /// Changes the name, icon or retired state of an issue type.
     change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<IssuePage>;
     /// Lists the people an issue of a project can be assigned to.
     assignable_people(AssignablePeopleQuery) -> Authorized<AssignablePeoplePage>;
-    /// Makes an issue.
-    make_issue(MakeIssue) -> Authorized<IssueView>;
+    /// Creates an issue.
+    create_issue(CreateIssue) -> Authorized<IssueView>;
     /// Shows one issue by its readable or internal ID.
     issue(IssueQuery) -> Authorized<IssueDetail>;
     /// Changes the fields of an issue.
@@ -418,8 +420,8 @@ use_cases! {
     restore_issue(RestoreIssue) -> Authorized<IssueView>;
     /// Lists the kinds of relation.
     relation_kinds(RelationKindsQuery) -> Authorized<RelationKindPage>;
-    /// Makes a kind of relation.
-    make_relation_kind(MakeRelationKind) -> Authorized<RelationKindView>;
+    /// Creates a kind of relation.
+    create_relation_kind(CreateRelationKind) -> Authorized<RelationKindView>;
     /// Changes the names or the retired state of a kind of relation.
     change_relation_kind(ChangeRelationKind) -> Authorized<RelationKindView>;
     /// Shows the sub-issues and the related issues of an issue.
@@ -468,8 +470,8 @@ use_cases! {
     field(FieldQuery) -> Authorized<FieldView>;
     /// Says where an own field is used.
     field_usage(FieldQuery) -> Authorized<FieldUsage>;
-    /// Makes an own field.
-    make_field(MakeField) -> Authorized<FieldView>;
+    /// Creates an own field.
+    create_field(CreateField) -> Authorized<FieldView>;
     /// Changes an own field.
     change_field(ChangeField) -> Authorized<FieldView>;
     /// Adds a choice to an own field.
@@ -483,23 +485,23 @@ use_cases! {
     /// Saves the long text of an own field of an issue, under its edit lock.
     save_field_text(SaveFieldText) -> Authorized<IssueView>;
     /// Says what a change to many issues would do to each issue.
-    preview_bulk(BulkPreviewQuery) -> Authorized<BulkPreview>;
+    preview_many_changes(ManyChangePreviewQuery) -> Authorized<ManyChangePreview>;
     /// Changes many issues at once after the preview.
-    apply_bulk(ApplyBulk) -> Authorized<BulkResult>;
+    apply_many_changes(ApplyManyChanges) -> Authorized<ManyChangeResult>;
     /// Shows how far a change to many issues that goes on in the background is.
-    bulk_run(BulkRunQuery) -> Authorized<BulkRunView>;
+    many_changes_run(ManyChangeRunQuery) -> Authorized<ManyChangeRunView>;
     /// Stops a change to many issues that goes on in the background.
-    cancel_bulk_run(BulkRunQuery) -> Authorized<BulkRunStatus>;
+    stop_many_changes_run(ManyChangeRunQuery) -> Authorized<ManyChangeRunStatus>;
     /// Shows the tags and labels of an issue.
-    issue_sorting(IssueSortingQuery) -> Authorized<IssueSorting>;
+    issue_labels_and_tags(IssueLabelsAndTagsQuery) -> Authorized<IssueLabelsAndTags>;
     /// Puts a tag on an issue by its name.
-    add_tag(AddTag) -> Authorized<IssueSorting>;
+    add_tag(AddTag) -> Authorized<IssueLabelsAndTags>;
     /// Takes a tag off an issue.
-    remove_tag(RemoveTag) -> Authorized<IssueSorting>;
+    remove_tag(RemoveTag) -> Authorized<IssueLabelsAndTags>;
     /// Puts a label on an issue.
-    add_label(AddLabel) -> Authorized<IssueSorting>;
+    add_label(AddLabel) -> Authorized<IssueLabelsAndTags>;
     /// Takes a label off an issue.
-    remove_label(RemoveLabel) -> Authorized<IssueSorting>;
+    remove_label(RemoveLabel) -> Authorized<IssueLabelsAndTags>;
     /// Lists the tags to offer while a person types.
     tag_suggestions(TagSuggestionsQuery) -> Authorized<TagSuggestions>;
     /// Lists the tags of the organization for the people who look after them.
@@ -512,12 +514,12 @@ use_cases! {
     combine_tags(CombineTags) -> Authorized<TagView>;
     /// Lists the labels of the organization with their groups.
     labels(LabelsQuery) -> Authorized<Labels>;
-    /// Makes a group of labels.
-    make_label_group(MakeLabelGroup) -> Authorized<LabelGroupView>;
+    /// Creates a group of labels.
+    create_label_group(CreateLabelGroup) -> Authorized<LabelGroupView>;
     /// Changes a group of labels.
     change_label_group(ChangeLabelGroup) -> Authorized<LabelGroupView>;
-    /// Makes a label.
-    make_label(MakeLabel) -> Authorized<LabelView>;
+    /// Creates a label.
+    create_label(CreateLabel) -> Authorized<LabelView>;
     /// Changes a label.
     change_label(ChangeLabel) -> Authorized<LabelView>;
     /// Says what renaming or combining a label would do.
@@ -528,8 +530,8 @@ use_cases! {
     form_layout(FormLayoutQuery) -> Authorized<FormLayout>;
     /// Shows the layout of a place to somebody who may change it.
     layout_editor(LayoutEditorQuery) -> Authorized<LayoutEditor>;
-    /// Makes the layout of a place as a copy of the one that counts there.
-    make_layout(MakeLayout) -> Authorized<LayoutEditor>;
+    /// Creates the layout of a place as a copy of the one that counts there.
+    create_layout(CreateLayout) -> Authorized<LayoutEditor>;
     /// Saves the sections and fields of a layout, under its edit lock.
     save_layout(SaveLayout) -> Authorized<LayoutEditor>;
     /// Takes the layout of a place away.

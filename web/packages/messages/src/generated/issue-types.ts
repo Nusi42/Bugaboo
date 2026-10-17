@@ -4,18 +4,18 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "issue-types.intro":
-    "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who makes an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
+    "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who creates an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
   "issue-types.more": "Show more issue types",
   "issue-types.search": "Search issue types",
   "issue-types.nothing": "No issue type has that name.",
   "issue-types.retired": "Retired",
-  "issue-types.make-title": "Make an issue type",
-  "issue-types.make-intro":
+  "issue-types.create-title": "Create an issue type",
+  "issue-types.create-intro":
     "A new type goes to the end of the list. Pick an icon so people find it quickly.",
   "issue-types.field-name": "Name",
   "issue-types.field-icon": "Icon",
-  "issue-types.make": "Make the issue type",
-  "issue-types.made": "The issue type {name} is made.",
+  "issue-types.create": "Create the issue type",
+  "issue-types.created": "Created the issue type {name}.",
   "issue-types.retire-help":
     "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
   "issue-types.retire": "Retire the issue type",

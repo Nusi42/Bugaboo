@@ -166,12 +166,25 @@ impl Kind {
         }
     }
 
+    /// The files that are never product sources: the tests of a module, in a file of their own next
+    /// to it (`router.rs` and `router/tests.rs`).
+    fn skipped_files(self) -> &'static [&'static str] {
+        match self {
+            Self::Rust => &["tests.rs"],
+            Self::Web | Self::WebAndStyles | Self::DocPages => &[],
+        }
+    }
+
     fn wants(self, path: &str) -> bool {
         path.starts_with(self.folder())
             && Path::new(path)
                 .extension()
                 .is_some_and(|ending| self.endings().iter().any(|wanted| ending == *wanted))
             && !path.split('/').any(|part| self.skipped().contains(&part))
+            && !path
+                .rsplit('/')
+                .next()
+                .is_some_and(|file| self.skipped_files().contains(&file))
     }
 }
 
@@ -326,6 +339,9 @@ mod tests {
     fn a_kind_wants_its_files_in_its_folder_and_not_the_tests() {
         assert!(Kind::Rust.wants("crates/bb-core/src/lib.rs"));
         assert!(!Kind::Rust.wants("crates/bb-core/tests/x.rs"));
+        // The tests of a module in a file of their own are not product code either.
+        assert!(!Kind::Rust.wants("crates/bb-api/src/router/tests.rs"));
+        assert!(Kind::Rust.wants("crates/bb-api/src/router.rs"));
         assert!(!Kind::Rust.wants("web/app/src/x.ts"));
         assert!(Kind::Web.wants("web/app/src/x.tsx"));
         assert!(!Kind::Web.wants("web/app/src/x.css"));

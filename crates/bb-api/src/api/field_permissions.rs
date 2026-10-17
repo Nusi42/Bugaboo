@@ -21,7 +21,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_keys::KeyProjectRef;
+use super::access_keys::ProjectLabelBody;
 use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer, NotSignedInAnswer, Session,
     answer_authorized, done,
@@ -105,7 +105,7 @@ pub(crate) enum LevelOriginBody {
     /// For a project above, which this project and its sub-projects inherit.
     Inherited {
         /// The project above, or *a project you can't see*.
-        from: KeyProjectRef,
+        from: ProjectLabelBody,
     },
     /// The role's own level, for the whole organization.
     RoleOwn,
@@ -118,7 +118,7 @@ impl From<&LevelOrigin> for LevelOriginBody {
         match origin {
             LevelOrigin::SetHere => Self::SetHere,
             LevelOrigin::Inherited { from } => Self::Inherited {
-                from: KeyProjectRef::from(from),
+                from: ProjectLabelBody::from(from),
             },
             LevelOrigin::RoleOwn => Self::RoleOwn,
             LevelOrigin::Unset => Self::Unset,
@@ -156,7 +156,7 @@ pub(crate) struct LevelRowBody<K, L> {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct LevelTableBody<K, L> {
     /// The project, or `null` for the whole organization.
-    project: Option<KeyProjectRef>,
+    project: Option<ProjectLabelBody>,
     /// The ID of the issue type the levels are for, or `null` for all issue types.
     issue_type: Option<String>,
     /// The roles, in the order of roles: the columns.
@@ -175,7 +175,7 @@ impl<K: Copy, L: Copy> LevelTableBody<K, L> {
     /// The body of a table; `levels` are the choices of a cell.
     pub(super) fn of(table: &LevelTable<K, L>, levels: &[L]) -> Self {
         Self {
-            project: table.place.as_ref().map(KeyProjectRef::from),
+            project: table.place.as_ref().map(ProjectLabelBody::from),
             issue_type: table.issue_type.map(|issue_type| issue_type.to_string()),
             roles: table.roles.iter().map(RoleRefBody::from).collect(),
             truncated: table.truncated,

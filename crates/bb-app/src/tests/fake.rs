@@ -16,7 +16,7 @@ use bb_core::event::DomainEvent;
 use bb_core::follow::Follower;
 use bb_core::history::HistoryEntry;
 use bb_core::id::{ProjectId, UserId};
-use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueType};
+use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueType};
 use bb_core::person::Person;
 use bb_core::project::{Project, ProjectAlias};
 use bb_core::relation::{IssueParent, Relation, RelationKind};
@@ -93,7 +93,7 @@ pub(crate) struct State {
     pub(crate) notices: Vec<EditNotice>,
     pub(crate) issue_types: Vec<IssueType>,
     pub(crate) issues: Vec<Issue>,
-    pub(crate) assignees: Vec<IssueAssignee>,
+    pub(crate) assigned_people: Vec<AssignedPerson>,
     pub(crate) issue_aliases: Vec<IssueAlias>,
     pub(crate) counters: Vec<(ProjectId, i64)>,
     pub(crate) relation_kinds: Vec<RelationKind>,
@@ -115,7 +115,7 @@ pub(crate) struct State {
     pub(crate) labels: Vec<bb_core::tags::Label>,
     pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
     pub(crate) jobs: Vec<bb_core::job::Job>,
-    pub(crate) bulk_runs: Vec<bb_core::bulk::BulkRun>,
+    pub(crate) many_changes_runs: Vec<bb_core::many_changes::ManyChangeRun>,
     pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,
 }
 
@@ -187,7 +187,7 @@ impl FakeStore {
 
     /// Makes the next `times` savings of the progress of a run fail, as the database does when it
     /// breaks for a while.
-    pub(crate) fn fail_bulk_progress(&self, times: usize) {
+    pub(crate) fn fail_many_changes_progress(&self, times: usize) {
         self.lock().progress_failures = times;
     }
 

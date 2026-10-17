@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { addressEndingAt, openFromMenu, signIn } from "./support/flows.ts";
-import { fillMake, openOverview, tree, treeLink } from "./support/projects.ts";
+import { fillCreate, openOverview, tree, treeLink } from "./support/projects.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 
 // Projects (PRJ-01, PRJ-02): making projects and sub-projects, the tree of the sidebar (the *More*
@@ -14,7 +14,7 @@ import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts"
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });
@@ -28,7 +28,7 @@ test("prj_01 an administrator makes a project in the organization settings and f
   await expect(page.getByRole("heading", { level: 1, name: t("projects.title") })).toBeVisible();
   await expect(page.getByText(t("projects.none-yet"))).toBeVisible();
   // The short name is typed in small letters; the form turns them into capitals.
-  await fillMake(page, "Website", "web");
+  await fillCreate(page, "Website", "web");
   await expect(page.getByLabel(t("projects.field-short-name"), { exact: true })).toHaveValue("");
   // The list holds the project, which opens in the panel next to it.
   await page.getByRole("button", { name: "Website", exact: true }).click();
@@ -47,8 +47,8 @@ test("prj_01 a project is opened from the tree and gets a sub-project", async ({
   await expect(page.getByRole("heading", { level: 1, name: "Website" })).toBeVisible();
   await expect(page.getByText(t("projects.sub-projects-empty"))).toBeVisible();
   // The one next step of an empty project: make a sub-project.
-  await page.getByRole("button", { name: t("projects.make-sub-project") }).click();
-  await fillMake(page, "Documents", "docs");
+  await page.getByRole("button", { name: t("projects.create-sub-project") }).click();
+  await fillCreate(page, "Documents", "docs");
   const subProjects = page.getByRole("list", { name: t("projects.sub-projects") });
   await expect(subProjects.getByRole("link", { name: "Documents" })).toBeVisible();
 });
@@ -103,7 +103,7 @@ test("prj_01 a short name that is taken is refused with a sentence", async ({ pa
   await page.getByLabel(t("projects.field-name"), { exact: true }).fill("Other");
   // WEB was the short name of the Website: nobody else can take it.
   await page.getByLabel(t("projects.field-short-name"), { exact: true }).fill("web");
-  await page.getByRole("button", { name: t("projects.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("projects.create"), exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText(t("error.name.taken"));
 });
 

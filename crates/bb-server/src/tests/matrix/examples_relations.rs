@@ -8,7 +8,7 @@
 //! refused for the reason the table says.
 
 use bb_app::comments::AddComment;
-use bb_app::relations::{AddRelation, MakeRelationKind, RelationKindsQuery};
+use bb_app::relations::{AddRelation, CreateRelationKind, RelationKindsQuery};
 use bb_core::relation::Direction;
 use bb_testing::Failure;
 use serde_json::json;
@@ -115,7 +115,7 @@ pub(super) async fn relation_request(
 ) -> Result<Option<Request>, Failure> {
     Ok(Some(match operation {
         "listRelationKinds" => ("GET", "/api/v1/relation-kinds".into(), None),
-        "makeRelationKind" => (
+        "createRelationKind" => (
             "POST",
             "/api/v1/relation-kinds".into(),
             Some(json!({
@@ -127,9 +127,9 @@ pub(super) async fn relation_request(
             let made = fixture
                 .rig()
                 .api()
-                .make_relation_kind(
+                .create_relation_kind(
                     Rig::info(),
-                    MakeRelationKind {
+                    CreateRelationKind {
                         session_token: fixture.admin_session().to_owned(),
                         forward: format!("leads to {}", fixture.next_number()),
                         backward: format!("comes from {}", fixture.next_number()),

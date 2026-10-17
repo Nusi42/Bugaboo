@@ -140,7 +140,7 @@ pub struct RemovePasskey {
 
 /// Make an access key. The password is asked again, so a stolen session cannot make a key that
 /// outlives it.
-pub struct MakeAccessKey {
+pub struct CreateAccessKey {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The password, asked again for this.

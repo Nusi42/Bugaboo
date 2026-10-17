@@ -61,7 +61,7 @@ impl From<&Label> for LabelRef {
 /// The tags and labels of one issue, and what the person may do with them. A member that holds a
 /// field of the catalogue is dropped when the viewer's level for the field is *Hidden*.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Masked)]
-pub struct IssueSorting {
+pub struct IssueLabelsAndTags {
     /// The issue.
     #[masked(open)]
     pub issue: IssueId,
@@ -88,7 +88,7 @@ pub struct IssueSorting {
 }
 
 /// Which issue and what is asked of it.
-pub struct IssueSortingQuery {
+pub struct IssueLabelsAndTagsQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The issue, by its readable ID (also an old one) or its internal ID.
@@ -345,7 +345,7 @@ pub struct LabelsQuery {
 }
 
 /// Make a group of labels, at the end of the order.
-pub struct MakeLabelGroup {
+pub struct CreateLabelGroup {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What it is called.
@@ -371,7 +371,7 @@ pub struct ChangeLabelGroup {
 }
 
 /// Make a label, at the end of the order.
-pub struct MakeLabel {
+pub struct CreateLabel {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What it is called.

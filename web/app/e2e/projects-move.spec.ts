@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, makeAdmin } from "./support/accounts.ts";
+import { ada, createAdmin } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { answerPreviewsWithEverything, expectEverySentence } from "./support/fake-preview.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject, openMove } from "./support/projects.ts";
+import { createProject, openMove } from "./support/projects.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 
 // Moving a project (PRJ-03, *Show, then do*): the dialog with its preview, in plain sentences.
@@ -13,9 +13,9 @@ import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts"
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const website = await makeProject(admin, "WEB", "Website");
-      await makeProject(admin, "DOCS", "Documents", website);
+      const admin = await createAdmin(server);
+      const website = await createProject(admin, "WEB", "Website");
+      await createProject(admin, "DOCS", "Documents", website);
       await admin.dispose();
     },
   },

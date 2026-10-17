@@ -1,6 +1,6 @@
 import { partOf, part } from "@bugaboo/ui";
 
-import { sortingKind } from "./change-preview.ts";
+import { labelsAndTagsKind } from "./change-preview.ts";
 import { CombineInto } from "./CombineInto.tsx";
 import type { TagLine } from "./labels.ts";
 import { TagForm } from "./TagForm.tsx";
@@ -20,7 +20,7 @@ export function EditTag({ tag, others }: EditTagProps) {
     <div {...partOf(part.stack)}>
       <TagForm tag={tag} />
       <CombineInto
-        kind={sortingKind.tag}
+        kind={labelsAndTagsKind.tag}
         id={tag.id}
         name={tag.name}
         version={tag.version}

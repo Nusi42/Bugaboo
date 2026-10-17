@@ -5,8 +5,8 @@ import { register } from "../registry.ts";
 export const messages = {
   "invitations.title": "Invitations",
   "invitations.intro":
-    "An invitation is a link that lets one person make their account. It works once and runs out after 7 days.",
-  "invitations.create": "Make an invitation",
+    "An invitation is a link that lets one person create their account. It works once and runs out after 7 days.",
+  "invitations.create": "Create an invitation",
   "invitations.created": "Invitation for {email}",
   "invitations.link": "Link to send",
   "invitations.link-help":
@@ -15,7 +15,7 @@ export const messages = {
   "invitations.copied": "Link copied",
   "invitations.open": "Open invitations",
   "invitations.none": "There are no open invitations.",
-  "invitations.made": "Made {when}",
+  "invitations.created-at": "Created {when}",
   "invitations.expires": "Runs out {when}",
   "invitations.take-back": "Take back",
   "invitations.take-back-name": "Take back the invitation for {email}",
@@ -25,16 +25,16 @@ export const messages = {
   "invitations.more": "Show more",
   "sign-up-policy.title": "Signing up without an invitation",
   "sign-up-policy.intro":
-    "When this is on, anyone who can open Bugaboo can make an account without being invited.",
-  "sign-up-policy.switch": "Let people make their own account",
+    "When this is on, anyone who can open Bugaboo can create an account without being invited.",
+  "sign-up-policy.switch": "Let people create their own account",
   "sign-up-policy.domains": "E-mail domains that may sign up",
   "sign-up-policy.domains-help":
     "One domain per line, like example.com. Only addresses of these domains can sign up.",
   "sign-up-policy.warning":
-    "No domain is listed, so everyone who can reach Bugaboo can make an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+    "No domain is listed, so everyone who can reach Bugaboo can create an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
   "sign-up-policy.confirm-title": "Let everybody sign up?",
   "sign-up-policy.confirm-text":
-    "No domain is listed. Everybody who can reach Bugaboo will be able to make an account.",
+    "No domain is listed. Everybody who can reach Bugaboo will be able to create an account.",
   "sign-up-policy.confirm-yes": "Let everybody sign up",
   "sign-up-policy.confirm-no": "Keep it off",
   "people.intro":
@@ -48,7 +48,7 @@ export const messages = {
   "people.in-groups": "In the groups {groups}",
   "people.no-groups": "In no group",
   "person.email": "E-mail address",
-  "person.since": "Account made",
+  "person.since": "Account created",
   "person.back": "All people",
   "person.groups": "Groups",
   "person.groups-none": "{name} is in no group.",
@@ -59,14 +59,14 @@ export const messages = {
   "groups.intro":
     "A group is a set of people. Give a role to a group, and everybody in it has that role.",
   "groups.search": "Search groups",
-  "groups.none-yet": "There are no groups yet. Make the first one below.",
+  "groups.none-yet": "There are no groups yet. Create the first one below.",
   "groups.nothing": "No group found. Try another word.",
   "groups.more": "Show more groups",
-  "groups.make-title": "Make a group",
-  "groups.make-intro": "A new group is empty. Put people into it afterwards.",
+  "groups.create-title": "Create a group",
+  "groups.create-intro": "A new group is empty. Put people into it afterwards.",
   "groups.field-name": "Name of the group",
-  "groups.make": "Make the group",
-  "groups.made": "The group {name} is made. Open it in the list to put people into it.",
+  "groups.create": "Create the group",
+  "groups.created": "Created the group {name}. Open it in the list to put people into it.",
   "groups.gone": "This group does not exist any more.",
   "groups.members": "People in the group",
   "groups.members-none": "Nobody is in this group yet.",

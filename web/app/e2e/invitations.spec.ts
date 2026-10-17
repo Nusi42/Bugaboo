@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
 import { type ApiSession } from "./support/api.ts";
-import { ada, bob, cleo, invite, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, cleo, invite, createAdmin, createPerson } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import {
   anotherBrowser,
@@ -21,8 +21,8 @@ let admin: ApiSession;
 test.use({
   preparation: {
     run: async (server) => {
-      admin = await makeAdmin(server);
-      await (await makePerson(server, admin, cleo)).dispose();
+      admin = await createAdmin(server);
+      await (await createPerson(server, admin, cleo)).dispose();
     },
   },
 });
@@ -36,7 +36,7 @@ async function openInvitations(page: Page): Promise<void> {
 }
 
 /** Makes an invitation for `email` on the page, and returns the link that is shown. */
-async function makeInvitation(page: Page, email: string): Promise<string> {
+async function createInvitation(page: Page, email: string): Promise<string> {
   await page.getByLabel(t("field.email"), { exact: true }).fill(email);
   await page.getByRole("button", { name: t("invitations.create") }).click();
   await expect(page.getByText(t("invitations.created", { email }))).toBeVisible();
@@ -58,7 +58,7 @@ test("auth_06 an administrator makes an invitation and the person makes an accou
   server,
 }) => {
   await openInvitations(page);
-  const link = await makeInvitation(page, bob.email);
+  const link = await createInvitation(page, bob.email);
   await page.getByRole("button", { name: t("invitations.copy") }).click();
   await expect(page.getByRole("button", { name: t("invitations.copied") })).toBeVisible();
   await expect(

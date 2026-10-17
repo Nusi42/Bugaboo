@@ -258,7 +258,7 @@ async fn the_crowd(
 ) -> Result<Vec<Person>, Failure> {
     let mut issues = Vec::new();
     for at in 0..ISSUE_COUNT {
-        let made = site.make(admin, &format!("Shared issue {at}")).await?;
+        let made = site.create(admin, &format!("Shared issue {at}")).await?;
         let body = ok(&made)?;
         issues.push(Work {
             id: body["id"].as_str().ok_or("no id")?.to_owned(),

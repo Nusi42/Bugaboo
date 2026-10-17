@@ -182,7 +182,7 @@ mod tests {
     -> Result<(), Failure> {
         let folder = tempfile::tempdir()?;
         // Two certificates of the same kind that Bugaboo makes, used as the person's own.
-        let make = |name: &str| -> Result<(std::path::PathBuf, std::path::PathBuf), Failure> {
+        let create = |name: &str| -> Result<(std::path::PathBuf, std::path::PathBuf), Failure> {
             let side = folder.path().join(name);
             std::fs::create_dir(&side)?;
             bb_api::tls::server_config(&TlsSource::SelfSigned {
@@ -194,8 +194,8 @@ mod tests {
                 side.join("self-signed-key.pem"),
             ))
         };
-        let (first_cert, first_key) = make("first")?;
-        let (second_cert, second_key) = make("second")?;
+        let (first_cert, first_key) = create("first")?;
+        let (second_cert, second_key) = create("second")?;
         let (cert, key) = (
             folder.path().join("cert.pem"),
             folder.path().join("key.pem"),

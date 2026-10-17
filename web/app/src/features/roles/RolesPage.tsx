@@ -4,7 +4,7 @@ import { Card, partOf, part } from "@bugaboo/ui";
 import { usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { AssignmentsSection } from "./AssignmentsSection.tsx";
-import { MakeRoleForm } from "./MakeRoleForm.tsx";
+import { CreateRoleForm } from "./CreateRoleForm.tsx";
 import { RoleList } from "./RoleList.tsx";
 
 /** The roles, and the form that makes one: for people who hold *Manage roles*. */
@@ -15,9 +15,9 @@ function Roles() {
         <p {...partOf(part.text)}>{t("roles.intro")}</p>
         <RoleList />
       </Card>
-      <Card heading={t("roles.make-title")}>
-        <p {...partOf(part.text)}>{t("roles.make-intro")}</p>
-        <MakeRoleForm />
+      <Card heading={t("roles.create-title")}>
+        <p {...partOf(part.text)}>{t("roles.create-intro")}</p>
+        <CreateRoleForm />
       </Card>
     </>
   );

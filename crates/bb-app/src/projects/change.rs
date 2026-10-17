@@ -64,7 +64,7 @@ impl Plan {
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// What the person asks for, when they may ask it: the right to change the project, the right
-    /// to make projects where it sits for a short name (only people who may make projects are
+    /// to create projects where it sits for a short name (only people who may create projects are
     /// told that a short name is taken), the version they looked at.
     async fn plan_change(
         &self,
@@ -119,7 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         if plan.changes_short_name()
             && !self
-                .may_make_projects_beside(actor, plan.current.parent)
+                .may_create_projects_beside(actor, plan.current.parent)
                 .await?
         {
             return Err(ErrorCode::Forbidden.into());
@@ -133,8 +133,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 ///
 /// # Errors
 /// `access.forbidden` without *Change the project's name, short name and settings* (and, for a
-/// short name, without *Make projects* or *Make sub-projects* where the project sits: only
-/// people who may make projects are told that a short name is taken), `resource.not_found` for a
+/// short name, without *Create projects* or *Create sub-projects* where the project sits: only
+/// people who may create projects are told that a short name is taken), `resource.not_found` for a
 /// project the person may not know about, `request.invalid` for a name or short name that
 /// cannot be one or when nothing is asked, `edit.version_changed` when somebody changed the
 /// project since it was looked at, `name.taken` for a short name that is used by another project

@@ -17,7 +17,7 @@ To add a passkey, sign in and open *My settings* and then "Sign-in & security". 
 If your account asks for a second check, Bugaboo shows "One more step" after your password:
 
 - Type the six-digit **code** from your code app. Each code works once.
-- If you cannot use the app, type one of your **backup codes**. Each backup code works once. In "Sign-in & security" you can make new backup codes, and the old ones stop working.
+- If you cannot use the app, type one of your **backup codes**. Each backup code works once. In "Sign-in & security" you can create new backup codes, and the old ones stop working.
 - If you have a passkey, press "Use a passkey".
 
 To switch the code app on or off, open *My settings* and then "Sign-in & security". Bugaboo asks for your password again before it changes anything.
@@ -32,10 +32,10 @@ Your administrator can ask everybody, or everybody with a certain role, to use a
 
 "Sign out everywhere" ends all your places at once, this one included, and deletes your access keys too. Use it when you lost a device. Afterwards, change your password.
 
-## Invitations and making your own account
+## Invitations and creating your own account
 
-An administrator invites people on the page "People" (in "Organization settings"), under "Invitations". Bugaboo cannot send e-mail yet, so the administrator copies the link and sends it to the person. The link works once and runs out after 7 days. The person opens it, chooses a name and a password, and the account is made. An administrator can take back an invitation that is still open.
+An administrator invites people on the page "People" (in "Organization settings"), under "Invitations". Bugaboo cannot send e-mail yet, so the administrator copies the link and sends it to the person. The link works once and runs out after 7 days. The person opens it, chooses a name and a password, and the account is created. An administrator can take back an invitation that is still open.
 
-An administrator can also let people make their own account, from chosen e-mail domains. The page "Invitations" shows this setting. If you remove all domains, anybody who can reach Bugaboo can make an account. Bugaboo warns you and asks you to confirm.
+An administrator can also let people create their own account, from chosen e-mail domains. The page "Invitations" shows this setting. If you remove all domains, anybody who can reach Bugaboo can create an account. Bugaboo warns you and asks you to confirm.
 
-If making your own account is switched off, the page "Make an account" says so and asks you to ask an administrator for an invitation.
+If creating your own account is switched off, the page "Create an account" says so and asks you to ask an administrator for an invitation.

@@ -16,8 +16,8 @@ import {
   addCodeApp,
   bob,
   invite,
-  makeAdmin,
-  makePerson,
+  createAdmin,
+  createPerson,
   ownId,
   setSignUpPolicy,
 } from "./support/accounts.ts";
@@ -26,7 +26,7 @@ import {
   expectGoodInEveryTheme as expectGoodInEveryThemeOnPage,
 } from "./support/checks.ts";
 import { setOrganizationSwitch } from "./support/organization.ts";
-import { makeProjectWithIssue } from "./support/issues.ts";
+import { createProjectWithIssue } from "./support/issues.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { sendPassword, signIn } from "./support/flows.ts";
 
@@ -47,8 +47,8 @@ let someIssue = "";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      const session = await makePerson(server, admin, bob);
+      const admin = await createAdmin(server);
+      const session = await createPerson(server, admin, bob);
       somebody = await ownId(session);
       someRole =
         dataOf(await admin.client.GET("/api/v1/roles", { params: { query: { limit: 1 } } }))
@@ -65,7 +65,7 @@ test.use({
       ).id;
       await addCodeApp(session, bob.password);
       invitationLink = await invite(admin, "guest@example.test");
-      someIssue = (await makeProjectWithIssue(admin, "WEB", "Website")).id;
+      someIssue = (await createProjectWithIssue(admin, "WEB", "Website")).id;
       await setSignUpPolicy(admin, { enabled: true, domains: ["example.test"] });
       await admin.dispose();
       await session.dispose();

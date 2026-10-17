@@ -19,7 +19,7 @@ use bb_app::comments::{AddComment, SaveComment, add_comment, save_comment};
 use bb_app::context::Clock as _;
 use bb_app::context::SystemIds;
 use bb_app::editing::{TakeLockQuery, take_lock};
-use bb_app::issues::{ChangeIssue, MakeIssue, change_issue, make_issue};
+use bb_app::issues::{ChangeIssue, CreateIssue, change_issue, create_issue};
 use bb_app::relations::{AddRelation, SetParent, add_relation, set_parent};
 use bb_app::tags::{AddLabel, AddTag, add_label, add_tag};
 use bb_core::comment::{TEXT_PART, handle_of};
@@ -111,7 +111,7 @@ impl Later for Everything {
         let calendar = Calendar::between(begins, ends);
         let plan = Plan::new(&names, &words, world.seed, self.issues, &calendar)?;
         let token = world.administrator_session.to_owned();
-        let setup = Setup::make(world, &token, &names).await?;
+        let setup = Setup::create(world, &token, &names).await?;
         let mut hands = Hands::new(world, calendar.clone(), plan.steps.len())?;
         let mut maker = Maker {
             world,
@@ -177,7 +177,7 @@ impl Maker<'_, '_> {
     }
 
     /// The people, as the people of the plan of the people, whom picks stand for.
-    fn assignees(&self, picks: &[u32]) -> Vec<UserId> {
+    fn assigned_people(&self, picks: &[u32]) -> Vec<UserId> {
         let mut people: Vec<UserId> = Vec::new();
         for pick in picks {
             let person = self.world.people.get(self.hands.anyone(*pick));
@@ -231,7 +231,7 @@ impl Maker<'_, '_> {
                 .set(jiff::Timestamp::from_second(moment).map_err(|_| SampleError::Start(moment))?);
             let person = self.hands.person(step.at, step.lane);
             match step.action {
-                Action::Make(at) => self.make(at, person).await?,
+                Action::Create(at) => self.create(at, person).await?,
                 Action::Parent(at) => self.parent(at, person).await?,
                 Action::Tag(at, tag) => self.tag(at, tag, person).await?,
                 Action::Label(at, label) => self.label(at, label, person).await?,
@@ -244,10 +244,10 @@ impl Maker<'_, '_> {
         Ok(())
     }
 
-    async fn make(&mut self, at: usize, person: usize) -> Result<(), SampleError> {
+    async fn create(&mut self, at: usize, person: usize) -> Result<(), SampleError> {
         let planned = &self.plan.issues[at];
         let token = self.hands.token(person).await?;
-        let assigned = self.assignees(&planned.assignees);
+        let assigned = self.assigned_people(&planned.assigned_people);
         let fields = planned
             .fields
             .iter()
@@ -261,9 +261,9 @@ impl Maker<'_, '_> {
             })
             .collect();
         let made = json(
-            make_issue(
+            create_issue(
                 &self.world.services.ctx(self.world.request()),
-                MakeIssue {
+                CreateIssue {
                     session_token: token,
                     project: planned.place.clone(),
                     issue_type: *self

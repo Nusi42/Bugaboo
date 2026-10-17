@@ -1,6 +1,7 @@
 {
   "paths": {
-    "/api/v1/ticket/{id}": {}
+    "/api/v1/ticket/{id}": {},
+    "/api/v1/bulk/x": {}
   },
   "components": {
     "schemas": {

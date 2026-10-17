@@ -7,7 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { fieldOf, pickableGroup, preparePickers } from "./support/fields.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
-import { makeIssue } from "./support/issues.ts";
+import { createIssue } from "./support/issues.ts";
 
 // The pickers of own fields on the issue page (CF-01, M3 WP-05 with WP-06): a person, a group and
 // an issue are chosen in a dialog and shown afterwards, and the page with its fields and a long
@@ -31,7 +31,7 @@ test("cf_01 a person is chosen for Tester, found by name, and shown on the page"
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  const made = await makeIssue(admin, "WEB", "Needs a tester");
+  const made = await createIssue(admin, "WEB", "Needs a tester");
   await signIn(page, ada);
   await openIssueWithDetails(page, made.key);
   const dialog = await openChooser(page, "Tester");
@@ -47,7 +47,7 @@ test("cf_01 a person is chosen for Tester, found by name, and shown on the page"
 
 test("cf_01 a group is chosen for Team and shown on the page", async ({ page, server }) => {
   const admin = await signedInAdmin(server);
-  const made = await makeIssue(admin, "WEB", "Needs a team");
+  const made = await createIssue(admin, "WEB", "Needs a team");
   await signIn(page, ada);
   await openIssueWithDetails(page, made.key);
   const dialog = await openChooser(page, "Team");
@@ -67,7 +67,7 @@ test("cf_01 a person without Manage groups is not offered a list of groups to ch
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  const made = await makeIssue(admin, "WEB", "Bob sets the fields");
+  const made = await createIssue(admin, "WEB", "Bob sets the fields");
   await signIn(page, bob);
   await openIssueWithDetails(page, made.key);
   // Bob may set Tester and Team, but the list of groups needs Manage groups: he can pick a
@@ -86,8 +86,8 @@ test("cf_01 an issue is chosen for Duplicate of by its readable ID, and a wrong 
   server,
 }) => {
   const admin = await signedInAdmin(server);
-  const first = await makeIssue(admin, "WEB", "The first");
-  const second = await makeIssue(admin, "WEB", "The second");
+  const first = await createIssue(admin, "WEB", "The first");
+  const second = await createIssue(admin, "WEB", "The second");
   await signIn(page, ada);
   await openIssueWithDetails(page, second.key);
   const dialog = await openChooser(page, "Duplicate of");
@@ -118,7 +118,7 @@ test("cf_04 the issue page with own fields and a long text is good in all four l
     `- ${"a-word-without-any-spaces-".repeat(8)}`,
     "```\n" + "a line of code that goes on and on and on ".repeat(6) + "\n```",
   ].join("\n\n");
-  const made = await makeIssue(admin, "WEB", "Long notes", undefined, { [notes.id]: longText });
+  const made = await createIssue(admin, "WEB", "Long notes", undefined, { [notes.id]: longText });
   await signIn(page, ada);
   await openIssueWithDetails(page, made.key);
   await expect(page.getByRole("region", { name: "Notes", exact: true })).toBeVisible();

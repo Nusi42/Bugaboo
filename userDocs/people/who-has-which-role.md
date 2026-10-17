@@ -10,7 +10,7 @@
 A row on a project says where it counts:
 
 - **Only this project**
-- **This project and its sub-projects**: it also counts in the projects inside, including ones made later
+- **This project and its sub-projects**: it also counts in the projects inside, including ones created later
 
 A row for the whole organization counts everywhere. Giving a role to a group gives it to everybody in the group.
 

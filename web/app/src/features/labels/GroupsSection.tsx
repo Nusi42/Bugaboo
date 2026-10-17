@@ -4,7 +4,7 @@ import { Card, partOf, part } from "@bugaboo/ui";
 import { ListEditor, type ListRow } from "../shell/index.ts";
 import { EditGroup } from "./EditGroup.tsx";
 import type { LabelGroup } from "./labels.ts";
-import { MakeGroupForm } from "./MakeGroupForm.tsx";
+import { CreateLabelGroupForm } from "./CreateLabelGroupForm.tsx";
 import type { OpenProps } from "./OpenProps.ts";
 
 /** The row of a group of labels: whether it is a group to pick one from, and whether it is retired. */
@@ -37,9 +37,9 @@ export function GroupsSection({
         onOpen={opening.onOpen}
         onClose={opening.onClose}
       />
-      <h3>{t("labels.make-group-title")}</h3>
-      <p {...partOf(part.text)}>{t("labels.make-group-intro")}</p>
-      <MakeGroupForm />
+      <h3>{t("labels.create-label-group-title")}</h3>
+      <p {...partOf(part.text)}>{t("labels.create-label-group-intro")}</p>
+      <CreateLabelGroupForm />
     </Card>
   );
 }

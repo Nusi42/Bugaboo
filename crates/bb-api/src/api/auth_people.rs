@@ -172,7 +172,7 @@ pub(crate) struct SignUpPolicyBody {
 
 impl Masked for SignUpPolicyBody {}
 
-/// Makes the first administrator with the setup code, and signs them in. Setup is closed for
+/// Creates the first administrator with the setup code, and signs them in. Setup is closed for
 /// good afterwards.
 #[utoipa::path(
     post,
@@ -208,7 +208,7 @@ async fn complete_setup(
     signed_in(&started)
 }
 
-/// Makes an account without an invitation, when an administrator allows it.
+/// Creates an account without an invitation, when an administrator allows it.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/sign-up",
@@ -269,7 +269,7 @@ async fn look_up_invitation(
     Ok(answer(InvitationLookupBody { email: found.email }))
 }
 
-/// Makes an account from an invitation link, and signs the person in.
+/// Creates an account from an invitation link, and signs the person in.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/invitation/accept",
@@ -348,7 +348,7 @@ async fn list_invitations(
     )?))
 }
 
-/// Makes an invitation. The link is shown once. Needs the permission *Invite people*.
+/// Creates an invitation. The link is shown once. Needs the permission *Invite people*.
 #[utoipa::path(
     post,
     path = "/api/v1/auth/invitations",

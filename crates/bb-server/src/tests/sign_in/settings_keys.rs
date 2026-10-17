@@ -10,7 +10,7 @@ use bb_core::access_key::KeyChoice;
 use bb_core::id::ProjectId;
 use bb_testing::{TestResult, each_database};
 
-use super::access_keys::make;
+use super::access_keys::create;
 use super::policy_rig::{Member, Org, Run};
 use super::rig::{Rig, refused};
 use super::settings::{NOTE, change, lock, people, reset, text};
@@ -24,7 +24,7 @@ async fn with_key(
     choice: KeyChoice,
     projects: &[ProjectId],
 ) -> Run<Member> {
-    let created = make(rig, owner, choice, &[], projects).await?;
+    let created = create(rig, owner, choice, &[], projects).await?;
     Ok(Member {
         id: owner.id,
         session: created.secret,

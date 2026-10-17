@@ -9,7 +9,7 @@ use bb_core::access::FieldLevel;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
-use super::fields_http::{FIELDS, make_field, reader_of, set_levels, severity};
+use super::fields_http::{FIELDS, create_field, reader_of, set_levels, severity};
 use super::http::{Browser, Reply, rig_and_app};
 use super::issues_site::{ISSUES, PROJECTS, Site, id_in, key_in, ok, version_of};
 use super::policy_rig::Member;
@@ -61,7 +61,7 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let tester = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
             )
@@ -79,8 +79,8 @@ async fn cf_01_a_person_in_a_field_is_judged_like_assigned_to_and_the_list_offer
         let (mut filler, _) = site.person(StartingRole::TeamMember, "fil").await?;
         let (mut gus, gus_id) = site.person(StartingRole::Guest, "gus").await?;
         let (gus_id, outsider) = (gus_id.to_string(), site.outsider("olga").await?.to_string());
-        let by_gus = ok(&site.make(&mut gus, "Gus found it").await?)?.clone();
-        let by_ada = ok(&site.make(&mut ada, "Ada found it").await?)?.clone();
+        let by_gus = ok(&site.create(&mut gus, "Gus found it").await?)?.clone();
+        let by_ada = ok(&site.create(&mut ada, "Ada found it").await?)?.clone();
         let list = format!("{PROJECTS}/{}/assignable-people", site.acme);
         let for_gus = format!("issue={}", by_gus["key"].as_str().ok_or("no key")?);
         // The list for *Assigned to* still needs the right to change *Assigned to*; the list for
@@ -136,7 +136,7 @@ async fn cf_08_a_person_in_a_field_of_a_project_has_to_see_the_project() -> Test
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let sponsor = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Sponsor", "kind": "person", "applies_to": "projects"}),
             )
@@ -192,7 +192,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let duplicate = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Duplicate of", "kind": "issue", "applies_to": "issues"}),
             )
@@ -205,7 +205,7 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
             "max@example.test",
             &[
                 Permission::SeeProjects,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
                 Permission::ChangeOwnIssues,
             ],
             &[
@@ -214,8 +214,8 @@ async fn cf_01_an_issue_in_a_field_has_to_be_one_the_setter_may_see() -> TestRes
             ],
         )
         .await?;
-        let theirs = ok(&site.make(&mut maker, "Max found it").await?)?.clone();
-        let hidden = ok(&site.make(&mut ada, "Only Ada sees it").await?)?.clone();
+        let theirs = ok(&site.create(&mut maker, "Max found it").await?)?.clone();
+        let hidden = ok(&site.create(&mut ada, "Only Ada sees it").await?)?.clone();
         for named in [hidden["id"].clone(), json!(NOBODY)] {
             let refused = set_on_issue(
                 &mut maker,
@@ -257,7 +257,7 @@ async fn cf_07_undo_puts_back_what_the_field_held_just_before() -> TestResult {
             id_in(&level["choices"][1])?,
         );
         let tester = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
             )
@@ -358,7 +358,7 @@ async fn offered_and_accepted(
     tester: &str,
     people: &[String],
 ) -> Result<Vec<(String, bool, bool, bool, bool)>, Failure> {
-    let made = ok(&site.make(ada, "Who is named").await?)?.clone();
+    let made = ok(&site.create(ada, "Who is named").await?)?.clone();
     let key = made["key"].as_str().ok_or("no key")?.to_owned();
     let list = format!("{PROJECTS}/{}/assignable-people", site.acme);
     let assigned = ok(&viewer
@@ -400,7 +400,7 @@ async fn cf_01_every_person_the_list_offers_is_accepted_and_no_other() -> TestRe
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let tester = id_in(
-            &make_field(
+            &create_field(
                 &mut ada,
                 json!({"name": "Tester", "kind": "person", "applies_to": "issues"}),
             )

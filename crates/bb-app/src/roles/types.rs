@@ -33,7 +33,7 @@ pub enum Given {
 }
 
 /// Make a role.
-pub struct MakeRole {
+pub struct CreateRole {
     /// The secret of the session of the request.
     pub session_token: String,
     /// What the role is called.

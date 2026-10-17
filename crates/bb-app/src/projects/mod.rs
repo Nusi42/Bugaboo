@@ -15,7 +15,7 @@
 //!   move after which somebody could take away a *No access* that applies to them.
 
 mod change;
-mod make;
+mod create;
 mod moving;
 mod read;
 mod shown;
@@ -31,7 +31,7 @@ use bb_policy::Tree;
 use crate::auth::{AppError, AuthStore, Stops, change_failed};
 
 pub use change::change_project;
-pub use make::make_project;
+pub use create::create_project;
 pub use moving::{move_project, preview_move};
 pub use read::{project, projects};
 pub(crate) use shown::Shown;

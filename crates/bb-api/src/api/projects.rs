@@ -9,7 +9,7 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::projects::{
-    ChangeProject, MakeProject, MoveRight, ProjectDetail, ProjectItem as AppProjectItem,
+    ChangeProject, CreateProject, MoveRight, ProjectDetail, ProjectItem as AppProjectItem,
     ProjectQuery, ProjectRef as AppProjectRef, ProjectView, ProjectsQuery,
 };
 use bb_core::fields::FieldKey;
@@ -331,11 +331,11 @@ async fn get_project(
     answer_authorized(&detail.map(ProjectDetailBody::from))
 }
 
-/// Makes a project at the top level. Needs the permission *Make projects at the top level*.
+/// Creates a project at the top level. Needs the permission *Create projects at the top level*.
 #[utoipa::path(
     post,
     path = "/api/v1/projects",
-    operation_id = "makeProject",
+    operation_id = "createProject",
     tag = "projects",
     request_body = NewProjectBody,
     responses(
@@ -346,7 +346,7 @@ async fn get_project(
         ConflictAnswer
     )
 )]
-async fn make_project(
+async fn create_project(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -354,9 +354,9 @@ async fn make_project(
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
-        .make_project(
+        .create_project(
             info,
-            MakeProject {
+            CreateProject {
                 session_token,
                 parent: None,
                 short_name: body.short_name,
@@ -367,12 +367,12 @@ async fn make_project(
     answer_authorized(&made.map(ProjectBody::from))
 }
 
-/// Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the
+/// Creates a sub-project. Needs the permission *Create sub-projects inside the project* in the
 /// project it goes into.
 #[utoipa::path(
     post,
     path = "/api/v1/projects/{project}/sub-projects",
-    operation_id = "makeSubProject",
+    operation_id = "createSubProject",
     tag = "projects",
     params(("project" = String, Path, description = "The ID of the project it goes into.")),
     request_body = NewProjectBody,
@@ -385,7 +385,7 @@ async fn make_project(
         ConflictAnswer
     )
 )]
-async fn make_sub_project(
+async fn create_sub_project(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -395,9 +395,9 @@ async fn make_sub_project(
     let parent = path_id::<ProjectId>(&parent)?;
     let made = auth
         .api()?
-        .make_project(
+        .create_project(
             info,
-            MakeProject {
+            CreateProject {
                 session_token,
                 parent: Some(parent),
                 short_name: body.short_name,
@@ -410,7 +410,7 @@ async fn make_sub_project(
 
 /// Changes the name or the short name of a project. A short name that is changed leaves the old
 /// one with the project, so its old addresses keep working. Needs the permission *Change the
-/// project's name, short name and settings*; a short name also needs the right to make projects
+/// project's name, short name and settings*; a short name also needs the right to create projects
 /// where the project sits.
 #[utoipa::path(
     patch,
@@ -460,9 +460,9 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_projects, make_project))
+        .routes(routes!(list_projects, create_project))
         .routes(routes!(get_project, change_project))
-        .routes(routes!(make_sub_project))
+        .routes(routes!(create_sub_project))
         .merge(super::projects_move::routes())
 }
 

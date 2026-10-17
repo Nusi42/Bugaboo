@@ -233,9 +233,9 @@ async fn cfg_06_a_project_the_person_cannot_see_is_not_found_over_http() -> Test
             .session_token;
         let acme = rig
             .api()
-            .make_project(
+            .create_project(
                 Rig::info(),
-                bb_app::projects::MakeProject {
+                bb_app::projects::CreateProject {
                     session_token: admin,
                     parent: None,
                     short_name: "ACME".to_owned(),

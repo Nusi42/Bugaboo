@@ -14,11 +14,11 @@
 use std::collections::BTreeMap;
 
 use bb_app::access::{Permission, PolicyStore as _, RoleRecord, StartingRole};
-use bb_app::people::{AddGroupMember, MakeGroup, add_group_member, make_group};
-use bb_app::projects::{MakeProject, make_project};
+use bb_app::people::{AddGroupMember, CreateGroup, add_group_member, create_group};
+use bb_app::projects::{CreateProject, create_project};
 use bb_app::roles::{
-    AssignRole, CopyRole, Given, MakeRole, SetFieldLevel, SetPeopleLevel, Subject, assign_role,
-    copy_role, make_role, set_level,
+    AssignRole, CopyRole, CreateRole, Given, SetFieldLevel, SetPeopleLevel, Subject, assign_role,
+    copy_role, create_role, set_level,
 };
 use bb_core::access::{AppliesTo, FieldLevel, PeopleLevel};
 use bb_core::fields::Field;
@@ -423,9 +423,9 @@ impl Making<'_, '_> {
     }
 
     async fn group(&self, name: &str) -> Result<(), SampleError> {
-        make_group(
+        create_group(
             &self.world.services.ctx(self.world.request()),
-            MakeGroup {
+            CreateGroup {
                 session_token: self.next(),
                 name: name.to_owned(),
             },
@@ -467,9 +467,9 @@ impl Making<'_, '_> {
             Some(parent) => Some(self.project_id(parent).await?),
             None => None,
         };
-        make_project(
+        create_project(
             &self.world.services.ctx(self.world.request()),
-            MakeProject {
+            CreateProject {
                 session_token: self.next(),
                 parent,
                 short_name: short_name.to_owned(),
@@ -502,9 +502,9 @@ impl Making<'_, '_> {
             .await?;
 
         let reviewer = names.role(SECURITY_REVIEWER)?;
-        make_role(
+        create_role(
             &self.world.services.ctx(self.world.request()),
-            MakeRole {
+            CreateRole {
                 session_token: self.next(),
                 name: reviewer.to_owned(),
                 permissions: vec![Permission::SeeProjects],

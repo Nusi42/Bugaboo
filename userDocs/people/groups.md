@@ -2,9 +2,9 @@
 
 A group is a set of people. Give a role to a group, and everybody in it has that role. Groups hold people only, never other groups.
 
-## Making and changing a group
+## Creating and changing a group
 
-*Organization settings › Groups* lists the groups. Type a name under "Make a group" and press "Make the group": a new group is empty. Press a group's name in the list to open it next to the list (on a phone it takes the whole page).
+*Organization settings › Groups* lists the groups. Type a name under "Create a group" and press "Create the group": a new group is empty. Press a group's name in the list to open it next to the list (on a phone it takes the whole page).
 
 In the open group you can:
 

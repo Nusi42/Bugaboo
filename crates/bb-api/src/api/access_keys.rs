@@ -11,7 +11,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::access::ProjectLabel;
 use bb_app::auth::{
-    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, DeleteAccessKey, MakeAccessKey,
+    AccessKeyRulesQuery, AccessKeyView, AccessKeysQuery, CreateAccessKey, DeleteAccessKey,
     ProjectChoice, ProjectChoicesQuery, RequireSessionQuery,
 };
 use bb_core::access_key::KeyChoice;
@@ -51,7 +51,7 @@ const KEYS_LIST: &str = "access-keys";
 /// A project a key is limited to, as its owner may see it: a reference by ID, and the names only
 /// of a project the owner may know about (*a project you can't see* otherwise).
 #[derive(Serialize, ToSchema)]
-pub(crate) struct KeyProjectRef {
+pub(crate) struct ProjectLabelBody {
     /// `visible` or `hidden`.
     shown: ProjectShown,
     /// The ID of the project. Only for a visible one.
@@ -73,7 +73,7 @@ enum ProjectShown {
     Hidden,
 }
 
-impl From<&ProjectLabel> for KeyProjectRef {
+impl From<&ProjectLabel> for ProjectLabelBody {
     fn from(label: &ProjectLabel) -> Self {
         match label {
             ProjectLabel::Visible {
@@ -117,7 +117,7 @@ pub(crate) struct AccessKeyItem {
     permissions: Option<Vec<Permission>>,
     /// The projects the key is limited to; empty for every project.
     #[serde(skip_serializing_if = "Option::is_none")]
-    projects: Option<Vec<KeyProjectRef>>,
+    projects: Option<Vec<ProjectLabelBody>>,
     /// When it was made.
     #[serde(skip_serializing_if = "Option::is_none")]
     created_at: Option<String>,
@@ -142,7 +142,7 @@ impl From<&AccessKeyView> for AccessKeyItem {
             prefix: Some(key.prefix.clone()),
             choice: Some(key.choice),
             permissions: Some(key.permissions.clone()),
-            projects: Some(key.projects.iter().map(KeyProjectRef::from).collect()),
+            projects: Some(key.projects.iter().map(ProjectLabelBody::from).collect()),
             created_at: Some(key.created_at.to_string()),
             expires_at: Some(key.expires_at.to_string()),
             last_used_at: key.last_used_at.map(|moment| moment.to_string()),
@@ -165,7 +165,7 @@ pub(crate) struct AccessKeyBody {
     /// The single permissions, when the choice is `permissions`.
     permissions: Vec<Permission>,
     /// The projects the key is limited to; empty for every project.
-    projects: Vec<KeyProjectRef>,
+    projects: Vec<ProjectLabelBody>,
     /// When it was made.
     created_at: String,
     /// When it stops working.
@@ -180,7 +180,7 @@ impl From<&AccessKeyView> for AccessKeyBody {
             prefix: key.prefix.clone(),
             choice: key.choice,
             permissions: key.permissions.clone(),
-            projects: key.projects.iter().map(KeyProjectRef::from).collect(),
+            projects: key.projects.iter().map(ProjectLabelBody::from).collect(),
             created_at: key.created_at.to_string(),
             expires_at: key.expires_at.to_string(),
         }
@@ -225,7 +225,7 @@ impl Masked for AccessKeyRulesBody {}
 
 /// An access key to make.
 #[derive(Deserialize, ToSchema)]
-pub(crate) struct MakeKeyBody {
+pub(crate) struct CreateKeyBody {
     /// The password of the person, asked again so a stolen session cannot make a key.
     password: String,
     /// What the key is called.
@@ -285,13 +285,13 @@ async fn list_access_keys(
     )?))
 }
 
-/// Makes an access key. The key is shown once. The password is asked again.
+/// Creates an access key. The key is shown once. The password is asked again.
 #[utoipa::path(
     post,
     path = "/api/v1/access-keys",
-    operation_id = "makeAccessKey",
+    operation_id = "createAccessKey",
     tag = "access-keys",
-    request_body = MakeKeyBody,
+    request_body = CreateKeyBody,
     responses(
         (status = 200, description = "The key, with its secret.", body = CreatedAccessKeyBody),
         InvalidAnswer,
@@ -300,11 +300,11 @@ async fn list_access_keys(
         NotFoundAnswer
     )
 )]
-async fn make_access_key(
+async fn create_access_key(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    body: Result<ApiJson<MakeKeyBody>, ApiError>,
+    body: Result<ApiJson<CreateKeyBody>, ApiError>,
 ) -> Result<Response, ApiError> {
     // Who asks comes before what is asked: a key is turned away before its body is looked at.
     auth.api()?
@@ -323,9 +323,9 @@ async fn make_access_key(
         .collect::<Result<Vec<_>, _>>()?;
     let created = auth
         .api()?
-        .make_access_key(
+        .create_access_key(
             info,
-            MakeAccessKey {
+            CreateAccessKey {
                 session_token,
                 password: body.password,
                 name: body.name,
@@ -487,7 +487,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_access_keys, make_access_key))
+        .routes(routes!(list_access_keys, create_access_key))
         .routes(routes!(get_access_key_rules))
         .routes(routes!(list_project_choices))
         .routes(routes!(delete_access_key))

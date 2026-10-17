@@ -49,7 +49,7 @@ const O: PeopleLevel = PeopleLevel::Hidden;
 const CONTRIBUTOR: [Permission; 5] = [
     Permission::SeeProjects,
     Permission::SeeIssues,
-    Permission::MakeIssues,
+    Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
 ];
@@ -63,7 +63,7 @@ const TEAM_MEMBER: [Permission; 3] = [
 
 /// What a Project lead has beyond a Team member.
 const PROJECT_LEAD: [Permission; 9] = [
-    Permission::MakeSubProjects,
+    Permission::CreateSubProjects,
     Permission::MoveProjects,
     Permission::ChangeProjectSettings,
     Permission::DecideRoles,
@@ -81,7 +81,7 @@ const VIEWER: [Permission; 2] = [Permission::SeeProjects, Permission::SeeIssues]
 /// and comments on them.
 const GUEST: [Permission; 4] = [
     Permission::SeeProjects,
-    Permission::MakeIssues,
+    Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
 ];
@@ -202,6 +202,46 @@ mod tests {
             );
         }
         assert_eq!(StartingRole::from_code("owner"), None);
+    }
+
+    #[test]
+    fn sec_02_starting_roles_have_the_m4_permission_words() {
+        // The words to create are the ones of M4, in the catalogue, the starting roles and the
+        // generated table of the architecture chapter, and no role keeps the old words.
+        let words = [
+            (Permission::CreateIssues, "create-issues"),
+            (Permission::CreateProjects, "create-projects"),
+            (Permission::CreateSubProjects, "create-sub-projects"),
+        ];
+        let page = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/architecture/07-cross-cutting.md"),
+        )
+        .unwrap();
+        for (permission, word) in words {
+            assert_eq!(permission.code(), word);
+            assert!(
+                page.contains(&format!("| `{word}` |")),
+                "the generated table lacks `{word}`"
+            );
+        }
+        let held = |role: StartingRole| -> Vec<&'static str> {
+            role.permissions()
+                .iter()
+                .map(|permission| permission.code())
+                .collect()
+        };
+        for role in StartingRole::ALL.iter().copied() {
+            for code in held(role) {
+                assert!(
+                    !code.starts_with("make-"),
+                    "{role:?} holds the old word {code}"
+                );
+            }
+        }
+        assert!(held(StartingRole::Administrator).contains(&"create-projects"));
+        assert!(held(StartingRole::ProjectLead).contains(&"create-sub-projects"));
+        assert!(held(StartingRole::Guest).contains(&"create-issues"));
     }
 
     #[test]

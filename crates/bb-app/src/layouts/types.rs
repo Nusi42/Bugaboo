@@ -36,7 +36,7 @@ pub struct LayoutEditorQuery {
 }
 
 /// Make the layout of a place, as a copy of the one that counts there now (*Customize this form*).
-pub struct MakeLayout {
+pub struct CreateLayout {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The project, by its ID or its short name; none for the whole organization.

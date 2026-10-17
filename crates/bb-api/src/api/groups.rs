@@ -1,14 +1,14 @@
 //! The group routes below `/api/v1/groups` (SEC-02): the list, making, renaming and deleting a
 //! group, who is in it, and the choices of people to put into it. All of them need the permission
-//! *Make, rename and delete groups and change who is in them*; what the use cases refuse beyond
+//! *Create, rename and delete groups and change who is in them*; what the use cases refuse beyond
 //! that (the last administrator, no escalation, a *No access* that a change would lift) comes back
 //! as the refusal of the use case.
 
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::people::{
-    ChoicePage, ChoiceView, DeleteGroup, GroupDetail, GroupMembers, GroupMembersQuery, GroupQuery,
-    GroupView, GroupsQuery, MakeGroup, MemberChoicesQuery, MemberView, RemoveGroupMember,
+    ChoicePage, ChoiceView, CreateGroup, DeleteGroup, GroupDetail, GroupMembers, GroupMembersQuery,
+    GroupQuery, GroupView, GroupsQuery, MemberChoicesQuery, MemberView, RemoveGroupMember,
     RenameGroup,
 };
 use bb_core::id::{GroupId, UserId};
@@ -223,7 +223,7 @@ pub(crate) fn choice_page(
     Ok(answer(Page::of_authorized(list, &list_page, &fields)?))
 }
 
-/// The groups, by name, a page at a time. Needs the permission *Make, rename and delete groups
+/// The groups, by name, a page at a time. Needs the permission *Create, rename and delete groups
 /// and change who is in them*.
 #[utoipa::path(
     get,
@@ -262,11 +262,11 @@ async fn list_groups(
     Ok(answer(Page::of_authorized(GROUPS_LIST, &listed, &fields)?))
 }
 
-/// Makes a group. Needs the permission *Make, rename and delete groups and change who is in them*.
+/// Creates a group. Needs the permission *Create, rename and delete groups and change who is in them*.
 #[utoipa::path(
     post,
     path = "/api/v1/groups",
-    operation_id = "makeGroup",
+    operation_id = "createGroup",
     tag = "groups",
     request_body = GroupNameBody,
     responses(
@@ -277,7 +277,7 @@ async fn list_groups(
         ConflictAnswer
     )
 )]
-async fn make_group(
+async fn create_group(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -285,9 +285,9 @@ async fn make_group(
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
-        .make_group(
+        .create_group(
             info,
-            MakeGroup {
+            CreateGroup {
                 session_token,
                 name: body.name,
             },
@@ -296,7 +296,7 @@ async fn make_group(
     answer_authorized(&made.map(|group| GroupBody::from(&group)))
 }
 
-/// One group, with what it is used for. Needs the permission *Make, rename and delete groups and
+/// One group, with what it is used for. Needs the permission *Create, rename and delete groups and
 /// change who is in them*.
 #[utoipa::path(
     get,
@@ -326,7 +326,7 @@ async fn get_group(
     answer_authorized(&found.map(|detail| GroupDetailBody::from(&detail)))
 }
 
-/// Renames a group. Needs the permission *Make, rename and delete groups and change who is in
+/// Renames a group. Needs the permission *Create, rename and delete groups and change who is in
 /// them*.
 #[utoipa::path(
     patch,
@@ -368,7 +368,7 @@ async fn rename_group(
 }
 
 /// Deletes a group, with its members and the rows that give it a role. Needs the permission
-/// *Make, rename and delete groups and change who is in them*, and, where the group has *No
+/// *Create, rename and delete groups and change who is in them*, and, where the group has *No
 /// access*, *Decide who has which role* there.
 #[utoipa::path(
     delete,
@@ -403,7 +403,7 @@ async fn delete_group(
     Ok(done())
 }
 
-/// The people in a group, a page at a time. Needs the permission *Make, rename and delete groups
+/// The people in a group, a page at a time. Needs the permission *Create, rename and delete groups
 /// and change who is in them*.
 #[utoipa::path(
     get,
@@ -444,7 +444,7 @@ async fn list_group_members(
     Ok(answer(Page::of_authorized(MEMBERS_LIST, &listed, &fields)?))
 }
 
-/// Puts a person into a group. Needs the permission *Make, rename and delete groups and change
+/// Puts a person into a group. Needs the permission *Create, rename and delete groups and change
 /// who is in them*; nobody puts somebody into a group that has a role with more than they hold
 /// themselves.
 #[utoipa::path(
@@ -484,7 +484,7 @@ async fn add_group_member(
     Ok(done())
 }
 
-/// Takes a person out of a group. Needs the permission *Make, rename and delete groups and change
+/// Takes a person out of a group. Needs the permission *Create, rename and delete groups and change
 /// who is in them*, and, where the group has *No access*, *Decide who has which role* there.
 #[utoipa::path(
     delete,
@@ -525,7 +525,7 @@ async fn remove_group_member(
 }
 
 /// The people that can be put into a group, by name, a page at a time; those who are in it
-/// already say so. Needs the permission *Make, rename and delete groups and change who is in
+/// already say so. Needs the permission *Create, rename and delete groups and change who is in
 /// them*. Names only, never e-mail addresses.
 #[utoipa::path(
     get,
@@ -570,7 +570,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_groups, make_group))
+        .routes(routes!(list_groups, create_group))
         .routes(routes!(get_group, rename_group, delete_group))
         .routes(routes!(list_group_members))
         .routes(routes!(add_group_member, remove_group_member))

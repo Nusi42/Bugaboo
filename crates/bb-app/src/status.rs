@@ -13,7 +13,7 @@ use crate::ports::BoxFuture;
 
 /// Which database the server uses. The address is never part of it: it can hold a password.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum DatabaseKind {
+pub enum RunningDatabase {
     /// The database inside the data folder.
     BuiltIn,
     /// A SQLite file chosen by the person who runs the server.
@@ -199,7 +199,7 @@ pub struct Snapshot {
     /// How long it has been running.
     pub uptime: Duration,
     /// Which database it uses.
-    pub database: DatabaseKind,
+    pub database: RunningDatabase,
     /// Whether the database answered.
     pub database_ok: bool,
     /// The certificate, when the server itself speaks HTTPS and the certificate could be read.

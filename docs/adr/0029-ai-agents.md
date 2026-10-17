@@ -31,7 +31,7 @@ One person may also drive several agents at the same time, each on its own issue
 
 ### 2. Agents
 
-- **Every agent has one responsible person**, normally the person who made it; handing an agent to another person needs that person's acceptance. Making agents takes the new permission *Make agents that work for you* (organization, kind *Change*; at the start Administrator, Project lead and Team member have it). Administrators see every agent of the organization in *Organization settings › Agents* and can stop any of them; an administrator can switch agents off for the organization or a project, like AI itself (AI-02). Enforced by: the tests `ai_30_an_agent_needs_a_responsible_person` and `ai_30_an_administrator_stops_any_agent` (M8).
+- **Every agent has one responsible person**, normally the person who made it; handing an agent to another person needs that person's acceptance. Creating agents takes the new permission *Create agents that work for you* (organization, kind *Change*; at the start Administrator, Project lead and Team member have it). Administrators see every agent of the organization in *Organization settings › Agents* and can stop any of them; an administrator can switch agents off for the organization or a project, like AI itself (AI-02). Enforced by: the tests `ai_30_an_agent_needs_a_responsible_person` and `ai_30_an_administrator_stops_any_agent` (M8).
 - **What an agent can do at a place is at most what its responsible person can do there**, narrowed by its work (decision 3) and its limits (decision 9). When the person loses that access, is switched off or leaves, the agent loses it at the next request, and its open work becomes *Stopped*. Enforced by: the tests `ai_30_an_agent_never_does_more_than_its_person` and `ai_30_an_agent_stops_when_its_person_loses_access` (M8).
 - **An agent is not a member:** it has no role, is in no group, never appears in *Who has which role*, and is never *Assigned to* an issue. The issue keeps its person; while an agent works on it the issue shows *"worked on by Fixer"*. This keeps a person answerable for every issue and keeps COMP-10 simple. Enforced by: the tests `ai_30_an_agent_cannot_be_assigned` and `ai_30_an_agent_has_no_role` (M8).
 - **Shown as** its name with an agent mark and its person: *"Fixer, agent of Ada Brandt"*. Its own name is always shown (it is not a person); its person follows *Who sees people* for the viewer (*"agent of a Team member"*).
@@ -51,7 +51,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 
   The hand-over ends at *Accept*, *Throw away*, *Stop*, or when it runs out (14 days unless set otherwise). The person handing over needs *Change issues* (or *Change the issues they reported*) on each issue. Enforced by: the tests `ai_31_a_handed_over_agent_sees_only_its_issues` and `ai_31_a_hand_over_ends_at_accept` (M8).
 - **Standing rule** (AI-32): a person lets one of their agents work on everything a saved search finds, for example *"every new bug in Website"*. Because anybody who changes an issue so that it matches gives the agent that issue, a standing rule is narrower than a hand-over:
-  - it may **propose** (default: nothing changes until a person clicks *Apply*, as with the assistant), or **change only the fields named in the rule** from a short list (*Labels, Tags, Type, Duplicate of, Found in release*); it may make issues in one named project when the rule says so (for an agent that reports failing tests);
+  - it may **propose** (default: nothing changes until a person clicks *Apply*, as with the assistant), or **change only the fields named in the rule** from a short list (*Labels, Tags, Type, Duplicate of, Found in release*); it may create issues in one named project when the rule says so (for an agent that reports failing tests);
   - it never changes a field that holds people (*Assigned to*, *Followers*, *Reported by*) and never the status; Enforced by: the test `ai_32_a_standing_rule_never_changes_people_fields` (M8), and COMP-10 in review;
   - it **runs out** after 30 days unless set otherwise (at most 90) and is renewed with one click;
   - every issue that newly comes under the rule is written down, so the person sees what the agent saw.
@@ -76,7 +76,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 
 ### 7. Runs: everything an app or an agent did, undone together
 
-- Every session of an AI app acting for a person, and every attempt of an agent, is **one run** (AI-38), built on the store of changes to many issues (`bulk_run`, its events and its *Stopped* state). A run is shown as the list of its changes and can be **undone in one step**; a change that somebody changed again afterwards is skipped and named, as in *Change many issues*. Enforced by: the test `ai_38_a_run_is_undone_in_one_step_and_skips_later_changes` (M8).
+- Every session of an AI app acting for a person, and every attempt of an agent, is **one run** (AI-38), built on the store of changes to many issues (`change_run`, its events and its *Stopped* state). A run is shown as the list of its changes and can be **undone in one step**; a change that somebody changed again afterwards is skipped and named, as in *Change many issues*. Enforced by: the test `ai_38_a_run_is_undone_in_one_step_and_skips_later_changes` (M8).
 - Text written through MCP is marked *Written by an AI app* or *Written by an agent*, stored with the text like *Written with the assistant* (COMP-08, COMP-09).
 
 ### 8. My agents: one person, several agents
@@ -99,7 +99,7 @@ There are two ways, and no third one (a project-wide permission would be a stand
 ## Consequences
 
 - One new kind of actor in `bb-policy` (*agent*), evaluated as the intersection of its person's rights, its work and its limits. The access-key narrowing of ADR-0025, decision 8, is reused for agent keys.
-- New records: agents, hand-overs, standing rules, agent work with attempts, questions and reviews. Runs reuse `bulk_run`.
+- New records: agents, hand-overs, standing rules, agent work with attempts, questions and reviews. Runs reuse `change_run`.
 - New words in the glossary (*Agent*, *Hand over*, *Brief*, *Done when*, *Standing rule*, *Agent work*, *Attempt*, the agent states, *Accept / Send back / Throw away*, *My agents*, *Agent key*, *Written by an AI app / an agent*); *Bot account* gives way to *Agent*, and the assistant's entry no longer forbids the word *agent*.
 - M8 grows by AI-30…AI-38 and the new permission; its demo shows a hand-over, a question, a review and *Throw away*.
 - The UX design gains the hand-over window, agent work on the issue page, *My agents* and its phone form (UX concept).

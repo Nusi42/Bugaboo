@@ -425,7 +425,7 @@ async fn iss_17_a_stale_group_or_role_answers_who_changed_what() -> TestResult {
                 },
             )
         };
-        let wider = [Permission::SeeProjects, Permission::MakeIssues];
+        let wider = [Permission::SeeProjects, Permission::CreateIssues];
         assert_eq!(
             change(role.version, wider.to_vec())
                 .await?
@@ -443,7 +443,7 @@ async fn iss_17_a_stale_group_or_role_answers_who_changed_what() -> TestResult {
         assert!(conflict.fields.contains(&"permissions".to_owned()));
         assert_eq!(
             conflict.current["permissions"],
-            json!(["see-projects", "make-issues"])
+            json!(["see-projects", "create-issues"])
         );
         Ok(())
     })

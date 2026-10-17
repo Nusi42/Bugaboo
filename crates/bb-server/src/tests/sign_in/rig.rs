@@ -296,7 +296,7 @@ impl Rig {
         RequestInfo::default()
     }
 
-    /// Makes the first administrator with the setup code.
+    /// Creates the first administrator with the setup code.
     pub(super) async fn admin(&self, email: &str) -> Result<Started, AppError> {
         self.api()
             .complete_setup(
@@ -312,7 +312,7 @@ impl Rig {
             .await
     }
 
-    /// Makes a person with an invitation from the administrator behind `admin_session`.
+    /// Creates a person with an invitation from the administrator behind `admin_session`.
     pub(super) async fn person(
         &self,
         admin_session: &str,

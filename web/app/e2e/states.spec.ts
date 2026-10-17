@@ -2,7 +2,7 @@ import { type Locator, type Page } from "@playwright/test";
 
 import { part } from "../../packages/ui/src/tokens.ts";
 import { paths } from "../src/shared/paths.ts";
-import { ada, forgetChoices, makeAdmin } from "./support/accounts.ts";
+import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { layoutOf } from "./support/layout.ts";
@@ -17,7 +17,7 @@ import { focusByKeyboard, inEveryLook, partOn, resolved } from "./support/styles
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

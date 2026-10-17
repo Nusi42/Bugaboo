@@ -154,7 +154,7 @@ impl Actor {
 /// The permissions that count only from a row for the whole organization, from the table of the
 /// catalogue in architecture §7 (*Counts: organization*).
 const ORGANIZATION_ONLY: [Permission; 8] = [
-    Permission::MakeProjects,
+    Permission::CreateProjects,
     Permission::ManageFields,
     Permission::ManagePeople,
     Permission::ManageInvitations,
@@ -228,7 +228,7 @@ const ACTS_ON_ISSUES_SEEN: [Permission; 4] = [
 /// field (everything is hidden), so the person of `Actor::Exactly` gets the level *Can change* for
 /// every field, and the route is let in for the permission alone.
 pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
-    Permission::MakeIssues,
+    Permission::CreateIssues,
     Permission::ChangeIssues,
     Permission::ChangeOwnIssues,
 ];
@@ -237,20 +237,20 @@ pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
         ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
-        CheckAccess, Comment, DecideRoles, DecideWhatRolesSee, DeleteIssues, EditAnyway,
-        MakeIssues, MakeProjects, MakeSubProjects, ManageFields, ManageGroups, ManageInvitations,
-        ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles, MoveIssues, MoveProjects,
-        SeeIssues, SeeProjects, SeeStatus,
+        CheckAccess, Comment, CreateIssues, CreateProjects, CreateSubProjects, DecideRoles,
+        DecideWhatRolesSee, DeleteIssues, EditAnyway, ManageFields, ManageGroups,
+        ManageInvitations, ManageIssueTypes, ManageLabels, ManagePeople, ManageRoles, MoveIssues,
+        MoveProjects, SeeIssues, SeeProjects, SeeStatus,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
             SeeProjects,
-            MakeProjects,
-            MakeSubProjects,
+            CreateProjects,
+            CreateSubProjects,
             MoveProjects,
             ChangeProjectSettings,
             SeeIssues,
-            MakeIssues,
+            CreateIssues,
             ChangeIssues,
             ChangeOwnIssues,
             Comment,
@@ -272,11 +272,11 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         ]),
         StartingRole::ProjectLead => BTreeSet::from([
             SeeProjects,
-            MakeSubProjects,
+            CreateSubProjects,
             MoveProjects,
             ChangeProjectSettings,
             SeeIssues,
-            MakeIssues,
+            CreateIssues,
             ChangeIssues,
             ChangeOwnIssues,
             Comment,
@@ -292,18 +292,24 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         StartingRole::TeamMember => BTreeSet::from([
             SeeProjects,
             SeeIssues,
-            MakeIssues,
+            CreateIssues,
             ChangeIssues,
             ChangeOwnIssues,
             Comment,
             DeleteIssues,
             MoveIssues,
         ]),
-        StartingRole::Contributor => {
-            BTreeSet::from([SeeProjects, SeeIssues, MakeIssues, ChangeOwnIssues, Comment])
-        }
+        StartingRole::Contributor => BTreeSet::from([
+            SeeProjects,
+            SeeIssues,
+            CreateIssues,
+            ChangeOwnIssues,
+            Comment,
+        ]),
         StartingRole::Viewer => BTreeSet::from([SeeProjects, SeeIssues]),
-        StartingRole::Guest => BTreeSet::from([SeeProjects, MakeIssues, ChangeOwnIssues, Comment]),
+        StartingRole::Guest => {
+            BTreeSet::from([SeeProjects, CreateIssues, ChangeOwnIssues, Comment])
+        }
     }
 }
 

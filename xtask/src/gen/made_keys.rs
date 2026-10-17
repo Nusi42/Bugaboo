@@ -5,13 +5,13 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::bulk::{BulkStatus, SkipReason};
 use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, Status, StatusGroup};
-use bb_core::issue_key::IdMode;
+use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::message::MessageKey;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::readable_id::IdMode;
 use bb_policy::{Permission, StartingRole, Topic};
 
 /// A message that the word of an enum makes, and the word.
@@ -97,7 +97,7 @@ pub(crate) fn made_keys() -> Vec<Made> {
             reason.name(),
         ));
     }
-    for status in BulkStatus::ALL {
+    for status in ManyChangeStatus::ALL {
         keys.push(made(
             "the status of a run of many changes",
             status.code(),

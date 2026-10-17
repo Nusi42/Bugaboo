@@ -1,10 +1,10 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { answerPreviewsWithEverything } from "./support/fake-preview.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { makeProject, openMove, tree } from "./support/projects.ts";
+import { createProject, openMove, tree } from "./support/projects.ts";
 import { screenshotFolder, shot } from "./support/screenshots.ts";
 import { addressInProject, paths, projectAddress } from "../src/shared/paths.ts";
 import { viewports } from "../../tooling/viewports.ts";
@@ -17,13 +17,13 @@ const MILESTONE = "M2";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
-      const acme = await makeProject(admin, "ACME", "Acme Corporation");
-      const website = await makeProject(admin, "WEB", "Website", acme);
-      await makeProject(admin, "DOCS", "Documents", website);
-      await makeProject(admin, "SHOP", "Online shop", acme);
-      await makeProject(admin, "LAB", "Research lab");
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
+      const acme = await createProject(admin, "ACME", "Acme Corporation");
+      const website = await createProject(admin, "WEB", "Website", acme);
+      await createProject(admin, "DOCS", "Documents", website);
+      await createProject(admin, "SHOP", "Online shop", acme);
+      await createProject(admin, "LAB", "Research lab");
       await admin.dispose();
     },
   },

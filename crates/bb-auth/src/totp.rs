@@ -6,6 +6,7 @@
 //! after it (clocks differ a little), and **only once**: the caller remembers the newest step
 //! that was accepted and passes it back, and a code for that step or an older one is refused.
 
+use bb_core::sign_in::TotpStep;
 use jiff::Timestamp;
 use totp_rs::{Algorithm, Builder, Secret, Totp};
 use zeroize::Zeroizing;
@@ -99,7 +100,7 @@ impl TotpSecret {
     }
 
     /// Checks a typed code at `time`. `last_step` is the newest step a code was accepted for
-    /// before (0 for none). Returns the step the code belongs to when it is right and newer than
+    /// before ([`TotpStep::NONE`] for none). Returns the step the code belongs to when it is right and newer than
     /// `last_step`; the caller stores it. All three steps are always worked out, so the time does
     /// not show which one matched.
     ///
@@ -109,8 +110,8 @@ impl TotpSecret {
         &self,
         code: &str,
         time: Timestamp,
-        last_step: i64,
-    ) -> Result<Option<i64>, AuthError> {
+        last_step: TotpStep,
+    ) -> Result<Option<TotpStep>, AuthError> {
         let seconds = u64::try_from(time.as_second()).map_err(|_| AuthError::Totp)?;
         let totp = self.totp(None, "")?;
         let now_step = seconds / STEP_SECONDS;
@@ -119,7 +120,7 @@ impl TotpSecret {
             let step_time = step * STEP_SECONDS;
             // With no skew, `check` accepts exactly the code of this step.
             if totp.check(code, step_time).is_some() {
-                let step = i64::try_from(step).map_err(|_| AuthError::Totp)?;
+                let step = TotpStep::new(i64::try_from(step).map_err(|_| AuthError::Totp)?);
                 if step > last_step {
                     found = Some(step);
                 }
@@ -145,8 +146,8 @@ mod tests {
         let now = at(CLOCK_START);
         let code = secret.code_at(now).unwrap();
         assert_eq!(code.len(), 6);
-        let step = secret.check(&code, now, 0).unwrap().unwrap();
-        assert_eq!(step, CLOCK_START / 30);
+        let step = secret.check(&code, now, TotpStep::NONE).unwrap().unwrap();
+        assert_eq!(step, TotpStep::new(CLOCK_START / 30));
         // The same code again, or at any later moment of its step, is refused.
         assert_eq!(secret.check(&code, now, step).unwrap(), None);
         assert_eq!(secret.check(&code, at(1_800_000_010), step).unwrap(), None);
@@ -159,9 +160,14 @@ mod tests {
         let before = secret.code_at(at(CLOCK_START - 30)).unwrap();
         let after = secret.code_at(at(CLOCK_START + 30)).unwrap();
         let far = secret.code_at(at(CLOCK_START + 90)).unwrap();
-        assert!(secret.check(&before, now, 0).unwrap().is_some());
-        assert!(secret.check(&after, now, 0).unwrap().is_some());
-        assert_eq!(secret.check(&far, now, 0).unwrap(), None);
+        assert!(
+            secret
+                .check(&before, now, TotpStep::NONE)
+                .unwrap()
+                .is_some()
+        );
+        assert!(secret.check(&after, now, TotpStep::NONE).unwrap().is_some());
+        assert_eq!(secret.check(&far, now, TotpStep::NONE).unwrap(), None);
     }
 
     #[test]
@@ -170,10 +176,14 @@ mod tests {
         let other = TotpSecret::generate().unwrap();
         let now = at(CLOCK_START);
         for bad in ["", "12345", "1234567", "abcdef", "12 34 56"] {
-            assert_eq!(secret.check(bad, now, 0).unwrap(), None, "{bad}");
+            assert_eq!(
+                secret.check(bad, now, TotpStep::NONE).unwrap(),
+                None,
+                "{bad}"
+            );
         }
         let code = other.code_at(now).unwrap();
-        assert_eq!(secret.check(&code, now, 0).unwrap(), None);
+        assert_eq!(secret.check(&code, now, TotpStep::NONE).unwrap(), None);
     }
 
     #[test]

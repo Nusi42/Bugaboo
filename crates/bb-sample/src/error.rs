@@ -196,7 +196,7 @@ impl SampleError {
             Self::PersonMissing => plain(message::SAMPLE_ERROR_PERSON_MISSING),
             Self::LinkMissing => plain(message::SAMPLE_ERROR_LINK_MISSING),
             Self::KeyMissing => plain(message::SAMPLE_ERROR_KEY_MISSING),
-            Self::NotMade(name) => message::sample_error_not_made(name),
+            Self::NotMade(name) => message::sample_error_not_created(name),
             Self::LogNotAnchored => plain(message::SAMPLE_ERROR_LOG_NOT_ANCHORED),
             Self::LogBroken { seq, reason } => message::sample_error_log_broken(reason, seq),
             Self::Start(start) => message::sample_error_start(start),

@@ -1,11 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { addressInProject, paths } from "../src/shared/paths.ts";
 
 // Issue types and the mode of issue IDs (ISS-02, ISS-01a, WP-03): the four types of the first
@@ -15,9 +15,9 @@ import { addressInProject, paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
-      await makeProject(admin, "WEB", "Website");
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
+      await createProject(admin, "WEB", "Website");
       await admin.dispose();
     },
   },
@@ -78,13 +78,13 @@ test("iss_02 a type is made, retired and offered again", async ({ page }) => {
   await page.getByLabel(t("issue-types.field-icon"), { exact: true }).selectOption({
     label: t("issue-icon.circle-help"),
   });
-  await page.getByRole("button", { name: t("issue-types.make"), exact: true }).click();
-  await expect(page.getByText(t("issue-types.made", { name: "Question" }))).toBeVisible();
+  await page.getByRole("button", { name: t("issue-types.create"), exact: true }).click();
+  await expect(page.getByText(t("issue-types.created", { name: "Question" }))).toBeVisible();
   const list = typeList(page);
   await expect(list.getByRole("listitem")).toHaveCount(5);
   // The same name is taken, whatever the capitals.
   await page.getByLabel(t("issue-types.field-name"), { exact: true }).fill("question");
-  await page.getByRole("button", { name: t("issue-types.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("issue-types.create"), exact: true }).click();
   await expect(page.getByText(t("error.name.taken"))).toBeVisible();
   await list.getByRole("button", { name: "Question", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Question" });

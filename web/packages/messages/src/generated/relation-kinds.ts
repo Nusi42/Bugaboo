@@ -10,13 +10,13 @@ export const messages = {
   "relation-kinds.nothing": "No kind of relation has that name.",
   "relation-kinds.retired": "Retired",
   "relation-kinds.reads": "{forward} / {backward}",
-  "relation-kinds.make-title": "Make a kind of relation",
-  "relation-kinds.make-intro":
+  "relation-kinds.create-title": "Create a kind of relation",
+  "relation-kinds.create-intro":
     "Write what the first issue reads and what the second one reads, like blocks and is blocked by. Use the same words twice for a kind that reads alike from both ends.",
   "relation-kinds.field-forward": "Words for the first issue",
   "relation-kinds.field-backward": "Words for the second issue",
-  "relation-kinds.make": "Make the kind of relation",
-  "relation-kinds.made": "The kind of relation {name} is made.",
+  "relation-kinds.create": "Create the kind of relation",
+  "relation-kinds.created": "Created the kind of relation {name}.",
   "relation-kinds.retire-help":
     "A retired kind is not offered for new relations. The relations that have it keep it. You can offer it again later.",
   "relation-kinds.retire": "Retire the kind of relation",

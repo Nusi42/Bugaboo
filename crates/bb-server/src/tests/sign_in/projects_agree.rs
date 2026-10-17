@@ -14,7 +14,7 @@ use bb_core::people_kinds::PeopleKind;
 use bb_testing::{Failure, TestResult, each_database};
 
 use super::policy_rig::{Member, Org};
-use super::projects::{LEAD, VIEW, make};
+use super::projects::{LEAD, VIEW, create};
 use super::rig::Rig;
 
 /// What a request decides for a person at a project: the permissions that count, the level of
@@ -58,10 +58,14 @@ async fn scenario(org: &Org<'_>) -> Result<Vec<Member>, Failure> {
     let mut chain: Vec<ProjectId> = Vec::new();
     for level in 0..10 {
         let parent = chain.last().copied();
-        chain.push(make(org, &admin, parent, &format!("DEEP{level}")).await?.id);
+        chain.push(
+            create(org, &admin, parent, &format!("DEEP{level}"))
+                .await?
+                .id,
+        );
     }
-    let branch = make(org, &admin, Some(chain[2]), "BRANCH").await?.id;
-    let twig = make(org, &admin, Some(branch), "TWIG").await?.id;
+    let branch = create(org, &admin, Some(chain[2]), "BRANCH").await?.id;
+    let twig = create(org, &admin, Some(branch), "TWIG").await?.id;
     let lead = org.role("Section lead", &LEAD).await?;
     let looker = org.role("Looker", &VIEW).await?;
     let (p1, p2, p3, p4) = (

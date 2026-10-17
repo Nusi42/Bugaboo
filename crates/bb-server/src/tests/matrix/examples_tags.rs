@@ -5,7 +5,7 @@
 //! the matrix in the target project (`examples_issues::an_issue`). The routes of the people who
 //! look after tags and labels make what they work on first, as the administrator.
 
-use bb_app::tags::{AddTag, MakeLabel, MakeLabelGroup};
+use bb_app::tags::{AddTag, CreateLabel, CreateLabelGroup};
 use bb_testing::Failure;
 use serde_json::json;
 
@@ -20,7 +20,7 @@ const NOBODYS_ID: &str = "01890a5d-ac96-774b-bcce-b302099a8057";
 /// A tag put on a new issue of the target project by the administrator: the ID of the tag.
 async fn a_tag(fixture: &Fixture<'_>) -> Result<String, Failure> {
     let issue = an_issue(fixture).await?;
-    let sorting = fixture
+    let labels_and_tags = fixture
         .rig()
         .api()
         .add_tag(
@@ -34,7 +34,7 @@ async fn a_tag(fixture: &Fixture<'_>) -> Result<String, Failure> {
         .await
         .map_err(|error| error.to_string())?
         .into_value();
-    sorting
+    labels_and_tags
         .tags
         .first()
         .map(|tag| tag.id.to_string())
@@ -46,9 +46,9 @@ async fn a_label(fixture: &Fixture<'_>) -> Result<String, Failure> {
     Ok(fixture
         .rig()
         .api()
-        .make_label(
+        .create_label(
             Rig::info(),
-            MakeLabel {
+            CreateLabel {
                 session_token: fixture.admin_session().to_owned(),
                 name: format!("label {}", fixture.next_number()),
                 color: None,
@@ -68,9 +68,12 @@ pub(super) async fn tag_request(
     operation: &str,
 ) -> Result<Option<Request>, Failure> {
     Ok(Some(match operation {
-        "getIssueSorting" => (
+        "getIssueLabelsAndTags" => (
             "GET",
-            format!("/api/v1/issues/{}/sorting", an_issue(fixture).await?),
+            format!(
+                "/api/v1/issues/{}/labels-and-tags",
+                an_issue(fixture).await?
+            ),
             None,
         ),
         "addTag" => (
@@ -80,7 +83,7 @@ pub(super) async fn tag_request(
         ),
         "removeTag" => {
             let issue = an_issue(fixture).await?;
-            let sorting = fixture
+            let labels_and_tags = fixture
                 .rig()
                 .api()
                 .add_tag(
@@ -94,7 +97,7 @@ pub(super) async fn tag_request(
                 .await
                 .map_err(|error| error.to_string())?
                 .into_value();
-            let tag = sorting
+            let tag = labels_and_tags
                 .tags
                 .first()
                 .ok_or("the tag is not on the issue")?
@@ -147,7 +150,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             Some(json!({"into": a_tag(fixture).await?, "version": 1, "into_version": 1})),
         ),
         "listLabels" => ("GET", "/api/v1/labels".into(), None),
-        "makeLabelGroup" => (
+        "createLabelGroup" => (
             "POST",
             "/api/v1/label-groups".into(),
             Some(json!({"name": format!("group {}", fixture.next_number()), "pick_one": true})),
@@ -156,9 +159,9 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             let made = fixture
                 .rig()
                 .api()
-                .make_label_group(
+                .create_label_group(
                     Rig::info(),
-                    MakeLabelGroup {
+                    CreateLabelGroup {
                         session_token: fixture.admin_session().to_owned(),
                         name: format!("group {}", fixture.next_number()),
                         pick_one: false,
@@ -173,7 +176,7 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
                 Some(json!({"version": 1, "name": format!("renamed {}", fixture.next_number())})),
             )
         }
-        "makeLabel" => (
+        "createLabel" => (
             "POST",
             "/api/v1/labels".into(),
             Some(json!({"name": format!("label {}", fixture.next_number())})),
@@ -193,12 +196,15 @@ async fn admin_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<
             format!("/api/v1/labels/{}/combine", a_label(fixture).await?),
             Some(json!({"into": a_label(fixture).await?, "version": 1, "into_version": 1})),
         ),
-        _ => return bulk_request(fixture, operation).await,
+        _ => return many_changes_request(fixture, operation).await,
     }))
 }
 
 /// The request of a route of moving an issue or changing many issues, if the operation is one.
-async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<Request>, Failure> {
+async fn many_changes_request(
+    fixture: &Fixture<'_>,
+    operation: &str,
+) -> Result<Option<Request>, Failure> {
     Ok(Some(match operation {
         "moveIssue" => {
             let issue = an_issue(fixture).await?;
@@ -212,30 +218,34 @@ async fn bulk_request(fixture: &Fixture<'_>, operation: &str) -> Result<Option<R
                 })),
             )
         }
-        "previewBulkChange" => (
+        "previewManyChanges" => (
             "POST",
-            "/api/v1/bulk/preview".into(),
+            "/api/v1/many-changes/preview".into(),
             Some(json!({
                 "issues": [an_issue(fixture).await?],
                 "action": {"kind": "change", "change": {"status": "done"}},
             })),
         ),
-        "applyBulkChange" => {
+        "applyManyChanges" => {
             let issue = an_issue(fixture).await?;
             let version = version_of(fixture, &issue).await?;
             (
                 "POST",
-                "/api/v1/bulk/changes".into(),
+                "/api/v1/many-changes".into(),
                 Some(json!({
                     "issues": [{"issue": issue, "version": version}],
                     "action": {"kind": "change", "change": {"status": "done"}},
                 })),
             )
         }
-        "getBulkRun" => ("GET", format!("/api/v1/bulk/runs/{NOBODYS_ID}"), None),
-        "cancelBulkRun" => (
+        "getManyChangeRun" => (
+            "GET",
+            format!("/api/v1/many-changes/runs/{NOBODYS_ID}"),
+            None,
+        ),
+        "stopManyChangeRun" => (
             "POST",
-            format!("/api/v1/bulk/runs/{NOBODYS_ID}/cancel"),
+            format!("/api/v1/many-changes/runs/{NOBODYS_ID}/stop"),
             None,
         ),
         _ => return Ok(None),

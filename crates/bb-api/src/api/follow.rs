@@ -112,7 +112,7 @@ async fn get_following(
     }))
 }
 
-/// Makes the person a follower of the issue. Following it already changes nothing.
+/// Creates the person a follower of the issue. Following it already changes nothing.
 #[utoipa::path(
     put,
     path = "/api/v1/issues/{issue}/follow",

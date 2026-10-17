@@ -16,8 +16,8 @@ use bb_core::access::PeopleLevel;
 use bb_core::comment::{MENTION_RECIPIENTS_MAX, Mention, MentionTarget, names_the_handle};
 use bb_core::id::{CommentId, GroupId, RoleId, UserId};
 use bb_core::issue::Issue;
-use bb_core::issue_key::IssueKey;
 use bb_core::people_kinds::PeopleKind;
+use bb_core::readable_id::ReadableId;
 use bb_markdown::{
     MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS, Options, Token, TokenKind, render,
 };
@@ -230,7 +230,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                     let seen = if let Some(known) = known {
                         known
                     } else {
-                        let seen = match written.parse::<IssueKey>() {
+                        let seen = match written.parse::<ReadableId>() {
                             Ok(_) => match self.find_issue(written).await? {
                                 Some(found) => {
                                     if maker.is_none() {

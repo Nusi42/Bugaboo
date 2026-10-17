@@ -64,7 +64,7 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
         // a fresh sample organization.
         steps::server_build(Profile::Debug),
         Step::new(
-            "make the sample organization",
+            "create the sample organization",
             xtask.to_string_lossy(),
             &["dataset", "sample"],
         ),
@@ -109,7 +109,7 @@ mod tests {
                 "sample organization",
                 "browser unit tests",
                 "build the bugaboo program",
-                "make the sample organization",
+                "create the sample organization",
                 "browser end-to-end tests",
                 "ten people at once",
                 "add the static Linux target",

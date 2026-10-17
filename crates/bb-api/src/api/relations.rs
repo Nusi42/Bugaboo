@@ -8,8 +8,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::relations::{
-    AddRelation, ChangeRelationKind, IssueLine, IssueRelations, IssueRelationsQuery,
-    MakeRelationKind, RelatedIssuesQuery, RelationKindView, RelationKindsQuery, RelationView,
+    AddRelation, ChangeRelationKind, CreateRelationKind, IssueLine, IssueRelations,
+    IssueRelationsQuery, RelatedIssuesQuery, RelationKindView, RelationKindsQuery, RelationView,
     RemoveRelation, SetParent, SubIssuesQuery,
 };
 use bb_core::id::{RelationId, RelationKindId};
@@ -295,12 +295,12 @@ async fn list_relation_kinds(
     Ok(answer(Page::of_authorized(KINDS_LIST, &list, &fields)?))
 }
 
-/// Makes a kind of relation. Needs the permission *Manage issue types, kinds of relation and
+/// Creates a kind of relation. Needs the permission *Manage issue types, kinds of relation and
 /// layouts*.
 #[utoipa::path(
     post,
     path = "/api/v1/relation-kinds",
-    operation_id = "makeRelationKind",
+    operation_id = "createRelationKind",
     tag = "relations",
     request_body = NewRelationKindBody,
     responses(
@@ -311,7 +311,7 @@ async fn list_relation_kinds(
         ConflictAnswer
     )
 )]
-async fn make_relation_kind(
+async fn create_relation_kind(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
@@ -319,9 +319,9 @@ async fn make_relation_kind(
 ) -> Result<Response, ApiError> {
     let made = auth
         .api()?
-        .make_relation_kind(
+        .create_relation_kind(
             info,
-            MakeRelationKind {
+            CreateRelationKind {
                 session_token,
                 forward: body.forward,
                 backward: body.backward,
@@ -608,7 +608,7 @@ where
     AuthHandle: axum::extract::FromRef<S>,
 {
     OpenApiRouter::new()
-        .routes(routes!(list_relation_kinds, make_relation_kind))
+        .routes(routes!(list_relation_kinds, create_relation_kind))
         .routes(routes!(change_relation_kind))
         .routes(routes!(get_issue_relations, add_relation))
         .routes(routes!(list_sub_issues))

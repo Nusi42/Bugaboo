@@ -25,21 +25,21 @@ async fn sec_02_people_and_groups_get_roles_on_the_whole_organization_a_project_
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/sub-projects"),
             json!({"short_name": "WEB", "name": "Website"}),
         )
         .await?;
-        org.make("/api/v1/projects", json!({"short_name": "LAB", "name": "Lab"}))
+        org.create("/api/v1/projects", json!({"short_name": "LAB", "name": "Lab"}))
             .await?;
         let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         let (mut cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
         let (mut dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
         let (mut eve, eve_id) = org.person("Eve Example", "eve@example.test").await?;
         let (mut finn, finn_id) = org.person("Finn Field", "finn@example.test").await?;
-        let group = org.make("/api/v1/groups", json!({"name": "Labs"})).await?;
+        let group = org.create("/api/v1/groups", json!({"name": "Labs"})).await?;
         let lab = {
             let list = org.ada.send("GET", "/api/v1/projects?search=lab", None).await?;
             list.body["items"][0]["id"].as_str().ok_or("no lab")?.to_owned()
@@ -54,27 +54,27 @@ async fn sec_02_people_and_groups_get_roles_on_the_whole_organization_a_project_
 
         // Bob: ACME and everything in it. Cleo: only the project WEB. Dana: the whole organization.
         // Eve: through her group, only LAB. Finn: only the project ACME, not what is in it.
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": bob_id}, "role": viewer, "applies_to": "project-and-sub-projects"}),
         )
         .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{web}/assignments"),
             json!({"who": {"person": cleo_id}, "role": viewer, "applies_to": "project"}),
         )
         .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": dana_id}, "role": viewer}),
         )
         .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{lab}/assignments"),
             json!({"who": {"group": group}, "role": viewer, "applies_to": "project-and-sub-projects"}),
         )
         .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": finn_id}, "role": viewer, "applies_to": "project"}),
         )
@@ -115,7 +115,7 @@ async fn sec_02_the_rows_of_a_place_say_where_they_count() -> TestResult {
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
         let acme = org
-            .make(
+            .create(
                 "/api/v1/projects",
                 json!({"short_name": "ACME", "name": "Acme"}),
             )
@@ -123,17 +123,17 @@ async fn sec_02_the_rows_of_a_place_say_where_they_count() -> TestResult {
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         let (_dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
         let (_finn, finn_id) = org.person("Finn Field", "finn@example.test").await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": bob_id}, "role": viewer, "applies_to": "project-and-sub-projects"}),
         )
         .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": finn_id}, "role": viewer, "applies_to": "project"}),
         )
         .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": dana_id}, "role": viewer}),
         )
@@ -184,16 +184,16 @@ async fn sec_03_a_row_from_above_is_listed_as_inherited_and_a_no_access_below_it
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
         let web = org
-            .make(
+            .create(
                 &format!("/api/v1/projects/{acme}/sub-projects"),
                 json!({"short_name": "WEB", "name": "Website"}),
             )
             .await?;
         let (mut bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": bob_id}, "role": viewer, "applies_to": "project-and-sub-projects"}),
         )
@@ -218,7 +218,7 @@ async fn sec_03_a_row_from_above_is_listed_as_inherited_and_a_no_access_below_it
         let before = bob.send("GET", &format!("/api/v1/projects/{web}"), None).await?;
         assert_eq!(before.status, StatusCode::OK);
         let forbidden = org
-            .make(
+            .create(
                 &format!("/api/v1/projects/{web}/assignments"),
                 json!({"who": {"person": bob_id}, "applies_to": "project-and-sub-projects"}),
             )
@@ -282,7 +282,7 @@ async fn sec_08_nobody_removes_the_last_way_to_manage_roles_over_http() -> TestR
         // A second administrator makes it possible.
         let administrator = org.role_named("Administrator").await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": bob_id}, "role": administrator}),
         )
@@ -302,45 +302,45 @@ async fn priv_13_used_by_counts_only_what_the_viewer_may_see() -> TestResult {
     each_database("priv_13_http_used_by", async |db| {
         let mut org = start(db).await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
         let secret = org
-            .make("/api/v1/projects", json!({"short_name": "SECRET", "name": "Secret"}))
+            .create("/api/v1/projects", json!({"short_name": "SECRET", "name": "Secret"}))
             .await?;
         let used = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Used", "permissions": ["see-projects"], "two_step": false}),
             )
             .await?;
         let keeper = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Keeper", "permissions": ["manage-roles", "manage-groups", "see-projects"], "two_step": false}),
             )
             .await?;
-        let group = org.make("/api/v1/groups", json!({"name": "Backend"})).await?;
+        let group = org.create("/api/v1/groups", json!({"name": "Backend"})).await?;
         let (mut carol, carol_id) = org.person("Carol Clerk", "carol@example.test").await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
         // Carol manages roles and groups, and cannot see SECRET.
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": carol_id}, "role": keeper}),
         )
         .await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{secret}/assignments"),
             json!({"who": {"person": carol_id}, "applies_to": "project-and-sub-projects"}),
         )
         .await?;
         // The role and the group are used in both projects.
         for project in [&acme, &secret] {
-            org.make(
+            org.create(
                 &format!("/api/v1/projects/{project}/assignments"),
                 json!({"who": {"person": bob_id}, "role": used, "applies_to": "project"}),
             )
             .await?;
-            org.make(
+            org.create(
                 &format!("/api/v1/projects/{project}/assignments"),
                 json!({"who": {"group": group}, "role": used, "applies_to": "project"}),
             )
@@ -383,14 +383,14 @@ async fn sec_02_a_project_lead_decides_who_has_which_role_only_in_their_projects
         let lead_role = org.role_named("Project lead").await?;
         let viewer = org.role_named("Viewer").await?;
         let acme = org
-            .make("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
+            .create("/api/v1/projects", json!({"short_name": "ACME", "name": "Acme"}))
             .await?;
         let lab = org
-            .make("/api/v1/projects", json!({"short_name": "LAB", "name": "Lab"}))
+            .create("/api/v1/projects", json!({"short_name": "LAB", "name": "Lab"}))
             .await?;
         let (mut lena, lena_id) = org.person("Lena Lead", "lena@example.test").await?;
         let (_bob, bob_id) = org.person("Bob Builder", "bob@example.test").await?;
-        org.make(
+        org.create(
             &format!("/api/v1/projects/{acme}/assignments"),
             json!({"who": {"person": lena_id}, "role": lead_role, "applies_to": "project-and-sub-projects"}),
         )
@@ -462,7 +462,7 @@ async fn sec_02_the_choices_of_the_form_are_by_name_and_walk_page_by_page() -> T
         ] {
             org.person(name, email).await?;
         }
-        org.make("/api/v1/groups", json!({"name": "Backend"}))
+        org.create("/api/v1/groups", json!({"name": "Backend"}))
             .await?;
         let first = org
             .ada
@@ -541,23 +541,23 @@ async fn sec_02_the_choices_of_roles_hold_only_the_roles_the_person_may_give() -
         let (mut cleo, cleo_id) = org.person("Cleo Coder", "cleo@example.test").await?;
         let (mut dana, dana_id) = org.person("Dana Desk", "dana@example.test").await?;
         let decider = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Decider", "permissions": ["decide-roles", "see-projects"], "two_step": false}),
             )
             .await?;
         let keeper = org
-            .make(
+            .create(
                 "/api/v1/roles",
                 json!({"name": "Keeper", "permissions": ["manage-roles", "see-projects"], "two_step": false}),
             )
             .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": cleo_id}, "role": decider}),
         )
         .await?;
-        org.make(
+        org.create(
             "/api/v1/assignments",
             json!({"who": {"person": dana_id}, "role": keeper}),
         )
@@ -595,8 +595,10 @@ async fn sec_03_the_rows_of_a_place_are_listed_a_page_at_a_time() -> TestResult 
         let mut org = start(db).await?;
         let viewer = org.role_named("Viewer").await?;
         for name in ["One", "Two", "Three"] {
-            let group = org.make("/api/v1/groups", json!({ "name": name })).await?;
-            org.make(
+            let group = org
+                .create("/api/v1/groups", json!({ "name": name }))
+                .await?;
+            org.create(
                 "/api/v1/assignments",
                 json!({"who": {"group": group}, "role": viewer}),
             )

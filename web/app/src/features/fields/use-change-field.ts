@@ -12,7 +12,7 @@ export function useChangeField() {
 }
 
 /** Makes a field, then opens its page. */
-export function useMakeField() {
+export function useCreateField() {
   const navigate = useNavigate();
   return api.query.useMutation("post", "/api/v1/fields", {
     onSuccess: (field: Schema<"FieldBody">) => {

@@ -9,10 +9,10 @@ import {
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
-import { ana, lea, makePeopleWithRoles, roleName } from "./access.ts";
-import { bob, makeAdmin, signInThroughApi } from "./accounts.ts";
+import { ana, lea, createPeopleWithRoles, roleName } from "./access.ts";
+import { bob, createAdmin, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
-import { makeProject } from "./projects.ts";
+import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 
 /** An issue that was made through the API. */
@@ -34,7 +34,7 @@ export async function firstIssueType(session: ApiSession): Promise<string> {
 }
 
 /** Makes an issue in a project (given by its short name) as the person of the session. */
-export async function makeIssue(
+export async function createIssue(
   session: ApiSession,
   project: string,
   title: string,
@@ -105,19 +105,19 @@ export const webIssues = {
  * made, a Viewer (Ana) and a Guest (Lea) with a role in it, and an issue the Guest reported.
  */
 export async function prepareWeb(server: Instance): Promise<void> {
-  const admin = await makeAdmin(server);
+  const admin = await createAdmin(server);
   // Counting issue IDs, so the tests can name them: WEB-1, WEB-2, WEB-3.
   await countIssueIds(admin);
-  await makeProject(admin, "WEB", "Website");
-  await makeIssue(admin, "WEB", webIssues.login, "Steps:\n\n1. Reset the password");
-  await makeIssue(admin, "WEB", webIssues.passkey);
-  await makePeopleWithRoles(server, admin, [
+  await createProject(admin, "WEB", "Website");
+  await createIssue(admin, "WEB", webIssues.login, "Steps:\n\n1. Reset the password");
+  await createIssue(admin, "WEB", webIssues.passkey);
+  await createPeopleWithRoles(server, admin, [
     { person: ana, role: roleName.viewer, project: "WEB" },
     { person: bob, role: roleName.teamMember, project: "WEB" },
     { person: lea, role: roleName.guest, project: "WEB" },
   ]);
   const guest = await signInThroughApi(server, lea);
-  await makeIssue(guest, "WEB", webIssues.typo);
+  await createIssue(guest, "WEB", webIssues.typo);
   await guest.dispose();
   await admin.dispose();
 }
@@ -176,13 +176,13 @@ export async function versionOf(session: ApiSession, issue: MadeIssue): Promise<
 }
 
 /** Makes a project and one issue in it; the issue. */
-export async function makeProjectWithIssue(
+export async function createProjectWithIssue(
   admin: ApiSession,
   shortName: string,
   name: string,
 ): Promise<MadeIssue> {
-  await makeProject(admin, shortName, name);
-  return makeIssue(admin, shortName, webIssues.login);
+  await createProject(admin, shortName, name);
+  return createIssue(admin, shortName, webIssues.login);
 }
 
 /** The *Saved* note of a page. */

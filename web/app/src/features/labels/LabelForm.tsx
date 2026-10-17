@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { Form, SubmitButton, partOf, part } from "@bugaboo/ui";
 
-import { sortingKind } from "./change-preview.ts";
+import { labelsAndTagsKind } from "./change-preview.ts";
 import { ShowChanges } from "./ChangePreview.tsx";
 import { LabelFields } from "./LabelFields.tsx";
 import type { Label, LabelGroup } from "./labels.ts";
@@ -38,7 +38,7 @@ export function LabelForm({
       </Form>
       <ShowChanges
         key={draft.name.trim()}
-        kind={sortingKind.label}
+        kind={labelsAndTagsKind.label}
         id={label.id}
         button={t("labels.show-changes")}
         asked={renamed ? { name: draft.name.trim() } : null}

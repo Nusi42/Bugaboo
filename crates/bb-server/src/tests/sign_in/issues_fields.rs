@@ -208,7 +208,7 @@ async fn changer(
                 Permission::SeeProjects,
                 Permission::SeeIssues,
                 Permission::ChangeIssues,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
             ],
         )
         .await?;
@@ -325,10 +325,10 @@ async fn priv_13_no_issue_answer_holds_a_count() -> TestResult {
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (mut gus, _) = site.person(StartingRole::Guest, "gus").await?;
         for title in ["One", "Two", "Three"] {
-            ok(&site.make(&mut ada, title).await?)?;
+            ok(&site.create(&mut ada, title).await?)?;
         }
-        ok(&site.make(&mut gus, "Gus's").await?)?;
-        let key = ok(&site.make(&mut ada, "Four").await?)?["key"]
+        ok(&site.create(&mut gus, "Gus's").await?)?;
+        let key = ok(&site.create(&mut ada, "Four").await?)?["key"]
             .as_str()
             .ok_or("no key")?
             .to_owned();
@@ -368,7 +368,7 @@ async fn priv_13_no_issue_answer_holds_a_count() -> TestResult {
 
 #[tokio::test]
 async fn sec_04_making_an_issue_refuses_a_field_one_may_not_set_whatever_its_value() -> TestResult {
-    each_database("sec_04_make_mask_first", async |db| {
+    each_database("sec_04_create_mask_first", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, _ada) = Site::start(&rig, &app).await?;
         let (_, tim) = site.person(StartingRole::TeamMember, "tim").await?;
@@ -399,7 +399,7 @@ async fn sec_04_making_an_issue_refuses_a_field_one_may_not_set_whatever_its_val
             );
         }
         // The title alone is theirs to set.
-        ok(&site.make(&mut who, "Only a title").await?)?;
+        ok(&site.create(&mut who, "Only a title").await?)?;
         Ok(())
     })
     .await

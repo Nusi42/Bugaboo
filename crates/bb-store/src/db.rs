@@ -14,10 +14,10 @@ use std::time::Duration;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, BulkRunId, ChoiceId, CommentId, EditorId, EntityId, EventId,
-    FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
-    LayoutId, LockToken, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId,
-    TagId, UserId,
+    AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
+    IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
+    ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId, TagId,
+    UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -106,7 +106,7 @@ async fn open_sqlite_once(options: SqliteConnectOptions) -> Result<SqlitePool, s
 /// that mode (SEC-16, M1-F65). A file that exists keeps the rights it has. On Windows the file
 /// inherits the access list of the data folder.
 #[cfg(unix)]
-fn make_private_file(file: &std::path::Path) -> Result<(), StoreError> {
+fn create_private_file(file: &std::path::Path) -> Result<(), StoreError> {
     use std::os::unix::fs::OpenOptionsExt as _;
     match std::fs::OpenOptions::new()
         .write(true)
@@ -183,7 +183,7 @@ impl Database {
     /// Fails when the database cannot be opened.
     pub async fn connect_file(file: &std::path::Path) -> Result<Self, StoreError> {
         #[cfg(unix)]
-        make_private_file(file)?;
+        create_private_file(file)?;
         Ok(Self {
             pool: Pool::Sqlite(open_sqlite(SqliteConnectOptions::new().filename(file)).await?),
             statements: Arc::default(),
@@ -663,7 +663,7 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AssignmentId => "an assignment ID",
-    BulkRunId => "a run ID",
+    ManyChangeRunId => "a run ID",
     CommentId => "a comment ID",
     EditorId => "an editor ID",
     EntityId => "a record ID",

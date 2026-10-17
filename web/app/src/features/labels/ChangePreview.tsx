@@ -4,7 +4,7 @@ import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { AppLongPreview } from "../../shared/app-long-preview.tsx";
 import { listText } from "../../shared/list-text.ts";
-import { useChangePreview, type ChangeAsked, type SortingKind } from "./change-preview.ts";
+import { useChangePreview, type ChangeAsked, type LabelsAndTagsKind } from "./change-preview.ts";
 
 /** The names a tag or label list reads as, or a word for none. */
 function namesOf(names: readonly string[]): string {
@@ -39,7 +39,7 @@ export function ChangePreviewView({ preview }: { readonly preview: Schema<"Chang
 }
 
 export interface ShowChangesProps {
-  readonly kind: SortingKind;
+  readonly kind: LabelsAndTagsKind;
   readonly id: string;
   /** What the preview is asked about; nothing when there is nothing to ask yet. */
   readonly asked: ChangeAsked | null;

@@ -5,7 +5,7 @@
 //! is there. A save carries a token of a lock nobody holds: an actor who is let in is told that
 //! the lock is lost, which is not a refusal of the permission.
 
-use bb_app::layouts::MakeLayout;
+use bb_app::layouts::CreateLayout;
 use bb_core::layout::LayoutKind;
 use bb_testing::Failure;
 use serde_json::json;
@@ -24,9 +24,9 @@ async fn a_layout(fixture: &Fixture<'_>) -> Result<(String, i64), Failure> {
     let editor = fixture
         .rig()
         .api()
-        .make_layout(
+        .create_layout(
             Rig::info(),
-            MakeLayout {
+            CreateLayout {
                 session_token: fixture.admin_session().to_owned(),
                 project: Some(fixture.project(Project::Target).to_string()),
                 issue_type: None,
@@ -56,7 +56,7 @@ pub(super) async fn layout_request(
             format!("/api/v1/layouts/editor?project={target}&kind=new-issue"),
             None,
         ),
-        "makeLayout" => (
+        "createLayout" => (
             "POST",
             "/api/v1/layouts".into(),
             Some(json!({"project": target, "kind": "new-issue"})),

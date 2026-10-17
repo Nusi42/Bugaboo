@@ -128,7 +128,7 @@ export interface NewProject {
 }
 
 /** Makes a project at the top level, or inside `parent` (an ID). */
-export function useMakeProject(parent: string | undefined) {
+export function useCreateProject(parent: string | undefined) {
   return useMutation({
     mutationFn: async ({ shortName, name }: NewProject) => {
       const body = { short_name: shortName, name };

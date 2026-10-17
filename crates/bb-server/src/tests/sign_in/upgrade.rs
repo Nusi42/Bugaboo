@@ -92,13 +92,13 @@ async fn sec_08_m1_administrators_become_administrators_and_nobody_else_does() -
         let entries = rig.database.security_log_entries(0, 100).await?;
         let made = entries
             .iter()
-            .filter(|entry| entry.action.as_str() == SecurityAction::AssignmentMade.code())
+            .filter(|entry| entry.action.as_str() == SecurityAction::AssignmentCreated.code())
             .count();
         assert_eq!(made, 2);
         // Another start gives nobody anything again.
-        bb_app::access::make_starting_roles(
+        bb_app::access::create_starting_roles(
             &rig.services.ctx(Rig::info()),
-            bb_app::access::MakeStartingRoles,
+            bb_app::access::CreateStartingRoles,
         )
         .await?;
         let after = rig.database.security_log_entries(0, 100).await?;

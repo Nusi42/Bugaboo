@@ -283,7 +283,7 @@ async fn auth_06_an_invitation_runs_out_after_seven_days() -> TestResult {
 }
 
 #[tokio::test]
-async fn auth_06_two_people_with_the_same_link_make_one_account() -> TestResult {
+async fn auth_06_two_people_with_the_same_link_create_one_account() -> TestResult {
     each_database("auth_06_race", async |db| {
         let rig = Rig::start(db).await?;
         let admin = rig.admin(ADA_EMAIL).await?;

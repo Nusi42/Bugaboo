@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { projectAddress } from "../../shared/paths.ts";
-import { MakeProjectForm } from "./MakeProjectForm.tsx";
+import { CreateProjectForm } from "./CreateProjectForm.tsx";
 import { linesOf, useProjectList, type OneProject } from "./use-projects.ts";
 
 /** The sub-projects the person sees, a page at a time. */
@@ -42,15 +42,15 @@ export function SubProjects({ project }: { readonly project: OneProject }) {
   const { id } = project.project;
   const list = useProjectList({ inside: id });
   const [making, setMaking] = useState(false);
-  const mayMake = project.permissions.includes("make-sub-projects");
+  const mayCreate = project.permissions.includes("create-sub-projects");
   const empty = list.isSuccess && linesOf(list.data.pages).length === 0;
   return (
     <Card heading={t("projects.sub-projects")}>
       {list.isError ? <Alert tone={alertTone.danger}>{messageOf(list.error)}</Alert> : null}
       {empty ? <p {...partOf(part.text)}>{t("projects.sub-projects-empty")}</p> : null}
       {empty ? null : <SubProjectList project={id} />}
-      {empty && !mayMake ? <p {...partOf(part.muted)}>{t("projects.sub-projects-ask")}</p> : null}
-      {mayMake && !making ? (
+      {empty && !mayCreate ? <p {...partOf(part.muted)}>{t("projects.sub-projects-ask")}</p> : null}
+      {mayCreate && !making ? (
         <div {...partOf(part.row)}>
           <Button
             look={empty ? buttonLook.primary : buttonLook.plain}
@@ -58,11 +58,11 @@ export function SubProjects({ project }: { readonly project: OneProject }) {
               setMaking(true);
             }}
           >
-            {t("projects.make-sub-project")}
+            {t("projects.create-sub-project")}
           </Button>
         </div>
       ) : null}
-      {mayMake && making ? <MakeProjectForm inside={id} /> : null}
+      {mayCreate && making ? <CreateProjectForm inside={id} /> : null}
     </Card>
   );
 }

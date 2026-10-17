@@ -10,7 +10,7 @@ use bb_core::settings::{
     SECURITY_TWO_STEP_REQUIRED, Scope, Setting, SettingValue, Text,
 };
 use bb_core::sign_in::{
-    Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TwoStep,
+    Invitation, SessionStage, SetupCode, SignInSession, StoredPasskey, TotpStep, TwoStep,
 };
 use bb_policy::guards::Refusal;
 use jiff::Timestamp;
@@ -392,7 +392,11 @@ impl SecondStepStore for FakeStore {
         Ok(())
     }
 
-    async fn accept_totp_step(tx: &mut Tx, person: UserId, step: i64) -> Result<bool, FakeError> {
+    async fn accept_totp_step(
+        tx: &mut Tx,
+        person: UserId,
+        step: TotpStep,
+    ) -> Result<bool, FakeError> {
         for known in &mut tx.state.two_steps {
             if known.person == person && known.last_step < step {
                 known.last_step = step;

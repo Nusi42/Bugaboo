@@ -21,9 +21,10 @@ use crate::comments::{
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::follow::{FollowIssue, UnfollowIssue, follow_issue, unfollow_issue};
 use crate::relations::{
-    AddRelation, ChangeRelationKind, MakeRelationKind, MakeStartingRelationKinds,
+    AddRelation, ChangeRelationKind, CreateRelationKind, CreateStartingRelationKinds,
     RelationKindsQuery, RemoveRelation, SetParent, add_relation, change_relation_kind,
-    make_relation_kind, make_starting_relation_kinds, relation_kinds, remove_relation, set_parent,
+    create_relation_kind, create_starting_relation_kinds, relation_kinds, remove_relation,
+    set_parent,
 };
 
 /// The first kind of relation of the first start (*blocks*).
@@ -53,12 +54,12 @@ async fn two_issues(world: &World) -> Result<(IssueId, IssueId), String> {
     ))
 }
 
-pub(crate) async fn make_relation_kind_scenario(world: &World) -> Added {
+pub(crate) async fn create_relation_kind_scenario(world: &World) -> Added {
     measured(
         &world.store,
-        make_relation_kind(
+        create_relation_kind(
             &world.ctx(),
-            MakeRelationKind {
+            CreateRelationKind {
                 session_token: token(world),
                 forward: "precedes".to_owned(),
                 backward: "follows".to_owned(),
@@ -88,12 +89,12 @@ pub(crate) async fn change_relation_kind_scenario(world: &World) -> Added {
 }
 
 /// A server that has not made its kinds of relation: the first start.
-pub(crate) async fn make_starting_relation_kinds_scenario(_world: &World) -> Added {
+pub(crate) async fn create_starting_relation_kinds_scenario(_world: &World) -> Added {
     let bare = World::new_without_issue_types().await?;
     let store: &FakeStore = &bare.store;
     measured(
         store,
-        make_starting_relation_kinds(&bare.ctx(), MakeStartingRelationKinds),
+        create_starting_relation_kinds(&bare.ctx(), CreateStartingRelationKinds),
     )
     .await
 }

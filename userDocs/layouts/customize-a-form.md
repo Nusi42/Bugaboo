@@ -2,9 +2,9 @@
 
 You need the permission "Manage issue types, kinds of relation and layouts" in the project. Open the editor from the new-issue dialog with **Customize this form**, or from *Project settings › Layouts* (for the whole organization: *Organization settings › Layouts*).
 
-## Making a layout of your own
+## Creating a layout of your own
 
-At first a form has not been customized: it shows the usual fields to every role. Choose the form and the issue type, then press **Customize for** the project. Bugaboo makes a copy of the layout that counts there now, so you can change it without touching the place it came from. **Reset to default** takes your layout away; it waits while somebody else is editing the layout.
+At first a form has not been customized: it shows the usual fields to every role. Choose the form and the issue type, then press **Customize for** the project. Bugaboo creates a copy of the layout that counts there now, so you can change it without touching the place it came from. **Reset to default** takes your layout away; it waits while somebody else is editing the layout.
 
 ## Sections and tabs
 

@@ -70,7 +70,7 @@ async fn m3_f28_an_issue_can_be_assigned_to_those_who_may_see_it_only() -> TestR
         assert!(!ids.contains(&outsider.to_string()), "{ids:?}");
         // Assigning is refused alike for a person who does not exist, one with no role and a
         // Guest who did not report the issue.
-        let made = site.make(&mut ada, "Who does it").await?;
+        let made = site.create(&mut ada, "Who does it").await?;
         let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
         for person in [outsider.to_string(), gus_id.to_string(), NOBODY.to_owned()] {
             assert_eq!(
@@ -79,7 +79,7 @@ async fn m3_f28_an_issue_can_be_assigned_to_those_who_may_see_it_only() -> TestR
             );
         }
         // A Guest can be assigned to the issue they reported themselves.
-        let own = site.make(&mut gus, "Gus found it").await?;
+        let own = site.create(&mut gus, "Gus found it").await?;
         let own_key = ok(&own)?["key"].as_str().ok_or("no key")?.to_owned();
         let on_gus = assign(&mut ada, &own_key, 1, &gus_id.to_string()).await?;
         assert_eq!(on_gus.0, StatusCode::OK);
@@ -127,7 +127,7 @@ async fn adr_0022_the_list_of_people_to_assign_follows_project_members_and_the_r
     .await
 }
 
-/// A person whose role may see and make issues and set *Assigned to*, but not change issues: the
+/// A person whose role may see and create issues and set *Assigned to*, but not change issues: the
 /// path of the new-issue form.
 async fn maker_who_assigns(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failure> {
     let email = "maya@example.test";
@@ -138,7 +138,7 @@ async fn maker_who_assigns(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failur
             &[
                 Permission::SeeProjects,
                 Permission::SeeIssues,
-                Permission::MakeIssues,
+                Permission::CreateIssues,
             ],
         )
         .await?;
@@ -167,7 +167,7 @@ async fn maker_who_assigns(site: &Site<'_>, rig: &Rig) -> Result<Browser, Failur
 }
 
 #[tokio::test]
-async fn m3_f28_who_may_make_issues_and_set_assigned_to_gets_the_list_for_the_new_issue_form()
+async fn m3_f28_who_may_create_issues_and_set_assigned_to_gets_the_list_for_the_new_issue_form()
 -> TestResult {
     each_database("m3_f28_new_issue_form", async |db| {
         let (rig, app) = rig_and_app(db).await?;
@@ -182,12 +182,12 @@ async fn m3_f28_who_may_make_issues_and_set_assigned_to_gets_the_list_for_the_ne
 }
 
 #[tokio::test]
-async fn m3_f28_an_assignee_who_lost_access_does_not_stop_a_change() -> TestResult {
-    each_database("m3_f28_assignee_lost_access", async |db| {
+async fn m3_f28_an_assigned_person_who_lost_access_does_not_stop_a_change() -> TestResult {
+    each_database("m3_f28_assigned_person_lost_access", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let (_, cora) = site.person(StartingRole::Contributor, "cora").await?;
-        let made = site.make(&mut ada, "Cora has it").await?;
+        let made = site.create(&mut ada, "Cora has it").await?;
         let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
         assert_eq!(
             assign(&mut ada, &issue, 1, &cora.to_string()).await?.0,
@@ -238,7 +238,7 @@ async fn adr_0027_who_is_shown_only_themselves_can_assign_only_themselves() -> T
         )
         .await?;
         // The list offers Tim only himself, and sending the ID of somebody else is no way round it.
-        let made = site.make(&mut ada, "Who does it").await?;
+        let made = site.create(&mut ada, "Who does it").await?;
         let issue = ok(&made)?["key"].as_str().ok_or("no key")?.to_owned();
         assert_eq!(
             assign(&mut tim, &issue, 1, &cora.to_string()).await?,

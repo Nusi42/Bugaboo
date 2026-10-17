@@ -74,7 +74,7 @@ pub(crate) struct Request {
 struct RunFolder(PathBuf);
 
 impl RunFolder {
-    fn make(database: DatabaseKind) -> anyhow::Result<Self> {
+    fn create(database: DatabaseKind) -> anyhow::Result<Self> {
         let folder = std::env::temp_dir().join(format!(
             "bugaboo-load-{}-{}",
             database.code(),
@@ -195,7 +195,7 @@ fn run_on(
     programs: &Programs,
 ) -> anyhow::Result<bool> {
     output::info(&format!("load: {} ...", database.code()));
-    let folder = RunFolder::make(database)?;
+    let folder = RunFolder::create(database)?;
     let arguments = driver_arguments(layout, request, database, &folder);
     let root = repo.root();
     match database {

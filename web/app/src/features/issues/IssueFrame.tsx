@@ -54,7 +54,7 @@ export function IssueFrame(props: IssueFrameProps) {
     <article>
       {show === "panel" ? (
         <SidePanel
-          title={blocks.issueKey}
+          title={blocks.readableId}
           onClose={onClose}
           {...(closeLabel === undefined ? {} : { closeLabel })}
         >

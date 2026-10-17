@@ -16,7 +16,7 @@ use jiff::Timestamp;
 use sea_query::{
     ColumnDef, DeleteStatement, Expr, IndexCreateStatement, InsertStatement, Order,
     PostgresQueryBuilder, Query, SqliteQueryBuilder, Table, TableAlterStatement,
-    TableCreateStatement, UpdateStatement,
+    TableCreateStatement, TableRenameStatement, UpdateStatement,
 };
 use sha2::{Digest as _, Sha256};
 
@@ -37,6 +37,7 @@ mod m0010_relations;
 mod m0011_tags;
 mod m0012_layouts;
 mod m0013_job_kinds;
+mod m0014_names;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -59,6 +60,8 @@ pub(crate) enum Step {
     Delete(DeleteStatement),
     /// Rewrite values the program names differently now.
     Update(UpdateStatement),
+    /// Give a table the name the program calls it now.
+    Rename(TableRenameStatement),
 }
 
 /// One migration.
@@ -104,6 +107,10 @@ impl Definition {
                 Step::Update(statement) => [
                     statement.to_string(SqliteQueryBuilder),
                     statement.to_string(PostgresQueryBuilder),
+                ],
+                Step::Rename(statement) => [
+                    statement.build(SqliteQueryBuilder),
+                    statement.build(PostgresQueryBuilder),
                 ],
             };
             for text in texts {
@@ -181,6 +188,11 @@ const ALL: &[Definition] = &[
         version: 13,
         name: "job_kinds",
         steps: || Ok(m0013_job_kinds::steps()),
+    },
+    Definition {
+        version: 14,
+        name: "names",
+        steps: || Ok(m0014_names::steps()),
     },
 ];
 
@@ -297,6 +309,7 @@ impl Database {
                     Step::Update(statement) => {
                         transaction.execute(&statement).await?;
                     }
+                    Step::Rename(statement) => transaction.execute_schema(&statement).await?,
                 }
             }
             record(&mut transaction, next, now).await?;
@@ -385,28 +398,37 @@ mod tests {
     use super::*;
     use crate::test_support::at;
 
+    /// The checksum of every migration a database may have applied. If one fails after a rename in
+    /// the code, a migration now builds other statements than the ones databases applied before:
+    /// databases that applied it would refuse to start. Add a new migration instead of changing an
+    /// old one, and name the old tables and columns it uses in the migration itself.
     #[test]
     fn the_checksum_of_an_applied_migration_never_changes() {
-        // If this fails after an upgrade of sea-query or an edit of migration 1, databases that
-        // applied it would refuse to start. Add a new migration instead of changing an old one.
-        let checksum = ALL[0].checksum().unwrap();
-        assert_eq!(
-            bb_core::hex::encode(checksum.as_bytes()),
+        const APPLIED: [&str; 14] = [
             "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
-            "the checksum of migration 1 changed"
-        );
-    }
-
-    #[test]
-    fn the_checksum_of_migration_2_never_changes() {
-        // Migration 2 names the column that migration 3 takes away through `Retired`; its text
-        // is the one databases applied before.
-        let checksum = ALL[1].checksum().unwrap();
-        assert_eq!(
-            bb_core::hex::encode(checksum.as_bytes()),
             "2f79f1fcf6ccadf282c92d37e1803b440c1759d098887112f96b5cbc24d2f30e",
-            "the checksum of migration 2 changed"
-        );
+            "559268007329af29e9b173a8e836d1e5e5d924a70eb5a509147de6d2f1a54d2a",
+            "da7d77fae7b54c478965753e08448db6e9ff6bb7cc1910aa5acefeff4d15c990",
+            "197f6e67ca2b33794b484a19c5b8577eb97023cd759f34689ddd8fe3131fb9cd",
+            "888c571ed03837927111de0bc757b71c8608e08dff06c11631d94c6a292e8ed4",
+            "8fbd8b15ec9aed2d418484ea4ee883801c5aacc7e2cbc20e4c967852e6db8ab0",
+            "a994400ac493c6282be22dca5f4d6dd33dcd9e9556a80c648ac1322df0ff590e",
+            "c5dd6be187a9c42674b2bdfd05cf9d28eb88486bea90f96ec4d12b2a4f2fff07",
+            "d1579888290157b29550deda66ad28230d214174efffc6c0345a7d94edfdc10c",
+            "dcaa647639437b3e8751fee41009ecde93b5872c8064d39f2600bd992f7b559c",
+            "fffa0b40e2a8b74a36236e5d54896ec8d4a5078c82dcde3215f9ff610a4b6d2e",
+            "672ecd2ebb383bd7483263729b11f4f2f3e2695825b42b86bbaf22330b12a4bf",
+            "045061588034b6040764c6ba14cfd34631f165361100372b98f44a2812c6b790",
+        ];
+        for (definition, wanted) in ALL.iter().zip(APPLIED) {
+            let checksum = definition.checksum().unwrap();
+            assert_eq!(
+                bb_core::hex::encode(checksum.as_bytes()),
+                wanted,
+                "the checksum of migration {} changed",
+                definition.version
+            );
+        }
     }
 
     #[tokio::test]

@@ -182,21 +182,31 @@ impl std::fmt::Debug for KeyRing {
     }
 }
 
+/// What to do with a key file that is missing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OpenMode {
+    /// Make it: the first start.
+    CreateMissing,
+    /// Fail: the keys are meant to be there already.
+    ExistingOnly,
+}
+
 impl KeyRing {
     /// Reads the key files in `folder` (the `keys/` folder of the data folder). A file that is
-    /// missing is made when `create` is set (the first start) and is an error otherwise.
+    /// missing is made in the mode [`OpenMode::CreateMissing`] (the first start) and is an error
+    /// in the mode [`OpenMode::ExistingOnly`].
     ///
     /// # Errors
-    /// Fails with [`StoreError::KeysMissing`] for a missing file when `create` is not set, when a
-    /// file cannot be read or written or is damaged, and (on Unix) when a file can be read by
-    /// anybody but its owner.
-    pub fn open(folder: &Path, create: bool) -> Result<Self, StoreError> {
+    /// Fails with [`StoreError::KeysMissing`] for a missing file in the mode
+    /// [`OpenMode::ExistingOnly`], when a file cannot be read or written or is damaged, and (on
+    /// Unix) when a file can be read by anybody but its owner.
+    pub fn open(folder: &Path, mode: OpenMode) -> Result<Self, StoreError> {
         let master_path = folder.join(MASTER_KEY_FILE);
         let log_path = folder.join(LOG_FILE);
-        if !create && (!master_path.exists() || !log_path.exists()) {
+        if mode == OpenMode::ExistingOnly && (!master_path.exists() || !log_path.exists()) {
             return Err(StoreError::KeysMissing);
         }
-        if create {
+        if mode == OpenMode::CreateMissing {
             fs::create_dir_all(folder).map_err(StoreError::KeyFile)?;
         }
         let keys = if let Some(text) = read_complete(&master_path)? {
@@ -239,7 +249,7 @@ impl KeyRing {
     /// # Errors
     /// The errors of [`Self::open`].
     pub fn open_or_create(folder: &Path) -> Result<Self, StoreError> {
-        Self::open(folder, true)
+        Self::open(folder, OpenMode::CreateMissing)
     }
 
     fn master_path(&self) -> PathBuf {
@@ -550,7 +560,7 @@ mod tests {
         let folder = tempfile::tempdir().unwrap();
         let first = KeyRing::open_or_create(folder.path()).unwrap();
         assert_eq!(first.ids().unwrap(), [id(1)]);
-        let again = KeyRing::open(folder.path(), false).unwrap();
+        let again = KeyRing::open(folder.path(), OpenMode::ExistingOnly).unwrap();
         assert_eq!(
             again.newest().unwrap().bytes(),
             first.newest().unwrap().bytes()
@@ -578,13 +588,13 @@ mod tests {
     fn sec_16_missing_key_files_are_not_made_again_unless_it_is_the_first_start() {
         let folder = tempfile::tempdir().unwrap();
         assert!(matches!(
-            KeyRing::open(folder.path(), false),
+            KeyRing::open(folder.path(), OpenMode::ExistingOnly),
             Err(StoreError::KeysMissing)
         ));
-        KeyRing::open(folder.path(), true).unwrap();
+        KeyRing::open(folder.path(), OpenMode::CreateMissing).unwrap();
         fs::remove_file(folder.path().join(LOG_FILE)).unwrap();
         assert!(matches!(
-            KeyRing::open(folder.path(), false),
+            KeyRing::open(folder.path(), OpenMode::ExistingOnly),
             Err(StoreError::KeysMissing)
         ));
         assert!(!folder.path().join(LOG_FILE).exists(), "nothing was made");
@@ -604,7 +614,7 @@ mod tests {
             std::thread::sleep(Duration::from_millis(300));
             fs::write(&master, content).unwrap();
         });
-        let second = KeyRing::open(&path, false).unwrap();
+        let second = KeyRing::open(&path, OpenMode::ExistingOnly).unwrap();
         writer.join().unwrap();
         assert_eq!(*second.newest().unwrap().bytes(), expected);
     }

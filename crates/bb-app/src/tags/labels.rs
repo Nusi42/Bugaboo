@@ -22,8 +22,8 @@ use serde_json::json;
 
 use super::rewrite::{Combining, ISSUES_PER_READ, Replacement, Rewrite, Sorted};
 use super::types::{
-    ChangeLabel, ChangeLabelGroup, CombineLabels, LabelChangePreviewQuery, LabelGroupView,
-    LabelView, Labels, LabelsQuery, MakeLabel, MakeLabelGroup, TagChangePreview,
+    ChangeLabel, ChangeLabelGroup, CombineLabels, CreateLabel, CreateLabelGroup,
+    LabelChangePreviewQuery, LabelGroupView, LabelView, Labels, LabelsQuery, TagChangePreview,
 };
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
 use crate::input::clean_tag_name;
@@ -171,14 +171,14 @@ pub async fn labels<S: AuthStore>(
     }))
 }
 
-/// Makes a group of labels, at the end of the order.
+/// Creates a group of labels, at the end of the order.
 ///
 /// # Errors
 /// `access.forbidden` without *Manage labels and tags*, `request.invalid` for a name that cannot be
 /// one or as many groups as there may be, `name.taken` for a name another group has.
-pub async fn make_label_group<S: AuthStore>(
+pub async fn create_label_group<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeLabelGroup,
+    input: CreateLabelGroup,
 ) -> Result<Authorized<LabelGroupView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.tag_manager(&actor).await?;
@@ -325,15 +325,15 @@ pub async fn change_label_group<S: AuthStore>(
     Ok(held.authorize(LabelGroupView::from(stored.group(id)?)))
 }
 
-/// Makes a label, at the end of the order, with the next color in turn when none is asked for.
+/// Creates a label, at the end of the order, with the next color in turn when none is asked for.
 ///
 /// # Errors
 /// `access.forbidden` without *Manage labels and tags*, `resource.not_found` for a group that is
 /// not there, `request.invalid` for a name that cannot be one or a retired group, `name.taken` for
 /// a name the group has, `limit.reached` for as many labels as there may be.
-pub async fn make_label<S: AuthStore>(
+pub async fn create_label<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeLabel,
+    input: CreateLabel,
 ) -> Result<Authorized<LabelView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx.tag_manager(&actor).await?;

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { type Browser, type Locator, type Page, type Route } from "@playwright/test";
 
-import { ada, endEverySession, makeAdmin } from "./support/accounts.ts";
+import { ada, endEverySession, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { type Instance } from "./support/server.ts";
 import { anotherBrowser, openFromMenu, signIn } from "./support/flows.ts";
@@ -12,7 +12,7 @@ import { paths } from "../src/shared/paths.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      await (await makeAdmin(server)).dispose();
+      await (await createAdmin(server)).dispose();
     },
   },
 });

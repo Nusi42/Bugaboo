@@ -4,9 +4,9 @@ A role is a named set of permissions, given to people or groups for the whole or
 
 *Organization settings › Roles & permissions* lists the roles, in the order of roles. Press a role to open its page.
 
-## Making a role
+## Creating a role
 
-Under "Make a role", type a name and choose where to start: an empty role, or a copy of the role that is closest to what you need. The new role opens on its page, where you choose what it allows.
+Under "Create a role", type a name and choose where to start: an empty role, or a copy of the role that is closest to what you need. The new role opens on its page, where you choose what it allows.
 
 On the page of a role, "Copy this role" does the same from there.
 
@@ -22,7 +22,7 @@ You can only add a permission to a role that you hold yourself.
 
 ## Reset to the starting permissions
 
-A starting role has "Reset to the starting permissions": the permissions and the two-step switch it had at the start come back, and the name stays. A role you made yourself has no starting permissions, so it has no reset.
+A starting role has "Reset to the starting permissions": the permissions and the two-step switch it had at the start come back, and the name stays. A role you created yourself has no starting permissions, so it has no reset.
 
 ## Deleting a role
 

@@ -1,12 +1,12 @@
 import { t } from "@bugaboo/messages";
 import { type Page } from "@playwright/test";
 
-import { ada, bob, makeAdmin, makePerson } from "./support/accounts.ts";
+import { ada, bob, createAdmin, createPerson } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn } from "./support/flows.ts";
 import { handleIn, onThisLayout, slotsIn } from "./support/layout.ts";
-import { makeProject } from "./support/projects.ts";
+import { createProject } from "./support/projects.ts";
 import { inOrder } from "./support/sequence.ts";
 
 // Own fields (CF-01 to CF-08, WP-05): an administrator makes *Severity* (pick one, four colored
@@ -17,9 +17,9 @@ import { inOrder } from "./support/sequence.ts";
 test.use({
   preparation: {
     run: async (server) => {
-      const admin = await makeAdmin(server);
-      await (await makePerson(server, admin, bob)).dispose();
-      await makeProject(admin, "WEB", "Website");
+      const admin = await createAdmin(server);
+      await (await createPerson(server, admin, bob)).dispose();
+      await createProject(admin, "WEB", "Website");
       await admin.dispose();
     },
   },
@@ -27,7 +27,7 @@ test.use({
 test.describe.configure({ mode: "serial" });
 
 /** Makes a field on the screen of fields: the kind, the name and, for choices, one on each line. */
-async function makeField(
+async function createField(
   page: Page,
   kind: string,
   name: string,
@@ -39,7 +39,7 @@ async function makeField(
   if (choices.length > 0) {
     await page.getByLabel(t("fields.field-choices"), { exact: true }).fill(choices.join("\n"));
   }
-  await page.getByRole("button", { name: t("fields.make"), exact: true }).click();
+  await page.getByRole("button", { name: t("fields.create"), exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }
 
@@ -55,7 +55,7 @@ test("cf_04 an administrator makes Severity with four colored choices and sees i
   page,
 }) => {
   await signIn(page, ada);
-  await makeField(
+  await createField(
     page,
     t("field-type.pick-one"),
     "Severity",
@@ -83,8 +83,8 @@ test("cf_01 Platforms (pick several) and Customer (text) are made on the same sc
   page,
 }) => {
   await signIn(page, ada);
-  await makeField(page, t("field-type.pick-several"), "Platforms", ["Windows", "Mac", "Linux"]);
-  await makeField(page, t("field-type.text"), "Customer");
+  await createField(page, t("field-type.pick-several"), "Platforms", ["Windows", "Mac", "Linux"]);
+  await createField(page, t("field-type.text"), "Customer");
   await openFromMenu(page, t("nav.fields"));
   const list = page.getByRole("list", { name: t("fields.list") });
   await expect(list.getByRole("link")).toHaveText(["Severity", "Platforms", "Customer"]);
@@ -100,7 +100,7 @@ test("m3_f61 the choices of a field are put in order with the buttons, and by dr
   page,
 }) => {
   await signIn(page, ada);
-  await makeField(page, t("field-type.pick-one"), "Impact", ["Low", "Mid", "High"]);
+  await createField(page, t("field-type.pick-one"), "Impact", ["Low", "Mid", "High"]);
   const rows = rowsOfChoices(page);
   await expect(rows.first()).toContainText("Low");
   // The buttons do everything a drag does: High goes up one place.

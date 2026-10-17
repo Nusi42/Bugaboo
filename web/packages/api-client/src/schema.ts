@@ -12,8 +12,8 @@ export interface paths {
     /** The access keys of the person, a page at a time. */
     get: operations["listAccessKeys"];
     put?: never;
-    /** Makes an access key. The key is shown once. The password is asked again. */
-    post: operations["makeAccessKey"];
+    /** Creates an access key. The key is shown once. The password is asked again. */
+    post: operations["createAccessKey"];
     delete?: never;
     options?: never;
     head?: never;
@@ -169,7 +169,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes an account from an invitation link, and signs the person in. */
+    /** Creates an account from an invitation link, and signs the person in. */
     post: operations["acceptInvitation"];
     delete?: never;
     options?: never;
@@ -207,7 +207,7 @@ export interface paths {
     /** The open invitations, a page at a time. Needs the permission *Invite people*. */
     get: operations["listInvitations"];
     put?: never;
-    /** Makes an invitation. The link is shown once. Needs the permission *Invite people*. */
+    /** Creates an invitation. The link is shown once. Needs the permission *Invite people*. */
     post: operations["createInvitation"];
     delete?: never;
     options?: never;
@@ -450,7 +450,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes the first administrator with the setup code, and signs them in. Setup is closed for
+     * Creates the first administrator with the setup code, and signs them in. Setup is closed for
      *     good afterwards.
      */
     post: operations["completeSetup"];
@@ -506,7 +506,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes an account without an invitation, when an administrator allows it. */
+    /** Creates an account without an invitation, when an administrator allows it. */
     post: operations["signUp"];
     delete?: never;
     options?: never;
@@ -575,7 +575,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes new backup codes; the old ones stop working. The password is typed again. */
+    /** Creates new backup codes; the old ones stop working. The password is typed again. */
     post: operations["renewBackupCodes"];
     delete?: never;
     options?: never;
@@ -631,89 +631,6 @@ export interface paths {
     put?: never;
     /** Switches the code app off. The password is typed again. */
     post: operations["removeCodeApp"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/bulk/changes": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Changes many issues at once, each on the version the preview read. Each issue is judged again,
-     *     and one that changed since the preview is named and left alone. More than 1,000 issues run in
-     *     the background: the answer holds the run, and `getBulkRun` says how far it is. A script with an
-     *     access key sends at most 1,000 issues at a time.
-     */
-    post: operations["applyBulkChange"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/bulk/preview": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Says what a change to many issues would do to each issue: what will change, what is left alone
-     *     and why, and the version of each issue, which the change takes back. Nothing is changed.
-     */
-    post: operations["previewBulkChange"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/bulk/runs/{run}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * How far a change to many issues that goes on in the background is. Only the person who asked
-     *     for it reads it.
-     */
-    get: operations["getBulkRun"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/bulk/runs/{run}/cancel": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Stops a change to many issues that goes on in the background: what was changed so far stays and
-     *     the rest is left alone. The person who asked for it may stop it, and so may whoever holds
-     *     *Manage people*. The answer holds the status only.
-     */
-    post: operations["cancelBulkRun"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1077,8 +994,8 @@ export interface paths {
     /** The own fields the person sees, for the organization or for one project. */
     get: operations["listFields"];
     put?: never;
-    /** Makes an own field. Needs the permission *Manage fields*. */
-    post: operations["makeField"];
+    /** Creates an own field. Needs the permission *Manage fields*. */
+    post: operations["createField"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1206,13 +1123,13 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The groups, by name, a page at a time. Needs the permission *Make, rename and delete groups
+     * The groups, by name, a page at a time. Needs the permission *Create, rename and delete groups
      *     and change who is in them*.
      */
     get: operations["listGroups"];
     put?: never;
-    /** Makes a group. Needs the permission *Make, rename and delete groups and change who is in them*. */
-    post: operations["makeGroup"];
+    /** Creates a group. Needs the permission *Create, rename and delete groups and change who is in them*. */
+    post: operations["createGroup"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1227,7 +1144,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * One group, with what it is used for. Needs the permission *Make, rename and delete groups and
+     * One group, with what it is used for. Needs the permission *Create, rename and delete groups and
      *     change who is in them*.
      */
     get: operations["getGroup"];
@@ -1235,14 +1152,14 @@ export interface paths {
     post?: never;
     /**
      * Deletes a group, with its members and the rows that give it a role. Needs the permission
-     *     *Make, rename and delete groups and change who is in them*, and, where the group has *No
+     *     *Create, rename and delete groups and change who is in them*, and, where the group has *No
      *     access*, *Decide who has which role* there.
      */
     delete: operations["deleteGroup"];
     options?: never;
     head?: never;
     /**
-     * Renames a group. Needs the permission *Make, rename and delete groups and change who is in
+     * Renames a group. Needs the permission *Create, rename and delete groups and change who is in
      *     them*.
      */
     patch: operations["renameGroup"];
@@ -1257,7 +1174,7 @@ export interface paths {
     };
     /**
      * The people that can be put into a group, by name, a page at a time; those who are in it
-     *     already say so. Needs the permission *Make, rename and delete groups and change who is in
+     *     already say so. Needs the permission *Create, rename and delete groups and change who is in
      *     them*. Names only, never e-mail addresses.
      */
     get: operations["listMemberChoices"];
@@ -1277,7 +1194,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The people in a group, a page at a time. Needs the permission *Make, rename and delete groups
+     * The people in a group, a page at a time. Needs the permission *Create, rename and delete groups
      *     and change who is in them*.
      */
     get: operations["listGroupMembers"];
@@ -1298,14 +1215,14 @@ export interface paths {
     };
     get?: never;
     /**
-     * Puts a person into a group. Needs the permission *Make, rename and delete groups and change
+     * Puts a person into a group. Needs the permission *Create, rename and delete groups and change
      *     who is in them*; nobody puts somebody into a group that has a role with more than they hold
      *     themselves.
      */
     put: operations["addGroupMember"];
     post?: never;
     /**
-     * Takes a person out of a group. Needs the permission *Make, rename and delete groups and change
+     * Takes a person out of a group. Needs the permission *Create, rename and delete groups and change
      *     who is in them*, and, where the group has *No access*, *Decide who has which role* there.
      */
     delete: operations["removeGroupMember"];
@@ -1327,8 +1244,8 @@ export interface paths {
      */
     get: operations["listIssueTypes"];
     put?: never;
-    /** Makes an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*. */
-    post: operations["makeIssueType"];
+    /** Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*. */
+    post: operations["createIssueType"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1455,7 +1372,7 @@ export interface paths {
     };
     /** Whether the person follows the issue (*Follow* or *Following*). */
     get: operations["getFollowing"];
-    /** Makes the person a follower of the issue. Following it already changes nothing. */
+    /** Creates the person a follower of the issue. Following it already changes nothing. */
     put: operations["followIssue"];
     post?: never;
     /** Takes the person out of the followers of the issue. Not following changes nothing. */
@@ -1517,6 +1434,23 @@ export interface paths {
      *     has from that group.
      */
     post: operations["addLabel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/issues/{issue}/labels-and-tags": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The tags and labels of an issue and what the person may do with them. */
+    get: operations["getIssueLabelsAndTags"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1667,23 +1601,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/issues/{issue}/sorting": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The tags and labels of an issue and what the person may do with them. */
-    get: operations["getIssueSorting"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/issues/{issue}/sub-issues": {
     parameters: {
       query?: never;
@@ -1750,8 +1667,8 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Makes a group of labels. Needs *Manage labels and tags*. */
-    post: operations["makeLabelGroup"];
+    /** Creates a group of labels. Needs *Manage labels and tags*. */
+    post: operations["createLabelGroup"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1788,8 +1705,8 @@ export interface paths {
      */
     get: operations["listLabels"];
     put?: never;
-    /** Makes a label. Needs *Manage labels and tags*. */
-    post: operations["makeLabel"];
+    /** Creates a label. Needs *Manage labels and tags*. */
+    post: operations["createLabel"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1866,10 +1783,10 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes the layout of a place as a copy of the one that counts there (*Customize this form*).
+     * Creates the layout of a place as a copy of the one that counts there (*Customize this form*).
      *     Needs the permission *Manage issue types, kinds of relation and layouts*.
      */
-    post: operations["makeLayout"];
+    post: operations["createLayout"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1935,6 +1852,89 @@ export interface paths {
      *     permission *Manage issue types, kinds of relation and layouts*.
      */
     delete: operations["deleteLayout"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/many-changes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Changes many issues at once, each on the version the preview read. Each issue is judged again,
+     *     and one that changed since the preview is named and left alone. More than 1,000 issues run in
+     *     the background: the answer holds the run, and `getManyChangeRun` says how far it is. A script with an
+     *     access key sends at most 1,000 issues at a time.
+     */
+    post: operations["applyManyChanges"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/many-changes/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Says what a change to many issues would do to each issue: what will change, what is left alone
+     *     and why, and the version of each issue, which the change takes back. Nothing is changed.
+     */
+    post: operations["previewManyChanges"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/many-changes/runs/{run}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * How far a change to many issues that goes on in the background is. Only the person who asked
+     *     for it reads it.
+     */
+    get: operations["getManyChangeRun"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/many-changes/runs/{run}/stop": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Stops a change to many issues that goes on in the background: what was changed so far stays and
+     *     the rest is left alone. The person who asked for it may stop it, and so may whoever holds
+     *     *Manage people*. The answer holds the status only.
+     */
+    post: operations["stopManyChangeRun"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -2144,7 +2144,7 @@ export interface paths {
     };
     /**
      * The permissions of the catalogue, topic by topic: what the role page lists. Needs the
-     *     permission *Make, change and delete roles*.
+     *     permission *Create, change and delete roles*.
      */
     get: operations["listPermissions"];
     put?: never;
@@ -2169,8 +2169,8 @@ export interface paths {
      */
     get: operations["listProjects"];
     put?: never;
-    /** Makes a project at the top level. Needs the permission *Make projects at the top level*. */
-    post: operations["makeProject"];
+    /** Creates a project at the top level. Needs the permission *Create projects at the top level*. */
+    post: operations["createProject"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2197,7 +2197,7 @@ export interface paths {
     /**
      * Changes the name or the short name of a project. A short name that is changed leaves the old
      *     one with the project, so its old addresses keep working. Needs the permission *Change the
-     *     project's name, short name and settings*; a short name also needs the right to make projects
+     *     project's name, short name and settings*; a short name also needs the right to create projects
      *     where the project sits.
      */
     patch: operations["changeProject"];
@@ -2214,7 +2214,7 @@ export interface paths {
      * The people an issue of the project can be assigned to, a page at a time, by name: those who
      *     see the project and hold *See issues* there, and the person who asks. A person who cannot see
      *     names for *Assigned to* and *Project members* is offered only themselves. Needs the right to
-     *     set *Assigned to*: *Change issues*, *Change own issues* or *Make issues*, and a field mask that
+     *     set *Assigned to*: *Change issues*, *Change own issues* or *Create issues*, and a field mask that
      *     lets the person change that field. For an own field (`field`) the right to change that field
      *     takes the place of the right to set *Assigned to*.
      */
@@ -2288,10 +2288,10 @@ export interface paths {
     get: operations["listIssues"];
     put?: never;
     /**
-     * Makes an issue in a project. Needs the permission *Make issues*; the fields set must be ones
+     * Creates an issue in a project. Needs the permission *Create issues*; the fields set must be ones
      *     the person may change (the title always).
      */
-    post: operations["makeIssue"];
+    post: operations["createIssue"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2396,10 +2396,10 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes a sub-project. Needs the permission *Make sub-projects inside the project* in the
+     * Creates a sub-project. Needs the permission *Create sub-projects inside the project* in the
      *     project it goes into.
      */
-    post: operations["makeSubProject"];
+    post: operations["createSubProject"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2440,10 +2440,10 @@ export interface paths {
     get: operations["listRelationKinds"];
     put?: never;
     /**
-     * Makes a kind of relation. Needs the permission *Manage issue types, kinds of relation and
+     * Creates a kind of relation. Needs the permission *Manage issue types, kinds of relation and
      *     layouts*.
      */
-    post: operations["makeRelationKind"];
+    post: operations["createRelationKind"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2495,16 +2495,16 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * The roles, in the order of roles, a page at a time. Needs the permission *Make, change and
+     * The roles, in the order of roles, a page at a time. Needs the permission *Create, change and
      *     delete roles*.
      */
     get: operations["listRoles"];
     put?: never;
     /**
-     * Makes a role. Needs the permission *Make, change and delete roles*; nobody gives a role a
+     * Creates a role. Needs the permission *Create, change and delete roles*; nobody gives a role a
      *     permission they do not hold themselves.
      */
-    post: operations["makeRole"];
+    post: operations["createRole"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2519,7 +2519,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * One role, with its permissions and what it is used for. Needs the permission *Make, change and
+     * One role, with its permissions and what it is used for. Needs the permission *Create, change and
      *     delete roles*.
      */
     get: operations["getRole"];
@@ -2527,13 +2527,13 @@ export interface paths {
     post?: never;
     /**
      * Deletes a role. A role that somebody has is deleted only with a `replacement`, which takes its
-     *     place in every row that gave it. Needs the permission *Make, change and delete roles*.
+     *     place in every row that gave it. Needs the permission *Create, change and delete roles*.
      */
     delete: operations["deleteRole"];
     options?: never;
     head?: never;
     /**
-     * Changes a role: its name, its permissions, its two-step switch. Needs the permission *Make,
+     * Changes a role: its name, its permissions, its two-step switch. Needs the permission *Create,
      *     change and delete roles*; nobody adds a permission they do not hold themselves, and nothing
      *     that would leave nobody who can manage roles.
      */
@@ -2550,8 +2550,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Makes a role from a copy of another: its permissions, its two-step switch and its levels.
-     *     Needs the permission *Make, change and delete roles*; nobody copies a role that holds more
+     * Creates a role from a copy of another: its permissions, its two-step switch and its levels.
+     *     Needs the permission *Create, change and delete roles*; nobody copies a role that holds more
      *     than they hold themselves.
      */
     post: operations["copyRole"];
@@ -2572,7 +2572,7 @@ export interface paths {
     put?: never;
     /**
      * Gives a starting role back the permissions and levels it had at the start (*Reset to the
-     *     starting permissions*). Needs the permission *Make, change and delete roles*.
+     *     starting permissions*). Needs the permission *Create, change and delete roles*.
      */
     post: operations["resetRole"];
     delete?: never;
@@ -2589,7 +2589,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * How many people with a role still have to set up a second step. Needs the permission *Make,
+     * How many people with a role still have to set up a second step. Needs the permission *Create,
      *     change and delete roles*.
      */
     get: operations["getSecondStepGap"];
@@ -2816,7 +2816,7 @@ export interface components {
       /** @description The public start of the key, after `bb_`. */
       prefix: string;
       /** @description The projects the key is limited to; empty for every project. */
-      projects: components["schemas"]["KeyProjectRef"][];
+      projects: components["schemas"]["ProjectLabelBody"][];
     };
     /**
      * @description An access key in a list: the fields that can be asked for. An answer holds only those that
@@ -2841,7 +2841,7 @@ export interface components {
       /** @description The public start of the key, after `bb_`. */
       prefix?: string | null;
       /** @description The projects the key is limited to; empty for every project. */
-      projects?: components["schemas"]["KeyProjectRef"][] | null;
+      projects?: components["schemas"]["ProjectLabelBody"][] | null;
     };
     /** @description How long a new access key lives in this organization, and what a key can be limited to. */
     AccessKeyRulesBody: {
@@ -2895,11 +2895,11 @@ export interface components {
      */
     AppliesToBody: "organization" | "project" | "project-and-sub-projects";
     /** @description The issues to change, with the versions the preview read, and what to do. */
-    ApplyBulkBody: {
+    ApplyManyChangesBody: {
       /** @description What to do. */
-      action: components["schemas"]["BulkActionBody"];
+      action: components["schemas"]["ManyChangeActionBody"];
       /** @description The issues. */
-      issues: components["schemas"]["BulkTargetBody"][];
+      issues: components["schemas"]["ManyChangeTargetBody"][];
     };
     /** @description A row of *Who has which role*: the fields that can be asked for. */
     AssignmentItem: {
@@ -2944,166 +2944,6 @@ export interface components {
        * @description The largest value.
        */
       most: number;
-    };
-    /** @description What is done to every issue of the selection. */
-    BulkActionBody:
-      | {
-          /** @description What to change. */
-          change: components["schemas"]["BulkChangeBody"];
-          /** @enum {string} */
-          kind: "change";
-        }
-      | {
-          /** @enum {string} */
-          kind: "move";
-          /** @description The project, by its ID or its short name. */
-          project: string;
-        }
-      | {
-          /** @enum {string} */
-          kind: "add_label";
-          /** @description The ID of the label. */
-          label: string;
-        }
-      | {
-          /** @description Which end the issues of the selection are. */
-          direction: components["schemas"]["Direction"];
-          /** @enum {string} */
-          kind: "add_relation";
-          /** @description The issue at the other end, by its readable or internal ID. */
-          other: string;
-          /** @description The ID of the kind of relation. */
-          relation_kind: string;
-        }
-      | {
-          /** @enum {string} */
-          kind: "delete";
-        };
-    /** @description What a person asks for in the fields of many issues: what is left out stays as it is. */
-    BulkChangeBody: {
-      /**
-       * @description The IDs of the people the issues are assigned to from now on: all of them, not the ones to
-       *     add.
-       */
-      assigned_to?: string[] | null;
-      /** @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away. */
-      fields?: {
-        [key: string]: unknown;
-      };
-      priority?: components["schemas"]["Priority"] | null;
-      status?: components["schemas"]["Status"] | null;
-    };
-    /** @description What a row of the preview says will happen to the issue. */
-    BulkDetailBody:
-      | {
-          /** @description The fields. */
-          fields: components["schemas"]["FieldChangeBody"][];
-          /** @enum {string} */
-          kind: "changes";
-        }
-      | {
-          /** @description The issue at the other end. */
-          issue: components["schemas"]["IssueRef"];
-          /** @enum {string} */
-          kind: "relation";
-          /** @description What the issue reads (*blocks*). */
-          name: string;
-        };
-    /** @description What happened to one issue of the selection. */
-    BulkOutcomeBody: {
-      /** @description What the person asked for the issue by. */
-      address: string;
-      issue?: components["schemas"]["IssueRef"] | null;
-      skipped?: components["schemas"]["SkipReason"] | null;
-    };
-    /** @description What the change to many issues would do, with the sentence on top. */
-    BulkPreviewBody: {
-      /** @description Every issue of the selection, in the order asked. */
-      rows: components["schemas"]["BulkRowBody"][];
-      /** @description The change is too big to wait for: it runs in the background and says when it is done. */
-      runs_in_background: boolean;
-      /** @description How many will change and how many are left alone. */
-      summary: components["schemas"]["PreviewSummaryBody"];
-    };
-    /** @description What a change to many issues did: at once, or the run that goes on in the background. */
-    BulkResultBody: {
-      /** @description What happened to each issue, when it was done at once. */
-      outcomes: components["schemas"]["BulkOutcomeBody"][];
-      run?: components["schemas"]["BulkRunBody"] | null;
-    };
-    /** @description One issue of the preview: what will happen to it. */
-    BulkRowBody: {
-      /** @description What the person asked for the issue by. */
-      address: string;
-      detail?: components["schemas"]["BulkDetailBody"] | null;
-      issue?: components["schemas"]["IssueRef"] | null;
-      skipped?: components["schemas"]["SkipReason"] | null;
-      /**
-       * Format: int64
-       * @description The version the preview read; the change takes it back.
-       */
-      version?: number | null;
-    };
-    /** @description How far a change that goes on in the background is. */
-    BulkRunBody: {
-      /**
-       * Format: int32
-       * @description How many of those it changed.
-       */
-      changed: number;
-      /** @description When it was asked for. */
-      created_at: string;
-      /**
-       * Format: int32
-       * @description How many it has looked at.
-       */
-      done: number;
-      /** @description When it ended; left out while it goes on. */
-      finished_at?: string | null;
-      /** @description The ID of the run. */
-      id: string;
-      /** @description The first of the issues it left alone, with why. */
-      skipped: components["schemas"]["BulkSkippedBody"][];
-      /**
-       * Format: int32
-       * @description How many issues it left alone in all.
-       */
-      skipped_count: number;
-      /** @description Where it is. */
-      status: components["schemas"]["BulkStatus"];
-      /**
-       * Format: int32
-       * @description How many issues it has.
-       */
-      total: number;
-    };
-    /** @description Where a change that goes on in the background is, and nothing more. */
-    BulkRunStatusBody: {
-      /** @description The ID of the run. */
-      id: string;
-      /** @description Where it is. */
-      status: components["schemas"]["BulkStatus"];
-    };
-    /** @description An issue a run left alone. */
-    BulkSkippedBody: {
-      issue?: components["schemas"]["IssueRef"] | null;
-      /** @description Why. */
-      reason: components["schemas"]["SkipReason"];
-    };
-    /**
-     * @description Where a run of a change to many issues is.
-     * @enum {string}
-     */
-    BulkStatus: "queued" | "running" | "done" | "failed" | "stopped";
-    /** @description One issue of the change with the version the preview read. */
-    BulkTargetBody: {
-      /** @description The issue. A change to more than 1,000 issues names them by their internal IDs. */
-      issue: string;
-      /**
-       * Format: int64
-       * @description The version of the issue the preview read.
-       */
-      version: number;
     };
     /** @description The HTTPS certificate the server uses itself. */
     CertificateBody: {
@@ -3348,7 +3188,7 @@ export interface components {
       permissions: components["schemas"]["PermissionAnswerBody"][];
       /** @description The person who was checked, as the person who asks may see them. */
       person: components["schemas"]["PersonRef"];
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
     };
     /** @description The records on the screen. */
     CheckVersionsBody: {
@@ -3506,6 +3346,27 @@ export interface components {
      * @enum {string}
      */
     CountsBody: "organization" | "project";
+    /** @description An access key to make. */
+    CreateKeyBody: {
+      /** @description What it may do. */
+      choice: components["schemas"]["KeyChoice"];
+      /**
+       * @description When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
+       *     default number of days from now. It cannot be later than the longest time.
+       */
+      expires_at?: string | null;
+      /** @description What the key is called. */
+      name: string;
+      /** @description The password of the person, asked again so a stolen session cannot make a key. */
+      password: string;
+      /** @description The single permissions; only with the choice `permissions`, and then at least one. */
+      permissions?: components["schemas"]["Permission"][];
+      /**
+       * @description The projects the key is limited to; leave empty for every project. The key counts in
+       *     them and in their sub-projects, and gives nothing for the whole organization.
+       */
+      projects?: string[];
+    };
     /** @description A new access key: the secret is shown only now. */
     CreatedAccessKeyBody: {
       /** @description The key as it will be listed. */
@@ -3545,15 +3406,10 @@ export interface components {
     /** @description The database. */
     DatabaseBody: {
       /** @description Which one it is. The address is never shown: it can hold a password. */
-      kind: components["schemas"]["DatabaseKindBody"];
+      kind: components["schemas"]["RunningDatabaseBody"];
       /** @description Whether it answered. */
       ok: boolean;
     };
-    /**
-     * @description Which database the server uses.
-     * @enum {string}
-     */
-    DatabaseKindBody: "built_in" | "sqlite" | "postgres";
     /**
      * @description Which end of a relation a person starts from: the forward name or the backward one.
      * @enum {string}
@@ -4224,6 +4080,29 @@ export interface components {
       version?: number | null;
     };
     /**
+     * @description The tags and labels of one issue, and what the person may do with them. A member that holds a
+     *     field of the catalogue is left out when the person's level for the field is *Hidden*.
+     */
+    IssueLabelsAndTagsBody: {
+      /** @description The internal ID of the issue. */
+      issue: string;
+      /** @description Its issue type. The levels set for it count for the fields of this issue. */
+      issue_type: components["schemas"]["IssueTypeRef"];
+      /** @description The labels on it, in the order they were put there. */
+      labels?: components["schemas"]["LabelRefBody"][] | null;
+      /** @description Whether the person may put labels on the issue and take them off. */
+      may_change_labels: boolean;
+      /** @description Whether the person may put tags on the issue and take them off. */
+      may_change_tags: boolean;
+      /** @description The tags on it, in the order they were put there. */
+      tags?: components["schemas"]["TagRefBody"][] | null;
+      /**
+       * Format: int64
+       * @description The version of the issue now. A change of a tag or a label counts it up.
+       */
+      version: number;
+    };
+    /**
      * @description An issue as a small reference: its readable ID and what the viewer may see of it in its own
      *     project. A title or a status that the viewer's role hides there is left out.
      */
@@ -4252,29 +4131,6 @@ export interface components {
       /**
        * Format: int64
        * @description The version of the issue: what *Part of* is changed from.
-       */
-      version: number;
-    };
-    /**
-     * @description The tags and labels of one issue, and what the person may do with them. A member that holds a
-     *     field of the catalogue is left out when the person's level for the field is *Hidden*.
-     */
-    IssueSortingBody: {
-      /** @description The internal ID of the issue. */
-      issue: string;
-      /** @description Its issue type. The levels set for it count for the fields of this issue. */
-      issue_type: components["schemas"]["IssueTypeRef"];
-      /** @description The labels on it, in the order they were put there. */
-      labels?: components["schemas"]["LabelRefBody"][] | null;
-      /** @description Whether the person may put labels on the issue and take them off. */
-      may_change_labels: boolean;
-      /** @description Whether the person may put tags on the issue and take them off. */
-      may_change_tags: boolean;
-      /** @description The tags on it, in the order they were put there. */
-      tags?: components["schemas"]["TagRefBody"][] | null;
-      /**
-       * Format: int64
-       * @description The version of the issue now. A change of a tag or a label counts it up.
        */
       version: number;
     };
@@ -4309,20 +4165,6 @@ export interface components {
      * @enum {string}
      */
     KeyChoice: "see-only" | "see-and-change" | "everything" | "permissions";
-    /**
-     * @description A project a key is limited to, as its owner may see it: a reference by ID, and the names only
-     *     of a project the owner may know about (*a project you can't see* otherwise).
-     */
-    KeyProjectRef: {
-      /** @description The ID of the project. Only for a visible one. */
-      id?: string | null;
-      /** @description Its name. Only for a visible one. */
-      name?: string | null;
-      /** @description Its short name. Only for a visible one. */
-      short_name?: string | null;
-      /** @description `visible` or `hidden`. */
-      shown: components["schemas"]["ProjectShown"];
-    };
     /**
      * @description The type of a setting.
      * @enum {string}
@@ -4520,7 +4362,7 @@ export interface components {
         }
       | {
           /** @description The project above, or *a project you can't see*. */
-          from: components["schemas"]["KeyProjectRef"];
+          from: components["schemas"]["ProjectLabelBody"];
           /** @enum {string} */
           kind: "inherited";
         }
@@ -4538,7 +4380,7 @@ export interface components {
           /** @enum {string} */
           kind: "project";
           /** @description The project, or *a project you can't see*. */
-          project: components["schemas"]["KeyProjectRef"];
+          project: components["schemas"]["ProjectLabelBody"];
         }
       | {
           /** @enum {string} */
@@ -4595,7 +4437,7 @@ export interface components {
       issue_type?: string | null;
       /** @description The levels a cell can be set to, the lowest first. */
       levels: ("hidden" | "can-see" | "can-change")[];
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description The roles, in the order of roles: the columns. */
       roles: components["schemas"]["RoleRefBody"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
@@ -4609,7 +4451,7 @@ export interface components {
       issue_type?: string | null;
       /** @description The levels a cell can be set to, the lowest first. */
       levels: ("hidden" | "role-only" | "names")[];
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description The roles, in the order of roles: the columns. */
       roles: components["schemas"]["RoleRefBody"][];
       /** @description The fields or kinds, in the order of their catalogue: the rows. */
@@ -4691,26 +4533,165 @@ export interface components {
      * @enum {string}
      */
     Look: "badge" | "pill" | "plain-text" | "progress-bar" | "avatar";
-    /** @description An access key to make. */
-    MakeKeyBody: {
-      /** @description What it may do. */
-      choice: components["schemas"]["KeyChoice"];
+    /** @description What is done to every issue of the selection. */
+    ManyChangeActionBody:
+      | {
+          /** @description What to change. */
+          change: components["schemas"]["ManyChangeBody"];
+          /** @enum {string} */
+          kind: "change";
+        }
+      | {
+          /** @enum {string} */
+          kind: "move";
+          /** @description The project, by its ID or its short name. */
+          project: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "add_label";
+          /** @description The ID of the label. */
+          label: string;
+        }
+      | {
+          /** @description Which end the issues of the selection are. */
+          direction: components["schemas"]["Direction"];
+          /** @enum {string} */
+          kind: "add_relation";
+          /** @description The issue at the other end, by its readable or internal ID. */
+          other: string;
+          /** @description The ID of the kind of relation. */
+          relation_kind: string;
+        }
+      | {
+          /** @enum {string} */
+          kind: "delete";
+        };
+    /** @description What a person asks for in the fields of many issues: what is left out stays as it is. */
+    ManyChangeBody: {
       /**
-       * @description When it stops working (a date and time such as `2027-03-01T00:00:00Z`). Left out: the
-       *     default number of days from now. It cannot be later than the longest time.
+       * @description The IDs of the people the issues are assigned to from now on: all of them, not the ones to
+       *     add.
        */
-      expires_at?: string | null;
-      /** @description What the key is called. */
-      name: string;
-      /** @description The password of the person, asked again so a stolen session cannot make a key. */
-      password: string;
-      /** @description The single permissions; only with the choice `permissions`, and then at least one. */
-      permissions?: components["schemas"]["Permission"][];
+      assigned_to?: string[] | null;
+      /** @description The values of own fields to set, by the key (ID) of the field; `null` takes a value away. */
+      fields?: {
+        [key: string]: unknown;
+      };
+      priority?: components["schemas"]["Priority"] | null;
+      status?: components["schemas"]["Status"] | null;
+    };
+    /** @description What a row of the preview says will happen to the issue. */
+    ManyChangeDetailBody:
+      | {
+          /** @description The fields. */
+          fields: components["schemas"]["FieldChangeBody"][];
+          /** @enum {string} */
+          kind: "changes";
+        }
+      | {
+          /** @description The issue at the other end. */
+          issue: components["schemas"]["IssueRef"];
+          /** @enum {string} */
+          kind: "relation";
+          /** @description What the issue reads (*blocks*). */
+          name: string;
+        };
+    /** @description What happened to one issue of the selection. */
+    ManyChangeOutcomeBody: {
+      /** @description What the person asked for the issue by. */
+      address: string;
+      issue?: components["schemas"]["IssueRef"] | null;
+      skipped?: components["schemas"]["SkipReason"] | null;
+    };
+    /** @description What the change to many issues would do, with the sentence on top. */
+    ManyChangePreviewBody: {
+      /** @description Every issue of the selection, in the order asked. */
+      rows: components["schemas"]["ManyChangeRowBody"][];
+      /** @description The change is too big to wait for: it runs in the background and says when it is done. */
+      runs_in_background: boolean;
+      /** @description How many will change and how many are left alone. */
+      summary: components["schemas"]["PreviewSummaryBody"];
+    };
+    /** @description What a change to many issues did: at once, or the run that goes on in the background. */
+    ManyChangeResultBody: {
+      /** @description What happened to each issue, when it was done at once. */
+      outcomes: components["schemas"]["ManyChangeOutcomeBody"][];
+      run?: components["schemas"]["ManyChangeRunBody"] | null;
+    };
+    /** @description One issue of the preview: what will happen to it. */
+    ManyChangeRowBody: {
+      /** @description What the person asked for the issue by. */
+      address: string;
+      detail?: components["schemas"]["ManyChangeDetailBody"] | null;
+      issue?: components["schemas"]["IssueRef"] | null;
+      skipped?: components["schemas"]["SkipReason"] | null;
       /**
-       * @description The projects the key is limited to; leave empty for every project. The key counts in
-       *     them and in their sub-projects, and gives nothing for the whole organization.
+       * Format: int64
+       * @description The version the preview read; the change takes it back.
        */
-      projects?: string[];
+      version?: number | null;
+    };
+    /** @description How far a change that goes on in the background is. */
+    ManyChangeRunBody: {
+      /**
+       * Format: int32
+       * @description How many of those it changed.
+       */
+      changed: number;
+      /** @description When it was asked for. */
+      created_at: string;
+      /**
+       * Format: int32
+       * @description How many it has looked at.
+       */
+      done: number;
+      /** @description When it ended; left out while it goes on. */
+      finished_at?: string | null;
+      /** @description The ID of the run. */
+      id: string;
+      /** @description The first of the issues it left alone, with why. */
+      skipped: components["schemas"]["ManyChangeSkippedBody"][];
+      /**
+       * Format: int32
+       * @description How many issues it left alone in all.
+       */
+      skipped_count: number;
+      /** @description Where it is. */
+      status: components["schemas"]["ManyChangeStatus"];
+      /**
+       * Format: int32
+       * @description How many issues it has.
+       */
+      total: number;
+    };
+    /** @description Where a change that goes on in the background is, and nothing more. */
+    ManyChangeRunStatusBody: {
+      /** @description The ID of the run. */
+      id: string;
+      /** @description Where it is. */
+      status: components["schemas"]["ManyChangeStatus"];
+    };
+    /** @description An issue a run left alone. */
+    ManyChangeSkippedBody: {
+      issue?: components["schemas"]["IssueRef"] | null;
+      /** @description Why. */
+      reason: components["schemas"]["SkipReason"];
+    };
+    /**
+     * @description Where a run of a change to many issues is.
+     * @enum {string}
+     */
+    ManyChangeStatus: "queued" | "running" | "done" | "failed" | "stopped";
+    /** @description One issue of the change with the version the preview read. */
+    ManyChangeTargetBody: {
+      /** @description The issue. A change to more than 1,000 issues names them by their internal IDs. */
+      issue: string;
+      /**
+       * Format: int64
+       * @description The version of the issue the preview read.
+       */
+      version: number;
     };
     /**
      * @description Who is signed in, and what they may do for the whole organization (the menus of the browser app
@@ -5093,7 +5074,7 @@ export interface components {
         /** @description The public start of the key, after `bb_`. */
         prefix?: string | null;
         /** @description The projects the key is limited to; empty for every project. */
-        projects?: components["schemas"]["KeyProjectRef"][] | null;
+        projects?: components["schemas"]["ProjectLabelBody"][] | null;
       }[];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
@@ -5679,12 +5660,12 @@ export interface components {
      */
     Permission:
       | "see-projects"
-      | "make-projects"
-      | "make-sub-projects"
+      | "create-projects"
+      | "create-sub-projects"
       | "move-projects"
       | "change-project-settings"
       | "see-issues"
-      | "make-issues"
+      | "create-issues"
       | "change-issues"
       | "change-own-issues"
       | "comment"
@@ -5829,19 +5810,19 @@ export interface components {
           /** @enum {string} */
           kind: "hidden";
         };
-    /** @description The issues to look at and what would be done to them. */
-    PreviewBulkBody: {
-      /** @description What would be done. */
-      action: components["schemas"]["BulkActionBody"];
-      /** @description The issues, by their readable or internal IDs. */
-      issues: string[];
-    };
     /** @description What to preview: a new name, or the one it would be combined with. */
     PreviewChangeBody: {
       /** @description The ID of the tag or label it would be combined with. */
       into?: string | null;
       /** @description The new name, when it is renamed. */
       name?: string | null;
+    };
+    /** @description The issues to look at and what would be done to them. */
+    PreviewManyChangesBody: {
+      /** @description What would be done. */
+      action: components["schemas"]["ManyChangeActionBody"];
+      /** @description The issues, by their readable or internal IDs. */
+      issues: string[];
     };
     /** @description How many things a preview says will change and how many it leaves alone. */
     PreviewSummaryBody: {
@@ -5991,6 +5972,20 @@ export interface components {
       /** @description The letters of its issue IDs and address. */
       short_name?: string | null;
     };
+    /**
+     * @description A project a key is limited to, as its owner may see it: a reference by ID, and the names only
+     *     of a project the owner may know about (*a project you can't see* otherwise).
+     */
+    ProjectLabelBody: {
+      /** @description The ID of the project. Only for a visible one. */
+      id?: string | null;
+      /** @description Its name. Only for a visible one. */
+      name?: string | null;
+      /** @description Its short name. Only for a visible one. */
+      short_name?: string | null;
+      /** @description `visible` or `hidden`. */
+      shown: components["schemas"]["ProjectShown"];
+    };
     /** @description A project as a small reference: what a name in a sentence needs. */
     ProjectRef: {
       /** @description The ID of the project. */
@@ -6077,7 +6072,7 @@ export interface components {
       assignment: string;
       /** @description Whether it comes from above the place that was checked. */
       inherited: boolean;
-      project?: components["schemas"]["KeyProjectRef"] | null;
+      project?: components["schemas"]["ProjectLabelBody"] | null;
       /** @description Whom it is for. */
       who: components["schemas"]["ReasonWhoBody"];
     };
@@ -6333,6 +6328,11 @@ export interface components {
       /** @description The value has to be there. */
       required?: boolean;
     };
+    /**
+     * @description Which database the server uses.
+     * @enum {string}
+     */
+    RunningDatabaseBody: "built_in" | "sqlite" | "postgres";
     /** @description The new text of a comment, saved under the lock the editor holds. */
     SaveCommentBody: {
       /** @description The token the lock on the text was taken with. */
@@ -6854,7 +6854,7 @@ export interface operations {
       };
     };
   };
-  makeAccessKey: {
+  createAccessKey: {
     parameters: {
       query?: never;
       header?: never;
@@ -6863,7 +6863,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["MakeKeyBody"];
+        "application/json": components["schemas"]["CreateKeyBody"];
       };
     };
     responses: {
@@ -9789,335 +9789,6 @@ export interface operations {
       };
     };
   };
-  applyBulkChange: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ApplyBulkBody"];
-      };
-    };
-    responses: {
-      /** @description What happened to each issue, or the run. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BulkResultBody"];
-        };
-      };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description There is no such thing (resource.not_found). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  previewBulkChange: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PreviewBulkBody"];
-      };
-    };
-    responses: {
-      /** @description What would happen to each issue. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BulkPreviewBody"];
-        };
-      };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description There is no such thing (resource.not_found). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  getBulkRun: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID of the run. */
-        run: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description How far the run is. */
-      200: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BulkRunBody"];
-        };
-      };
-      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
-      304: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description There is no such thing (resource.not_found). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  cancelBulkRun: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID of the run. */
-        run: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Where the run is after the stop. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BulkRunStatusBody"];
-        };
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description There is no such thing (resource.not_found). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
   listPeopleToCheck: {
     parameters: {
       query?: {
@@ -11960,7 +11631,7 @@ export interface operations {
       };
     };
   };
-  makeField: {
+  createField: {
     parameters: {
       query?: never;
       header?: never;
@@ -12814,7 +12485,7 @@ export interface operations {
       };
     };
   };
-  makeGroup: {
+  createGroup: {
     parameters: {
       query?: never;
       header?: never;
@@ -13619,7 +13290,7 @@ export interface operations {
       };
     };
   };
-  makeIssueType: {
+  createIssueType: {
     parameters: {
       query?: never;
       header?: never;
@@ -14781,7 +14452,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -14860,6 +14531,87 @@ export interface operations {
       };
     };
   };
+  getIssueLabelsAndTags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
+        issue: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The tags and labels of the issue. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   removeLabel: {
     parameters: {
       query?: never;
@@ -14880,7 +14632,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */
@@ -15591,87 +15343,6 @@ export interface operations {
       };
     };
   };
-  getIssueSorting: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The readable ID (WEB-142) or the internal ID of the issue. */
-        issue: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The tags and labels of the issue. */
-      200: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
-        };
-      };
-      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
-      304: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description There is no such thing (resource.not_found). */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
   listSubIssues: {
     parameters: {
       query?: {
@@ -15782,7 +15453,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -15881,7 +15552,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["IssueSortingBody"];
+          "application/json": components["schemas"]["IssueLabelsAndTagsBody"];
         };
       };
       /** @description Not signed in (auth.not_signed_in). */
@@ -15942,7 +15613,7 @@ export interface operations {
       };
     };
   };
-  makeLabelGroup: {
+  createLabelGroup: {
     parameters: {
       query?: never;
       header?: never;
@@ -16201,7 +15872,7 @@ export interface operations {
       };
     };
   };
-  makeLabel: {
+  createLabel: {
     parameters: {
       query?: never;
       header?: never;
@@ -16602,7 +16273,7 @@ export interface operations {
       };
     };
   };
-  makeLayout: {
+  createLayout: {
     parameters: {
       query?: never;
       header?: never;
@@ -17040,6 +16711,335 @@ export interface operations {
       };
       /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  applyManyChanges: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ApplyManyChangesBody"];
+      };
+    };
+    responses: {
+      /** @description What happened to each issue, or the run. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ManyChangeResultBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  previewManyChanges: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PreviewManyChangesBody"];
+      };
+    };
+    responses: {
+      /** @description What would happen to each issue. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ManyChangePreviewBody"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  getManyChangeRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description How far the run is. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ManyChangeRunBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  stopManyChangeRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the run. */
+        run: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Where the run is after the stop. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ManyChangeRunStatusBody"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -18184,7 +18184,7 @@ export interface operations {
       };
     };
   };
-  makeProject: {
+  createProject: {
     parameters: {
       query?: never;
       header?: never;
@@ -18954,7 +18954,7 @@ export interface operations {
       };
     };
   };
-  makeIssue: {
+  createIssue: {
     parameters: {
       query?: never;
       header?: never;
@@ -19548,7 +19548,7 @@ export interface operations {
       };
     };
   };
-  makeSubProject: {
+  createSubProject: {
     parameters: {
       query?: never;
       header?: never;
@@ -19811,7 +19811,7 @@ export interface operations {
       };
     };
   };
-  makeRelationKind: {
+  createRelationKind: {
     parameters: {
       query?: never;
       header?: never;
@@ -20165,7 +20165,7 @@ export interface operations {
       };
     };
   };
-  makeRole: {
+  createRole: {
     parameters: {
       query?: never;
       header?: never;

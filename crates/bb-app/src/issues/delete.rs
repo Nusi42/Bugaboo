@@ -135,11 +135,11 @@ pub async fn restore_issue<S: AuthStore>(
         .ok_or(AppError::Refused(ErrorCode::NotFound))?;
     let assigned_to: Vec<UserId> = ctx
         .store()
-        .assignees(id)
+        .assigned_people(id)
         .await
         .map_err(|error| internal::<S>(&error))?
         .into_iter()
-        .map(|assignee| assignee.person)
+        .map(|assigned_person| assigned_person.person)
         .collect();
     let mut views = ctx.issue_views(&actor, held.clone(), project).await?;
     let view = ctx.issue_view(&mut views, &restored, &assigned_to).await?;

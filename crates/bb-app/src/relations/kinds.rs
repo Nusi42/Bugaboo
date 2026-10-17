@@ -18,7 +18,7 @@ use jiff::Timestamp;
 use serde_json::json;
 
 use super::types::{
-    ChangeRelationKind, MakeRelationKind, MakeStartingRelationKinds, RelationKindPage,
+    ChangeRelationKind, CreateRelationKind, CreateStartingRelationKinds, RelationKindPage,
     RelationKindView, RelationKindsQuery,
 };
 use crate::auth::{
@@ -68,15 +68,15 @@ pub async fn relation_kinds<S: AuthStore>(
     }))
 }
 
-/// Makes a kind of relation, at the end of the order.
+/// Creates a kind of relation, at the end of the order.
 ///
 /// # Errors
 /// `access.forbidden` without *Manage issue types, kinds of relation and layouts* for the whole
 /// organization, `request.invalid` for a name that cannot be one, `name.taken` for a name another
 /// kind has.
-pub async fn make_relation_kind<S: AuthStore>(
+pub async fn create_relation_kind<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: MakeRelationKind,
+    input: CreateRelationKind,
 ) -> Result<Authorized<RelationKindView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let held = ctx
@@ -271,9 +271,9 @@ pub async fn change_relation_kind<S: AuthStore>(
 ///
 /// # Errors
 /// Fails when the store fails.
-pub async fn make_starting_relation_kinds<S: AuthStore>(
+pub async fn create_starting_relation_kinds<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    _input: MakeStartingRelationKinds,
+    _input: CreateStartingRelationKinds,
 ) -> Result<(), AppError> {
     let existing = ctx
         .store()

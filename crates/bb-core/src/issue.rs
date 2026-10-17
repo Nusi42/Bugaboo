@@ -1,6 +1,6 @@
 //! Issues, issue types and statuses (ISS-01, ISS-02, ADR-0027 decision 5).
 //!
-//! An issue has an internal ID that never changes and a readable ID (`issue_key.rs`) that can.
+//! An issue has an internal ID that never changes and a readable ID (`readable_id.rs`) that can.
 //! Until workflows come (M4) every issue type uses the **starting workflow**, defined here once:
 //! *Open*, *In progress* and *Done*, each in a status group, and every status can follow every
 //! other. Entering the group *Done* sets the closed date; leaving it clears it.
@@ -8,12 +8,12 @@
 use jiff::Timestamp;
 
 use crate::id::{IssueId, IssueTypeId, ProjectId, UserId};
-use crate::issue_key::IssueCode;
 use crate::message::{self, MessageKey};
 use crate::personal::Entity;
+use crate::readable_id::IssueCode;
 
 /// The most people an issue is assigned to.
-pub const ASSIGNEES_MAX: usize = 20;
+pub const ASSIGNED_PEOPLE_MAX: usize = 20;
 
 words! {
     /// The group a status belongs to. Searches, boards and progress ask for the group, so a
@@ -255,7 +255,7 @@ pub struct Issue {
 
 /// One person an issue is assigned to; an issue can be assigned to several people.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
-pub struct IssueAssignee {
+pub struct AssignedPerson {
     /// The issue.
     #[not_personal]
     pub issue: IssueId,

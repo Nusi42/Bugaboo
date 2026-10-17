@@ -9,15 +9,15 @@
 use bb_app::issues::{InTrash, IssueFound, IssueStore};
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::{Issue, IssueAlias, IssueAssignee, IssueIcon, IssueType, Priority, Status};
-use bb_core::issue_key::IssueCode;
+use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority, Status};
+use bb_core::readable_id::IssueCode;
 use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query, SelectStatement, UpdateStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Database, LockClass, Reader, Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
-use crate::schema::{IssueAliasRow, IssueAssigneeRow, IssueCounterRow, IssueRow, IssueTypeRow};
+use crate::schema::{AssignedPersonRow, IssueAliasRow, IssueCounterRow, IssueRow, IssueTypeRow};
 
 fn type_select() -> SelectStatement {
     let mut select = Query::select();
@@ -94,11 +94,11 @@ pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
     })
 }
 
-fn read_assignee(row: &Row) -> Result<IssueAssignee, StoreError> {
-    Ok(IssueAssignee {
-        issue: row.id::<IssueId>(IssueAssigneeRow::Issue)?,
-        person: row.id::<UserId>(IssueAssigneeRow::Person)?,
-        added_at: row.time(IssueAssigneeRow::AddedAt)?,
+fn read_assigned_person(row: &Row) -> Result<AssignedPerson, StoreError> {
+    Ok(AssignedPerson {
+        issue: row.id::<IssueId>(AssignedPersonRow::Issue)?,
+        person: row.id::<UserId>(AssignedPersonRow::Person)?,
+        added_at: row.time(AssignedPersonRow::AddedAt)?,
     })
 }
 
@@ -179,58 +179,58 @@ async fn code_taken_in(
     Ok(reader.fetch_optional(&select).await?.is_some())
 }
 
-async fn assignees_of_in(
+async fn assigned_people_of_in(
     reader: &mut impl Reader,
     issues: &[IssueId],
-) -> Result<Vec<IssueAssignee>, StoreError> {
+) -> Result<Vec<AssignedPerson>, StoreError> {
     if issues.is_empty() {
         return Ok(Vec::new());
     }
     let mut select = Query::select();
     select
         .columns([
-            IssueAssigneeRow::Issue,
-            IssueAssigneeRow::Person,
-            IssueAssigneeRow::AddedAt,
+            AssignedPersonRow::Issue,
+            AssignedPersonRow::Person,
+            AssignedPersonRow::AddedAt,
         ])
-        .from(IssueAssigneeRow::Table)
+        .from(AssignedPersonRow::Table)
         .and_where(
-            Expr::col(IssueAssigneeRow::Issue).is_in(
+            Expr::col(AssignedPersonRow::Issue).is_in(
                 issues
                     .iter()
                     .map(|issue| issue.stored())
                     .collect::<Vec<_>>(),
             ),
         )
-        .order_by(IssueAssigneeRow::AddedAt, Order::Asc)
-        .order_by(IssueAssigneeRow::Person, Order::Asc);
+        .order_by(AssignedPersonRow::AddedAt, Order::Asc)
+        .order_by(AssignedPersonRow::Person, Order::Asc);
     reader
         .fetch_all(&select)
         .await?
         .iter()
-        .map(read_assignee)
+        .map(read_assigned_person)
         .collect()
 }
 
-async fn insert_assignees(
+async fn insert_assigned_people(
     transaction: &mut Transaction,
-    assignees: &[IssueAssignee],
+    assigned_people: &[AssignedPerson],
 ) -> Result<(), StoreError> {
-    for assignee in assignees {
+    for assigned_person in assigned_people {
         let mut insert = Query::insert();
         insert
-            .into_table(IssueAssigneeRow::Table)
+            .into_table(AssignedPersonRow::Table)
             .columns([
-                IssueAssigneeRow::Issue,
-                IssueAssigneeRow::Person,
-                IssueAssigneeRow::AddedAt,
+                AssignedPersonRow::Issue,
+                AssignedPersonRow::Person,
+                AssignedPersonRow::AddedAt,
             ])
             .values([
-                Expr::val(assignee.issue.stored()),
-                Expr::val(assignee.person.stored()),
-                Expr::val(to_micros(assignee.added_at)),
+                Expr::val(assigned_person.issue.stored()),
+                Expr::val(assigned_person.person.stored()),
+                Expr::val(to_micros(assigned_person.added_at)),
             ])
-            .map_err(|_| StoreError::Corrupt("an assignee"))?;
+            .map_err(|_| StoreError::Corrupt("an assigned person"))?;
         transaction.execute(&insert).await?;
     }
     Ok(())
@@ -285,11 +285,11 @@ impl IssueStore for AuthStorage {
         code_taken_in(transaction, project, &code).await
     }
 
-    async fn assignees_in(
+    async fn assigned_people_in(
         transaction: &mut Transaction,
         issue: IssueId,
-    ) -> Result<Vec<IssueAssignee>, StoreError> {
-        assignees_of_in(transaction, &[issue]).await
+    ) -> Result<Vec<AssignedPerson>, StoreError> {
+        assigned_people_of_in(transaction, &[issue]).await
     }
 
     async fn issue_codes_in(
@@ -353,8 +353,11 @@ impl IssueStore for AuthStorage {
             .collect()
     }
 
-    async fn assignees_of(&self, issues: &[IssueId]) -> Result<Vec<IssueAssignee>, StoreError> {
-        assignees_of_in(&mut self.database(), issues).await
+    async fn assigned_people_of(
+        &self,
+        issues: &[IssueId],
+    ) -> Result<Vec<AssignedPerson>, StoreError> {
+        assigned_people_of_in(&mut self.database(), issues).await
     }
 
     async fn insert_issue_type(
@@ -410,7 +413,7 @@ impl IssueStore for AuthStorage {
     async fn insert_issue(
         transaction: &mut Transaction,
         issue: &Issue,
-        assignees: &[IssueAssignee],
+        assigned_people: &[AssignedPerson],
     ) -> Result<(), StoreError> {
         let mut insert = Query::insert();
         insert
@@ -449,7 +452,7 @@ impl IssueStore for AuthStorage {
             ])
             .map_err(|_| StoreError::Corrupt("an issue"))?;
         transaction.execute(&insert).await?;
-        insert_assignees(transaction, assignees).await
+        insert_assigned_people(transaction, assigned_people).await
     }
 
     async fn update_issue(
@@ -492,17 +495,17 @@ impl IssueStore for AuthStorage {
         Ok(transaction.execute(&update).await? > 0)
     }
 
-    async fn replace_assignees(
+    async fn replace_assigned_people(
         transaction: &mut Transaction,
         issue: IssueId,
-        assignees: &[IssueAssignee],
+        assigned_people: &[AssignedPerson],
     ) -> Result<(), StoreError> {
         let mut delete = Query::delete();
         delete
-            .from_table(IssueAssigneeRow::Table)
-            .and_where(Expr::col(IssueAssigneeRow::Issue).eq(issue.stored()));
+            .from_table(AssignedPersonRow::Table)
+            .and_where(Expr::col(AssignedPersonRow::Issue).eq(issue.stored()));
         transaction.execute(&delete).await?;
-        insert_assignees(transaction, assignees).await
+        insert_assigned_people(transaction, assigned_people).await
     }
 
     async fn set_issue_deleted(

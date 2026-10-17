@@ -34,7 +34,7 @@ function CreatedLink({ email, linkPath }: CreatedLinkProps) {
   );
 }
 
-/** *Make an invitation*: the address of the person, and then the link to send them. */
+/** *Create an invitation*: the address of the person, and then the link to send them. */
 export function CreateInvitation() {
   const [email, setEmail] = useState("");
   const create = api.query.useMutation("post", "/api/v1/auth/invitations", {
