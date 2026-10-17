@@ -48,6 +48,15 @@ export type {
   Timers,
 } from "./editing.ts";
 export { appPaths } from "./app-paths.generated.ts";
+export {
+  handleChangeEveryDays,
+  handleMax,
+  notificationKeepDays,
+  notificationSettings,
+  signUpLinkHours,
+  signUpResendMinutes,
+  testEmailEverySeconds,
+} from "./notifications.generated.ts";
 export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export { decimalDigits, decimalParts, ownFieldPartPrefix } from "./fields.generated.ts";
@@ -63,6 +72,8 @@ export {
   layoutKindWords,
   lookWords,
   newIssuePriority,
+  notificationFilterWords,
+  notificationKindWords,
   priorityWords,
   statusGroupWords,
 } from "./words.generated.ts";

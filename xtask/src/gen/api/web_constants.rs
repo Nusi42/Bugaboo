@@ -13,7 +13,7 @@ use anyhow::{Context as _, bail};
 
 use super::TS_HEADER;
 use crate::checks::arch_settings::{CATALOG_PATH, REGISTRY_FOLDER};
-use crate::rust_registry::{ChoiceLists, read_registry};
+use crate::rust_registry::{ChoiceLists, SettingDecl, read_registry};
 use crate::source::Source;
 
 const APP_PATHS_SOURCE: &str = "crates/bb-core/src/app_paths.rs";
@@ -48,9 +48,9 @@ fn camel_case(key: &str) -> String {
     name
 }
 
-/// The keys, the choices and the defaults of the registry as constants for the browser client. The
+/// The settings of the registry in the order of the file, and the lists of choices by name. The
 /// settings that exist only for tests are left out.
-pub(super) fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
+pub(super) fn registry(sources: &[Source]) -> anyhow::Result<(Vec<SettingDecl>, ChoiceLists)> {
     let mut settings = Vec::new();
     let mut lists = ChoiceLists::new();
     let mut seen = false;
@@ -77,6 +77,13 @@ pub(super) fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
     if settings.is_empty() {
         bail!("{REGISTRY_FOLDER} declares no setting");
     }
+    Ok((settings, lists))
+}
+
+/// The keys, the choices and the defaults of the registry as constants for the browser client. The
+/// settings that exist only for tests are left out.
+pub(super) fn setting_keys(sources: &[Source]) -> anyhow::Result<String> {
+    let (settings, lists) = registry(sources)?;
     let mut out = format!(
         "{TS_HEADER}/** The key of every setting of the registry (ADR-0018), by the name the app uses for it. */
 export const settingKeys = {{
@@ -155,7 +162,7 @@ fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<Stri
 /// a priority that a value must be one of), by the name of their
 /// schema in the API description. The type of each stays the generated one; only the list of words
 /// is made here, so it is never written a second time.
-const WORD_LISTS: [&str; 10] = [
+const WORD_LISTS: [&str; 12] = [
     "IssueIcon",
     "StatusGroup",
     "Priority",
@@ -166,6 +173,8 @@ const WORD_LISTS: [&str; 10] = [
     "ChoiceColor",
     "LayoutKind",
     "HistoryTab",
+    "NotificationKind",
+    "NotificationFilter",
 ];
 
 /// `IssueIcon` as `issueIconWords`.
@@ -611,18 +620,12 @@ pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
         text_const(text, name)
             .with_context(|| format!("{APP_PATHS_SOURCE} has no `const {name}` that is text"))
     };
-    let (issue, invitation, confirm, sign_in) = (
-        path("ISSUE")?,
-        path("INVITATION")?,
-        path("CONFIRM_ADDRESS")?,
-        path("SIGN_IN")?,
-    );
+    let (issue, invitation, sign_in) = (path("ISSUE")?, path("INVITATION")?, path("SIGN_IN")?);
     Ok(format!(
         "{TS_HEADER}/** The addresses of the app pages that the server links to (invitations, e-mails). */
 export const appPaths = {{
   issue: {issue:?},
   invitation: {invitation:?},
-  confirmAddress: {confirm:?},
   signIn: {sign_in:?},
 }} as const;
 "
@@ -645,6 +648,9 @@ export const trustedTypesPolicyName = \"{name}\";
 "
     ))
 }
+
+mod notifications;
+pub(super) use notifications::notifications;
 
 #[cfg(test)]
 mod tests;

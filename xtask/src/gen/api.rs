@@ -25,6 +25,8 @@
 //!   as `src/safe-html.generated.ts`, and their TypeScript type is `SafeHtml`;
 //! - the addresses of the app pages the server links to (`crates/bb-core/src/app_paths.rs`) are
 //!   written as `src/app-paths.generated.ts`;
+//! - the table of *Customize* and the numbers that the texts of notifications, signing up and
+//!   handles say are read as Rust source into `src/notifications.generated.ts`;
 //! - the name of the Trusted Types policy (`crates/bb-api-words`) is read as Rust source and
 //!   written as `src/browser.generated.ts`.
 //!
@@ -72,6 +74,9 @@ pub(crate) const WORDS_PATH: &str = "web/packages/api-client/src/words.generated
 pub(crate) const BROWSER_NAMES_PATH: &str = "web/packages/api-client/src/browser.generated.ts";
 /// The addresses of the app pages the server links to.
 pub(crate) const APP_PATHS_PATH: &str = "web/packages/api-client/src/app-paths.generated.ts";
+/// What the texts of notifications, signing up and handles say: numbers and the table of *Customize*.
+pub(crate) const NOTIFICATIONS_PATH: &str =
+    "web/packages/api-client/src/notifications.generated.ts";
 /// The user docs page.
 pub(crate) const COOKIES_PAGE: &str = "userDocs/cookies.md";
 
@@ -93,6 +98,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SAFE_HTML_PATH,
         BROWSER_NAMES_PATH,
         APP_PATHS_PATH,
+        NOTIFICATIONS_PATH,
         COOKIES_PAGE,
     ]
 }
@@ -153,6 +159,14 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
         Generated::new(
             APP_PATHS_PATH,
             format_with_oxfmt(repo, APP_PATHS_PATH, &web_constants::app_paths(&sources)?)?,
+        ),
+        Generated::new(
+            NOTIFICATIONS_PATH,
+            format_with_oxfmt(
+                repo,
+                NOTIFICATIONS_PATH,
+                &web_constants::notifications(&sources, &spec)?,
+            )?,
         ),
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
     ])

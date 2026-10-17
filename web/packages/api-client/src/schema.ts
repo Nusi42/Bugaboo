@@ -5401,6 +5401,11 @@ export interface components {
       text?: string | null;
     };
     /**
+     * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
+     * @enum {string}
+     */
+    NotificationFilter: "all" | "unread" | "mentions";
+    /**
      * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.
      * @enum {string}
      */

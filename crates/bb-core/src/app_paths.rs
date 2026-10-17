@@ -12,9 +12,6 @@ pub const ISSUE: &str = "/issues/$issue";
 /// The page that takes an invitation link (the secret follows the `#`, so it never reaches a log).
 pub const INVITATION: &str = "/invitation";
 
-/// The page that takes the link that confirms an e-mail address (the secret follows the `#`).
-pub const CONFIRM_ADDRESS: &str = "/confirm-address";
-
 /// The page to sign in.
 pub const SIGN_IN: &str = "/sign-in";
 

@@ -14,6 +14,7 @@ use bb_api_words::marks;
 use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
 use bb_core::fields::Field;
 use bb_core::history::HistoryTab;
+use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
 use utoipa::openapi::path::{Operation as OperationSpec, PathItem};
@@ -43,7 +44,15 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         description = "The API of Bugaboo. The browser app uses exactly this API. Every error \
             is application/problem+json with a stable code and a message key."
     ),
-    components(schemas(Problem, ErrorCode, ConflictProblem, Field, HistoryTab)),
+    components(schemas(
+        Problem,
+        ErrorCode,
+        ConflictProblem,
+        Field,
+        HistoryTab,
+        NotificationFilter,
+        NotificationKind
+    )),
     tags(
         (name = "server", description = "The server itself."),
         (name = "auth", description = "Signing in, sessions, second step, passkeys, invitations and setup."),
