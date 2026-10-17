@@ -24,6 +24,19 @@ pub struct ProjectStatusesQuery {
 pub struct ProjectStatuses {
     /// The statuses.
     pub statuses: Vec<StatusView>,
+    /// The status changes by their words: each status a change ends in with the text of its
+    /// button, once for the same status and text in several workflows, in the order the workflows
+    /// list them. What a choice of a status change for many issues offers.
+    pub changes: Vec<ProjectChange>,
+}
+
+/// A status change of some workflow of a project: where it leads and what its button says.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct ProjectChange {
+    /// The status it ends in.
+    pub to: StatusView,
+    /// The text of the button.
+    pub button: String,
 }
 
 impl Masked for ProjectStatuses {}
@@ -50,6 +63,7 @@ pub async fn project_statuses<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?;
     let mut statuses: Vec<StatusView> = Vec::new();
+    let mut changes: Vec<ProjectChange> = Vec::new();
     for issue_type in types.iter().filter(|each| each.retired_at.is_none()) {
         let workflow = ctx.workflow_in_force(&chain, Some(issue_type.id)).await?;
         for status in &workflow.statuses {
@@ -58,6 +72,18 @@ pub async fn project_statuses<S: AuthStore>(
                 statuses.push(shown);
             }
         }
+        for change in &workflow.changes {
+            let Some(to) = workflow.status(&change.to) else {
+                continue;
+            };
+            let shown = ProjectChange {
+                to: StatusView::from(to),
+                button: change.button.clone(),
+            };
+            if !changes.contains(&shown) {
+                changes.push(shown);
+            }
+        }
     }
-    Ok(held.authorize(ProjectStatuses { statuses }))
+    Ok(held.authorize(ProjectStatuses { statuses, changes }))
 }

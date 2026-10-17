@@ -6558,6 +6558,11 @@ export interface components {
      *     name or group is listed for each.
      */
     ProjectStatusesBody: {
+      /**
+       * @description The status changes by their words, once for the same status and text, in the order the
+       *     workflows list them: what a choice of a status change for many issues offers.
+       */
+      changes: components["schemas"]["ProjectChangeBody"][];
       /** @description The statuses, in the order the workflows list them. */
       statuses: components["schemas"]["StatusRef"][];
     };

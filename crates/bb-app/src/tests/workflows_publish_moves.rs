@@ -226,3 +226,37 @@ async fn wf_02_the_preview_names_what_the_publisher_sees_and_only_counts_the_res
     assert_eq!(dropped.named.len(), 1);
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_09_a_project_lists_the_status_changes_of_its_workflows_once_by_their_words() -> Outcome
+{
+    let world = World::new().await?;
+    a_project(&world, "ACME").await?;
+    let listed = crate::workflows::project_statuses(
+        &world.ctx(),
+        crate::workflows::ProjectStatusesQuery {
+            session_token: world.admin.session_token.clone(),
+            project: "ACME".to_owned(),
+        },
+    )
+    .await?
+    .into_value();
+    let words = |to: &str| -> Vec<String> {
+        listed
+            .changes
+            .iter()
+            .filter(|each| each.to.key == key(to))
+            .map(|each| each.button.clone())
+            .collect()
+    };
+    // Bug and Simple both have "Mark as done"; it is listed once. Only Bug leads to Testing.
+    assert_eq!(words("testing"), ["Send to testing"]);
+    assert_eq!(
+        words(DONE)
+            .iter()
+            .filter(|each| *each == "Mark as done")
+            .count(),
+        1
+    );
+    Ok(())
+}

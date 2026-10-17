@@ -24,7 +24,7 @@ mod write;
 pub use editor::{workflow_editor, workflows};
 pub use preview::publish_preview;
 pub use publish::publish_workflow;
-pub use read::{ProjectStatuses, ProjectStatusesQuery, project_statuses};
+pub use read::{ProjectChange, ProjectStatuses, ProjectStatusesQuery, project_statuses};
 pub use starting::{CreateStartingWorkflows, create_starting_workflows};
 pub use store::{DirectoryRows, StatusFilter, WorkflowStore};
 pub use try_it::try_workflow;

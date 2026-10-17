@@ -91,6 +91,18 @@ pub(crate) fn status_in(text: Option<&str>) -> Result<Option<StatusKey>, ApiErro
 pub(crate) struct ProjectStatusesBody {
     /// The statuses, in the order the workflows list them.
     statuses: Vec<StatusRef>,
+    /// The status changes by their words, once for the same status and text, in the order the
+    /// workflows list them: what a choice of a status change for many issues offers.
+    changes: Vec<ProjectChangeBody>,
+}
+
+/// A status change of some workflow of the project.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct ProjectChangeBody {
+    /// The status it ends in.
+    to: StatusRef,
+    /// The text of the button.
+    button: String,
 }
 
 impl Masked for ProjectStatusesBody {}
@@ -99,6 +111,14 @@ impl From<&ProjectStatuses> for ProjectStatusesBody {
     fn from(list: &ProjectStatuses) -> Self {
         Self {
             statuses: list.statuses.iter().map(StatusRef::from).collect(),
+            changes: list
+                .changes
+                .iter()
+                .map(|change| ProjectChangeBody {
+                    to: StatusRef::from(&change.to),
+                    button: change.button.clone(),
+                })
+                .collect(),
         }
     }
 }
