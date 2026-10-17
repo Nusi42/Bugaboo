@@ -270,7 +270,7 @@ pub struct WorkflowEditor {
     /// The issue type of the place; none for all types.
     pub issue_type: Option<IssueTypeRef>,
     /// The workflow set at this place. Without it the place uses the workflow it inherits (or the
-    /// starting workflow), and *Create* makes one.
+    /// starting workflow), and *Create* creates one.
     pub workflow: Option<WorkflowSlot>,
     /// Where the workflow that counts is set, when it is another place.
     pub inherited_from: Option<InheritedFrom>,

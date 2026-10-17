@@ -1,5 +1,5 @@
 //! The starter workflows of a new organization (WF-06, ADR-0031 decision 5, M4-Q1): *Simple*,
-//! *Bug* and *Development*, made once at the first start from the one definition in `bb-core`.
+//! *Bug* and *Development*, created once at the first start from the one definition in `bb-core`.
 //!
 //! *Simple* is used for every issue type that has no workflow of its own, *Bug* for the issue type
 //! *Bug* and *Development* for *Feature*. An organization that ran M3 has issues already and
@@ -30,15 +30,15 @@ pub async fn create_starting_workflows<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     _input: CreateStartingWorkflows,
 ) -> Result<(), AppError> {
-    // New: no workflow was made and no issue was ever written.
+    // New: no workflow was created and no issue was ever written.
     let failed = |error| internal::<S>(&error);
-    let none_made = ctx
+    let none_created = ctx
         .store()
         .workflow_headers()
         .await
         .map_err(failed)?
         .is_empty();
-    if !none_made || ctx.store().has_issues().await.map_err(failed)? {
+    if !none_created || ctx.store().has_issues().await.map_err(failed)? {
         return Ok(());
     }
     let types = ctx
@@ -56,14 +56,14 @@ pub async fn create_starting_workflows<S: AuthStore>(
             version: FIRST_VERSION,
         };
         if starter.name == SIMPLE.name {
-            // Every issue type that has no workflow of its own, also one made later.
+            // Every issue type that has no workflow of its own, also one created later.
             uses.push(WorkflowUse {
                 project: None,
                 issue_type: None,
                 workflow: workflow.id,
             });
         } else {
-            // The issue types it is for, found by the name they were made with.
+            // The issue types it is for, found by the name they were created with.
             for wanted in starter.used_by {
                 let name = Message::from(*wanted).render();
                 if let Some(found) = types.iter().find(|each| each.name == name) {
@@ -89,7 +89,7 @@ pub async fn create_starting_workflows<S: AuthStore>(
             Box::pin(async move {
                 S::lock_policy(transaction).await?;
                 // Two servers that start together both saw a new organization above; the one that
-                // gets the lock second finds them made and stops, which is not a failure.
+                // gets the lock second finds them created and stops, which is not a failure.
                 if !S::workflow_headers_in(transaction).await?.is_empty() {
                     return Err(S::aborted());
                 }

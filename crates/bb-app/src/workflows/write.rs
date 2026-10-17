@@ -1,4 +1,4 @@
-//! Changing which workflow a place uses: making the workflow of a place (a copy of the one that
+//! Changing which workflow a place uses: creating the workflow of a place (a copy of the one that
 //! counts there), saying that a place uses another one, and taking a workflow away (WF-01,
 //! PRJ-02, ADR-0031 decisions 2 and 4).
 //!
@@ -73,7 +73,7 @@ pub(super) fn what_of(id: WorkflowId) -> Result<EditWhat, AppError> {
 ///
 /// # Errors
 /// `resource.not_found` for a project the person may not know about, `access.forbidden` without
-/// *Manage workflows* at the place, `edit.version_changed` when somebody made the workflow at the
+/// *Manage workflows* at the place, `edit.version_changed` when somebody created the workflow at the
 /// same moment.
 pub async fn create_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
