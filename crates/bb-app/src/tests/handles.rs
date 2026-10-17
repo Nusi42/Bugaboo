@@ -332,12 +332,12 @@ async fn m3_f70_a_group_or_a_role_cannot_be_named_like_the_handle_of_a_person() 
     let ada = token(&crew.world);
     let taken = Some(AppError::Refused(ErrorCode::NameTaken));
     let group = |name: &'static str| {
-        let (world, token) = (&crew.world, ada.clone());
+        let (world, session) = (&crew.world, ada.clone());
         async move {
             create_group(
                 &world.ctx(),
                 CreateGroup {
-                    session_token: token,
+                    session_token: session,
                     name: name.to_owned(),
                 },
             )
