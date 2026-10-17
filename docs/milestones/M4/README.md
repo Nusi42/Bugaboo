@@ -129,7 +129,8 @@ As in M3: a package changes only what it owns; shared files get added lines only
 | M3-F175, F181, F172 (other keys for resizing a window, if a test with a screen reader shows the clash) | WP-07 |
 | M1-F38 (confirming an e-mail address at sign-up) | WP-08 |
 | M3-F102, F105, F107, F173, F176, F179, F180, F184…F189, F100 (decided in WP-01) | WP-09 |
-| M3-F93, F111, F113, F121 | WP-10 |
+| M3-F93, F111, F113 | WP-10 |
+| M3-F121 (decided: not in M4, moved to M5 automation) | WP-10 |
 | M3-F154, F155 | the package that touches those files next (WP-04 and WP-06) |
 
 **Not in M4:** M1-F49 and M1-F53 (a warning for a sign-in from a new network: M9, with operations), M2-F45 (only if the benchmarks show it), M1-F10 and M2-F03 (done in M3 WP-02; WP-01 marks them).
