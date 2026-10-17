@@ -246,8 +246,8 @@ pub struct Notification {
     /// Where its e-mail is.
     #[not_personal]
     pub mail: MailState,
-    /// When the person read it; unread while empty.
-    #[not_personal]
+    /// When the person read it; unread while empty. It says what a person did and when.
+    #[personal(category = "activity", basis = "legitimate_interests")]
     pub read_at: Option<Timestamp>,
 }
 

@@ -11152,7 +11152,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.host.name", "Mail server"),
     (
         "setting.mail.port.help",
-        "The port of the mail server. Usually 587 when the connection switches to encryption, and 465 when it is encrypted from the start.",
+        "The port of the mail server, as the provider of your mail server tells you. It depends on how the connection is protected.",
     ),
     ("setting.mail.port.name", "Mail server port"),
     (
@@ -11178,7 +11178,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.mail.username.name", "Mail server user name"),
     (
         "setting.notifications.assigned-by-mail.help",
-        "Send me an e-mail when an issue is assigned to me. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when an issue is assigned to you. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.assigned-by-mail.name",
@@ -11186,7 +11186,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.assigned-in-app.help",
-        "Tell me under Notifications when an issue is assigned to me.",
+        "Tells you under Notifications when an issue is assigned to you.",
     ),
     (
         "setting.notifications.assigned-in-app.name",
@@ -11194,7 +11194,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.edit-notice-by-mail.help",
-        "Send me an e-mail when somebody asks me to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when somebody asks you to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.edit-notice-by-mail.name",
@@ -11202,7 +11202,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.edit-notice-in-app.help",
-        "Tell me under Notifications when somebody asks me to finish editing a text, or takes the editing over.",
+        "Tells you under Notifications when somebody asks you to finish editing a text, or takes the editing over.",
     ),
     (
         "setting.notifications.edit-notice-in-app.name",
@@ -11210,7 +11210,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.followed-activity-by-mail.help",
-        "Send me an e-mail when somebody else changes the status of an issue I follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when somebody else changes the status of an issue you follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.followed-activity-by-mail.name",
@@ -11218,7 +11218,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.followed-activity-in-app.help",
-        "Tell me under Notifications when somebody else changes the status of an issue I follow, or comments on it or adds a file to it.",
+        "Tells you under Notifications when somebody else changes the status of an issue you follow, or comments on it or adds a file to it.",
     ),
     (
         "setting.notifications.followed-activity-in-app.name",
@@ -11226,7 +11226,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.followed-fields-by-mail.help",
-        "Send me an e-mail when somebody else changes other fields of an issue I follow. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when somebody else changes other fields of an issue you follow. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.followed-fields-by-mail.name",
@@ -11234,7 +11234,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.followed-fields-in-app.help",
-        "Tell me under Notifications when somebody else changes other fields of an issue I follow.",
+        "Tells you under Notifications when somebody else changes other fields of an issue you follow.",
     ),
     (
         "setting.notifications.followed-fields-in-app.name",
@@ -11242,7 +11242,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.mentioned-by-mail.help",
-        "Send me an e-mail when a comment mentions me, or a group or role I am in. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when a comment mentions you, or a group or role you are in. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.mentioned-by-mail.name",
@@ -11250,7 +11250,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.mentioned-in-app.help",
-        "Tell me under Notifications when a comment mentions me, or a group or role I am in.",
+        "Tells you under Notifications when a comment mentions you, or a group or role you are in.",
     ),
     (
         "setting.notifications.mentioned-in-app.name",
@@ -11258,7 +11258,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-by-mail.help",
-        "Send me an e-mail when a change to many issues that I asked for has ended, or when work I asked for gave up. E-mail goes only when your organization has switched it on.",
+        "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
     ),
     (
         "setting.notifications.run-ended-by-mail.name",
@@ -11266,7 +11266,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.notifications.run-ended-in-app.help",
-        "Tell me under Notifications when a change to many issues that I asked for has ended, or when work I asked for gave up.",
+        "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
     ),
     (
         "setting.notifications.run-ended-in-app.name",
@@ -11329,7 +11329,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("setting.region.time-zone.name", "Time zone"),
     (
         "setting.security.log-keep-days.help",
-        "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out. Between 30 days and 10 years (3650 days).",
+        "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
     ),
     (
         "setting.security.log-keep-days.name",
