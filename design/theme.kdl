@@ -3312,10 +3312,12 @@ part "bottom-bar.tabs" {
     use "list-reset"
 }
 
+// A tab is as wide as its words need and shares the rest of the bar: the five tabs of a small phone
+// do not have the same width, because *Notifications* is longer than *New*.
 part "bottom-bar.tab" {
     display flex
-    flex 1
-    min-width 0
+    flex "1 1 auto"
+    min-width min-content
 }
 
 part "bottom-bar.item" {
@@ -3325,7 +3327,7 @@ part "bottom-bar.item" {
     justify-content center
     box-sizing border-box
     min-height "$size-bar"
-    padding "$space-2"
+    padding "$space-2 $space-1"
     use "bare-button"
     color "$fg"
     font-size "$fs-base"
@@ -3345,11 +3347,13 @@ part "bottom-bar.item[focus-visible]" {
     use "ring-inside"
 }
 
+// A word is never broken inside: a tab is at least as wide as its longest word (five tabs, larger text,
+// a small phone), and the words of a tab that has several wrap between words only.
 part "bottom-bar.label" {
     max-width "100%"
-    overflow hidden
-    text-overflow ellipsis
-    white-space nowrap
+    overflow-wrap normal
+    hyphens manual
+    text-align center
 }
 
 part "top-bar" {
@@ -11225,4 +11229,350 @@ part "form-section.title" {
     color "$fg"
     font-size "$fs-md"
     font-weight "$weight-bold"
+}
+
+// ───────────── Notifications, Customize and the mail server (M4 WP-08) ─────────────
+//
+// The page of notifications: a bar with the filters, then one box for each issue with its
+// notifications in it. An unread notification has the soft accent color and an accent edge: color
+// says state (R4), and the word *New* says it too (R5). The count on the menu is the one filled
+// pill of the menu.
+
+part "notifications-bar" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content flex-end
+    gap "$space-2 $space-4"
+}
+
+part "notification-group" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$pad-box"
+    use "surface-box"
+    min-width 0
+}
+
+part "notification-group.head" {
+    display flex
+    flex-wrap wrap
+    align-items baseline
+    gap "$space-1 $space-3"
+    margin 0
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "notification" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border-inline-start "$size-edge solid transparent"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    min-width 0
+}
+
+part "notification[state=unread]" {
+    border-inline-start-color "$accent"
+    background "$accent-soft"
+}
+
+part "notification.head" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2 $space-3"
+}
+
+part "notification.new" {
+    color "$accent-fg"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+}
+
+part "notification.sentences" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+    line-height "$lh-body"
+    color "$fg"
+    font-size "$fs-md"
+    overflow-wrap anywhere
+}
+
+part "notification.actions" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
+// The number of unread notifications on the menu and on the bar of a phone.
+part "nav-item.count" "bottom-bar.count" {
+    display inline-flex
+    align-items center
+    justify-content center
+    box-sizing border-box
+    min-width "$size-target-least"
+    padding "0 $space-2"
+    border-radius "$r-pill"
+    background "$accent"
+    color "$on-accent"
+    font-size "$fs-sm"
+    font-weight "$weight-bold"
+    line-height "$lh-snug"
+    forced {
+        border "$border-width solid"
+    }
+}
+
+// The icon of a tab of the bar, with the number after it.
+part "bottom-bar.icon" {
+    order -1
+    display inline-flex
+    align-items center
+    gap "$space-1"
+}
+
+// Customize: one row for each kind of event, with its two switches.
+part "customize-row" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    justify-content space-between
+    gap "$space-2 $space-5"
+    padding "$space-3"
+    margin 0
+    use "surface-box"
+}
+
+part "customize-row.kind" {
+    flex-grow 1
+    flex-basis "$size-menu"
+    min-width 0
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+part "customize-row.ways" {
+    use "fieldset-reset"
+    display flex
+    flex-wrap wrap
+    gap "$space-2 $space-5"
+}
+
+// The mail server: the fields in a row that wraps, and the answer to the test e-mail.
+part "mail-server.fields" {
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(min(100%, $size-menu), 1fr))"
+    gap "$gap-fields"
+}
+
+// The entry of the history that *Open* of a notification came to: the same soft color and edge as an
+// unread notification, so the person finds it at once.
+part "history.entry[state=highlighted]" {
+    border-inline-start "$size-edge solid $accent"
+    background "$accent-soft"
+}
+
+// The row with *Use the standard choices*: the button holds text, so it pulls itself back by its own
+// padding and its words stand on the start edge of the rows above (R1).
+part "customize-actions" {
+    display flex
+    flex-wrap wrap
+}
+
+part "customize-actions button[variant=quiet]:first-child" {
+    use "hang-start"
+}
+
+// ───────────── Workflows (M4 WP-07) ─────────────
+//
+// The editor of a workflow (UX §5.4): the plain list of statuses with their status changes, the
+// rules of a change, the drawing of boxes and arrows, and the answers of *Try it*.
+
+part "workflow-editor" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+part "workflow-statuses" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-4"
+}
+
+part "workflow-status" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$space-4"
+}
+
+part "workflow-status.head" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "workflow-status.name" {
+    margin 0
+    color "$fg"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+    overflow-wrap anywhere
+}
+
+part "workflow-changes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "workflow-change" {
+    use "sunken-box"
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+    padding "$space-3"
+}
+
+part "workflow-change.to" {
+    min-width "$size-name"
+    font-weight "$weight-bold"
+    line-height "$size-control"
+    overflow-wrap anywhere
+}
+
+part "workflow-add" {
+    use "fieldset-reset"
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "workflow-rules" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "workflow-condition" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-3"
+}
+
+part "workflow-tried" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "workflow-try" {
+    use "sunken-box"
+    display flex
+    flex-wrap wrap
+    align-items baseline
+    gap "$space-2" "$space-4"
+    padding "$space-3"
+}
+
+// The drawing: a column for each status group, the boxes in them, and the arrows over them.
+part "workflow-drawing" {
+    position relative
+    padding "$space-4"
+    use "surface-box"
+}
+
+part "drawing-columns" {
+    position relative
+    display grid
+    grid-auto-flow column
+    grid-auto-columns "minmax(0, 1fr)"
+    gap "$space-7"
+}
+
+part "drawing-column" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    align-content flex-start
+    gap "$space-5"
+}
+
+part "drawing-box" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid currentColor"
+    border-radius "$r-ctl"
+    overflow-wrap anywhere
+}
+
+part "drawing-box.name" {
+    display flex
+    align-items center
+    gap "$space-2"
+    font-weight "$weight-bold"
+}
+
+part "drawing-box.changes" {
+    use "list-reset"
+    display flex
+    flex-direction column
+    align-items flex-start
+}
+
+part "drawing-box[variant=not-started]" {
+    background "$st-ns-soft"
+    color "$st-ns"
+}
+
+part "drawing-box[variant=in-progress]" {
+    background "$st-ip-soft"
+    color "$st-ip"
+}
+
+part "drawing-box[variant=done]" {
+    background "$st-done-soft"
+    color "$st-done"
+}
+
+part "drawing-arrows" {
+    position absolute
+    top 0
+    left 0
+    width "100%"
+    height "100%"
+    overflow visible
+    pointer-events none
+}
+
+part "drawing-line" {
+    stroke "$fg-muted"
+    stroke-width "$border-width"
+    fill none
+}
+
+part "drawing-head" {
+    fill "$fg-muted"
 }

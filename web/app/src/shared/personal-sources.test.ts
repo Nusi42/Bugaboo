@@ -6,6 +6,7 @@ import { saveProgress } from "./change-my-settings.ts";
 import { mySettingsKey } from "./my-settings.ts";
 import { forgetDeviceChoices, installPersonalSources } from "./personal-sources.ts";
 import { queryClient } from "./query-client.ts";
+import { currentKeysSource } from "./shortcuts-source.ts";
 import { leaveSession } from "./session.ts";
 
 /** A storage of the browser that is only a map, so a test can look at what was left in it. */
@@ -57,6 +58,21 @@ describe("cfg_04 the person's choices never reach the storage of the browser", (
     expect(currentSource().read().theme).toBe("midnight");
     expect(saveProgress.read().state).toBe("not-saved");
     expect(storage.length).toBe(0);
+  });
+
+  it("gives the same keys at every read while the server gives no settings", async () => {
+    // A screen that reads them with useSyncExternalStore draws again without end otherwise.
+    installPersonalSources();
+    await queryClient
+      .query({
+        queryKey: mySettingsKey(),
+        queryFn: () => Promise.reject(new ApiError(500, undefined)),
+      })
+      .catch(() => {
+        // The answer is the failure the test wants in the cache.
+      });
+    const keys = currentKeysSource();
+    expect(keys.read()).toBe(keys.read());
   });
 
   it("removes what the device kept before the settings lived on the server", () => {

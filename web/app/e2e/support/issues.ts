@@ -14,6 +14,7 @@ import { bob, createAdmin, signInThroughApi } from "./accounts.ts";
 import { type ApiSession } from "./api.ts";
 import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
+import { serverWord } from "./server-words.ts";
 
 // The notes and rows of the issue page are found by helpers of their own; they are named here too,
 // so a test asks one place for everything of the issue page.
@@ -247,6 +248,11 @@ export async function setStatusAndPriority(
 /** The tick box of an issue in the list, named as the list names it. */
 export function tickBox(page: Page, key: string) {
   return page.getByRole("checkbox", { name: t("issues.select-issue", { key }), exact: true });
+}
+
+/** Changes the status of an issue that is *Open* with the words of the status change *Start working*. */
+export async function startWorking(page: Page): Promise<void> {
+  await chooseStatus(page, serverWord("workflow-change.start-working"));
 }
 
 /** The big status button of the issue page: the current status with its group's icon and color. */

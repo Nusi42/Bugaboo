@@ -1,24 +1,20 @@
-//! Reading what comments hold: every text of a comment, what the writer may name after `@`, and the
-//! *Mentions* block of the start page (ISS-05, M3-Q3, M3-Q7).
+//! Reading what comments hold: every text of a comment, and what the writer may name after `@`
+//! (ISS-05, M3-Q3, M3-Q7).
 
 use bb_auth::looks_like_access_key;
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
-use bb_core::comment::{Mention, handle_of};
-use bb_core::event::{FieldChange, RecordKind};
-use bb_core::id::{CommentId, UserId};
+use bb_core::comment::handle_of;
 use bb_core::paging::{page_len, window};
 use bb_core::people_kinds::PeopleKind;
-use bb_policy::{Authorized, PeopleContext, Permission, Place};
-use serde_json::json;
+use bb_policy::{Authorized, PeopleContext, Permission};
 
 use super::resolve::PEOPLE_LOOK_AT;
 use super::types::{
     CommentTextView, CommentVersions, CommentVersionsQuery, MentionChoice, MentionChoices,
-    MentionChoicesQuery, MentionItem, Mentions, MentionsQuery, ReadMentions,
+    MentionChoicesQuery,
 };
-use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
-use crate::member::mentions as member;
+use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The person whose *Mentions* are asked for. They are the person's own inbox, so only a
@@ -158,125 +154,4 @@ pub async fn mention_choices<S: AuthStore>(
         items: offered,
         next_cursor: None,
     }))
-}
-
-/// The comments that mention the person: the unread ones first, then the newest. A comment is
-/// listed only when the person may see its issue; the author is shown as the kind *Authors* says
-/// there.
-///
-/// # Errors
-/// None besides a failing store.
-pub async fn mentions<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    input: MentionsQuery,
-) -> Result<Authorized<Mentions>, AppError> {
-    let actor = ctx.inbox_owner(&input.session_token).await?;
-    let limit = page_len(Some(input.limit));
-    let failed = |error| internal::<S>(&error);
-    let mut maker = ctx.line_maker().await?;
-    let mut items: Vec<MentionItem> = Vec::new();
-    for unread in [true, false] {
-        let mut before: Option<CommentId> = None;
-        // A page can hold mentions the person may no longer see, so more pages are read until the
-        // list is full or there are no more.
-        while items.len() < limit {
-            let want = u64::try_from(limit).unwrap_or(u64::MAX).saturating_add(1);
-            let batch: Vec<Mention> = ctx
-                .store()
-                .mentions_of(actor.person.id, unread, before, want)
-                .await
-                .map_err(failed)?;
-            let Some(last) = batch.last().map(|mention| mention.comment) else {
-                break;
-            };
-            before = Some(last);
-            let ids: Vec<CommentId> = batch.iter().map(|mention| mention.comment).collect();
-            let comments = ctx.store().comments_by_ids(&ids).await.map_err(failed)?;
-            for mention in &batch {
-                let Some(comment) = comments
-                    .iter()
-                    .find(|comment| comment.id == mention.comment && comment.deleted_at.is_none())
-                else {
-                    continue;
-                };
-                let Some(issue) = ctx.issues_named(&[comment.issue]).await?.into_iter().next()
-                else {
-                    continue;
-                };
-                let Some(line) = ctx.line_of(&actor, &mut maker, &issue).await? else {
-                    continue;
-                };
-                let held = ctx
-                    .evaluation_of(&actor, Place::Project(issue.project))
-                    .await?;
-                let author = ctx
-                    .person_ref(
-                        &held,
-                        PeopleKind::Authors,
-                        PeopleContext::Ordinary,
-                        comment.author,
-                    )
-                    .await?;
-                items.push(MentionItem {
-                    comment: comment.id,
-                    issue: line,
-                    author,
-                    html: ctx.html_of(&actor, &held, &issue, &comment.text).await?,
-                    at: comment.created_at,
-                    unread,
-                });
-                if items.len() == limit {
-                    break;
-                }
-            }
-            if batch.len() < usize::try_from(want).unwrap_or(usize::MAX) {
-                break;
-            }
-        }
-    }
-    let held = ctx.evaluation_of(&actor, Place::Organization).await?;
-    Ok(held.authorize(Mentions {
-        items,
-        next_cursor: None,
-    }))
-}
-
-/// Marks the mentions of the person in these comments as read.
-///
-/// # Errors
-/// `request.invalid` when no comment is named.
-pub async fn read_mentions<S: AuthStore>(
-    ctx: &Ctx<'_, S>,
-    input: ReadMentions,
-) -> Result<Done, AppError> {
-    let actor = ctx.inbox_owner(&input.session_token).await?;
-    if input.comments.is_empty() {
-        return Err(ErrorCode::InvalidRequest.into());
-    }
-    let person: UserId = actor.person.id;
-    let event = ctx.event(
-        by(person),
-        entity(RecordKind::Person, person),
-        vec![FieldChange {
-            field: member::READ.to_owned(),
-            before: None,
-            after: Some(json!(
-                input
-                    .comments
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
-            )),
-        }],
-    )?;
-    let (comments, now) = (input.comments, ctx.now());
-    ctx.store()
-        .record_change(&event, move |transaction| {
-            Box::pin(
-                async move { S::mark_mentions_read(transaction, person, &comments, now).await },
-            )
-        })
-        .await
-        .map_err(|error| crate::auth::change_failed::<S>(&error, crate::auth::Stops::NONE))?;
-    Ok(Done)
 }

@@ -25,9 +25,6 @@ const AN_EDITOR: &str = "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a";
 /// An ID that holds no lock and no kind, for the routes that ask for one.
 const NOBODYS_RANDOM_ID: &str = "5b0f6a3e-2d1c-4e8a-9f77-0a1b2c3d4e5f";
 
-/// The ID of a comment that nobody wrote (a time-ordered ID, as a comment has).
-const A_COMMENT_NOBODY_WROTE: &str = "01890a5d-ac96-774b-bcce-b302099a8057";
-
 /// The ID of the first kind of relation, from the start.
 async fn a_kind(fixture: &Fixture<'_>) -> Result<String, Failure> {
     let page = fixture
@@ -263,12 +260,6 @@ async fn text_request(
                 an_issue(fixture).await?
             ),
             None,
-        ),
-        "listMentions" => ("GET", "/api/v1/me/mentions".into(), None),
-        "readMentions" => (
-            "POST",
-            "/api/v1/me/mentions/read".into(),
-            Some(json!({"comments": [A_COMMENT_NOBODY_WROTE]})),
         ),
         "listIssueHistory" => (
             "GET",

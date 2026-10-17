@@ -6,7 +6,8 @@
 //! - the browser scenarios in `web/app/e2e/concurrent/` (ten Playwright contexts) exist under the
 //!   names the work package gives them, and none is skipped, marked `fixme` or alone (`only`);
 //! - `tolerate(`, which lets a test expect the console lines of a browser that is cut off the
-//!   network, is used in `concurrent/locks.spec.ts` only: anywhere else it would hide defects;
+//!   network, is used in `concurrent/locks.spec.ts` (a cut network) and the two specs that cause the 502 of a wrong mail
+//!   password (`mail-server.spec.ts`, `screenshots-notifications.spec.ts`) only: anywhere else it would hide defects;
 //! - the invariants test of the server (`test_concurrent_invariants_hold_after_a_run`, run on both
 //!   databases by `cargo xtask ci`) is a `#[tokio::test]` that is not switched off;
 //! - `cargo xtask ci` makes the short run of `cargo xtask load` (the API at speed, both databases).
@@ -31,10 +32,12 @@ const CI_FILE: &str = "xtask/src/ci.rs";
 const LOAD_COMMAND: &str = "\"load\"";
 /// The folder with the browser tests and their helpers, with every folder below it.
 const E2E_FOLDER: &str = "web/app/e2e";
-/// The files that may name `tolerate(`: the spec of the locks, which uses it, and the fixtures,
-/// which define it.
-const MAY_TOLERATE: [&str; 2] = [
+/// The files that may name `tolerate(`: the specs of the locks and of the mail server, which use
+/// it, and the fixtures, which define it.
+const MAY_TOLERATE: [&str; 4] = [
     "web/app/e2e/concurrent/locks.spec.ts",
+    "web/app/e2e/mail-server.spec.ts",
+    "web/app/e2e/screenshots-notifications.spec.ts",
     "web/app/e2e/support/fixtures.ts",
 ];
 
@@ -110,7 +113,7 @@ fn tolerated_elsewhere(files: &[(String, String)]) -> Vec<Finding> {
         .map(|(path, _)| {
             Finding::at(
                 path.clone(),
-                "`tolerate(` lets a test expect the console lines of a browser that is cut off the network. Only concurrent/locks.spec.ts may use it; anywhere else it would hide defects.",
+                "`tolerate(` lets a test expect the console lines of a browser that is cut off the network. Only concurrent/locks.spec.ts, mail-server.spec.ts and screenshots-notifications.spec.ts may use it; anywhere else it would hide defects.",
             )
         })
         .collect()

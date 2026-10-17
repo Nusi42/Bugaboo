@@ -6,7 +6,7 @@
 use std::future::Future;
 
 use bb_core::comment::{Comment, CommentVersion, Mention};
-use bb_core::id::{CommentId, UserId};
+use bb_core::id::CommentId;
 use jiff::Timestamp;
 
 use crate::issues::IssueStore;
@@ -24,14 +24,6 @@ pub trait CommentStore: IssueStore + 'static {
     reads! {
         /// The comments with these IDs that exist, also those in the trash.
         fn comments_by_ids(ids: &[CommentId]) -> Vec<Comment>;
-        /// The mentions of a person, newest comment first: the unread ones or the read ones, the
-        /// ones before `before` (the last of the page before), at most `limit`.
-        fn mentions_of(
-            recipient: UserId,
-            unread: bool,
-            before: Option<CommentId>,
-            limit: u64
-        ) -> Vec<Mention>;
         /// The people a comment puts into *Mentions*.
         fn mentions_in_comment(comment: CommentId) -> Vec<Mention>;
     }
@@ -54,7 +46,5 @@ pub trait CommentStore: IssueStore + 'static {
         fn set_comment_deleted(id: CommentId, deleted_at: Option<Timestamp>) -> bool;
         /// Makes these the mentions of a comment: the ones that stay keep the date they were read.
         fn replace_mentions(comment: CommentId, mentions: &[Mention]) -> ();
-        /// Marks the mentions of a person in these comments as read.
-        fn mark_mentions_read(recipient: UserId, comments: &[CommentId], at: Timestamp) -> ();
     }
 }

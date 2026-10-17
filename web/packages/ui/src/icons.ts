@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bell,
   Building2,
   ChevronDown,
   ChevronLeft,
@@ -16,6 +17,7 @@ import {
   ListChecks,
   Lock,
   LogOut,
+  Mail,
   Maximize2,
   Menu,
   Minus,
@@ -52,6 +54,7 @@ import {
 export const iconName = {
   "access-keys": "access-keys",
   back: "back",
+  bell: "bell",
   "check-access": "check-access",
   close: "close",
   down: "down",
@@ -67,6 +70,7 @@ export const iconName = {
   keyboard: "keyboard",
   labels: "labels",
   lock: "lock",
+  mail: "mail",
   maximize: "maximize",
   menu: "menu",
   minimize: "minimize",
@@ -102,6 +106,7 @@ export type IconName = (typeof iconName)[keyof typeof iconName];
 export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   "access-keys": KeyRound,
   back: ChevronLeft,
+  bell: Bell,
   "check-access": UserSearch,
   close: X,
   down: ChevronDown,
@@ -117,6 +122,7 @@ export const glyphs: Readonly<Record<IconName, LucideIcon>> = {
   keyboard: Keyboard,
   labels: Tags,
   lock: Lock,
+  mail: Mail,
   maximize: Square,
   menu: Menu,
   minimize: Minus,

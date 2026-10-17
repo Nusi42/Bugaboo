@@ -40,6 +40,13 @@ export const shortcutDefinitions = [
     button: "nav.home",
   },
   {
+    id: "go-notifications",
+    keys: ["g n"],
+    message: "shortcut.go-notifications",
+    where: "everywhere",
+    button: "nav.notifications",
+  },
+  {
     id: "new-issue",
     keys: ["c"],
     message: "shortcut.new-issue",

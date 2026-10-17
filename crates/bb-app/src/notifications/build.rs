@@ -24,7 +24,7 @@ use bb_core::id::{CommentId, EntityId, IssueId, JobId, NotificationId, UserId};
 use bb_core::issue::Issue;
 use bb_core::many_changes::ManyChangeStatus;
 use bb_core::notification::{
-    BATCH, FIELDS_MAX, MailState, Notification, NotificationKind, Once, Via, mail_batch,
+    BATCH, FIELDS_MAX, MailState, Notification, NotificationKind, Once, Via,
 };
 use bb_core::person::Person;
 use bb_core::settings::Layers;
@@ -190,7 +190,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             seen.push(key);
             let run_at = row
                 .at
-                .checked_add(mail_batch())
+                .checked_add(self.services.mail_batch)
                 .map_err(|error| AppError::Internal(error.to_string()))?;
             jobs.push(QueuedJob {
                 id: JobId::generate(&mut self.ids())

@@ -4,6 +4,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
 import { tickBox } from "./issues.ts";
 import { inOrder } from "./sequence.ts";
+import { serverWord } from "./server-words.ts";
 
 // The screen of changing many issues (ISS-09, M3 WP-08) as a person uses it: tick issues in the
 // list of the project, choose a new status, read the preview, confirm.
@@ -27,13 +28,19 @@ export async function tickIssues(page: Page, keys: readonly string[]): Promise<v
   ).toBeVisible();
 }
 
+/** Opens the dialog of one of the five things. */
+export async function openAction(page: Page, name: string) {
+  await page.getByRole("button", { name, exact: true }).click();
+  return page.getByRole("alertdialog");
+}
+
 /** Chooses *Change status* to *Done* for the ticked issues and reads the preview; gives the dialog back. */
 export async function previewDoneOnScreen(page: Page, count: number) {
   await page.getByRole("button", { name: t("many-changes.action-change"), exact: true }).click();
   const dialog = page.getByRole("alertdialog");
   await dialog
     .getByLabel(t("issue-field.status"), { exact: true })
-    .selectOption({ label: t("status.done") });
+    .selectOption({ label: serverWord("workflow-change.mark-as-done") });
   await dialog.getByRole("button", { name: t("many-changes.show-changes"), exact: true }).click();
   await expect(
     dialog.getByText(t("preview.summary", { changed: count, skipped: 0 })),

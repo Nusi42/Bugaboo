@@ -15,6 +15,12 @@ export interface Mail {
   readonly text: string;
 }
 
+/** The user name and the password a mail server of a test asks for; without them it asks for none. */
+export interface Login {
+  readonly user: string;
+  readonly password: string;
+}
+
 /** A mail server for a test: it takes what the server sends and keeps it to be read. */
 export interface Mailbox {
   /** The port on this computer that the server is told to send e-mail to. */
@@ -40,59 +46,114 @@ function decoded(raw: string): string {
     );
 }
 
+/** What the mail server says to the commands of signing in, when it asks for a login. */
+const AUTH_OK = "235 authenticated";
+const AUTH_FAILED = "535 5.7.8 authentication failed";
+const NOT_SIGNED_IN = "530 5.7.0 authentication required";
+
+/** Whether the base64 text is the `PLAIN` answer for this login: a NUL character, the user, a NUL character, the password. */
+function isLogin(encoded: string, login: Login): boolean {
+  const NUL = String.fromCodePoint(0);
+  return Buffer.from(encoded, "base64").toString() === `${NUL}${login.user}${NUL}${login.password}`;
+}
+
+/** What the server of a test says to a line. */
+type Say = (line: string) => void;
+
+/** What the dialogue about signing in did with a line. */
+type SignIn = "not-about-it" | "offered" | "signed-in" | "refused";
+
+/** The part of the dialogue about signing in: `EHLO` offers `AUTH PLAIN`, `AUTH PLAIN` signs in or not. */
+function signInStep(line: string, login: Login, say: Say): SignIn {
+  const command = line.toUpperCase();
+  if (command.startsWith("EHLO")) {
+    say("250-test");
+    say("250 AUTH PLAIN");
+    return "offered";
+  }
+  if (!command.startsWith("AUTH PLAIN")) {
+    return "not-about-it";
+  }
+  const signedIn = isLogin(line.slice("AUTH PLAIN".length).trim(), login);
+  say(signedIn ? AUTH_OK : AUTH_FAILED);
+  return signedIn ? "signed-in" : "refused";
+}
+
 /**
- * One conversation with the server, the few commands that sending one e-mail takes: the function
- * takes what came in and answers through `say`; it returns `true` once the server said goodbye.
+ * One conversation with the server, the few commands that sending one e-mail takes. It is fed what
+ * came in and answers through `say`; `feed` returns `true` once the server said goodbye. With a
+ * `login` the server offers `AUTH PLAIN` and takes e-mail only from whoever signed in.
  */
-function conversation(
-  keep: (mail: Mail) => void,
-  say: (line: string) => void,
-): (text: string) => boolean {
-  let to = "";
-  let data: string | undefined;
-  let pending = "";
-  const finishData = (): boolean => {
-    const end = pending.indexOf(TEXT_END);
-    if (end >= 0) {
-      keep({ to, text: decoded((data ?? "") + pending.slice(0, end)) });
-      pending = pending.slice(end + TEXT_END.length);
-      data = undefined;
-      say("250 queued");
-    }
-    return end >= 0;
-  };
-  const answer = (line: string): boolean => {
-    const command = line.toUpperCase();
-    if (command === "QUIT") {
-      say("221 bye");
-      return true;
-    }
-    to = command.startsWith("RCPT TO") ? (/<([^>]*)>/u.exec(line)?.[1] ?? "") : to;
-    data = command === "DATA" ? "" : data;
-    say(command === "DATA" ? "354 go on" : "250 ok");
-    return false;
-  };
-  say("220 test ESMTP");
-  return (text) => {
-    pending += text;
+class Conversation {
+  private to = "";
+  private data: string | undefined;
+  private pending = "";
+  private signedIn: boolean;
+  private readonly keep: (mail: Mail) => void;
+  private readonly say: Say;
+  private readonly login: Login | undefined;
+
+  constructor(keep: (mail: Mail) => void, say: Say, login?: Login) {
+    this.keep = keep;
+    this.say = say;
+    this.login = login;
+    this.signedIn = login === undefined;
+    say("220 test ESMTP");
+  }
+
+  /** Takes in what came and answers every line of it. */
+  feed(text: string): boolean {
+    this.pending += text;
     for (;;) {
-      if (data !== undefined) {
-        if (!finishData()) {
+      if (this.data !== undefined) {
+        if (!this.finishData()) {
           return false;
         }
         continue;
       }
-      const lineEnd = pending.indexOf(LINE_END);
+      const lineEnd = this.pending.indexOf(LINE_END);
       if (lineEnd < 0) {
         return false;
       }
-      const line = pending.slice(0, lineEnd);
-      pending = pending.slice(lineEnd + LINE_END.length);
-      if (answer(line)) {
+      const line = this.pending.slice(0, lineEnd);
+      this.pending = this.pending.slice(lineEnd + LINE_END.length);
+      if (this.answer(line)) {
         return true;
       }
     }
-  };
+  }
+
+  /** The text of the e-mail is complete when its end is there: keeps it. */
+  private finishData(): boolean {
+    const end = this.pending.indexOf(TEXT_END);
+    if (end >= 0) {
+      this.keep({ to: this.to, text: decoded((this.data ?? "") + this.pending.slice(0, end)) });
+      this.pending = this.pending.slice(end + TEXT_END.length);
+      this.data = undefined;
+      this.say("250 queued");
+    }
+    return end >= 0;
+  }
+
+  /** Answers one command; `true` after `QUIT`. */
+  private answer(line: string): boolean {
+    const command = line.toUpperCase();
+    if (command === "QUIT") {
+      this.say("221 bye");
+      return true;
+    }
+    const step = this.login === undefined ? "not-about-it" : signInStep(line, this.login, this.say);
+    if (step !== "not-about-it") {
+      this.signedIn = step === "signed-in";
+    } else if (!this.signedIn && command.startsWith("MAIL")) {
+      this.say(NOT_SIGNED_IN);
+    } else {
+      this.to = command.startsWith("RCPT TO") ? (/<([^>]*)>/u.exec(line)?.[1] ?? "") : this.to;
+      this.data = command === "DATA" ? "" : this.data;
+      this.say(command === "DATA" ? "354 go on" : "250 ok");
+    }
+    return false;
+  }
 }
 
 /** A server that listens on a free port of this computer, and the connections it gets. */
@@ -117,10 +178,11 @@ async function listening(): Promise<{
 }
 
 /**
- * Starts a mail server on a free port of this computer. It stays up until the test process ends
- * (the server of a file may be used again by a repeat of its tests).
+ * Starts a mail server on a free port of this computer, one that asks for `login` if one is given.
+ * It stays up until the test process ends (the server of a file may be used again by a repeat of
+ * its tests).
  */
-export async function startMailbox(): Promise<Mailbox> {
+export async function startMailbox(login?: Login): Promise<Mailbox> {
   const took: Mail[] = [];
   const { port, connections } = await listening();
   void (async () => {
@@ -129,18 +191,19 @@ export async function startMailbox(): Promise<Mailbox> {
       if (!(socket instanceof Socket)) {
         continue;
       }
-      const feed = conversation(
+      const conversation = new Conversation(
         (mail) => {
           took.push(mail);
         },
         (line) => {
           socket.write(`${line}${LINE_END}`);
         },
+        login,
       );
       void (async () => {
         try {
           for await (const chunk of socket) {
-            if (feed(String(chunk))) {
+            if (conversation.feed(String(chunk))) {
               socket.end();
             }
           }

@@ -185,7 +185,7 @@ async fn iss_05_a_guest_can_mention_a_role_but_not_a_person() -> TestResult {
         let (mut gus, _) = site
             .person_called(StartingRole::Guest, "gus", "Gus Guest")
             .await?;
-        let (mut lena, _) = site
+        let (_, lena_id) = site
             .person_called(StartingRole::ProjectLead, "lena", "Lena Lead")
             .await?;
         let issue = key_of(&site.create(&mut gus, "Gus cannot sign in").await?)?;
@@ -230,26 +230,12 @@ async fn iss_05_a_guest_can_mention_a_role_but_not_a_person() -> TestResult {
         let html = ok(&written)?["html"].as_str().ok_or("no html")?.to_owned();
         assert_eq!(html.matches("data-kind=\"mention\"").count(), 1, "{html}");
         assert!(html.contains("@ada.admin"), "{html}");
-        // The role's holder finds the comment under Mentions, unread; Ada does not.
-        let lenas = lena.send("GET", "/api/v1/me/mentions", None).await?;
-        let mine = items(&lenas);
-        assert_eq!(mine.len(), 1, "{:?}", lenas.body);
-        assert_eq!(mine[0]["unread"], true);
-        assert_eq!(mine[0]["issue"]["key"], issue);
-        let adas = ada.send("GET", "/api/v1/me/mentions", None).await?;
-        assert!(items(&adas).is_empty());
-        // Reading it marks it, and it moves behind the unread ones.
-        let comment_id = mine[0]["comment"].as_str().ok_or("no comment")?.to_owned();
-        let marked = lena
-            .send(
-                "POST",
-                "/api/v1/me/mentions/read",
-                Some(json!({"comments": [comment_id]})),
-            )
-            .await?;
-        assert_eq!(marked.status, StatusCode::NO_CONTENT);
-        let after = lena.send("GET", "/api/v1/me/mentions", None).await?;
-        assert_eq!(items(&after)[0]["unread"], false);
+        // The role's holder is a recipient of the mention (the notifications reader turns it into a
+        // notification); Ada, who was named by text only, is not.
+        let comment_id: CommentId = ok(&written)?["id"].as_str().ok_or("no id")?.parse()?;
+        let rows = rig.storage.mentions_in_comment(comment_id).await?;
+        let people: Vec<_> = rows.iter().map(|row| row.recipient).collect();
+        assert_eq!(people, [lena_id], "{rows:?}");
         Ok(())
     })
     .await
@@ -609,7 +595,7 @@ async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> 
     each_database("iss_05_mention_unseen", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
-        let (mut gus, gus_id) = site
+        let (_, gus_id) = site
             .person_called(StartingRole::Guest, "gus", "Gus Guest")
             .await?;
         let (_, bob_id) = site
@@ -630,8 +616,6 @@ async fn iss_05_a_mention_does_not_reach_a_person_who_cannot_see_the_issue() -> 
         let people: Vec<_> = rows.iter().map(|row| row.recipient).collect();
         assert_eq!(people, [bob_id], "{rows:?}");
         assert!(!people.contains(&gus_id));
-        let theirs = gus.send("GET", "/api/v1/me/mentions", None).await?;
-        assert!(items(&theirs).is_empty(), "{:?}", theirs.body);
         Ok(())
     })
     .await

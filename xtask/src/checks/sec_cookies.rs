@@ -135,7 +135,7 @@ fn writes_document_cookie(code: &str) -> bool {
 mod tests {
     use super::*;
 
-    const TABLE: &str = "pub const CSRF_HEADER: &str = \"x-csrf-token\";\ncookies! {\n    Session => (\"__Host-bb_session\", true, Lax, message::COOKIE_SESSION_PURPOSE),\n}\n";
+    const TABLE: &str = "pub const CSRF_HEADER: &str = \"x-csrf-token\";\npub const BACKGROUND_HEADER: &str = \"x-background-read\";\ncookies! {\n    Session => (\"__Host-bb_session\", true, Lax, message::COOKIE_SESSION_PURPOSE),\n}\n";
 
     fn module(text: &str) -> Source {
         (COOKIE_MODULE.to_owned(), text.to_owned())
@@ -170,7 +170,7 @@ mod tests {
         let rust = [
             module(
                 "cookies! {\n    A => (\"session\", true, Lax, message::COOKIE_MISSING),\n}\n\
-                 pub const CSRF_HEADER: &str = \"x\";",
+                 pub const CSRF_HEADER: &str = \"x\"; pub const BACKGROUND_HEADER: &str = \"y\";",
             ),
             (
                 "crates/bb-api/src/api.rs".to_owned(),

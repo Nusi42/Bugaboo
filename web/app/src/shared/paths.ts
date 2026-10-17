@@ -7,6 +7,7 @@ import { appPaths } from "@bugaboo/api-client";
  */
 export const paths = {
   home: "/",
+  notifications: "/notifications",
   setup: "/setup",
   signIn: appPaths.signIn,
   secondStep: "/sign-in/second-step",
@@ -16,6 +17,8 @@ export const paths = {
   mySettings: "/me",
   appearance: "/me/appearance",
   region: "/me/region",
+  notificationSettings: "/me/notifications",
+  handle: "/me/handle",
   startPage: "/me/start-page",
   shortcuts: "/me/shortcuts",
   security: "/me/security",
@@ -27,6 +30,7 @@ export const paths = {
   groups: "/settings/groups",
   issueTypes: "/settings/issue-types",
   layouts: "/settings/layouts",
+  workflows: "/settings/workflows",
   relationKinds: "/settings/relation-kinds",
   labels: "/settings/labels",
   fields: "/settings/fields",
@@ -37,6 +41,7 @@ export const paths = {
   organizationSecurity: "/settings/security",
   themes: "/settings/themes",
   status: "/settings/status",
+  mailServer: "/settings/email",
   projects: "/settings/projects",
   fieldPermissions: "/settings/field-permissions",
   peopleVisibility: "/settings/people-visibility",
@@ -46,6 +51,7 @@ export const paths = {
   projectRoles: "/p/$project/settings/roles",
   projectFields: "/p/$project/settings/fields",
   projectLayouts: "/p/$project/settings/layouts",
+  projectWorkflows: "/p/$project/settings/workflows",
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
@@ -108,27 +114,52 @@ export function issueTypeAddress(id: string): string {
 }
 
 /**
- * The address of the editor of a layout: of a project, or of the whole organization without one,
- * with the form and the issue type that are open (`?form=new-issue&type=<ID>`).
+ * The address of an editor of a place (layouts, workflows): of a project, or of the whole
+ * organization without one, with what is open in it as the search part (`?form=…&type=<ID>`);
+ * what is left out is not in the address.
  */
-export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen = {}): string {
-  const base =
-    shortName === undefined ? paths.layouts : addressInProject(paths.projectLayouts, shortName);
+function editorAddress(
+  organization: Path,
+  project: Extract<Path, `/p/${string}`>,
+  shortName: string | undefined,
+  open: Readonly<Record<string, string | undefined>>,
+): string {
+  const base = shortName === undefined ? organization : addressInProject(project, shortName);
   const query = new URLSearchParams();
-  if (open.form !== undefined) {
-    query.set("form", open.form);
-  }
-  if (open.type !== undefined) {
-    query.set("type", open.type);
+  for (const [name, value] of Object.entries(open)) {
+    if (value !== undefined) {
+      query.set(name, value);
+    }
   }
   const text = query.toString();
   return text === "" ? base : `${base}?${text}`;
+}
+
+/**
+ * The address of the editor of a layout, with the form and the issue type that are open
+ * (`?form=new-issue&type=<ID>`).
+ */
+export function layoutsAddress(shortName: string | undefined, open: LayoutsOpen = {}): string {
+  return editorAddress(paths.layouts, paths.projectLayouts, shortName, {
+    form: open.form,
+    type: open.type,
+  });
 }
 
 /** What is open in the editor of layouts: the form (`issue-page`, `new-issue`) and the issue type's ID. */
 export interface LayoutsOpen {
   readonly form?: string | undefined;
   readonly type?: string | undefined;
+}
+
+/** What is open in the editor of workflows: the ID of the issue type; none for all issue types. */
+export interface WorkflowsOpen {
+  readonly type?: string | undefined;
+}
+
+/** The address of the editor of workflows, with the issue type that is open (`?type=<ID>`). */
+export function workflowsAddress(shortName: string | undefined, open: WorkflowsOpen = {}): string {
+  return editorAddress(paths.workflows, paths.projectWorkflows, shortName, { type: open.type });
 }
 
 /** The address of the page of an own field, `/settings/fields/<ID>`. */
@@ -144,6 +175,25 @@ export function roleAddress(id: string): string {
 /** The address of an issue, `/issues/WEB-142`: the focus view, and the link that is shared. */
 export function issueAddress(key: string): string {
   return filled(paths.issue, routeParam.issue, key);
+}
+
+/** What an issue page is opened at: a comment, or the change that happened at a moment. */
+export type IssueTarget =
+  | { readonly kind: "comment"; readonly comment: string }
+  | { readonly kind: "change"; readonly at: string };
+
+/** The names of the parts of an address that say where on the issue page to look. */
+export const targetParam = { comment: "comment", change: "change" } as const;
+
+/** The address of an issue with the comment or the change that *Open* of a notification goes to. */
+export function issueTargetAddress(key: string, target: IssueTarget): string {
+  const query = new URLSearchParams();
+  if (target.kind === "comment") {
+    query.set(targetParam.comment, target.comment);
+  } else {
+    query.set(targetParam.change, target.at);
+  }
+  return `${issueAddress(key)}?${query.toString()}`;
 }
 
 /** The address of the issues of a project, `/p/WEB/issues`. */

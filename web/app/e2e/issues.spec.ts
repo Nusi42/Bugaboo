@@ -8,7 +8,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import {
   assignTo,
-  chooseStatus,
+  startWorking,
   expectStatus,
   statusButton,
   holdDescription,
@@ -60,7 +60,7 @@ test("iss_01 status and priority change in place and say Saved", async ({ page }
   await signIn(page, ada);
   await page.goto(issueAddress("WEB-1"));
   await expect(loginHeading(page)).toBeVisible();
-  await chooseStatus(page, t("status.in-progress"));
+  await startWorking(page);
   await expect(issueNote(page)).toBeVisible();
   await openIssueWithDetails(page, "WEB-1");
   await page.getByLabel(t("issue-field.priority"), { exact: true }).selectOption({

@@ -21,6 +21,7 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { statusOptions } from "../../shared/session.ts";
+import { MailOffNote } from "./MailOffNote.tsx";
 
 /** The rule for signing up, as the server has it now. */
 function policyOptions() {
@@ -64,6 +65,7 @@ function PolicyForm({ policy }: { readonly policy: Schema<"SignUpPolicyBody"> })
         value={text}
         onChange={setText}
       />
+      <MailOffNote enabled={policy.enabled} />
       {everybody ? <Alert tone={alertTone.warning}>{t("sign-up-policy.warning")}</Alert> : null}
       {save.isError ? <Alert tone={alertTone.danger}>{messageOf(save.error)}</Alert> : null}
       {save.isSuccess ? <Alert tone={alertTone.success}>{t("save.saved")}</Alert> : null}

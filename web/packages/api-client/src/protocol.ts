@@ -5,3 +5,6 @@ export const CSRF_COOKIE = "__Host-bb_csrf";
 
 /** The request header that carries the CSRF token on every change request. */
 export const CSRF_HEADER = "x-csrf-token";
+
+/** The request header that marks a read nobody asked for (a count that refreshes itself): it does not keep a session alive. */
+export const BACKGROUND_HEADER = "x-background-read";

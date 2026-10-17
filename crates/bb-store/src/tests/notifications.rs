@@ -169,12 +169,31 @@ async fn ntf_01_the_store_lists_newest_first_by_filter_and_marks_as_read() -> Te
             .await?
         };
         assert_eq!(marked, 0, "not Ben's notification");
+        // *Mark all as read* goes up to the newest the person has seen: a later one stays unread.
         let change = event(&mut source, 7);
+        let older = first.id;
         let marked = ChangeStore::record_change(&storage, &change, move |tx| {
-            Box::pin(async move { AuthStorage::mark_all_notifications_read(tx, ana, at(7)).await })
+            Box::pin(async move {
+                AuthStorage::mark_notifications_read_up_to(tx, ana, older, at(7)).await
+            })
         })
         .await?;
-        assert_eq!(marked, 2);
+        assert_eq!(marked, 1);
+        assert_eq!(
+            storage
+                .notifications_of(ana, NotificationFilter::Unread, None, 10)
+                .await?,
+            [second.clone()]
+        );
+        let change = event(&mut source, 8);
+        let newer = second.id;
+        let marked = ChangeStore::record_change(&storage, &change, move |tx| {
+            Box::pin(async move {
+                AuthStorage::mark_notifications_read_up_to(tx, ana, newer, at(8)).await
+            })
+        })
+        .await?;
+        assert_eq!(marked, 1);
         assert!(
             storage
                 .notifications_of(ana, NotificationFilter::Unread, None, 10)

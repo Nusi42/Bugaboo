@@ -4,6 +4,5 @@
 export const appPaths = {
   issue: "/issues/$issue",
   invitation: "/invitation",
-  confirmAddress: "/confirm-address",
   signIn: "/sign-in",
 } as const;

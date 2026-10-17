@@ -495,3 +495,18 @@ async fn wf_03_the_person_assigned_counts_only_for_who_sees_who_is_assigned() ->
     assert!(!offers(&world, &blind.session_token, id, IN_PROGRESS).await?);
     Ok(())
 }
+
+/// An issue of the project that the administrator has put into *In progress*.
+pub(super) async fn issue_in_progress(
+    world: &World,
+    project: ProjectId,
+) -> Result<IssueId, AppError> {
+    let id = an_issue(world, project).await.map_err(AppError::Internal)?;
+    let admin = world.admin.session_token.clone();
+    change_issue(
+        &world.ctx(),
+        change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
+    )
+    .await?;
+    Ok(id)
+}

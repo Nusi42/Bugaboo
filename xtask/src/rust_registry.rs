@@ -21,6 +21,8 @@ enum Default {
 /// What one `settings! { … }` declaration says that the tools need.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct SettingDecl {
+    /// The name of the constant the setting is declared as, like `MAIL_HOST`.
+    pub(crate) ident: String,
     pub(crate) key: String,
     /// The default, already written the way TypeScript writes it.
     pub(crate) default: String,
@@ -30,6 +32,7 @@ pub(crate) struct SettingDecl {
 
 /// A declaration before its default is looked up.
 struct Declared {
+    ident: String,
     key: String,
     default: Default,
     choices: Option<String>,
@@ -124,6 +127,7 @@ fn declaration<'a>(
     }
     match (key, default) {
         (Some(key), Some(default)) => Ok(Declared {
+            ident: name.to_string(),
             key,
             default,
             choices,
@@ -286,6 +290,7 @@ pub(crate) fn read_registry(
             })?,
         };
         settings.push(SettingDecl {
+            ident: decl.ident,
             key: decl.key,
             default,
             choices: decl.choices,
@@ -355,6 +360,7 @@ pub(super) const DEFAULT_LOOK: &str = "day";
         let (settings, lists) = read_registry(REGISTRY, &[]).unwrap();
         let keys: Vec<&str> = settings.iter().map(|s| s.key.as_str()).collect();
         assert_eq!(keys, ["appearance.mode", "web.size"]);
+        assert_eq!(settings[0].ident, "MODE");
         assert_eq!(settings[0].default, "\"device\"");
         assert_eq!(settings[0].choices.as_deref(), Some("MODE_CHOICES"));
         assert_eq!(settings[1].default, "90");

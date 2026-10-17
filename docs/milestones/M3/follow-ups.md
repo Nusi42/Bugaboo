@@ -122,16 +122,16 @@ Points found while building M3 that were accepted for later. Each names where it
 | M3-F169 | Browser tests for `useWindow` and `useWindowResize` | Done in WP-17 (`window.spec.ts`) | Done in WP-17 |
 | M3-F170 | `keyboardStep` (24 px) is a constant in TypeScript, not a token | The generator exports only breakpoints as numbers; a new kind of exported token is needed | The next package that exports token numbers to TypeScript |
 | M3-F171 | The issue list has no *Labels* column: an issue in a list carries no labels | The list answer must name the labels the reader may see | M5 (search and lists) |
-| M3-F172 | Ctrl+Alt+arrows to resize a window can clash with screen-reader keys (NVDA, JAWS, VoiceOver) | The *Window size* button is a way without these keys; a change needs tests with screen readers | M4: a resize mode from the title bar, or other keys, after a test with NVDA, JAWS and VoiceOver |
+| M3-F172 | Ctrl+Alt+arrows to resize a window can clash with screen-reader keys (NVDA, JAWS, VoiceOver) | The *Window size* button is a way without these keys; a change needs tests with screen readers | **Decided (M4 WP-07):** the keys stay. The *Window size* button is the way without them. A test with NVDA, JAWS and VoiceOver still has to be done by a person (not possible in the build). |
 | M3-F173 | Sub-issue and related rows have no priority edge: `IssueRef` has no priority | A change of the API answer | M4 |
 | M3-F174 | Own fields as name-and-value rows | Done in WP-17 | Done in WP-17 |
-| M3-F175 | The big status button lists status names, not changes in words such as *Start working* | Needs the workflow | M4 (WF-04) |
+| M3-F175 | The big status button lists status names, not changes in words such as *Start working* | Needs the workflow | **Done (M4 WP-07):** the status button lists the status changes in words. |
 | M3-F176 | After a refused save, the reason (who took over) is learned by one extra heartbeat | The server could answer `edit.taken_over` itself (see M3-F180) | M4 |
 | M3-F177 | The count line, filters, *Group by* and *Spacing* above the issue list (UX §4.2) are not built | They belong to search and saved filters | M5 |
 | M3-F178 | The Timer on the phone's Details row and bottom bar (UX §3.3) | Time entries come with M6 | M6 |
 | M3-F179 | *Labels and tags* in Details are still blocks, not name-and-value rows (*Followers* is a row since WP-17) | Adding a tag or a label in a row needs its own design | M4 |
 | M3-F180 | A refused save of a long text should answer `edit.taken_over` with who took over (`why_lost` inside `save_text`), so the browser needs no extra heartbeat | A change of the server answer and its tests | M4 |
-| M3-F181 | Same as M3-F175 | — | M4 (WF-04) |
+| M3-F181 | Same as M3-F175 | — | **Done (M4 WP-07):** as M3-F175. |
 | M3-F182 | `aria-current` on the slim list's link and a name for the tick box | Done in WP-17 | Done in WP-17 |
 | M3-F183 | Widths in the browser tests read from the theme's tokens | Done in WP-17 (`support/tokens.ts`) | Done in WP-17 |
 | M3-F184 | On a phone, the Details button shows the priority word without its icon and a bare word when nobody is assigned; "Add Assigned to" reads badly | Wording and a summary part | M4 |

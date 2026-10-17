@@ -18,6 +18,7 @@ import {
   sendSetupAccount,
   setUpCodeApp,
   signOut,
+  skipMailStep,
 } from "./support/flows.ts";
 import { type Instance } from "./support/server.ts";
 import { screenshotFolder, shoot } from "./support/screenshots.ts";
@@ -58,6 +59,7 @@ async function keepTheAccountSafe(page: Page): Promise<string> {
 /** The end of the setup, and the start page and the security page. */
 async function finishTheSetup(page: Page): Promise<void> {
   await page.getByRole("button", { name: t("first-run.safer.finish") }).click();
+  await skipMailStep(page);
   await expect(page.getByRole("heading", { name: t("first-run.done.title") })).toBeVisible();
   await shoot(page, "06-setup-done");
   await page.getByRole("button", { name: t("first-run.done.go") }).click();

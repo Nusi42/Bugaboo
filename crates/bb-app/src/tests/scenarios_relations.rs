@@ -15,8 +15,8 @@ use super::scenarios_issues::an_issue;
 use super::world::World;
 use crate::auth::entity;
 use crate::comments::{
-    AddComment, DeleteComment, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
-    add_comment, delete_comment, mentions, read_mentions, restore_comment, save_comment,
+    AddComment, DeleteComment, RestoreComment, SaveComment, add_comment, delete_comment,
+    restore_comment, save_comment,
 };
 use crate::editing::{LockOutcome, TakeLockQuery, take_lock};
 use crate::follow::{FollowIssue, UnfollowIssue, follow_issue, unfollow_issue};
@@ -272,33 +272,6 @@ pub(crate) async fn restore_comment_scenario(world: &World) -> Added {
             RestoreComment {
                 session_token: token(world),
                 comment,
-            },
-        ),
-    )
-    .await
-}
-
-pub(crate) async fn read_mentions_scenario(world: &World) -> Added {
-    let project = a_project(world, "ACME").await?;
-    let issue = an_issue(world, project).await?;
-    let comment = a_comment(world, issue).await?;
-    // The page of mentions is a read; reading it is not the command.
-    mentions(
-        &world.ctx(),
-        MentionsQuery {
-            session_token: token(world),
-            limit: 10,
-        },
-    )
-    .await
-    .map_err(text)?;
-    measured(
-        &world.store,
-        read_mentions(
-            &world.ctx(),
-            ReadMentions {
-                session_token: token(world),
-                comments: vec![comment],
             },
         ),
     )

@@ -270,7 +270,6 @@ Rules:
 | **Mail server**          | The organization's server Bugaboo sends e-mails through; e-mail is off until an administrator enters it | SMTP relay (in UI) |
 | **Short e-mails**        | An organization choice: e-mails leave out all issue text (title and comments) | — |
 | **Handle**               | A person's short unique name for mentions (`@ana.brandt`), changeable in *My settings* | username, nick (in UI) |
-| **Confirm your e-mail address** | The link a person gets after signing up on their own, valid for 24 hours; the account works only after it | verify email (in UI) |
 
 ## Internal terms (docs and code only, never in the UI)
 

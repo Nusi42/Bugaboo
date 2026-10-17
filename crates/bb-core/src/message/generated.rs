@@ -698,6 +698,9 @@ pub const DATA_FOLDER_PART_FOLDER: MessageKey = MessageKey::new("data-folder.par
 pub const DATA_FOLDER_PART_SETUP_CODE_FILE: MessageKey =
     MessageKey::new("data-folder.part.setup-code-file");
 
+/// The message `editing.changes-drop`.
+pub const EDITING_CHANGES_DROP: MessageKey = MessageKey::new("editing.changes-drop");
+
 /// The message `editing.draft-drop`.
 pub const EDITING_DRAFT_DROP: MessageKey = MessageKey::new("editing.draft-drop");
 
@@ -706,6 +709,9 @@ pub const EDITING_EDIT_ANYWAY: MessageKey = MessageKey::new("editing.edit-anyway
 
 /// The message `editing.lost-ran-out`.
 pub const EDITING_LOST_RAN_OUT: MessageKey = MessageKey::new("editing.lost-ran-out");
+
+/// The message `editing.taking`.
+pub const EDITING_TAKING: MessageKey = MessageKey::new("editing.taking");
 
 /// The message `editing.text-kept`.
 pub const EDITING_TEXT_KEPT: MessageKey = MessageKey::new("editing.text-kept");
@@ -721,6 +727,9 @@ pub const EDITING_THIS_COMMENT: MessageKey = MessageKey::new("editing.this-comme
 
 /// The message `editing.this-layout`.
 pub const EDITING_THIS_LAYOUT: MessageKey = MessageKey::new("editing.this-layout");
+
+/// The message `editing.this-workflow`.
+pub const EDITING_THIS_WORKFLOW: MessageKey = MessageKey::new("editing.this-workflow");
 
 /// The message `error.access.cannot-lift`.
 pub const ERROR_ACCESS_CANNOT_LIFT: MessageKey = MessageKey::new("error.access.cannot-lift");
@@ -1028,9 +1037,6 @@ pub const FIELD_LOOK_PLAIN_TEXT: MessageKey = MessageKey::new("field-look.plain-
 
 /// The message `field-look.progress-bar`.
 pub const FIELD_LOOK_PROGRESS_BAR: MessageKey = MessageKey::new("field-look.progress-bar");
-
-/// The message `field-permissions.all-types`.
-pub const FIELD_PERMISSIONS_ALL_TYPES: MessageKey = MessageKey::new("field-permissions.all-types");
 
 /// The message `field-permissions.fewer-options`.
 pub const FIELD_PERMISSIONS_FEWER_OPTIONS: MessageKey =
@@ -1449,6 +1455,12 @@ pub const FIRST_RUN_DONE_TEXT: MessageKey = MessageKey::new("first-run.done.text
 /// The message `first-run.done.title`.
 pub const FIRST_RUN_DONE_TITLE: MessageKey = MessageKey::new("first-run.done.title");
 
+/// The message `first-run.mail.intro`.
+pub const FIRST_RUN_MAIL_INTRO: MessageKey = MessageKey::new("first-run.mail.intro");
+
+/// The message `first-run.mail.title`.
+pub const FIRST_RUN_MAIL_TITLE: MessageKey = MessageKey::new("first-run.mail.title");
+
 /// The message `first-run.safer.finish`.
 pub const FIRST_RUN_SAFER_FINISH: MessageKey = MessageKey::new("first-run.safer.finish");
 
@@ -1466,6 +1478,9 @@ pub const FIRST_RUN_STEP_CODE: MessageKey = MessageKey::new("first-run.step.code
 
 /// The message `first-run.step.done`.
 pub const FIRST_RUN_STEP_DONE: MessageKey = MessageKey::new("first-run.step.done");
+
+/// The message `first-run.step.mail`.
+pub const FIRST_RUN_STEP_MAIL: MessageKey = MessageKey::new("first-run.step.mail");
 
 /// The message `first-run.step.safer`.
 pub const FIRST_RUN_STEP_SAFER: MessageKey = MessageKey::new("first-run.step.safer");
@@ -1581,6 +1596,33 @@ pub const GROUPS_USED_NOTHING: MessageKey = MessageKey::new("groups.used-nothing
 /// The message `groups.used-whole`.
 pub const GROUPS_USED_WHOLE: MessageKey = MessageKey::new("groups.used-whole");
 
+/// The message `handle.intro`.
+pub const HANDLE_INTRO: MessageKey = MessageKey::new("handle.intro");
+
+/// The message `handle.invalid`.
+pub const HANDLE_INVALID: MessageKey = MessageKey::new("handle.invalid");
+
+/// The message `handle.label`.
+pub const HANDLE_LABEL: MessageKey = MessageKey::new("handle.label");
+
+/// The message `handle.rule-kept`.
+pub const HANDLE_RULE_KEPT: MessageKey = MessageKey::new("handle.rule-kept");
+
+/// The message `handle.rule-own`.
+pub const HANDLE_RULE_OWN: MessageKey = MessageKey::new("handle.rule-own");
+
+/// The message `handle.rules`.
+pub const HANDLE_RULES: MessageKey = MessageKey::new("handle.rules");
+
+/// The message `handle.save`.
+pub const HANDLE_SAVE: MessageKey = MessageKey::new("handle.save");
+
+/// The message `handle.taken`.
+pub const HANDLE_TAKEN: MessageKey = MessageKey::new("handle.taken");
+
+/// The message `handle.title`.
+pub const HANDLE_TITLE: MessageKey = MessageKey::new("handle.title");
+
 /// The message `history.more`.
 pub const HISTORY_MORE: MessageKey = MessageKey::new("history.more");
 
@@ -1611,8 +1653,8 @@ pub const HISTORY_TITLE: MessageKey = MessageKey::new("history.title");
 /// The message `home.admin`.
 pub const HOME_ADMIN: MessageKey = MessageKey::new("home.admin");
 
-/// The message `home.intro`.
-pub const HOME_INTRO: MessageKey = MessageKey::new("home.intro");
+/// The message `invitation.ask-again`.
+pub const INVITATION_ASK_AGAIN: MessageKey = MessageKey::new("invitation.ask-again");
 
 /// The message `invitation.incomplete`.
 pub const INVITATION_INCOMPLETE: MessageKey = MessageKey::new("invitation.incomplete");
@@ -1796,6 +1838,9 @@ pub const ISSUE_TYPE_GOAL: MessageKey = MessageKey::new("issue-type.goal");
 /// The message `issue-type.task`.
 pub const ISSUE_TYPE_TASK: MessageKey = MessageKey::new("issue-type.task");
 
+/// The message `issue-types.all-types`.
+pub const ISSUE_TYPES_ALL_TYPES: MessageKey = MessageKey::new("issue-types.all-types");
+
 /// The message `issue-types.create`.
 pub const ISSUE_TYPES_CREATE: MessageKey = MessageKey::new("issue-types.create");
 
@@ -1837,6 +1882,9 @@ pub const ISSUE_TYPES_SEARCH: MessageKey = MessageKey::new("issue-types.search")
 
 /// The message `issues.all-details`.
 pub const ISSUES_ALL_DETAILS: MessageKey = MessageKey::new("issues.all-details");
+
+/// The message `issues.ask-for-description`.
+pub const ISSUES_ASK_FOR_DESCRIPTION: MessageKey = MessageKey::new("issues.ask-for-description");
 
 /// The message `issues.assign`.
 pub const ISSUES_ASSIGN: MessageKey = MessageKey::new("issues.assign");
@@ -2217,9 +2265,6 @@ pub const LAYOUTS_CUSTOMIZE_FORM: MessageKey = MessageKey::new("layouts.customiz
 pub const LAYOUTS_CUSTOMIZE_ORGANIZATION: MessageKey =
     MessageKey::new("layouts.customize-organization");
 
-/// The message `layouts.draft-drop`.
-pub const LAYOUTS_DRAFT_DROP: MessageKey = MessageKey::new("layouts.draft-drop");
-
 /// The message `layouts.draft-restore`.
 pub const LAYOUTS_DRAFT_RESTORE: MessageKey = MessageKey::new("layouts.draft-restore");
 
@@ -2281,15 +2326,6 @@ pub const LAYOUTS_TAB_OTHER: MessageKey = MessageKey::new("layouts.tab-other");
 /// The message `layouts.tabs`.
 pub const LAYOUTS_TABS: MessageKey = MessageKey::new("layouts.tabs");
 
-/// The message `layouts.taking`.
-pub const LAYOUTS_TAKING: MessageKey = MessageKey::new("layouts.taking");
-
-/// The message `layouts.type`.
-pub const LAYOUTS_TYPE: MessageKey = MessageKey::new("layouts.type");
-
-/// The message `layouts.type-all`.
-pub const LAYOUTS_TYPE_ALL: MessageKey = MessageKey::new("layouts.type-all");
-
 /// The message `layouts.unreadable`.
 pub const LAYOUTS_UNREADABLE: MessageKey = MessageKey::new("layouts.unreadable");
 
@@ -2307,6 +2343,52 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
+
+/// The message `mail-server.connection`.
+pub const MAIL_SERVER_CONNECTION: MessageKey = MessageKey::new("mail-server.connection");
+
+/// The message `mail-server.intro`.
+pub const MAIL_SERVER_INTRO: MessageKey = MessageKey::new("mail-server.intro");
+
+/// The message `mail-server.no-encryption-note`.
+pub const MAIL_SERVER_NO_ENCRYPTION_NOTE: MessageKey =
+    MessageKey::new("mail-server.no-encryption-note");
+
+/// The message `mail-server.password-help`.
+pub const MAIL_SERVER_PASSWORD_HELP: MessageKey = MessageKey::new("mail-server.password-help");
+
+/// The message `mail-server.password-new`.
+pub const MAIL_SERVER_PASSWORD_NEW: MessageKey = MessageKey::new("mail-server.password-new");
+
+/// The message `mail-server.password-none`.
+pub const MAIL_SERVER_PASSWORD_NONE: MessageKey = MessageKey::new("mail-server.password-none");
+
+/// The message `mail-server.password-remove`.
+pub const MAIL_SERVER_PASSWORD_REMOVE: MessageKey = MessageKey::new("mail-server.password-remove");
+
+/// The message `mail-server.password-set`.
+pub const MAIL_SERVER_PASSWORD_SET: MessageKey = MessageKey::new("mail-server.password-set");
+
+/// The message `mail-server.save`.
+pub const MAIL_SERVER_SAVE: MessageKey = MessageKey::new("mail-server.save");
+
+/// The message `mail-server.sending-title`.
+pub const MAIL_SERVER_SENDING_TITLE: MessageKey = MessageKey::new("mail-server.sending-title");
+
+/// The message `mail-server.short-title`.
+pub const MAIL_SERVER_SHORT_TITLE: MessageKey = MessageKey::new("mail-server.short-title");
+
+/// The message `mail-server.sign-up-note`.
+pub const MAIL_SERVER_SIGN_UP_NOTE: MessageKey = MessageKey::new("mail-server.sign-up-note");
+
+/// The message `mail-server.test-send`.
+pub const MAIL_SERVER_TEST_SEND: MessageKey = MessageKey::new("mail-server.test-send");
+
+/// The message `mail-server.test-title`.
+pub const MAIL_SERVER_TEST_TITLE: MessageKey = MessageKey::new("mail-server.test-title");
+
+/// The message `mail-server.title`.
+pub const MAIL_SERVER_TITLE: MessageKey = MessageKey::new("mail-server.title");
 
 /// The message `mail.footer`.
 pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
@@ -2507,18 +2589,6 @@ pub const MARKDOWN_TOOLBAR: MessageKey = MessageKey::new("markdown.toolbar");
 /// The message `markdown.write`.
 pub const MARKDOWN_WRITE: MessageKey = MessageKey::new("markdown.write");
 
-/// The message `mentions.mark-read`.
-pub const MENTIONS_MARK_READ: MessageKey = MessageKey::new("mentions.mark-read");
-
-/// The message `mentions.new`.
-pub const MENTIONS_NEW: MessageKey = MessageKey::new("mentions.new");
-
-/// The message `mentions.nothing`.
-pub const MENTIONS_NOTHING: MessageKey = MessageKey::new("mentions.nothing");
-
-/// The message `mentions.title`.
-pub const MENTIONS_TITLE: MessageKey = MessageKey::new("mentions.title");
-
 /// The message `nav.access-keys`.
 pub const NAV_ACCESS_KEYS: MessageKey = MessageKey::new("nav.access-keys");
 
@@ -2533,6 +2603,12 @@ pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permiss
 
 /// The message `nav.fields`.
 pub const NAV_FIELDS: MessageKey = MessageKey::new("nav.fields");
+
+/// The message `nav.group.connections`.
+pub const NAV_GROUP_CONNECTIONS: MessageKey = MessageKey::new("nav.group.connections");
+
+/// The message `nav.group.hearing`.
+pub const NAV_GROUP_HEARING: MessageKey = MessageKey::new("nav.group.hearing");
 
 /// The message `nav.group.look`.
 pub const NAV_GROUP_LOOK: MessageKey = MessageKey::new("nav.group.look");
@@ -2555,6 +2631,9 @@ pub const NAV_GROUP_WORK: MessageKey = MessageKey::new("nav.group.work");
 /// The message `nav.groups`.
 pub const NAV_GROUPS: MessageKey = MessageKey::new("nav.groups");
 
+/// The message `nav.handle`.
+pub const NAV_HANDLE: MessageKey = MessageKey::new("nav.handle");
+
 /// The message `nav.home`.
 pub const NAV_HOME: MessageKey = MessageKey::new("nav.home");
 
@@ -2564,8 +2643,17 @@ pub const NAV_ISSUE_TYPES: MessageKey = MessageKey::new("nav.issue-types");
 /// The message `nav.labels`.
 pub const NAV_LABELS: MessageKey = MessageKey::new("nav.labels");
 
+/// The message `nav.mail-server`.
+pub const NAV_MAIL_SERVER: MessageKey = MessageKey::new("nav.mail-server");
+
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
+
+/// The message `nav.notification-settings`.
+pub const NAV_NOTIFICATION_SETTINGS: MessageKey = MessageKey::new("nav.notification-settings");
+
+/// The message `nav.notifications`.
+pub const NAV_NOTIFICATIONS: MessageKey = MessageKey::new("nav.notifications");
 
 /// The message `nav.organization-security`.
 pub const NAV_ORGANIZATION_SECURITY: MessageKey = MessageKey::new("nav.organization-security");
@@ -2632,6 +2720,85 @@ pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notificatio
 
 /// The message `notification.kind.run-ended`.
 pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
+
+/// The message `notifications.by-mail`.
+pub const NOTIFICATIONS_BY_MAIL: MessageKey = MessageKey::new("notifications.by-mail");
+
+/// The message `notifications.customize`.
+pub const NOTIFICATIONS_CUSTOMIZE: MessageKey = MessageKey::new("notifications.customize");
+
+/// The message `notifications.customize-intro`.
+pub const NOTIFICATIONS_CUSTOMIZE_INTRO: MessageKey =
+    MessageKey::new("notifications.customize-intro");
+
+/// The message `notifications.filter.all`.
+pub const NOTIFICATIONS_FILTER_ALL: MessageKey = MessageKey::new("notifications.filter.all");
+
+/// The message `notifications.filter.mentions`.
+pub const NOTIFICATIONS_FILTER_MENTIONS: MessageKey =
+    MessageKey::new("notifications.filter.mentions");
+
+/// The message `notifications.filter.unread`.
+pub const NOTIFICATIONS_FILTER_UNREAD: MessageKey = MessageKey::new("notifications.filter.unread");
+
+/// The message `notifications.filters`.
+pub const NOTIFICATIONS_FILTERS: MessageKey = MessageKey::new("notifications.filters");
+
+/// The message `notifications.hide-result`.
+pub const NOTIFICATIONS_HIDE_RESULT: MessageKey = MessageKey::new("notifications.hide-result");
+
+/// The message `notifications.in-app`.
+pub const NOTIFICATIONS_IN_APP: MessageKey = MessageKey::new("notifications.in-app");
+
+/// The message `notifications.kind`.
+pub const NOTIFICATIONS_KIND: MessageKey = MessageKey::new("notifications.kind");
+
+/// The message `notifications.mark-all-read`.
+pub const NOTIFICATIONS_MARK_ALL_READ: MessageKey = MessageKey::new("notifications.mark-all-read");
+
+/// The message `notifications.mark-read`.
+pub const NOTIFICATIONS_MARK_READ: MessageKey = MessageKey::new("notifications.mark-read");
+
+/// The message `notifications.more`.
+pub const NOTIFICATIONS_MORE: MessageKey = MessageKey::new("notifications.more");
+
+/// The message `notifications.new`.
+pub const NOTIFICATIONS_NEW: MessageKey = MessageKey::new("notifications.new");
+
+/// The message `notifications.news`.
+pub const NOTIFICATIONS_NEWS: MessageKey = MessageKey::new("notifications.news");
+
+/// The message `notifications.nothing-all`.
+pub const NOTIFICATIONS_NOTHING_ALL: MessageKey = MessageKey::new("notifications.nothing-all");
+
+/// The message `notifications.nothing-mentions`.
+pub const NOTIFICATIONS_NOTHING_MENTIONS: MessageKey =
+    MessageKey::new("notifications.nothing-mentions");
+
+/// The message `notifications.nothing-unread`.
+pub const NOTIFICATIONS_NOTHING_UNREAD: MessageKey =
+    MessageKey::new("notifications.nothing-unread");
+
+/// The message `notifications.open`.
+pub const NOTIFICATIONS_OPEN: MessageKey = MessageKey::new("notifications.open");
+
+/// The message `notifications.run-done`.
+pub const NOTIFICATIONS_RUN_DONE: MessageKey = MessageKey::new("notifications.run-done");
+
+/// The message `notifications.run-failed`.
+pub const NOTIFICATIONS_RUN_FAILED: MessageKey = MessageKey::new("notifications.run-failed");
+
+/// The message `notifications.show-all`.
+pub const NOTIFICATIONS_SHOW_ALL: MessageKey = MessageKey::new("notifications.show-all");
+
+/// The message `notifications.show-result`.
+pub const NOTIFICATIONS_SHOW_RESULT: MessageKey = MessageKey::new("notifications.show-result");
+
+/// The message `notifications.start-nothing`.
+pub const NOTIFICATIONS_START_NOTHING: MessageKey = MessageKey::new("notifications.start-nothing");
+
+/// The message `notifications.title`.
+pub const NOTIFICATIONS_TITLE: MessageKey = MessageKey::new("notifications.title");
 
 /// The message `own.ask-keep`.
 pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
@@ -4212,6 +4379,9 @@ pub const SHORTCUT_EVERYWHERE: MessageKey = MessageKey::new("shortcut.everywhere
 /// The message `shortcut.go-home`.
 pub const SHORTCUT_GO_HOME: MessageKey = MessageKey::new("shortcut.go-home");
 
+/// The message `shortcut.go-notifications`.
+pub const SHORTCUT_GO_NOTIFICATIONS: MessageKey = MessageKey::new("shortcut.go-notifications");
+
 /// The message `shortcut.in-lists`.
 pub const SHORTCUT_IN_LISTS: MessageKey = MessageKey::new("shortcut.in-lists");
 
@@ -4345,6 +4515,12 @@ pub const SIGN_UP_POLICY_DOMAINS_HELP: MessageKey = MessageKey::new("sign-up-pol
 /// The message `sign-up-policy.intro`.
 pub const SIGN_UP_POLICY_INTRO: MessageKey = MessageKey::new("sign-up-policy.intro");
 
+/// The message `sign-up-policy.mail-link`.
+pub const SIGN_UP_POLICY_MAIL_LINK: MessageKey = MessageKey::new("sign-up-policy.mail-link");
+
+/// The message `sign-up-policy.mail-off`.
+pub const SIGN_UP_POLICY_MAIL_OFF: MessageKey = MessageKey::new("sign-up-policy.mail-off");
+
 /// The message `sign-up-policy.switch`.
 pub const SIGN_UP_POLICY_SWITCH: MessageKey = MessageKey::new("sign-up-policy.switch");
 
@@ -4354,14 +4530,23 @@ pub const SIGN_UP_POLICY_TITLE: MessageKey = MessageKey::new("sign-up-policy.tit
 /// The message `sign-up-policy.warning`.
 pub const SIGN_UP_POLICY_WARNING: MessageKey = MessageKey::new("sign-up-policy.warning");
 
+/// The message `sign-up.check-nothing`.
+pub const SIGN_UP_CHECK_NOTHING: MessageKey = MessageKey::new("sign-up.check-nothing");
+
+/// The message `sign-up.check-title`.
+pub const SIGN_UP_CHECK_TITLE: MessageKey = MessageKey::new("sign-up.check-title");
+
 /// The message `sign-up.closed`.
 pub const SIGN_UP_CLOSED: MessageKey = MessageKey::new("sign-up.closed");
 
 /// The message `sign-up.have-account`.
 pub const SIGN_UP_HAVE_ACCOUNT: MessageKey = MessageKey::new("sign-up.have-account");
 
-/// The message `sign-up.sent`.
-pub const SIGN_UP_SENT: MessageKey = MessageKey::new("sign-up.sent");
+/// The message `sign-up.other-address`.
+pub const SIGN_UP_OTHER_ADDRESS: MessageKey = MessageKey::new("sign-up.other-address");
+
+/// The message `sign-up.resend`.
+pub const SIGN_UP_RESEND: MessageKey = MessageKey::new("sign-up.resend");
 
 /// The message `sign-up.submit`.
 pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
@@ -4525,6 +4710,179 @@ pub const WORKFLOW_DEVELOPMENT: MessageKey = MessageKey::new("workflow.developme
 
 /// The message `workflow.simple`.
 pub const WORKFLOW_SIMPLE: MessageKey = MessageKey::new("workflow.simple");
+
+/// The message `workflows.add-condition`.
+pub const WORKFLOWS_ADD_CONDITION: MessageKey = MessageKey::new("workflows.add-condition");
+
+/// The message `workflows.ask-for`.
+pub const WORKFLOWS_ASK_FOR: MessageKey = MessageKey::new("workflows.ask-for");
+
+/// The message `workflows.ask-for-help`.
+pub const WORKFLOWS_ASK_FOR_HELP: MessageKey = MessageKey::new("workflows.ask-for-help");
+
+/// The message `workflows.create-change-button`.
+pub const WORKFLOWS_CREATE_CHANGE_BUTTON: MessageKey =
+    MessageKey::new("workflows.create-change-button");
+
+/// The message `workflows.create-change-do`.
+pub const WORKFLOWS_CREATE_CHANGE_DO: MessageKey = MessageKey::new("workflows.create-change-do");
+
+/// The message `workflows.create-change-to`.
+pub const WORKFLOWS_CREATE_CHANGE_TO: MessageKey = MessageKey::new("workflows.create-change-to");
+
+/// The message `workflows.create-status`.
+pub const WORKFLOWS_CREATE_STATUS: MessageKey = MessageKey::new("workflows.create-status");
+
+/// The message `workflows.customize-organization`.
+pub const WORKFLOWS_CUSTOMIZE_ORGANIZATION: MessageKey =
+    MessageKey::new("workflows.customize-organization");
+
+/// The message `workflows.draft-changed`.
+pub const WORKFLOWS_DRAFT_CHANGED: MessageKey = MessageKey::new("workflows.draft-changed");
+
+/// The message `workflows.draft-note`.
+pub const WORKFLOWS_DRAFT_NOTE: MessageKey = MessageKey::new("workflows.draft-note");
+
+/// The message `workflows.draft-restore`.
+pub const WORKFLOWS_DRAFT_RESTORE: MessageKey = MessageKey::new("workflows.draft-restore");
+
+/// The message `workflows.has-rules`.
+pub const WORKFLOWS_HAS_RULES: MessageKey = MessageKey::new("workflows.has-rules");
+
+/// The message `workflows.intro`.
+pub const WORKFLOWS_INTRO: MessageKey = MessageKey::new("workflows.intro");
+
+/// The message `workflows.lost`.
+pub const WORKFLOWS_LOST: MessageKey = MessageKey::new("workflows.lost");
+
+/// The message `workflows.must-fill`.
+pub const WORKFLOWS_MUST_FILL: MessageKey = MessageKey::new("workflows.must-fill");
+
+/// The message `workflows.must-fill-help`.
+pub const WORKFLOWS_MUST_FILL_HELP: MessageKey = MessageKey::new("workflows.must-fill-help");
+
+/// The message `workflows.name`.
+pub const WORKFLOWS_NAME: MessageKey = MessageKey::new("workflows.name");
+
+/// The message `workflows.nav`.
+pub const WORKFLOWS_NAV: MessageKey = MessageKey::new("workflows.nav");
+
+/// The message `workflows.new-status`.
+pub const WORKFLOWS_NEW_STATUS: MessageKey = MessageKey::new("workflows.new-status");
+
+/// The message `workflows.new-status-group`.
+pub const WORKFLOWS_NEW_STATUS_GROUP: MessageKey = MessageKey::new("workflows.new-status-group");
+
+/// The message `workflows.no-changes`.
+pub const WORKFLOWS_NO_CHANGES: MessageKey = MessageKey::new("workflows.no-changes");
+
+/// The message `workflows.only-if`.
+pub const WORKFLOWS_ONLY_IF: MessageKey = MessageKey::new("workflows.only-if");
+
+/// The message `workflows.only-if-field`.
+pub const WORKFLOWS_ONLY_IF_FIELD: MessageKey = MessageKey::new("workflows.only-if-field");
+
+/// The message `workflows.only-if-help`.
+pub const WORKFLOWS_ONLY_IF_HELP: MessageKey = MessageKey::new("workflows.only-if-help");
+
+/// The message `workflows.only-if-test`.
+pub const WORKFLOWS_ONLY_IF_TEST: MessageKey = MessageKey::new("workflows.only-if-test");
+
+/// The message `workflows.organization-title`.
+pub const WORKFLOWS_ORGANIZATION_TITLE: MessageKey =
+    MessageKey::new("workflows.organization-title");
+
+/// The message `workflows.publish`.
+pub const WORKFLOWS_PUBLISH: MessageKey = MessageKey::new("workflows.publish");
+
+/// The message `workflows.publish-go-over`.
+pub const WORKFLOWS_PUBLISH_GO_OVER: MessageKey = MessageKey::new("workflows.publish-go-over");
+
+/// The message `workflows.publish-text`.
+pub const WORKFLOWS_PUBLISH_TEXT: MessageKey = MessageKey::new("workflows.publish-text");
+
+/// The message `workflows.publish-title`.
+pub const WORKFLOWS_PUBLISH_TITLE: MessageKey = MessageKey::new("workflows.publish-title");
+
+/// The message `workflows.rules-done`.
+pub const WORKFLOWS_RULES_DONE: MessageKey = MessageKey::new("workflows.rules-done");
+
+/// The message `workflows.rules-link`.
+pub const WORKFLOWS_RULES_LINK: MessageKey = MessageKey::new("workflows.rules-link");
+
+/// The message `workflows.starts-here`.
+pub const WORKFLOWS_STARTS_HERE: MessageKey = MessageKey::new("workflows.starts-here");
+
+/// The message `workflows.status-group`.
+pub const WORKFLOWS_STATUS_GROUP: MessageKey = MessageKey::new("workflows.status-group");
+
+/// The message `workflows.status-name`.
+pub const WORKFLOWS_STATUS_NAME: MessageKey = MessageKey::new("workflows.status-name");
+
+/// The message `workflows.statuses`.
+pub const WORKFLOWS_STATUSES: MessageKey = MessageKey::new("workflows.statuses");
+
+/// The message `workflows.statuses-help`.
+pub const WORKFLOWS_STATUSES_HELP: MessageKey = MessageKey::new("workflows.statuses-help");
+
+/// The message `workflows.test-empty`.
+pub const WORKFLOWS_TEST_EMPTY: MessageKey = MessageKey::new("workflows.test-empty");
+
+/// The message `workflows.test-filled`.
+pub const WORKFLOWS_TEST_FILLED: MessageKey = MessageKey::new("workflows.test-filled");
+
+/// The message `workflows.try-allowed`.
+pub const WORKFLOWS_TRY_ALLOWED: MessageKey = MessageKey::new("workflows.try-allowed");
+
+/// The message `workflows.try-go`.
+pub const WORKFLOWS_TRY_GO: MessageKey = MessageKey::new("workflows.try-go");
+
+/// The message `workflows.try-none`.
+pub const WORKFLOWS_TRY_NONE: MessageKey = MessageKey::new("workflows.try-none");
+
+/// The message `workflows.try-text`.
+pub const WORKFLOWS_TRY_TEXT: MessageKey = MessageKey::new("workflows.try-text");
+
+/// The message `workflows.try-title`.
+pub const WORKFLOWS_TRY_TITLE: MessageKey = MessageKey::new("workflows.try-title");
+
+/// The message `workflows.use-inherited`.
+pub const WORKFLOWS_USE_INHERITED: MessageKey = MessageKey::new("workflows.use-inherited");
+
+/// The message `workflows.use-inherited-text`.
+pub const WORKFLOWS_USE_INHERITED_TEXT: MessageKey =
+    MessageKey::new("workflows.use-inherited-text");
+
+/// The message `workflows.use-inherited-title`.
+pub const WORKFLOWS_USE_INHERITED_TITLE: MessageKey =
+    MessageKey::new("workflows.use-inherited-title");
+
+/// The message `workflows.view`.
+pub const WORKFLOWS_VIEW: MessageKey = MessageKey::new("workflows.view");
+
+/// The message `workflows.view-drawing`.
+pub const WORKFLOWS_VIEW_DRAWING: MessageKey = MessageKey::new("workflows.view-drawing");
+
+/// The message `workflows.view-list`.
+pub const WORKFLOWS_VIEW_LIST: MessageKey = MessageKey::new("workflows.view-list");
+
+/// The message `workflows.who`.
+pub const WORKFLOWS_WHO: MessageKey = MessageKey::new("workflows.who");
+
+/// The message `workflows.who-assigned`.
+pub const WORKFLOWS_WHO_ASSIGNED: MessageKey = MessageKey::new("workflows.who-assigned");
+
+/// The message `workflows.who-groups`.
+pub const WORKFLOWS_WHO_GROUPS: MessageKey = MessageKey::new("workflows.who-groups");
+
+/// The message `workflows.who-help`.
+pub const WORKFLOWS_WHO_HELP: MessageKey = MessageKey::new("workflows.who-help");
+
+/// The message `workflows.who-reporter`.
+pub const WORKFLOWS_WHO_REPORTER: MessageKey = MessageKey::new("workflows.who-reporter");
+
+/// The message `workflows.who-roles`.
+pub const WORKFLOWS_WHO_ROLES: MessageKey = MessageKey::new("workflows.who-roles");
 
 /// The message `access-keys.delete-name`.
 #[must_use]
@@ -5833,6 +6191,33 @@ pub fn groups_used_projects(count: i64) -> Message {
     )
 }
 
+/// The message `handle.changed`.
+#[must_use]
+pub fn handle_changed(handle: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("handle.changed"),
+        vec![("handle", Value::Text(handle.to_string()))],
+    )
+}
+
+/// The message `handle.rule-characters`.
+#[must_use]
+pub fn handle_rule_characters(max: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("handle.rule-characters"),
+        vec![("max", Value::Text(max.to_string()))],
+    )
+}
+
+/// The message `handle.rule-weekly`.
+#[must_use]
+pub fn handle_rule_weekly(days: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("handle.rule-weekly"),
+        vec![("days", Value::Number(days))],
+    )
+}
+
 /// The message `history.by`.
 #[must_use]
 pub fn history_by(when: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -6100,6 +6485,15 @@ pub fn issue_types_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issue-types.created"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `issues.ask-for-intro`.
+#[must_use]
+pub fn issues_ask_for_intro(to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.ask-for-intro"),
+        vec![("to", Value::Text(to.to_string()))],
     )
 }
 
@@ -6770,6 +7164,33 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `mail-server.test-done`.
+#[must_use]
+pub fn mail_server_test_done(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail-server.test-done"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `mail-server.test-intro`.
+#[must_use]
+pub fn mail_server_test_intro(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail-server.test-intro"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `mail-server.test-wait`.
+#[must_use]
+pub fn mail_server_test_wait(seconds: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail-server.test-wait"),
+        vec![("seconds", Value::Number(seconds))],
+    )
+}
+
 /// The message `mail.line-assigned`.
 #[must_use]
 pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
@@ -6913,6 +7334,21 @@ pub fn many_changes_apply_delete(count: i64) -> Message {
     )
 }
 
+/// The message `many-changes.change-and-status`.
+#[must_use]
+pub fn many_changes_change_and_status(
+    button: impl std::fmt::Display,
+    status: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("many-changes.change-and-status"),
+        vec![
+            ("button", Value::Text(button.to_string())),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
 /// The message `many-changes.line-changes`.
 #[must_use]
 pub fn many_changes_line_changes(
@@ -7006,24 +7442,108 @@ pub fn many_changes_title(action: impl std::fmt::Display, count: i64) -> Message
     )
 }
 
-/// The message `mentions.in`.
+/// The message `notifications.assigned`.
 #[must_use]
-pub fn mentions_in(issue: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+pub fn notifications_assigned(who: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mentions.in"),
+        MessageKey::new("notifications.assigned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.commented`.
+#[must_use]
+pub fn notifications_commented(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.commented"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.count-capped`.
+#[must_use]
+pub fn notifications_count_capped(max: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.count-capped"),
+        vec![("max", Value::Text(max.to_string()))],
+    )
+}
+
+/// The message `notifications.finish-asked`.
+#[must_use]
+pub fn notifications_finish_asked(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.finish-asked"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.group-name`.
+#[must_use]
+pub fn notifications_group_name(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.group-name"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `notifications.locked-way`.
+#[must_use]
+pub fn notifications_locked_way(
+    value: impl std::fmt::Display,
+    way: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.locked-way"),
         vec![
-            ("issue", Value::Text(issue.to_string())),
-            ("who", Value::Text(who.to_string())),
+            ("value", Value::Text(value.to_string())),
+            ("way", Value::Text(way.to_string())),
         ],
     )
 }
 
-/// The message `mentions.unread`.
+/// The message `notifications.mark-read-name`.
 #[must_use]
-pub fn mentions_unread(count: i64) -> Message {
+pub fn notifications_mark_read_name(what: impl std::fmt::Display) -> Message {
     Message::with_arguments(
-        MessageKey::new("mentions.unread"),
-        vec![("count", Value::Number(count))],
+        MessageKey::new("notifications.mark-read-name"),
+        vec![("what", Value::Text(what.to_string()))],
+    )
+}
+
+/// The message `notifications.mentioned`.
+#[must_use]
+pub fn notifications_mentioned(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.mentioned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.open-name`.
+#[must_use]
+pub fn notifications_open_name(what: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.open-name"),
+        vec![("what", Value::Text(what.to_string()))],
+    )
+}
+
+/// The message `notifications.released`.
+#[must_use]
+pub fn notifications_released(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.released"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `notifications.taken-over`.
+#[must_use]
+pub fn notifications_taken_over(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("notifications.taken-over"),
+        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -8284,6 +8804,36 @@ pub fn shortcuts_conflict(action: impl std::fmt::Display, keys: impl std::fmt::D
     )
 }
 
+/// The message `sign-up.check-text`.
+#[must_use]
+pub fn sign_up_check_text(email: impl std::fmt::Display, hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sign-up.check-text"),
+        vec![
+            ("email", Value::Text(email.to_string())),
+            ("hours", Value::Number(hours)),
+        ],
+    )
+}
+
+/// The message `sign-up.resend-in`.
+#[must_use]
+pub fn sign_up_resend_in(minutes: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sign-up.resend-in"),
+        vec![("minutes", Value::Number(minutes))],
+    )
+}
+
+/// The message `sign-up.resent`.
+#[must_use]
+pub fn sign_up_resent(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("sign-up.resent"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
 /// The message `sub-issues.added`.
 #[must_use]
 pub fn sub_issues_added(key: impl std::fmt::Display) -> Message {
@@ -8413,6 +8963,308 @@ pub fn tls_write_failed(path: impl std::fmt::Display, reason: impl std::fmt::Dis
             ("path", Value::Text(path.to_string())),
             ("reason", Value::Text(reason.to_string())),
         ],
+    )
+}
+
+/// The message `workflows.arrow-label`.
+#[must_use]
+pub fn workflows_arrow_label(
+    button: impl std::fmt::Display,
+    from: impl std::fmt::Display,
+    to: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.arrow-label"),
+        vec![
+            ("button", Value::Text(button.to_string())),
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.button-text`.
+#[must_use]
+pub fn workflows_button_text(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.button-text"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.change-remove`.
+#[must_use]
+pub fn workflows_change_remove(
+    from: impl std::fmt::Display,
+    to: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.change-remove"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.create-change`.
+#[must_use]
+pub fn workflows_create_change(from: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.create-change"),
+        vec![("from", Value::Text(from.to_string()))],
+    )
+}
+
+/// The message `workflows.customize-project`.
+#[must_use]
+pub fn workflows_customize_project(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.customize-project"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `workflows.delete-held`.
+#[must_use]
+pub fn workflows_delete_held(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.delete-held"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.from`.
+#[must_use]
+pub fn workflows_from(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.from"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.project-title`.
+#[must_use]
+pub fn workflows_project_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.project-title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `workflows.publish-blocked`.
+#[must_use]
+pub fn workflows_publish_blocked(count: i64, status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-blocked"),
+        vec![
+            ("count", Value::Number(count)),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.publish-go`.
+#[must_use]
+pub fn workflows_publish_go(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-go"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `workflows.publish-too-many`.
+#[must_use]
+pub fn workflows_publish_too_many(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-too-many"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `workflows.publish-unseen`.
+#[must_use]
+pub fn workflows_publish_unseen(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-unseen"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `workflows.publish-where`.
+#[must_use]
+pub fn workflows_publish_where(count: i64, status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-where"),
+        vec![
+            ("count", Value::Number(count)),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.publish-where-over`.
+#[must_use]
+pub fn workflows_publish_where_over(status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.publish-where-over"),
+        vec![("status", Value::Text(status.to_string()))],
+    )
+}
+
+/// The message `workflows.remove-condition`.
+#[must_use]
+pub fn workflows_remove_condition(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.remove-condition"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `workflows.rules-intro`.
+#[must_use]
+pub fn workflows_rules_intro(from: impl std::fmt::Display, to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.rules-intro"),
+        vec![
+            ("from", Value::Text(from.to_string())),
+            ("to", Value::Text(to.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.rules-open`.
+#[must_use]
+pub fn workflows_rules_open(button: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.rules-open"),
+        vec![("button", Value::Text(button.to_string()))],
+    )
+}
+
+/// The message `workflows.rules-title`.
+#[must_use]
+pub fn workflows_rules_title(button: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.rules-title"),
+        vec![("button", Value::Text(button.to_string()))],
+    )
+}
+
+/// The message `workflows.status-down`.
+#[must_use]
+pub fn workflows_status_down(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.status-down"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.status-remove`.
+#[must_use]
+pub fn workflows_status_remove(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.status-remove"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.status-up`.
+#[must_use]
+pub fn workflows_status_up(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.status-up"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.try-in`.
+#[must_use]
+pub fn workflows_try_in(key: impl std::fmt::Display, status: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.try-in"),
+        vec![
+            ("key", Value::Text(key.to_string())),
+            ("status", Value::Text(status.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.try-needs`.
+#[must_use]
+pub fn workflows_try_needs(fields: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.try-needs"),
+        vec![("fields", Value::Text(fields.to_string()))],
+    )
+}
+
+/// The message `workflows.try-on-field`.
+#[must_use]
+pub fn workflows_try_on_field(
+    field: impl std::fmt::Display,
+    reason: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.try-on-field"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.uses-hidden`.
+#[must_use]
+pub fn workflows_uses_hidden(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-hidden"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.uses-organization`.
+#[must_use]
+pub fn workflows_uses_organization(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-organization"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.uses-project`.
+#[must_use]
+pub fn workflows_uses_project(
+    name: impl std::fmt::Display,
+    project: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-project"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("project", Value::Text(project.to_string())),
+        ],
+    )
+}
+
+/// The message `workflows.uses-starting`.
+#[must_use]
+pub fn workflows_uses_starting(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-starting"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `workflows.uses-type`.
+#[must_use]
+pub fn workflows_uses_type(type_: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("workflows.uses-type"),
+        vec![("type", Value::Text(type_.to_string()))],
     )
 }
 
@@ -9054,6 +9906,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{part} {path} could not be checked, because Bugaboo could not read its access rights. Check them yourself: other accounts on this computer should not be able to open it, unless you want that.",
     ),
     ("editing.ask-to-finish", "Ask {name} to finish"),
+    ("editing.changes-drop", "Throw my changes away"),
     ("editing.draft-continue", "Continue your draft from {when}"),
     ("editing.draft-drop", "Throw the draft away"),
     (
@@ -9081,6 +9934,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "editing.lost-taken-over",
         "Not saved yet: {name} took over the editing. Your text is kept.",
     ),
+    ("editing.taking", "Getting ready to edit…"),
     ("editing.text-kept", "What you typed is kept as a draft:"),
     (
         "editing.text-kept-on-close",
@@ -9089,6 +9943,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("editing.the-description", "the description"),
     ("editing.this-comment", "this comment"),
     ("editing.this-layout", "this layout"),
+    ("editing.this-workflow", "this workflow"),
     (
         "error.access.cannot-lift",
         "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",
@@ -9247,7 +10102,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.mail.rejected",
-        "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+        "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
     ),
     (
         "error.mail.unavailable",
@@ -9384,7 +10239,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("field-look.pill", "Pill"),
     ("field-look.plain-text", "Plain text"),
     ("field-look.progress-bar", "Progress bar"),
-    ("field-permissions.all-types", "All issue types"),
     ("field-permissions.fewer-options", "Fewer options"),
     (
         "field-permissions.intro",
@@ -9673,6 +10527,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your account is ready and you are signed in.",
     ),
     ("first-run.done.title", "You are all set"),
+    (
+        "first-run.mail.intro",
+        "Bugaboo can tell people by e-mail when something happens on issues they follow, and can let people sign up with their e-mail address. For that it needs your organization's mail server. You can skip this and do it later under Organization settings.",
+    ),
+    (
+        "first-run.mail.title",
+        "Set up e-mail (you can do this later)",
+    ),
     ("first-run.safer.finish", "Finish"),
     (
         "first-run.safer.intro",
@@ -9683,6 +10545,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("first-run.step.account", "Your account"),
     ("first-run.step.code", "Setup code"),
     ("first-run.step.done", "Done"),
+    ("first-run.step.mail", "E-mail"),
     ("first-run.step.safer", "Keep it safe"),
     ("first-run.title", "Welcome to Bugaboo"),
     ("focus.back", "Back to list"),
@@ -9760,6 +10623,39 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {in # project you can see} other {in # projects you can see}}",
     ),
     ("groups.used-whole", "for the whole organization"),
+    ("handle.changed", "Your handle is now @{handle}."),
+    (
+        "handle.intro",
+        "Your handle is the short name people type after @ to mention you, like @ana.brandt.",
+    ),
+    (
+        "handle.invalid",
+        "That is not a handle. Use only the letters a to z, digits, dots, dashes and underscores.",
+    ),
+    ("handle.label", "Your handle"),
+    (
+        "handle.rule-characters",
+        "A handle has only the letters a to z (no accents), digits, dots, dashes and underscores, and at most {max} characters.",
+    ),
+    (
+        "handle.rule-kept",
+        "A handle you give up stays reserved for you. Comments written before still name you, but a new comment that uses it names nobody.",
+    ),
+    (
+        "handle.rule-own",
+        "Nobody else may have it, and it cannot be the handle of a group or a role.",
+    ),
+    (
+        "handle.rule-weekly",
+        "You can change it once in {days, plural, one {# day} other {# days}}.",
+    ),
+    ("handle.rules", "How a handle works"),
+    ("handle.save", "Change my handle"),
+    (
+        "handle.taken",
+        "Somebody has this handle, or had it, or a group or a role has it. Choose another one.",
+    ),
+    ("handle.title", "Handle"),
     ("history.by", "{who} · {when}"),
     (
         "history.changed",
@@ -9800,11 +10696,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "home.admin",
         "You can look after this server. Organization settings shows what you may do there.",
     ),
-    (
-        "home.intro",
-        "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
-    ),
     ("home.title", "Welcome, {name}"),
+    ("invitation.ask-again", "Ask for a new link"),
     (
         "invitation.incomplete",
         "This link is not complete. Open the whole link that you were sent.",
@@ -9889,6 +10782,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-type.feature", "Feature"),
     ("issue-type.goal", "Goal"),
     ("issue-type.task", "Task"),
+    ("issue-types.all-types", "All issue types"),
     ("issue-types.create", "Create the issue type"),
     (
         "issue-types.create-intro",
@@ -9913,6 +10807,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-types.retired", "Retired"),
     ("issue-types.search", "Search issue types"),
     ("issues.all-details", "All details"),
+    (
+        "issues.ask-for-description",
+        "Write the description of the issue first: this change needs it.",
+    ),
+    (
+        "issues.ask-for-intro",
+        "Before this issue can go to {to}, fill in:",
+    ),
     (
         "issues.asked-to-finish",
         "{name} asked you to finish editing.",
@@ -10211,7 +11113,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "layouts.draft-changed",
         "This layout changed while you were editing, and you see it as it is now. Your changes from {when} are kept. Putting them back replaces what you see now.",
     ),
-    ("layouts.draft-drop", "Throw my changes away"),
     ("layouts.draft-restore", "Put my changes back"),
     ("layouts.field-add-to", "Add {name} to a section"),
     ("layouts.field-down", "Move {name} down"),
@@ -10293,9 +11194,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.section-up", "Move section {number} up"),
     ("layouts.tab-other", "Other"),
     ("layouts.tabs", "Sections of the form"),
-    ("layouts.taking", "Getting ready to edit…"),
-    ("layouts.type", "Issue type"),
-    ("layouts.type-all", "All issue types"),
     (
         "layouts.unreadable",
         "The layout of this form could not be read, so only the basic fields are shown. Reload the page to try again.",
@@ -10308,6 +11206,45 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("mail-server.connection", "Connection"),
+    (
+        "mail-server.intro",
+        "Bugaboo sends e-mail through your organization's mail server. E-mail stays off until you have entered the mail server, tried it with a test e-mail and switched it on.",
+    ),
+    (
+        "mail-server.no-encryption-note",
+        "Without encryption, a user name or a password is only accepted when the mail server is on this machine.",
+    ),
+    (
+        "mail-server.password-help",
+        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the host, the port or the user name, the password is removed: a new mail server needs its password again.",
+    ),
+    ("mail-server.password-new", "New password"),
+    ("mail-server.password-none", "No password is set."),
+    ("mail-server.password-remove", "Remove the password"),
+    ("mail-server.password-set", "A password is set."),
+    ("mail-server.save", "Save the mail server"),
+    ("mail-server.sending-title", "Sending"),
+    ("mail-server.short-title", "What e-mails say"),
+    (
+        "mail-server.sign-up-note",
+        "Signing up without an invitation needs e-mail. While e-mail is off it is closed.",
+    ),
+    (
+        "mail-server.test-done",
+        "The test e-mail was sent to {email}. Check your e-mail.",
+    ),
+    (
+        "mail-server.test-intro",
+        "Bugaboo sends one e-mail to your address, {email}, through the mail server as you saved it.",
+    ),
+    ("mail-server.test-send", "Send me a test e-mail"),
+    ("mail-server.test-title", "Try it"),
+    (
+        "mail-server.test-wait",
+        "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
+    ),
+    ("mail-server.title", "E-mail & notifications"),
     (
         "mail.footer",
         "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
@@ -10438,6 +11375,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
     ),
     ("many-changes.bar", "Change the issues you ticked"),
+    ("many-changes.change-and-status", "{button} (to {status})"),
     (
         "many-changes.delete-text",
         "The issues go to the trash. You can undo this for a short while.",
@@ -10496,20 +11434,13 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("markdown.quote", "Quote"),
     ("markdown.toolbar", "Formatting"),
     ("markdown.write", "Write"),
-    ("mentions.in", "{who} in {issue}"),
-    ("mentions.mark-read", "Mark as read"),
-    ("mentions.new", "New"),
-    ("mentions.nothing", "Nobody has mentioned you."),
-    ("mentions.title", "Mentions"),
-    (
-        "mentions.unread",
-        "{count, plural, one {# unread} other {# unread}}",
-    ),
     ("nav.access-keys", "Access keys"),
     ("nav.appearance", "Appearance"),
     ("nav.check-access", "Check access"),
     ("nav.field-permissions", "Field permissions"),
     ("nav.fields", "Fields"),
+    ("nav.group.connections", "Connections"),
+    ("nav.group.hearing", "Notifications and mentions"),
     ("nav.group.look", "Look and feel"),
     ("nav.group.look-org", "Look"),
     ("nav.group.people", "People"),
@@ -10517,10 +11448,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.group.system", "System"),
     ("nav.group.work", "Work"),
     ("nav.groups", "Groups"),
+    ("nav.handle", "Handle"),
     ("nav.home", "Home"),
     ("nav.issue-types", "Issue types"),
     ("nav.labels", "Labels and tags"),
+    ("nav.mail-server", "E-mail & notifications"),
     ("nav.my-settings", "My settings"),
+    ("nav.notification-settings", "Notification settings"),
+    ("nav.notifications", "Notifications"),
     ("nav.organization-security", "Security"),
     ("nav.organization-settings", "Organization settings"),
     ("nav.people", "People"),
@@ -10554,6 +11489,66 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notification.kind.run-ended",
         "Your run of many changes has ended",
     ),
+    ("notifications.assigned", "{who} assigned this issue to you"),
+    ("notifications.by-mail", "By e-mail"),
+    ("notifications.commented", "{who} wrote a comment"),
+    ("notifications.count-capped", "{max}+"),
+    ("notifications.customize", "Customize"),
+    (
+        "notifications.customize-intro",
+        "Choose for each kind of event whether you hear of it in the app, by e-mail, in both or not at all. You never hear of your own changes. E-mail goes only when your organization has switched it on.",
+    ),
+    ("notifications.filter.all", "All"),
+    ("notifications.filter.mentions", "Mentions"),
+    ("notifications.filter.unread", "Unread"),
+    ("notifications.filters", "Show"),
+    (
+        "notifications.finish-asked",
+        "{who} asks you to finish editing",
+    ),
+    ("notifications.group-name", "Notifications about {issue}"),
+    ("notifications.hide-result", "Hide the result"),
+    ("notifications.in-app", "In the app"),
+    ("notifications.kind", "What happens"),
+    (
+        "notifications.locked-way",
+        "{way}: {value} · Set by your organization",
+    ),
+    ("notifications.mark-all-read", "Mark all as read"),
+    ("notifications.mark-read", "Mark as read"),
+    ("notifications.mark-read-name", "Mark as read: {what}"),
+    ("notifications.mentioned", "{who} mentioned you"),
+    ("notifications.more", "Show earlier"),
+    ("notifications.new", "New"),
+    ("notifications.news", "There is news on this issue"),
+    (
+        "notifications.nothing-all",
+        "You have no notifications yet. You hear of mentions, of issues assigned to you and of what happens on issues you follow.",
+    ),
+    (
+        "notifications.nothing-mentions",
+        "Nobody has mentioned you.",
+    ),
+    ("notifications.nothing-unread", "You have read everything."),
+    ("notifications.open", "Open"),
+    ("notifications.open-name", "Open: {what}"),
+    ("notifications.released", "{who} let go of the editing"),
+    (
+        "notifications.run-done",
+        "Your change to many issues is done",
+    ),
+    (
+        "notifications.run-failed",
+        "Your change to many issues stopped before it was done",
+    ),
+    ("notifications.show-all", "Show all notifications"),
+    ("notifications.show-result", "Show the result"),
+    ("notifications.start-nothing", "Nothing new."),
+    (
+        "notifications.taken-over",
+        "{who} took over the editing. What you wrote is kept as your draft",
+    ),
+    ("notifications.title", "Notifications"),
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
@@ -12020,6 +13015,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("shortcut.everywhere", "Everywhere"),
     ("shortcut.go-home", "Go to the start page"),
+    ("shortcut.go-notifications", "Go to Notifications"),
     ("shortcut.in-lists", "Where a list is shown"),
     (
         "shortcut.intro",
@@ -12095,6 +13091,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "sign-up-policy.intro",
         "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
     ),
+    ("sign-up-policy.mail-link", "Set up e-mail"),
+    (
+        "sign-up-policy.mail-off",
+        "E-mail is off, so signing up without an invitation is closed. Set up e-mail first.",
+    ),
     (
         "sign-up-policy.switch",
         "Let people create their own account",
@@ -12105,13 +13106,28 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "No domain is listed, so everyone who can reach Bugaboo can ask for an account. The e-mail goes to the address they give, so only a person who can read that address can create one.",
     ),
     (
+        "sign-up.check-nothing",
+        "Nothing there? Look in your spam folder and check the address. You can ask for a new link.",
+    ),
+    (
+        "sign-up.check-text",
+        "If {email} can sign up here, we sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
+    ),
+    ("sign-up.check-title", "Check your e-mail"),
+    (
         "sign-up.closed",
         "Creating your own account is switched off here. Ask an administrator to invite you.",
     ),
     ("sign-up.have-account", "I already have an account"),
+    ("sign-up.other-address", "Use another address"),
+    ("sign-up.resend", "Send a new link"),
     (
-        "sign-up.sent",
-        "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you.",
+        "sign-up.resend-in",
+        "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
+    ),
+    (
+        "sign-up.resent",
+        "If {email} can sign up here, we sent a new link to it.",
     ),
     ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),
@@ -12205,4 +13221,182 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("workflow.bug", "Bug"),
     ("workflow.development", "Development"),
     ("workflow.simple", "Simple"),
+    ("workflows.add-condition", "Add a field to check"),
+    (
+        "workflows.arrow-label",
+        "From {from} to {to}: {button}. Open its rules.",
+    ),
+    ("workflows.ask-for", "Ask for"),
+    (
+        "workflows.ask-for-help",
+        "These fields are asked for in a small form while the change happens. The description cannot be asked for: it is long text with a lock of its own.",
+    ),
+    ("workflows.button-text", "Button text from {from} to {to}"),
+    (
+        "workflows.change-remove",
+        "Remove the status change from {from} to {to}",
+    ),
+    (
+        "workflows.create-change",
+        "Create a status change from {from}",
+    ),
+    ("workflows.create-change-button", "Button text"),
+    ("workflows.create-change-do", "Create status change"),
+    ("workflows.create-change-to", "Go to"),
+    ("workflows.create-status", "Create status"),
+    (
+        "workflows.customize-organization",
+        "Customize for the whole organization",
+    ),
+    ("workflows.customize-project", "Customize for {project}"),
+    (
+        "workflows.delete-held",
+        "{name} is editing this workflow, so it cannot be taken away yet. Try again when they have finished.",
+    ),
+    (
+        "workflows.draft-changed",
+        "This workflow changed while you were editing, and you see it as it is now. Your changes are kept.",
+    ),
+    (
+        "workflows.draft-note",
+        "These changes are a draft: they count only after you publish them.",
+    ),
+    ("workflows.draft-restore", "Put my changes back"),
+    ("workflows.from", "From {name} you can go to:"),
+    ("workflows.has-rules", "Has rules"),
+    (
+        "workflows.intro",
+        "A workflow says which statuses an issue can have and which status changes are allowed between them. Change it as a draft, try it, and publish it when it is right.",
+    ),
+    (
+        "workflows.lost",
+        "Not published yet: someone took over, or your editing time ran out. Your changes are kept here. Choose Try again to publish them.",
+    ),
+    ("workflows.must-fill", "Must be filled in"),
+    (
+        "workflows.must-fill-help",
+        "These fields need a value before the change can happen.",
+    ),
+    ("workflows.name", "Name of the workflow"),
+    ("workflows.nav", "Workflows"),
+    ("workflows.new-status", "Name of the new status"),
+    ("workflows.new-status-group", "Group of the new status"),
+    ("workflows.no-changes", "No status change starts here yet."),
+    ("workflows.only-if", "Only if …"),
+    ("workflows.only-if-field", "Field"),
+    (
+        "workflows.only-if-help",
+        "Everything listed here must be true before the change can happen.",
+    ),
+    ("workflows.only-if-test", "What must be true"),
+    (
+        "workflows.organization-title",
+        "Workflows of the whole organization",
+    ),
+    ("workflows.project-title", "Workflows of {project}"),
+    ("workflows.publish", "Publish"),
+    (
+        "workflows.publish-blocked",
+        "{count, plural, one {# issue} other {# issues}} in {status} cannot be moved by you, so this workflow cannot be published yet.",
+    ),
+    (
+        "workflows.publish-go",
+        "Publish and move {count, plural, one {# issue} other {# issues}}",
+    ),
+    ("workflows.publish-go-over", "Publish and move the issues"),
+    (
+        "workflows.publish-text",
+        "Issues are still in statuses that you removed. Choose a status for each group of issues. They move when you publish, and each move is written in the history.",
+    ),
+    ("workflows.publish-title", "Where do the issues go?"),
+    (
+        "workflows.publish-too-many",
+        "More than {limit} issues are in the statuses you removed. Move some of them first, then publish.",
+    ),
+    (
+        "workflows.publish-unseen",
+        "{count, plural, one {# of them is an issue} other {# of them are issues}} that you cannot see.",
+    ),
+    (
+        "workflows.publish-where",
+        "{count, plural, one {# issue is} other {# issues are}} in {status}. They go to",
+    ),
+    ("workflows.publish-where-over", "Issues in {status} go to"),
+    ("workflows.remove-condition", "Stop checking {field}"),
+    ("workflows.rules-done", "Done"),
+    (
+        "workflows.rules-intro",
+        "From {from} to {to}. A rule that is left empty does not apply.",
+    ),
+    ("workflows.rules-link", "Rules"),
+    ("workflows.rules-open", "Rules for {button}"),
+    ("workflows.rules-title", "Rules for “{button}”"),
+    ("workflows.starts-here", "New issues start here"),
+    ("workflows.status-down", "Move {name} down"),
+    ("workflows.status-group", "Status group"),
+    ("workflows.status-name", "Name of the status"),
+    ("workflows.status-remove", "Remove {name}"),
+    ("workflows.status-up", "Move {name} up"),
+    ("workflows.statuses", "Statuses"),
+    (
+        "workflows.statuses-help",
+        "New issues start in the first status. Renaming a status does not move the issues that are in it.",
+    ),
+    ("workflows.test-empty", "has no value"),
+    ("workflows.test-filled", "has a value"),
+    ("workflows.try-allowed", "Allowed."),
+    ("workflows.try-go", "Show the status changes"),
+    ("workflows.try-in", "{key} is in {status}."),
+    (
+        "workflows.try-needs",
+        "Possible once these fields have a value: {fields}.",
+    ),
+    ("workflows.try-none", "No status change starts here."),
+    ("workflows.try-on-field", "{reason} Field: {field}."),
+    (
+        "workflows.try-text",
+        "Pick an issue and a person to see which status changes they would get, and why.",
+    ),
+    ("workflows.try-title", "Try it"),
+    (
+        "workflows.use-inherited",
+        "Use the inherited workflow again",
+    ),
+    (
+        "workflows.use-inherited-text",
+        "The workflow of this place is taken away, and the place follows its parent again. This cannot be undone, and it is refused while it would leave an issue in a status the inherited workflow does not have.",
+    ),
+    (
+        "workflows.use-inherited-title",
+        "Use the inherited workflow again?",
+    ),
+    (
+        "workflows.uses-hidden",
+        "These issues use the workflow {name}, which is set higher up.",
+    ),
+    (
+        "workflows.uses-organization",
+        "These issues use the workflow {name} of the whole organization.",
+    ),
+    (
+        "workflows.uses-project",
+        "These issues use the workflow {name} of {project}.",
+    ),
+    (
+        "workflows.uses-starting",
+        "These issues use the starting workflow {name}.",
+    ),
+    ("workflows.uses-type", "It is only for {type}."),
+    ("workflows.view", "View"),
+    ("workflows.view-drawing", "Drawing"),
+    ("workflows.view-list", "List"),
+    ("workflows.who", "Who can do it"),
+    ("workflows.who-assigned", "The person it is assigned to"),
+    ("workflows.who-groups", "Groups"),
+    (
+        "workflows.who-help",
+        "Name nobody and everybody who may change the issue can do it. A rule only narrows who can do it: it never gives a right that the person does not have.",
+    ),
+    ("workflows.who-reporter", "The person who reported it"),
+    ("workflows.who-roles", "Roles"),
 ];

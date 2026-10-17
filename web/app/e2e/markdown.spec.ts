@@ -101,7 +101,7 @@ test("ux_04 the editor is good in every theme, writing and previewing", async ({
   );
   await expectGoodInEveryLook(page);
   await openPreview(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Title" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Title", exact: true })).toBeVisible();
   await expectGoodInEveryLook(page);
 });
 

@@ -28,6 +28,10 @@ export const messages = {
   "first-run.done.title": "You are all set",
   "first-run.done.text": "Your account is ready and you are signed in.",
   "first-run.done.go": "Open Bugaboo",
+  "first-run.step.mail": "E-mail",
+  "first-run.mail.title": "Set up e-mail (you can do this later)",
+  "first-run.mail.intro":
+    "Bugaboo can tell people by e-mail when something happens on issues they follow, and can let people sign up with their e-mail address. For that it needs your organization's mail server. You can skip this and do it later under Organization settings.",
 } as const;
 
 register(messages);

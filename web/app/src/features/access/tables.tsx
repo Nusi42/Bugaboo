@@ -1,47 +1,31 @@
 import { t } from "@bugaboo/messages";
-import { Button, buttonLook, SelectField, partOf, part } from "@bugaboo/ui";
-import { useQuery } from "@tanstack/react-query";
+import { Button, buttonLook, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { api } from "../../shared/api.ts";
 import { fieldNameOf } from "../../shared/field-names.ts";
+import { IssueTypeChooser } from "../issue-types/index.ts";
 import { LevelTableView } from "./LevelTableView.tsx";
 import type { LevelTable, PeopleKindKey, PeopleLevelCode } from "./levels.ts";
 import { PeoplePreview } from "./PeoplePreview.tsx";
 import { useFieldPermissions, usePeopleVisibility } from "./use-levels.ts";
 
-/** The value of the choice *All issue types* in the list of issue types. */
-const allTypes = "";
-
 /** *More options* of the field permissions: the issue type whose levels the table shows (ADR-0027). */
-function IssueTypeChooser({
-  value,
+function TypeOptions({
+  type,
   onChange,
 }: {
-  readonly value: string;
-  readonly onChange: (issueType: string) => void;
+  readonly type: string | undefined;
+  readonly onChange: (issueType: string | undefined) => void;
 }) {
-  const types = useQuery(api.query.queryOptions("get", "/api/v1/issue-types"));
   return (
     <div {...partOf(part.stack)}>
-      <SelectField
+      <IssueTypeChooser
         label={t("field-permissions.type-chooser")}
-        choices={[
-          { value: allTypes, label: t("field-permissions.all-types") },
-          ...(types.data?.items ?? []).flatMap((each) =>
-            each.id === undefined ||
-            each.id === null ||
-            each.name === undefined ||
-            each.name === null
-              ? []
-              : [{ value: each.id, label: each.name }],
-          ),
-        ]}
-        value={value}
+        type={type}
         onChange={onChange}
       />
       <p {...partOf(part.muted)}>
-        {value === allTypes
+        {type === undefined
           ? t("field-permissions.type-help")
           : t("field-permissions.type-help-chosen")}
       </p>
@@ -52,8 +36,8 @@ function IssueTypeChooser({
 /** The field permissions of a place: the whole organization, or a project (an ID). */
 export function FieldPermissionsTable({ project }: { readonly project?: string }) {
   const [more, setMore] = useState(false);
-  const [issueType, setIssueType] = useState(allTypes);
-  const levels = useFieldPermissions(project, issueType === allTypes ? undefined : issueType);
+  const [issueType, setIssueType] = useState<string>();
+  const levels = useFieldPermissions(project, issueType);
   return (
     <div {...partOf(part.stack)}>
       <div {...partOf(part.row)}>
@@ -61,7 +45,7 @@ export function FieldPermissionsTable({ project }: { readonly project?: string }
           look={buttonLook.quiet}
           onPress={() => {
             if (more) {
-              setIssueType(allTypes);
+              setIssueType(undefined);
             }
             setMore(!more);
           }}
@@ -69,7 +53,7 @@ export function FieldPermissionsTable({ project }: { readonly project?: string }
           {more ? t("field-permissions.fewer-options") : t("field-permissions.more-options")}
         </Button>
       </div>
-      {more ? <IssueTypeChooser value={issueType} onChange={setIssueType} /> : null}
+      {more ? <TypeOptions type={issueType} onChange={setIssueType} /> : null}
       <LevelTableView
         levels={levels}
         subjectName={(field, name) => fieldNameOf({ code: field, name })}

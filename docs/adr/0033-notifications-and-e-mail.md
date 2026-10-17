@@ -86,6 +86,20 @@ The reader and the e-mail are built. What the build decided where this record le
 - **Tags.** Renaming or combining tags counts each touched issue's version in the same change that rewrites its tags (M3-F126); a rename of a very large tag is therefore one long change, which a step job could split later.
 - **Delivery in the matrix.** The record of SEC-MATRIX has a `delivery` line for each entry point (`notifications`, `e-mail`) and each starting role as the recipient; the check compares it with the tables of the starting roles.
 
+## Amendment (M4 WP-08)
+
+The screens are built. What the build decided where this record left room:
+
+- **The count.** The number on the menu entry and on the bar of a phone is `GET /api/v1/notifications/unread`. Until live updates arrive the browser asks every 30 seconds (the time of the check of versions, ADR-0019) and when the person comes back to the tab. A count of `AT_ONCE_MAX` is shown as *100+*.
+- **Open.** *Open* goes to the issue with `?comment=<ID>` for a comment and `?change=<moment>` for a change. The issue page marks the entry and reads earlier pages of the history until it finds it. A change is found by the moment it happened, to the millisecond, because the history and a notification are made from the same event.
+- **The text of a comment** in a notification is HTML that the server made with `bb-markdown` for this reader (the mark `x-safe-html` on `NotificationEntry.html`), so the browser draws it as it draws a comment.
+- **Customize** is *My settings › Notification settings*. Its rows come from `NotificationKind::setting`: `cargo xtask gen api` reads that function and writes the table into the browser client, so the settings of a kind are written once.
+- **The mail server** is *Organization settings › Connections › E-mail & notifications*. The settings are the registry's (`mail.*`); the password goes through `PUT /api/v1/mail/password` and is never read back. `GET /api/v1/mail` says whether one is set (`credential_set`) and the server's own judgement of the mail server as entered (`readiness`: `ready`, `incomplete` when the host or the sender is missing, or `insecure` when a secret would go without encryption to another machine). It comes from the same code the test e-mail and the jobs use (`mail_server`), so the page shows the judgement and holds no copy of the rule. `credential_set` is a yes or no and not a secret: it tells an administrator who may change the mail server nothing they could not see by trying the test e-mail, and the page needs it to show *not set*. A change of the mail server, its port or the user name deletes the stored password in the same change (the event records it), so a new server is never handed the old password; the page then shows *not set*. The refusals of *Send me a test e-mail* are shown in words: not entered (`mail.off`), a user name or password in the clear to another machine (`mail.insecure`), turned away (`mail.rejected`, status 502), not reached (`mail.unavailable`), and too soon (`rate_limit.exceeded`, once in 10 seconds for a person; the button waits that long too).
+- **The wait for the changes of one e-mail** is the start-up setting `mail_batch_seconds` (`BUGABOO_MAIL_BATCH_SECONDS`, 300 unless set), so a test or a demo can see the e-mail in seconds.
+- **The first start** has an optional step for the mail server after the second check of the account.
+- **Signing up** shows *Check your e-mail* after the form. Asking for a new link waits as long as the server does for one address (`RESEND_AFTER_MINUTES`), and the route has its own limit; a link that ran out leads to asking for a new one. While e-mail is off, the switch for signing up says so.
+- **The *Mentions* block** of the start page is gone. The routes `/api/v1/me/mentions` and `/api/v1/me/mentions/read` are removed: there is one way to read mentions, the notifications.
+
 ## Enforced by
 
 SEC-MATRIX (the e-mail and notifications column), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (`lettre`), the permission tests of M4 WP-06, and review (no other path sends mail).

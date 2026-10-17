@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { partOf, part } from "@bugaboo/ui";
 
 import { formatDateTime } from "../../shared/format.ts";
-import { sentenceOf } from "./history.ts";
+import { sentenceOf, useScrollTo } from "./history.ts";
 
 /** What tells the items of one event apart: the field that changed, the relation or the file. */
 function keyOf(item: Schema<"HistoryEntryItem">): string {
@@ -15,13 +15,21 @@ function keyOf(item: Schema<"HistoryEntryItem">): string {
  * relation that was added or taken away is a sentence too. What the reader may not see is not in
  * the entries at all (SEC-06).
  */
-export function ChangeEntry({ items }: { readonly items: readonly Schema<"HistoryEntryItem">[] }) {
+export function ChangeEntry({
+  items,
+  highlighted = false,
+}: {
+  readonly items: readonly Schema<"HistoryEntryItem">[];
+  /** *Open* of a notification came here. */
+  readonly highlighted?: boolean;
+}) {
+  const shown = useScrollTo<HTMLElement>(highlighted);
   const first = items[0];
   if (first === undefined) {
     return null;
   }
   return (
-    <article {...partOf(part.historyEntry)}>
+    <article ref={shown} {...partOf(part.historyEntry, { states: [highlighted && "highlighted"] })}>
       <span {...partOf(part.historyWhen)}>{formatDateTime(first.at)}</span>
       <ul {...partOf(part.list)}>
         {items.map((item) => (

@@ -6,7 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { chooseStatus, detailRow, expectStatus, prepareWeb, issueNote } from "./support/issues.ts";
+import { detailRow, expectStatus, issueNote, prepareWeb, startWorking } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
@@ -84,7 +84,7 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
   ).toBeVisible();
   // The tag counted the version of the issue up; the change of status is made on that version. The
   // row of the tag says *Saved* already, so the note of the status is what is waited for.
-  await chooseStatus(page, t("status.in-progress"));
+  await startWorking(page);
   await expect(issueNote(page)).toBeVisible();
   await page.reload();
   await expectStatus(page, t("status.in-progress"));

@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use axum::extract::{FromRequestParts, Request, State};
 use axum::http::request::Parts;
-use axum::http::{StatusCode, header};
+use axum::http::{Method, StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse as _, Response};
 use bb_app::auth::{AppError, AuthApi, RequestInfo, Started};
@@ -37,7 +37,7 @@ use utoipa_axum::router::OpenApiRouter;
 
 use super::is_api;
 use crate::conflict::ConflictBody;
-use crate::cookies::{CSRF_HEADER, Cookie};
+use crate::cookies::{BACKGROUND_HEADER, CSRF_HEADER, Cookie};
 use crate::errors::ApiError;
 use crate::limits::{Limits, limit_sign_in, limit_sign_up};
 use crate::logging::ClientIp;
@@ -117,7 +117,13 @@ impl<S: Send + Sync> FromRequestParts<S> for Info {
             .and_then(|value| value.to_str().ok())
             .map(Device::from_user_agent)
             .unwrap_or_default();
-        Ok(Self(RequestInfo { network, device }))
+        let background =
+            parts.method == Method::GET && parts.headers.contains_key(BACKGROUND_HEADER);
+        Ok(Self(RequestInfo {
+            network,
+            device,
+            background,
+        }))
     }
 }
 

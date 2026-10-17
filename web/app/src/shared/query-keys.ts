@@ -1,3 +1,5 @@
+import type { EditWhat } from "@bugaboo/api-client";
+
 import { queryClient } from "./query-client.ts";
 
 /**
@@ -50,8 +52,10 @@ export const queryKeys = {
   layouts: {
     /** The draft that a refused save of a layout kept, by layout. */
     draft: (layout: string) => ["layouts", "draft", layout],
-    /** Who is editing a layout now. */
-    editing: (layout: string) => ["layouts", "editing", layout],
+  },
+  editing: {
+    /** Who is editing a thing now (a layout, a workflow): what its edit lock is about. */
+    now: (what: EditWhat) => ["editing", "now", what.record.kind, what.record.id, what.part],
   },
   issueTypes: {
     all: ["issue-types"],
@@ -89,9 +93,12 @@ export const queryKeys = {
     state: (issue: string) => ["followers", "state", issue],
     list: (issue: string) => ["followers", "list", issue],
   },
+  notifications: {
+    /** A page-by-page list of notifications; it starts with the route like `api.query` keys do. */
+    list: (filter: string, size: number) => ["get", "/api/v1/notifications", "list", filter, size],
+  },
   mentions: {
     all: ["mentions"],
-    list: () => ["mentions", "list"],
     choices: (issue: string, search: string) => ["mentions", "choices", issue, search],
   },
   issues: {
@@ -99,7 +106,7 @@ export const queryKeys = {
     lists: () => ["issues", "list"],
     list: (project: string) => ["issues", "list", project],
     one: (address: string) => ["issues", "one", address],
-    statuses: (project: string) => ["issues", "statuses", project],
+    statusChanges: (project: string) => ["issues", "status-changes", project],
     people: (project: string, search: string, field = "", issue = "", issueType = "") => [
       "issues",
       "assignable-people",
@@ -205,6 +212,19 @@ export function refreshLayoutDraft(layout: string): void {
   });
 }
 
+/** The answers that show a workflow: the editor, the lists of workflows and what an issue can change to. */
+const WORKFLOW_READS = [
+  "/api/v1/workflows/editor",
+  "/api/v1/workflows",
+  "/api/v1/projects/{project}/statuses",
+] as const;
+
+/** A workflow was created, published or taken away: the editor and what issues offer are read again. */
+export function refreshWorkflows(): void {
+  refreshReads(WORKFLOW_READS);
+  refreshIssues();
+}
+
 /** An issue type was made or changed: the list of types is read again. */
 export function refreshIssueTypes(): void {
   reread({ queryKey: queryKeys.issueTypes.all });
@@ -237,16 +257,22 @@ export function refreshIssueRelations(): void {
   refreshRoutes(["/api/v1/issues/{issue}/relations"]);
 }
 
+/** A notification was read: the list and the number on the menu are read again. */
+export function refreshNotifications(): void {
+  refreshRoutes(["/api/v1/notifications"]);
+}
+
+/** The mail server changed (its settings or its password): the answers about it are read again. */
+export function refreshMailServer(): void {
+  refreshRoutes(["/api/v1/mail", "/api/v1/settings"]);
+}
+
 /** A comment was written, changed or deleted, or a follower came or went: the history is read again. */
 export function refreshHistory(): void {
   reread({ queryKey: queryKeys.history.all });
   reread({ queryKey: queryKeys.followers.all });
   reread({ queryKey: queryKeys.mentions.all });
-  refreshRoutes([
-    "/api/v1/issues/{issue}/follow",
-    "/api/v1/me/mentions",
-    "/api/v1/comments/{comment}/versions",
-  ]);
+  refreshRoutes(["/api/v1/issues/{issue}/follow", "/api/v1/comments/{comment}/versions"]);
 }
 
 /** Something about people, groups, roles or rows changed: all of it is read again where it is shown. */

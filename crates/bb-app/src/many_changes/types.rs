@@ -28,6 +28,10 @@ use crate::relations::IssueLine;
 pub struct ManyChange {
     /// A new status.
     pub status: Option<StatusKey>,
+    /// The words of the status change that was chosen to get there (*Start working*). With it,
+    /// an issue is changed only when its own workflow has exactly that change from the status the
+    /// issue is in, and is skipped otherwise: two workflows can lead to one status with other words.
+    pub status_button: Option<String>,
     /// A new priority.
     pub priority: Option<Priority>,
     /// The people the issues are assigned to from now on (all of them, not the ones to add).

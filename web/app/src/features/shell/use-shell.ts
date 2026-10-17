@@ -49,6 +49,9 @@ export function useShell(): {
     "go-home": () => {
       void navigate({ to: paths.home });
     },
+    "go-notifications": () => {
+      void navigate({ to: paths.notifications });
+    },
   });
   return {
     person: {

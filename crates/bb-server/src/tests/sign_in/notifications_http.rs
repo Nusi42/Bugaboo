@@ -334,6 +334,13 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             )
             .await?;
         assert_eq!(denied.code(), "access.forbidden");
+        let unknown = bob.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(unknown.code(), "access.forbidden");
+        let before = ada.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(
+            before.body,
+            json!({"credential_set": false, "readiness": "incomplete"})
+        );
         let set = ada
             .send(
                 "PUT",
@@ -342,6 +349,12 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             )
             .await?;
         assert_eq!(set.status, StatusCode::NO_CONTENT, "{}", set.body);
+        // The page learns that a password is entered, never what it is.
+        let after = ada.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(
+            after.body,
+            json!({"credential_set": true, "readiness": "incomplete"})
+        );
         for path in ["/api/v1/settings", "/api/v1/admin/status"] {
             let shown = ada.send("GET", path, None).await?;
             assert!(!shown.body.to_string().contains(password), "{path}");
@@ -353,6 +366,11 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             .await?;
         assert_eq!(removed.status, StatusCode::NO_CONTENT);
         assert!(rig.storage.mail_password().await?.is_none());
+        let gone = ada.send("GET", "/api/v1/mail", None).await?;
+        assert_eq!(
+            gone.body,
+            json!({"credential_set": false, "readiness": "incomplete"})
+        );
         Ok(())
     })
     .await
@@ -620,6 +638,47 @@ async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
         let fresh = secret_of_the_last_e_mail(&rig)?;
         let made = eve.send("POST", ACCEPT, Some(accept_body(&fresh))).await?;
         assert_eq!(made.status, StatusCode::OK, "{}", made.body);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_over_http_the_background_header_counts_as_use_only_on_a_post() -> TestResult {
+    each_database("sec_12_background_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        for person in [&mut ada, &mut bob] {
+            person.set_header(bb_api::cookies::BACKGROUND_HEADER, "1");
+        }
+        // The idle time is 30 minutes. Twenty minutes in, both ask with the header.
+        rig.clock.advance(20 * 60);
+        let count = ada
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(count.status, StatusCode::OK, "{}", count.body);
+        let read = bob
+            .send(
+                "POST",
+                "/api/v1/notifications/read",
+                Some(json!({"up_to": "01900000-0000-7000-8000-000000000000"})),
+            )
+            .await?;
+        assert_eq!(read.status, StatusCode::NO_CONTENT, "{}", read.body);
+        // Twenty minutes later, asking without the header: the read did not count as use, the
+        // post did.
+        rig.clock.advance(20 * 60);
+        ada.clear_headers();
+        bob.clear_headers();
+        let gone = ada
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(gone.status, StatusCode::UNAUTHORIZED, "{}", gone.body);
+        let kept = bob
+            .send("GET", "/api/v1/notifications/unread", None)
+            .await?;
+        assert_eq!(kept.status, StatusCode::OK, "{}", kept.body);
         Ok(())
     })
     .await

@@ -1,8 +1,10 @@
+import { signUpLinkHours, signUpResendMinutes } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
 import { type ApiSession } from "./support/api.ts";
-import { ada, bob, createAdmin } from "./support/accounts.ts";
+import { ada, bob, cleo, createAdmin } from "./support/accounts.ts";
+import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { expectHome, openFromMenu, signIn, signOut } from "./support/flows.ts";
 import { invitationPath, type Mailbox, startMailbox, turnMailOn } from "./support/mailbox.ts";
@@ -41,6 +43,16 @@ async function openPolicy(page: Page): Promise<Locator> {
 async function sendSignUp(page: Page, email: string): Promise<void> {
   await page.getByLabel(t("field.email")).fill(email);
   await page.getByRole("button", { name: t("sign-up.submit") }).click();
+}
+
+/** The screen that says to look at the e-mail, the same for every address. */
+async function expectCheckYourEmail(page: Page, email: string): Promise<void> {
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("sign-up.check-title"), exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(t("sign-up.check-text", { email, hours: signUpLinkHours })),
+  ).toBeVisible();
 }
 
 /** The sign-in page has no link to sign up, and the page of signing up says that it is closed. */
@@ -101,7 +113,7 @@ test("auth_06 people of the listed domain get a link by e-mail and make their ow
 
   // The listed domain is told to look at its mail; nothing is made yet.
   await sendSignUp(page, bob.email);
-  await expect(page.getByText(t("sign-up.sent"))).toBeVisible();
+  await expectCheckYourEmail(page, bob.email);
   const mail = await mailbox.waitFor(bob.email);
   expect(mailbox.mails().some((sent) => sent.to === "mallory@elsewhere.test")).toBe(false);
 
@@ -120,9 +132,35 @@ test("auth_06 an address that has an account is told the same, and gets no link"
 }) => {
   await page.goto(paths.signUp);
   await sendSignUp(page, ada.email);
-  await expect(page.getByText(t("sign-up.sent"))).toBeVisible();
+  await expectCheckYourEmail(page, ada.email);
   const mail = await mailbox.waitFor(ada.email);
   expect(mail.text).not.toContain("/invitation#");
+});
+
+test("auth_06 the screen waits before it lets a person ask for a new link, and takes them back to the form", async ({
+  page,
+}) => {
+  await page.goto(paths.signUp);
+  await sendSignUp(page, cleo.email);
+  await expectCheckYourEmail(page, cleo.email);
+  // The server sends one e-mail to an address in ten minutes, so the button waits for that long
+  // and says so.
+  await expect(page.getByRole("button", { name: t("sign-up.resend"), exact: true })).toBeDisabled();
+  await expect(
+    page.getByText(t("sign-up.resend-in", { minutes: signUpResendMinutes })),
+  ).toBeVisible();
+  await expectGoodInEveryLook(page);
+  await page.getByRole("button", { name: t("sign-up.other-address"), exact: true }).click();
+  await expect(page.getByLabel(t("field.email"))).toBeVisible();
+});
+
+test("auth_06 a link that does not work leads to asking for a new one", async ({ page }) => {
+  await page.goto(`${paths.invitation}#not-a-link-of-this-server`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("invitation.invalid-title"), exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: t("invitation.ask-again"), exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: t("sign-up.title") })).toBeVisible();
 });
 
 test("auth_06 an administrator can switch it off again", async ({ page }) => {

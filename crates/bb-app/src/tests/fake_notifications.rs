@@ -173,6 +173,11 @@ impl NotificationStore for FakeStore {
         Ok(())
     }
 
+    async fn forget_mail_password(tx: &mut Tx) -> Result<(), FakeError> {
+        tx.state.mail_password = None;
+        Ok(())
+    }
+
     async fn delete_mail_password(&self) -> Result<(), FakeError> {
         self.lock().state.mail_password = None;
         Ok(())
@@ -201,14 +206,16 @@ impl NotificationStore for FakeStore {
         Ok(marked)
     }
 
-    async fn mark_all_notifications_read(
+    async fn mark_notifications_read_up_to(
         tx: &mut Tx,
         recipient: UserId,
+        up_to: NotificationId,
         at: Timestamp,
     ) -> Result<u64, FakeError> {
         let mut marked = 0;
         for row in &mut tx.state.notifications {
-            if row.recipient == recipient && row.in_app && row.read_at.is_none() {
+            if row.recipient == recipient && row.in_app && row.read_at.is_none() && row.id <= up_to
+            {
                 row.read_at = Some(at);
                 marked += 1;
             }

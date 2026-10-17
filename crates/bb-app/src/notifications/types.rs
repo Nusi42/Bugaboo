@@ -114,8 +114,9 @@ impl Masked for Unread {}
 pub enum Which {
     /// These.
     These(Vec<NotificationId>),
-    /// Every unread one.
-    All,
+    /// Every unread one up to and including this one, the newest the person has seen: ones that
+    /// came after it stay unread.
+    UpTo(NotificationId),
 }
 
 /// Marks notifications of the person as read (*Mark as read*).

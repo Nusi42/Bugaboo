@@ -161,7 +161,7 @@ test("cfg_01 every move of the editor is a button too, and a second editor is to
       .getByRole("list", { name: t("layouts.available"), exact: true })
       .getByText(dueDate, { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
+  await page.getByRole("button", { name: t("editing.changes-drop"), exact: true }).click();
 
   // Another lead opens the same layout: Ada holds the lock, so they are told.
   const other = await anotherBrowser(browser, server);
@@ -239,7 +239,7 @@ test("cfg_01 a field is moved and added with the keyboard alone, and its drag ha
   });
   await chooseByTyping(addTo, t("layouts.section", { number: "1" }));
   await expect(sectionList("1").getByText(dueDate, { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: t("layouts.draft-drop"), exact: true }).click();
+  await page.getByRole("button", { name: t("editing.changes-drop"), exact: true }).click();
 });
 
 test("cfg_01 a layout that changed while it was edited shows the new one and keeps the changes as a draft", async ({

@@ -14,8 +14,8 @@ import type { messages as issues } from "./issues.ts";
 import type { messages as labels } from "./labels.ts";
 import type { messages as layouts } from "./layouts.ts";
 import type { messages as manyChanges } from "./many-changes.ts";
-import type { messages as mentions } from "./mentions.ts";
 import type { messages as mySettings } from "./my-settings.ts";
+import type { messages as notifications } from "./notifications.ts";
 import type { messages as people } from "./people.ts";
 import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
@@ -27,6 +27,7 @@ import type { messages as shared } from "./shared.ts";
 import type { messages as shell } from "./shell.ts";
 import type { messages as signIn } from "./sign-in.ts";
 import type { messages as signUp } from "./sign-up.ts";
+import type { messages as workflows } from "./workflows.ts";
 
 export type MessageKey =
   | keyof typeof access
@@ -43,8 +44,8 @@ export type MessageKey =
   | keyof typeof labels
   | keyof typeof layouts
   | keyof typeof manyChanges
-  | keyof typeof mentions
   | keyof typeof mySettings
+  | keyof typeof notifications
   | keyof typeof people
   | keyof typeof projects
   | keyof typeof relationKinds
@@ -55,7 +56,8 @@ export type MessageKey =
   | keyof typeof shared
   | keyof typeof shell
   | keyof typeof signIn
-  | keyof typeof signUp;
+  | keyof typeof signUp
+  | keyof typeof workflows;
 
 export interface MessageArguments {
   "access-keys.delete-name": { name: string | number };
@@ -190,6 +192,9 @@ export interface MessageArguments {
   "groups.removed": { group: string | number; name: string | number };
   "groups.used": { places: string | number };
   "groups.used-projects": { count: number };
+  "handle.changed": { handle: string | number };
+  "handle.rule-characters": { max: string | number };
+  "handle.rule-weekly": { days: number };
   "history.by": { when: string | number; who: string | number };
   "history.changed": {
     after: string | number;
@@ -222,6 +227,7 @@ export interface MessageArguments {
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
   "issue-types.created": { name: string | number };
+  "issues.ask-for-intro": { to: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
   "issues.change-field": { field: string | number };
@@ -279,8 +285,12 @@ export interface MessageArguments {
   "layouts.section-named": { number: string | number; title: string | number };
   "layouts.section-remove": { number: string | number };
   "layouts.section-up": { number: string | number };
+  "mail-server.test-done": { email: string | number };
+  "mail-server.test-intro": { email: string | number };
+  "mail-server.test-wait": { seconds: number };
   "many-changes.apply": { count: number };
   "many-changes.apply-delete": { count: number };
+  "many-changes.change-and-status": { button: string | number; status: string | number };
   "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
   "many-changes.progress": { done: string | number; total: string | number };
@@ -288,8 +298,17 @@ export interface MessageArguments {
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };
   "many-changes.title": { action: string | number; count: number };
-  "mentions.in": { issue: string | number; who: string | number };
-  "mentions.unread": { count: number };
+  "notifications.assigned": { who: string | number };
+  "notifications.commented": { who: string | number };
+  "notifications.count-capped": { max: string | number };
+  "notifications.finish-asked": { who: string | number };
+  "notifications.group-name": { issue: string | number };
+  "notifications.locked-way": { value: string | number; way: string | number };
+  "notifications.mark-read-name": { what: string | number };
+  "notifications.mentioned": { who: string | number };
+  "notifications.open-name": { what: string | number };
+  "notifications.released": { who: string | number };
+  "notifications.taken-over": { who: string | number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
@@ -403,10 +422,42 @@ export interface MessageArguments {
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
   "shortcuts.conflict": { action: string | number; keys: string | number };
+  "sign-up.check-text": { email: string | number; hours: number };
+  "sign-up.resend-in": { minutes: number };
+  "sign-up.resent": { email: string | number };
   "sub-issues.added": { key: string | number };
   "sub-issues.not-part-of": { key: string | number };
   "sub-issues.progress": { done: string | number; total: string | number };
   "sub-issues.take-out": { key: string | number };
   "sub-issues.take-out-short": { key: string | number };
   "theme.device-resolved": { device: string | number; theme: string | number };
+  "workflows.arrow-label": { button: string | number; from: string | number; to: string | number };
+  "workflows.button-text": { from: string | number; to: string | number };
+  "workflows.change-remove": { from: string | number; to: string | number };
+  "workflows.create-change": { from: string | number };
+  "workflows.customize-project": { project: string | number };
+  "workflows.delete-held": { name: string | number };
+  "workflows.from": { name: string | number };
+  "workflows.project-title": { project: string | number };
+  "workflows.publish-blocked": { count: number; status: string | number };
+  "workflows.publish-go": { count: number };
+  "workflows.publish-too-many": { limit: string | number };
+  "workflows.publish-unseen": { count: number };
+  "workflows.publish-where": { count: number; status: string | number };
+  "workflows.publish-where-over": { status: string | number };
+  "workflows.remove-condition": { field: string | number };
+  "workflows.rules-intro": { from: string | number; to: string | number };
+  "workflows.rules-open": { button: string | number };
+  "workflows.rules-title": { button: string | number };
+  "workflows.status-down": { name: string | number };
+  "workflows.status-remove": { name: string | number };
+  "workflows.status-up": { name: string | number };
+  "workflows.try-in": { key: string | number; status: string | number };
+  "workflows.try-needs": { fields: string | number };
+  "workflows.try-on-field": { field: string | number; reason: string | number };
+  "workflows.uses-hidden": { name: string | number };
+  "workflows.uses-organization": { name: string | number };
+  "workflows.uses-project": { name: string | number; project: string | number };
+  "workflows.uses-starting": { name: string | number };
+  "workflows.uses-type": { type: string | number };
 }

@@ -31,9 +31,8 @@ use crate::access::{
 };
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
-    MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
-    add_comment, comment_versions, delete_comment, mention_choices, mentions, read_mentions,
-    restore_comment, save_comment,
+    MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,
+    delete_comment, mention_choices, restore_comment, save_comment,
 };
 use crate::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftView, EditAnyway, HeartbeatAnswer,
@@ -77,9 +76,10 @@ use crate::many_changes::{
     many_changes_run, preview_many_changes, stop_many_changes_run,
 };
 use crate::notifications::{
-    ChangeHandle, MyHandle, MyHandleQuery, NotificationPage, NotificationsQuery, ReadNotifications,
-    SendTestEmail, SetMailPassword, Unread, UnreadQuery, change_handle, my_handle, notifications,
-    read_notifications, send_test_email, set_mail_password, unread_notifications,
+    ChangeHandle, MailServerQuery, MailServerStatus, MyHandle, MyHandleQuery, NotificationPage,
+    NotificationsQuery, ReadNotifications, SendTestEmail, SetMailPassword, Unread, UnreadQuery,
+    change_handle, mail_server_status, my_handle, notifications, read_notifications,
+    send_test_email, set_mail_password, unread_notifications,
 };
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
@@ -124,10 +124,11 @@ use crate::tags::{
     tag_change_preview, tag_suggestions, tags,
 };
 use crate::workflows::{
-    CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishWorkflow,
-    Published, Tried, TryWorkflowQuery, UseWorkflow, WorkflowEditor, WorkflowEditorQuery,
-    WorkflowList, WorkflowsQuery, create_workflow, delete_workflow, project_statuses,
-    publish_workflow, try_workflow, use_workflow, workflow_editor, workflows,
+    CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishPreview,
+    PublishPreviewQuery, PublishWorkflow, Published, Tried, TryWorkflowQuery, UseWorkflow,
+    WorkflowEditor, WorkflowEditorQuery, WorkflowList, WorkflowsQuery, create_workflow,
+    delete_workflow, project_statuses, publish_preview, publish_workflow, try_workflow,
+    use_workflow, workflow_editor, workflows,
 };
 
 #[cfg(test)]
@@ -469,8 +470,6 @@ use_cases! {
     comment_versions(CommentVersionsQuery) -> Authorized<CommentVersions>;
     /// Lists what a writer may name after @.
     mention_choices(MentionChoicesQuery) -> Authorized<MentionChoices>;
-    /// Lists the comments that mention the person.
-    mentions(MentionsQuery) -> Authorized<Mentions>;
     /// Lists the notifications of the person.
     notifications(NotificationsQuery) -> Authorized<NotificationPage>;
     /// How many notifications the person has not read.
@@ -481,12 +480,12 @@ use_cases! {
     change_handle(ChangeHandle) -> Authorized<MyHandle>;
     /// Enters, changes or removes the password of the mail server.
     set_mail_password(SetMailPassword) -> Authorized<Done>;
+    /// Tells whether the password of the mail server is entered.
+    mail_server_status(MailServerQuery) -> Authorized<MailServerStatus>;
     /// Sends a test e-mail to the person who asks.
     send_test_email(SendTestEmail) -> Authorized<Done>;
     /// Marks notifications of the person as read.
     read_notifications(ReadNotifications) -> Done;
-    /// Marks the mentions of the person as read.
-    read_mentions(ReadMentions) -> Done;
     /// Starts an upload of a file to an issue or a comment.
     start_upload(StartUploadQuery) -> Authorized<UploadView>;
     /// Shows how far an upload is, so an interrupted one goes on.
@@ -603,6 +602,8 @@ use_cases! {
     use_workflow(UseWorkflow) -> Authorized<WorkflowEditor>;
     /// Publishes a workflow under its edit lock.
     publish_workflow(PublishWorkflow) -> Authorized<Published>;
+    /// Says which statuses publishing a workflow would drop, and which issues are in them.
+    publish_preview(PublishPreviewQuery) -> Authorized<PublishPreview>;
     /// Takes a workflow away.
     delete_workflow(DeleteWorkflow) -> Done;
     /// Tells which status changes a person would get on an issue.

@@ -1,6 +1,5 @@
 //! The comment routes (ISS-05): comments below `/api/v1/issues/{issue}/comments` and
-//! `/api/v1/comments/{comment}`, what the writer may name after `@`, and the *Mentions* block of
-//! the start page below `/api/v1/me/mentions`.
+//! `/api/v1/comments/{comment}`, and what the writer may name after `@`.
 //!
 //! The text of a comment is Markdown; every answer that holds it also holds `html`, made on the
 //! server by `bb-markdown` for the reader (the mark `x-safe-html`). Saving a new text is the save
@@ -10,7 +9,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::comments::{
     AddComment, CommentTextView, CommentVersionsQuery, CommentView, DeleteComment, MentionChoice,
-    MentionChoicesQuery, MentionItem, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
+    MentionChoicesQuery, RestoreComment, SaveComment,
 };
 use bb_core::comment::MentionTarget;
 use bb_core::id::{CommentId, LockToken};
@@ -25,14 +24,12 @@ use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized, done,
 };
-use super::relations::IssueRef;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 const VERSIONS_LIST: &str = "comment-versions";
 const CHOICES_LIST: &str = "mention-choices";
-const MENTIONS_LIST: &str = "mentions";
 
 const TEXT_FIELDS: [FieldSpec; 4] = [
     FieldSpec::by_default("version"),
@@ -45,15 +42,6 @@ const CHOICE_FIELDS: [FieldSpec; 3] = [
     FieldSpec::by_default("handle"),
     FieldSpec::by_default("name"),
 ];
-const MENTION_FIELDS: [FieldSpec; 6] = [
-    FieldSpec::by_default("comment"),
-    FieldSpec::by_default("issue"),
-    FieldSpec::by_default("author"),
-    FieldSpec::by_default("html"),
-    FieldSpec::by_default("at"),
-    FieldSpec::by_default("unread"),
-];
-
 /// A comment as the reader sees it.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct CommentItem {
@@ -148,38 +136,6 @@ impl From<&MentionChoice> for MentionChoiceItem {
     }
 }
 
-/// A comment that mentions the person.
-#[derive(Serialize, ToSchema)]
-pub(crate) struct MentionedComment {
-    /// The ID of the comment.
-    comment: String,
-    /// The issue it is under.
-    issue: IssueRef,
-    /// Who wrote it, as the person may see people of the kind *Authors*.
-    author: PersonRef,
-    /// The text as safe HTML, made on the server for this reader.
-    html: String,
-    /// When it was written.
-    at: String,
-    /// Whether the person has not looked at it under *Mentions* yet.
-    unread: bool,
-}
-
-impl Masked for MentionedComment {}
-
-impl From<&MentionItem> for MentionedComment {
-    fn from(item: &MentionItem) -> Self {
-        Self {
-            comment: item.comment.to_string(),
-            issue: IssueRef::from(&item.issue),
-            author: item.author.clone(),
-            html: item.html.clone(),
-            at: item.at.to_string(),
-            unread: item.unread,
-        }
-    }
-}
-
 /// A comment to write.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct NewCommentBody {
@@ -196,13 +152,6 @@ pub(crate) struct SaveCommentBody {
     lock_token: String,
     /// The new text, in Markdown.
     text: String,
-}
-
-/// The mentions to mark as read.
-#[derive(Deserialize, ToSchema)]
-pub(crate) struct ReadMentionsBody {
-    /// The IDs of the comments.
-    comments: Vec<String>,
 }
 
 /// What the writer has typed after `@`.
@@ -440,74 +389,7 @@ async fn list_mention_choices(
     Ok(answer(Page::of_authorized(CHOICES_LIST, &list, &fields)?))
 }
 
-/// The comments that mention the person, unread first and then the newest: the *Mentions* block of
-/// the start page. Only comments under issues the person may see.
-#[utoipa::path(
-    get,
-    path = "/api/v1/me/mentions",
-    operation_id = "listMentions",
-    tag = "comments",
-    params(ListParams),
-    responses((status = 200, description = "The comments.", body = Page<MentionedComment>), NotSignedInAnswer)
-)]
-async fn list_mentions(
-    State(auth): State<AuthHandle>,
-    Info(info): Info,
-    Session(session_token): Session,
-    ApiQuery(params): ApiQuery<ListParams>,
-) -> Result<Response, ApiError> {
-    params.position(MENTIONS_LIST)?;
-    let found = auth
-        .api()?
-        .mentions(
-            info,
-            MentionsQuery {
-                session_token,
-                limit: params.limit(),
-            },
-        )
-        .await?;
-    let list = found.map(|block| Listed {
-        items: block.items.iter().map(MentionedComment::from).collect(),
-        next: block.next_cursor,
-    });
-    let fields = params.fields_readable(&MENTION_FIELDS, &list.hidden_properties())?;
-    Ok(answer(Page::of_authorized(MENTIONS_LIST, &list, &fields)?))
-}
-
-/// Marks the mentions of the person in these comments as read.
-#[utoipa::path(
-    post,
-    path = "/api/v1/me/mentions/read",
-    operation_id = "readMentions",
-    tag = "comments",
-    request_body = ReadMentionsBody,
-    responses((status = 204, description = "They are marked."), InvalidAnswer, NotSignedInAnswer)
-)]
-async fn read_mentions(
-    State(auth): State<AuthHandle>,
-    Info(info): Info,
-    Session(session_token): Session,
-    ApiJson(body): ApiJson<ReadMentionsBody>,
-) -> Result<Response, ApiError> {
-    let comments = body
-        .comments
-        .iter()
-        .map(|text| body_id::<CommentId>(text))
-        .collect::<Result<Vec<_>, _>>()?;
-    auth.api()?
-        .read_mentions(
-            info,
-            ReadMentions {
-                session_token,
-                comments,
-            },
-        )
-        .await?;
-    Ok(done())
-}
-
-/// The routes of comments and mentions.
+/// The routes of comments and of what a writer may name after `@`.
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
 where
     S: Clone + Send + Sync + 'static,
@@ -519,8 +401,6 @@ where
         .routes(routes!(restore_comment))
         .routes(routes!(list_comment_versions))
         .routes(routes!(list_mention_choices))
-        .routes(routes!(list_mentions))
-        .routes(routes!(read_mentions))
 }
 
 #[cfg(test)]

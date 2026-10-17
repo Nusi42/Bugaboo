@@ -4,5 +4,13 @@ export { useLongText, type LongText, type LongTextOptions } from "./use-long-tex
 export { lockCanBeRetaken, lostReasonOf, retakingLockHelps } from "./long-text-model.ts";
 export type { LostReason, Phase, Who } from "./long-text-model.ts";
 export { useLetGoWhenHidden } from "./let-go-when-hidden.ts";
+export type { LockState } from "./edit-lock-state.ts";
+export { editedThing } from "./edited-thing.ts";
+export { LockedEditor } from "./LockedEditor.tsx";
+export { RemoveEditable, type RemoveWords } from "./RemoveEditable.tsx";
+export { useEditingNow } from "./use-editing-now.ts";
+export { SaveBar, type SaveBarProps } from "./SaveBar.tsx";
+export { shownSaveError } from "./save-error.ts";
+export { useEditLock, type EditLock } from "./use-edit-lock.ts";
 export { useVersionWatch } from "./use-version-watch.ts";
 export type { Watched } from "./version-watch.ts";

@@ -354,6 +354,39 @@ fn sec_14_rate_limits_have_defaults_and_can_be_changed() {
 }
 
 #[test]
+fn ntf_02_the_wait_for_the_changes_of_one_e_mail_has_a_default_and_can_be_changed() {
+    let settings = resolve_with(None, &[], &[(SettingName::Port, "1")]).unwrap();
+    assert_eq!(settings.mail_batch, mail_batch());
+    let cli = [
+        (SettingName::Port, "1"),
+        (SettingName::MailBatchSeconds, "2"),
+    ];
+    let settings = resolve_with(None, &[], &cli).unwrap();
+    assert_eq!(settings.mail_batch, jiff::SignedDuration::from_secs(2));
+    let a_day = MAIL_BATCH_SECONDS_MAX.to_string();
+    let a_day_and_a_second = (MAIL_BATCH_SECONDS_MAX + 1).to_string();
+    let cli = [
+        (SettingName::Port, "1"),
+        (SettingName::MailBatchSeconds, a_day.as_str()),
+    ];
+    assert!(resolve_with(None, &[], &cli).is_ok());
+    for bad in [
+        "0",
+        "soon",
+        "-5",
+        a_day_and_a_second.as_str(),
+        "99999999999",
+    ] {
+        let cli = [
+            (SettingName::Port, "1"),
+            (SettingName::MailBatchSeconds, bad),
+        ];
+        let error = resolve_with(None, &[], &cli).unwrap_err();
+        assert!(matches!(error, ConfigError::NumberInvalid { .. }), "{bad}");
+    }
+}
+
+#[test]
 fn ops_10_the_default_settings_file_is_next_to_the_program() {
     let missing = read_file(None, Path::new("no/such/folder")).unwrap();
     assert!(missing.is_none());

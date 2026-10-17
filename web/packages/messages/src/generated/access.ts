@@ -91,7 +91,6 @@ export const messages = {
   "field-permissions.more-options": "More options",
   "field-permissions.fewer-options": "Fewer options",
   "field-permissions.type-chooser": "Levels for",
-  "field-permissions.all-types": "All issue types",
   "field-permissions.type-help":
     "These levels count for issues of every type, unless a level is set for one type below.",
   "field-permissions.type-help-chosen":

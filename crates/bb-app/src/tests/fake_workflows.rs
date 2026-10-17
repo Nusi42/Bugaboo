@@ -1,6 +1,6 @@
 //! The workflows part of the in-memory store.
 
-use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::Issue;
 use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 
@@ -102,6 +102,22 @@ impl WorkflowStore for FakeStore {
             .collect();
         found.sort_by_key(|issue| issue.id);
         Ok(found)
+    }
+
+    async fn live_issues_after_in(
+        tx: &mut Tx,
+        projects: Option<Vec<ProjectId>>,
+        issue_types: Option<Vec<IssueTypeId>>,
+        statuses: StatusFilter,
+        after: Option<IssueId>,
+        limit: usize,
+    ) -> Result<Vec<Issue>, FakeError> {
+        let all = Self::live_issues_in(tx, projects, issue_types, statuses).await?;
+        Ok(all
+            .into_iter()
+            .filter(|issue| after.is_none_or(|after| issue.id > after))
+            .take(limit)
+            .collect())
     }
 
     async fn insert_workflow(

@@ -70,7 +70,7 @@ macro_rules! part {
 
 /// Every part, in the order of the files: `shared` and one per feature folder. A test compares the
 /// list with the folders, so a new feature cannot be left out.
-const PARTS: [Part; 27] = [
+const PARTS: [Part; 28] = [
     part!("access"),
     part!("account"),
     part!("admin"),
@@ -85,8 +85,8 @@ const PARTS: [Part; 27] = [
     part!("labels"),
     part!("layouts"),
     part!("many-changes"),
-    part!("mentions"),
     part!("my-settings"),
+    part!("notifications"),
     part!("people"),
     part!("projects"),
     part!("relation-kinds"),
@@ -98,12 +98,13 @@ const PARTS: [Part; 27] = [
     part!("shell"),
     part!("sign-in"),
     part!("sign-up"),
+    part!("workflows"),
 ];
 
 /// The areas (first part of a key) that the browser shows: an allow-list, so a new area ships to the
 /// browser only when it is added here (M1-F12). A key outside these areas is for the server and its
 /// command line. A `t("…")` of the app with a key from another area is a type error.
-const BROWSER_AREAS: [&str; 89] = [
+const BROWSER_AREAS: [&str; 93] = [
     "access",
     "access-keys",
     "app",
@@ -132,6 +133,7 @@ const BROWSER_AREAS: [&str; 89] = [
     "focus",
     "followers",
     "groups",
+    "handle",
     "history",
     "home",
     "invitation",
@@ -147,12 +149,14 @@ const BROWSER_AREAS: [&str; 89] = [
     "layout-kind",
     "layouts",
     "list",
+    "mail-server",
     "many-changes",
     "many-changes-skip",
     "many-changes-status",
     "markdown",
-    "mentions",
     "nav",
+    "notification",
+    "notifications",
     "own",
     "page",
     "panel",
@@ -193,6 +197,7 @@ const BROWSER_AREAS: [&str; 89] = [
     "theme",
     "validation",
     "window",
+    "workflows",
 ];
 
 /// Whether a message is shown by the server only, and so is left out of the browser's catalog.

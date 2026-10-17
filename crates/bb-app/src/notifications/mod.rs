@@ -25,7 +25,10 @@ pub use handles::{
     create_missing_handles, my_handle,
 };
 pub(crate) use mail::{MailJob, send_failure_for_job};
-pub use mail_settings::{SendTestEmail, SetMailPassword, send_test_email, set_mail_password};
+pub use mail_settings::{
+    MailServerQuery, MailServerStatus, SendTestEmail, SetMailPassword, mail_server_status,
+    send_test_email, set_mail_password,
+};
 pub use read::{notifications, read_notifications, unread_notifications};
 pub use store::NotificationStore;
 pub use types::*;

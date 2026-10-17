@@ -5,11 +5,11 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import {
-  chooseStatus,
   detailRow,
   expectStatus,
-  statusButton,
   issueNote,
+  startWorking,
+  statusButton,
 } from "./support/issues.ts";
 import { prepareLook } from "./support/list-look.ts";
 import { partIn } from "./support/parts.ts";
@@ -29,7 +29,7 @@ test("ux_4_4 the big status button shows the status with its group's icon and li
   await expectStatus(page, t("status.open"));
   await expect(statusButton(page)).toHaveAttribute("data-variant", "not-started");
   await expect(partIn(statusButton(page), "status-icon")).toHaveCount(1);
-  await chooseStatus(page, t("status.in-progress"));
+  await startWorking(page);
   await expectStatus(page, t("status.in-progress"));
   await expect(statusButton(page)).toHaveAttribute("data-variant", "in-progress");
   // Kept: the page is read again from the server, once the server has the change (the button shows
