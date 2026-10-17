@@ -5,7 +5,7 @@
 //! `(recipient, once)` is what keeps a reader that reads an event again from making it twice. The
 //! row keeps the fields the person could see when it was built, and where its e-mail is. A person
 //! who is removed leaves no row (PRIV-04): the rows go with them. `person_handle` has one row
-//! for each person, and the handle is unique. `address_confirmation` has a row only for an account
+//! for each handle a person has or had, and a handle names one person for good. `address_confirmation` has a row only for an account
 //! that waits for its address to be confirmed.
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
@@ -97,18 +97,20 @@ fn handles() -> Vec<Step> {
         Step::Table(
             Table::create()
                 .table(PersonHandleRow::Table)
+                .col(ColumnDef::new(PersonHandleRow::Person).blob().not_null())
+                // A handle names one person, for good: a former handle stays with the person.
                 .col(
-                    ColumnDef::new(PersonHandleRow::Person)
-                        .blob()
+                    ColumnDef::new(PersonHandleRow::Handle)
+                        .text()
                         .not_null()
                         .primary_key(),
                 )
-                .col(ColumnDef::new(PersonHandleRow::Handle).text().not_null())
                 .col(
                     ColumnDef::new(PersonHandleRow::ChangedAt)
                         .big_integer()
                         .not_null(),
                 )
+                .col(ColumnDef::new(PersonHandleRow::Current).boolean().not_null())
                 .foreign_key(
                     ForeignKey::create()
                         .from(PersonHandleRow::Table, PersonHandleRow::Person)
@@ -116,14 +118,12 @@ fn handles() -> Vec<Step> {
                 )
                 .to_owned(),
         ),
-        // A handle names one person: two people who ask for it at the same moment cannot both
-        // get it.
+        // The handles of a person are found from the person.
         Step::Index(
             Index::create()
-                .name("person_handle_by_handle")
+                .name("person_handle_by_person")
                 .table(PersonHandleRow::Table)
-                .col(PersonHandleRow::Handle)
-                .unique()
+                .col(PersonHandleRow::Person)
                 .to_owned(),
         ),
     ]

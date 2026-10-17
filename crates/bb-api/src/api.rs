@@ -55,6 +55,7 @@ mod field_permissions;
 mod fields;
 mod follow;
 mod groups;
+mod handles;
 mod history;
 mod issue_types;
 mod issues;
@@ -166,6 +167,7 @@ where
         .merge(history::routes())
         .merge(follow::routes())
         .merge(notifications::routes())
+        .merge(handles::routes())
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())

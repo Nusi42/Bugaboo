@@ -11,6 +11,7 @@
 
 mod build;
 mod compose;
+mod handles;
 mod mail;
 mod mail_settings;
 mod plan;
@@ -20,6 +21,11 @@ mod retention;
 mod store;
 mod types;
 
+pub(crate) use handles::give_handle;
+pub use handles::{
+    ChangeHandle, CreateMissingHandles, HandleStore, MyHandle, MyHandleQuery, change_handle,
+    create_missing_handles, my_handle,
+};
 pub use mail_settings::{SendTestEmail, SetMailPassword, send_test_email, set_mail_password};
 pub use read::{notifications, read_notifications, unread_notifications};
 pub use store::NotificationStore;

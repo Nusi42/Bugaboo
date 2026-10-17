@@ -6,7 +6,8 @@ use bb_core::settings::SettingValue;
 use super::scenarios::{Added, measured, text, token};
 use super::world::World;
 use crate::notifications::{
-    NotificationsQuery, ReadNotifications, SendTestEmail, SetMailPassword, Which, notifications,
+    ChangeHandle, CreateMissingHandles, NotificationsQuery, ReadNotifications, SendTestEmail,
+    SetMailPassword, Which, change_handle, create_missing_handles, notifications,
     read_notifications, send_test_email, set_mail_password,
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
@@ -88,6 +89,30 @@ pub(crate) async fn send_test_email_scenario(world: &World) -> Added {
                 session_token: token(world),
             },
         ),
+    )
+    .await
+}
+
+pub(crate) async fn change_handle_scenario(world: &World) -> Added {
+    measured(
+        &world.store,
+        change_handle(
+            &world.ctx(),
+            ChangeHandle {
+                session_token: token(world),
+                handle: "ada.a".to_owned(),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn create_missing_handles_scenario(world: &World) -> Added {
+    // A person made before handles existed has none.
+    world.store.lock().state.handles.clear();
+    measured(
+        &world.store,
+        create_missing_handles(&world.ctx(), CreateMissingHandles),
     )
     .await
 }

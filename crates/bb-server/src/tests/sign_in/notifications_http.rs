@@ -7,6 +7,7 @@ use axum::http::StatusCode;
 use bb_api::{LimitsConfig, router};
 use bb_app::access::StartingRole;
 use bb_app::auth::RequestInfo;
+use bb_app::notifications::NotificationStore as _;
 use bb_core::job::JobState;
 use bb_core::notification::KEEP_DAYS;
 use bb_core::time::SECONDS_PER_DAY;
@@ -177,7 +178,6 @@ async fn sec_16_the_mail_password_is_stored_encrypted_and_never_sent_back() -> T
             let shown = ada.send("GET", path, None).await?;
             assert!(!shown.body.to_string().contains(password), "{path}");
         }
-        use bb_app::notifications::NotificationStore as _;
         let stored = rig.storage.mail_password().await?.ok_or("no password")?;
         assert_eq!(stored.as_slice(), password.as_bytes());
         let removed = ada

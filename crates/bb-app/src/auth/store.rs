@@ -32,7 +32,7 @@ use crate::history::HistoryStore;
 use crate::issues::IssueStore;
 use crate::layouts::LayoutStore;
 use crate::many_changes::ManyChangeStore;
-use crate::notifications::NotificationStore;
+use crate::notifications::{HandleStore, NotificationStore};
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -328,6 +328,7 @@ pub trait AuthStore:
     + FollowStore
     + HistoryStore
     + NotificationStore
+    + HandleStore
     + FieldStore
     + LayoutStore
     + SettingsStore

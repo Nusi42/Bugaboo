@@ -23,6 +23,7 @@ use super::types::{
     AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
 };
 use crate::input::clean_name;
+use crate::notifications::give_handle;
 
 /// The password as a new password: the rules of AUTH-01, as the error a person can read.
 pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
@@ -214,6 +215,7 @@ pub async fn complete_setup<S: AuthStore>(
                 }
                 S::lock_policy(transaction).await?;
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
+                give_handle::<S>(transaction, &stored_person, now).await?;
                 S::insert_assignment(transaction, &assignment).await?;
                 S::insert_session(transaction, &session).await
             })
@@ -285,6 +287,7 @@ pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<St
                     S::delete_session(transaction, old).await?;
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
+                give_handle::<S>(transaction, &stored_person, now).await?;
                 S::insert_session(transaction, &session).await
             })
         })
@@ -368,6 +371,7 @@ pub async fn accept_invitation<S: AuthStore>(
                     S::delete_session(transaction, old).await?;
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
+                give_handle::<S>(transaction, &stored_person, now).await?;
                 S::insert_session(transaction, &session).await
             })
         })

@@ -107,6 +107,7 @@ pub(crate) struct State {
     /// How many events the history has finished (their place in the outbox).
     pub(crate) history_position: i64,
     pub(crate) notifications: Vec<bb_core::notification::Notification>,
+    pub(crate) handles: Vec<bb_core::handle::PersonHandle>,
     /// How many events the notifications reader has finished (their place in the outbox).
     pub(crate) notification_position: i64,
     /// The password of the mail server, as the secrets table would hold it (not encrypted here).

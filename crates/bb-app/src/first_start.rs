@@ -1,6 +1,7 @@
 //! The first start of a server, in the one order it has to run (ADR-0025, ADR-0021, ISS-02): the
 //! starting roles first, so whoever sets the organization up gets the Administrator role; then
-//! the starting issue types and kinds of relation; then the setup code, while nobody can manage
+//! the starting issue types and kinds of relation; then the handles of the people who have none;
+//! then the setup code, while nobody can manage
 //! roles yet. Every part does nothing when it was done before, so the whole is run at every start.
 //!
 //! The server, the sample organization and the tests start this way and no one of them lists the
@@ -13,6 +14,7 @@ use crate::auth::{
     AppError, AuthServices, AuthStore, IssueSetupCode, RequestInfo, issue_setup_code,
 };
 use crate::issues::{CreateStartingIssueTypes, create_starting_issue_types};
+use crate::notifications::{CreateMissingHandles, create_missing_handles};
 use crate::relations::{CreateStartingRelationKinds, create_starting_relation_kinds};
 
 /// Makes what a new organization starts with, and the setup code while the organization has no
@@ -28,5 +30,7 @@ pub async fn first_start<S: AuthStore>(
     create_starting_roles(&ctx, CreateStartingRoles).await?;
     create_starting_issue_types(&ctx, CreateStartingIssueTypes).await?;
     create_starting_relation_kinds(&ctx, CreateStartingRelationKinds).await?;
+    // The people made before handles existed get theirs (M3-F70).
+    create_missing_handles(&ctx, CreateMissingHandles).await?;
     issue_setup_code(&ctx, IssueSetupCode).await
 }

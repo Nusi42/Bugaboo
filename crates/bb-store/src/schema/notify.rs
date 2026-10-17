@@ -30,6 +30,7 @@ pub(crate) enum PersonHandleRow {
     Person,
     Handle,
     ChangedAt,
+    Current,
 }
 
 /// An account that waits for its address to be confirmed (M1-F38).

@@ -81,6 +81,13 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         ),
         "resetMySetting" => ("DELETE", "/api/v1/me/settings/appearance.mode".into(), None),
         "getMe" => ("GET", "/api/v1/auth/me".into(), None),
+        // The person's own handle: their own data, so only a session reaches it.
+        "getMyHandle" => ("GET", "/api/v1/me/handle".into(), None),
+        "changeMyHandle" => (
+            "PUT",
+            "/api/v1/me/handle".into(),
+            Some(json!({"handle": "somebody.new"})),
+        ),
         // The person's own notifications.
         "listNotifications" => ("GET", "/api/v1/notifications".into(), None),
         "getUnreadNotifications" => ("GET", "/api/v1/notifications/unread".into(), None),

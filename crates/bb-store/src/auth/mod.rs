@@ -12,6 +12,7 @@ mod invitations;
 mod second_step;
 mod sessions;
 
+pub(crate) use accounts::{person_columns, read_person};
 use std::sync::Arc;
 
 use bb_app::auth::{AuthSettings, AuthStore, SecurityEvent};

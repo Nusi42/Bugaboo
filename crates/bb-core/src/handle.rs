@@ -2,7 +2,9 @@
 //!
 //! The handle is made from the name when the account is made, is unique, and can be changed in
 //! *My settings*. A mention stores the person and not the handle, so a changed handle never breaks
-//! an old comment. A handle is people information and follows *Who sees people*.
+//! an old comment: the handle a person had before stays with them, so the `@name` in an old text
+//! still names them, and nobody else can take it. A handle is people information and follows *Who
+//! sees people*.
 
 use jiff::Timestamp;
 
@@ -43,18 +45,22 @@ pub fn is_handle(text: &str) -> bool {
     handle_of(text).as_deref() == Some(text)
 }
 
-/// The handle of a person (ADR-0033 §6).
+/// A handle of a person (ADR-0033 §6): the one they have now, or one they had before.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct PersonHandle {
     /// The person.
     #[personal(category = "identity", basis = "contract")]
     pub person: UserId,
-    /// The handle, unique among people. Made from the name, so it can hold the name.
+    /// The handle, unique among all handles, former ones included. Made from the name, so it can hold the name.
     #[personal(category = "identity", basis = "contract")]
     pub handle: String,
-    /// When it was made or last changed.
+    /// When it was made or last taken up.
     #[not_personal]
     pub changed_at: Timestamp,
+    /// Whether it is the handle the person has now. The others are former handles, which still
+    /// name the person in old texts and stay out of everybody else's reach.
+    #[not_personal]
+    pub current: bool,
 }
 
 #[cfg(test)]

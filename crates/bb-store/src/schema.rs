@@ -570,6 +570,7 @@ stored_tables! {
         Person => person,
         Handle => handle,
         ChangedAt => changed_at,
+        Current => current,
     },
     AddressConfirmationRow => bb_core::confirmation::AddressConfirmation {
         Person => person,
