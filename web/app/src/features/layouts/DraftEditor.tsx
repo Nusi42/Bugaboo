@@ -2,17 +2,15 @@ import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Button, partOf, part } from "@bugaboo/ui";
 
+import { SaveBar, shownSaveError, type EditLock } from "../../shared/editing/index.ts";
 import { AvailableFields } from "./AvailableFields.tsx";
 import { KeptDraft } from "./KeptDraft.tsx";
-import { SaveBar } from "./SaveBar.tsx";
-import { shownSaveError } from "./save-error.ts";
 import { SectionCard } from "./SectionCard.tsx";
 import { useDraftEditor } from "./use-draft-editor.ts";
-import type { LayoutLock } from "./use-layout-lock.ts";
 
 export interface DraftEditorProps {
   readonly editor: Schema<"LayoutEditorBody">;
-  readonly lock: LayoutLock;
+  readonly lock: EditLock;
   /** The layout on screen is the one that was just saved. */
   readonly saved: boolean;
   /** A save worked; says the version that was saved. */
@@ -54,6 +52,8 @@ export function DraftEditor({ editor, lock, saved, onSaved }: DraftEditorProps) 
           error={shownSaveError(state.error, lock.state)}
           onSave={state.save}
           onDiscard={state.discard}
+          saveLabel={t("layouts.save")}
+          discardLabel={t("layouts.draft-drop")}
         />
       </fieldset>
     </>

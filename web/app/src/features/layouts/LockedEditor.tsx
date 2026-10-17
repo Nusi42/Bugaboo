@@ -1,9 +1,10 @@
 import type { Schema } from "@bugaboo/api-client";
+import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
+import { EditLockNotices, editedThing, useEditLock } from "../../shared/editing/index.ts";
+import { whatOf } from "./layouts.ts";
 import { DraftEditor } from "./DraftEditor.tsx";
-import { EditNotices } from "./EditNotices.tsx";
-import { useLayoutLock } from "./use-layout-lock.ts";
 
 /**
  * The editor of a layout that exists: the lock is taken when it opens and let go when it closes.
@@ -18,12 +19,17 @@ export function LockedEditor({
   readonly editor: Schema<"LayoutEditorBody">;
   readonly layout: string;
 }) {
-  const lock = useLayoutLock(layout);
+  const lock = useEditLock(whatOf(layout));
   const [savedAt, setSavedAt] = useState<number | undefined>();
   const version = editor.layout?.version;
   return (
     <>
-      <EditNotices lock={lock} />
+      <EditLockNotices
+        lock={lock}
+        thing={editedThing.layout}
+        lost={t("layouts.lost")}
+        taking={t("layouts.taking")}
+      />
       <DraftEditor
         key={version}
         editor={editor}

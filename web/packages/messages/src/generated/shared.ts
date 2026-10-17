@@ -532,6 +532,7 @@ export const messages = {
   "editing.the-description": "the description",
   "editing.this-comment": "this comment",
   "editing.this-layout": "this layout",
+  "editing.this-workflow": "this workflow",
   "editing.ask-to-finish": "Ask {name} to finish",
   "editing.edit-anyway": "Edit anyway",
   "editing.draft-found": "You have a draft of {thing} from {when}.",

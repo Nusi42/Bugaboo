@@ -722,6 +722,9 @@ pub const EDITING_THIS_COMMENT: MessageKey = MessageKey::new("editing.this-comme
 /// The message `editing.this-layout`.
 pub const EDITING_THIS_LAYOUT: MessageKey = MessageKey::new("editing.this-layout");
 
+/// The message `editing.this-workflow`.
+pub const EDITING_THIS_WORKFLOW: MessageKey = MessageKey::new("editing.this-workflow");
+
 /// The message `error.access.cannot-lift`.
 pub const ERROR_ACCESS_CANNOT_LIFT: MessageKey = MessageKey::new("error.access.cannot-lift");
 
@@ -8760,6 +8763,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("editing.the-description", "the description"),
     ("editing.this-comment", "this comment"),
     ("editing.this-layout", "this layout"),
+    ("editing.this-workflow", "this workflow"),
     (
         "error.access.cannot-lift",
         "This group has No access in a project that you cannot decide in. Taking people out of it, or deleting it, would lift that No access, so ask someone who decides there.",

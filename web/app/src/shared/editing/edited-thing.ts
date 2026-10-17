@@ -3,6 +3,7 @@ export const editedThing = {
   description: "editing.the-description",
   comment: "editing.this-comment",
   layout: "editing.this-layout",
+  workflow: "editing.this-workflow",
 } as const;
 
 export type EditedThing = (typeof editedThing)[keyof typeof editedThing];
