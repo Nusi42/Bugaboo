@@ -18,6 +18,7 @@ use bb_api::{
 };
 
 use bb_core::message::{self, Message};
+use bb_core::notification::mail_batch;
 use bb_core::settings::list_items;
 use bb_core::words;
 
@@ -42,6 +43,7 @@ words! {
         SignInAttemptsPerMinute => "sign_in_attempts_per_minute",
         SignInFailuresPerMinute => "sign_in_failures_per_minute",
         AccessKeyRequestsPerMinute => "access_key_requests_per_minute",
+        MailBatchSeconds => "mail_batch_seconds",
     }
 }
 
@@ -109,6 +111,8 @@ pub(crate) struct Settings {
     pub(crate) max_connections: usize,
     pub(crate) header_timeout: Duration,
     pub(crate) limits: LimitsConfig,
+    /// How long changes to one issue are collected into one e-mail (M4-Q6).
+    pub(crate) mail_batch: jiff::SignedDuration,
 }
 
 /// Where the settings come from.
@@ -399,6 +403,18 @@ fn settings_from(
         )?,
     };
 
+    let mail_batch_seconds = whole_number(
+        values,
+        SettingName::MailBatchSeconds,
+        mail_batch().as_secs().unsigned_abs(),
+    )?;
+    let mail_batch = i64::try_from(mail_batch_seconds)
+        .map(jiff::SignedDuration::from_secs)
+        .map_err(|_| ConfigError::NumberInvalid {
+            name: SettingName::MailBatchSeconds,
+            value: mail_batch_seconds.to_string(),
+        })?;
+
     let database_url = get(SettingName::DatabaseUrl).map(str::to_owned);
     if let Some(url) = &database_url
         && !["sqlite:", "postgres://", "postgresql://"]
@@ -454,6 +470,7 @@ fn settings_from(
         max_connections: usize::try_from(max_connections).unwrap_or(usize::MAX),
         header_timeout: Duration::from_secs(header_seconds),
         limits,
+        mail_batch,
     })
 }
 

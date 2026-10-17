@@ -143,7 +143,8 @@ pub(crate) async fn wire(
     )
     .with_setup_code_file(Arc::new(SetupCodeOnDisk(data.setup_code_file())))
     .with_mailer(Arc::new(SmtpMailer))
-    .with_public_url(settings.public_url.clone());
+    .with_public_url(settings.public_url.clone())
+    .with_mail_batch(settings.mail_batch);
     // A server that runs as a service writes its log to a file, which a job rotates (M1-F61).
     let services = match crate::log::server_log_file() {
         Some(file) => services.with_server_log(file),
