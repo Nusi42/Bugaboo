@@ -67,8 +67,14 @@ async function putOnTheme(page: Page, theme: Theme): Promise<void> {
   }, theme.id);
 }
 
-/** The screen has no accessibility violation that the checks of axe can find (WCAG 2.2 AA). */
+/**
+ * The screen has no accessibility violation that the checks of axe can find (WCAG 2.2 AA). A button
+ * that waits for an answer is drawn paler while it waits (`data-state="busy"`), and axe measures
+ * what is drawn, so the check waits until nothing is busy: it looks at the screen a person reads,
+ * not at the moment between a press and the answer.
+ */
 export async function expectNoViolations(page: Page): Promise<void> {
+  await expect(page.locator('[data-state~="busy"]')).toHaveCount(0);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
