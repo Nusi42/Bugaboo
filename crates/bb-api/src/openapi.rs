@@ -14,6 +14,7 @@ use bb_api_words::marks;
 use bb_api_words::versions::{CONFLICT_SCHEMA, VERSION};
 use bb_core::fields::Field;
 use bb_core::history::HistoryTab;
+use bb_core::mail::MailServerReadiness;
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
 use utoipa::openapi::extensions::Extensions;
@@ -50,6 +51,7 @@ const ACCESS_KEY_SCHEME: &str = "accessKey";
         ConflictProblem,
         Field,
         HistoryTab,
+        MailServerReadiness,
         NotificationFilter,
         NotificationKind
     )),

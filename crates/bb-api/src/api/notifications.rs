@@ -16,6 +16,7 @@ use bb_app::notifications::{
 };
 use bb_core::edit::NoticeKind;
 use bb_core::id::NotificationId;
+use bb_core::mail::MailServerReadiness;
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_core::own_fields::FieldType;
 use bb_policy::{Masked, PersonRef};
@@ -286,6 +287,10 @@ pub(crate) struct MailPasswordBody {
 pub(crate) struct MailServerStatusBody {
     /// A password is stored. The password itself is never sent.
     credential_set: bool,
+    /// What the server judges of the mail server as entered: `ready`, `incomplete` (the host or
+    /// the sender is missing) or `insecure` (a secret would go without encryption to another
+    /// machine).
+    readiness: MailServerReadiness,
 }
 
 impl Masked for MailServerStatusBody {}
@@ -441,6 +446,7 @@ async fn get_mail_password(
         .await?;
     answer_authorized(&state.map(|state| MailServerStatusBody {
         credential_set: state.credential_set,
+        readiness: state.readiness,
     }))
 }
 

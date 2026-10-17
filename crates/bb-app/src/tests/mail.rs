@@ -683,3 +683,36 @@ async fn test_e_mail(
     )
     .await
 }
+
+/// What the server judges of the mail server as entered.
+async fn readiness_of(crew: &Crew) -> Result<bb_core::mail::MailServerReadiness, String> {
+    use crate::notifications::{MailServerQuery, mail_server_status};
+    let status = mail_server_status(
+        &crew.world.ctx(),
+        MailServerQuery {
+            session_token: token(&crew.world),
+        },
+    )
+    .await
+    .map_err(text)?;
+    Ok(status.into_value().readiness)
+}
+
+#[tokio::test]
+async fn ntf_02_the_server_judges_the_mail_server_and_the_page_only_shows_it() -> Outcome {
+    use bb_core::mail::MailServerReadiness;
+    let crew = Crew::new().await?;
+    assert_eq!(readiness_of(&crew).await?, MailServerReadiness::Incomplete);
+    enter_the_mail_server(&crew.world).await?;
+    assert_eq!(readiness_of(&crew).await?, MailServerReadiness::Ready);
+    // A password without encryption to another machine would go in the clear.
+    set_setting(&crew, "mail.security", SettingValue::Text("off".to_owned())).await?;
+    set_setting(
+        &crew,
+        "mail.username",
+        SettingValue::Text("mailer".to_owned()),
+    )
+    .await?;
+    assert_eq!(readiness_of(&crew).await?, MailServerReadiness::Insecure);
+    Ok(())
+}

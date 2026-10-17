@@ -3,6 +3,23 @@
 //! The settings themselves (`mail.*`) are in the registry; the password is a stored secret
 //! (SEC-16) and is no setting.
 
+words! {
+    /// What the server itself judges of the mail server as entered.
+    pub enum MailServerReadiness {
+        /// Host and sender are entered, and the settings send no secret in the clear.
+        Ready => "ready",
+        /// The host or the sender is not entered yet.
+        Incomplete => "incomplete",
+        /// The settings would send a user name or a password without encryption to another machine.
+        Insecure => "insecure",
+    }
+}
+
+words_in_api!(
+    MailServerReadiness,
+    "What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine)."
+);
+
 /// The name the mail password is stored under (SEC-16).
 pub const PASSWORD_SECRET: &str = "mail.password";
 

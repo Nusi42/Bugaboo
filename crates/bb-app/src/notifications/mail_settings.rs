@@ -7,7 +7,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
-use bb_core::mail::PASSWORD_MAX;
+use bb_core::mail::{MailServerReadiness, PASSWORD_MAX};
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Authorized, Masked, Permission, Place};
 use serde::Serialize;
@@ -40,6 +40,9 @@ pub struct MailServerQuery {
 pub struct MailServerStatus {
     /// A password is stored.
     pub credential_set: bool,
+    /// The server's own judgement of the mail server as entered: the page shows it and judges
+    /// nothing itself.
+    pub readiness: MailServerReadiness,
 }
 
 impl Masked for MailServerStatus {}
@@ -129,7 +132,17 @@ pub async fn mail_server_status<S: AuthStore>(
         .await
         .map_err(|error| internal::<S>(&error))?
         .is_some();
-    Ok(access.authorize(MailServerStatus { credential_set }))
+    let layers = ctx.setting_layers_of(None).await?;
+    let readiness = match ctx.mail_server(&layers).await {
+        Ok(Some(_)) => MailServerReadiness::Ready,
+        Ok(None) => MailServerReadiness::Incomplete,
+        Err(AppError::Refused(ErrorCode::MailInsecure)) => MailServerReadiness::Insecure,
+        Err(other) => return Err(other),
+    };
+    Ok(access.authorize(MailServerStatus {
+        credential_set,
+        readiness,
+    }))
 }
 
 /// Sends a test e-mail to the person who asks.

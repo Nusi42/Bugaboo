@@ -26435,14 +26435,23 @@
           }
         }
       },
+      "MailServerReadiness": {
+        "type": "string",
+        "description": "What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).",
+        "enum": ["ready", "incomplete", "insecure"]
+      },
       "MailServerStatusBody": {
         "type": "object",
         "description": "What the mail server has that is no setting.",
-        "required": ["credential_set"],
+        "required": ["credential_set", "readiness"],
         "properties": {
           "credential_set": {
             "type": "boolean",
             "description": "A password is stored. The password itself is never sent."
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/MailServerReadiness",
+            "description": "What the server judges of the mail server as entered: `ready`, `incomplete` (the host or\nthe sender is missing) or `insecure` (a secret would go without encryption to another\nmachine)."
           }
         }
       },

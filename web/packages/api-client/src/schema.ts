@@ -5071,10 +5071,21 @@ export interface components {
        */
       password?: string | null;
     };
+    /**
+     * @description What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).
+     * @enum {string}
+     */
+    MailServerReadiness: "ready" | "incomplete" | "insecure";
     /** @description What the mail server has that is no setting. */
     MailServerStatusBody: {
       /** @description A password is stored. The password itself is never sent. */
       credential_set: boolean;
+      /**
+       * @description What the server judges of the mail server as entered: `ready`, `incomplete` (the host or
+       *     the sender is missing) or `insecure` (a secret would go without encryption to another
+       *     machine).
+       */
+      readiness: components["schemas"]["MailServerReadiness"];
     };
     /** @description What is done to every issue of the selection. */
     ManyChangeActionBody:
