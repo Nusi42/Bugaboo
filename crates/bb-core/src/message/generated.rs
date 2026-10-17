@@ -2744,6 +2744,9 @@ pub const PERMISSION_MANAGE_PEOPLE: MessageKey = MessageKey::new("permission.man
 /// The message `permission.manage-roles`.
 pub const PERMISSION_MANAGE_ROLES: MessageKey = MessageKey::new("permission.manage-roles");
 
+/// The message `permission.manage-workflows`.
+pub const PERMISSION_MANAGE_WORKFLOWS: MessageKey = MessageKey::new("permission.manage-workflows");
+
 /// The message `permission.move-issues`.
 pub const PERMISSION_MOVE_ISSUES: MessageKey = MessageKey::new("permission.move-issues");
 
@@ -9877,6 +9880,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "See everybody's e-mail address, correct their names and stop a change to many issues that somebody else started",
     ),
     ("permission.manage-roles", "Create, change and delete roles"),
+    (
+        "permission.manage-workflows",
+        "Manage workflows: change statuses and status changes, and publish them",
+    ),
     (
         "permission.move-issues",
         "Move issues into or out of the project",

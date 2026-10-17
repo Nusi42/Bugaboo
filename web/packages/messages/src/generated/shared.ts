@@ -282,6 +282,8 @@ export const messages = {
   "permission.move-issues": "Move issues into or out of the project",
   "permission.edit-anyway": "Take over text someone else is editing; their text is kept",
   "permission.manage-issue-types": "Manage issue types, kinds of relation and layouts",
+  "permission.manage-workflows":
+    "Manage workflows: change statuses and status changes, and publish them",
   "permission.manage-fields": "Create, change and retire fields",
   "permission.manage-labels": "Manage labels and tags, also rename and combine them",
   "permission.create-projects": "Create projects at the top level",

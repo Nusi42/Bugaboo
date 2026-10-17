@@ -32,6 +32,7 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageIssueTypes,
     Permission::ManageFields,
     Permission::ManageLabels,
+    Permission::ManageWorkflows,
 ];
 
 /// Declares the permissions: one line per permission, with the key, topic, where it counts and
@@ -105,6 +106,8 @@ permissions! {
     EditAnyway => ("edit-anyway", Issues, Project, Manage),
     /// Manage issue types, kinds of relation and layouts.
     ManageIssueTypes => ("manage-issue-types", WorkSettings, Project, Manage),
+    /// Manage workflows: change statuses and status changes and make them count.
+    ManageWorkflows => ("manage-workflows", WorkSettings, Project, Manage),
     /// Create, change and retire fields.
     ManageFields => ("manage-fields", WorkSettings, Organization, Manage),
     /// Manage labels and tags, also renaming and combining them.
