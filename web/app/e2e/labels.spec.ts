@@ -6,7 +6,7 @@ import { signedInAdmin } from "./support/access.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { chooseStatus, expectStatus, prepareWeb, savedNote } from "./support/issues.ts";
+import { expectStatus, prepareWeb, savedNote, startWorking } from "./support/issues.ts";
 import { labelIdOf, showDetails } from "./support/labels.ts";
 import { issueAddress, paths } from "../src/shared/paths.ts";
 
@@ -83,7 +83,7 @@ test("tag_01 a status change right after a tag is added does not conflict", asyn
     listNamed(page, t("labels.tags-heading")).getByText("quick", { exact: true }),
   ).toBeVisible();
   // The tag counted the version of the issue up; the change of status is made on that version.
-  await chooseStatus(page, t("status.in-progress"));
+  await startWorking(page);
   await expect(savedNote(page)).toBeVisible();
   await page.reload();
   await expectStatus(page, t("status.in-progress"));

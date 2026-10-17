@@ -1422,6 +1422,8 @@
   "issues.side-panel-view": "Open in the side panel",
   "issues.details": "Details",
   "issues.change-status": "Change the status",
+  "issues.ask-for-intro": "Before this issue can go to {to}, fill in:",
+  "issues.ask-for-description": "Write the description of the issue first: this change needs it.",
   "issues.summary-separator": " · ",
   "issues.all-details": "All details",
   "issues.hide-details": "Hide details",

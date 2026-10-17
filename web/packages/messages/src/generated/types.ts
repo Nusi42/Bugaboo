@@ -198,6 +198,7 @@ export interface MessageArguments {
   "invitations.take-back-title": { email: string | number };
   "issue-types.created": { name: string | number };
   "issues.add-field": { field: string | number };
+  "issues.ask-for-intro": { to: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
   "issues.change-field": { field: string | number };

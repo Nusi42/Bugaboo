@@ -1790,6 +1790,9 @@ pub const ISSUE_TYPES_SEARCH: MessageKey = MessageKey::new("issue-types.search")
 /// The message `issues.all-details`.
 pub const ISSUES_ALL_DETAILS: MessageKey = MessageKey::new("issues.all-details");
 
+/// The message `issues.ask-for-description`.
+pub const ISSUES_ASK_FOR_DESCRIPTION: MessageKey = MessageKey::new("issues.ask-for-description");
+
 /// The message `issues.assign`.
 pub const ISSUES_ASSIGN: MessageKey = MessageKey::new("issues.assign");
 
@@ -5813,6 +5816,15 @@ pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `issues.ask-for-intro`.
+#[must_use]
+pub fn issues_ask_for_intro(to: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.ask-for-intro"),
+        vec![("to", Value::Text(to.to_string()))],
+    )
+}
+
 /// The message `issues.asked-to-finish`.
 #[must_use]
 pub fn issues_asked_to_finish(name: impl std::fmt::Display) -> Message {
@@ -9519,6 +9531,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issue-types.search", "Search issue types"),
     ("issues.add-field", "Add {field}"),
     ("issues.all-details", "All details"),
+    (
+        "issues.ask-for-description",
+        "Write the description of the issue first: this change needs it.",
+    ),
+    (
+        "issues.ask-for-intro",
+        "Before this issue can go to {to}, fill in:",
+    ),
     (
         "issues.asked-to-finish",
         "{name} asked you to finish editing.",
