@@ -905,3 +905,63 @@ async fn att_01_a_file_on_a_comment_is_added_by_its_writer_and_goes_with_the_com
     })
     .await
 }
+
+#[tokio::test]
+async fn att_01_a_person_who_lost_the_right_to_add_a_file_cannot_delete_it_either() -> TestResult {
+    each_database("att_01_delete_follows_the_right", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let started = rig
+            .person_called(&site.org.admin.session, "bob@example.test", "Bob Builder")
+            .await?;
+        let bob = super::policy_rig::Member {
+            id: started.person.id,
+            session: started.session_token,
+        };
+        let roles = site.org.starting_roles().await?;
+        let acme = site.acme.parse().map_err(|_| "no project ID")?;
+        let given = site
+            .org
+            .give(&bob, roles[StartingRole::TeamMember.code()], acme)
+            .await?;
+        let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
+        let own = upload(&mut bob, &issue, "bobs.txt", b"what bob saw").await?;
+        assert_eq!(own["may_delete"], true);
+
+        // Bob becomes a Viewer: he sees the issue and its files, and may no longer add any.
+        rig.api()
+            .remove_assignment(
+                Rig::info(),
+                RemoveAssignment {
+                    session_token: site.org.admin.session.clone(),
+                    assignment: given.id,
+                },
+            )
+            .await?;
+        let member = super::policy_rig::Member {
+            id: started.person.id,
+            session: site.org.admin.session.clone(),
+        };
+        site.org
+            .give(&member, roles[StartingRole::Viewer.code()], acme)
+            .await?;
+        // The rule is the one of comments: the writer deletes while they may still write, and
+        // whoever may change issues deletes any.
+        let listed = files(&mut bob, &issue).await?;
+        assert_eq!(named(&listed, "bobs.txt")?["may_delete"], false);
+        let refused = bob
+            .send("DELETE", &format!("{ATTACHMENTS}/{}", id_in(&own)?), None)
+            .await?;
+        assert_eq!(
+            (refused.status, refused.code()),
+            (StatusCode::FORBIDDEN, "access.forbidden")
+        );
+        let by_ada = ada
+            .send("DELETE", &format!("{ATTACHMENTS}/{}", id_in(&own)?), None)
+            .await?;
+        assert_eq!(by_ada.status, StatusCode::NO_CONTENT);
+        Ok(())
+    })
+    .await
+}

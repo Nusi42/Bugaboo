@@ -2,8 +2,8 @@
 //! and taking it out again (ATT-01, M4-Q3), and what a person may add (ATT-03).
 //!
 //! A file is seen by whoever sees its issue, and a file on a comment by whoever sees the comment.
-//! Whoever added a file may delete it, and so may whoever may change issues; *Undo* takes it out of
-//! the trash again.
+//! Whoever added a file may delete it while they may still add one there, and so may whoever may
+//! change issues; *Undo* takes it out of the trash again.
 
 use std::sync::Arc;
 
@@ -11,6 +11,7 @@ use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::files::{Attachment, DownloadLink, LinkTarget, PART_BYTES, PreviewState, StoredFile};
 use bb_core::id::{AttachmentId, UserId};
+use bb_core::issue::Issue;
 use bb_core::version::{counted_up, next};
 use bb_policy::{Authorized, Evaluation, Permission};
 use serde_json::json;
@@ -23,6 +24,24 @@ use super::types::{
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
 use crate::projects::Why;
+
+/// Whether `person` may put the attachment into the trash or take it out again: whoever may change
+/// issues, and the person who added it while they may still add it, which is the rule of comments
+/// (a file of the issue itself follows the right to change the issue, a file of a comment the right
+/// to comment). The one place that says it, for the button and for the change.
+pub(super) fn may_remove(
+    held: &Evaluation,
+    issue: &Issue,
+    attachment: &Attachment,
+    person: UserId,
+) -> bool {
+    held.allows(Permission::ChangeIssues)
+        || attachment.added_by == person
+            && match attachment.comment {
+                Some(_) => held.allows(Permission::Comment),
+                None => held.may_change_issue(issue.reported_by),
+            }
+}
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// The signed link that opens `target` of `attachment` for `person` for five minutes.
@@ -42,6 +61,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         actor: &Actor,
         held: &Evaluation,
+        issue: &Issue,
         attachment: &Attachment,
         file: &StoredFile,
     ) -> Result<AttachmentView, AppError> {
@@ -70,8 +90,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             version: attachment.version,
             download_link: self.link_for(attachment.id, LinkTarget::File, actor.person.id)?,
             preview_link,
-            may_delete: attachment.added_by == actor.person.id
-                || held.allows(Permission::ChangeIssues),
+            may_delete: may_remove(held, issue, attachment, actor.person.id),
         })
     }
 
@@ -83,7 +102,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         id: AttachmentId,
         trashed: bool,
-    ) -> Result<(Attachment, bb_core::issue::Issue, Arc<Evaluation>), AppError> {
+    ) -> Result<(Attachment, Issue, Arc<Evaluation>), AppError> {
         let found = self
             .store()
             .attachment(id)
@@ -149,7 +168,10 @@ pub async fn issue_files<S: AuthStore>(
             continue;
         };
         if !on_a_deleted_comment {
-            items.push(ctx.attachment_view(&actor, &held, attachment, file).await?);
+            items.push(
+                ctx.attachment_view(&actor, &held, &issue, attachment, file)
+                    .await?,
+            );
         }
     }
     Ok(held.authorize(IssueFiles {
@@ -180,6 +202,7 @@ pub async fn file_rules<S: AuthStore>(
 struct Trashing {
     actor: Actor,
     attachment: Attachment,
+    issue: Issue,
     held: Arc<Evaluation>,
     event: bb_core::event::DomainEvent,
 }
@@ -195,8 +218,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Trashing, AppError> {
         let actor = self.actor(session_token).await?;
         let (attachment, issue, held) = self.visible_attachment(&actor, id, !into_trash).await?;
-        let mine = attachment.added_by == actor.person.id;
-        if !mine && !held.allows(Permission::ChangeIssues) {
+        if !may_remove(&held, &issue, &attachment, actor.person.id) {
             // Whoever may not take a file out of the trash is not told that it is in it.
             return Err(if into_trash {
                 ErrorCode::Forbidden
@@ -226,13 +248,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(Trashing {
             actor,
             attachment,
+            issue,
             held,
             event,
         })
     }
 }
 
-/// Puts an attachment into the trash. The person who added it may, and whoever may change issues.
+/// Puts an attachment into the trash. The person who added it may while they may still add it, and
+/// whoever may change issues.
 ///
 /// # Errors
 /// `resource.not_found` for an attachment that does not exist, is in the trash already or whose
@@ -300,7 +324,7 @@ pub async fn restore_attachment<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .ok_or_else(|| AppError::Internal("an attachment without its file".to_owned()))?;
     let view = ctx
-        .attachment_view(&plan.actor, &plan.held, &restored, &file)
+        .attachment_view(&plan.actor, &plan.held, &plan.issue, &restored, &file)
         .await?;
     Ok(plan.held.authorize(view))
 }

@@ -394,7 +394,7 @@ pub async fn finish_upload<S: AuthStore>(
         .map_err(|error| internal::<S>(&error))?
         .unwrap_or(file);
     let view = ctx
-        .attachment_view(&actor, &held, &attachment, &stored)
+        .attachment_view(&actor, &held, &issue, &attachment, &stored)
         .await?;
     Ok(held.authorize(view))
 }
