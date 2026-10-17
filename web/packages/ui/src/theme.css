@@ -2370,6 +2370,15 @@ body {
   overflow-wrap: anywhere;
 }
 
+[data-part="item.main"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  flex: 1 1 var(--size-name);
+}
+
 [data-part="item.title"] {
   font-weight: var(--weight-bold);
 }

@@ -16,7 +16,7 @@ export const messages = {
   "many-changes.project-list": "Projects to move the issues to",
   "many-changes.project-nothing": "No project has that name.",
   "many-changes.project-more": "Show more projects",
-  "many-changes.project-picked": "Move to {name}",
+  "many-changes.project-picked": "Chosen project: {name}",
   "many-changes.field-label": "Label",
   "many-changes.delete-text": "The issues go to the trash. You can undo this for a short while.",
   "many-changes.show-changes": "Show what changes",

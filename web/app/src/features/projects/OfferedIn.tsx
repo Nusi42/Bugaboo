@@ -214,7 +214,9 @@ function Lines({
         const project = projectOf(row.place);
         return (
           <li key={keyOf(row.place, position)} {...partOf(part.item)}>
-            <span>{t("projects.offer-line", { name, state: offerStateName(row.offered) })}</span>
+            <span {...partOf(part.itemMain)}>
+              {t("projects.offer-line", { name, state: offerStateName(row.offered) })}
+            </span>
             {row.may_change === true && project !== undefined ? (
               <Button
                 look={buttonLook.quiet}

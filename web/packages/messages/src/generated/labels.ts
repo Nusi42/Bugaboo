@@ -75,6 +75,8 @@ export const messages = {
   "labels.project-list": "Groups of labels of the project",
   "labels.project-create-title": "Create a group of labels for this project",
   "labels.project-create-intro": "A group created here is offered in this project and below.",
+  "labels.project-create-label-title": "Create a label for this project",
+  "labels.project-create-label-intro": "A label goes into one of the label groups of this project.",
 } as const;
 
 register(messages);

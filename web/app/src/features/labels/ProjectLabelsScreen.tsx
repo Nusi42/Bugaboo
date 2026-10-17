@@ -65,6 +65,9 @@ function ProjectLabels({ project, name }: { readonly project: string; readonly n
       <Card heading={t("labels.project-create-title")}>
         <p {...partOf(part.text)}>{t("labels.project-create-intro")}</p>
         <CreateLabelGroupForm project={project} />
+      </Card>
+      <Card heading={t("labels.project-create-label-title")}>
+        <p {...partOf(part.text)}>{t("labels.project-create-label-intro")}</p>
         <CreateLabelForm groups={groups} inGroupsOnly />
       </Card>
     </>

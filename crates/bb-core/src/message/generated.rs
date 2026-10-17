@@ -2172,6 +2172,14 @@ pub const LABELS_PREVIEW_TRUNCATED: MessageKey = MessageKey::new("labels.preview
 /// The message `labels.project-create-intro`.
 pub const LABELS_PROJECT_CREATE_INTRO: MessageKey = MessageKey::new("labels.project-create-intro");
 
+/// The message `labels.project-create-label-intro`.
+pub const LABELS_PROJECT_CREATE_LABEL_INTRO: MessageKey =
+    MessageKey::new("labels.project-create-label-intro");
+
+/// The message `labels.project-create-label-title`.
+pub const LABELS_PROJECT_CREATE_LABEL_TITLE: MessageKey =
+    MessageKey::new("labels.project-create-label-title");
+
 /// The message `labels.project-create-title`.
 pub const LABELS_PROJECT_CREATE_TITLE: MessageKey = MessageKey::new("labels.project-create-title");
 
@@ -10268,6 +10276,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "A group created here is offered in this project and below.",
     ),
     (
+        "labels.project-create-label-intro",
+        "A label goes into one of the label groups of this project.",
+    ),
+    (
+        "labels.project-create-label-title",
+        "Create a label for this project",
+    ),
+    (
         "labels.project-create-title",
         "Create a group of labels for this project",
     ),
@@ -10587,7 +10603,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("many-changes.project-more", "Show more projects"),
     ("many-changes.project-nothing", "No project has that name."),
-    ("many-changes.project-picked", "Move to {name}"),
+    ("many-changes.project-picked", "Chosen project: {name}"),
     ("many-changes.project-search", "Search projects"),
     (
         "many-changes.result-done",

@@ -2170,6 +2170,13 @@ part "item.text" {
     use "column-wrap"
 }
 
+// The words of an item that has a button beside them: they take the room that is left and break
+// inside their own box, so the button stays beside them on every line of a list.
+part "item.main" {
+    use "column-wrap"
+    flex "1 1 $size-name"
+}
+
 part "item.title" {
     font-weight "$weight-bold"
 }
