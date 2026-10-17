@@ -39,7 +39,7 @@ use super::is_api;
 use crate::conflict::ConflictBody;
 use crate::cookies::{CSRF_HEADER, Cookie};
 use crate::errors::ApiError;
-use crate::limits::{Limits, limit_sign_in};
+use crate::limits::{Limits, limit_sign_in, limit_sign_up};
 use crate::logging::ClientIp;
 use crate::permissions::csrf_exempt;
 
@@ -353,7 +353,18 @@ where
             Arc::clone(limits),
             limit_sign_in,
         ));
+    // Signing up sends an e-mail to whatever address is typed: a small limit of its own.
+    let sign_up = super::auth_people::sign_up_routes::<S>()
+        .route_layer(axum::middleware::from_fn_with_state(
+            Arc::clone(limits),
+            limit_sign_up,
+        ))
+        .route_layer(axum::middleware::from_fn_with_state(
+            Arc::clone(limits),
+            limit_sign_in,
+        ));
     tried
+        .merge(sign_up)
         .merge(super::auth_sign_in::session_routes::<S>())
         .merge(super::auth_factors::session_routes::<S>())
         .merge(super::auth_people::session_routes::<S>())

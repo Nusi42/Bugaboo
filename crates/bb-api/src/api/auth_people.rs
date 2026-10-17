@@ -491,9 +491,17 @@ where
 {
     OpenApiRouter::new()
         .routes(routes!(complete_setup))
-        .routes(routes!(sign_up))
         .routes(routes!(look_up_invitation))
         .routes(routes!(accept_invitation))
+}
+
+/// The route to sign up, which has a small limit of its own besides the one of the sign-in family.
+pub(crate) fn sign_up_routes<S>() -> OpenApiRouter<S>
+where
+    S: Clone + Send + Sync + 'static,
+    AuthHandle: axum::extract::FromRef<S>,
+{
+    OpenApiRouter::new().routes(routes!(sign_up))
 }
 
 /// The routes of an administrator.

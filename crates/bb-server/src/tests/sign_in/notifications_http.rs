@@ -563,6 +563,36 @@ async fn auth_a_sign_up_for_an_address_with_an_account_answers_like_one_for_a_ne
 }
 
 #[tokio::test]
+async fn sec_14_signing_up_has_a_small_limit_per_network_of_its_own() -> TestResult {
+    each_database("sec_14_sign_up_limit_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, _ada) = Site::start(&rig, &app).await?;
+        mail_and_sign_up_on(&rig).await?;
+        let mut visitor = Browser::new(&app, &super::http::called());
+        for number in 0..bb_api::limits::SIGN_UP_REQUESTS_PER_MINUTE {
+            let reply = visitor
+                .send(
+                    "POST",
+                    SIGN_UP,
+                    Some(sign_up_body(&format!("n{number}@example.test"))),
+                )
+                .await?;
+            assert_eq!(reply.status, StatusCode::ACCEPTED, "{}", reply.body);
+        }
+        let over = visitor
+            .send("POST", SIGN_UP, Some(sign_up_body("late@example.test")))
+            .await?;
+        assert_eq!(over.status, StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(over.code(), "rate_limit.exceeded");
+        // The sign-in family keeps its own, larger cap.
+        let refused = visitor.sign_in(EVE, super::rig::PASSWORD).await?;
+        assert_eq!(refused.code(), "auth.wrong_credentials");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
     each_database("auth_link_expiry_http", async |db| {
         let (rig, app) = rig_and_app(db).await?;
