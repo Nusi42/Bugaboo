@@ -164,6 +164,16 @@ async fn sign_up(tour: &mut Tour) -> TestResult {
         )
         .await?;
     assert_eq!(reply.code(), "auth.sign_up_refused");
+    // A link that was never sent opens nothing (the real link is tried in `notifications_http`).
+    let reply = eve
+        .route(
+            "POST",
+            "/api/v1/auth/address/confirm",
+            &format!("{api}/address/confirm"),
+            Some(json!({"secret": "a-secret-nobody-was-sent"})),
+        )
+        .await?;
+    assert_eq!(reply.code(), "auth.confirmation_invalid");
 
     Ok(())
 }
