@@ -198,14 +198,34 @@ export async function editWhenYouCan(page: Page, ready: Locator): Promise<void> 
 
 /** Adds a section to the layout in the editor by pressing the button with the keyboard. */
 export async function addSectionWithKeyboard(page: Page): Promise<void> {
-  await page.getByRole("button", { name: t("layouts.add-section"), exact: true }).focus();
-  await page.keyboard.press("Enter");
+  const add = page.getByRole("button", { name: t("layouts.add-section"), exact: true });
+  await add.focus();
+  await expect(add).toBeFocused();
+  await add.press("Enter");
 }
 
-/** Picks a choice of a list in the editor with the keyboard alone: the list has the focus and the choice is typed. */
-export async function chooseByTyping(page: Page, list: Locator, choice: string): Promise<void> {
+/**
+ * Presses the keys one after the other on the list. The list may be gone before the last key (the
+ * first letters can already pick the choice and the editor draws the list again): then there is
+ * nothing left to type, and no key goes to the page.
+ */
+async function pressKeys(list: Locator, keys: string): Promise<void> {
+  if (keys === "" || (await list.count()) === 0) {
+    return;
+  }
+  await list.press(keys.slice(0, 1), { timeout: 2000 }).catch(() => null);
+  await pressKeys(list, keys.slice(1));
+}
+
+/**
+ * Picks a choice of a list in the editor with the keyboard alone: the list has the focus and the
+ * choice is typed into it, one key at a time. Each key is pressed on the list, never on the page,
+ * so a letter can not reach a shortcut of the page.
+ */
+export async function chooseByTyping(list: Locator, choice: string): Promise<void> {
   await list.focus();
-  await page.keyboard.type(choice);
+  await expect(list).toBeFocused();
+  await pressKeys(list, choice);
 }
 
 /**
