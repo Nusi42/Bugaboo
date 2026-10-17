@@ -60,7 +60,7 @@ export function PasswordField({
 }) {
   const status = useMailServerStatus();
   const remove = useSetMailPassword();
-  const set = status.data?.password_set === true;
+  const set = status.data?.credential_set === true;
   return (
     <div {...partOf(part.stack)}>
       <TextField

@@ -25350,9 +25350,9 @@
       "MailServerStatusBody": {
         "type": "object",
         "description": "What the mail server has that is no setting.",
-        "required": ["password_set"],
+        "required": ["credential_set"],
         "properties": {
-          "password_set": {
+          "credential_set": {
             "type": "boolean",
             "description": "A password is stored. The password itself is never sent."
           }

@@ -481,7 +481,7 @@ async fn sec_16_the_page_learns_that_a_mail_password_is_entered_but_never_what_i
             .await
             .map_err(text)?
             .into_value()
-            .password_set
+            .credential_set
     );
     mail_is_on(&crew).await?;
     assert!(
@@ -489,7 +489,7 @@ async fn sec_16_the_page_learns_that_a_mail_password_is_entered_but_never_what_i
             .await
             .map_err(text)?
             .into_value()
-            .password_set
+            .credential_set
     );
     set_mail_password(
         &ctx,
@@ -505,7 +505,7 @@ async fn sec_16_the_page_learns_that_a_mail_password_is_entered_but_never_what_i
             .await
             .map_err(text)?
             .into_value()
-            .password_set
+            .credential_set
     );
     // Somebody who may not change the settings does not learn even that.
     let denied = ask(crew.bob.session_token.clone()).await.err();

@@ -4891,7 +4891,7 @@ export interface components {
     /** @description What the mail server has that is no setting. */
     MailServerStatusBody: {
       /** @description A password is stored. The password itself is never sent. */
-      password_set: boolean;
+      credential_set: boolean;
     };
     /** @description What is done to every issue of the selection. */
     ManyChangeActionBody:

@@ -39,7 +39,7 @@ pub struct MailServerQuery {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct MailServerStatus {
     /// A password is stored.
-    pub password_set: bool,
+    pub credential_set: bool,
 }
 
 impl Masked for MailServerStatus {}
@@ -123,13 +123,13 @@ pub async fn mail_server_status<S: AuthStore>(
             Place::Organization,
         )
         .await?;
-    let password_set = ctx
+    let credential_set = ctx
         .store()
         .mail_password()
         .await
         .map_err(|error| internal::<S>(&error))?
         .is_some();
-    Ok(access.authorize(MailServerStatus { password_set }))
+    Ok(access.authorize(MailServerStatus { credential_set }))
 }
 
 /// Sends a test e-mail to the person who asks.

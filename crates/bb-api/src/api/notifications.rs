@@ -285,7 +285,7 @@ pub(crate) struct MailPasswordBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct MailServerStatusBody {
     /// A password is stored. The password itself is never sent.
-    password_set: bool,
+    credential_set: bool,
 }
 
 impl Masked for MailServerStatusBody {}
@@ -440,7 +440,7 @@ async fn get_mail_password(
         .mail_server_status(info, MailServerQuery { session_token })
         .await?;
     answer_authorized(&state.map(|state| MailServerStatusBody {
-        password_set: state.password_set,
+        credential_set: state.credential_set,
     }))
 }
 
