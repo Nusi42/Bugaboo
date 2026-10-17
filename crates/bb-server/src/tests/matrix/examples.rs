@@ -55,10 +55,11 @@ pub(super) enum Quirk {
     /// refusal that the matrix does not expect fails, so a permitted actor cannot be refused for
     /// another reason without anybody noticing.
     AlsoAnswers(&'static str),
-    /// The route names a record that belongs to the person who made it (an upload), and the example
-    /// names one that nobody made: whoever may do the thing is told `resource.not_found`, as for a
-    /// record that is not there, and so is whoever may not, because the record is looked up before
-    /// the permission of the issue it belongs to (M4 WP-05).
+    /// The route names a record that belongs to the person who made it (an upload). The example
+    /// names the actor's own where the actor may start one, so the route runs on a real record; for
+    /// whoever may not, it names one that nobody made, and they are told `resource.not_found`, as
+    /// for a record that is not there, whether the permission is theirs or not, because the record
+    /// is looked up before the permission of the issue it belongs to (M4 WP-05).
     TheirOwn,
     /// The route is about an issue in the target project that somebody else reported (M3 WP-03): a
     /// person who does not see the project, or lacks *See issues* there, is told
@@ -150,7 +151,7 @@ impl Example {
     }
 }
 
-/// What the routes of an upload have in common: the example names an upload nobody started.
+/// What the routes of an upload have in common: the example names the actor's own upload, or one nobody started.
 const UPLOAD: [Quirk; 3] = [
     Quirk::AtTheTargetProject,
     Quirk::NamesAMissingThing,

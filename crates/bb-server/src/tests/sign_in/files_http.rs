@@ -1004,3 +1004,118 @@ async fn att_04_finishing_a_file_that_somebody_else_stored_answers_like_a_new_on
     })
     .await
 }
+
+#[tokio::test]
+async fn sec_06_the_upload_of_somebody_else_cannot_be_reached() -> TestResult {
+    each_database("sec_06_upload_of_another", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let (mut carl, _) = site.person(StartingRole::TeamMember, "carl").await?;
+        let (mut mia, _) = site.person(StartingRole::TeamMember, "mia").await?;
+
+        let started = start(&mut carl, &issue, "carls.txt", 8, None).await?;
+        let upload = id_in(ok(&started)?)?;
+        assert_eq!(
+            send_part(&mut carl, &upload, 0, b"first").await?.status,
+            StatusCode::OK
+        );
+        // Somebody who may add files to the issue as well, and the administrator, find no such
+        // upload: not to read it, not to add a part, not to finish it, not to throw it away.
+        for who in [&mut mia, &mut ada] {
+            let state = who
+                .send("GET", &format!("{UPLOADS}/{upload}"), None)
+                .await?;
+            assert_eq!(
+                (state.status, state.code()),
+                (StatusCode::NOT_FOUND, "resource.not_found")
+            );
+            let part = send_part(who, &upload, 5, b"hijack").await?;
+            assert_eq!(part.status, StatusCode::NOT_FOUND);
+            let finished = who
+                .send("POST", &format!("{UPLOADS}/{upload}/finish"), None)
+                .await?;
+            assert_eq!(finished.status, StatusCode::NOT_FOUND);
+            let thrown = who
+                .send("DELETE", &format!("{UPLOADS}/{upload}"), None)
+                .await?;
+            assert_eq!(thrown.status, StatusCode::NOT_FOUND);
+        }
+        // Nothing of that touched it: its owner goes on from where it stood and finishes.
+        let state = carl
+            .send("GET", &format!("{UPLOADS}/{upload}"), None)
+            .await?;
+        assert_eq!(ok(&state)?["offset"], 5);
+        assert_eq!(
+            send_part(&mut carl, &upload, 5, b"end").await?.status,
+            StatusCode::OK
+        );
+        let finished = carl
+            .send("POST", &format!("{UPLOADS}/{upload}/finish"), None)
+            .await?;
+        assert_eq!(ok(&finished)?["name"], "carls.txt");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_06_an_upload_ends_when_the_person_loses_access_in_the_middle_of_it() -> TestResult {
+    each_database("sec_06_access_lost_midway", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let created = rig
+            .person_called(&site.org.admin.session, "bob@example.test", "Bob Builder")
+            .await?;
+        let bob = super::policy_rig::Member {
+            id: created.person.id,
+            session: created.session_token,
+        };
+        let roles = site.org.starting_roles().await?;
+        let acme = site.acme.parse().map_err(|_| "no project ID")?;
+        let given = site
+            .org
+            .give(&bob, roles[StartingRole::TeamMember.code()], acme)
+            .await?;
+        let mut bob = Browser::signed_in_as(&app, "bob@example.test").await?;
+        let started = start(&mut bob, &issue, "bobs.txt", 8, None).await?;
+        let upload = id_in(ok(&started)?)?;
+        assert_eq!(
+            send_part(&mut bob, &upload, 0, b"first").await?.status,
+            StatusCode::OK
+        );
+        assert_eq!(on_disk(&rig, "uploads").len(), 1);
+
+        // Bob loses his role. The next part is refused as for something that is not there, and
+        // the upload ends: its bytes and its row are gone, also if the role comes back.
+        rig.api()
+            .remove_assignment(
+                Rig::info(),
+                RemoveAssignment {
+                    session_token: site.org.admin.session.clone(),
+                    assignment: given.id,
+                },
+            )
+            .await?;
+        let refused = send_part(&mut bob, &upload, 5, b"end").await?;
+        assert_eq!(
+            (refused.status, refused.code()),
+            (StatusCode::NOT_FOUND, "resource.not_found")
+        );
+        assert!(on_disk(&rig, "uploads").is_empty());
+        let member = super::policy_rig::Member {
+            id: created.person.id,
+            session: site.org.admin.session.clone(),
+        };
+        site.org
+            .give(&member, roles[StartingRole::TeamMember.code()], acme)
+            .await?;
+        let again = bob
+            .send("GET", &format!("{UPLOADS}/{upload}"), None)
+            .await?;
+        assert_eq!(again.status, StatusCode::NOT_FOUND);
+        Ok(())
+    })
+    .await
+}

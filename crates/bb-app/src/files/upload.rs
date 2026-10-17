@@ -80,6 +80,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(())
     }
 
+    /// The issue and the rights of the actor for a step of their own upload that changes it. A
+    /// person who may not add files there any more (their role was taken away, the issue went into
+    /// the trash) ends the upload with the refusal: its bytes and its row are thrown away at once
+    /// and not left for the daily clean-up.
+    async fn upload_target_or_end(
+        &self,
+        actor: &Actor,
+        upload: &Upload,
+    ) -> Result<(bb_core::issue::Issue, Arc<Evaluation>), AppError> {
+        let found = self
+            .upload_target(actor, &upload.issue.to_string(), upload.comment)
+            .await;
+        if matches!(found, Err(AppError::Refused(_))) {
+            self.drop_upload(upload.id).await;
+        }
+        found
+    }
+
     /// The upload of the actor. Somebody else's upload does not exist for them.
     async fn own_upload(&self, actor: &Actor, id: UploadId) -> Result<Upload, AppError> {
         let found = self
@@ -199,7 +217,7 @@ pub async fn upload_state<S: AuthStore>(
 ///
 /// # Errors
 /// `resource.not_found` for an upload that is not the person's or is gone, `access.forbidden` when
-/// the person may not add files there any more, `request.invalid` for an empty part, a part that is
+/// the person may not add files there any more (the upload then ends), `request.invalid` for an empty part, a part that is
 /// too big or that goes past the size the upload started with, `file.wrong_part` for a part that
 /// does not start where the file stands (the answer to `upload_state` says where), and
 /// `file.type_blocked` when the content is of a type the organization never accepts: the upload
@@ -210,9 +228,7 @@ pub async fn send_part<S: AuthStore>(
 ) -> Result<Authorized<UploadView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let upload = ctx.own_upload(&actor, input.upload).await?;
-    let (issue, held) = ctx
-        .upload_target(&actor, &upload.issue.to_string(), upload.comment)
-        .await?;
+    let (issue, held) = ctx.upload_target_or_end(&actor, &upload).await?;
     let length = u64::try_from(input.bytes.len()).unwrap_or(u64::MAX);
     let end = input.offset.checked_add(length);
     if length == 0
@@ -341,9 +357,7 @@ pub async fn finish_upload<S: AuthStore>(
 ) -> Result<Authorized<AttachmentView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let upload = ctx.own_upload(&actor, input.upload).await?;
-    let (issue, held) = ctx
-        .upload_target(&actor, &upload.issue.to_string(), upload.comment)
-        .await?;
+    let (issue, held) = ctx.upload_target_or_end(&actor, &upload).await?;
     ctx.room_for_one_more_file(issue.id).await?;
     let inspected = ctx.inspect_to_finish(&upload, issue.project).await?;
     // The file is held from the moment its bytes are put into the store until its attachment is
