@@ -27,6 +27,32 @@ pub(crate) fn issue_in(changes: &[FieldChange], field: &str, after: bool) -> Opt
     value.as_ref()?.as_str()?.parse().ok()
 }
 
+/// Whether a value says nothing: no value, an empty text, no people. A new issue has such values
+/// for the fields nobody filled in.
+fn is_empty(value: Option<&serde_json::Value>) -> bool {
+    match value {
+        None | Some(serde_json::Value::Null) => true,
+        Some(serde_json::Value::String(text)) => text.is_empty(),
+        Some(serde_json::Value::Array(items)) => items.is_empty(),
+        Some(_) => false,
+    }
+}
+
+/// What a new issue shows in its history: the values that were set, not the empty ones ("set
+/// Assigned to: nobody", M3-F185). A new issue is the event that did not count a version up; every
+/// later change of a value to an empty one is a change and stays.
+fn set_at_creation(event: &DomainEvent) -> Vec<FieldChange> {
+    if event.counted_version() {
+        return event.changes.clone();
+    }
+    event
+        .changes
+        .iter()
+        .filter(|change| !(is_empty(change.before.as_ref()) && is_empty(change.after.as_ref())))
+        .cloned()
+        .collect()
+}
+
 /// The rows of the history that an event makes, at its place in the outbox. None for an event that
 /// belongs in no history.
 #[must_use]
@@ -53,7 +79,7 @@ pub(crate) fn rows_of(position: i64, event: &DomainEvent) -> Vec<HistoryEntry> {
         let Ok(issue) = IssueId::from_bytes(event.entity.id.to_bytes()) else {
             return Vec::new();
         };
-        let mut rows = vec![row(issue, HistoryKind::Change, event.changes.clone())];
+        let mut rows = vec![row(issue, HistoryKind::Change, set_at_creation(event))];
         // The parent: one row for the issue it left and one for the issue it joined.
         for (parent, joined) in [
             (issue_in(&event.changes, issue_member::PARENT, false), false),
@@ -137,6 +163,35 @@ mod tests {
         assert_eq!(rows[0].position, 7);
         assert_eq!(rows[0].kind, HistoryKind::Change);
         assert_eq!(rows[0].record, made.entity.id);
+    }
+
+    #[test]
+    fn iss_06_history_leaves_out_empty_values_at_creation() {
+        let made = event(
+            RecordKind::Issue,
+            vec![
+                set("title", &json!("A")),
+                set("assigned-to", &json!([])),
+                set("description", &json!("")),
+            ],
+        );
+        let fields: Vec<_> = rows_of(1, &made)[0]
+            .changes
+            .iter()
+            .map(|change| change.field.as_str())
+            .collect();
+        assert_eq!(fields, ["title"]);
+        // Later, taking the people away is a change: the event counted the version up.
+        let mut cleared = event(
+            RecordKind::Issue,
+            vec![FieldChange {
+                field: "assigned-to".to_owned(),
+                before: Some(json!(["a"])),
+                after: Some(json!([])),
+            }],
+        );
+        cleared.changes.push(bb_core::version::counted_up(1));
+        assert_eq!(rows_of(2, &cleared)[0].changes.len(), 2);
     }
 
     #[test]
