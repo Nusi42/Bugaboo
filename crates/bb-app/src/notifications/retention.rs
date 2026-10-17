@@ -59,11 +59,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
-    /// Removes the sessions nobody can use any more, and the accounts that waited for their
-    /// address to be confirmed and ran out of time. A change of Bugaboo itself, so it writes an
-    /// event.
+    /// Removes the sessions nobody can use any more, and the links of sign-ups that were used or
+    /// ran out. A change of Bugaboo itself, so it writes an event.
     pub(crate) async fn purge_dead_sessions(&self) -> Result<(), AppError> {
-        self.remove_stale_sign_ups().await?;
+        self.delete_old_sign_up_links().await?;
         let settings = self.settings().await?;
         let event = self.event(
             EventActor::System,

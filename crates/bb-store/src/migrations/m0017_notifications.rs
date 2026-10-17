@@ -1,22 +1,23 @@
-//! Migration 17: notifications, handles and the confirmation of addresses (NTF-01, NTF-02,
-//! M3-F70, M1-F38, ADR-0033).
+//! Migration 17: notifications, handles and the links of sign-ups (NTF-01, NTF-02, M3-F70, M1-F38,
+//! ADR-0033).
 //!
 //! `notification` has one row for each person and event (or comment, for a mention): the unique key
 //! `(recipient, once)` is what keeps a reader that reads an event again from making it twice. The
-//! row keeps the fields the person could see when it was built, and where its e-mail is. A person
-//! who is removed leaves no row (PRIV-04): the rows go with them. `person_handle` has one row
-//! for each handle a person has or had, and a handle names one person for good. `address_confirmation` has a row only for an account
-//! that waits for its address to be confirmed.
+//! row keeps the fields the person could see when it was built, and where its e-mail is. The table
+//! has no cascade: the rows of a person who is removed are deleted by the removal (M9, PRIV-04), and
+//! all of them go after 90 days anyway. `person_handle` has one row for each handle a person has or
+//! had, and a handle names one person for good. `sign_up_invitation` has one row for each link a
+//! sign-up on one's own made: an invitation with nobody who invited.
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
-use crate::schema::{AddressConfirmationRow, NotificationRow, PersonHandleRow, PersonRow};
+use crate::schema::{NotificationRow, PersonHandleRow, PersonRow, SignUpInvitationRow};
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = notifications();
     steps.extend(handles());
-    steps.extend(confirmations());
+    steps.extend(sign_up_invitations());
     steps
 }
 
@@ -129,55 +130,52 @@ fn handles() -> Vec<Step> {
     ]
 }
 
-fn confirmations() -> Vec<Step> {
+fn sign_up_invitations() -> Vec<Step> {
     vec![
         Step::Table(
             Table::create()
-                .table(AddressConfirmationRow::Table)
+                .table(SignUpInvitationRow::Table)
                 .col(
-                    ColumnDef::new(AddressConfirmationRow::Person)
+                    ColumnDef::new(SignUpInvitationRow::Id)
                         .blob()
                         .not_null()
                         .primary_key(),
                 )
                 .col(
-                    ColumnDef::new(AddressConfirmationRow::TokenHash)
+                    ColumnDef::new(SignUpInvitationRow::TokenHash)
                         .blob()
-                        .not_null(),
+                        .not_null()
+                        .unique_key(),
                 )
+                .col(ColumnDef::new(SignUpInvitationRow::Email).text().not_null())
                 .col(
-                    ColumnDef::new(AddressConfirmationRow::CreatedAt)
+                    ColumnDef::new(SignUpInvitationRow::CreatedAt)
                         .big_integer()
                         .not_null(),
                 )
                 .col(
-                    ColumnDef::new(AddressConfirmationRow::ExpiresAt)
+                    ColumnDef::new(SignUpInvitationRow::ExpiresAt)
                         .big_integer()
                         .not_null(),
                 )
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(
-                            AddressConfirmationRow::Table,
-                            AddressConfirmationRow::Person,
-                        )
-                        .to(PersonRow::Table, PersonRow::Id),
-                )
+                .col(ColumnDef::new(SignUpInvitationRow::UsedAt).big_integer())
                 .to_owned(),
         ),
+        // The last link made for an address is found by the address.
         Step::Index(
             Index::create()
-                .name("address_confirmation_by_token")
-                .table(AddressConfirmationRow::Table)
-                .col(AddressConfirmationRow::TokenHash)
-                .unique()
+                .name("sign_up_invitation_by_email")
+                .table(SignUpInvitationRow::Table)
+                .col(SignUpInvitationRow::Email)
+                .col(SignUpInvitationRow::CreatedAt)
                 .to_owned(),
         ),
+        // The job that clears sessions finds the finished links by this.
         Step::Index(
             Index::create()
-                .name("address_confirmation_by_expiry")
-                .table(AddressConfirmationRow::Table)
-                .col(AddressConfirmationRow::ExpiresAt)
+                .name("sign_up_invitation_by_expiry")
+                .table(SignUpInvitationRow::Table)
+                .col(SignUpInvitationRow::ExpiresAt)
                 .to_owned(),
         ),
     ]

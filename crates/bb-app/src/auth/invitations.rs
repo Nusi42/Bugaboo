@@ -68,7 +68,7 @@ pub async fn create_invitation<S: AuthStore>(
         id: InvitationId::generate(&mut ctx.ids()),
         token_hash: secret.hash(Purpose::Invitation),
         email: email.as_str().to_owned(),
-        invited_by: actor.person.id,
+        invited_by: Some(actor.person.id),
         created_at: now,
         expires_at,
         used_at: None,

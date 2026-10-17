@@ -43,7 +43,7 @@ pub mod kind {
     /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21). It
     /// comes back every day.
     pub const PRUNE_SECURITY_LOG: &str = "security-log.prune";
-    /// Deleting the sessions nobody can use any more and the sign-ups never confirmed (M1-F43). It
+    /// Deleting the sessions nobody can use any more and the links of finished sign-ups (M1-F43). It
     /// comes back every day.
     pub const PURGE_SESSIONS: &str = "sessions.purge";
     /// Starting a new file of the log of a server that has no console (M1-F61). It comes back

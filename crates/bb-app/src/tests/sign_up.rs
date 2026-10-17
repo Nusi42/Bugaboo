@@ -1,0 +1,273 @@
+//! Signing up on one's own (AUTH-06, M1-F38, ADR-0033 §3): a self-invitation. Nothing is stored for
+//! the address but a job; the link that the job mails goes through the invitation page, where the
+//! person chooses a name and a password. The answer is the same for every address.
+
+use bb_core::ErrorCode;
+use bb_core::settings::SettingValue;
+use bb_core::sign_up_invitation::{HOURS, RESEND_AFTER_MINUTES};
+use bb_core::time::SECONDS_PER_DAY;
+
+use super::scenarios::{text, token};
+use super::scenarios_notifications::switch_mail_on;
+use super::world::{Outcome, PASSWORD, PUBLIC_URL, World};
+use crate::auth::{
+    AcceptInvitation, AppError, ChangeSignUpPolicy, SignIn, SignUp, SignUpPolicy,
+    accept_invitation, change_sign_up_policy, sign_in, sign_up,
+};
+use crate::settings::{ChangeSetting, SettingsScope, change_setting};
+
+const EVE: &str = "eve@example.test";
+
+/// A world where people may sign up, and e-mail is on when asked.
+async fn world(mail_on: bool) -> Result<World, String> {
+    let world = World::new().await?;
+    change_sign_up_policy(
+        &world.ctx(),
+        ChangeSignUpPolicy {
+            session_token: token(&world),
+            policy: SignUpPolicy {
+                enabled: true,
+                domains: vec!["example.test".to_owned()],
+                version: 0,
+            },
+        },
+    )
+    .await
+    .map_err(text)?;
+    if mail_on {
+        switch_mail_on(&world).await?;
+    }
+    Ok(world)
+}
+
+async fn sign_up_for(world: &World, address: &str) -> Result<(), AppError> {
+    sign_up(
+        &world.ctx(),
+        SignUp {
+            email: address.to_owned(),
+        },
+    )
+    .await
+    .map(|_| ())
+}
+
+/// Runs the jobs that are due.
+async fn run_jobs(world: &World) -> Result<(), String> {
+    loop {
+        if world.ctx().run_due_jobs().await.map_err(text)? == 0 {
+            return Ok(());
+        }
+    }
+}
+
+/// The secret in the link of the last e-mail.
+fn secret_in_the_last_e_mail(world: &World) -> Result<String, String> {
+    let mails = world.mailer.messages();
+    let mail = mails.last().ok_or("no e-mail went")?;
+    let (_, secret) = mail
+        .text
+        .split_once("/invitation#")
+        .ok_or("no link in the e-mail")?;
+    Ok(secret
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .to_owned())
+}
+
+async fn follow(world: &World, secret: &str) -> Result<(), AppError> {
+    accept_invitation(
+        &world.ctx(),
+        AcceptInvitation {
+            secret: secret.to_owned(),
+            display_name: "Eve Evans".to_owned(),
+            password: PASSWORD.to_owned(),
+            previous_session: None,
+        },
+    )
+    .await
+    .map(|_| ())
+}
+
+fn people_with(world: &World, address: &str) -> usize {
+    world
+        .store
+        .lock()
+        .state
+        .people
+        .iter()
+        .filter(|(person, _)| person.email == address)
+        .count()
+}
+
+#[tokio::test]
+async fn auth_no_password_and_no_person_exist_before_the_link_is_followed() -> Outcome {
+    let world = world(true).await?;
+    let people = world.store.lock().state.people.len();
+    let handles = world.store.lock().state.handles.len();
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.store.lock().state.people.len(), people);
+    assert_eq!(world.store.lock().state.handles.len(), handles);
+    assert_eq!(people_with(&world, EVE), 0);
+    // Nobody can sign in with any password yet.
+    let signed_in = sign_in(
+        &world.ctx(),
+        SignIn {
+            email: EVE.to_owned(),
+            password: PASSWORD.to_owned(),
+            previous_session: None,
+        },
+    )
+    .await;
+    assert_eq!(
+        signed_in.err(),
+        Some(AppError::Refused(ErrorCode::WrongCredentials))
+    );
+    let mails = world.mailer.messages();
+    assert_eq!(mails.len(), 1);
+    assert_eq!(mails[0].to, EVE);
+    assert!(mails[0].text.contains(&format!("{PUBLIC_URL}/invitation#")));
+    // The link makes the account, with the name and the password the person chooses there.
+    follow(&world, &secret_in_the_last_e_mail(&world)?).await?;
+    assert_eq!(people_with(&world, EVE), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_a_link_works_once() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    let secret = secret_in_the_last_e_mail(&world)?;
+    follow(&world, &secret).await?;
+    assert_eq!(
+        follow(&world, &secret).await.err(),
+        Some(AppError::Refused(ErrorCode::InvitationInvalid))
+    );
+    assert_eq!(people_with(&world, EVE), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_the_link_runs_out_after_24_hours() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    let secret = secret_in_the_last_e_mail(&world)?;
+    world.clock.advance(HOURS * 3600 + 1);
+    assert_eq!(
+        follow(&world, &secret).await.err(),
+        Some(AppError::Refused(ErrorCode::InvitationInvalid))
+    );
+    assert_eq!(people_with(&world, EVE), 0);
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_a_link_works_for_24_hours_from_the_moment_it_was_sent() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    // The mail server is slow: the link is made when the e-mail goes, not when the person signs up.
+    world.clock.advance(3600);
+    run_jobs(&world).await?;
+    let secret = secret_in_the_last_e_mail(&world)?;
+    world.clock.advance(HOURS * 3600 - 60);
+    follow(&world, &secret).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_a_sign_up_for_an_address_with_an_account_is_answered_like_any_other() -> Outcome {
+    let world = world(true).await?;
+    let known = "ada@example.test";
+    let before = world.store.lock().state.jobs.len();
+    let for_new = sign_up_for(&world, EVE).await;
+    let for_known = sign_up_for(&world, known).await;
+    assert_eq!(format!("{for_new:?}"), format!("{for_known:?}"));
+    assert!(for_known.is_ok());
+    assert_eq!(
+        world.store.lock().state.jobs.len(),
+        before + 2,
+        "a job for each"
+    );
+    run_jobs(&world).await?;
+    let mails = world.mailer.messages();
+    assert_eq!(mails.len(), 2);
+    let to_known = mails
+        .iter()
+        .find(|mail| mail.to == known)
+        .ok_or("no e-mail")?;
+    // The one who has an account is told so, and gets no link that would make a second one.
+    assert!(!to_known.text.contains("/invitation#"));
+    assert!(to_known.text.contains(&format!("{PUBLIC_URL}/sign-in")));
+    assert_eq!(people_with(&world, known), 1);
+    let to_new = mails
+        .iter()
+        .find(|mail| mail.to == EVE)
+        .ok_or("no e-mail")?;
+    assert!(to_new.text.contains("/invitation#"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_signing_up_again_soon_sends_no_second_e_mail() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), 1, "the inbox is not filled");
+    // After the pause a new link goes.
+    world.clock.advance(RESEND_AFTER_MINUTES * 60 + 1);
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), 2);
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_signing_up_is_refused_while_mail_is_off_for_nothing_could_prove_the_address()
+-> Outcome {
+    let world = world(false).await?;
+    assert_eq!(
+        sign_up_for(&world, EVE).await.err(),
+        Some(AppError::Refused(ErrorCode::SignUpRefused))
+    );
+    // E-mail on, but switched off again before the job runs: nothing goes.
+    switch_mail_on(&world).await?;
+    sign_up_for(&world, EVE).await?;
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            session_token: token(&world),
+            scope: SettingsScope::Organization,
+            key: "mail.enabled".to_owned(),
+            value: SettingValue::Bool(false),
+        },
+    )
+    .await
+    .map_err(text)?;
+    run_jobs(&world).await?;
+    assert!(world.mailer.messages().is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_the_job_that_clears_sessions_removes_the_links_that_are_done() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.store.lock().state.sign_up_invitations.len(), 1);
+    world.ctx().purge_dead_sessions().await.map_err(text)?;
+    assert_eq!(
+        world.store.lock().state.sign_up_invitations.len(),
+        1,
+        "an open link stays"
+    );
+    world.clock.advance(HOURS * 3600 + SECONDS_PER_DAY + 1);
+    world.ctx().purge_dead_sessions().await.map_err(text)?;
+    assert!(world.store.lock().state.sign_up_invitations.is_empty());
+    // Safe to run again.
+    world.ctx().purge_dead_sessions().await.map_err(text)?;
+    Ok(())
+}

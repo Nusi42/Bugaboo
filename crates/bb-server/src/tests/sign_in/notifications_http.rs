@@ -39,23 +39,6 @@ async fn finish(browser: &mut Browser, issue: &str) -> Result<(), Failure> {
     Ok(())
 }
 
-/// Runs the jobs that are due, as the job runner does.
-async fn run_jobs(rig: &Rig) -> Result<usize, Failure> {
-    let mut total = 0;
-    loop {
-        let taken = rig
-            .services
-            .ctx(RequestInfo::default())
-            .run_due_jobs()
-            .await
-            .map_err(|error| error.to_string())?;
-        if taken == 0 {
-            return Ok(total);
-        }
-        total += taken;
-    }
-}
-
 #[tokio::test]
 async fn ntf_01_a_follower_hears_over_http_and_marks_what_was_read() -> TestResult {
     each_database("ntf_01_http", async |db| {
@@ -239,7 +222,7 @@ async fn priv_05_notifications_go_after_90_days() -> TestResult {
         ctx.start_daily_jobs()
             .await
             .map_err(|error| error.to_string())?;
-        run_jobs(&rig).await?;
+        rig.run_jobs().await?;
         assert_eq!(
             items(&ada.send("GET", NOTIFICATIONS, None).await?).len(),
             1,
@@ -248,7 +231,7 @@ async fn priv_05_notifications_go_after_90_days() -> TestResult {
         rig.clock.advance((KEEP_DAYS + 1) * SECONDS_PER_DAY);
         // A session lasts a day at most: sign in again.
         let mut ada = Browser::signed_in_as(&app, super::http::ADA_EMAIL).await?;
-        run_jobs(&rig).await?;
+        rig.run_jobs().await?;
         assert!(items(&ada.send("GET", NOTIFICATIONS, None).await?).is_empty());
         Ok(())
     })
@@ -263,11 +246,11 @@ async fn adr_0017_every_keep_and_delete_job_runs_again_with_nothing_more_to_dele
         ctx.start_daily_jobs()
             .await
             .map_err(|error| error.to_string())?;
-        let first = run_jobs(&rig).await?;
+        let first = rig.run_jobs().await?;
         assert_eq!(first, bb_app::jobs::kind::DAILY_JOBS.len());
         // A day later every kind runs once more, and none of them fails or leaves a dead job.
         rig.clock.advance(SECONDS_PER_DAY + 1);
-        assert_eq!(run_jobs(&rig).await?, bb_app::jobs::kind::DAILY_JOBS.len());
+        assert_eq!(rig.run_jobs().await?, bb_app::jobs::kind::DAILY_JOBS.len());
         let dead = rig.database.dead_jobs(10).await?;
         assert!(
             dead.iter().all(|job| job.state != JobState::Dead),
@@ -279,30 +262,18 @@ async fn adr_0017_every_keep_and_delete_job_runs_again_with_nothing_more_to_dele
 }
 
 /// Switches e-mail on with a mail server, and signing up on.
-async fn mail_and_sign_up_on(rig: &Rig, ada: &mut Browser) -> Result<(), Failure> {
-    for (key, value) in [
-        ("mail.host", json!("mail.example.test")),
-        ("mail.from", json!("bugaboo@example.test")),
-    ] {
-        let put = ada
-            .send(
-                "PUT",
-                &format!("/api/v1/settings/{key}"),
-                Some(json!({"value": value})),
-            )
-            .await?;
-        assert_eq!(put.status, StatusCode::OK, "{key}: {}", put.body);
-    }
-    rig.set_organization_switch("mail.enabled", true).await?;
+async fn mail_and_sign_up_on(rig: &Rig) -> Result<(), Failure> {
+    rig.turn_mail_on().await?;
     rig.set_organization_switch("auth.sign-up-enabled", true)
-        .await?;
-    Ok(())
+        .await
 }
 
 const EVE: &str = "eve@example.test";
+const SIGN_UP: &str = "/api/v1/auth/sign-up";
+const ACCEPT: &str = "/api/v1/auth/invitation/accept";
 
-fn sign_up_body() -> Value {
-    json!({"email": EVE, "display_name": "Eve Evans", "password": super::rig::PASSWORD})
+fn sign_up_body(address: &str) -> Value {
+    json!({"email": address})
 }
 
 /// The secret in the link of the last e-mail.
@@ -311,7 +282,7 @@ fn secret_of_the_last_e_mail(rig: &Rig) -> Result<String, Failure> {
     let mail = mails.last().ok_or("no e-mail went")?;
     let (_, secret) = mail
         .text
-        .split_once("/confirm-address#")
+        .split_once("/invitation#")
         .ok_or("no link in the e-mail")?;
     Ok(secret
         .split_whitespace()
@@ -320,47 +291,87 @@ fn secret_of_the_last_e_mail(rig: &Rig) -> Result<String, Failure> {
         .to_owned())
 }
 
+fn accept_body(secret: &str) -> Value {
+    json!({"secret": secret, "display_name": "Eve Evans", "password": super::rig::PASSWORD})
+}
+
 #[tokio::test]
 async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() -> TestResult {
-    each_database("auth_confirm_http", async |db| {
+    each_database("auth_sign_up_link_http", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let (_site, mut ada) = Site::start(&rig, &app).await?;
-        mail_and_sign_up_on(&rig, &mut ada).await?;
+        let (_site, _ada) = Site::start(&rig, &app).await?;
+        mail_and_sign_up_on(&rig).await?;
         let mut eve = Browser::new(&app, &super::http::called());
-        let made = eve
-            .send("POST", "/api/v1/auth/sign-up", Some(sign_up_body()))
-            .await?;
-        assert_eq!(made.status, StatusCode::ACCEPTED, "{}", made.body);
-        assert_eq!(made.body["confirmation_needed"], true);
-        assert!(made.headers.get("set-cookie").is_none(), "no session");
+        let asked = eve.send("POST", SIGN_UP, Some(sign_up_body(EVE))).await?;
+        assert_eq!(asked.status, StatusCode::ACCEPTED, "{}", asked.body);
+        assert_eq!(asked.body["check_your_mail"], true);
+        assert!(asked.headers.get("set-cookie").is_none(), "no session");
+        // Nothing is made yet: no password, no person.
         let refused = eve.sign_in(EVE, super::rig::PASSWORD).await?;
-        assert_eq!(refused.code(), "auth.address_not_confirmed");
-        run_jobs(&rig).await?;
+        assert_eq!(refused.code(), "auth.wrong_credentials");
+        assert!(rig.account_by_email(EVE).await?.is_none());
+        rig.run_jobs().await?;
         let secret = secret_of_the_last_e_mail(&rig)?;
         assert_eq!(rig.mailer.messages()[0].to, EVE);
-        let confirmed = eve
-            .send(
-                "POST",
-                "/api/v1/auth/address/confirm",
-                Some(json!({"secret": secret})),
-            )
+        // The link goes through the invitation page: the person chooses a name and a password.
+        let made = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
+        assert_eq!(made.status, StatusCode::OK, "{}", made.body);
+        assert!(rig.account_by_email(EVE).await?.is_some());
+        let again = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
+        assert_eq!(again.code(), "auth.invitation_invalid", "once");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_a_sign_up_for_an_address_with_an_account_answers_like_one_for_a_new_address()
+-> TestResult {
+    each_database("auth_sign_up_same_answer_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (_site, _ada) = Site::start(&rig, &app).await?;
+        mail_and_sign_up_on(&rig).await?;
+        let mut visitor = Browser::new(&app, &super::http::called());
+        let new = visitor
+            .send("POST", SIGN_UP, Some(sign_up_body(EVE)))
             .await?;
+        let known = visitor
+            .send("POST", SIGN_UP, Some(sign_up_body(super::http::ADA_EMAIL)))
+            .await?;
+        assert_eq!(new.status, known.status);
+        assert_eq!(new.body, known.body);
+        // The same headers, whatever the request carried (the moment and the request ID differ).
+        let kept = |reply: &Reply| {
+            let mut headers: Vec<(String, String)> = reply
+                .headers
+                .iter()
+                .filter(|(name, _)| !matches!(name.as_str(), "date" | "x-request-id"))
+                .map(|(name, value)| {
+                    (
+                        name.as_str().to_owned(),
+                        value.to_str().unwrap_or_default().to_owned(),
+                    )
+                })
+                .collect();
+            headers.sort();
+            headers
+        };
+        assert_eq!(kept(&new), kept(&known));
         assert_eq!(
-            confirmed.status,
-            StatusCode::NO_CONTENT,
-            "{}",
-            confirmed.body
+            new.body.to_string().as_bytes(),
+            known.body.to_string().as_bytes(),
+            "byte for byte"
         );
-        let signed = eve.sign_in(EVE, super::rig::PASSWORD).await?;
-        assert_eq!(signed.status, StatusCode::OK, "{}", signed.body);
-        let again = eve
-            .send(
-                "POST",
-                "/api/v1/auth/address/confirm",
-                Some(json!({"secret": secret})),
-            )
-            .await?;
-        assert_eq!(again.code(), "auth.confirmation_invalid");
+        // Only the e-mail differs: a link for the new one, the word that it has an account for
+        // the other, and the person who has one gets no second account.
+        rig.run_jobs().await?;
+        let mails = rig.mailer.messages();
+        assert_eq!(mails.len(), 2);
+        let to_known = mails
+            .iter()
+            .find(|mail| mail.to == super::http::ADA_EMAIL)
+            .ok_or("no e-mail")?;
+        assert!(!to_known.text.contains("/invitation#"));
         Ok(())
     })
     .await
@@ -368,35 +379,32 @@ async fn auth_a_signed_up_account_works_only_after_the_link_when_mail_is_on() ->
 
 #[tokio::test]
 async fn auth_the_link_runs_out_after_24_hours() -> TestResult {
-    each_database("auth_confirm_expiry_http", async |db| {
+    each_database("auth_link_expiry_http", async |db| {
         let (rig, app) = rig_and_app(db).await?;
-        let (_site, mut ada) = Site::start(&rig, &app).await?;
-        mail_and_sign_up_on(&rig, &mut ada).await?;
+        let (_site, _ada) = Site::start(&rig, &app).await?;
+        mail_and_sign_up_on(&rig).await?;
         let mut eve = Browser::new(&app, &super::http::called());
-        eve.send("POST", "/api/v1/auth/sign-up", Some(sign_up_body()))
-            .await?;
-        run_jobs(&rig).await?;
+        eve.send("POST", SIGN_UP, Some(sign_up_body(EVE))).await?;
+        rig.run_jobs().await?;
         let secret = secret_of_the_last_e_mail(&rig)?;
         rig.clock.advance(24 * 3600 + 1);
-        let late = eve
-            .send(
-                "POST",
-                "/api/v1/auth/address/confirm",
-                Some(json!({"secret": secret})),
-            )
-            .await?;
-        assert_eq!(late.code(), "auth.confirmation_invalid");
-        // The job that clears sessions removes the account, and the address is free again.
+        let late = eve.send("POST", ACCEPT, Some(accept_body(&secret))).await?;
+        assert_eq!(late.code(), "auth.invitation_invalid");
+        assert!(rig.account_by_email(EVE).await?.is_none());
+        // The job that clears sessions removes the link, and signing up again sends a new one.
         rig.services
             .ctx(RequestInfo::default())
             .start_daily_jobs()
             .await
             .map_err(|error| error.to_string())?;
-        run_jobs(&rig).await?;
-        let again = eve
-            .send("POST", "/api/v1/auth/sign-up", Some(sign_up_body()))
-            .await?;
+        rig.clock.advance(SECONDS_PER_DAY);
+        rig.run_jobs().await?;
+        let again = eve.send("POST", SIGN_UP, Some(sign_up_body(EVE))).await?;
         assert_eq!(again.status, StatusCode::ACCEPTED, "{}", again.body);
+        rig.run_jobs().await?;
+        let fresh = secret_of_the_last_e_mail(&rig)?;
+        let made = eve.send("POST", ACCEPT, Some(accept_body(&fresh))).await?;
+        assert_eq!(made.status, StatusCode::OK, "{}", made.body);
         Ok(())
     })
     .await

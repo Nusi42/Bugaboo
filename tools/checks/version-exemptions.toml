@@ -152,10 +152,6 @@ routes = ["DELETE /api/v1/layouts/{layout}"]
 reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version_changed."
 
 [[exempt]]
-routes = ["POST /api/v1/auth/address/confirm"]
-reason = "Opens the link that was sent to an address (a secret in the body, valid once and for 24 hours); there is no record the person read, and a second try is told auth.confirmation_invalid."
-
-[[exempt]]
 routes = ["PUT /api/v1/mail/password"]
 reason = "Sets or removes the one mail password of the organization, which no answer ever shows, so no person has read a version of it; the change is a security log entry."
 

@@ -133,10 +133,6 @@ words! {
         EditLockReleased => "edit_lock.released",
         /// An administrator entered or removed the password of the mail server.
         MailPasswordChanged => "mail.password_changed",
-        /// A person opened the confirmation of their e-mail address.
-        AddressConfirmed => "address.confirmed",
-        /// A confirmation of an address did not work.
-        AddressConfirmationRefused => "address.confirmation_refused",
     }
 }
 
@@ -299,9 +295,9 @@ pub struct Invitation {
     /// The e-mail address the account will get.
     #[personal(category = "identity", basis = "contract")]
     pub email: String,
-    /// The administrator who made it.
+    /// The administrator who made it; nobody for the invitation a sign-up makes.
     #[personal(category = "identity", basis = "contract")]
-    pub invited_by: UserId,
+    pub invited_by: Option<UserId>,
     /// When it was made.
     #[personal(category = "activity", basis = "contract")]
     pub created_at: Timestamp,

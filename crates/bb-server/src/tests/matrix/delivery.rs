@@ -19,7 +19,6 @@ use serde_json::{Value, json};
 use crate::sign_in_tests::http::{Browser, rig_and_app};
 use crate::sign_in_tests::issues_site::{ISSUES, Site, key_of, version_of};
 use crate::sign_in_tests::rig::Rig;
-use bb_app::auth::RequestInfo;
 
 /// The name of the administrator who makes the change.
 const CHANGER: &str = "Ada Admin";
@@ -114,7 +113,7 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Delivered>, Failure> {
         everyone.push(in_the_app(role, &mut person).await?);
     }
     rig.clock.advance(AFTER_THE_WAIT);
-    run_jobs(&rig).await?;
+    rig.run_jobs().await?;
     for role in StartingRole::ALL.iter().copied() {
         everyone.push(by_mail(&rig, role));
     }
@@ -170,21 +169,6 @@ async fn switch_mail_on(rig: &Rig, ada: &mut Browser) -> Result<(), Failure> {
     rig.set_organization_switch("notifications.followed-activity-by-mail", true)
         .await?;
     Ok(())
-}
-
-/// Runs the jobs that are due, as the job runner does.
-async fn run_jobs(rig: &Rig) -> Result<(), Failure> {
-    loop {
-        let taken = rig
-            .services
-            .ctx(RequestInfo::default())
-            .run_due_jobs()
-            .await
-            .map_err(|error| error.to_string())?;
-        if taken == 0 {
-            return Ok(());
-        }
-    }
 }
 
 impl Delivered {

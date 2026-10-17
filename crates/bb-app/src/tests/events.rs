@@ -62,7 +62,6 @@ table! {
     "revoke_invitation" => s::revoke_invitation_scenario,
     "accept_invitation" => s::accept_invitation_scenario,
     "sign_up" => s::sign_up_scenario,
-    "confirm_address" => sn::confirm_address_scenario,
     "change_sign_up_policy" => s::change_sign_up_policy_scenario,
     "complete_setup" => s::complete_setup_scenario,
     "issue_setup_code" => s::issue_setup_code_scenario,

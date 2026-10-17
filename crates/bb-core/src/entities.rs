@@ -22,7 +22,7 @@ crate::entities! {
     crate::access_key::AccessKeyProject,
     crate::many_changes::ManyChangeRun,
     crate::comment::Comment,
-    crate::confirmation::AddressConfirmation,
+    crate::sign_up_invitation::SignUpInvitation,
     crate::comment::CommentVersion,
     crate::comment::Mention,
     crate::edit::Draft,

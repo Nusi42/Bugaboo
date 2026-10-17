@@ -49,7 +49,8 @@ pub async fn status<S: AuthStore>(
     let settings = ctx.settings().await?;
     Ok(AuthStatus {
         setup_needed,
-        sign_up_open: settings.sign_up_enabled,
+        // Signing up needs the link in an e-mail, so it is open only while e-mail can go.
+        sign_up_open: settings.sign_up_enabled && ctx.can_send_mail().await?,
         passkeys_available: ctx.services.passkeys.is_some(),
     })
 }
@@ -238,17 +239,6 @@ pub async fn sign_in<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignIn) -> Result<St
     ctx.slot_succeeded(slot);
 
     let person = account.person;
-    // An account made by signing up works only once its address is confirmed (M1-F38). The
-    // password was right, so saying so tells nothing to a stranger.
-    if ctx
-        .store()
-        .unconfirmed(person.id)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .is_some()
-    {
-        return Err(ErrorCode::AddressNotConfirmed.into());
-    }
     let methods = ctx.second_step_methods(person.id).await?;
     let stage = if methods.is_some() {
         SessionStage::SecondStepPending

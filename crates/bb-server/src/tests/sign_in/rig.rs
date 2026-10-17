@@ -296,6 +296,42 @@ impl Rig {
         self.put_setting(key, SettingValue::Bool(value)).await
     }
 
+    /// Sets a text setting of the organization.
+    pub(super) async fn set_organization_text(
+        &self,
+        key: &str,
+        value: &str,
+    ) -> Result<(), Failure> {
+        self.put_setting(key, SettingValue::Text(value.to_owned()))
+            .await
+    }
+
+    /// Enters the mail server and switches e-mail on: what the jobs that send mail need.
+    pub(super) async fn turn_mail_on(&self) -> Result<(), Failure> {
+        self.set_organization_text("mail.host", "mail.example.test")
+            .await?;
+        self.set_organization_text("mail.from", "bugaboo@example.test")
+            .await?;
+        self.set_organization_switch("mail.enabled", true).await
+    }
+
+    /// Runs the jobs that are due until none is left, as the job runner does; how many ran.
+    pub(super) async fn run_jobs(&self) -> Result<usize, Failure> {
+        let mut total = 0;
+        loop {
+            let taken = self
+                .services
+                .ctx(RequestInfo::default())
+                .run_due_jobs()
+                .await
+                .map_err(|error| error.to_string())?;
+            if taken == 0 {
+                return Ok(total);
+            }
+            total += taken;
+        }
+    }
+
     async fn put_setting(&self, key: &str, value: SettingValue) -> Result<(), Failure> {
         let mut ids = SystemIds;
         let event = DomainEvent {
@@ -436,6 +472,14 @@ impl Rig {
     pub(super) async fn group_version(&self, group: GroupId) -> Result<i64, Failure> {
         let found = self.storage.group(group).await?.ok_or("no such group")?;
         Ok(found.version)
+    }
+
+    /// The account with this address, if there is one.
+    pub(super) async fn account_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<bb_app::auth::Account>, Failure> {
+        Ok(self.storage.account_by_email(email).await?)
     }
 
     /// The person with this address.

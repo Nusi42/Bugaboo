@@ -195,17 +195,11 @@ pub struct AcceptInvitation {
     pub previous_session: Option<String>,
 }
 
-/// Make an account without an invitation.
+/// Ask for an account without an invitation: a link goes to the address, and the account is made
+/// when the link is opened.
 pub struct SignUp {
     /// The address as typed.
     pub email: String,
-    /// The name the person gives.
-    pub display_name: String,
-    /// The password the person chooses.
-    pub password: String,
-    /// The secret of the session cookie the browser still has, if any: signing in ends that old
-    /// session.
-    pub previous_session: Option<String>,
 }
 
 /// Change who may sign up on their own.

@@ -33,13 +33,15 @@ pub(crate) enum PersonHandleRow {
     Current,
 }
 
-/// An account that waits for its address to be confirmed (M1-F38).
+/// The link a sign-up on one's own makes (M1-F38): an invitation with nobody who invited.
 #[derive(Clone, Copy, Iden)]
-pub(crate) enum AddressConfirmationRow {
-    #[iden = "address_confirmation"]
+pub(crate) enum SignUpInvitationRow {
+    #[iden = "sign_up_invitation"]
     Table,
-    Person,
+    Id,
     TokenHash,
+    Email,
     CreatedAt,
     ExpiresAt,
+    UsedAt,
 }

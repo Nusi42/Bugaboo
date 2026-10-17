@@ -22,6 +22,7 @@ use bb_policy::Permission;
 use jiff::Timestamp;
 use zeroize::Zeroizing;
 
+use super::sign_up::SignUpStore;
 use super::types::ProjectChoice;
 use crate::access::PolicyStore;
 use crate::comments::CommentStore;
@@ -32,7 +33,7 @@ use crate::history::HistoryStore;
 use crate::issues::IssueStore;
 use crate::layouts::LayoutStore;
 use crate::many_changes::ManyChangeStore;
-use crate::notifications::{ConfirmationStore, HandleStore, NotificationStore};
+use crate::notifications::{HandleStore, NotificationStore};
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -329,7 +330,7 @@ pub trait AuthStore:
     + HistoryStore
     + NotificationStore
     + HandleStore
-    + ConfirmationStore
+    + SignUpStore
     + FieldStore
     + LayoutStore
     + SettingsStore

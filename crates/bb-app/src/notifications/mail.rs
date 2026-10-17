@@ -8,7 +8,7 @@
 //! never go into a log (DATA-LOGS): a failure is logged as a class.
 
 use bb_core::ErrorCode;
-use bb_core::id::{IssueId, UserId};
+use bb_core::id::{InvitationId, IssueId, UserId};
 use bb_core::mail::MailSecurity;
 use bb_core::notification::{MAIL_ENTRIES_MAX, MailState, Via};
 use bb_core::settings::{
@@ -26,7 +26,7 @@ use crate::mailer::{MailFailure, MailMessage, MailServer};
 
 /// What a job of the kind `mail.send` is for. The payload names who and about what, never a text:
 /// the e-mail is made when the job runs, from what the person may see then.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "what", rename_all = "snake_case")]
 pub(crate) enum MailJob {
     /// The changes to one issue (or the notifications about no issue) that wait for a person.
@@ -36,17 +36,20 @@ pub(crate) enum MailJob {
         /// The issue; none for the notifications that are about no issue.
         issue: Option<IssueId>,
     },
-    /// The e-mail with the link that confirms the address of an account made by signing up
-    /// (M1-F38). The link is made when the job runs, so it is in no payload.
-    Confirm {
-        /// The person whose address waits.
-        person: UserId,
+    /// The e-mail of somebody who signed up: the link that makes the account, or the word that
+    /// the address has an account. The link is made when the job runs, so it is in no payload; the
+    /// address is, until the job is done (and with a dead job, for its keep period).
+    SignUp {
+        /// The address as typed.
+        email: String,
+        /// The ID the link will have.
+        invitation: InvitationId,
     },
 }
 
 impl MailJob {
     /// The payload of the job.
-    pub(crate) fn to_value(self) -> Value {
+    pub(crate) fn to_value(&self) -> Value {
         // A payload of IDs and words always has a JSON form.
         serde_json::to_value(self).unwrap_or(Value::Null)
     }
@@ -57,7 +60,7 @@ impl MailJob {
     }
 }
 
-/// What a failure to send says to the one who asked (the test e-mail) and to the queue.
+/// What a failure to send says to the one who asked (the test e-mail).
 pub(crate) fn send_failure(failure: MailFailure) -> AppError {
     AppError::Refused(match failure {
         MailFailure::Rejected => ErrorCode::MailRejected,
@@ -65,7 +68,36 @@ pub(crate) fn send_failure(failure: MailFailure) -> AppError {
     })
 }
 
+/// What a failure to send says to the queue: a refusal for good is a refusal, and a mail server
+/// that cannot be reached is a failure, so the job is tried again.
+pub(crate) fn send_failure_for_job(failure: MailFailure) -> AppError {
+    match failure {
+        MailFailure::Rejected => send_failure(failure),
+        MailFailure::Unavailable => {
+            AppError::Internal("the mail server cannot be reached".to_owned())
+        }
+    }
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The address of a page of the app, from the public address of the server.
+    pub(crate) fn app_address(&self, path: &str) -> String {
+        format!("{}{path}", self.services.public_url)
+    }
+
+    /// The mail server when e-mail is switched on and the server is entered: the only way a job
+    /// gets one (PRIV-08).
+    pub(crate) async fn mail_server_if_on(
+        &self,
+        layers: &Layers,
+    ) -> Result<Option<MailServer>, AppError> {
+        if yes(layers, &MAIL_ENABLED) {
+            self.mail_server(layers).await
+        } else {
+            Ok(None)
+        }
+    }
+
     /// The mail server as the settings and the stored password say now, whether or not e-mail is
     /// switched on. `None` while the host or the sender is not entered.
     pub(crate) async fn mail_server(
@@ -117,7 +149,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             Some(MailJob::Changes { recipient, issue }) => {
                 self.send_changes(recipient, issue).await
             }
-            Some(MailJob::Confirm { person }) => self.send_confirmation(person).await,
+            Some(MailJob::SignUp { email, invitation }) => {
+                self.send_sign_up_mail(&email, invitation).await
+            }
             None => Err(AppError::Refused(ErrorCode::InvalidRequest)),
         }
     }
@@ -131,7 +165,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
         }
-        // A confirmation that did not go leaves the account waiting until its time runs out.
+        // A sign-up whose e-mail did not go leaves nothing behind but a link that runs out.
         Ok(())
     }
 
@@ -143,12 +177,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<(), AppError> {
         let failed = |error| internal::<S>(&error);
         let layers = self.setting_layers_of(None).await?;
-        let server = if yes(&layers, &MAIL_ENABLED) {
-            self.mail_server(&layers).await?
-        } else {
-            None
-        };
-        let Some(server) = server else {
+        let Some(server) = self.mail_server_if_on(&layers).await? else {
             // E-mail is off, or the mail server is not entered: nothing goes (PRIV-08).
             self.store()
                 .give_up_mail(recipient, issue)
@@ -219,12 +248,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .set_mail_state(&ids, MailState::Never)
                     .await
                     .map_err(failed)?;
-                Err(send_failure(MailFailure::Rejected))
+                Err(send_failure_for_job(MailFailure::Rejected))
             }
             // Another try may work: the notifications keep waiting, and the job runs again.
-            Err(MailFailure::Unavailable) => Err(AppError::Internal(
-                "the mail server cannot be reached".to_owned(),
-            )),
+            Err(failure) => Err(send_failure_for_job(failure)),
         }
     }
 }

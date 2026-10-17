@@ -572,11 +572,13 @@ stored_tables! {
         ChangedAt => changed_at,
         Current => current,
     },
-    AddressConfirmationRow => bb_core::confirmation::AddressConfirmation {
-        Person => person,
+    SignUpInvitationRow => bb_core::sign_up_invitation::SignUpInvitation {
+        Id => id,
         TokenHash => token_hash,
+        Email => email,
         CreatedAt => created_at,
         ExpiresAt => expires_at,
+        UsedAt => used_at,
     },
 }
 

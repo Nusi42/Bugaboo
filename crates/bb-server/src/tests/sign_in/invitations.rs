@@ -304,29 +304,34 @@ async fn auth_06_two_people_with_the_same_link_create_one_account() -> TestResul
     .await
 }
 
-async fn sign_up(
-    rig: &Rig,
-    email: &str,
-    password: &str,
-) -> Result<bb_app::auth::Started, bb_app::auth::AppError> {
-    match rig
-        .api()
+async fn sign_up(rig: &Rig, email: &str) -> Result<(), bb_app::auth::AppError> {
+    rig.api()
         .sign_up(
             Rig::info(),
             SignUp {
                 email: email.to_owned(),
-                display_name: "Eve".to_owned(),
-                password: password.to_owned(),
-                previous_session: None,
             },
         )
-        .await?
-    {
-        bb_app::auth::SignedUp::SignedIn(started) => Ok(started),
-        bb_app::auth::SignedUp::ConfirmationNeeded => Err(bb_app::auth::AppError::Internal(
-            "these tests run with e-mail off".to_owned(),
-        )),
-    }
+        .await
+        .map(|_| ())
+}
+
+/// The account that the link of the last e-mail makes, with the name and the password the person
+/// chooses on the invitation page.
+async fn follow_the_last_link(
+    rig: &Rig,
+    password: &str,
+) -> Result<bb_app::auth::Started, bb_app::auth::AppError> {
+    let mails = rig.mailer.messages();
+    let text = mails
+        .last()
+        .map(|mail| mail.text.clone())
+        .unwrap_or_default();
+    let secret = text
+        .split_once("/invitation#")
+        .and_then(|(_, rest)| rest.split_whitespace().next())
+        .unwrap_or_default();
+    accept(rig, secret, password).await
 }
 
 async fn policy(rig: &Rig, session: &str) -> Result<SignUpPolicy, bb_app::auth::AppError> {
@@ -381,7 +386,7 @@ async fn auth_06_signing_up_is_off_by_default_and_only_administrators_change_the
                 .sign_up_open
         );
         assert_eq!(
-            refused(sign_up(&rig, "eve@example.test", PASSWORD).await),
+            refused(sign_up(&rig, "eve@example.test").await),
             Some(ErrorCode::SignUpRefused)
         );
         assert_eq!(
@@ -449,6 +454,18 @@ async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> TestResul
         )
         .await?;
         assert_eq!(set.domains, ["example.test", "corp.test"]);
+        // Signing up sends a link by e-mail, so it is open only while e-mail can go.
+        assert!(
+            !rig.api()
+                .status(Rig::info(), StatusQuery)
+                .await?
+                .sign_up_open
+        );
+        assert_eq!(
+            refused(sign_up(&rig, "eve@example.test").await),
+            Some(ErrorCode::SignUpRefused)
+        );
+        rig.turn_mail_on().await?;
         assert!(
             rig.api()
                 .status(Rig::info(), StatusQuery)
@@ -457,37 +474,36 @@ async fn auth_06_signing_up_follows_the_rule_of_the_administrator() -> TestResul
         );
         for refused_email in ["mallory@evil.test", "mallory@sub.example.test"] {
             assert_eq!(
-                refused(sign_up(&rig, refused_email, PASSWORD).await),
+                refused(sign_up(&rig, refused_email).await),
                 Some(ErrorCode::SignUpRefused),
                 "{refused_email}"
             );
         }
+        sign_up(&rig, "Eve@Example.test").await?;
+        rig.run_jobs().await?;
+        // The password rules are those of the invitation page, where the password is chosen.
         assert_eq!(
-            refused(sign_up(&rig, "eve@example.test", "short").await),
+            refused(follow_the_last_link(&rig, "short").await),
             Some(ErrorCode::PasswordTooShort)
         );
-        let eve = sign_up(&rig, "Eve@Example.test", PASSWORD).await?;
+        let eve = follow_the_last_link(&rig, PASSWORD).await?;
         assert!(rig.permissions(&eve.session_token).await?.is_empty());
-        // An address that has an account gets the same answer as a closed door.
+        // An address that has an account gets the same answer as any other.
         for taken in ["eve@example.test", "bob@example.test"] {
-            assert_eq!(
-                refused(sign_up(&rig, taken, OTHER_PASSWORD).await),
-                Some(ErrorCode::SignUpRefused),
-                "{taken}"
-            );
+            sign_up(&rig, taken).await?;
         }
         rig.sign_in("eve@example.test", PASSWORD).await?;
 
         // With no list, every address may sign up while it is on; off, nobody may.
         change_policy(&rig, session, true, &[]).await?;
-        sign_up(&rig, "zed@anywhere.test", PASSWORD).await?;
+        sign_up(&rig, "zed@anywhere.test").await?;
         change_policy(&rig, session, false, &["example.test"]).await?;
         assert_eq!(
-            refused(sign_up(&rig, "late@example.test", PASSWORD).await),
+            refused(sign_up(&rig, "late@example.test").await),
             Some(ErrorCode::SignUpRefused)
         );
-        assert_eq!(action_count(&rig, SecurityAction::SignUpAccepted).await?, 2);
-        assert!(action_count(&rig, SecurityAction::SignUpRefused).await? >= 5);
+        assert_eq!(action_count(&rig, SecurityAction::SignUpAccepted).await?, 4);
+        assert!(action_count(&rig, SecurityAction::SignUpRefused).await? >= 4);
         assert_eq!(
             action_count(&rig, SecurityAction::SignUpPolicyChanged).await?,
             3

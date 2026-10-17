@@ -160,27 +160,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/auth/address/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirms the e-mail address of an account made by signing up, with the secret of the link in
-     *     the e-mail. It is a `POST` so the secret is in the body, not in an address that logs and browser
-     *     history keep. The person signs in afterwards.
-     */
-    post: operations["confirmAddress"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/auth/invitation/accept": {
     parameters: {
       query?: never;
@@ -528,9 +507,9 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Creates an account without an invitation, when an administrator allows it. When e-mail is on,
-     *     the account works only after the person has opened the link in the e-mail that goes to the
-     *     address (24 hours), and the answer is `202` without a session.
+     * Asks for an account without an invitation, when an administrator allows it and e-mail is on.
+     *     Nothing is made yet: the answer is `202` for every address, and a link goes to the address
+     *     (24 hours, once) that opens the invitation page.
      */
     post: operations["signUp"];
     delete?: never;
@@ -3454,14 +3433,6 @@ export interface components {
       /** @description The password. */
       password: string;
     };
-    /** @description What signing up comes to when e-mail is on: the account waits for its address. */
-    ConfirmationNeededBody: {
-      /**
-       * @description Always `true`: the account works only after the link in the e-mail sent to the address is
-       *     opened. The person is not signed in.
-       */
-      confirmation_needed: boolean;
-    };
     /** @description What changed a record since the person looked at it. */
     ConflictBody: {
       /** @description When, as a moment in time. */
@@ -3709,8 +3680,6 @@ export interface components {
       | "mail.rejected"
       | "mail.unavailable"
       | "mail.off"
-      | "auth.address_not_confirmed"
-      | "auth.confirmation_invalid"
       | "request.wrong_origin"
       | "request.wrong_token"
       | "request.method_not_allowed"
@@ -6856,14 +6825,19 @@ export interface components {
       /** @description The password. */
       password: string;
     };
-    /** @description Somebody who makes an account on their own. */
+    /** @description What signing up comes to: the same for every address. */
+    SignUpAnswer: {
+      /**
+       * @description Always `true`: an e-mail goes to the address. For an address with no account it holds a link
+       *     to the invitation page, where the person chooses a name and a password; for an address with
+       *     one it says so. Nothing is made yet, and the answer does not tell which of the two it is.
+       */
+      check_your_mail: boolean;
+    };
+    /** @description Somebody who asks for an account on their own. */
     SignUpBody: {
-      /** @description The name others see. */
-      display_name: string;
-      /** @description The e-mail address. */
+      /** @description The e-mail address. The link that makes the account goes there. */
       email: string;
-      /** @description The password. */
-      password: string;
     };
     /** @description Who may sign up on their own. */
     SignUpPolicyBody: {
@@ -7867,66 +7841,6 @@ export interface operations {
       };
       /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  confirmAddress: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SecretBody"];
-      };
-    };
-    responses: {
-      /** @description The address is confirmed; the account works. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
-      400: {
         headers: {
           [name: string]: unknown;
         };
@@ -9472,22 +9386,13 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The account was made and is signed in. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SignedInBody"];
-        };
-      };
-      /** @description The account was made and waits for its address to be confirmed; the person is not signed in. */
+      /** @description An e-mail goes to the address, the same answer for every address. */
       202: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ConfirmationNeededBody"];
+          "application/json": components["schemas"]["SignUpAnswer"];
         };
       };
       /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
@@ -9499,7 +9404,7 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description Signing up is not possible here (auth.sign_up_refused). */
+      /** @description Signing up is not possible here (auth.sign_up_refused): it is off, the domain is not listed, or e-mail is off. */
       403: {
         headers: {
           [name: string]: unknown;

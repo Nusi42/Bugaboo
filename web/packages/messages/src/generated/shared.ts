@@ -63,7 +63,7 @@ export const messages = {
   "setting.auth.access-key-longest-days.help":
     "The most days an access key can live, whatever date the person picks. Between 1 and 365 days.",
   "setting.auth.sign-up-enabled.help":
-    "Let people create an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+    "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
   "setting.content.image-hosts.name": "Hosts that images may come from",
   "setting.content.image-hosts.help":
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
@@ -634,10 +634,6 @@ export const messages = {
   "error.mail.unavailable":
     "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
   "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
-  "error.auth.address-not-confirmed":
-    "Your e-mail address is not confirmed yet. Open the e-mail that Bugaboo sent you.",
-  "error.auth.confirmation-invalid":
-    "This confirmation does not work. It may have run out or been used already. Sign up again to get a new one.",
   "setting.security.log-keep-days.name": "Days to keep the security log",
   "setting.security.log-keep-days.help":
     "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out. Between 30 days and 10 years (3650 days).",

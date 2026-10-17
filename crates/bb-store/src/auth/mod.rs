@@ -11,6 +11,7 @@ mod accounts;
 mod invitations;
 mod second_step;
 mod sessions;
+mod sign_up;
 
 pub(crate) use accounts::{person_columns, read_person};
 use std::sync::Arc;

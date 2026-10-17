@@ -745,14 +745,6 @@ pub const ERROR_ASSIGNMENT_CONFLICT: MessageKey = MessageKey::new("error.assignm
 pub const ERROR_AUTH_ACCESS_KEY_NOT_ALLOWED: MessageKey =
     MessageKey::new("error.auth.access-key-not-allowed");
 
-/// The message `error.auth.address-not-confirmed`.
-pub const ERROR_AUTH_ADDRESS_NOT_CONFIRMED: MessageKey =
-    MessageKey::new("error.auth.address-not-confirmed");
-
-/// The message `error.auth.confirmation-invalid`.
-pub const ERROR_AUTH_CONFIRMATION_INVALID: MessageKey =
-    MessageKey::new("error.auth.confirmation-invalid");
-
 /// The message `error.auth.invitation-invalid`.
 pub const ERROR_AUTH_INVITATION_INVALID: MessageKey =
     MessageKey::new("error.auth.invitation-invalid");
@@ -2241,9 +2233,6 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
 
-/// The message `mail.confirm-subject`.
-pub const MAIL_CONFIRM_SUBJECT: MessageKey = MessageKey::new("mail.confirm-subject");
-
 /// The message `mail.footer`.
 pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
 
@@ -2255,6 +2244,12 @@ pub const MAIL_LINE_RUN_DONE: MessageKey = MessageKey::new("mail.line-run-done")
 
 /// The message `mail.line-run-failed`.
 pub const MAIL_LINE_RUN_FAILED: MessageKey = MessageKey::new("mail.line-run-failed");
+
+/// The message `mail.sign-up-exists-subject`.
+pub const MAIL_SIGN_UP_EXISTS_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-exists-subject");
+
+/// The message `mail.sign-up-subject`.
+pub const MAIL_SIGN_UP_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-subject");
 
 /// The message `mail.subject-run`.
 pub const MAIL_SUBJECT_RUN: MessageKey = MessageKey::new("mail.subject-run");
@@ -4264,6 +4259,9 @@ pub const SIGN_UP_CLOSED: MessageKey = MessageKey::new("sign-up.closed");
 
 /// The message `sign-up.have-account`.
 pub const SIGN_UP_HAVE_ACCOUNT: MessageKey = MessageKey::new("sign-up.have-account");
+
+/// The message `sign-up.sent`.
+pub const SIGN_UP_SENT: MessageKey = MessageKey::new("sign-up.sent");
 
 /// The message `sign-up.submit`.
 pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
@@ -6378,15 +6376,6 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `mail.confirm-text`.
-#[must_use]
-pub fn mail_confirm_text(address: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("mail.confirm-text"),
-        vec![("address", Value::Text(address.to_string()))],
-    )
-}
-
 /// The message `mail.line-assigned`.
 #[must_use]
 pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
@@ -6467,6 +6456,27 @@ pub fn mail_open(address: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("mail.open"),
         vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.sign-up-exists-text`.
+#[must_use]
+pub fn mail_sign_up_exists_text(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.sign-up-exists-text"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.sign-up-text`.
+#[must_use]
+pub fn mail_sign_up_text(address: impl std::fmt::Display, hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.sign-up-text"),
+        vec![
+            ("address", Value::Text(address.to_string())),
+            ("hours", Value::Number(hours)),
+        ],
     )
 }
 
@@ -8710,14 +8720,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "An access key cannot do that. Sign in with your password to change your own sign-in details.",
     ),
     (
-        "error.auth.address-not-confirmed",
-        "Your e-mail address is not confirmed yet. Open the e-mail that Bugaboo sent you.",
-    ),
-    (
-        "error.auth.confirmation-invalid",
-        "This confirmation does not work. It may have run out or been used already. Sign up again to get a new one.",
-    ),
-    (
         "error.auth.invitation-invalid",
         "This invitation does not work. It may have run out or been used already. Ask for a new one.",
     ),
@@ -9810,14 +9812,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     (
-        "mail.confirm-subject",
-        "Bugaboo: confirm your e-mail address",
-    ),
-    (
-        "mail.confirm-text",
-        "Open this address to confirm your e-mail address and finish creating your account. It works for 24 hours.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
-    ),
-    (
         "mail.footer",
         "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
     ),
@@ -9841,6 +9835,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{who} took over the editing. What you wrote is kept as your draft.",
     ),
     ("mail.open", "Open it in Bugaboo: {address}"),
+    (
+        "mail.sign-up-exists-subject",
+        "Bugaboo: you already have an account",
+    ),
+    (
+        "mail.sign-up-exists-text",
+        "Somebody, probably you, tried to sign up with this address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
+    ),
+    (
+        "mail.sign-up-subject",
+        "Bugaboo: finish creating your account",
+    ),
+    (
+        "mail.sign-up-text",
+        "Open this address to choose your name and your password and finish creating your account. It works once, for {hours, plural, one {# hour} other {# hours}}.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
+    ),
     ("mail.subject", "Bugaboo: {issue} {title}"),
     (
         "mail.subject-run",
@@ -11086,7 +11096,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.sign-up-enabled.help",
-        "Let people create an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+        "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
     ),
     (
         "setting.auth.sign-up-enabled.name",
@@ -11561,7 +11571,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up-policy.intro",
-        "When this is on, anyone who can open Bugaboo can create an account without being invited.",
+        "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
     ),
     (
         "sign-up-policy.switch",
@@ -11570,14 +11580,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sign-up-policy.title", "Signing up without an invitation"),
     (
         "sign-up-policy.warning",
-        "No domain is listed, so everyone who can reach Bugaboo can create an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+        "No domain is listed, so everyone who can reach Bugaboo can ask for an account. The e-mail goes to the address they give, so only a person who can read that address can create one.",
     ),
     (
         "sign-up.closed",
         "Creating your own account is switched off here. Ask an administrator to invite you.",
     ),
     ("sign-up.have-account", "I already have an account"),
-    ("sign-up.submit", "Create my account"),
+    (
+        "sign-up.sent",
+        "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you.",
+    ),
+    ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),
     ("starting-role.administrator", "Administrator"),
     ("starting-role.contributor", "Contributor"),

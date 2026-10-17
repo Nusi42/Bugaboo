@@ -1,15 +1,14 @@
 //! The scenarios of the notification and mail use cases (ADR-0007, M1-F18).
 
-use bb_core::confirmation::{AddressConfirmation, lasts};
 use bb_core::notification::NotificationFilter;
 use bb_core::settings::SettingValue;
 
 use super::scenarios::{Added, measured, text, token};
 use super::world::World;
 use crate::notifications::{
-    ChangeHandle, ConfirmAddress, CreateMissingHandles, NotificationsQuery, ReadNotifications,
-    SendTestEmail, SetMailPassword, Which, change_handle, confirm_address, create_missing_handles,
-    notifications, read_notifications, send_test_email, set_mail_password,
+    ChangeHandle, CreateMissingHandles, NotificationsQuery, ReadNotifications, SendTestEmail,
+    SetMailPassword, Which, change_handle, create_missing_handles, notifications,
+    read_notifications, send_test_email, set_mail_password,
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -80,6 +79,23 @@ pub(crate) async fn enter_the_mail_server(world: &World) -> Result<(), String> {
     Ok(())
 }
 
+/// Enters the mail server and switches e-mail on.
+pub(crate) async fn switch_mail_on(world: &World) -> Result<(), String> {
+    enter_the_mail_server(world).await?;
+    change_setting(
+        &world.ctx(),
+        ChangeSetting {
+            session_token: token(world),
+            scope: SettingsScope::Organization,
+            key: "mail.enabled".to_owned(),
+            value: SettingValue::Bool(true),
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(text)
+}
+
 pub(crate) async fn send_test_email_scenario(world: &World) -> Added {
     enter_the_mail_server(world).await?;
     measured(
@@ -114,34 +130,6 @@ pub(crate) async fn create_missing_handles_scenario(world: &World) -> Added {
     measured(
         &world.store,
         create_missing_handles(&world.ctx(), CreateMissingHandles),
-    )
-    .await
-}
-
-pub(crate) async fn confirm_address_scenario(world: &World) -> Added {
-    // An account that waits for its address, and the link that confirms it.
-    let secret = bb_auth::SecretToken::generate().map_err(text)?;
-    let person = world
-        .person("waiting@example.test")
-        .await
-        .map_err(text)?
-        .person
-        .id;
-    let waiting = AddressConfirmation {
-        person,
-        token_hash: secret.hash(bb_auth::Purpose::AddressConfirmation),
-        created_at: world.ctx().now(),
-        expires_at: world.ctx().now().checked_add(lasts()).map_err(text)?,
-    };
-    world.store.lock().state.confirmations.push(waiting);
-    measured(
-        &world.store,
-        confirm_address(
-            &world.ctx(),
-            ConfirmAddress {
-                secret: secret.encode(),
-            },
-        ),
     )
     .await
 }

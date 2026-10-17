@@ -477,7 +477,6 @@ pub const ROUTES: &[Route] = &[
     ),
     route("listMentions", Declared::SignedIn, Answer::NeverStored),
     route("readMentions", Declared::SignedIn, Answer::Ordinary),
-    route("confirmAddress", Declared::Public, Answer::Ordinary),
     route("getMyHandle", Declared::SignedIn, Answer::NeverStored),
     route("changeMyHandle", Declared::SignedIn, Answer::Ordinary),
     route("listNotifications", Declared::SignedIn, Answer::NeverStored),
