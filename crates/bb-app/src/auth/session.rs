@@ -49,7 +49,8 @@ pub async fn status<S: AuthStore>(
     let settings = ctx.settings().await?;
     Ok(AuthStatus {
         setup_needed,
-        sign_up_open: settings.sign_up_enabled,
+        // Signing up needs the link in an e-mail, so it is open only while e-mail can go.
+        sign_up_open: settings.sign_up_enabled && ctx.can_send_mail().await?,
         passkeys_available: ctx.services.passkeys.is_some(),
     })
 }

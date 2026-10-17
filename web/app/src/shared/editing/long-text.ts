@@ -194,6 +194,15 @@ export class LongTextEditor extends WatchingEditor {
     void this.deps.throwAwayServerDraft().catch(ignore);
   };
 
+  /**
+   * Reads the record again, so that what *Compare and save* sets next to the person's text is the
+   * newest: the page may have been told that the editing was taken over before the other person
+   * saved, and then holds a text older than the server's.
+   */
+  readonly reread = async (): Promise<void> => {
+    await this.deps.refresh().catch(ignore);
+  };
+
   /** *Compare and save*: the person's choice of the text becomes the text, and is saved on the newest version. */
   readonly resolve = async (text: string): Promise<void> => {
     this.baseVersion = this.state.version;

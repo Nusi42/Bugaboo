@@ -1,9 +1,10 @@
 //! Making accounts and changing passwords (AUTH-01, AUTH-06, AUTH-09): the first administrator
-//! with the setup code, signing up, accepting an invitation, and changing the password.
+//! with the setup code, accepting an invitation, and changing the password. Signing up is in
+//! `sign_up.rs`: it ends in an invitation.
 
 use bb_auth::{
     EmailAddress, HumanCode, PasswordProblem, Purpose, SecretToken, check_policy, code_hash,
-    domain_is_listed, same_digest,
+    same_digest,
 };
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, RecordKind};
@@ -19,10 +20,9 @@ use super::error::{AppError, Stops, change_failed, internal};
 use super::events::{by, changed, entity, fixed_entity, set_to};
 use super::request_session::NewSession;
 use super::store::AuthStore;
-use super::types::{
-    AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, SignUp, Started,
-};
+use super::types::{AcceptInvitation, ChangePassword, CompleteSetup, IssueSetupCode, Started};
 use crate::input::clean_name;
+use crate::notifications::give_handle;
 
 /// The password as a new password: the rules of AUTH-01, as the error a person can read.
 pub(crate) fn check_new_password(password: &str) -> Result<(), AppError> {
@@ -201,6 +201,7 @@ pub async fn complete_setup<S: AuthStore>(
             set_to("role", json!(administrator.map(|role| role.to_string()))),
         ],
     )?;
+    let reserved = ctx.reserved_handles().await?;
     let (store, stored_person, session, now) =
         (ctx.store(), person.clone(), new.session.clone(), ctx.now());
     store
@@ -214,6 +215,7 @@ pub async fn complete_setup<S: AuthStore>(
                 }
                 S::lock_policy(transaction).await?;
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
+                give_handle::<S>(transaction, &stored_person, now, &reserved).await?;
                 S::insert_assignment(transaction, &assignment).await?;
                 S::insert_session(transaction, &session).await
             })
@@ -237,69 +239,6 @@ pub async fn complete_setup<S: AuthStore>(
         SecurityAction::AssignmentCreated,
         Some(person.id),
         Some(entity(RecordKind::Assignment, assignment_id)),
-    )
-    .await;
-    ctx.started(&new, &person, &settings, None)
-}
-
-/// Creates an account without an invitation, when an administrator allows it, and signs the
-/// person in.
-///
-/// # Errors
-/// `auth.sign_up_refused` when signing up is off, when the domain of the address is not on the
-/// list, and when the address has an account already (it does not say which).
-pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<Started, AppError> {
-    let refused = || AppError::Refused(ErrorCode::SignUpRefused);
-    let settings = ctx.settings().await?;
-    let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
-    let listed = settings.sign_up_domains.trim().is_empty()
-        || domain_is_listed(&email, &settings.sign_up_domains);
-    if !settings.sign_up_enabled || !listed {
-        ctx.note(SecurityAction::SignUpRefused, None, None).await;
-        return Err(refused());
-    }
-    let NewAccount {
-        person,
-        hash,
-        old,
-        new,
-    } = ctx
-        .new_account(
-            &email,
-            &input.display_name,
-            input.password,
-            input.previous_session.as_deref(),
-        )
-        .await?;
-    let event = ctx.event(
-        by(person.id),
-        entity(RecordKind::Person, person.id),
-        vec![changed("account")],
-    )?;
-    let (store, stored_person, session, now) =
-        (ctx.store(), person.clone(), new.session.clone(), ctx.now());
-    let result = store
-        .record_change(&event, move |transaction| {
-            Box::pin(async move {
-                if let Some(old) = old {
-                    S::delete_session(transaction, old).await?;
-                }
-                S::insert_person(transaction, &stored_person, &hash, now).await?;
-                S::insert_session(transaction, &session).await
-            })
-        })
-        .await;
-    if let Err(error) = result {
-        let error = change_failed::<S>(&error, Stops::both(ErrorCode::SignUpRefused));
-        if matches!(error, AppError::Refused(_)) {
-            ctx.note(SecurityAction::SignUpRefused, None, None).await;
-        }
-        return Err(error);
-    }
-    ctx.note(
-        SecurityAction::SignUpAccepted,
-        Some(person.id),
-        Some(entity(RecordKind::Person, person.id)),
     )
     .await;
     ctx.started(&new, &person, &settings, None)
@@ -333,6 +272,13 @@ pub async fn accept_invitation<S: AuthStore>(
         return Err(invalid());
     };
     let email = EmailAddress::parse(&invitation.email).ok_or_else(invalid)?;
+    // The link of a sign-up (nobody invited) is judged by the rule of signing up again: switching
+    // signing up off, or taking the domain off the list, stops the links that are out.
+    if invitation.invited_by.is_none() && !ctx.sign_up_allows(&email).await? {
+        ctx.note(SecurityAction::InvitationRefused, None, None)
+            .await;
+        return Err(invalid());
+    }
     let NewAccount {
         person,
         hash,
@@ -352,6 +298,7 @@ pub async fn accept_invitation<S: AuthStore>(
         entity(RecordKind::Person, person.id),
         vec![changed("account")],
     )?;
+    let reserved = ctx.reserved_handles().await?;
     let (store, stored_person, session, invitation_id) = (
         ctx.store(),
         person.clone(),
@@ -368,6 +315,7 @@ pub async fn accept_invitation<S: AuthStore>(
                     S::delete_session(transaction, old).await?;
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
+                give_handle::<S>(transaction, &stored_person, now, &reserved).await?;
                 S::insert_session(transaction, &session).await
             })
         })

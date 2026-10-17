@@ -16,8 +16,8 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{
     AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
     FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
-    LayoutId, LockToken, ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId,
-    SessionId, TagId, UploadId, UserId,
+    LayoutId, LockToken, ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId,
+    RelationKindId, RoleId, SessionId, TagId, UploadId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -417,12 +417,15 @@ pub(crate) enum LockClass {
     /// Changes of the names of tags, labels and groups of labels (key 0): two changes at the same
     /// moment cannot both take a name, and a *Pick one* group is judged on what is stored.
     TagsAndLabels = 6,
+    /// Changes of the handles of one person (key: four bytes of the person's ID): two changes at
+    /// the same moment cannot both pass the rule of how often a handle changes.
+    Handles = 7,
     /// Starting uploads (key: four bytes of the person's ID): two uploads of one person started at
     /// the same moment cannot both pass the limits of what a person may have open.
-    Uploads = 7,
+    Uploads = 8,
     /// Finishing an upload of an issue (key: four bytes of the issue's ID): two finishes at the same
     /// moment cannot both take the last place for a file of the issue.
-    IssueFiles = 8,
+    IssueFiles = 9,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -687,6 +690,7 @@ stored_ids!(
     LabelId => "a label ID",
     LayoutId => "a layout ID",
     LockToken => "an edit lock token",
+    NotificationId => "a notification ID",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",
     TagId => "a tag ID",

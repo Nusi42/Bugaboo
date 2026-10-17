@@ -1,10 +1,21 @@
 [package]
 name = "bb-notify"
-description = "Delivery of in-app notifications, e-mail and webhooks."
+description = "Delivery adapters: e-mail over SMTP, and webhooks later."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+
+[dependencies]
+bb-app = { path = "../bb-app" }
+bb-core = { path = "../bb-core" }
+lettre = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "time"] }
+tracing-subscriber = { workspace = true }
+zeroize = { workspace = true }
 
 [lints]
 workspace = true

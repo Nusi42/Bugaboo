@@ -131,6 +131,8 @@ words! {
         ProjectMoved => "project.moved",
         /// Somebody with *Edit anyway* released an edit lock that another person held.
         EditLockReleased => "edit_lock.released",
+        /// An administrator entered or removed the password of the mail server.
+        MailPasswordChanged => "mail.password_changed",
     }
 }
 
@@ -293,9 +295,9 @@ pub struct Invitation {
     /// The e-mail address the account will get.
     #[personal(category = "identity", basis = "contract")]
     pub email: String,
-    /// The administrator who made it.
+    /// The administrator who made it; nobody for the invitation a sign-up makes.
     #[personal(category = "identity", basis = "contract")]
-    pub invited_by: UserId,
+    pub invited_by: Option<UserId>,
     /// When it was made.
     #[personal(category = "activity", basis = "contract")]
     pub created_at: Timestamp,

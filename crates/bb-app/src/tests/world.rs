@@ -19,6 +19,7 @@ use crate::auth::{
 use crate::context::Clock;
 use crate::editing::EditableRecords;
 use crate::first_start::first_start;
+use crate::mailer::FakeMailer;
 
 pub(crate) use bb_dev_words::accounts::{CLOCK_START, OTHER_PASSWORD, PASSWORD, PUBLIC_URL};
 /// The start of the clock of the tests: 2027-01-15 08:00:00 UTC.
@@ -47,6 +48,8 @@ pub(crate) struct World {
     pub(crate) clock: Arc<TestClock>,
     /// The bytes of files.
     pub(crate) files: FakeFiles,
+    /// What the server would have sent by e-mail.
+    pub(crate) mailer: FakeMailer,
     pub(crate) admin: Started,
 }
 
@@ -64,6 +67,7 @@ impl World {
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo").map_err(text)?;
         let files = FakeFiles::default();
+        let mailer = FakeMailer::default();
         let services = AuthServices::new(
             store.clone(),
             clock.clone(),
@@ -73,12 +77,15 @@ impl World {
             Arc::new(NoFailureLimit),
             "Bugaboo".to_owned(),
         )
-        .with_files(Arc::new(files.clone()));
+        .with_files(Arc::new(files.clone()))
+        .with_mailer(Arc::new(mailer.clone()))
+        .with_public_url(PUBLIC_URL);
         Ok(Self {
             store,
             services,
             clock,
             files,
+            mailer,
             // Replaced by `new`; a bare world has nobody.
             admin: Started {
                 session_token: String::new(),
@@ -152,6 +159,15 @@ impl World {
 
     /// A new person without a role, made through an invitation of the administrator, and signed in.
     pub(crate) async fn person(&self, email: &str) -> Result<Started, AppError> {
+        self.person_named(email, "Bob Builder").await
+    }
+
+    /// The same for a person with a name of their own.
+    pub(crate) async fn person_named(
+        &self,
+        email: &str,
+        display_name: &str,
+    ) -> Result<Started, AppError> {
         let created = create_invitation(
             &self.ctx(),
             CreateInvitation {
@@ -170,7 +186,7 @@ impl World {
             &self.ctx(),
             AcceptInvitation {
                 secret,
-                display_name: "Bob Builder".to_owned(),
+                display_name: display_name.to_owned(),
                 password: PASSWORD.to_owned(),
                 previous_session: None,
             },

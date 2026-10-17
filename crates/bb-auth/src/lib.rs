@@ -36,7 +36,7 @@ pub use password::{
     PasswordProblem, Verdict, check_policy,
 };
 pub use signed_link::LinkKey;
-pub use token::{Purpose, SecretToken, same_digest, stable_id};
+pub use token::{Purpose, SecretToken, address_digest, same_digest, stable_id};
 pub use totp::{Enrolment, STEP_SECONDS, TotpSecret};
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).

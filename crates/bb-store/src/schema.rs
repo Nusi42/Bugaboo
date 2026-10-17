@@ -14,6 +14,7 @@ use sea_query::{Iden, IdenStatic};
 mod access;
 mod comments;
 mod files;
+mod notify;
 mod sign_in;
 mod system;
 mod work;
@@ -21,6 +22,7 @@ mod work;
 pub(crate) use access::*;
 pub(crate) use comments::*;
 pub(crate) use files::*;
+pub(crate) use notify::*;
 pub(crate) use sign_in::*;
 pub(crate) use system::*;
 pub(crate) use work::*;
@@ -579,6 +581,40 @@ stored_tables! {
         Key => key,
         Value => value,
         UpdatedAt => updated_at,
+    },
+    NotificationRow => bb_core::notification::Notification {
+        Id => id,
+        Recipient => recipient,
+        Kind => kind,
+        Issue => issue,
+        Event => event,
+        Once => once,
+        Record => record,
+        By => by,
+        At => at,
+        Changes => changes,
+        InApp => in_app,
+        Mail => mail,
+        ReadAt => read_at,
+    },
+    PersonHandleRow => bb_core::handle::PersonHandle {
+        Person => person,
+        Handle => handle,
+        ChangedAt => changed_at,
+        Current => current,
+    },
+    SignUpMailRow => bb_core::sign_up_invitation::SignUpMail {
+        Address => address,
+        Invitation => invitation,
+        SentAt => sent_at,
+    },
+    SignUpInvitationRow => bb_core::sign_up_invitation::SignUpInvitation {
+        Id => id,
+        TokenHash => token_hash,
+        Email => email,
+        CreatedAt => created_at,
+        ExpiresAt => expires_at,
+        UsedAt => used_at,
     },
 }
 

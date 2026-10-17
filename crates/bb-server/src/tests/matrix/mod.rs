@@ -12,6 +12,7 @@
 //! they use.
 
 mod actors;
+mod delivery;
 mod examples;
 mod examples_editing;
 mod examples_fields;

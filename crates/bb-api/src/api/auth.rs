@@ -39,7 +39,7 @@ use super::is_api;
 use crate::conflict::ConflictBody;
 use crate::cookies::{CSRF_HEADER, Cookie};
 use crate::errors::ApiError;
-use crate::limits::{Limits, limit_sign_in};
+use crate::limits::{Limits, limit_sign_in, limit_sign_up};
 use crate::logging::ClientIp;
 use crate::permissions::csrf_exempt;
 
@@ -336,6 +336,8 @@ problem_answers! {
     NotFoundAnswer => ("404", "There is no such thing (resource.not_found)."),
     /// Something stands in the way of a change.
     ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed)."),
+    /// Too soon after the last try.
+    TooSoonAnswer => ("429", "Too soon after the last time (rate_limit.exceeded, handle.changed_lately)."),
 }
 
 /// The routes of the sign-in family, with the small per-network limit of SEC-14 on those that
@@ -351,7 +353,18 @@ where
             Arc::clone(limits),
             limit_sign_in,
         ));
+    // Signing up sends an e-mail to whatever address is typed: a small limit of its own.
+    let sign_up = super::auth_people::sign_up_routes::<S>()
+        .route_layer(axum::middleware::from_fn_with_state(
+            Arc::clone(limits),
+            limit_sign_up,
+        ))
+        .route_layer(axum::middleware::from_fn_with_state(
+            Arc::clone(limits),
+            limit_sign_in,
+        ));
     tried
+        .merge(sign_up)
         .merge(super::auth_sign_in::session_routes::<S>())
         .merge(super::auth_factors::session_routes::<S>())
         .merge(super::auth_people::session_routes::<S>())

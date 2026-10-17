@@ -15,6 +15,7 @@ use bb_app::context::Clock;
 use bb_app::context::SystemIds;
 use bb_app::editing::EditableRecords;
 use bb_app::first_start::first_start;
+use bb_app::mailer::FakeMailer;
 use bb_auth::{CsrfKey, Passkeys, PasswordHasher, RelyingParty};
 use bb_core::ErrorCode;
 use bb_core::event::{Actor, Channel, DomainEvent, EntityKind, EntityRef};
@@ -52,6 +53,8 @@ pub(super) struct Rig {
     pub(super) services: Arc<AuthServices<AuthStorage>>,
     pub(super) clock: Arc<TestClock>,
     pub(super) seal: LogSeal,
+    /// What the server would have sent by e-mail.
+    pub(super) mailer: FakeMailer,
     /// The setup code of the first start, as the console would show it.
     pub(super) setup_code: String,
     /// Keeps the key files and the anchor file of the log alive.
@@ -183,14 +186,45 @@ impl Rig {
         Self::build_with(db, shape, None).await
     }
 
+    /// The same server started again on the same database with the same key files, as after a
+    /// stop of the program: the clock, the mailer and everything held in memory are new.
+    pub(super) async fn restarted(&self, db: &TestDatabase) -> Result<Self, Failure> {
+        let folder = tempfile::tempdir()?;
+        let copy = |from: &std::path::Path, to: &std::path::Path| -> Result<(), Failure> {
+            std::fs::create_dir_all(to)?;
+            for entry in std::fs::read_dir(from)? {
+                let entry = entry?;
+                std::fs::copy(entry.path(), to.join(entry.file_name()))?;
+            }
+            Ok(())
+        };
+        copy(
+            &self.folder.path().join("keys"),
+            &folder.path().join("keys"),
+        )?;
+        copy(
+            &self.folder.path().join("logs"),
+            &folder.path().join("logs"),
+        )?;
+        Self::build_in(db, Shape::NEW, None, folder).await
+    }
+
     async fn build_with(
         db: &TestDatabase,
         shape: Shape,
         records: Option<Arc<dyn EditableRecords>>,
     ) -> Result<Self, Failure> {
+        Self::build_in(db, shape, records, tempfile::tempdir()?).await
+    }
+
+    async fn build_in(
+        db: &TestDatabase,
+        shape: Shape,
+        records: Option<Arc<dyn EditableRecords>>,
+        folder: tempfile::TempDir,
+    ) -> Result<Self, Failure> {
         let database = Database::connect(db.url()).await?;
         database.migrate(Timestamp::from_second(START)?).await?;
-        let folder = tempfile::tempdir()?;
         std::fs::create_dir_all(folder.path().join("logs"))?;
         let keys = Arc::new(database.open_keys(&folder.path().join("keys")).await?);
         let seal = LogSeal::new(&keys, folder.path().join("logs").join("security-head.log"));
@@ -198,6 +232,7 @@ impl Rig {
         let storage = AuthStorage::new(database.clone(), keys, seal.clone());
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo")?;
+        let mailer = FakeMailer::default();
         let services = AuthServices::new(
             storage.clone(),
             clock.clone(),
@@ -209,7 +244,9 @@ impl Rig {
             csrf,
             FailureLimits::new(shape.tries.per_minute()),
             "Bugaboo".to_owned(),
-        );
+        )
+        .with_mailer(Arc::new(mailer.clone()))
+        .with_public_url(PUBLIC_URL);
         let services = services.with_files(Arc::new(DiskFiles::new(
             folder.path().join(bb_files::FILES_FOLDER),
             PreviewCommand::in_process(),
@@ -233,6 +270,7 @@ impl Rig {
             services,
             clock,
             seal,
+            mailer,
             setup_code: code
                 .map(|code| code.as_str().to_owned())
                 .unwrap_or_default(),
@@ -271,6 +309,32 @@ impl Rig {
     ) -> Result<(), Failure> {
         self.put_setting(key, SettingValue::Text(value.to_owned()))
             .await
+    }
+
+    /// Enters the mail server and switches e-mail on: what the jobs that send mail need.
+    pub(super) async fn turn_mail_on(&self) -> Result<(), Failure> {
+        self.set_organization_text("mail.host", "mail.example.test")
+            .await?;
+        self.set_organization_text("mail.from", "bugaboo@example.test")
+            .await?;
+        self.set_organization_switch("mail.enabled", true).await
+    }
+
+    /// Runs the jobs that are due until none is left, as the job runner does; how many ran.
+    pub(super) async fn run_jobs(&self) -> Result<usize, Failure> {
+        let mut total = 0;
+        loop {
+            let taken = self
+                .services
+                .ctx(RequestInfo::default())
+                .run_due_jobs()
+                .await
+                .map_err(|error| error.to_string())?;
+            if taken == 0 {
+                return Ok(total);
+            }
+            total += taken;
+        }
     }
 
     async fn put_setting(&self, key: &str, value: SettingValue) -> Result<(), Failure> {
@@ -413,6 +477,14 @@ impl Rig {
     pub(super) async fn group_version(&self, group: GroupId) -> Result<i64, Failure> {
         let found = self.storage.group(group).await?.ok_or("no such group")?;
         Ok(found.version)
+    }
+
+    /// The account with this address, if there is one.
+    pub(super) async fn account_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<bb_app::auth::Account>, Failure> {
+        Ok(self.storage.account_by_email(email).await?)
     }
 
     /// The person with this address.

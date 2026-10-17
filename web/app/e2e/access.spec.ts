@@ -149,7 +149,7 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   await open(page, paths.peopleVisibility, t("nav.people-visibility"));
   const preview = t("people-visibility.preview-heading", { role: roleName.guest });
   await expect(page.getByRole("heading", { name: preview })).toBeVisible();
-  const asRole = t("access.person-role-inside", { role: t("starting-role.team-member") });
+  const asRole = t("person.role-inside", { role: t("starting-role.team-member") });
   await expect(
     page.getByText(t("people-visibility.example-assigned", { who: asRole })),
   ).toBeVisible();
@@ -157,7 +157,7 @@ test("priv_12 hiding who is assigned from Guests shows them Someone, and the scr
   const assigned = await levelList(page, t("people-kind.assigned-to"), roleName.guest);
   await pickLevel(assigned, page, t("people-level.hidden"));
   await expect(
-    page.getByText(t("people-visibility.example-assigned", { who: t("projects.person-someone") })),
+    page.getByText(t("people-visibility.example-assigned", { who: t("person.someone") })),
   ).toBeVisible();
   await pickLevel(assigned, page, t("people-level.names"));
   await expect(

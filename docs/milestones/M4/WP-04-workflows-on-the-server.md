@@ -45,8 +45,7 @@ The screens are WP-07. The browser only stops depending on a fixed list of statu
    - When a status is dropped, *Publish* names where its issues go and moves them as a run of many changes, with history.
    - The permission *Manage workflows*: Admin everywhere, Project lead in their projects, never in an access key.
 8. **Starter workflows (§5, WF-06):** *Simple*, *Bug* and *Development* from one definition. On a new organization they go to Task/Goal, Bug and Feature. On an upgraded one, *Simple* stays everywhere.
-9. **Per project (M3-F22, F122, F124):** issue types and labels may be limited to projects. A retired type no longer counts as missing when an issue moves.
-10. **Check access per issue type (M3-F44):** *Check access* names the level per issue type where they differ.
+9. **Moved to [WP-11](WP-11-types-and-labels-per-project.md):** issue types and labels per project (M3-F22, F122, F124) and *Check access* per issue type (M3-F44). They needed a model that this package did not decide.
 
 ## Acceptance tests (write first)
 

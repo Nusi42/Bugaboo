@@ -373,6 +373,13 @@ pub(super) const EXAMPLES: &[Example] = &[
         &[Quirk::AnIssueOfTheTarget, Quirk::InTheTrash],
     ),
     Example::with("downloadFile", &[Quirk::AnIssueOfTheTarget]),
+    Example::route("getMyHandle"),
+    Example::route("changeMyHandle"),
+    Example::route("listNotifications"),
+    Example::route("getUnreadNotifications"),
+    Example::route("readNotifications"),
+    Example::route("setMailPassword"),
+    Example::route("sendTestEmail"),
     Example::with("listIssueHistory", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listFollowers", &[Quirk::AnIssueOfTheTarget]),
     Example::with(

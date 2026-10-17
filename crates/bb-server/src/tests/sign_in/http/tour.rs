@@ -117,8 +117,6 @@ async fn invitations(tour: &mut Tour) -> TestResult {
 }
 
 async fn sign_up(tour: &mut Tour) -> TestResult {
-    let app = &tour.app;
-    let used = &tour.used;
     let ada = &mut tour.ada;
     let api = API;
     // Signing up on one's own: the rule, then somebody who uses it.
@@ -146,25 +144,28 @@ async fn sign_up(tour: &mut Tour) -> TestResult {
         reply.body,
         json!({"enabled": true, "domains": ["example.test"], "version": 1})
     );
+    // Signing up sends a link by e-mail, so it needs e-mail.
+    tour.rig.turn_mail_on().await?;
+    let app = &tour.app;
+    let used = &tour.used;
     let mut eve = Browser::new(app, used);
     let reply = eve
         .route(
             "POST",
             "/api/v1/auth/sign-up",
             &format!("{api}/sign-up"),
-            Some(json!({"email": "eve@example.test", "display_name": "Eve", "password": PASSWORD})),
+            Some(json!({"email": "eve@example.test"})),
         )
         .await?;
-    assert!(ok(&reply));
+    assert_eq!(reply.status, StatusCode::ACCEPTED, "{}", reply.body);
     let reply = eve
         .send(
             "POST",
             &format!("{api}/sign-up"),
-            Some(json!({"email": "x@evil.test", "display_name": "X", "password": PASSWORD})),
+            Some(json!({"email": "x@evil.test"})),
         )
         .await?;
     assert_eq!(reply.code(), "auth.sign_up_refused");
-
     Ok(())
 }
 

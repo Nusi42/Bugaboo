@@ -103,15 +103,13 @@ pub(crate) async fn sign_up_scenario(world: &World) -> Added {
     )
     .await
     .map_err(text)?;
+    super::super::scenarios_notifications::switch_mail_on(world).await?;
     measured(
         &world.store,
         sign_up(
             &world.ctx(),
             SignUp {
                 email: "eve@example.test".to_owned(),
-                display_name: "Eve".to_owned(),
-                password: PASSWORD.to_owned(),
-                previous_session: None,
             },
         ),
     )

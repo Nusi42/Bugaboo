@@ -16,6 +16,7 @@ use crate::checks::arch_settings::{CATALOG_PATH, REGISTRY_FOLDER};
 use crate::rust_registry::{ChoiceLists, read_registry};
 use crate::source::Source;
 
+const APP_PATHS_SOURCE: &str = "crates/bb-core/src/app_paths.rs";
 const WORDS_SOURCE: &str = "crates/bb-api-words/src/lib.rs";
 const POLICY_MACRO: &str = "macro_rules! trusted_types_policy";
 const PAGING_SOURCE: &str = "crates/bb-core/src/paging.rs";
@@ -601,6 +602,34 @@ export const decimalParts = {parts};
 
 /** How many digits a decimal number of an own field has after the point. */
 export const decimalDigits = {digits};
+"
+    ))
+}
+
+/// The addresses of the app pages that the server links to as constants for the browser app, so
+/// `paths.ts` does not write them a second time.
+pub(super) fn app_paths(sources: &[Source]) -> anyhow::Result<String> {
+    let Some((_, text)) = sources.iter().find(|(path, _)| path == APP_PATHS_SOURCE) else {
+        bail!("{APP_PATHS_SOURCE} is missing");
+    };
+    let path = |name: &str| {
+        text_const(text, name)
+            .with_context(|| format!("{APP_PATHS_SOURCE} has no `const {name}` that is text"))
+    };
+    let (issue, invitation, confirm, sign_in) = (
+        path("ISSUE")?,
+        path("INVITATION")?,
+        path("CONFIRM_ADDRESS")?,
+        path("SIGN_IN")?,
+    );
+    Ok(format!(
+        "{TS_HEADER}/** The addresses of the app pages that the server links to (invitations, e-mails). */
+export const appPaths = {{
+  issue: {issue:?},
+  invitation: {invitation:?},
+  confirmAddress: {confirm:?},
+  signIn: {sign_in:?},
+}} as const;
 "
     ))
 }

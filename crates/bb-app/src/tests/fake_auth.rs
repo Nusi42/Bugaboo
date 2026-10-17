@@ -472,13 +472,14 @@ impl InvitationStore for FakeStore {
     }
 
     async fn invitation_by_hash(&self, hash: &Digest) -> Result<Option<Invitation>, FakeError> {
-        Ok(self.read(|state| {
+        let made = self.read(|state| {
             state
                 .invitations
                 .iter()
                 .find(|invitation| invitation.token_hash == *hash)
                 .cloned()
-        }))
+        });
+        Ok(made.or_else(|| self.sign_up_link_by_hash(hash)))
     }
 
     async fn open_invitations(
@@ -528,6 +529,12 @@ impl InvitationStore for FakeStore {
         for invitation in &mut tx.state.invitations {
             if invitation.id == id && invitation.used_at.is_none() && invitation.expires_at > now {
                 invitation.used_at = Some(now);
+                return Ok(true);
+            }
+        }
+        for link in &mut tx.state.sign_up_invitations {
+            if link.id == id && link.used_at.is_none() && link.expires_at > now {
+                link.used_at = Some(now);
                 return Ok(true);
             }
         }
@@ -763,6 +770,20 @@ impl AuthStore for FakeStore {
         }
         shared.log.push(event.clone());
         Ok(())
+    }
+
+    async fn prune_security_log(
+        &self,
+        before: Timestamp,
+        _now: Timestamp,
+    ) -> Result<u64, FakeError> {
+        let mut shared = self.lock();
+        let newest = shared.log.last().map(|event| event.time);
+        let kept = shared.log.len();
+        shared
+            .log
+            .retain(|event| event.time >= before || Some(event.time) == newest);
+        Ok(u64::try_from(kept - shared.log.len()).unwrap_or(u64::MAX))
     }
 
     async fn sign_up_policy_version(&self) -> Result<i64, FakeError> {

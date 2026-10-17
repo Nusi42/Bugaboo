@@ -38,20 +38,61 @@ words_in_api!(
     "What a mention names: a person, a group or a role."
 );
 
-/// What the handle of a name is: lower case, words joined by dots, only letters, digits and
-/// `_`, `.`, `-`, never starting or ending with a dot or a dash. `None` for a name that has no
-/// letter or digit.
+/// The ASCII letters a letter outside ASCII stands for in a handle: `ä` is `ae`, `é` is `e`. The
+/// letters of the Latin alphabets of Europe are here; a letter of another script has none, and a
+/// name made only of such letters gets the fallback handle (`handle::FALLBACK`).
+const fn ascii_of(character: char) -> Option<&'static str> {
+    Some(match character {
+        'ä' | 'æ' => "ae",
+        'ö' | 'œ' => "oe",
+        'ü' => "ue",
+        'ß' => "ss",
+        'à' | 'á' | 'â' | 'ã' | 'å' | 'ā' | 'ą' => "a",
+        'ç' | 'ć' | 'č' => "c",
+        'ď' | 'đ' | 'ð' => "d",
+        'è' | 'é' | 'ê' | 'ë' | 'ē' | 'ę' | 'ě' => "e",
+        'ğ' => "g",
+        'ì' | 'í' | 'î' | 'ï' | 'ī' | 'ı' => "i",
+        'ł' | 'ľ' => "l",
+        'ñ' | 'ń' | 'ň' => "n",
+        'ò' | 'ó' | 'ô' | 'õ' | 'ø' | 'ō' | 'ő' => "o",
+        'ř' => "r",
+        'ś' | 'š' | 'ş' => "s",
+        'ť' | 'ţ' => "t",
+        'ù' | 'ú' | 'û' | 'ū' | 'ů' | 'ű' => "u",
+        'ý' | 'ÿ' => "y",
+        'ź' | 'ż' | 'ž' => "z",
+        'þ' => "th",
+        _ => return None,
+    })
+}
+
+/// What the handle of a name is: lower case, words joined by dots, only the ASCII letters and
+/// digits and `_`, never starting or ending with a dot or a dash. Letters outside ASCII are
+/// replaced by the ASCII letters they stand for (`ä` is `ae`), and a character with none is left
+/// out. `None` for a name that has no letter or digit left.
 #[must_use]
 pub fn handle_of(name: &str) -> Option<String> {
     let mut handle = String::new();
     let mut gap = false;
     for character in name.chars() {
-        if character.is_alphanumeric() || matches!(character, '_' | '-') {
+        let lower: String = character.to_lowercase().collect();
+        let spelled: String = lower
+            .chars()
+            .map(|each| {
+                if each.is_ascii_alphanumeric() || matches!(each, '_' | '-') {
+                    each.to_string()
+                } else {
+                    ascii_of(each).map(str::to_owned).unwrap_or_default()
+                }
+            })
+            .collect();
+        if !spelled.is_empty() {
             if gap && !handle.is_empty() {
                 handle.push('.');
             }
             gap = false;
-            handle.extend(character.to_lowercase());
+            handle.push_str(&spelled);
         } else if character.is_whitespace() || character == '.' {
             gap = true;
         }
@@ -144,7 +185,14 @@ mod tests {
             handle_of("  Project   lead ").as_deref(),
             Some("project.lead")
         );
-        assert_eq!(handle_of("Zoë O'Neil").as_deref(), Some("zoë.oneil"));
+        assert_eq!(handle_of("Zoë O'Neil").as_deref(), Some("zoe.oneil"));
+        assert_eq!(
+            handle_of("Jürgen Groß-Müller").as_deref(),
+            Some("juergen.gross-mueller")
+        );
+        // A name in a script with no ASCII letters for it has no handle of its own.
+        assert_eq!(handle_of("Иван Петров"), None);
+        assert_eq!(handle_of("山田 Ken").as_deref(), Some("ken"));
         assert_eq!(handle_of("---").as_deref(), None);
         assert_eq!(handle_of("   ").as_deref(), None);
         assert!(names_the_handle("Ana.Silva", "Ana Silva"));

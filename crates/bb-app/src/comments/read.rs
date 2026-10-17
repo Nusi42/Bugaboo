@@ -17,7 +17,7 @@ use super::types::{
     CommentTextView, CommentVersions, CommentVersionsQuery, MentionChoice, MentionChoices,
     MentionChoicesQuery, MentionItem, Mentions, MentionsQuery, ReadMentions,
 };
-use crate::auth::{AppError, AuthStore, Ctx, Done, SearchIn, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal};
 use crate::member::mentions as member;
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -98,26 +98,18 @@ pub async fn mention_choices<S: AuthStore>(
                 .is_none_or(|start| handle.starts_with(start))
         })
     };
-    // People are looked for by the first word typed, as the store searches names, not handles.
-    let first_word = wanted
-        .as_deref()
-        .and_then(|start| start.split('.').next())
-        .filter(|word| !word.is_empty());
     let failed = |error| internal::<S>(&error);
     // (target, handle, name), in the order they are offered.
     let mut offered: Vec<MentionChoice> = Vec::new();
     if level == PeopleLevel::Names {
+        // People are found by their handle (M3-F70): the one they chose, not their name.
         let people = ctx
             .store()
-            .people_page(first_word, SearchIn::Names, None, PEOPLE_LOOK_AT)
+            .handle_choices(wanted.as_deref().unwrap_or_default(), PEOPLE_LOOK_AT)
             .await
             .map_err(failed)?;
-        for person in people {
-            if person.id != actor.person.id
-                && matches(&person.display_name)
-                && ctx.person_sees_issue(person.id, &issue).await?
-                && let Some(handle) = handle_of(&person.display_name)
-            {
+        for (person, handle) in people {
+            if person.id != actor.person.id && ctx.person_sees_issue(person.id, &issue).await? {
                 offered.push(MentionChoice {
                     target: bb_core::comment::MentionTarget::Person,
                     handle,

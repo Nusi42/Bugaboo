@@ -56,10 +56,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .setting_layers(None, None)
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let value = layers.resolve(CONTENT_IMAGE_HOSTS.definition()).value;
-        let text = CONTENT_IMAGE_HOSTS
-            .resolve(Some(&value))
-            .unwrap_or_default();
+        let text = layers.text(&CONTENT_IMAGE_HOSTS);
         Ok(checked_hosts(list_items(&text)))
     }
 }

@@ -48,7 +48,6 @@ term = "network"
 at = [
   "messages/en.json#sessions.network",
   "messages/en.json#config.tls-off-public",
-  "messages/en.json#setting.auth.sign-up-enabled.help",
   "api:property SessionBody.network",
 ]
 reason = "The computer network a request came from or travels over. Not a Relation map."

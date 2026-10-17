@@ -76,6 +76,15 @@ words! {
     messages name = "many-changes-status."
 }
 
+impl ManyChangeStatus {
+    /// Whether the run is over: it is done, it failed, or it was stopped. A run that is queued or
+    /// running is not.
+    #[must_use]
+    pub const fn is_over(self) -> bool {
+        matches!(self, Self::Done | Self::Failed | Self::Stopped)
+    }
+}
+
 words_in_api!(
     ManyChangeStatus,
     "Where a run of a change to many issues is."
