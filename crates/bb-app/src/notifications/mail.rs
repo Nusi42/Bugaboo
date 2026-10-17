@@ -19,7 +19,7 @@ use serde_json::Value;
 use zeroize::Zeroizing;
 
 use super::compose::compose;
-use super::prefs::{number, text, wants, yes};
+use super::prefs::wants;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::mailer::{MailFailure, MailMessage, MailServer};
@@ -91,7 +91,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         layers: &Layers,
     ) -> Result<Option<MailServer>, AppError> {
-        if yes(layers, &MAIL_ENABLED) {
+        if layers.yes(&MAIL_ENABLED) {
             self.mail_server(layers).await
         } else {
             Ok(None)
@@ -104,20 +104,16 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         layers: &Layers,
     ) -> Result<Option<MailServer>, AppError> {
-        let (Some(host), Some(from)) = (text(layers, &MAIL_HOST), text(layers, &MAIL_FROM)) else {
-            return Ok(None);
-        };
-        let (host, from) = (host.trim().to_owned(), from.trim().to_owned());
+        let host = layers.text(&MAIL_HOST).trim().to_owned();
+        let from = layers.text(&MAIL_FROM).trim().to_owned();
         if host.is_empty() || from.is_empty() {
             return Ok(None);
         }
-        let port = number(layers, &MAIL_PORT).and_then(|port| u16::try_from(port).ok());
-        let Some(port) = port else {
+        let Ok(port) = u16::try_from(layers.number(&MAIL_PORT)) else {
             return Ok(None);
         };
-        let security = text(layers, &MAIL_SECURITY)
-            .and_then(|word| MailSecurity::from_code(&word))
-            .unwrap_or(MailSecurity::StartTls);
+        let security =
+            MailSecurity::from_code(&layers.text(&MAIL_SECURITY)).unwrap_or(MailSecurity::StartTls);
         let password = self
             .store()
             .mail_password()
@@ -129,10 +125,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             host,
             port,
             security,
-            username: text(layers, &MAIL_USERNAME)
-                .unwrap_or_default()
-                .trim()
-                .to_owned(),
+            username: layers.text(&MAIL_USERNAME).trim().to_owned(),
             password: Zeroizing::new(password),
             from,
         }))
@@ -222,7 +215,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 items.push(item);
             }
         }
-        let composed = compose(&items, yes(&layers, &MAIL_SHORT), &self.services.public_url);
+        let composed = compose(&items, layers.yes(&MAIL_SHORT), &self.services.public_url);
         let Some(composed) = composed else {
             self.store()
                 .set_mail_state(&ids, MailState::Never)

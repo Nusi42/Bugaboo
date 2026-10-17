@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use super::{Level, SettingDefinition, SettingValue};
+use super::{Bool, Integer, Level, Setting, SettingDefinition, SettingKind, SettingValue, Text};
 use crate::id::{ProjectId, UserId};
 
 /// Where one stored value belongs.
@@ -117,6 +117,45 @@ impl Layers {
             resolved.source = Source::Person;
         }
         resolved
+    }
+
+    /// The value of `setting` that counts, as its type. A stored value of another type (written by
+    /// hand; the registry accepts nothing else) counts as the default. `None` only when the
+    /// default of the registry itself has another type, which would be a defect of the registry.
+    #[must_use]
+    pub fn get<K: SettingKind>(&self, setting: &Setting<K>) -> Option<K::Value> {
+        let resolved = self.resolve(setting.definition()).value;
+        setting
+            .resolve(Some(&resolved))
+            .or_else(|_| setting.default_value())
+            .ok()
+    }
+
+    /// The yes or no of a setting.
+    #[must_use]
+    pub fn yes(&self, setting: &Setting<Bool>) -> bool {
+        self.get(setting).unwrap_or_default()
+    }
+
+    /// The number of a setting, kept inside its bounds. A value stored before the bounds, or by
+    /// hand, is cut to them.
+    #[must_use]
+    pub fn number(&self, setting: &Setting<Integer>) -> i64 {
+        setting
+            .definition()
+            .clamp(self.get(setting).unwrap_or_default())
+    }
+
+    /// The text of a setting.
+    #[must_use]
+    pub fn text(&self, setting: &Setting<Text>) -> String {
+        self.get(setting).unwrap_or_default()
+    }
+
+    /// The text of a list setting, cut to the limits of the setting.
+    #[must_use]
+    pub fn list(&self, setting: &Setting<Text>) -> String {
+        setting.definition().cap_list(&self.text(setting))
     }
 
     /// The value that would count if the layer of `scope` had no value of its own: what *Reset to

@@ -14,7 +14,6 @@ use bb_core::settings::{LOGS_SERVER_LOG_FILES, LOGS_SERVER_LOG_MEGABYTES, SECURI
 use bb_core::time::SECONDS_PER_DAY;
 use jiff::{SignedDuration, Timestamp};
 
-use super::prefs::number;
 use crate::auth::{
     AppError, AuthStore, Ctx, Stops, change_failed, changed, fixed_entity, internal, purge_sessions,
 };
@@ -82,9 +81,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// entries went.
     pub(crate) async fn prune_old_security_log(&self) -> Result<u64, AppError> {
         let layers = self.setting_layers_of(None).await?;
-        let days = number(&layers, &SECURITY_LOG_KEEP_DAYS)
-            .unwrap_or(365)
-            .max(1);
+        let days = layers.number(&SECURITY_LOG_KEEP_DAYS);
         let now = self.now();
         let before: Timestamp = now
             .checked_sub(SignedDuration::from_secs(
@@ -104,8 +101,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok(false);
         };
         let layers = self.setting_layers_of(None).await?;
-        let megabytes = number(&layers, &LOGS_SERVER_LOG_MEGABYTES).unwrap_or(20);
-        let files = number(&layers, &LOGS_SERVER_LOG_FILES).unwrap_or(5);
+        let megabytes = layers.number(&LOGS_SERVER_LOG_MEGABYTES);
+        let files = layers.number(&LOGS_SERVER_LOG_FILES);
         file.rotate(
             u64::try_from(megabytes)
                 .unwrap_or(1)

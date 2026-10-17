@@ -49,17 +49,11 @@ impl CodePlan {
     /// that was made by hand).
     pub(crate) fn of(layers: &Layers) -> Self {
         let parse = |text: String| IdMode::from_code(&text);
-        let value = layers.resolve(ISSUES_ID_MODE.definition()).value;
-        let mode = ISSUES_ID_MODE
-            .resolve(Some(&value))
-            .ok()
-            .and_then(parse)
+        let mode = parse(layers.text(&ISSUES_ID_MODE))
             .or_else(|| ISSUES_ID_MODE.default_value().ok().and_then(parse))
             // The default of the registry is one of the modes: this is never reached.
             .unwrap_or(IdMode::ALL[0]);
-        let length = ISSUES_ID_LENGTH
-            .resolve(Some(&layers.resolve(ISSUES_ID_LENGTH.definition()).value))
-            .unwrap_or_default();
+        let length = layers.number(&ISSUES_ID_LENGTH);
         Self {
             mode,
             length: code_length(length),
