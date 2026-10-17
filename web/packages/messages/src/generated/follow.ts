@@ -4,7 +4,8 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "followers.name": "Followers",
-  "followers.count": "{count} followers",
+  "followers.count": "{count, plural, one {# follower} other {# followers}}",
+  "followers.count-more": "{count, plural, other {# or more followers}}",
   "followers.follow": "Follow",
   "followers.following": "Following",
   "followers.stop": "Stop following",

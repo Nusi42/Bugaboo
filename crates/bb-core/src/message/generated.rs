@@ -5707,10 +5707,19 @@ pub fn first_run_step_of(
 
 /// The message `followers.count`.
 #[must_use]
-pub fn followers_count(count: impl std::fmt::Display) -> Message {
+pub fn followers_count(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("followers.count"),
-        vec![("count", Value::Text(count.to_string()))],
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `followers.count-more`.
+#[must_use]
+pub fn followers_count_more(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("followers.count-more"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -9565,7 +9574,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("focus.back", "Back to list"),
     ("focus.hide-list", "Hide list"),
     ("focus.show-list", "Show list"),
-    ("followers.count", "{count} followers"),
+    (
+        "followers.count",
+        "{count, plural, one {# follower} other {# followers}}",
+    ),
+    (
+        "followers.count-more",
+        "{count, plural, other {# or more followers}}",
+    ),
     ("followers.follow", "Follow"),
     ("followers.following", "Following"),
     ("followers.more", "Show more followers"),

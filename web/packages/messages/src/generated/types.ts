@@ -177,7 +177,8 @@ export interface MessageArguments {
   "files.too-big": { limit: string | number };
   "files.waiting": { name: string | number };
   "first-run.step-of": { name: string | number; step: string | number; total: string | number };
-  "followers.count": { count: string | number };
+  "followers.count": { count: number };
+  "followers.count-more": { count: number };
   "groups.add-name": { name: string | number };
   "groups.added": { group: string | number; name: string | number };
   "groups.created": { name: string | number };

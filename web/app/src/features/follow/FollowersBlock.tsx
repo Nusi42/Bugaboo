@@ -1,4 +1,3 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -14,9 +13,9 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { listText } from "../../shared/list-text.ts";
+import { followerCount } from "./follower-count.ts";
+import { FollowerNames } from "./FollowerNames.tsx";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
-import { personNameInside } from "../../shared/person.ts";
 import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
 
 const reasonMessage = {
@@ -75,16 +74,6 @@ function FollowButton({ issue }: { readonly issue: string }) {
   );
 }
 
-/** The followers by name as the kind *Followers* says for the reader; shown on request. */
-function FollowerNames({ people }: { readonly people: readonly Schema<"PersonRef">[] }) {
-  return <p {...partOf(part.text)}>{listText(people.map((person) => personNameInside(person)))}</p>;
-}
-
-/** How many followers the first pages hold; a next page shows as a plus. */
-function countOf(loaded: number, more: boolean): string {
-  return more ? [loaded, "+"].join("") : String(loaded);
-}
-
 /**
  * The *Followers* row of the Details (ISS-07, *3 followers · Follow*): the number of followers, the button, and the
  * names when asked for. A reader who may not see followers gets neither names nor a number.
@@ -105,7 +94,7 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
                 setShown(!shown);
               }}
             >
-              {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
+              {followerCount(people.length, list.hasNextPage)}
             </Button>
           )}
           <FollowButton issue={readableId} />
