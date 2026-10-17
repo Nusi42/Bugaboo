@@ -13018,6 +13018,148 @@
         "x-permission": "manage-issue-types"
       }
     },
+    "/api/v1/mail/password": {
+      "put": {
+        "tags": ["notifications"],
+        "summary": "Enters, changes or removes the password of the mail server. It is stored encrypted like other\nsecrets and never sent back.",
+        "operationId": "setMailPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailPasswordBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The password is stored."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
+    "/api/v1/mail/test": {
+      "post": {
+        "tags": ["notifications"],
+        "summary": "Sends a test e-mail to the person who asks, through the mail server as it is entered, even\nwhile e-mail is still off.",
+        "operationId": "sendTestEmail",
+        "responses": {
+          "204": {
+            "description": "The mail server took the e-mail."
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/many-changes": {
       "post": {
         "tags": ["many-changes"],
@@ -13983,6 +14125,315 @@
             }
           }
         },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": ["notifications"],
+        "summary": "The notifications of the person, newest first, a page at a time. A notification about an issue\nthe person cannot see any more is not in the list.",
+        "operationId": "listNotifications",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "All of them (the default), the unread ones, or the ones that mention the person.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Which notifications a list shows: all, the unread ones, or the ones that mention the person.",
+              "enum": ["all", "unread", "mentions"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The notifications.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_NotificationEntry"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/notifications/read": {
+      "post": {
+        "tags": ["notifications"],
+        "summary": "Marks notifications of the person as read: the ones named, or all of them.",
+        "operationId": "readNotifications",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadNotificationsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "They are marked."
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/notifications/unread": {
+      "get": {
+        "tags": ["notifications"],
+        "summary": "How many notifications the person has not read: the number on the menu entry.",
+        "operationId": "getUnreadNotifications",
+        "responses": {
+          "200": {
+            "description": "The number.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
         "x-permission": "signed-in"
       }
     },
@@ -21345,6 +21796,11 @@
           "request.invalid",
           "request.unknown_field",
           "request.bad_cursor",
+          "mail.rejected",
+          "mail.unavailable",
+          "mail.off",
+          "auth.address_not_confirmed",
+          "auth.confirmation_invalid",
           "request.wrong_origin",
           "request.wrong_token",
           "request.method_not_allowed",
@@ -23473,6 +23929,16 @@
         "description": "How the value of an own field is shown.",
         "enum": ["badge", "pill", "plain-text", "progress-bar", "avatar"]
       },
+      "MailPasswordBody": {
+        "type": "object",
+        "description": "The password of the mail server.",
+        "properties": {
+          "password": {
+            "type": ["string", "null"],
+            "description": "The password. Leave it out, or leave it empty, to remove it (a mail server that asks for\nnone). It is stored encrypted and never sent back."
+          }
+        }
+      },
       "ManyChangeActionBody": {
         "oneOf": [
           {
@@ -24542,6 +25008,131 @@
         "description": "What the person who is editing is told: somebody asked them to finish, took the editing over, or released the lock.",
         "enum": ["finish_asked", "taken_over", "released"]
       },
+      "NotificationEntry": {
+        "type": "object",
+        "description": "One item of the list of notifications.",
+        "required": ["id", "kind", "at", "read"],
+        "properties": {
+          "after_text": {
+            "type": ["string", "null"],
+            "description": "A change: what the field is now, in words."
+          },
+          "after_value": {
+            "description": "The same for what the field is now."
+          },
+          "at": {
+            "type": "string",
+            "description": "When it happened."
+          },
+          "before_text": {
+            "type": ["string", "null"],
+            "description": "A change: what the field was, in words."
+          },
+          "before_value": {
+            "description": "A change of an own field that a screen words itself (yes or no, a length of time, a\nnumber, a day): what the field was, as the JSON of its kind."
+          },
+          "by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef",
+                "description": "Who did it, as the person may see people of the kind *Authors*; left out for Bugaboo itself."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment": {
+            "type": ["string", "null"],
+            "description": "A comment: its ID, which *Open* goes to."
+          },
+          "field": {
+            "type": ["string", "null"],
+            "description": "A change: the key of the field."
+          },
+          "field_kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FieldType",
+                "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field_name": {
+            "type": ["string", "null"],
+            "description": "A change of an own field: its name."
+          },
+          "html": {
+            "type": ["string", "null"],
+            "description": "A comment: the text as safe HTML, made on the server for this person."
+          },
+          "id": {
+            "type": "string",
+            "description": "The ID of the notification; the items of one notification share it. *Mark as read* names it."
+          },
+          "issue": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueRef",
+                "description": "The issue it is about, when the person may see it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NotificationKind",
+            "description": "What the notification is about."
+          },
+          "notice": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NoticeKind",
+                "description": "A note about editing: somebody asked the person to finish, or took the editing over."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "part": {
+            "type": ["string", "null"],
+            "description": "A note about editing: the part of the record that was being edited."
+          },
+          "read": {
+            "type": "boolean",
+            "description": "Whether the person has read it."
+          },
+          "run": {
+            "type": ["string", "null"],
+            "description": "The end of a run: the ID of the run."
+          },
+          "run_done": {
+            "type": ["boolean", "null"],
+            "description": "The end of a run: whether it ended well."
+          },
+          "text": {
+            "type": ["string", "null"],
+            "description": "A comment: the text, in Markdown."
+          }
+        }
+      },
+      "NotificationKind": {
+        "type": "string",
+        "description": "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.",
+        "enum": [
+          "mentioned",
+          "assigned",
+          "followed_activity",
+          "followed_fields",
+          "run_ended",
+          "edit_notice"
+        ]
+      },
       "OwnChangeBody": {
         "oneOf": [
           {
@@ -25560,6 +26151,134 @@
                 "unread": {
                   "type": "boolean",
                   "description": "Whether the person has not looked at it under *Mentions* yet."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_NotificationEntry": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One item of the list of notifications.",
+              "required": ["id", "kind", "at", "read"],
+              "properties": {
+                "after_text": {
+                  "type": ["string", "null"],
+                  "description": "A change: what the field is now, in words."
+                },
+                "after_value": {
+                  "description": "The same for what the field is now."
+                },
+                "at": {
+                  "type": "string",
+                  "description": "When it happened."
+                },
+                "before_text": {
+                  "type": ["string", "null"],
+                  "description": "A change: what the field was, in words."
+                },
+                "before_value": {
+                  "description": "A change of an own field that a screen words itself (yes or no, a length of time, a\nnumber, a day): what the field was, as the JSON of its kind."
+                },
+                "by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PersonRef",
+                      "description": "Who did it, as the person may see people of the kind *Authors*; left out for Bugaboo itself."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "comment": {
+                  "type": ["string", "null"],
+                  "description": "A comment: its ID, which *Open* goes to."
+                },
+                "field": {
+                  "type": ["string", "null"],
+                  "description": "A change: the key of the field."
+                },
+                "field_kind": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldType",
+                      "description": "A change of an own field: its kind, which says how `before_value` and `after_value` are\nworded."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "field_name": {
+                  "type": ["string", "null"],
+                  "description": "A change of an own field: its name."
+                },
+                "html": {
+                  "type": ["string", "null"],
+                  "description": "A comment: the text as safe HTML, made on the server for this person."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The ID of the notification; the items of one notification share it. *Mark as read* names it."
+                },
+                "issue": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/IssueRef",
+                      "description": "The issue it is about, when the person may see it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/NotificationKind",
+                  "description": "What the notification is about."
+                },
+                "notice": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/NoticeKind",
+                      "description": "A note about editing: somebody asked the person to finish, or took the editing over."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "part": {
+                  "type": ["string", "null"],
+                  "description": "A note about editing: the part of the record that was being edited."
+                },
+                "read": {
+                  "type": "boolean",
+                  "description": "Whether the person has read it."
+                },
+                "run": {
+                  "type": ["string", "null"],
+                  "description": "The end of a run: the ID of the run."
+                },
+                "run_done": {
+                  "type": ["boolean", "null"],
+                  "description": "The end of a run: whether it ended well."
+                },
+                "text": {
+                  "type": ["string", "null"],
+                  "description": "A comment: the text, in Markdown."
                 }
               }
             },
@@ -26783,6 +27502,23 @@
               "type": "string"
             },
             "description": "The IDs of the comments."
+          }
+        }
+      },
+      "ReadNotificationsBody": {
+        "type": "object",
+        "description": "The notifications to mark as read.",
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "description": "Mark every unread notification as read."
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the notifications, at most 100; or leave it out and set `all`."
           }
         }
       },
@@ -28182,6 +28918,18 @@
           "truncated": {
             "type": "boolean",
             "description": "There are more passkeys than the list holds."
+          }
+        }
+      },
+      "UnreadBody": {
+        "type": "object",
+        "description": "How many notifications the person has not read.",
+        "required": ["unread"],
+        "properties": {
+          "unread": {
+            "type": "integer",
+            "description": "The number, at most 100: only what the person may still see is counted.",
+            "minimum": 0
           }
         }
       },

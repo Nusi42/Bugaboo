@@ -44,6 +44,11 @@ pub const MAIL_TEXT_MAX: usize = 2000;
 /// The most notifications one e-mail names; the rest are in the app.
 pub const MAIL_ENTRIES_MAX: usize = 20;
 
+/// How many unread notifications are looked at to tell a person how many they have: the number
+/// shown is never more, so what a person cannot see any more costs a bounded amount of reading
+/// and no total ever includes it (ARCH-NO-COUNTERS).
+pub const UNREAD_COUNT_MAX: usize = 100;
+
 /// How long a notification is kept.
 #[must_use]
 pub const fn keep() -> jiff::SignedDuration {
@@ -86,6 +91,23 @@ words! {
 words_in_api!(
     NotificationKind,
     "What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing."
+);
+
+words! {
+    /// Which notifications a list shows.
+    pub enum NotificationFilter {
+        /// Every one, newest first.
+        All => "all",
+        /// The ones not read yet.
+        Unread => "unread",
+        /// The ones that mention the person (the filter that replaces the *Mentions* block).
+        Mentions => "mentions",
+    }
+}
+
+words_in_api!(
+    NotificationFilter,
+    "Which notifications a list shows: all, the unread ones, or the ones that mention the person."
 );
 
 words! {

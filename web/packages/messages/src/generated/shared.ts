@@ -629,6 +629,24 @@ export const messages = {
   "setting.mail.short.name": "Short e-mails",
   "setting.mail.short.help":
     "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+  "error.mail.rejected":
+    "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+  "error.mail.unavailable":
+    "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
+  "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
+  "error.auth.address-not-confirmed":
+    "Your e-mail address is not confirmed yet. Open the e-mail that Bugaboo sent you.",
+  "error.auth.confirmation-invalid":
+    "This confirmation does not work. It may have run out or been used already. Sign up again to get a new one.",
+  "setting.security.log-keep-days.name": "Days to keep the security log",
+  "setting.security.log-keep-days.help":
+    "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out. Between 30 days and 10 years (3650 days).",
+  "setting.logs.server-log-megabytes.name": "Size of the server log file",
+  "setting.logs.server-log-megabytes.help":
+    "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
+  "setting.logs.server-log-files.name": "Old server log files to keep",
+  "setting.logs.server-log-files.help":
+    "How many old files of the server log are kept next to the current one. Older ones are deleted.",
 } as const;
 
 register(messages);

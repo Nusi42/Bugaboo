@@ -6,6 +6,20 @@ use crate::id::JobId;
 use crate::personal::Entity;
 use crate::technical::TechnicalName;
 
+/// How long the payload of a job that died is kept, in days (M1-F21, PRIV-05): it can hold the
+/// address and the text of a person, so it is emptied when this has passed. The job itself stays on
+/// the dead-letter list for an administrator to look at.
+pub const DEAD_PAYLOAD_KEEP_DAYS: i64 = 30;
+
+/// The moment before which the payload of a dead job is too old to keep, at `now`.
+#[must_use]
+pub fn dead_payload_cutoff(now: Timestamp) -> Option<Timestamp> {
+    now.checked_sub(jiff::SignedDuration::from_secs(
+        DEAD_PAYLOAD_KEEP_DAYS * crate::time::SECONDS_PER_DAY,
+    ))
+    .ok()
+}
+
 words! {
     /// Where a job is in its life.
     pub enum JobState {

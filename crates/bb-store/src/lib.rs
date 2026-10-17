@@ -26,6 +26,7 @@ mod layout;
 mod layouts;
 mod many_changes;
 mod migrations;
+mod notifications;
 mod paging;
 mod policy;
 mod projects;

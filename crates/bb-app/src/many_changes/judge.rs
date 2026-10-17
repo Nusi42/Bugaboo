@@ -110,6 +110,11 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::PasswordTooShort
             | ErrorCode::PasswordBreached
             | ErrorCode::InvitationInvalid
+            | ErrorCode::MailRejected
+            | ErrorCode::MailUnavailable
+            | ErrorCode::MailOff
+            | ErrorCode::AddressNotConfirmed
+            | ErrorCode::ConfirmationInvalid
             | ErrorCode::SignUpRefused
             | ErrorCode::PasskeyRejected
             | ErrorCode::SecondStepRequired

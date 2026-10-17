@@ -131,6 +131,12 @@ words! {
         ProjectMoved => "project.moved",
         /// Somebody with *Edit anyway* released an edit lock that another person held.
         EditLockReleased => "edit_lock.released",
+        /// An administrator entered or removed the password of the mail server.
+        MailPasswordChanged => "mail.password_changed",
+        /// A person opened the confirmation of their e-mail address.
+        AddressConfirmed => "address.confirmed",
+        /// A confirmation of an address did not work.
+        AddressConfirmationRefused => "address.confirmation_refused",
     }
 }
 

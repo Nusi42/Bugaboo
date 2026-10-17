@@ -44,6 +44,7 @@ mod layouts_review;
 mod lists;
 mod long_text_http;
 mod many_changes_http;
+mod notifications_http;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.
 #[path = "../matrix/mod.rs"]

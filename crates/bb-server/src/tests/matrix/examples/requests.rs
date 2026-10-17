@@ -81,6 +81,14 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         ),
         "resetMySetting" => ("DELETE", "/api/v1/me/settings/appearance.mode".into(), None),
         "getMe" => ("GET", "/api/v1/auth/me".into(), None),
+        // The person's own notifications.
+        "listNotifications" => ("GET", "/api/v1/notifications".into(), None),
+        "getUnreadNotifications" => ("GET", "/api/v1/notifications/unread".into(), None),
+        "readNotifications" => (
+            "POST",
+            "/api/v1/notifications/read".into(),
+            Some(json!({"all": true})),
+        ),
         "signOut" => ("POST", "/api/v1/auth/sign-out".into(), None),
         _ => return Ok(None),
     }))
@@ -223,6 +231,13 @@ pub(super) async fn organization_request(
             )
         }
         "listOrganizationSettings" => ("GET", "/api/v1/settings".into(), None),
+        "setMailPassword" => (
+            "PUT",
+            "/api/v1/mail/password".into(),
+            Some(json!({"password": "a made-up mail password"})),
+        ),
+        // No mail server is entered in the matrix, so the test e-mail is turned away for that.
+        "sendTestEmail" => ("POST", "/api/v1/mail/test".into(), None),
         "changeOrganizationSetting" => (
             "PUT",
             "/api/v1/settings/security.session-idle-minutes".into(),

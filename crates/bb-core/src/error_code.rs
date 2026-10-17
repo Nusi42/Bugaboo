@@ -138,6 +138,17 @@ error_codes! {
     UnknownField => ("request.unknown_field", 400),
     /// The cursor of a list page was changed or is not one of ours (PERF-02).
     BadCursor => ("request.bad_cursor", 400),
+    /// The mail server turned an e-mail away for good: the sender or the address is not accepted
+    /// (NTF-02).
+    MailRejected => ("mail.rejected", 502),
+    /// The mail server cannot be reached, or said to try later (NTF-02).
+    MailUnavailable => ("mail.unavailable", 503),
+    /// E-mail is off, or the mail server is not entered (PRIV-08).
+    MailOff => ("mail.off", 409),
+    /// The account was made by signing up and its e-mail address is not confirmed yet (M1-F38).
+    AddressNotConfirmed => ("auth.address_not_confirmed", 403),
+    /// The confirmation of an address does not work: unknown, used or run out. Never says which.
+    ConfirmationInvalid => ("auth.confirmation_invalid", 400),
     /// A change request that does not come from one of Bugaboo's own pages.
     WrongOrigin => ("request.wrong_origin", 403),
     /// A change request without the right token of the session (CSRF).

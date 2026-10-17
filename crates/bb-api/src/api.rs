@@ -60,6 +60,7 @@ mod issue_types;
 mod issues;
 mod layouts;
 mod many_changes;
+mod notifications;
 mod own_access;
 mod people;
 mod people_visibility;
@@ -164,6 +165,7 @@ where
         .merge(comments::routes())
         .merge(history::routes())
         .merge(follow::routes())
+        .merge(notifications::routes())
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())

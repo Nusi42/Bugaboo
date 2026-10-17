@@ -477,6 +477,23 @@ pub const ROUTES: &[Route] = &[
     ),
     route("listMentions", Declared::SignedIn, Answer::NeverStored),
     route("readMentions", Declared::SignedIn, Answer::Ordinary),
+    route("listNotifications", Declared::SignedIn, Answer::NeverStored),
+    route(
+        "getUnreadNotifications",
+        Declared::SignedIn,
+        Answer::NeverStored,
+    ),
+    route("readNotifications", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "setMailPassword",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+        Answer::Ordinary,
+    ),
+    route(
+        "sendTestEmail",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+        Answer::Ordinary,
+    ),
     route(
         "listIssueHistory",
         Declared::Permission(Permission::SeeIssues),

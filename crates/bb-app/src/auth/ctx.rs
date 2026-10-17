@@ -24,6 +24,7 @@ use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
 use crate::mailer::{Mailer, NoMailer};
 use crate::ports::SetupCodeFile;
+use crate::server_log::ServerLogFile;
 use crate::status::LogWrites;
 
 /// What is known about the request that is being served.
@@ -48,6 +49,7 @@ pub struct AuthServices<S> {
     pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
     pub(crate) records: Arc<dyn EditableRecords>,
     pub(crate) mailer: Arc<dyn Mailer>,
+    pub(crate) server_log: Option<Arc<dyn ServerLogFile>>,
     /// The address people reach the server at, which the links in e-mails start with.
     pub(crate) public_url: String,
 }
@@ -77,6 +79,7 @@ impl<S> AuthServices<S> {
             setup_code_file: None,
             records: Arc::new(NoRecords),
             mailer: Arc::new(NoMailer),
+            server_log: None,
             public_url: String::new(),
         }
     }
@@ -93,6 +96,14 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_mailer(mut self, mailer: Arc<dyn Mailer>) -> Self {
         self.mailer = mailer;
+        self
+    }
+
+    /// The log file of a server that runs without a console, which a job starts a new file of
+    /// when it is big (M1-F61).
+    #[must_use]
+    pub fn with_server_log(mut self, file: Arc<dyn ServerLogFile>) -> Self {
+        self.server_log = Some(file);
         self
     }
 

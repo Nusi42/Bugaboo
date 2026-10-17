@@ -765,6 +765,20 @@ impl AuthStore for FakeStore {
         Ok(())
     }
 
+    async fn prune_security_log(
+        &self,
+        before: Timestamp,
+        _now: Timestamp,
+    ) -> Result<u64, FakeError> {
+        let mut shared = self.lock();
+        let newest = shared.log.last().map(|event| event.time);
+        let kept = shared.log.len();
+        shared
+            .log
+            .retain(|event| event.time >= before || Some(event.time) == newest);
+        Ok(u64::try_from(kept - shared.log.len()).unwrap_or(u64::MAX))
+    }
+
     async fn sign_up_policy_version(&self) -> Result<i64, FakeError> {
         Ok(self.read(|state| state.sign_up_version))
     }

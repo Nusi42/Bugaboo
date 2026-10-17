@@ -61,6 +61,11 @@ impl AuthStorage {
     pub const fn database(&self) -> &Database {
         &self.database
     }
+
+    /// The keys that protect the secrets in the database.
+    pub(crate) fn key_ring(&self) -> &KeyRing {
+        &self.keys
+    }
 }
 
 /// The hash stored in a row, or the report that it is not one.
@@ -152,6 +157,16 @@ impl AuthStore for AuthStorage {
             .append_security_log(&self.seal, &entry)
             .await
             .map(|_| ())
+    }
+
+    async fn prune_security_log(
+        &self,
+        before: Timestamp,
+        now: Timestamp,
+    ) -> Result<u64, StoreError> {
+        self.database
+            .prune_security_log(&self.seal, before, now)
+            .await
     }
 
     async fn sign_up_policy_version(&self) -> Result<i64, StoreError> {

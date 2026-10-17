@@ -38,6 +38,7 @@ mod m0011_tags;
 mod m0012_layouts;
 mod m0013_job_kinds;
 mod m0014_names;
+mod m0017_notifications;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -193,6 +194,13 @@ const ALL: &[Definition] = &[
         version: 14,
         name: "names",
         steps: || Ok(m0014_names::steps()),
+    },
+    // 15 and 16 are the migrations of workflows and files (M4 WP-04, WP-05), built at the same time
+    // as this one in other folders: a number that is missing here is applied when it exists.
+    Definition {
+        version: 17,
+        name: "notifications",
+        steps: || Ok(m0017_notifications::steps()),
     },
 ];
 

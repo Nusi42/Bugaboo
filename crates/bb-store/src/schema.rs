@@ -13,12 +13,14 @@ use sea_query::{Iden, IdenStatic};
 
 mod access;
 mod comments;
+mod notify;
 mod sign_in;
 mod system;
 mod work;
 
 pub(crate) use access::*;
 pub(crate) use comments::*;
+pub(crate) use notify::*;
 pub(crate) use sign_in::*;
 pub(crate) use system::*;
 pub(crate) use work::*;
@@ -548,6 +550,32 @@ stored_tables! {
         Key => key,
         Value => value,
         UpdatedAt => updated_at,
+    },
+    NotificationRow => bb_core::notification::Notification {
+        Id => id,
+        Recipient => recipient,
+        Kind => kind,
+        Issue => issue,
+        Event => event,
+        Once => once,
+        Record => record,
+        By => by,
+        At => at,
+        Changes => changes,
+        InApp => in_app,
+        Mail => mail,
+        ReadAt => read_at,
+    },
+    PersonHandleRow => bb_core::handle::PersonHandle {
+        Person => person,
+        Handle => handle,
+        ChangedAt => changed_at,
+    },
+    AddressConfirmationRow => bb_core::confirmation::AddressConfirmation {
+        Person => person,
+        TokenHash => token_hash,
+        CreatedAt => created_at,
+        ExpiresAt => expires_at,
     },
 }
 

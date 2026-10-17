@@ -16,8 +16,8 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{
     AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
     IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
-    ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId, TagId,
-    UserId,
+    ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId,
+    SessionId, TagId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -679,6 +679,7 @@ stored_ids!(
     LabelId => "a label ID",
     LayoutId => "a layout ID",
     LockToken => "an edit lock token",
+    NotificationId => "a notification ID",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",
     TagId => "a tag ID",

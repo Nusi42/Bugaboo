@@ -640,6 +640,8 @@ async fn adr_0017_a_step_that_keeps_failing_ends_its_run_as_failed() -> Outcome 
         .store
         .fail_many_changes_progress(usize::try_from(crate::jobs::JOB_ATTEMPTS_MAX)?);
     for _ in 0..crate::jobs::JOB_ATTEMPTS_MAX {
+        // A start that failed waits before the next one, as the store makes it.
+        world.clock.advance(60);
         world.ctx().run_due_jobs().await?;
     }
     let shared = world.store.lock();

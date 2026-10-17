@@ -332,7 +332,7 @@ mod tests {
                     .record_change(&event, async |_transaction| Ok(()))
                     .await?;
             }
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             for _ in 0..2 {
                 let mut select = Query::select();
                 select
@@ -348,7 +348,7 @@ mod tests {
                 assert_eq!(kinds, ["change_run", "issue"]);
                 run_updates_again(&database).await?;
             }
-            assert!(database.migrate(at(2)).await?.is_empty());
+            assert!(database.migrate_until(14, at(2)).await?.is_empty());
             Ok(())
         })
         .await
@@ -371,7 +371,7 @@ mod tests {
                     .record_change(&event, async |_transaction| Ok(()))
                     .await?;
             }
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             for _ in 0..2 {
                 let mut select = Query::select();
                 select
@@ -395,7 +395,7 @@ mod tests {
                 );
                 run_updates_again(&database).await?;
             }
-            assert!(database.migrate(at(2)).await?.is_empty());
+            assert!(database.migrate_until(14, at(2)).await?.is_empty());
             Ok(())
         })
         .await
@@ -414,7 +414,7 @@ mod tests {
                     .record_change(&event, async |_transaction| Ok(()))
                     .await?;
             }
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             for _ in 0..2 {
                 let mut select = Query::select();
                 select
@@ -430,7 +430,7 @@ mod tests {
                 assert_eq!(reasons, ["Reported", "change-run:one:7"]);
                 run_updates_again(&database).await?;
             }
-            assert!(database.migrate(at(2)).await?.is_empty());
+            assert!(database.migrate_until(14, at(2)).await?.is_empty());
             Ok(())
         })
         .await
@@ -468,7 +468,7 @@ mod tests {
                     Expr::val(5_i64),
                 ])?;
             database.execute(&run).await?;
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             let mut select = Query::select();
             select
                 .columns([ManyChangeRunRow::Done, ManyChangeRunRow::Changed])
@@ -480,7 +480,7 @@ mod tests {
             let mut old = Query::select();
             old.column(Alias::new("done")).from(Alias::new("bulk_run"));
             assert!(database.fetch_all(&old).await.is_err());
-            assert!(database.migrate(at(2)).await?.is_empty());
+            assert!(database.migrate_until(14, at(2)).await?.is_empty());
             Ok(())
         })
         .await
@@ -500,7 +500,7 @@ mod tests {
             database
                 .enqueue_job(JobId::generate(&mut source)?, &job, at(0))
                 .await?;
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             run_updates_again(&database).await?;
             let worker = TechnicalName::new("worker.one")?;
             let taken = database
@@ -508,7 +508,7 @@ mod tests {
                 .await?;
             assert_eq!(taken.len(), 1);
             assert_eq!(taken[0].kind.as_str(), "many-changes.step");
-            assert!(database.migrate(at(3)).await?.is_empty());
+            assert!(database.migrate_until(14, at(3)).await?.is_empty());
             Ok(())
         })
         .await
@@ -535,7 +535,7 @@ mod tests {
                     Expr::val(7_i64),
                 ])?;
             database.execute(&assigned).await?;
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             let mut select = Query::select();
             select
                 .columns([AssignedPersonRow::Person, AssignedPersonRow::AddedAt])
@@ -567,7 +567,7 @@ mod tests {
             old.column(Alias::new("person"))
                 .from(Alias::new("issue_assignee"));
             assert!(database.fetch_all(&old).await.is_err());
-            assert!(database.migrate(at(2)).await?.is_empty());
+            assert!(database.migrate_until(14, at(2)).await?.is_empty());
             assert_eq!(database.fetch_all(&select).await?.len(), 1);
             Ok(())
         })
@@ -602,7 +602,7 @@ mod tests {
                     .values([Expr::val(vec![3_u8; 16]), Expr::val(old)])?;
                 database.execute(&key_row).await?;
             }
-            assert_eq!(database.migrate(at(1)).await?, [14]);
+            assert_eq!(database.migrate_until(14, at(1)).await?, [14]);
             let wanted = [
                 "create-issues",
                 "create-projects",
@@ -631,7 +631,7 @@ mod tests {
                 run_updates_again(&database).await?;
             }
             // Migrating again applies nothing.
-            assert!(database.migrate(at(2)).await?.is_empty());
+            assert!(database.migrate_until(14, at(2)).await?.is_empty());
             Ok(())
         })
         .await

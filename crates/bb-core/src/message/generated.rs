@@ -745,6 +745,14 @@ pub const ERROR_ASSIGNMENT_CONFLICT: MessageKey = MessageKey::new("error.assignm
 pub const ERROR_AUTH_ACCESS_KEY_NOT_ALLOWED: MessageKey =
     MessageKey::new("error.auth.access-key-not-allowed");
 
+/// The message `error.auth.address-not-confirmed`.
+pub const ERROR_AUTH_ADDRESS_NOT_CONFIRMED: MessageKey =
+    MessageKey::new("error.auth.address-not-confirmed");
+
+/// The message `error.auth.confirmation-invalid`.
+pub const ERROR_AUTH_CONFIRMATION_INVALID: MessageKey =
+    MessageKey::new("error.auth.confirmation-invalid");
+
 /// The message `error.auth.invitation-invalid`.
 pub const ERROR_AUTH_INVITATION_INVALID: MessageKey =
     MessageKey::new("error.auth.invitation-invalid");
@@ -836,6 +844,15 @@ pub const ERROR_LABEL_PICK_ONE_CONFLICT: MessageKey =
 
 /// The message `error.limit.reached`.
 pub const ERROR_LIMIT_REACHED: MessageKey = MessageKey::new("error.limit.reached");
+
+/// The message `error.mail.off`.
+pub const ERROR_MAIL_OFF: MessageKey = MessageKey::new("error.mail.off");
+
+/// The message `error.mail.rejected`.
+pub const ERROR_MAIL_REJECTED: MessageKey = MessageKey::new("error.mail.rejected");
+
+/// The message `error.mail.unavailable`.
+pub const ERROR_MAIL_UNAVAILABLE: MessageKey = MessageKey::new("error.mail.unavailable");
 
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
@@ -2223,6 +2240,33 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
+
+/// The message `mail.footer`.
+pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
+
+/// The message `mail.line-news`.
+pub const MAIL_LINE_NEWS: MessageKey = MessageKey::new("mail.line-news");
+
+/// The message `mail.line-run-done`.
+pub const MAIL_LINE_RUN_DONE: MessageKey = MessageKey::new("mail.line-run-done");
+
+/// The message `mail.line-run-failed`.
+pub const MAIL_LINE_RUN_FAILED: MessageKey = MessageKey::new("mail.line-run-failed");
+
+/// The message `mail.subject-run`.
+pub const MAIL_SUBJECT_RUN: MessageKey = MessageKey::new("mail.subject-run");
+
+/// The message `mail.test-subject`.
+pub const MAIL_TEST_SUBJECT: MessageKey = MessageKey::new("mail.test-subject");
+
+/// The message `mail.test-text`.
+pub const MAIL_TEST_TEXT: MessageKey = MessageKey::new("mail.test-text");
+
+/// The message `mail.who-bugaboo`.
+pub const MAIL_WHO_BUGABOO: MessageKey = MessageKey::new("mail.who-bugaboo");
+
+/// The message `mail.who-someone`.
+pub const MAIL_WHO_SOMEONE: MessageKey = MessageKey::new("mail.who-someone");
 
 /// The message `many-changes-skip.changed-since`.
 pub const MANY_CHANGES_SKIP_CHANGED_SINCE: MessageKey =
@@ -3643,6 +3687,22 @@ pub const SETTING_ISSUES_ID_MODE_HELP: MessageKey = MessageKey::new("setting.iss
 /// The message `setting.issues.id-mode.name`.
 pub const SETTING_ISSUES_ID_MODE_NAME: MessageKey = MessageKey::new("setting.issues.id-mode.name");
 
+/// The message `setting.logs.server-log-files.help`.
+pub const SETTING_LOGS_SERVER_LOG_FILES_HELP: MessageKey =
+    MessageKey::new("setting.logs.server-log-files.help");
+
+/// The message `setting.logs.server-log-files.name`.
+pub const SETTING_LOGS_SERVER_LOG_FILES_NAME: MessageKey =
+    MessageKey::new("setting.logs.server-log-files.name");
+
+/// The message `setting.logs.server-log-megabytes.help`.
+pub const SETTING_LOGS_SERVER_LOG_MEGABYTES_HELP: MessageKey =
+    MessageKey::new("setting.logs.server-log-megabytes.help");
+
+/// The message `setting.logs.server-log-megabytes.name`.
+pub const SETTING_LOGS_SERVER_LOG_MEGABYTES_NAME: MessageKey =
+    MessageKey::new("setting.logs.server-log-megabytes.name");
+
 /// The message `setting.mail.enabled.help`.
 pub const SETTING_MAIL_ENABLED_HELP: MessageKey = MessageKey::new("setting.mail.enabled.help");
 
@@ -3875,6 +3935,14 @@ pub const SETTING_REGION_TIME_ZONE_HELP: MessageKey =
 /// The message `setting.region.time-zone.name`.
 pub const SETTING_REGION_TIME_ZONE_NAME: MessageKey =
     MessageKey::new("setting.region.time-zone.name");
+
+/// The message `setting.security.log-keep-days.help`.
+pub const SETTING_SECURITY_LOG_KEEP_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.security.log-keep-days.help");
+
+/// The message `setting.security.log-keep-days.name`.
+pub const SETTING_SECURITY_LOG_KEEP_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.security.log-keep-days.name");
 
 /// The message `setting.security.session-absolute-hours.help`.
 pub const SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_HELP: MessageKey =
@@ -6307,6 +6375,128 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `mail.line-assigned`.
+#[must_use]
+pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-assigned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-changed`.
+#[must_use]
+pub fn mail_line_changed(
+    field: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-changed"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("value", Value::Text(value.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.line-cleared`.
+#[must_use]
+pub fn mail_line_cleared(field: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-cleared"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.line-commented`.
+#[must_use]
+pub fn mail_line_commented(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-commented"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-finish-asked`.
+#[must_use]
+pub fn mail_line_finish_asked(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-finish-asked"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-mentioned`.
+#[must_use]
+pub fn mail_line_mentioned(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-mentioned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-taken-over`.
+#[must_use]
+pub fn mail_line_taken_over(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-taken-over"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.open`.
+#[must_use]
+pub fn mail_open(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.open"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.subject`.
+#[must_use]
+pub fn mail_subject(issue: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.subject"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.subject-short`.
+#[must_use]
+pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.subject-short"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
+/// The message `mail.who-former`.
+#[must_use]
+pub fn mail_who_former(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.who-former"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `mail.who-role`.
+#[must_use]
+pub fn mail_who_role(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.who-role"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
 /// The message `many-changes.apply`.
 #[must_use]
 pub fn many_changes_apply(count: i64) -> Message {
@@ -8508,6 +8698,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "An access key cannot do that. Sign in with your password to change your own sign-in details.",
     ),
     (
+        "error.auth.address-not-confirmed",
+        "Your e-mail address is not confirmed yet. Open the e-mail that Bugaboo sent you.",
+    ),
+    (
+        "error.auth.confirmation-invalid",
+        "This confirmation does not work. It may have run out or been used already. Sign up again to get a new one.",
+    ),
+    (
         "error.auth.invitation-invalid",
         "This invitation does not work. It may have run out or been used already. Ask for a new one.",
     ),
@@ -8609,6 +8807,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.limit.reached",
         "There is no room for more of these. Take some away first.",
+    ),
+    (
+        "error.mail.off",
+        "E-mail is not set up. Enter the mail server and switch e-mail on first.",
+    ),
+    (
+        "error.mail.rejected",
+        "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+    ),
+    (
+        "error.mail.unavailable",
+        "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
     ),
     (
         "error.name.taken",
@@ -9587,6 +9797,45 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    (
+        "mail.footer",
+        "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
+    ),
+    ("mail.line-assigned", "{who} assigned this issue to you."),
+    ("mail.line-changed", "{who} changed {field} to {value}."),
+    ("mail.line-cleared", "{who} cleared {field}."),
+    ("mail.line-commented", "{who} wrote a comment:"),
+    (
+        "mail.line-finish-asked",
+        "{who} asks you to finish editing.",
+    ),
+    ("mail.line-mentioned", "{who} mentioned you in a comment:"),
+    ("mail.line-news", "There is news on this issue."),
+    ("mail.line-run-done", "Your change to many issues is done."),
+    (
+        "mail.line-run-failed",
+        "Your change to many issues stopped before it was done.",
+    ),
+    (
+        "mail.line-taken-over",
+        "{who} took over the editing. What you wrote is kept as your draft.",
+    ),
+    ("mail.open", "Open it in Bugaboo: {address}"),
+    ("mail.subject", "Bugaboo: {issue} {title}"),
+    (
+        "mail.subject-run",
+        "Bugaboo: your change to many issues has ended",
+    ),
+    ("mail.subject-short", "Bugaboo: news on {issue}"),
+    ("mail.test-subject", "Bugaboo: test e-mail"),
+    (
+        "mail.test-text",
+        "This is a test e-mail from Bugaboo. If you can read it, Bugaboo can send e-mail.",
+    ),
+    ("mail.who-bugaboo", "Bugaboo"),
+    ("mail.who-former", "Former user {label}"),
+    ("mail.who-role", "A {role}"),
+    ("mail.who-someone", "Someone"),
     (
         "many-changes-skip.changed-since",
         "It changed after the preview",
@@ -10845,6 +11094,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("setting.issues.id-mode.name", "Issue IDs"),
     (
+        "setting.logs.server-log-files.help",
+        "How many old files of the server log are kept next to the current one. Older ones are deleted.",
+    ),
+    (
+        "setting.logs.server-log-files.name",
+        "Old server log files to keep",
+    ),
+    (
+        "setting.logs.server-log-megabytes.help",
+        "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
+    ),
+    (
+        "setting.logs.server-log-megabytes.name",
+        "Size of the server log file",
+    ),
+    (
         "setting.mail.enabled.help",
         "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
     ),
@@ -11036,6 +11301,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The time zone for the times you see. Match my device uses the time zone of your device.",
     ),
     ("setting.region.time-zone.name", "Time zone"),
+    (
+        "setting.security.log-keep-days.help",
+        "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out. Between 30 days and 10 years (3650 days).",
+    ),
+    (
+        "setting.security.log-keep-days.name",
+        "Days to keep the security log",
+    ),
     (
         "setting.security.session-absolute-hours.help",
         "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",

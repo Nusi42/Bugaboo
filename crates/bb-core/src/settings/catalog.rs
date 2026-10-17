@@ -330,6 +330,44 @@ settings! {
         lockable: false,
     }
 
+    /// How many days the security log keeps its entries before the oldest whole blocks of it are
+    /// deleted (M1-F21, SEC-15, PRIV-05).
+    SECURITY_LOG_KEEP_DAYS: Integer = {
+        key: "security.log-keep-days",
+        name: message::SETTING_SECURITY_LOG_KEEP_DAYS_NAME,
+        default: 365,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_SECURITY_LOG_KEEP_DAYS_HELP,
+        lockable: false,
+        bounds: (30, 3650),
+    }
+
+    /// How big the log file of a server that runs as a service may get, in megabytes, before a new
+    /// file is started (M1-F61).
+    LOGS_SERVER_LOG_MEGABYTES: Integer = {
+        key: "logs.server-log-megabytes",
+        name: message::SETTING_LOGS_SERVER_LOG_MEGABYTES_NAME,
+        default: 20,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_LOGS_SERVER_LOG_MEGABYTES_HELP,
+        lockable: false,
+        bounds: (1, 1024),
+    }
+
+    /// How many old log files of a server that runs as a service are kept (M1-F61).
+    LOGS_SERVER_LOG_FILES: Integer = {
+        key: "logs.server-log-files",
+        name: message::SETTING_LOGS_SERVER_LOG_FILES_NAME,
+        default: 5,
+        levels: [Organization],
+        changed_by: Administrators,
+        help: message::SETTING_LOGS_SERVER_LOG_FILES_HELP,
+        lockable: false,
+        bounds: (1, 100),
+    }
+
     /// How many days a new access key lives when the person picks no other date.
     AUTH_ACCESS_KEY_DEFAULT_DAYS: Integer = {
         key: "auth.access-key-default-days",
