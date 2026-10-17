@@ -68,3 +68,15 @@ Until M4 every issue type uses the starting workflow, a fixed enum in `bb-core` 
 ## Enforced by
 
 TEST-WORKFLOWS (new in M4 WP-04: every rule, on both databases), ARCH-EVENTS (every change of a workflow), ARCH-VERSIONED (the editor saves with a version), SEC-MATRIX (rows for the workflow routes), and review (one judge, no second lookup).
+
+## Amendments (M4 WP-04)
+
+What the first build of the server settled, so the later packages (WP-07 for the screens) can rely on it.
+
+1. **No rows, no copy.** The tables are created empty by the migration. Where no place uses a stored workflow, the built-in *Simple* counts, so an upgraded database keeps every status and no issue moves. A new organization (no issues and no workflow at the first start) gets the three starter workflows and their uses: *Bug* for Bug, *Development* for Feature, *Simple* for all other types.
+2. **Statuses are unique by name** in a workflow. A new status gets a key made from its name; a status change in a draft names a status by its key or by the name of a new one.
+3. **The judge** (`bb_core::workflow::judge`) answers *allowed*, *needs these fields* or *not allowed* with one of four reasons: no such change, not for you, only if, cannot fill. Each reason has its own error code. A status that the workflow does not have (dropped, or after a move to another project) may go to any status of the workflow, without rules. A rule that names a field the person may not see turns the change down as *cannot fill* without naming it, before any value is looked at. *Needs* is the empty *Must be filled in* fields and the *Ask for* fields the request does not carry.
+4. **Who may change a workflow.** The permission *Manage workflows* is checked at the place of the workflow: the project that contains all of its uses, or the organization. It is never held through an access key.
+5. **Publish** plans the moves first (nothing is saved while an issue of a dropped status has no place to go), saves the workflow under the edit lock and the version, then moves the issues as many-changes in chunks, as the person who published; an issue that person cannot change stays where it is and can be put right by hand.
+6. **Which roles may change a field here** (M3-F53) is one question of the policy (`bb_policy::roles_that_change`); the route `getWhoMayChange` answers it for the sentence of a refusal and for *Who can do it*. It names only roles somebody holds in the project, answers not found for a field the reader may not see, and names no role to a reader who is not shown the people of the project by role.
+7. **Statement budget.** The workflows that count are read once for a request: three statements when places use stored workflows, one when none does. The ceiling of the reads of an issue page (PERF-05) went from 45 to 47 for them.
