@@ -12,7 +12,7 @@ You then read three parts:
 - **Fields**: the level of every field for that person, and which role gives it, and where. Fields that have the same level for the same reason are told together ("All other fields: Can change ..."), followed by the exceptions. **Show every field** lists them one by one.
 - **How they see people**: the same for every kind of people information, with **Show every kind**.
 
-When the levels of the person differ by issue type, because a role sets a level of a field for one type, **Which issue type?** appears above the fields. Pick a type to read the levels for issues of that type and the reasons for them; **All issue types** reads the levels for all types. When the levels are the same for every type, the question is not there.
+When the levels of the person differ by issue type, because a role sets a level of a field for one type, **Which issue type?** appears above the fields. Pick a type to read the levels for issues of that type and the reasons for them (the list holds the types the place offers, and not the retired ones); **All issue types** reads the levels for all types. When the levels are the same for every type, the question is not there.
 
 ## An example
 
