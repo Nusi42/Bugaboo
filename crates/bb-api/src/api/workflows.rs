@@ -84,7 +84,9 @@ pub(crate) fn status_in(text: Option<&str>) -> Result<Option<StatusKey>, ApiErro
     text.map(body_id::<StatusKey>).transpose()
 }
 
-/// The statuses the issues of a project can have: one list for all issue types, each key once.
+/// The statuses the issues of a project can have: one list for all issue types. A status with the
+/// same key, name and group in several workflows is listed once; one with the same key and another
+/// name or group is listed for each.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct ProjectStatusesBody {
     /// The statuses, in the order the workflows list them.

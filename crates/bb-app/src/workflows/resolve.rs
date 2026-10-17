@@ -8,9 +8,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
-use bb_core::workflow::starter::SIMPLE;
-use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowUse, find};
+use bb_core::workflow::starter::{SIMPLE, STARTERS};
+use bb_core::workflow::{StatusKey, StoredWorkflow, Workflow, WorkflowContent, WorkflowUse, find};
 
+use super::types::StatusView;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// A workflow that is stored, with its content shared.
@@ -129,6 +130,23 @@ impl WorkflowDirectory {
             .map(|workflow| workflow.id)
     }
 
+    /// The status with this key as a starter workflow or, failing that, another workflow has it:
+    /// what an issue in a status of no workflow it counts under is shown as.
+    pub(crate) fn named(&self, key: &StatusKey) -> Option<StatusView> {
+        STARTERS
+            .iter()
+            .find_map(|starter| starter.content().status(key).map(StatusView::from))
+            .or_else(|| {
+                let mut ids: Vec<&WorkflowId> = self.workflows.keys().collect();
+                ids.sort_unstable();
+                ids.into_iter().find_map(|id| {
+                    self.workflows
+                        .get(id)
+                        .and_then(|stored| stored.content.status(key).map(StatusView::from))
+                })
+            })
+    }
+
     /// Every place a workflow is used at.
     pub(crate) fn uses(&self) -> &[WorkflowUse] {
         &self.uses
@@ -147,20 +165,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(directory) = known {
             return Ok(directory);
         }
-        let uses = self
+        let rows = self
             .store()
-            .workflow_uses()
+            .workflow_directory()
             .await
             .map_err(|error| internal::<S>(&error))?;
-        let mut named: Vec<WorkflowId> = uses.iter().map(|used| used.workflow).collect();
-        named.sort_unstable();
-        named.dedup();
-        let workflows = self
-            .store()
-            .stored_workflows(named)
-            .await
-            .map_err(|error| internal::<S>(&error))?;
-        let directory = Arc::new(WorkflowDirectory::build(uses, workflows));
+        let directory = Arc::new(WorkflowDirectory::build(rows.uses, rows.workflows));
         *self
             .known
             .workflows
@@ -197,5 +207,28 @@ impl<S: AuthStore> Ctx<'_, S> {
         issue_type: Option<IssueTypeId>,
     ) -> Result<Arc<WorkflowContent>, AppError> {
         Ok(self.workflow_directory().await?.in_force(chain, issue_type))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bb_core::issue::StatusGroup;
+
+    use super::*;
+
+    #[test]
+    fn wf_01_an_issue_outside_its_workflow_shows_the_name_a_starter_gives_its_key() {
+        let directory = WorkflowDirectory::build(Vec::new(), Vec::new());
+        let testing = directory.named(&StatusKey::new("testing").unwrap());
+        assert_eq!(
+            testing.map(|each| (each.name, each.group)),
+            Some(("Testing".to_owned(), StatusGroup::InProgress))
+        );
+        // A key that no workflow has is the only one shown as it is.
+        assert!(
+            directory
+                .named(&StatusKey::new("nowhere").unwrap())
+                .is_none()
+        );
     }
 }

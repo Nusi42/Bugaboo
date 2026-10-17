@@ -21,13 +21,14 @@ use bb_core::own_fields::FieldFor;
 use bb_core::version::counted_up;
 use bb_core::workflow::{StatusKey, StoredWorkflow, WorkflowContent, check_name};
 use bb_policy::{Authorized, Evaluation, Permission};
+use jiff::Timestamp;
 use serde_json::json;
 
 use super::strand::{Reach, count_stranded_in, places_of};
 use super::types::{PublishWorkflow, Published, StatusMoveInput, WorkflowSlot};
 use super::write::{summary, what_of};
 use crate::access::Actor;
-use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
+use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::editing::{TextSave, Written};
 use crate::issues::{ChangeIssue, member as issue_member};
 use crate::member::workflow as member;
@@ -158,6 +159,52 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// Carries out the moves of the issues of the dropped statuses inside the change, each with its history.
+/// Says why not when one cannot be made as it was planned: the issue changed since.
+async fn carry_out_moves<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    moving: &[Moving],
+    events: &EventMaker,
+    now: Timestamp,
+) -> Result<Option<ErrorCode>, S::Error> {
+    for each in moving {
+        let Some(stored) = S::issue_in(transaction, each.issue.id).await? else {
+            return Ok(Some(ErrorCode::WorkflowStatusInUse));
+        };
+        if stored.deleted_at.is_some() {
+            // In the trash an issue keeps its status; it starts again when it comes back.
+            continue;
+        }
+        if stored.version != each.issue.version || stored.status != each.issue.status {
+            return Ok(Some(ErrorCode::WorkflowStatusInUse));
+        }
+        let next = Issue {
+            status: each.target.clone(),
+            closed_at: each.group.closed_after(stored.closed_at, now),
+            updated_at: now,
+            ..stored.clone()
+        };
+        if !S::update_issue(transaction, &next, stored.version).await? {
+            return Ok(Some(ErrorCode::WorkflowStatusInUse));
+        }
+        let followed = events
+            .create(
+                entity(RecordKind::Issue, stored.id),
+                vec![
+                    FieldChange {
+                        field: issue_member::STATUS.to_owned(),
+                        before: Some(json!(stored.status.as_str())),
+                        after: Some(json!(each.target.as_str())),
+                    },
+                    counted_up(stored.version),
+                ],
+            )
+            .map_err(|_| S::aborted())?;
+        S::append_follow_up_event(transaction, &followed).await?;
+    }
+    Ok(None)
+}
+
 /// Publishes a workflow under the edit lock the person holds: the statuses, the status changes and
 /// their rules are replaced by what was sent, and the issues of the statuses that are dropped go
 /// where the person said, in the same change.
@@ -235,41 +282,8 @@ pub async fn publish_workflow<S: AuthStore>(
             if !S::replace_workflow(transaction, id, &written_name, &written, version).await? {
                 return Ok(Written::Stale);
             }
-            // The issues of the dropped statuses go where they were told to, each with its history.
-            for each in &moving {
-                let Some(stored) = S::issue_in(transaction, each.issue.id).await? else {
-                    return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
-                };
-                if stored.deleted_at.is_some() {
-                    // In the trash an issue keeps its status; it starts again when it comes back.
-                    continue;
-                }
-                if stored.version != each.issue.version || stored.status != each.issue.status {
-                    return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
-                }
-                let next = Issue {
-                    status: each.target.clone(),
-                    closed_at: each.group.closed_after(stored.closed_at, now),
-                    updated_at: now,
-                    ..stored.clone()
-                };
-                if !S::update_issue(transaction, &next, stored.version).await? {
-                    return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));
-                }
-                let followed = events
-                    .create(
-                        entity(RecordKind::Issue, stored.id),
-                        vec![
-                            FieldChange {
-                                field: issue_member::STATUS.to_owned(),
-                                before: Some(json!(stored.status.as_str())),
-                                after: Some(json!(each.target.as_str())),
-                            },
-                            counted_up(stored.version),
-                        ],
-                    )
-                    .map_err(|_| S::aborted())?;
-                S::append_follow_up_event(transaction, &followed).await?;
+            if let Some(refused) = carry_out_moves::<S>(transaction, &moving, &events, now).await? {
+                return Ok(Written::Refused(refused));
             }
             if count_stranded_in::<S>(transaction, &reach).await? > 0 {
                 return Ok(Written::Refused(ErrorCode::WorkflowStatusInUse));

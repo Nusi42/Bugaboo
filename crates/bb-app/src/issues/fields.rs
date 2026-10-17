@@ -2,8 +2,10 @@
 //! text is, the people have to be members of the project, and every field the person touches has to be one they may
 //! change (the mask of their roles, SEC-04).
 
+use std::collections::BTreeSet;
+
 use bb_core::ErrorCode;
-use bb_core::fields::Field;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::ASSIGNED_PEOPLE_MAX;
 use bb_core::text::TITLE_MAX;
@@ -91,6 +93,18 @@ impl Given {
             .into_iter()
             .zip(self.0)
             .filter_map(|(field, given)| given.then_some(field))
+            .collect()
+    }
+}
+
+impl Given {
+    /// The keys of the fields a request carries, for the judge of a status change: the fields of
+    /// the catalogue that are given and the own fields named by their keys.
+    pub(crate) fn keys<'a>(self, own: impl Iterator<Item = &'a String>) -> BTreeSet<FieldKey> {
+        self.fields()
+            .into_iter()
+            .map(FieldKey::from)
+            .chain(own.filter_map(|key| FieldKey::from_code(key)))
             .collect()
     }
 }

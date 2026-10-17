@@ -10,6 +10,7 @@ use bb_core::workflow::{
 use bb_policy::Masked;
 use serde::Serialize;
 
+use super::resolve::WorkflowDirectory;
 use crate::issues::IssueTypeRef;
 use crate::layouts::InheritedFrom;
 use crate::projects::ProjectRef;
@@ -37,12 +38,21 @@ impl From<&WorkflowStatus> for StatusView {
 
 impl StatusView {
     /// The status an issue is in, as its workflow names it. An issue in a status that its workflow
-    /// does not have (the status was dropped, or the issue moved to a workflow without it) shows
-    /// the key as its name, and the group *Done* while it has a closed date.
+    /// does not have (the status was dropped, or the issue moved to a workflow without it) is
+    /// shown with the name and group that a starter workflow or another workflow gives that key;
+    /// only a key that no workflow has is shown as it is, with the group *Done* while the issue has
+    /// a closed date.
     #[must_use]
-    pub fn of_issue(workflow: &WorkflowContent, issue: &Issue) -> Self {
-        workflow.status(&issue.status).map_or_else(
-            || Self {
+    pub(crate) fn of_issue(
+        workflow: &WorkflowContent,
+        issue: &Issue,
+        others: &WorkflowDirectory,
+    ) -> Self {
+        workflow
+            .status(&issue.status)
+            .map(Self::from)
+            .or_else(|| others.named(&issue.status))
+            .unwrap_or_else(|| Self {
                 key: issue.status.clone(),
                 name: issue.status.to_string(),
                 group: if issue.closed_at.is_some() {
@@ -50,9 +60,7 @@ impl StatusView {
                 } else {
                     StatusGroup::NotStarted
                 },
-            },
-            Self::from,
-        )
+            })
     }
 }
 

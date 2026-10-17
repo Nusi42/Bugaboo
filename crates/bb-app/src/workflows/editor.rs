@@ -204,7 +204,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// The name of the starting workflow, in the language of the catalog.
-fn starting_name() -> String {
+pub(super) fn starting_name() -> String {
     bb_core::workflow::starter::SIMPLE.title()
 }
 

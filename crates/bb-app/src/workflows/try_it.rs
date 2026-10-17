@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::RecordKind;
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::FieldKey;
 use bb_core::workflow::judge::{Verdict, Why};
 use bb_policy::{Authorized, Permission, Place};
 
@@ -63,9 +63,8 @@ pub async fn try_workflow<S: AuthStore>(
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
     let chain = held.chain().to_vec();
-    let workflow = ctx
-        .workflow_in_force(&chain, Some(issue.issue_type))
-        .await?;
+    let directory = ctx.workflow_directory().await?;
+    let workflow = directory.in_force(&chain, Some(issue.issue_type));
     let assigned: Vec<_> = ctx
         .store()
         .assigned_people(issue.id)
@@ -78,8 +77,8 @@ pub async fn try_workflow<S: AuthStore>(
         .load_values(RecordKind::Issue, &[issue.id.into()])
         .await?;
     let own_filled = values.filled_fields(issue.id.into());
-    let may_change_status = theirs.may_change_issue(issue.reported_by)
-        && theirs.field_level_for(Some(issue.issue_type), Field::Status) >= FieldLevel::CanChange;
+    let may_change_status =
+        StatusCheck::may_change_status(&theirs, issue.issue_type, issue.reported_by);
     let check = StatusCheck {
         held: &theirs,
         person: input.person,
@@ -98,7 +97,7 @@ pub async fn try_workflow<S: AuthStore>(
     let hidden_from_trier =
         |field: FieldKey| held.field_level_for(Some(issue.issue_type), field) < FieldLevel::CanSee;
     Ok(held.authorize(Tried {
-        status: StatusView::of_issue(&workflow, &issue),
+        status: StatusView::of_issue(&workflow, &issue, &directory),
         changes: verdicts
             .into_iter()
             .map(|(to, button, verdict)| {

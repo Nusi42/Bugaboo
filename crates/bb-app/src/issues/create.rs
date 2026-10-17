@@ -7,7 +7,6 @@ use bb_core::ErrorCode;
 use std::collections::BTreeSet;
 
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, Priority, StatusGroup};
 use bb_core::project::Project;
@@ -89,18 +88,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Ok((status, group));
         }
         let own_filled = facts.own.filled_after(BTreeSet::new());
-        let given: BTreeSet<FieldKey> = Given::from(facts.input)
-            .fields()
-            .into_iter()
-            .map(FieldKey::from)
-            .chain(
-                facts
-                    .input
-                    .fields
-                    .keys()
-                    .filter_map(|key| FieldKey::from_code(key)),
-            )
-            .collect();
+        let given = Given::from(facts.input).keys(facts.input.fields.keys());
         let check = StatusCheck {
             held: access,
             person: actor.person.id,

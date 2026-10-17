@@ -2,10 +2,9 @@
 //! The closed date follows the status group *Done* (ADR-0027, decision 5).
 
 use bb_core::ErrorCode;
-use std::collections::BTreeSet;
 
 use bb_core::event::{EntityKind, FieldChange, RecordKind};
-use bb_core::fields::{Field, FieldKey};
+use bb_core::fields::Field;
 use bb_core::id::{IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, StatusGroup};
 use bb_core::version::{counted_up, next as next_version};
@@ -130,16 +129,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let own_filled = change
             .own
             .filled_after(change.stored.filled_fields(current.id.into()));
-        let given: BTreeSet<FieldKey> = named(input)
-            .into_iter()
-            .map(FieldKey::from)
-            .chain(
-                input
-                    .fields
-                    .keys()
-                    .filter_map(|key| FieldKey::from_code(key)),
-            )
-            .collect();
+        let given = Given::from(*input).keys(input.fields.keys());
         let check = StatusCheck {
             held,
             person: actor.person.id,

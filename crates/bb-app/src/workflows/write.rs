@@ -15,6 +15,7 @@ use bb_core::workflow::{Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 use bb_policy::{Authorized, Permission};
 use serde_json::{Value, json};
 
+use super::editor::starting_name;
 use super::strand::{Reach, count_stranded_in, places_of};
 use super::types::{CreateWorkflow, DeleteWorkflow, UseWorkflow, WorkflowEditor};
 use crate::auth::{AppError, AuthStore, Ctx, Done, by, entity, internal, set_to};
@@ -98,10 +99,10 @@ pub async fn create_workflow<S: AuthStore>(
     let workflow = Workflow {
         id: WorkflowId::generate(&mut ctx.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?,
-        name: in_force.workflow.as_ref().map_or_else(
-            || bb_core::workflow::starter::SIMPLE.title(),
-            |each| each.name.clone(),
-        ),
+        name: in_force
+            .workflow
+            .as_ref()
+            .map_or_else(starting_name, |each| each.name.clone()),
         version: FIRST_VERSION,
     };
     let place = at.workflow_place();

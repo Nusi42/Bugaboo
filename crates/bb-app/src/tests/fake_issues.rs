@@ -5,11 +5,10 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType};
 use bb_core::readable_id::IssueCode;
-use bb_core::workflow::StatusKey;
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, State, Tx};
-use crate::issues::{InTrash, IssueFound, IssueStore};
+use crate::issues::{InTrash, IssueFound, IssueStore, MovedStatus};
 
 fn types_of(state: &State) -> Vec<IssueType> {
     let mut types = state.issue_types.clone();
@@ -211,8 +210,7 @@ impl IssueStore for FakeStore {
         id: IssueId,
         project: ProjectId,
         code: &IssueCode,
-        status: &StatusKey,
-        closed_at: Option<Timestamp>,
+        moved: &MovedStatus,
         version: i64,
         now: Timestamp,
     ) -> Result<bool, FakeError> {
@@ -225,8 +223,8 @@ impl IssueStore for FakeStore {
         };
         found.project = project;
         found.code = code.clone();
-        found.status.clone_from(status);
-        found.closed_at = closed_at;
+        found.status.clone_from(&moved.status);
+        found.closed_at = moved.closed_at;
         found.updated_at = now;
         found.version += 1;
         Ok(true)

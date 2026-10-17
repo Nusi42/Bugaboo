@@ -5,11 +5,23 @@ use bb_core::issue::Issue;
 use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace, WorkflowUse};
 
 use super::fake::{FakeError, FakeStore, Tx};
-use crate::workflows::WorkflowStore;
+use crate::workflows::{DirectoryRows, WorkflowStore};
 
 impl WorkflowStore for FakeStore {
     async fn workflow_uses_in(tx: &mut Tx) -> Result<Vec<WorkflowUse>, FakeError> {
         Ok(tx.state.workflow_uses.clone())
+    }
+
+    async fn workflow_directory_in(tx: &mut Tx) -> Result<DirectoryRows, FakeError> {
+        let uses = tx.state.workflow_uses.clone();
+        let workflows = tx
+            .state
+            .workflows
+            .iter()
+            .filter(|stored| uses.iter().any(|used| used.workflow == stored.workflow.id))
+            .cloned()
+            .collect();
+        Ok(DirectoryRows { uses, workflows })
     }
 
     async fn workflow_headers_in(tx: &mut Tx) -> Result<Vec<Workflow>, FakeError> {

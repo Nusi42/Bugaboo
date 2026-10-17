@@ -89,7 +89,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let status_seen = mask.can_see(Field::Status);
         let status = if status_seen {
             let workflow = self.line_workflow(maker, issue, held.chain()).await?;
-            Some(StatusView::of_issue(&workflow, issue))
+            let directory = self.workflow_directory().await?;
+            Some(StatusView::of_issue(&workflow, issue, &directory))
         } else {
             None
         };

@@ -24,7 +24,7 @@ pub use editor::{workflow_editor, workflows};
 pub use publish::publish_workflow;
 pub use read::{ProjectStatuses, ProjectStatusesQuery, project_statuses};
 pub use starting::{CreateStartingWorkflows, create_starting_workflows};
-pub use store::WorkflowStore;
+pub use store::{DirectoryRows, WorkflowStore};
 pub use try_it::try_workflow;
 pub use types::*;
 pub use write::{create_workflow, delete_workflow, use_workflow};

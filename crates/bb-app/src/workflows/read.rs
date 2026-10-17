@@ -16,7 +16,9 @@ pub struct ProjectStatusesQuery {
 }
 
 /// The statuses the issues of a project can have: those of the workflow of every issue type that is
-/// not retired, each key once, in the order the workflows list them. What a choice of a status for
+/// not retired, in the order the workflows list them. A status that two workflows share with the
+/// same key, name and group is listed once; one with the same key and another name or group is
+/// listed for each. What a choice of a status for
 /// many issues offers; each issue is still judged by its own workflow.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ProjectStatuses {
@@ -51,8 +53,9 @@ pub async fn project_statuses<S: AuthStore>(
     for issue_type in types.iter().filter(|each| each.retired_at.is_none()) {
         let workflow = ctx.workflow_in_force(&chain, Some(issue_type.id)).await?;
         for status in &workflow.statuses {
-            if statuses.iter().all(|each| each.key != status.key) {
-                statuses.push(StatusView::from(status));
+            let shown = StatusView::from(status);
+            if !statuses.contains(&shown) {
+                statuses.push(shown);
             }
         }
     }

@@ -21,8 +21,9 @@ use crate::auth::AppError;
 use crate::issues::{DeleteIssue, RestoreIssue, change_issue, delete_issue, restore_issue};
 use crate::roles::{CopyRole, SetFieldLevel, copy_role, set_level};
 use crate::workflows::{
-    DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict, TryWorkflowQuery, UseWorkflow,
-    WorkflowsQuery, delete_workflow, try_workflow, use_workflow, workflows,
+    CreateWorkflow, DeleteWorkflow, PublishWorkflow, StatusMoveInput, TriedVerdict,
+    TryWorkflowQuery, UseWorkflow, WorkflowsQuery, create_workflow, delete_workflow, try_workflow,
+    use_workflow, workflows,
 };
 
 const REVIEW: &str = "review";
@@ -377,5 +378,49 @@ async fn sec_06_try_it_names_nothing_of_a_field_the_person_trying_cannot_see() -
             field: None
         }
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn wf_01_the_statuses_of_a_project_are_listed_once_for_the_same_key_name_and_group() -> Outcome
+{
+    let world = World::new().await?;
+    a_project(&world, "ACME").await?;
+    let admin = world.admin.session_token.clone();
+    let listed = async |world: &World| -> Result<Vec<String>, AppError> {
+        Ok(crate::workflows::project_statuses(
+            &world.ctx(),
+            crate::workflows::ProjectStatusesQuery {
+                session_token: world.admin.session_token.clone(),
+                project: "ACME".to_owned(),
+            },
+        )
+        .await?
+        .into_value()
+        .statuses
+        .into_iter()
+        .filter(|each| each.key == key(OPEN))
+        .map(|each| each.name)
+        .collect())
+    };
+    // The starter workflows all call their first status Open: it is listed once.
+    assert_eq!(listed(&world).await?, ["Open"]);
+    // ACME calls it something else for tasks: the same key is listed for each name.
+    let task_type = super::scenarios_issues::a_type(&world).await?;
+    let editor = create_workflow(
+        &world.ctx(),
+        CreateWorkflow {
+            session_token: admin,
+            project: Some("ACME".to_owned()),
+            issue_type: Some(task_type),
+        },
+    )
+    .await?
+    .into_value();
+    published_with(&world, &editor, |sent| {
+        "To do".clone_into(&mut sent.statuses[0].name);
+    })
+    .await?;
+    assert_eq!(listed(&world).await?, ["Open", "To do"]);
     Ok(())
 }

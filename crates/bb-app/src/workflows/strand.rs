@@ -90,12 +90,8 @@ pub(crate) async fn count_stranded_in<S: AuthStore>(
     reach: &Reach,
 ) -> Result<usize, S::Error> {
     let tree = S::project_tree_in(transaction).await?;
-    let uses = S::workflow_uses_in(transaction).await?;
-    let mut ids: Vec<WorkflowId> = uses.iter().map(|used| used.workflow).collect();
-    ids.sort_unstable();
-    ids.dedup();
-    let stored = S::stored_workflows_in(transaction, ids).await?;
-    let directory = WorkflowDirectory::build(uses, stored);
+    let rows = S::workflow_directory_in(transaction).await?;
+    let directory = WorkflowDirectory::build(rows.uses, rows.workflows);
     let issues = S::live_issues_in(
         transaction,
         reach.projects.clone(),

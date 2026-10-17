@@ -6,7 +6,7 @@
 //! of the product: `next_counting_number` raises the stored last number by one in the
 //! transaction, so two writers wait for each other and no number is skipped or given twice.
 
-use bb_app::issues::{InTrash, IssueFound, IssueStore};
+use bb_app::issues::{InTrash, IssueFound, IssueStore, MovedStatus};
 use bb_core::event::DomainEvent;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::{AssignedPerson, Issue, IssueAlias, IssueIcon, IssueType, Priority};
@@ -481,8 +481,7 @@ impl IssueStore for AuthStorage {
         id: IssueId,
         project: ProjectId,
         code: &IssueCode,
-        status: &StatusKey,
-        closed_at: Option<Timestamp>,
+        moved: &MovedStatus,
         version: i64,
         now: Timestamp,
     ) -> Result<bool, StoreError> {
@@ -491,8 +490,8 @@ impl IssueStore for AuthStorage {
             .table(IssueRow::Table)
             .value(IssueRow::Project, project.stored())
             .value(IssueRow::Code, code.as_str())
-            .value(IssueRow::Status, status.as_str())
-            .value(IssueRow::ClosedAt, closed_at.map(to_micros));
+            .value(IssueRow::Status, moved.status.as_str())
+            .value(IssueRow::ClosedAt, moved.closed_at.map(to_micros));
         counting_up(&mut update, now)
             .and_where(Expr::col(IssueRow::Id).eq(id.stored()))
             .and_where(Expr::col(IssueRow::Version).eq(version))

@@ -10,12 +10,25 @@ use bb_core::workflow::{StoredWorkflow, Workflow, WorkflowContent, WorkflowPlace
 use crate::fields::FieldStore;
 use crate::store_macros::{queries, writes};
 
+/// The places workflows are used at and the workflows they name, with everything the judge needs:
+/// the workflows that no place uses are not in it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct DirectoryRows {
+    /// Where each workflow is used.
+    pub uses: Vec<WorkflowUse>,
+    /// The workflows that are used somewhere, with their statuses and status changes.
+    pub workflows: Vec<StoredWorkflow>,
+}
+
 /// What the workflow use cases need from storage.
 pub trait WorkflowStore: FieldStore + 'static {
     queries! {
         /// Where each workflow is used. The lookup of ADR-0031 (`bb_core::workflow::find`) picks
         /// the one that counts.
         fn workflow_uses() -> Vec<WorkflowUse> = workflow_uses_in;
+        /// The places workflows are used at and the workflows they name: two reads, and one when
+        /// no place uses a stored workflow (the statuses are read together with the uses).
+        fn workflow_directory() -> DirectoryRows = workflow_directory_in;
         /// The header of every workflow, by name.
         fn workflow_headers() -> Vec<Workflow> = workflow_headers_in;
         /// One workflow with its statuses and status changes.

@@ -22,6 +22,7 @@ use jiff::Timestamp;
 use serde_json::json;
 
 use super::ids::{code_plan_in, new_code_in};
+use super::store::MovedStatus;
 use super::types::{IssueView, MoveIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
@@ -306,8 +307,10 @@ impl MoveWrite {
             self.id,
             self.to,
             &code,
-            &self.status,
-            self.closed_at,
+            &MovedStatus {
+                status: self.status.clone(),
+                closed_at: self.closed_at,
+            },
             self.version,
             now,
         )

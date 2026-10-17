@@ -25,6 +25,16 @@ pub enum InTrash {
     Counted,
 }
 
+/// The status an issue has after a move into another project, and the closed date that goes with
+/// it.
+#[derive(Clone, Debug)]
+pub struct MovedStatus {
+    /// The status.
+    pub status: StatusKey,
+    /// When the issue was closed, if it is in a status of the group *Done*.
+    pub closed_at: Option<Timestamp>,
+}
+
 /// An issue found by a readable ID: the issue, and whether the code was an old one of it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IssueFound {
@@ -92,8 +102,7 @@ pub trait IssueStore: ProjectStore + 'static {
             id: IssueId,
             project: ProjectId,
             code: &IssueCode,
-            status: &StatusKey,
-            closed_at: Option<Timestamp>,
+            moved: &MovedStatus,
             version: i64,
             now: Timestamp
         ) -> bool;

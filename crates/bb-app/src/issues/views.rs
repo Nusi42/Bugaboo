@@ -5,7 +5,6 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
 use bb_core::event::RecordKind;
-use bb_core::fields::Field;
 use bb_core::id::{EntityId, IssueId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::Issue;
 use bb_core::people_kinds::PeopleKind;
@@ -105,10 +104,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         assigned_to: &[UserId],
     ) -> Result<Vec<StatusChangeView>, AppError> {
         let held = &views.viewer;
-        let mask = held.field_mask_for(Some(issue.issue_type));
         if issue.deleted_at.is_some()
-            || !held.may_change_issue(issue.reported_by)
-            || !mask.can_change(Field::Status)
+            || !StatusCheck::may_change_status(held, issue.issue_type, issue.reported_by)
         {
             return Ok(Vec::new());
         }
@@ -192,7 +189,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         // A value the viewer is not shown (an issue they do not see) is no value.
         own_fields.0.retain(|_, value| !value.is_null());
         let workflow = self.view_workflow(views, issue.issue_type).await?;
-        let status = StatusView::of_issue(&workflow, issue);
+        let directory = self.workflow_directory().await?;
+        let status = StatusView::of_issue(&workflow, issue, &directory);
         let status_changes = self
             .view_status_changes(views, &workflow, issue, assigned_to)
             .await?;

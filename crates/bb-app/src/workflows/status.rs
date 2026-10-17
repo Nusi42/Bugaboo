@@ -6,7 +6,8 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use bb_core::ErrorCode;
-use bb_core::fields::FieldKey;
+use bb_core::access::FieldLevel;
+use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{FieldId, GroupId, IssueTypeId, ProjectId, UserId};
 use bb_core::issue::StatusGroup;
 use bb_core::workflow::judge::{Because, Changer, Verdict, judge};
@@ -39,6 +40,20 @@ pub(crate) struct StatusCheck<'a> {
     pub(crate) own_filled: &'a BTreeSet<FieldId>,
     /// The fields the request carries.
     pub(crate) given: &'a BTreeSet<FieldKey>,
+}
+
+impl StatusCheck<'_> {
+    /// Whether the person may change the status of an issue at all: they may change the issue
+    /// (*Change issues*, or *Change own issues* on an issue they reported) and their level for
+    /// *Status* is *Can change*. The one answer for the issue page and for *Try it*.
+    pub(crate) fn may_change_status(
+        held: &Evaluation,
+        issue_type: IssueTypeId,
+        reported_by: UserId,
+    ) -> bool {
+        held.may_change_issue(reported_by)
+            && held.field_level_for(Some(issue_type), Field::Status) >= FieldLevel::CanChange
+    }
 }
 
 /// A status change that the judge allows.
@@ -109,11 +124,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Verdict, AppError> {
         let groups = self.groups_of_person(check.person).await?;
         let roles: Vec<_> = check.held.roles().iter().map(|role| role.id).collect();
+        // Who is assigned counts for *Who can do it* only for a person who is shown the field:
+        // the buttons must not tell what the field would not.
+        let sees_assigned = check
+            .held
+            .field_level_for(Some(check.issue_type), Field::AssignedTo)
+            >= FieldLevel::CanSee;
         let changer = Changer {
             may_change_status: check.may_change_status,
             roles: &roles,
             groups: &groups,
-            assigned: check.assigned.contains(&check.person),
+            assigned: sees_assigned && check.assigned.contains(&check.person),
             reporter: check.reported_by == check.person,
         };
         let facts = IssueFacts {

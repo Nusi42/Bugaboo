@@ -4,7 +4,7 @@
 //! A workflow is saved as a whole: its statuses and status changes are deleted and written again in
 //! the one transaction that checks the version, so a reader never sees half a workflow.
 
-use bb_app::workflows::WorkflowStore;
+use bb_app::workflows::{DirectoryRows, WorkflowStore};
 use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::workflow::{
@@ -284,6 +284,93 @@ impl WorkflowStore for AuthStorage {
             .collect()
     }
 
+    async fn workflow_directory_in(
+        transaction: &mut Transaction,
+    ) -> Result<DirectoryRows, StoreError> {
+        // The statuses come with the header of their workflow and with every use of it, in one
+        // read; the status changes are the second, and nothing more is read when no place uses a
+        // stored workflow.
+        let mut select = Query::select();
+        select
+            .columns([
+                (WorkflowStatusRow::Table, WorkflowStatusRow::Workflow),
+                (WorkflowStatusRow::Table, WorkflowStatusRow::Key),
+                (WorkflowStatusRow::Table, WorkflowStatusRow::Name),
+                (WorkflowStatusRow::Table, WorkflowStatusRow::StatusGroup),
+                (WorkflowStatusRow::Table, WorkflowStatusRow::Position),
+            ])
+            .expr_as(
+                Expr::col((WorkflowRow::Table, WorkflowRow::Name)),
+                HeaderOf::Name,
+            )
+            .expr_as(
+                Expr::col((WorkflowRow::Table, WorkflowRow::Version)),
+                HeaderOf::Version,
+            )
+            .columns([
+                (WorkflowUseRow::Table, WorkflowUseRow::Project),
+                (WorkflowUseRow::Table, WorkflowUseRow::IssueType),
+            ])
+            .from(WorkflowStatusRow::Table)
+            .inner_join(
+                WorkflowRow::Table,
+                Expr::col((WorkflowStatusRow::Table, WorkflowStatusRow::Workflow))
+                    .equals((WorkflowRow::Table, WorkflowRow::Id)),
+            )
+            .inner_join(
+                WorkflowUseRow::Table,
+                Expr::col((WorkflowStatusRow::Table, WorkflowStatusRow::Workflow))
+                    .equals((WorkflowUseRow::Table, WorkflowUseRow::Workflow)),
+            )
+            .order_by(
+                (WorkflowStatusRow::Table, WorkflowStatusRow::Position),
+                Order::Asc,
+            );
+        let rows = transaction.fetch_all(&select).await?;
+        let mut uses: Vec<WorkflowUse> = Vec::new();
+        let mut headers: Vec<Workflow> = Vec::new();
+        let mut statuses: Vec<StoredStatus> = Vec::new();
+        for row in &rows {
+            let status = read_status(row)?;
+            let place_use = WorkflowUse {
+                project: row.optional_id(WorkflowUseRow::Project)?,
+                issue_type: row.optional_id(WorkflowUseRow::IssueType)?,
+                workflow: status.workflow,
+            };
+            if !uses.contains(&place_use) {
+                uses.push(place_use);
+            }
+            if !headers.iter().any(|header| header.id == status.workflow) {
+                headers.push(Workflow {
+                    id: status.workflow,
+                    name: row.get(HeaderOf::Name)?,
+                    version: row.get(HeaderOf::Version)?,
+                });
+            }
+            // A status shows once for each use of its workflow.
+            if !statuses
+                .iter()
+                .any(|each| each.workflow == status.workflow && each.key == status.key)
+            {
+                statuses.push(status);
+            }
+        }
+        if headers.is_empty() {
+            return Ok(DirectoryRows::default());
+        }
+        headers.sort_by_key(|header| header.id);
+        let wanted: Vec<Vec<u8>> = headers.iter().map(|header| header.id.stored()).collect();
+        let changes = read_changes(transaction, wanted).await?;
+        let workflows = headers
+            .into_iter()
+            .map(|workflow| {
+                let content = content_of(workflow.id, &statuses, &changes);
+                StoredWorkflow { workflow, content }
+            })
+            .collect();
+        Ok(DirectoryRows { uses, workflows })
+    }
+
     async fn workflow_headers_in(
         transaction: &mut Transaction,
     ) -> Result<Vec<Workflow>, StoreError> {
@@ -505,3 +592,7 @@ impl WorkflowStore for AuthStorage {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/workflows.rs"]
+mod tests;

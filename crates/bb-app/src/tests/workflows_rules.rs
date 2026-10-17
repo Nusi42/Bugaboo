@@ -463,3 +463,35 @@ async fn sec_06_a_refusal_of_a_status_change_names_no_field_the_person_cannot_se
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn wf_03_the_person_assigned_counts_only_for_who_sees_who_is_assigned() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let sighted = member(
+        &world,
+        "bob@example.test",
+        StartingRole::TeamMember,
+        project,
+    )
+    .await?;
+    let blind = person_who_cannot_see_who_is_assigned(&world, project).await?;
+    let only_assigned = StatusRules {
+        who: WhoCan {
+            assigned: true,
+            ..WhoCan::default()
+        },
+        ..StatusRules::default()
+    };
+    with_rules(&world, "ACME", &[(OPEN, IN_PROGRESS, only_assigned)]).await?;
+    let id = an_issue(&world, project).await?;
+    let admin = world.admin.session_token.clone();
+    let mut assign_both = change(&admin, &id.to_string(), 1, OPEN)?;
+    assign_both.status = None;
+    assign_both.assigned_to = Some(vec![sighted.person.id, blind.person.id]);
+    change_issue(&world.ctx(), assign_both).await?;
+    // Both are assigned; the buttons of the one who is not shown the field do not tell it.
+    assert!(offers(&world, &sighted.session_token, id, IN_PROGRESS).await?);
+    assert!(!offers(&world, &blind.session_token, id, IN_PROGRESS).await?);
+    Ok(())
+}

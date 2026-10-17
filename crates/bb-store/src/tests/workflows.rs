@@ -8,8 +8,8 @@ use bb_app::workflows::WorkflowStore;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{IdSource, WorkflowId};
 use bb_core::version::FIRST_VERSION;
-use bb_core::workflow::starter::{BUG, DONE, OPEN, SIMPLE, TESTING};
-use bb_core::workflow::{Condition, StatusKey, Test, Workflow, WorkflowPlace, WorkflowUse, find};
+use bb_core::workflow::starter::{BUG, SIMPLE};
+use bb_core::workflow::{Condition, Test, Workflow, WorkflowPlace, WorkflowUse, find};
 use bb_testing::{TestResult, each_database};
 
 use super::*;
@@ -30,10 +30,6 @@ fn header(source: &mut impl IdSource, name: &str) -> Workflow {
         name: name.to_owned(),
         version: FIRST_VERSION,
     }
-}
-
-fn key(text: &str) -> StatusKey {
-    StatusKey::new(text).unwrap()
 }
 
 #[tokio::test]
@@ -148,6 +144,22 @@ async fn wf_01_a_project_finds_its_workflow_like_a_layout() -> TestResult {
         assert_eq!(uses.len(), 2);
         assert_eq!(found(&uses, Some(bug)), Some(own.id));
         assert_eq!(found(&uses, None), Some(simple.id));
+        // The directory brings the same uses and the workflows they name, with their content.
+        let rows = storage.workflow_directory().await?;
+        assert_eq!(rows.uses.len(), 2);
+        let mut named: Vec<(String, usize)> = rows
+            .workflows
+            .iter()
+            .map(|each| (each.workflow.name.clone(), each.content.statuses.len()))
+            .collect();
+        named.sort();
+        assert_eq!(
+            named,
+            [
+                ("Own".to_owned(), BUG.content().statuses.len()),
+                ("Simple".to_owned(), SIMPLE.content().statuses.len())
+            ]
+        );
 
         // Saying the place uses another workflow replaces the use of that place only.
         let place = WorkflowPlace {
@@ -157,12 +169,12 @@ async fn wf_01_a_project_finds_its_workflow_like_a_layout() -> TestResult {
         let a = simple.clone();
         changed(storage, &mut source, move |tx| {
             Box::pin(async move {
-                let used = WorkflowUse {
+                let again = WorkflowUse {
                     project: place.project,
                     issue_type: place.issue_type,
                     workflow: a.id,
                 };
-                AuthStorage::put_workflow_use(tx, &used).await
+                AuthStorage::put_workflow_use(tx, &again).await
             })
         })
         .await?;
@@ -189,50 +201,44 @@ async fn wf_01_a_project_finds_its_workflow_like_a_layout() -> TestResult {
 }
 
 #[tokio::test]
-async fn wf_02_the_issues_in_the_statuses_a_workflow_drops_are_found() -> TestResult {
-    each_database("wf_02_store_issues_in_statuses", async |db| {
+async fn wf_02_the_live_issues_of_some_projects_and_types_are_found() -> TestResult {
+    each_database("wf_02_store_live_issues", async |db| {
         let fixture = fixture(db).await?;
         let storage = &fixture.storage;
         let mut source = ids();
         let world = world(storage, &mut source, 4).await;
-        let mut in_testing = world.issues[1].clone();
-        in_testing.status = key(TESTING);
-        let mut also = world.issues[2].clone();
-        also.status = key(TESTING);
-        let mut done = world.issues[3].clone();
-        done.status = key(DONE);
-        let rows = [in_testing.clone(), also.clone(), done];
-        changed(storage, &mut source, move |tx| {
-            Box::pin(async move {
-                for issue in &rows {
-                    assert!(AuthStorage::update_issue(tx, issue, FIRST_VERSION).await?);
-                }
-                Ok(())
-            })
-        })
-        .await?;
-        let found = storage.issues_in_statuses(vec![key(TESTING)]).await?;
-        let mut found: Vec<_> = found.iter().map(|issue| issue.id).collect();
-        found.sort();
-        let mut wanted = vec![in_testing.id, also.id];
-        wanted.sort();
-        assert_eq!(found, wanted);
-        assert!(storage.issues_in_statuses(Vec::new()).await?.is_empty());
-        assert_eq!(storage.issues_in_statuses(vec![key(OPEN)]).await?.len(), 1);
+        let all = storage.live_issues(None, None).await?;
+        assert_eq!(all.len(), 4);
+        // The issues of a project, and of an issue type, and of neither.
+        let project = world.project;
+        let in_project = storage.live_issues(Some(vec![project]), None).await?;
+        assert_eq!(in_project.len(), 4);
+        assert!(
+            storage
+                .live_issues(Some(Vec::new()), None)
+                .await?
+                .is_empty()
+        );
+        let kind = world.issues[0].issue_type;
+        let of_type = storage.live_issues(None, Some(vec![kind])).await?;
+        assert!(of_type.iter().all(|issue| issue.issue_type == kind));
+        assert!(
+            storage
+                .live_issues(None, Some(Vec::new()))
+                .await?
+                .is_empty()
+        );
 
         // An issue in the trash is no part of it.
-        let mut trashed = world.issues[0].clone();
-        trashed.status = key(TESTING);
-        trashed.deleted_at = Some(at(9));
+        let trashed = world.issues[0].id;
         changed(storage, &mut source, move |tx| {
             Box::pin(async move {
-                assert!(AuthStorage::update_issue(tx, &trashed, FIRST_VERSION).await?);
+                assert!(AuthStorage::set_issue_deleted(tx, trashed, Some(at(9)), at(9)).await?);
                 Ok(())
             })
         })
         .await?;
-        let found = storage.issues_in_statuses(vec![key(TESTING)]).await?;
-        assert_eq!(found.len(), 2);
+        assert_eq!(storage.live_issues(None, None).await?.len(), 3);
         Ok(())
     })
     .await

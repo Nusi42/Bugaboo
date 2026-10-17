@@ -245,6 +245,11 @@ mod tests {
         Ok((issues, project))
     }
 
+    // The rows of the "M3 database" are written by hand, up to migration 14. That is the same as a
+    // database made by M3: the schema of M3 is the schema these migrations build and nothing else
+    // (a database is its migrations, checksums included), and the rows are the ones M3 writes for
+    // an issue: the status as one of the words *open*, *in-progress* and *done*, and a closed date
+    // only for *done*. The migration under test reads nothing but those columns.
     #[tokio::test]
     async fn wf_01_an_m3_database_keeps_every_status_after_the_upgrade() -> TestResult {
         each_database("wf_01_m3_upgrade", async |db| {
