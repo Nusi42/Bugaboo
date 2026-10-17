@@ -2,6 +2,8 @@
 //! keys, and the labels of passkeys. Defined once, so every use case that takes such a text keeps
 //! it the same way. Also the alphabet of the codes that people read out (Crockford's base 32).
 
+use unicode_properties::{GeneralCategory, UnicodeGeneralCategory as _};
+
 /// The longest name of a person, group, role, project or access key, in characters.
 pub const NAME_MAX: usize = 100;
 
@@ -100,21 +102,15 @@ pub fn has_invisible_format(text: &str) -> bool {
     text.chars().any(is_invisible_format)
 }
 
-/// Whether the character is one of those [`has_invisible_format`] looks for.
-const fn is_invisible_format(c: char) -> bool {
-    matches!(
-        c,
-        '\u{00AD}'
-            | '\u{061C}'
-            | '\u{180E}'
-            | '\u{200B}'
-            | '\u{200E}'
-            | '\u{200F}'
-            | '\u{202A}'..='\u{202E}'
-            | '\u{2060}'..='\u{2064}'
-            | '\u{2066}'..='\u{206F}'
-            | '\u{FEFF}'
-    )
+/// Whether a character takes no room on the screen or turns the text round: it is of the Unicode
+/// category *Format* (Cf), except the zero-width joiner and non-joiner, which emoji sequences and
+/// several scripts need. The category is the one of the crate `unicode-properties`, of the Unicode
+/// version it names (`UNICODE_VERSION`), so a new version of the crate brings the characters that
+/// a new version of Unicode adds. The one function for every cleaner of text: names, e-mails and
+/// the names of files.
+#[must_use]
+pub fn is_invisible_format(c: char) -> bool {
+    c.general_category() == GeneralCategory::Format && !matches!(c, '\u{200C}' | '\u{200D}')
 }
 
 /// The longest subject of an e-mail, in characters.
@@ -233,6 +229,25 @@ mod tests {
             assert!(has_invisible_format(found), "{found:?}");
         }
         for plain in ["tag", "Größe", "👨\u{200D}👩", "می\u{200C}خواهم", "日本語"] {
+            assert!(!has_invisible_format(plain), "{plain:?}");
+        }
+    }
+
+    #[test]
+    fn the_format_characters_of_later_versions_of_unicode_are_found_too() {
+        // Not in any list of the older kind: the Arabic pound mark above (Unicode 14), the
+        // Egyptian hieroglyph format controls (Unicode 12 and later), the Arabic number signs.
+        for found in [
+            "a\u{0890}b",
+            "a\u{13430}b",
+            "a\u{1343F}b",
+            "a\u{0600}b",
+            "a\u{110BD}b",
+        ] {
+            assert!(has_invisible_format(found), "{found:?}");
+        }
+        // The one category is the one that decides: letters, marks, spaces and symbols are not it.
+        for plain in ["a\u{0301}b", "a b", "a\u{3000}b", "a\u{2764}\u{FE0F}b"] {
             assert!(!has_invisible_format(plain), "{plain:?}");
         }
     }

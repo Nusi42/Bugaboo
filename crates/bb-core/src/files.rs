@@ -12,6 +12,7 @@ use crate::id::{AttachmentId, CommentId, IssueId, UploadId, UserId};
 use crate::personal::Entity;
 use crate::security_log::Digest;
 use crate::settings::FILES_MAX_MEGABYTES;
+use crate::text::is_invisible_format;
 
 /// The size of one megabyte in the limits of files: the limit of a project is a whole number of
 /// them.
@@ -153,18 +154,6 @@ impl PreviewKind {
     }
 }
 
-/// Whether a character is of the Unicode category *Format* (Cf): it draws nothing and can turn the
-/// order of the letters around (U+202E) or hide in a name (U+200B), so a name that has one could
-/// show another extension than the one it has.
-fn is_format_character(c: char) -> bool {
-    matches!(c,
-        '\u{00AD}' | '\u{0600}'..='\u{0605}' | '\u{061C}' | '\u{06DD}' | '\u{070F}' | '\u{08E2}'
-        | '\u{180E}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}'
-        | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206F}' | '\u{FEFF}' | '\u{FFF9}'..='\u{FFFB}'
-        | '\u{110BD}' | '\u{110CD}' | '\u{1BCA0}'..='\u{1BCA3}' | '\u{1D173}'..='\u{1D17A}'
-        | '\u{E0001}' | '\u{E0020}'..='\u{E007F}')
-}
-
 /// The name of a file as it is kept: the last part of what the browser sent (a path is cut off,
 /// both `/` and `\` count), without control or format characters, without the dots and spaces at
 /// its end (Windows drops them, so `run.bat.` is `run.bat` there), at most [`NAME_MAX_CHARS`]
@@ -174,7 +163,7 @@ pub fn clean_file_name(sent: &str) -> Option<String> {
     let last = sent.rsplit(['/', '\\']).next().unwrap_or(sent);
     if last
         .chars()
-        .any(|c| c.is_control() || is_format_character(c))
+        .any(|c| c.is_control() || is_invisible_format(c))
     {
         return None;
     }
@@ -397,6 +386,12 @@ mod tests {
         assert_eq!(clean_file_name("photo\u{202E}gpj.exe"), None);
         assert_eq!(clean_file_name("zero\u{200B}width.txt"), None);
         assert_eq!(clean_file_name("\u{FEFF}bom.txt"), None);
+        // The format characters that later versions of Unicode added are refused the same way.
+        assert_eq!(clean_file_name("run\u{0890}.txt"), None);
+        assert_eq!(clean_file_name("glyph\u{13430}.txt"), None);
+        // The joiners that emoji and several scripts need stay allowed.
+        let family = "family \u{1F468}\u{200D}\u{1F469}.png";
+        assert_eq!(clean_file_name(family).as_deref(), Some(family));
         // Letters of other scripts are fine.
         let german = "Bericht \u{00FC}ber \u{65E5}\u{672C}.pdf";
         assert_eq!(clean_file_name(german).as_deref(), Some(german));

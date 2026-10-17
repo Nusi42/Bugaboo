@@ -20,6 +20,9 @@ bb-macros = { path = "../bb-macros" }
 jiff = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+unicode-properties = { version = "0.1.4", default-features = false, features = [
+  "general-category",
+] }
 utoipa = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["std"] }
 
