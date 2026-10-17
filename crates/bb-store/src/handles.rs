@@ -12,7 +12,7 @@ use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
 use crate::auth::{person_columns, read_person};
-use crate::db::{StoredId, Transaction, to_micros};
+use crate::db::{LockClass, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::{PersonHandleRow, PersonRow};
 
@@ -70,13 +70,23 @@ impl HandleStore for AuthStorage {
             .transpose()
     }
 
-    async fn handle_changed_at(&self, person: UserId) -> Result<Option<Timestamp>, StoreError> {
+    async fn handle_changed_in(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<Option<Timestamp>, StoreError> {
+        // The lock is named by the person: four random bytes of the ID.
+        let bytes = person.to_bytes();
+        let mut tail = [0_u8; 4];
+        tail.copy_from_slice(&bytes[12..]);
+        transaction
+            .advisory_lock(LockClass::Handles, i32::from_be_bytes(tail))
+            .await?;
         let mut select = Query::select();
         select
             .columns([PersonHandleRow::ChangedAt, PersonHandleRow::Current])
             .from(PersonHandleRow::Table)
             .and_where(Expr::col(PersonHandleRow::Person).eq(person.stored()));
-        let rows = self.database().fetch_all(&select).await?;
+        let rows = transaction.fetch_all(&select).await?;
         // One row is the handle the account was given; a second one is a change.
         if rows.len() < 2 {
             return Ok(None);

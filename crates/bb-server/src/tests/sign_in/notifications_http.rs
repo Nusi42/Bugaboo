@@ -236,6 +236,49 @@ async fn sec_06_a_notification_and_an_e_mail_leave_out_a_field_the_role_of_the_r
 }
 
 #[tokio::test]
+async fn m3_f70_of_two_changes_of_a_handle_at_the_same_moment_one_is_kept_on_both_databases()
+-> TestResult {
+    each_database("m3_f70_handle_parallel", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, _ada) = Site::start(&rig, &app).await?;
+        site.person(StartingRole::TeamMember, "bob").await?;
+        for round in 0..5 {
+            // Two sessions of one person change the handle at the same moment, once in each
+            // period: one change is made, the other is told it came too soon.
+            let mut one = Browser::signed_in_as(&app, "bob@example.test").await?;
+            let mut two = Browser::signed_in_as(&app, "bob@example.test").await?;
+            let (first, second) = tokio::join!(
+                one.send(
+                    "PUT",
+                    "/api/v1/me/handle",
+                    Some(json!({"handle": format!("first.{round}")}))
+                ),
+                two.send(
+                    "PUT",
+                    "/api/v1/me/handle",
+                    Some(json!({"handle": format!("second.{round}")}))
+                )
+            );
+            let (first, second) = (first?, second?);
+            let codes = [first.code().to_owned(), second.code().to_owned()];
+            let made = [first.status, second.status]
+                .iter()
+                .filter(|status| **status == StatusCode::OK)
+                .count();
+            assert_eq!(made, 1, "round {round}: {codes:?}");
+            assert!(
+                codes.contains(&"handle.changed_lately".to_owned()),
+                "round {round}: {codes:?}"
+            );
+            rig.clock
+                .advance(bb_core::handle::CHANGE_EVERY_DAYS * SECONDS_PER_DAY + 1);
+        }
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ntf_01_the_reader_resumes_after_a_restart_without_doubles() -> TestResult {
     each_database("ntf_01_restart", async |db| {
         let (rig, app) = rig_and_app(db).await?;

@@ -22,6 +22,7 @@ use crate::auth::{
     AccountStore, AppError, AuthStore, Ctx, Stops, by, change_failed, entity, internal,
 };
 use crate::member;
+use crate::projects::Why;
 use crate::store_macros::{reads, writes};
 use bb_core::event::{Actor as EventActor, FieldChange};
 
@@ -38,9 +39,6 @@ pub trait HandleStore: AccountStore + 'static {
         /// The person who has this handle now. A handle a person gave up names nobody in a new
         /// text.
         fn person_with_current_handle(handle: &str) -> Option<UserId>;
-        /// When the person last changed their handle; none while they still have the one they were
-        /// given with the account.
-        fn handle_changed_at(person: UserId) -> Option<Timestamp>;
         /// People who have no handle yet, at most `limit`: the people made before handles existed.
         fn people_without_handle(limit: u64) -> Vec<Person>;
         /// The people whose handle now starts with `start`, with it, by handle, at most `limit`.
@@ -48,6 +46,11 @@ pub trait HandleStore: AccountStore + 'static {
     }
 
     writes! {
+        /// When the person last changed their handle, as the change that needs to know sees it:
+        /// none while they still have the one they were given with the account. It takes a lock
+        /// on the handles of the person that lasts to the end of the change, so two changes of one
+        /// person at the same moment cannot both pass the rule of how often a handle changes.
+        fn handle_changed_in(person: UserId) -> Option<Timestamp>;
         /// Whether somebody has this handle, or had it (a former handle is not free), as the change
         /// that needs a free one sees it.
         fn handle_taken_in(handle: &str) -> bool;
@@ -159,16 +162,6 @@ pub async fn change_handle<S: AuthStore>(
     if before.as_deref() == Some(handle.as_str()) {
         return Ok(held.authorize(MyHandle { handle }));
     }
-    let lately = ctx
-        .store()
-        .handle_changed_at(person)
-        .await
-        .map_err(failed)?
-        .and_then(|changed| changed.checked_add(change_every()).ok())
-        .is_some_and(|again| again > ctx.now());
-    if lately {
-        return Err(ErrorCode::HandleChangedLately.into());
-    }
     let event = ctx.event(
         by(person),
         entity(RecordKind::Person, person),
@@ -179,16 +172,27 @@ pub async fn change_handle<S: AuthStore>(
         }],
     )?;
     let (now, put) = (ctx.now(), handle.clone());
+    let why = Why::default();
+    let stopped = why.clone();
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
+                // Judged inside the change, under a lock: two changes of one person at the same
+                // moment cannot both pass.
+                let lately = S::handle_changed_in(transaction, person)
+                    .await?
+                    .and_then(|changed| changed.checked_add(change_every()).ok())
+                    .is_some_and(|again| again > now);
+                if lately {
+                    return Err(stopped.stop::<S>(ErrorCode::HandleChangedLately));
+                }
                 // Somebody may have taken it since it was looked at: the store refuses the same
                 // handle twice.
                 S::put_handle(transaction, person, &put, now).await
             })
         })
         .await
-        .map_err(|error| change_failed::<S>(&error, Stops::both(ErrorCode::NameTaken)))?;
+        .map_err(|error| why.answer::<S>(&error, ErrorCode::NameTaken))?;
     Ok(held.authorize(MyHandle { handle }))
 }
 

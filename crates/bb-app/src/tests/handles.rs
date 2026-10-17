@@ -309,3 +309,17 @@ async fn m3_f70_the_people_made_before_handles_get_theirs_when_the_server_starts
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn m3_f70_of_two_changes_of_one_handle_at_the_same_moment_one_is_kept() -> Outcome {
+    let crew = Crew::new().await?;
+    let bob = crew.bob.session_token.clone();
+    let (first, second) = tokio::join!(change(&crew, &bob, "bobby"), change(&crew, &bob, "robert"));
+    let results = [first, second];
+    assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
+    assert!(results.iter().any(|result| matches!(
+        result,
+        Err(AppError::Refused(ErrorCode::HandleChangedLately))
+    )));
+    Ok(())
+}
