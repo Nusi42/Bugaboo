@@ -2,7 +2,11 @@
 //! who may not decide what roles see takes a field off the form, saves, and puts it back, and the
 //! field is shown to the roles it was shown to before, not to every role. Both databases.
 
+use std::str::FromStr as _;
+
 use bb_app::access::Permission;
+use bb_core::event::{EntityRef, RecordKind};
+use bb_core::id::LayoutId;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 
@@ -86,6 +90,22 @@ async fn cfg_01_a_field_put_back_keeps_its_roles() -> TestResult {
             json!([{"field": "description", "roles": []}]),
         )
         .await?;
+        // The trail of the layout shows what the field keeps while it is off the form.
+        let record = EntityRef {
+            kind: RecordKind::Layout.into(),
+            id: LayoutId::from_str(&layout)?.into(),
+        };
+        let events = rig.database.events_about(&record, 100).await?;
+        let kept: Vec<&Value> = events
+            .iter()
+            .flat_map(|event| event.changes.iter())
+            .filter(|change| change.field == "off")
+            .filter_map(|change| change.after.as_ref())
+            .filter(|after| after.as_array().is_some_and(|fields| !fields.is_empty()))
+            .collect();
+        assert_eq!(kept.len(), 1, "{events:?}");
+        assert_eq!(kept[0][0]["field"], "priority");
+        assert_eq!(kept[0][0]["roles"], json!([&team]));
         let off = editor_of(&mut ada, "ACME").await?;
         assert!(
             roles_of(&off, "priority").is_err(),

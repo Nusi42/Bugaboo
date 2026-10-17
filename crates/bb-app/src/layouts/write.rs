@@ -42,6 +42,21 @@ fn summary(content: &LayoutContent) -> Value {
     )
 }
 
+/// The fields taken off the form with the roles they keep, as an event writes them: so the trail
+/// shows what a field put back will be shown to, as it shows the sections.
+fn off_summary(content: &LayoutContent) -> Value {
+    json!(
+        content
+            .off
+            .iter()
+            .map(|placed| json!({
+                "field": placed.field.code(),
+                "roles": placed.roles.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            }))
+            .collect::<Vec<_>>()
+    )
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// The place a stored layout is set for, with what is needed to judge and to show it.
     async fn layout_at(&self, layout: &Layout) -> Result<Where, AppError> {
@@ -345,6 +360,11 @@ pub async fn save_layout<S: AuthStore>(
                 before: Some(summary(&stored.content)),
                 after: Some(summary(&content)),
             },
+            FieldChange {
+                field: member::OFF.to_owned(),
+                before: Some(off_summary(&stored.content)),
+                after: Some(off_summary(&content)),
+            },
             counted_up(input.version),
         ],
     )?;
@@ -410,6 +430,11 @@ pub async fn delete_layout<S: AuthStore>(
             FieldChange {
                 field: member::SECTIONS.to_owned(),
                 before: Some(summary(&stored.content)),
+                after: None,
+            },
+            FieldChange {
+                field: member::OFF.to_owned(),
+                before: Some(off_summary(&stored.content)),
                 after: None,
             },
             counted_up(version),

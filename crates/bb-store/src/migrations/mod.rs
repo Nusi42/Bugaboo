@@ -8,6 +8,10 @@
 //! transaction that also takes the write lock (SQLite) or an advisory lock (PostgreSQL) and reads
 //! the record of applied migrations again inside it, so two processes that start at the same
 //! moment cannot both apply the same migration.
+//!
+//! Migrations that are given out to work packages built at the same time must not depend on each
+//! other: a database can get them in either order (a database that has number 19 may get 18 later,
+//! and the other way round), so each one builds only on the migrations before the numbers given out.
 
 use bb_core::migration::MigrationRecord;
 use bb_core::security_log::Digest;

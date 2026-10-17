@@ -108,16 +108,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         what: &EditWhat,
     ) -> AppError {
         let found = async {
-            let Some(lock) = self.live_lock(what).await? else {
-                return Ok(None);
-            };
             let viewer = self.evaluate(person, place).await?;
-            Ok::<_, AppError>(Some(self.editor_ref(&viewer, lock.holder).await?))
+            // The same lookup as the heartbeat makes, with no notes: who holds the lock now.
+            self.why_lost(&viewer, what, &[]).await
         }
         .await;
         match found {
-            Ok(Some(by)) => AppError::TakenOver { by },
-            Ok(None) | Err(_) => AppError::Refused(ErrorCode::EditTakenOver),
+            Ok(LockStatus::TakenOver { by }) => AppError::TakenOver { by },
+            Ok(_) => AppError::Refused(ErrorCode::EditTakenOver),
+            Err(error) => {
+                tracing::warn!(
+                    cause = %error,
+                    "who took the editing over could not be found; the plain refusal is sent"
+                );
+                AppError::Refused(ErrorCode::EditTakenOver)
+            }
         }
     }
 

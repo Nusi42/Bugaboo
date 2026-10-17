@@ -224,8 +224,11 @@ async fn cfg_01_a_database_of_migration_17_takes_the_table_of_fields_taken_off_a
     each_database("cfg_01_upgrade_19", async |db| {
         let old = Database::connect(db.url()).await?;
         old.migrate_up_to(17, Timestamp::UNIX_EPOCH).await?;
-        // 18 is the migration of another package; this one is applied after it, in its place.
-        assert_eq!(old.migrate(Timestamp::UNIX_EPOCH).await?, vec![19]);
+        // The migrations after 17 are applied, this one among them and as the last (the numbers
+        // between belong to other packages, and there may be none yet).
+        let applied = old.migrate(Timestamp::UNIX_EPOCH).await?;
+        assert_eq!(applied.last(), Some(&19));
+        assert!(applied.iter().all(|version| *version > 17), "{applied:?}");
         assert_eq!(
             old.applied_migrations()
                 .await?
