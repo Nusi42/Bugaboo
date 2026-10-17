@@ -66,6 +66,13 @@ pub trait AttachmentStore: CommentStore + 'static {
     }
 
     writes! {
+        /// Puts the finishes of the files of one issue one after the other: takes the lock of the
+        /// issue, which is held until the end of the change, so the count that follows is the
+        /// count of whoever got the lock first and two finishes cannot both take the last place.
+        fn lock_issue_files(issue: IssueId) -> ();
+        /// How many attachments an issue has as this change sees them, the ones in the trash
+        /// included.
+        fn attachment_count_in_change(issue: IssueId) -> u64;
         /// Ends an upload inside the change that makes its attachment; `false` when it was not
         /// there any more.
         fn delete_upload(id: UploadId) -> bool;

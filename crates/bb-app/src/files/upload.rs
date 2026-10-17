@@ -98,6 +98,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         found
     }
 
+    /// Ends an upload whose finish was refused after its bytes were put into the store: the
+    /// upload goes, and so do the bytes of its file when no file of that content is stored (the
+    /// file is held by the caller, so nobody adds one meanwhile).
+    async fn end_refused_finish(&self, upload: &Upload, hash: bb_core::security_log::Digest) {
+        self.drop_upload(upload.id).await;
+        let kept = self.store().stored_file(hash).await;
+        if matches!(kept, Ok(None))
+            && let Err(error) = self.files().delete(hash).await
+        {
+            tracing::warn!(cause = %error, "the bytes of a refused file could not be removed");
+        }
+    }
+
     /// The upload of the actor. Somebody else's upload does not exist for them.
     async fn own_upload(&self, actor: &Actor, id: UploadId) -> Result<Upload, AppError> {
         let found = self
@@ -358,7 +371,11 @@ pub async fn finish_upload<S: AuthStore>(
     let actor = ctx.actor(&input.session_token).await?;
     let upload = ctx.own_upload(&actor, input.upload).await?;
     let (issue, held) = ctx.upload_target_or_end(&actor, &upload).await?;
-    ctx.room_for_one_more_file(issue.id).await?;
+    if let Err(error) = ctx.room_for_one_more_file(issue.id).await {
+        // An issue that is full ends the upload: it would only go on counting as an open one.
+        ctx.drop_upload(upload.id).await;
+        return Err(error);
+    }
     let inspected = ctx.inspect_to_finish(&upload, issue.project).await?;
     // The file is held from the moment its bytes are put into the store until its attachment is
     // there, so the daily clean-up cannot take the bytes of a file that nothing points to yet.
@@ -403,17 +420,27 @@ pub async fn finish_upload<S: AuthStore>(
         changes,
     )?;
     let (stored_attachment, stored_file, upload_id) = (attachment.clone(), file.clone(), upload.id);
+    let issue_id = issue.id;
     let (queue, payload) = (
         kind_name(kind::PREVIEW_FILE)?,
         super::jobs::preview_payload(attachment.id),
     );
     let why = Why::default();
     let stopped = why.clone();
-    ctx.store()
+    let made = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 if !S::delete_upload(transaction, upload_id).await? {
                     return Err(stopped.stop::<S>(ErrorCode::NotFound));
+                }
+                // The limit of the issue is judged again here, under the lock of the issue, so two
+                // finishes at the same moment cannot both take the last place.
+                S::lock_issue_files(transaction, issue_id).await?;
+                if S::attachment_count_in_change(transaction, issue_id).await?
+                    >= ATTACHMENTS_PER_ISSUE_MAX as u64
+                {
+                    return Err(stopped.stop::<S>(ErrorCode::LimitReached));
                 }
                 S::insert_stored_file(transaction, &stored_file).await?;
                 S::insert_attachment(transaction, &stored_attachment).await?;
@@ -427,7 +454,15 @@ pub async fn finish_upload<S: AuthStore>(
             })
         })
         .await
-        .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
+        .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound));
+    if let Err(error) = made {
+        // The last place was taken while this upload was being finished: the upload ends, and the
+        // bytes of its file go too when nothing else points to them.
+        if matches!(error, AppError::Refused(ErrorCode::LimitReached)) {
+            ctx.end_refused_finish(&upload, file.hash).await;
+        }
+        return Err(error);
+    }
     let stored = ctx
         .store()
         .stored_file(file.hash)

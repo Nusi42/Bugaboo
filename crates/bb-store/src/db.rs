@@ -420,6 +420,9 @@ pub(crate) enum LockClass {
     /// Starting uploads (key: four bytes of the person's ID): two uploads of one person started at
     /// the same moment cannot both pass the limits of what a person may have open.
     Uploads = 7,
+    /// Finishing an upload of an issue (key: four bytes of the issue's ID): two finishes at the same
+    /// moment cannot both take the last place for a file of the issue.
+    IssueFiles = 8,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through

@@ -5,9 +5,10 @@
 use bb_app::files::AttachmentStore as _;
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::files::{
-    Attachment, MediaType, PreviewStatus, StoredFile, TRASH_KEPT, UNFINISHED_KEPT, Upload,
+    ATTACHMENTS_PER_ISSUE_MAX, Attachment, MediaType, PreviewStatus, StoredFile, TRASH_KEPT,
+    UNFINISHED_KEPT, Upload,
 };
-use bb_core::id::{AttachmentId, IdSource, UploadId};
+use bb_core::id::{AttachmentId, IdSource, IssueId, UploadId};
 use bb_core::security_log::Digest;
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
@@ -221,6 +222,72 @@ async fn att_01_open_uploads_are_counted_and_old_ones_are_found_by_their_last_pa
         let left = storage.uploads_untouched_since(day_later, 10).await?;
         assert!(left.is_empty());
         assert!(storage.try_insert_upload(&upload(), 2, 20_000).await?);
+        Ok(())
+    })
+    .await
+}
+
+/// The finish of an upload as the change of the store sees it: takes the lock of the issue, counts,
+/// and adds the file only if there is room. Answers whether it did.
+fn finishing(
+    issue: IssueId,
+    new: Attachment,
+) -> impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<bool, StoreError>> + Send {
+    move |tx| {
+        Box::pin(async move {
+            AuthStorage::lock_issue_files(tx, issue).await?;
+            let held = AuthStorage::attachment_count_in_change(tx, issue).await?;
+            if held >= ATTACHMENTS_PER_ISSUE_MAX as u64 {
+                return Ok(false);
+            }
+            AuthStorage::insert_attachment(tx, &new).await?;
+            Ok(true)
+        })
+    }
+}
+
+#[tokio::test]
+async fn att_03_two_finishes_at_the_last_place_of_an_issue_are_put_one_after_the_other()
+-> TestResult {
+    each_database("att_03_last_place", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let png = file(7);
+        let issue = world.issues[0].id;
+        // The issue holds one file less than it may.
+        let held: Vec<Attachment> = (0..ATTACHMENTS_PER_ISSUE_MAX - 1)
+            .map(|_| attachment(&mut source, &world, 0, &png))
+            .collect();
+        let stored = png.clone();
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move {
+                AuthStorage::insert_stored_file(tx, &stored).await?;
+                for each in &held {
+                    AuthStorage::insert_attachment(tx, each).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
+
+        // Two finishes at the same moment: each takes the lock of the issue, counts, and adds its
+        // file only if there is room.
+        let (first_event, second_event) = (event(&mut source, 5), event(&mut source, 5));
+        let (first, second) = (
+            attachment(&mut source, &world, 0, &png),
+            attachment(&mut source, &world, 0, &png),
+        );
+        let (one, other) = tokio::join!(
+            ChangeStore::record_change(storage, &first_event, finishing(issue, first)),
+            ChangeStore::record_change(storage, &second_event, finishing(issue, second)),
+        );
+        assert_eq!([one?, other?].iter().filter(|took| **took).count(), 1);
+        assert_eq!(
+            storage.attachment_count_of_issue(issue).await?,
+            ATTACHMENTS_PER_ISSUE_MAX as u64
+        );
         Ok(())
     })
     .await

@@ -378,6 +378,37 @@ impl AttachmentStore for AuthStorage {
         Ok(self.database().execute(&delete).await? > 0)
     }
 
+    async fn lock_issue_files(
+        transaction: &mut Transaction,
+        issue: IssueId,
+    ) -> Result<(), StoreError> {
+        // The lock is named by the issue: four random bytes of its ID.
+        let mut tail = [0_u8; 4];
+        tail.copy_from_slice(&issue.to_bytes()[12..]);
+        transaction
+            .advisory_lock(LockClass::IssueFiles, i32::from_be_bytes(tail))
+            .await
+    }
+
+    async fn attachment_count_in_change(
+        transaction: &mut Transaction,
+        issue: IssueId,
+    ) -> Result<u64, StoreError> {
+        let mut select = Query::select();
+        select
+            .expr_as(
+                Expr::col(AttachmentRow::Id).count(),
+                crate::schema::Computed::Total,
+            )
+            .from(AttachmentRow::Table)
+            .and_where(Expr::col(AttachmentRow::Issue).eq(issue.stored()));
+        match transaction.fetch_optional(&select).await? {
+            Some(row) => u64::try_from(row.get::<i64>(crate::schema::Computed::Total)?)
+                .map_err(|_| StoreError::Corrupt("a count")),
+            None => Ok(0),
+        }
+    }
+
     async fn delete_upload(
         transaction: &mut Transaction,
         id: UploadId,

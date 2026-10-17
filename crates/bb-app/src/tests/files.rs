@@ -642,3 +642,50 @@ async fn att_04_finishing_a_file_that_is_stored_already_answers_like_a_new_one()
     assert_eq!(world.files.previews_made(), 1, "the preview was reused");
     Ok(())
 }
+
+#[tokio::test]
+async fn att_03_two_finishes_at_the_last_place_of_an_issue_do_not_both_pass() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    // Two uploads are complete and wait to be finished while the issue has room for one more file.
+    let first = an_upload(&world, issue, "first.txt", A_FILE).await?;
+    let second = an_upload(&world, issue, "second.txt", b"Another file.").await?;
+    fill_with_files(&world, issue, ATTACHMENTS_PER_ISSUE_MAX - 1, 0)?;
+    // Both are finished at the same moment: the limit is judged again inside the change, so one
+    // of them gets the place and the other is refused.
+    let (one, other) = (world.ctx(), world.ctx());
+    let (one, other) = tokio::join!(
+        finish_upload(
+            &one,
+            FinishUpload {
+                session_token: token(&world),
+                upload: first,
+            },
+        ),
+        finish_upload(
+            &other,
+            FinishUpload {
+                session_token: token(&world),
+                upload: second,
+            },
+        ),
+    );
+    let refused = [one, other]
+        .into_iter()
+        .filter(|answer| matches!(answer, Err(AppError::Refused(ErrorCode::LimitReached))))
+        .count();
+    assert_eq!(refused, 1);
+    let held = world
+        .store
+        .attachment_count_of_issue(issue)
+        .await
+        .map_err(text)?;
+    assert_eq!(held, ATTACHMENTS_PER_ISSUE_MAX as u64);
+    // The one that was refused is ended: its row is gone, so it no longer counts as an open upload,
+    // and the bytes of its file are gone too, as nothing points to them.
+    assert!(world.store.lock().state.uploads.is_empty());
+    assert_eq!(world.files.upload_count(), 0);
+    assert_eq!(world.files.file_count(), 1);
+    Ok(())
+}

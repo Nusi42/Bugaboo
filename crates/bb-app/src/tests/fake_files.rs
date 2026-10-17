@@ -77,13 +77,17 @@ impl AttachmentStore for FakeStore {
     }
 
     async fn attachment_count_of_issue(&self, issue: IssueId) -> Result<u64, FakeError> {
-        Ok(self.read(|state| {
+        let count = self.read(|state| {
             state
                 .attachments
                 .iter()
                 .filter(|attachment| attachment.issue == issue)
                 .count() as u64
-        }))
+        });
+        // A real store takes time to answer: whoever else is working gets its turn before the
+        // answer is used.
+        tokio::task::yield_now().await;
+        Ok(count)
     }
 
     async fn try_insert_upload(
@@ -216,6 +220,20 @@ impl AttachmentStore for FakeStore {
             shared.state.stored_files.retain(|file| file.hash != hash);
         }
         Ok(shared.state.stored_files.len() < before)
+    }
+
+    async fn lock_issue_files(_tx: &mut Tx, _issue: IssueId) -> Result<(), FakeError> {
+        // A change of the in-memory store runs alone.
+        Ok(())
+    }
+
+    async fn attachment_count_in_change(tx: &mut Tx, issue: IssueId) -> Result<u64, FakeError> {
+        Ok(tx
+            .state
+            .attachments
+            .iter()
+            .filter(|attachment| attachment.issue == issue)
+            .count() as u64)
     }
 
     async fn delete_upload(tx: &mut Tx, id: UploadId) -> Result<bool, FakeError> {
