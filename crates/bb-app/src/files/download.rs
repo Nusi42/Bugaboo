@@ -10,7 +10,6 @@ use bb_core::ErrorCode;
 use bb_core::files::{
     DownloadLink, LinkTarget, PREVIEW_MEDIA_TYPE, PreviewState, UNKNOWN_MEDIA_TYPE,
 };
-use bb_policy::Authorized;
 
 use super::types::{DownloadQuery, FileDownload};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -25,7 +24,9 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// Opens a file or its preview for the person who holds the link.
+/// Opens a file or its preview for the person who holds the link. A file has no fields to hide, so
+/// the answer is the file itself: whether the person may have it was judged here, against the issue
+/// and the comment, with the link only naming what is asked for.
 ///
 /// # Errors
 /// `resource.not_found` for a link that is not ours, ran out, is for another person, names an
@@ -34,7 +35,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 pub async fn download<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: DownloadQuery,
-) -> Result<Authorized<FileDownload>, AppError> {
+) -> Result<FileDownload, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let link = ctx
         .open_link(&input.link)
@@ -43,7 +44,7 @@ pub async fn download<S: AuthStore>(
         // The same work as for a link that is good, so the answers cannot be told apart.
         return Err(ctx.not_found_like_a_hidden_issue(&actor).await);
     };
-    let (attachment, _, held) = ctx
+    let (attachment, _, _) = ctx
         .visible_attachment(&actor, link.attachment, false)
         .await?;
     let file = ctx
@@ -72,9 +73,9 @@ pub async fn download<S: AuthStore>(
         LinkTarget::Preview => PREVIEW_MEDIA_TYPE,
     }
     .to_owned();
-    Ok(held.authorize(FileDownload {
+    Ok(FileDownload {
         name: attachment.name,
         media_type,
         body,
-    }))
+    })
 }

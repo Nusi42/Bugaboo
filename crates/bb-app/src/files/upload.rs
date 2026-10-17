@@ -13,12 +13,13 @@ use bb_core::files::{
     ATTACHMENTS_PER_ISSUE_MAX, Attachment, OPEN_UPLOADS_MAX, PART_BYTES, PreviewKind, PreviewState,
     StoredFile, Upload, clean_file_name,
 };
-use bb_core::id::{AttachmentId, CommentId, JobId, UploadId};
+use bb_core::id::{AttachmentId, CommentId, JobId, ProjectId, UploadId};
 use bb_core::version::FIRST_VERSION;
 use bb_policy::{Authorized, Evaluation, Permission};
+use jiff::Timestamp;
 use serde_json::json;
 
-use super::file_store::PartError;
+use super::file_store::{Inspected, PartError};
 use super::member;
 use super::types::{
     AttachmentView, CancelUploadQuery, FinishUpload, SendPartQuery, StartUploadQuery,
@@ -254,6 +255,61 @@ pub async fn cancel_upload<S: AuthStore>(
     Ok(crate::auth::Done)
 }
 
+/// The row of a file that has just been put together: it gets a preview if it is a kind that has
+/// one, and has none otherwise.
+fn stored_file_of(inspected: Inspected, now: Timestamp) -> StoredFile {
+    let preview = if PreviewKind::of_media_type(&inspected.sniffed.media_type).is_some() {
+        PreviewState::Pending
+    } else {
+        PreviewState::Without
+    };
+    StoredFile {
+        hash: inspected.hash,
+        size: i64::try_from(inspected.size).unwrap_or(i64::MAX),
+        media_type: inspected.sniffed.media_type,
+        preview,
+        created_at: now,
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Reads the whole upload and judges it: all bytes must be there, within the limit of the
+    /// project, of a type the organization accepts. An upload that fails the limit or the type is
+    /// thrown away.
+    async fn inspect_to_finish(
+        &self,
+        upload: &Upload,
+        project: ProjectId,
+    ) -> Result<Inspected, AppError> {
+        let received = self
+            .files()
+            .received(upload.id)
+            .await
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        if received != bytes_of(upload.size) {
+            return Err(ErrorCode::FileIncomplete.into());
+        }
+        let limits = self.file_limits(project).await?;
+        let inspected = self
+            .files()
+            .inspect_upload(upload.id)
+            .await
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        if inspected.size != bytes_of(upload.size) {
+            return Err(ErrorCode::FileIncomplete.into());
+        }
+        if inspected.size > limits.max_bytes {
+            self.drop_upload(upload.id).await;
+            return Err(ErrorCode::FileTooBig.into());
+        }
+        if limits.blocks(&upload.name, Some(&inspected.sniffed)) {
+            self.drop_upload(upload.id).await;
+            return Err(ErrorCode::FileTypeBlocked.into());
+        }
+        Ok(inspected)
+    }
+}
+
 /// Finishes an upload: the whole file is read once, its real type is judged, and the file becomes
 /// an attachment of the issue or the comment. A file that is stored already is not stored again.
 ///
@@ -269,31 +325,7 @@ pub async fn finish_upload<S: AuthStore>(
     let (issue, held) = ctx
         .upload_target(&actor, &upload.issue.to_string(), upload.comment)
         .await?;
-    let received = ctx
-        .files()
-        .received(upload.id)
-        .await
-        .map_err(|error| AppError::Internal(error.to_string()))?;
-    if received != bytes_of(upload.size) {
-        return Err(ErrorCode::FileIncomplete.into());
-    }
-    let limits = ctx.file_limits(issue.project).await?;
-    let inspected = ctx
-        .files()
-        .inspect_upload(upload.id)
-        .await
-        .map_err(|error| AppError::Internal(error.to_string()))?;
-    if inspected.size != bytes_of(upload.size) {
-        return Err(ErrorCode::FileIncomplete.into());
-    }
-    if inspected.size > limits.max_bytes {
-        ctx.drop_upload(upload.id).await;
-        return Err(ErrorCode::FileTooBig.into());
-    }
-    if limits.blocks(&upload.name, Some(&inspected.sniffed)) {
-        ctx.drop_upload(upload.id).await;
-        return Err(ErrorCode::FileTypeBlocked.into());
-    }
+    let inspected = ctx.inspect_to_finish(&upload, issue.project).await?;
     // The bytes go into the store first: an attachment always has its file.
     ctx.files()
         .keep_upload(upload.id, inspected.hash)
@@ -314,18 +346,7 @@ pub async fn finish_upload<S: AuthStore>(
         version: FIRST_VERSION,
     };
     let job = JobId::generate(&mut ids).map_err(|error| AppError::Internal(error.to_string()))?;
-    let preview = if PreviewKind::of_media_type(&inspected.sniffed.media_type).is_some() {
-        PreviewState::Pending
-    } else {
-        PreviewState::Without
-    };
-    let file = StoredFile {
-        hash: inspected.hash,
-        size: i64::try_from(inspected.size).unwrap_or(i64::MAX),
-        media_type: inspected.sniffed.media_type,
-        preview,
-        created_at: now,
-    };
+    let file = stored_file_of(inspected, now);
     let mut changes = vec![
         set_to(member::ISSUE, json!(issue.id.to_string())),
         set_to(member::NAME, json!(attachment.name)),

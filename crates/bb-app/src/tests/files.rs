@@ -36,8 +36,11 @@ async fn set(world: &World, scope: SettingsScope, key: &str, value: SettingValue
     Ok(())
 }
 
-fn refused(error: AppError, code: ErrorCode) {
-    assert_eq!(error.code(), Some(code), "{error}");
+fn refused<T: std::fmt::Debug>(answer: Result<T, AppError>, code: ErrorCode) {
+    match answer {
+        Err(AppError::Refused(found)) => assert_eq!(found, code),
+        other => panic!("not refused with {code}: {other:?}"),
+    }
 }
 
 async fn remove(world: &World, attachment: AttachmentId) -> Result<crate::auth::Done, AppError> {
@@ -72,7 +75,6 @@ async fn open(world: &World, link: String) -> Result<FileDownload, AppError> {
         },
     )
     .await
-    .map(bb_policy::Authorized::into_value)
 }
 
 async fn start(world: &World, issue: &str, name: &str, size: u64) -> Result<(), AppError> {
@@ -180,7 +182,7 @@ async fn att_01_an_interrupted_upload_goes_on_from_the_last_part() -> Outcome {
     assert_eq!(state.received, head.len() as u64);
     // The first part again is refused, and the file is not finished yet.
     refused(
-        send_part(&world.ctx(), part(0, head)).await.unwrap_err(),
+        send_part(&world.ctx(), part(0, head)).await,
         ErrorCode::FileWrongPart,
     );
     let finish = || FinishUpload {
@@ -188,7 +190,7 @@ async fn att_01_an_interrupted_upload_goes_on_from_the_last_part() -> Outcome {
         upload: started.id,
     };
     refused(
-        finish_upload(&world.ctx(), finish()).await.unwrap_err(),
+        finish_upload(&world.ctx(), finish()).await,
         ErrorCode::FileIncomplete,
     );
     send_part(&world.ctx(), part(state.received, tail)).await?;
@@ -206,9 +208,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> Outcom
     let default = FILES_MAX_MEGABYTES.default_value().map_err(text)?;
     assert_eq!(default, 25);
     refused(
-        start(&world, &issue, "big.bin", 26 * MEGABYTE)
-            .await
-            .unwrap_err(),
+        start(&world, &issue, "big.bin", 26 * MEGABYTE).await,
         ErrorCode::FileTooBig,
     );
     start(&world, &issue, "fits.bin", 25 * MEGABYTE).await?;
@@ -230,9 +230,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> Outcom
     )
     .await?;
     refused(
-        start(&world, &issue, "big.bin", 3 * MEGABYTE)
-            .await
-            .unwrap_err(),
+        start(&world, &issue, "big.bin", 3 * MEGABYTE).await,
         ErrorCode::FileTooBig,
     );
     // A project never gets more than the organization.
@@ -251,9 +249,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> Outcom
     )
     .await?;
     refused(
-        start(&world, &issue, "big.bin", 2 * MEGABYTE)
-            .await
-            .unwrap_err(),
+        start(&world, &issue, "big.bin", 2 * MEGABYTE).await,
         ErrorCode::FileTooBig,
     );
     // Only the two that fit started an upload; nothing was stored for the refused ones.
@@ -276,9 +272,7 @@ async fn att_03_a_blocked_type_is_refused() -> Outcome {
     .await?;
     // By its name, before anything is sent.
     refused(
-        start(&world, &issue.to_string(), "Setup.EXE", 10)
-            .await
-            .unwrap_err(),
+        start(&world, &issue.to_string(), "Setup.EXE", 10).await,
         ErrorCode::FileTypeBlocked,
     );
     // By its content, as soon as the first part shows it, whatever the name says.
@@ -303,8 +297,7 @@ async fn att_03_a_blocked_type_is_refused() -> Outcome {
             bytes: b"MZ this is a program".to_vec(),
         },
     )
-    .await
-    .unwrap_err();
+    .await;
     refused(refusal, ErrorCode::FileTypeBlocked);
     assert_eq!(world.files.upload_count(), 0, "the upload is gone");
     assert!(world.store.lock().state.attachments.is_empty());
@@ -340,13 +333,13 @@ async fn att_07_a_link_works_for_five_minutes_and_a_trashed_file_opens_nothing()
 
     // A token that is no link, or a link with a letter changed, opens nothing.
     refused(
-        open(&world, "nonsense".to_owned()).await.unwrap_err(),
+        open(&world, "nonsense".to_owned()).await,
         ErrorCode::NotFound,
     );
     let mut changed = link.clone().into_bytes();
     changed[10] = if changed[10] == b'A' { b'B' } else { b'A' };
     refused(
-        open(&world, String::from_utf8(changed)?).await.unwrap_err(),
+        open(&world, String::from_utf8(changed)?).await,
         ErrorCode::NotFound,
     );
 
@@ -354,16 +347,13 @@ async fn att_07_a_link_works_for_five_minutes_and_a_trashed_file_opens_nothing()
     world.clock.advance(5 * 60 - 1);
     open(&world, link.clone()).await?;
     world.clock.advance(1);
-    refused(
-        open(&world, link.clone()).await.unwrap_err(),
-        ErrorCode::NotFound,
-    );
+    refused(open(&world, link.clone()).await, ErrorCode::NotFound);
     let fresh = list(&world, issue).await?.items[0].download_link.clone();
     open(&world, fresh.clone()).await?;
 
     // A file in the trash opens nothing, with a link that was good a moment ago.
     remove(&world, attachment).await?;
-    refused(open(&world, fresh).await.unwrap_err(), ErrorCode::NotFound);
+    refused(open(&world, fresh).await, ErrorCode::NotFound);
     assert!(list(&world, issue).await?.items.is_empty());
     Ok(())
 }

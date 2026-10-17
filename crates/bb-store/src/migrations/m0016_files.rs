@@ -12,26 +12,36 @@ use super::{Step, id_column};
 use crate::schema::{AttachmentRow, CommentRow, IssueRow, StoredFileRow, UploadRow};
 
 pub(super) fn steps() -> Vec<Step> {
+    let mut steps = stored_files();
+    steps.extend(attachments());
+    steps.extend(uploads());
+    steps
+}
+
+fn stored_files() -> Vec<Step> {
+    vec![Step::Table(
+        Table::create()
+            .table(StoredFileRow::Table)
+            .col(
+                ColumnDef::new(StoredFileRow::Hash)
+                    .blob()
+                    .not_null()
+                    .primary_key(),
+            )
+            .col(ColumnDef::new(StoredFileRow::Size).big_integer().not_null())
+            .col(ColumnDef::new(StoredFileRow::MediaType).text().not_null())
+            .col(ColumnDef::new(StoredFileRow::Preview).text().not_null())
+            .col(
+                ColumnDef::new(StoredFileRow::CreatedAt)
+                    .big_integer()
+                    .not_null(),
+            )
+            .to_owned(),
+    )]
+}
+
+fn attachments() -> Vec<Step> {
     vec![
-        Step::Table(
-            Table::create()
-                .table(StoredFileRow::Table)
-                .col(
-                    ColumnDef::new(StoredFileRow::Hash)
-                        .blob()
-                        .not_null()
-                        .primary_key(),
-                )
-                .col(ColumnDef::new(StoredFileRow::Size).big_integer().not_null())
-                .col(ColumnDef::new(StoredFileRow::MediaType).text().not_null())
-                .col(ColumnDef::new(StoredFileRow::Preview).text().not_null())
-                .col(
-                    ColumnDef::new(StoredFileRow::CreatedAt)
-                        .big_integer()
-                        .not_null(),
-                )
-                .to_owned(),
-        ),
         Step::Table(
             Table::create()
                 .table(AttachmentRow::Table)
@@ -88,6 +98,11 @@ pub(super) fn steps() -> Vec<Step> {
                 .col(AttachmentRow::File)
                 .to_owned(),
         ),
+    ]
+}
+
+fn uploads() -> Vec<Step> {
+    vec![
         Step::Table(
             Table::create()
                 .table(UploadRow::Table)

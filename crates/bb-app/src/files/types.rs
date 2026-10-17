@@ -191,5 +191,3 @@ impl std::fmt::Debug for FileDownload {
             .finish_non_exhaustive()
     }
 }
-
-impl Masked for FileDownload {}

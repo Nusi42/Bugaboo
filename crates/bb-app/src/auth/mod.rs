@@ -478,7 +478,7 @@ use_cases! {
     /// Takes an attachment out of the trash.
     restore_attachment(RestoreAttachment) -> Authorized<AttachmentView>;
     /// Opens a file or its preview through a signed link.
-    download(DownloadQuery) -> Authorized<FileDownload>;
+    download(DownloadQuery) -> FileDownload;
     /// Shows the history of an issue.
     history(HistoryQuery) -> Authorized<HistoryPage>;
     /// Follows an issue.
