@@ -41,8 +41,7 @@ export function LongTextBlock({
   words,
 }: LongTextBlockProps) {
   const [comparing, setComparing] = useState(false);
-  const editing = description.phase.kind !== "reading";
-  const showCompare = comparing && editing;
+  const showCompare = comparing && description.phase.kind !== "reading";
   return (
     <section {...partOf(part.issueSection)} aria-labelledby={sectionId(issue, which)}>
       <DescriptionHead
@@ -58,6 +57,7 @@ export function LongTextBlock({
         comparing={showCompare}
         onCompare={() => {
           setComparing(true);
+          description.reread();
         }}
       />
       {showCompare ? (
@@ -73,10 +73,10 @@ export function LongTextBlock({
           }}
         />
       ) : null}
-      {editing ? (
-        <DescriptionEditor description={description} words={words} />
-      ) : (
+      {description.phase.kind === "reading" ? (
         <DescriptionReading html={html} filled={filled} empty={words.empty} />
+      ) : (
+        <DescriptionEditor description={description} words={words} />
       )}
     </section>
   );

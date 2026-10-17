@@ -1,15 +1,22 @@
 import { t } from "@bugaboo/messages";
 import { type Locator, type Page } from "@playwright/test";
 
+import { type ApiSession } from "./support/api.ts";
 import { ada, bob, createAdmin } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { expectHome, openFromMenu, signIn, signOut } from "./support/flows.ts";
+import { invitationPath, type Mailbox, startMailbox, turnMailOn } from "./support/mailbox.ts";
 import { paths } from "../src/shared/paths.ts";
+
+/** The administrator, signed in through the API, and the mail server the Bugaboo server sends to. */
+let admin: ApiSession;
+let mailbox: Mailbox;
 
 test.use({
   preparation: {
     run: async (server) => {
-      await (await createAdmin(server)).dispose();
+      admin = await createAdmin(server);
+      mailbox = await startMailbox();
     },
   },
 });
@@ -31,27 +38,25 @@ async function openPolicy(page: Page): Promise<Locator> {
 }
 
 /** Fills in the sign-up page and sends it. */
-async function sendSignUp(
-  page: Page,
-  name: string,
-  email: string,
-  password: string,
-): Promise<void> {
-  await page.getByLabel(t("field.name")).fill(name);
+async function sendSignUp(page: Page, email: string): Promise<void> {
   await page.getByLabel(t("field.email")).fill(email);
-  await page.getByLabel(t("field.password")).fill(password);
   await page.getByRole("button", { name: t("sign-up.submit") }).click();
 }
 
-test("auth_06 signing up is off by default: the page says so and the sign-in page has no link", async ({
-  page,
-}) => {
+/** The sign-in page has no link to sign up, and the page of signing up says that it is closed. */
+async function expectSignUpClosed(page: Page): Promise<void> {
   await page.goto(paths.signIn);
   await expect(page.getByRole("heading", { level: 1, name: t("sign-in.title") })).toBeVisible();
   await expect(page.getByRole("link", { name: t("sign-in.create-account") })).toHaveCount(0);
   await page.goto(paths.signUp);
   await expect(page.getByText(t("sign-up.closed"))).toBeVisible();
   await expect(page.getByLabel(t("field.email"))).toHaveCount(0);
+}
+
+test("auth_06 signing up is off by default: the page says so and the sign-in page has no link", async ({
+  page,
+}) => {
+  await expectSignUpClosed(page);
 });
 
 test("m1_f46 an administrator switches it on and is warned before it is open to everybody", async ({
@@ -75,18 +80,49 @@ test("m1_f46 an administrator switches it on and is warned before it is open to 
   await signOut(page);
 });
 
-test("auth_06 people of the listed domain make their own account, and others are refused", async ({
+test("auth_06 signing up needs e-mail: with it off the sign-in page has no link and the page says so", async ({
   page,
 }) => {
+  // Signing up is on, for the domain, and no mail server is entered.
+  await expectSignUpClosed(page);
+});
+
+test("auth_06 people of the listed domain get a link by e-mail and make their own account with it", async ({
+  page,
+}) => {
+  await turnMailOn(admin, mailbox);
   await page.goto(paths.signIn);
   await page.getByRole("link", { name: t("sign-in.create-account") }).click();
   await expect(page.getByRole("heading", { level: 1, name: t("sign-up.title") })).toBeVisible();
 
-  await sendSignUp(page, "Mallory", "mallory@elsewhere.test", "Maple-Harvest-Quartz-2291");
+  // Another domain is refused, and nothing is sent.
+  await sendSignUp(page, "mallory@elsewhere.test");
   await expect(page.getByRole("alert")).toHaveText(t("error.auth.sign-up-refused"));
 
-  await sendSignUp(page, bob.name, bob.email, bob.password);
+  // The listed domain is told to look at its mail; nothing is made yet.
+  await sendSignUp(page, bob.email);
+  await expect(page.getByText(t("sign-up.sent"))).toBeVisible();
+  const mail = await mailbox.waitFor(bob.email);
+  expect(mailbox.mails().some((sent) => sent.to === "mallory@elsewhere.test")).toBe(false);
+
+  // The link of the e-mail is the invitation page: the person chooses a name and a password there.
+  await page.goto(invitationPath(mail));
+  await expect(page.getByRole("heading", { level: 1, name: t("invitation.title") })).toBeVisible();
+  await page.getByLabel(t("field.name")).fill(bob.name);
+  await page.getByLabel(t("field.password")).fill(bob.password);
+  await page.getByRole("button", { name: t("invitation.submit") }).click();
   await expectHome(page, bob);
+  await signOut(page);
+});
+
+test("auth_06 an address that has an account is told the same, and gets no link", async ({
+  page,
+}) => {
+  await page.goto(paths.signUp);
+  await sendSignUp(page, ada.email);
+  await expect(page.getByText(t("sign-up.sent"))).toBeVisible();
+  const mail = await mailbox.waitFor(ada.email);
+  expect(mail.text).not.toContain("/invitation#");
 });
 
 test("auth_06 an administrator can switch it off again", async ({ page }) => {
