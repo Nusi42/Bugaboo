@@ -52,6 +52,7 @@ export {
   handleChangeEveryDays,
   handleMax,
   notificationKeepDays,
+  notificationsAtOnceMax,
   notificationSettings,
   signUpLinkHours,
   signUpResendMinutes,

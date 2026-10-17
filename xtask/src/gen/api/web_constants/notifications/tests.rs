@@ -30,7 +30,9 @@ fn sources() -> Vec<Source> {
     vec![
         (
             NOTIFICATION_SOURCE.to_owned(),
-            format!("pub const KEEP_DAYS: i64 = 90;\n{NOTIFICATION}"),
+            format!(
+                "pub const KEEP_DAYS: i64 = 90;\npub const AT_ONCE_MAX: usize = 100;\n{NOTIFICATION}"
+            ),
         ),
         (CATALOG_PATH.to_owned(), CATALOG.to_owned()),
         (
@@ -71,6 +73,7 @@ fn the_table_of_customize_comes_from_the_match_of_the_notification_kind() {
 fn the_numbers_of_the_texts_come_from_the_constants_of_the_core() {
     let text = notifications(&sources(), KINDS).unwrap();
     assert!(text.contains("notificationKeepDays = 90;"), "{text}");
+    assert!(text.contains("notificationsAtOnceMax = 100;"), "{text}");
     assert!(text.contains("signUpLinkHours = 24;"), "{text}");
     assert!(text.contains("signUpResendMinutes = 10;"), "{text}");
     assert!(text.contains("testEmailEverySeconds = 10;"), "{text}");
@@ -82,7 +85,8 @@ fn the_numbers_of_the_texts_come_from_the_constants_of_the_core() {
 fn a_kind_without_both_settings_or_a_missing_source_is_an_error() {
     let one_way = NOTIFICATION.replace("            (Self::Mentioned, Via::Mail) => &B,\n", "");
     let mut broken = sources();
-    broken[0].1 = format!("pub const KEEP_DAYS: i64 = 90;\n{one_way}");
+    broken[0].1 =
+        format!("pub const KEEP_DAYS: i64 = 90;\npub const AT_ONCE_MAX: usize = 100;\n{one_way}");
     assert!(notifications(&broken, KINDS).is_err());
     assert!(notifications(&sources(), r#"{"components":{"schemas":{}}}"#).is_err());
     assert!(notifications(&[], KINDS).is_err());

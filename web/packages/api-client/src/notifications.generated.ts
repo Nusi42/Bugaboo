@@ -22,6 +22,9 @@ export const notificationSettings = {
 /** How many days a notification is kept before it is deleted. */
 export const notificationKeepDays = 90;
 
+/** The most unread notifications the server counts: a count of this many means this many or more. */
+export const notificationsAtOnceMax = 100;
+
 /** How many hours the link that signing up sends works. */
 export const signUpLinkHours = 24;
 
