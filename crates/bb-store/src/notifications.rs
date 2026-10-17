@@ -21,7 +21,7 @@ use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::events::outbox_move;
 use crate::jobs::{NewJob, enqueue};
@@ -293,6 +293,12 @@ impl NotificationStore for AuthStorage {
             .await
     }
 
+    async fn forget_mail_password(transaction: &mut Transaction) -> Result<(), StoreError> {
+        Database::delete_secret_in(transaction, &password_name()?)
+            .await
+            .map(|_| ())
+    }
+
     async fn delete_mail_password(&self) -> Result<(), StoreError> {
         self.database()
             .delete_secret(&password_name()?)
@@ -327,9 +333,10 @@ impl NotificationStore for AuthStorage {
         transaction.execute(&update).await
     }
 
-    async fn mark_all_notifications_read(
+    async fn mark_notifications_read_up_to(
         transaction: &mut Transaction,
         recipient: UserId,
+        up_to: NotificationId,
         at: Timestamp,
     ) -> Result<u64, StoreError> {
         let mut update = Query::update();
@@ -337,6 +344,7 @@ impl NotificationStore for AuthStorage {
             .table(NotificationRow::Table)
             .value(NotificationRow::ReadAt, to_micros(at))
             .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
+            .and_where(Expr::col(NotificationRow::Id).lte(up_to.stored()))
             .and_where(Expr::col(NotificationRow::InApp).eq(true))
             .and_where(Expr::col(NotificationRow::ReadAt).is_null());
         transaction.execute(&update).await

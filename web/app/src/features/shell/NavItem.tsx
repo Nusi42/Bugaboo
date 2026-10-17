@@ -12,10 +12,12 @@ interface ItemProps {
   readonly label: string;
   /** The sidebar shows icons only. */
   readonly narrow?: boolean;
+  /** A number after the words, such as the notifications not read yet. Nothing for none. */
+  readonly count?: string | undefined;
 }
 
 /** The icon and the words; with icons only the words are for screen readers and the tooltip. */
-function Content({ icon, label, narrow, hint }: ItemProps & { readonly hint?: ReactNode }) {
+function Content({ icon, label, narrow, count, hint }: ItemProps & { readonly hint?: ReactNode }) {
   return (
     <>
       <Icon name={icon} />
@@ -24,6 +26,7 @@ function Content({ icon, label, narrow, hint }: ItemProps & { readonly hint?: Re
       ) : (
         <span {...partOf(part.navItemLabel)}>{label}</span>
       )}
+      {count === undefined ? null : <span {...partOf(part.navItemCount)}>{count}</span>}
       {narrow === true ? null : hint}
     </>
   );
@@ -70,6 +73,7 @@ export function NavLink({
   narrow = false,
   href,
   current = false,
+  count,
   onNavigate,
 }: NavLinkProps) {
   return (
@@ -80,7 +84,7 @@ export function NavLink({
         {...(current ? { "aria-current": currentPage } : {})}
         {...(onNavigate === undefined ? {} : { onPress: onNavigate })}
       >
-        <Content icon={icon} label={label} narrow={narrow} />
+        <Content icon={icon} label={label} narrow={narrow} count={count} />
       </Link>
     </WithTooltip>
   );

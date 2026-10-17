@@ -289,7 +289,7 @@ pub async fn unread_notifications<S: AuthStore>(
 }
 
 /// Marks notifications of the person as read (*Mark as read*): the ones named, or every unread
-/// one. Marking one that is read already changes nothing.
+/// one up to the newest the person has seen (*Mark all as read*). Marking one that is read already changes nothing.
 ///
 /// # Errors
 /// `request.invalid` when no notification is named, or too many.
@@ -306,7 +306,7 @@ pub async fn read_notifications<S: AuthStore>(
     let person = actor.person.id;
     let named = match &input.which {
         Which::These(ids) => json!(ids.iter().map(ToString::to_string).collect::<Vec<_>>()),
-        Which::All => json!("all"),
+        Which::UpTo(id) => json!({ "up_to": id.to_string() }),
     };
     let event = ctx.event(
         by(person),
@@ -325,7 +325,9 @@ pub async fn read_notifications<S: AuthStore>(
                     Which::These(ids) => {
                         S::mark_notifications_read(transaction, person, &ids, now).await
                     }
-                    Which::All => S::mark_all_notifications_read(transaction, person, now).await,
+                    Which::UpTo(id) => {
+                        S::mark_notifications_read_up_to(transaction, person, id, now).await
+                    }
                 }
                 .map(|_| ())
             })

@@ -4,8 +4,6 @@ import { register } from "../registry.ts";
 
 export const messages = {
   "home.title": "Welcome, {name}",
-  "home.intro":
-    "You are signed in. Projects and issues come with the next versions of Bugaboo. For now you can look after your account.",
   "home.admin":
     "You can look after this server. Organization settings shows what you may do there.",
 } as const;

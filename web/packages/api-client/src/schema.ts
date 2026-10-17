@@ -2060,6 +2060,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/mail": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the page of the mail server needs to know that the settings do not hold: whether a
+     *     password is entered, never what it is.
+     */
+    get: operations["getMailServer"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/mail/password": {
     parameters: {
       query?: never;
@@ -2199,43 +2219,6 @@ export interface paths {
      */
     put: operations["changeMyHandle"];
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/me/mentions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The comments that mention the person, unread first and then the newest: the *Mentions* block of
-     *     the start page. Only comments under issues the person may see.
-     */
-    get: operations["listMentions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/me/mentions/read": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Marks the mentions of the person in these comments as read. */
-    post: operations["readMentions"];
     delete?: never;
     options?: never;
     head?: never;
@@ -3278,6 +3261,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/workflows/{workflow}/publish-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Says which statuses publishing a workflow would drop and which issues are in them, so the editor
+     *     can ask where those issues go. The issues the person sees are named; the others are only
+     *     counted. Needs the permission *Manage workflows* wherever the workflow is used.
+     */
+    post: operations["previewPublishWorkflow"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4038,6 +4042,25 @@ export interface components {
       base_version?: number | null;
       /** @description The text as it stands now. */
       text: string;
+    };
+    /** @description A status that publishing would drop, and the issues that are in it. */
+    DroppedStatusBody: {
+      /**
+       * @description How many of the issues the person could not move: those they do not see, and those they may
+       *     not change. A publish that has to move them is refused.
+       */
+      blocked: number;
+      /**
+       * @description How many live issues the workflow governs that are in it, also the ones the person does not
+       *     see.
+       */
+      issues: number;
+      /** @description Some of the issues the person sees, as a list shows them. */
+      named: components["schemas"]["IssueRef"][];
+      /** @description The status, as the stored workflow names it. */
+      status: components["schemas"]["StatusRef"];
+      /** @description How many of the issues the person does not see. They are counted, never named. */
+      unseen: number;
     };
     /** @description Take the editing over from the person who is editing. */
     EditAnywayBody: {
@@ -5245,6 +5268,22 @@ export interface components {
        */
       password?: string | null;
     };
+    /**
+     * @description What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).
+     * @enum {string}
+     */
+    MailServerReadiness: "ready" | "incomplete" | "insecure";
+    /** @description What the mail server has that is no setting. */
+    MailServerStatusBody: {
+      /** @description A password is stored. The password itself is never sent. */
+      credential_set: boolean;
+      /**
+       * @description What the server judges of the mail server as entered: `ready`, `incomplete` (the host or
+       *     the sender is missing) or `insecure` (a secret would go without encryption to another
+       *     machine).
+       */
+      readiness: components["schemas"]["MailServerReadiness"];
+    };
     /** @description What is done to every issue of the selection. */
     ManyChangeActionBody:
       | {
@@ -5296,6 +5335,12 @@ export interface components {
        *     workflow does not allow the change is skipped.
        */
       status?: string | null;
+      /**
+       * @description The words of the status change that was chosen to get to `status` (*Start working*). An
+       *     issue whose workflow has no such change from its status is skipped, also when it has
+       *     another change to that status.
+       */
+      status_button?: string | null;
     };
     /** @description What a row of the preview says will happen to the issue. */
     ManyChangeDetailBody:
@@ -5462,21 +5507,6 @@ export interface components {
      * @enum {string}
      */
     MentionTarget: "person" | "group" | "role";
-    /** @description A comment that mentions the person. */
-    MentionedComment: {
-      /** @description When it was written. */
-      at: string;
-      /** @description Who wrote it, as the person may see people of the kind *Authors*. */
-      author: components["schemas"]["PersonRef"];
-      /** @description The ID of the comment. */
-      comment: string;
-      /** @description The text as safe HTML, made on the server for this reader. */
-      html: SafeHtml;
-      /** @description The issue it is under. */
-      issue: components["schemas"]["IssueRef"];
-      /** @description Whether the person has not looked at it under *Mentions* yet. */
-      unread: boolean;
-    };
     /** @description Where a project goes, and the version of the preview that was looked at. */
     MoveBody: {
       /** @description The `preview` of the answer to the preview that was looked at. */
@@ -5528,6 +5558,18 @@ export interface components {
       id: string;
       /** @description The name. */
       name: string;
+    };
+    /**
+     * @description What kind of input a field of a status change is asked for with.
+     * @enum {string}
+     */
+    NeedKind: "description" | "assigned-to" | "own";
+    /** @description A field a status change still needs. */
+    NeededFieldBody: {
+      /** @description The key of the field: the word of a built-in field or the ID of an own field. */
+      field: string;
+      /** @description What kind of input it needs. */
+      kind: components["schemas"]["NeedKind"];
     };
     /** @description A comment to write. */
     NewCommentBody: {
@@ -5774,7 +5816,7 @@ export interface components {
       /** @description A change of an own field: its name. */
       field_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this person. */
-      html?: string | null;
+      html?: SafeHtml;
       /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
       id: string;
       issue?: components["schemas"]["IssueRef"] | null;
@@ -5792,6 +5834,11 @@ export interface components {
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
     };
+    /**
+     * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
+     * @enum {string}
+     */
+    NotificationFilter: "all" | "unread" | "mentions";
     /**
      * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.
      * @enum {string}
@@ -6358,29 +6405,6 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
-    Page_MentionedComment: {
-      /** @description The items of this page. */
-      items: {
-        /** @description When it was written. */
-        at: string;
-        /** @description Who wrote it, as the person may see people of the kind *Authors*. */
-        author: components["schemas"]["PersonRef"];
-        /** @description The ID of the comment. */
-        comment: string;
-        /** @description The text as safe HTML, made on the server for this reader. */
-        html: SafeHtml;
-        /** @description The issue it is under. */
-        issue: components["schemas"]["IssueRef"];
-        /** @description Whether the person has not looked at it under *Mentions* yet. */
-        unread: boolean;
-      }[];
-      /** @description The cursor of the next page; `null` on the last page. */
-      next_cursor: string | null;
-    };
-    /**
-     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
-     *     items cut to the chosen fields ([`Page::of_authorized`]).
-     */
     Page_NotificationEntry: {
       /** @description The items of this page. */
       items: {
@@ -6418,7 +6442,7 @@ export interface components {
         /** @description A change of an own field: its name. */
         field_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this person. */
-        html?: string | null;
+        html?: SafeHtml;
         /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
         id: string;
         issue?: components["schemas"]["IssueRef"] | null;
@@ -7084,14 +7108,42 @@ export interface components {
      * @enum {string}
      */
     ProjectShown: "visible" | "hidden";
+    /** @description A status change of some workflow of the project. */
+    ProjectStatusChangeBody: {
+      /** @description The text of the button. */
+      button: string;
+      /** @description The status it ends in. */
+      to: components["schemas"]["StatusRef"];
+    };
     /**
-     * @description The statuses the issues of a project can have: one list for all issue types. A status with the
-     *     same key, name and group in several workflows is listed once; one with the same key and another
-     *     name or group is listed for each.
+     * @description The status changes the issues of a project can have: one list for all issue types, each status
+     *     change once by its words.
      */
     ProjectStatusesBody: {
-      /** @description The statuses, in the order the workflows list them. */
-      statuses: components["schemas"]["StatusRef"][];
+      /**
+       * @description The status changes by their words, once for the same status and text, in the order the
+       *     workflows list them: what a choice of a status change for many issues offers.
+       */
+      changes: components["schemas"]["ProjectStatusChangeBody"][];
+    };
+    /** @description What publishing a workflow would drop. */
+    PublishPreviewAnswer: {
+      /** @description The statuses the stored workflow has and the new one lacks. */
+      dropped: components["schemas"]["DroppedStatusBody"][];
+      /** @description The most issues one publish moves; a publish that would move more is refused. */
+      limit: number;
+      /**
+       * @description There are more issues than that in the statuses that would go. They are then not judged or
+       *     named, and the counts are not complete.
+       */
+      too_many: boolean;
+    };
+    /** @description What to preview: the workflow as *Publish* would send it. */
+    PublishPreviewBody: {
+      /** @description All the status changes. */
+      changes: components["schemas"]["ChangeDraftBody"][];
+      /** @description All the statuses, in order. */
+      statuses: components["schemas"]["StatusDraftBody"][];
     };
     /** @description The workflow to publish. */
     PublishWorkflowBody: {
@@ -7119,17 +7171,15 @@ export interface components {
       /** @description The workflow, with its new version. */
       workflow: components["schemas"]["WorkflowSlotBody"];
     };
-    /** @description The mentions to mark as read. */
-    ReadMentionsBody: {
-      /** @description The IDs of the comments. */
-      comments: string[];
-    };
     /** @description The notifications to mark as read. */
     ReadNotificationsBody: {
-      /** @description Mark every unread notification as read. */
-      all?: boolean;
-      /** @description The IDs of the notifications, at most 100; or leave it out and set `all`. */
+      /** @description The IDs of the notifications, at most 100; or leave it out and set `up_to`. */
       ids?: string[];
+      /**
+       * @description Mark every unread notification as read up to and including this one, the newest the person
+       *     has seen: ones that came after it stay unread.
+       */
+      up_to?: string | null;
     };
     /** @description Why a permission is given or not. */
     ReasonBody:
@@ -7415,6 +7465,11 @@ export interface components {
     };
     /** @description A field a rule can name. */
     RuleFieldBody: {
+      /**
+       * @description Whether a rule may ask for the field in the small form of a status change; the description
+       *     can only be required to be filled in.
+       */
+      askable: boolean;
       /** @description The key of the field: the word of a built-in field or the ID of an own field. */
       field: string;
       /** @description The name of an own field; a built-in field is named by its word. */
@@ -7788,9 +7843,10 @@ export interface components {
       button: string;
       /**
        * @description The fields the change still needs before it can be made (*Must be filled in* fields that
-       *     are empty, and *Ask for* fields), by their keys. Empty when it needs none.
+       *     are empty, and *Ask for* fields), each with the kind of input it needs. Empty when it needs
+       *     none.
        */
-      needs: components["schemas"]["FieldKey"][];
+      needs: components["schemas"]["NeededFieldBody"][];
       /** @description The status it ends in. */
       to: components["schemas"]["StatusRef"];
     };
@@ -7815,7 +7871,7 @@ export interface components {
     StatusMoveBody: {
       /** @description The key of the status that is dropped. */
       from: string;
-      /** @description The key of the status of the new workflow the issues go to. */
+      /** @description The status of the new workflow the issues go to: its key, or its name when it is new. */
       to: string;
     };
     /** @description A status as it is shown: the browser keeps no list of statuses, it shows what the server sends. */
@@ -19214,6 +19270,75 @@ export interface operations {
       };
     };
   };
+  getMailServer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Whether it is entered. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MailServerStatusBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   setMailPassword: {
     parameters: {
       query?: never;
@@ -19787,151 +19912,6 @@ export interface operations {
       /** @description Too soon after the last time (rate_limit.exceeded, handle.changed_lately). */
       429: {
         headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  listMentions: {
-    parameters: {
-      query?: {
-        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
-        fields?: string;
-        /** @description Where the page starts: the `next_cursor` of the page before. */
-        cursor?: string;
-        /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The comments. */
-      200: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Page_MentionedComment"];
-        };
-      };
-      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
-      304: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  readMentions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ReadMentionsBody"];
-      };
-    };
-    responses: {
-      /** @description They are marked. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
           [name: string]: unknown;
         };
         content: {
@@ -25860,6 +25840,98 @@ export interface operations {
       };
       /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  previewPublishWorkflow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workflow. */
+        workflow: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PublishPreviewBody"];
+      };
+    };
+    responses: {
+      /** @description The dropped statuses and their issues. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublishPreviewAnswer"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

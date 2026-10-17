@@ -1,4 +1,4 @@
-//! Changing which workflow a place uses: making the workflow of a place (a copy of the one that
+//! Changing which workflow a place uses: creating the workflow of a place (a copy of the one that
 //! counts there), saying that a place uses another one, and taking a workflow away (WF-01,
 //! PRJ-02, ADR-0031 decisions 2 and 4).
 //!
@@ -73,7 +73,7 @@ pub(super) fn what_of(id: WorkflowId) -> Result<EditWhat, AppError> {
 ///
 /// # Errors
 /// `resource.not_found` for a project the person may not know about, `access.forbidden` without
-/// *Manage workflows* at the place, `edit.version_changed` when somebody made the workflow at the
+/// *Manage workflows* at the place, `edit.version_changed` when somebody created the workflow at the
 /// same moment.
 pub async fn create_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -123,7 +123,7 @@ pub async fn create_workflow<S: AuthStore>(
         ],
     )?;
     let why = Why::default();
-    let (stopped, made, copied) = (why.clone(), workflow.clone(), in_force.content.clone());
+    let (stopped, created, copied) = (why.clone(), workflow.clone(), in_force.content.clone());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -132,7 +132,7 @@ pub async fn create_workflow<S: AuthStore>(
                 if placed.iter().any(|each| each.place() == place) {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
-                S::insert_workflow(transaction, &made, &copied).await?;
+                S::insert_workflow(transaction, &created, &copied).await?;
                 S::put_workflow_use(transaction, &used).await
             })
         })

@@ -8,23 +8,31 @@ import { CommentFiles } from "../files/index.ts";
 import { CommentActions } from "./CommentActions.tsx";
 import { CommentText } from "./CommentText.tsx";
 import { CommentVersions } from "./CommentVersions.tsx";
-import { whoOf } from "./history.ts";
+import { useScrollTo, whoOf } from "./history.ts";
 
-/** One comment of the history: who wrote it and when, its text, and what the reader may do. */
-export function CommentEntry({
-  issue,
-  entry,
-}: {
+interface CommentEntryProps {
   readonly issue: string;
   readonly entry: Schema<"HistoryEntryItem">;
-}) {
+  /** *Open* of a notification came here. */
+  readonly highlighted?: boolean;
+}
+
+/** One comment of the history: who wrote it and when, its text, and what the reader may do. */
+export function CommentEntry({ issue, entry, highlighted = false }: CommentEntryProps) {
+  const shown = useScrollTo<HTMLElement>(highlighted);
   const [editing, setEditing] = useState(false);
   const [versions, setVersions] = useState(false);
   const id = entry.comment;
   const edited = entry.edited_at !== undefined && entry.edited_at !== null;
   const known = id !== undefined && id !== null;
   return (
-    <article {...partOf(part.historyEntry, { variants: ["comment"] })}>
+    <article
+      ref={shown}
+      {...partOf(part.historyEntry, {
+        variants: ["comment"],
+        states: [highlighted && "highlighted"],
+      })}
+    >
       <span {...partOf(part.historyWhen)}>
         {t("history.by", { who: whoOf(entry), when: formatDateTime(entry.at) })}
       </span>

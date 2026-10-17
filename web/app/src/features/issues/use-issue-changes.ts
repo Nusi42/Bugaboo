@@ -120,10 +120,58 @@ function conflictAnswers(held: Held, ways: ConflictWays): IssueConflict {
   };
 }
 
+/** What a change that was asked for first needs to be sent and taken back. */
+interface Asked {
+  readonly detail: IssueDetail;
+  readonly address: string;
+  readonly id: string;
+  readonly values: IssueValues;
+  /** Sends values on a version, as *Undo* does. */
+  readonly run: (values: IssueValues, version: number) => void;
+}
+
+/** Sends a change and waits for the answer; once it is made, *Undo* is on offer. */
+async function askAndOffer({ detail, address, id, values, run }: Asked): Promise<void> {
+  const before = valuesBefore(detail, values);
+  const made = await sendChange(id, { values, version: versionNow(address, detail.issue) });
+  readAgain(address);
+  undoStore.offer({
+    message: changeSentence(values),
+    inline: false,
+    undo: () => {
+      run(before, made ?? versionNow(address, detail.issue));
+    },
+  });
+}
+
+/** What the answers to a change that came second do, for the issue on this page. */
+function waysOf(
+  setHeld: (held: Held | null) => void,
+  address: string,
+  detail: IssueDetail,
+  run: Asked["run"],
+): ConflictWays {
+  return {
+    drop: () => {
+      setHeld(null);
+      readAgain(address);
+    },
+    again: (values, version) => {
+      run(values, version ?? versionNow(address, detail.issue));
+    },
+  };
+}
+
 /** What the page of an issue gets for changing short values. */
 export interface IssueChanges {
   /** Shows the change at once and sends it; *Undo* is on offer for 10 seconds. */
   readonly change: (values: IssueValues) => void;
+  /**
+   * Sends a change that asked for something first (*Ask for*) and waits for the answer, so the
+   * window that asked can name the field the server says is still empty. Rejects with the refusal;
+   * *Undo* is on offer for 10 seconds like for any change.
+   */
+  readonly ask: (values: IssueValues) => Promise<void>;
   readonly saveState: OptimisticMutation<IssueEdit>["saveState"];
   /**
    * The row of the Details that the last change was made in, with the offer to take it back while
@@ -175,21 +223,11 @@ export function useIssueChanges(detail: IssueDetail, address: string): IssueChan
       });
       rowChanged(field, offer);
     },
+    ask: (values) => askAndOffer({ detail, address, id, values, run }),
     saveState: mutation.saveState,
     lastRow,
     savedAt,
     problem: held === null ? mutation.problem : null,
-    conflict:
-      held === null
-        ? null
-        : conflictAnswers(held, {
-            drop: () => {
-              setHeld(null);
-              readAgain(address);
-            },
-            again: (values, version) => {
-              run(values, version ?? versionNow(address, detail.issue));
-            },
-          }),
+    conflict: held === null ? null : conflictAnswers(held, waysOf(setHeld, address, detail, run)),
   };
 }

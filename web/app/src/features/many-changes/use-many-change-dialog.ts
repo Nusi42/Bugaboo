@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
-import { useProjectStatuses } from "../issues/index.ts";
+import { useProjectStatusChanges, type ProjectChange } from "../issues/index.ts";
 import { relationChoices } from "../relations/index.ts";
 import {
   manyChangeKind,
@@ -15,7 +15,7 @@ import {
 import { actionOf, emptyDraft, type Draft } from "./draft.ts";
 
 /** What is filled in for one of the five things, and the request it makes (nothing while it is not complete). */
-function useManyChangeDraft(kind: ManyChangeKind) {
+function useManyChangeDraft(kind: ManyChangeKind, statusChanges: readonly ProjectChange[]) {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const kinds = useRelationKinds();
   const relations = relationChoices(relationKindLinesOf(kinds.data?.pages));
@@ -23,7 +23,7 @@ function useManyChangeDraft(kind: ManyChangeKind) {
     draft,
     setDraft,
     relations,
-    action: actionOf(kind, draft, relations),
+    action: actionOf(kind, draft, { relations, statusChanges }),
     plain: kind === manyChangeKind.delete ? t("many-changes.line-delete") : "",
   };
 }
@@ -38,15 +38,15 @@ export function useManyChangeDialog(
   issues: readonly string[],
   onApplied: (applied: ManyChangeApplied) => void,
 ) {
-  const { draft, setDraft, relations, action, plain } = useManyChangeDraft(kind);
-  const statuses = useProjectStatuses(project).data ?? [];
+  const statusChanges = useProjectStatusChanges(project).data ?? [];
+  const { draft, setDraft, relations, action, plain } = useManyChangeDraft(kind, statusChanges);
   const preview = usePreviewManyChanges();
   const apply = useApplyManyChanges(onApplied);
   const changes = preview.data === undefined ? [] : targetsOf(preview.data);
   return {
     draft,
     relations,
-    statuses,
+    statusChanges,
     preview,
     action,
     plain,

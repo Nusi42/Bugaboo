@@ -102,6 +102,7 @@ impl ImageHostsCache {
         let request = RequestInfo {
             network: None,
             device: Device::default(),
+            background: false,
         };
         // Without a database, or when the read fails, the base policy applies: no image from
         // outside. That answer is not kept: the next page load reads again, so a read that failed

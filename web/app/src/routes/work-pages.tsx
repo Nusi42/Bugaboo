@@ -8,11 +8,15 @@ import {
   paths,
   projectIssuesAddress,
   routeParam,
+  targetParam,
 } from "../shared/paths.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
 import { loadsScreen } from "./preload.ts";
+
+export { projectIssueTypesRoute, projectLabelsRoute } from "./project-offer-pages.tsx";
+export { projectWorkflowsRoute, workflowsRoute } from "./workflow-pages.tsx";
 
 // The screens of work (issue types) are loaded when they are first opened, so the first page stays
 // small (coding-standards section 6).
@@ -144,38 +148,6 @@ export const projectLayoutsRoute = createRoute({
   },
 });
 
-const ProjectIssueTypesScreen = lazyRouteComponent(
-  () => import("../features/issue-types/index.ts"),
-  "ProjectIssueTypesScreen",
-);
-
-/** `/p/WEB/settings/issue-types`: the issue types of a project, and which of them it offers. */
-export const projectIssueTypesRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: paths.projectIssueTypes,
-  loader: loadsScreen(ProjectIssueTypesScreen),
-  component: function ProjectIssueTypes() {
-    const project = useAddressPart(routeParam.project);
-    return project === undefined ? null : <ProjectIssueTypesScreen address={project} />;
-  },
-});
-
-const ProjectLabelsScreen = lazyRouteComponent(
-  () => import("../features/labels/index.ts"),
-  "ProjectLabelsScreen",
-);
-
-/** `/p/WEB/settings/labels`: the groups of labels of a project, and which of them it offers. */
-export const projectLabelsRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: paths.projectLabels,
-  loader: loadsScreen(ProjectLabelsScreen),
-  component: function ProjectLabels() {
-    const project = useAddressPart(routeParam.project);
-    return project === undefined ? null : <ProjectLabelsScreen address={project} />;
-  },
-});
-
 const FieldsScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldsPage");
 const FieldScreen = lazyRouteComponent(() => import("../features/fields/index.ts"), "FieldPage");
 
@@ -276,6 +248,17 @@ export const projectIssuesRoute = createRoute({
 export const issueRoute = createRoute({
   getParentRoute: () => appRoute,
   path: paths.issue,
+  // Where *Open* of a notification goes on the page: a comment, or the change at a moment.
+  validateSearch: (
+    search: Readonly<Record<string, unknown>>,
+  ): { comment?: string | undefined; change?: string | undefined } => {
+    const comment = search[targetParam.comment];
+    const change = search[targetParam.change];
+    return {
+      [targetParam.comment]: typeof comment === "string" ? comment : undefined,
+      [targetParam.change]: typeof change === "string" ? change : undefined,
+    };
+  },
   loader: loadsScreen(IssueScreen),
   component: function Issue() {
     const issue = useAddressPart(routeParam.issue);

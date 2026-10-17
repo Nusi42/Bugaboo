@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { tokenValue } from "./support/tokens.ts";
 import { type Page } from "@playwright/test";
 
-import { ada, forgetChoices, createAdmin } from "./support/accounts.ts";
+import { forgetChoices, createAdmin } from "./support/accounts.ts";
 import {
   expectNoOverlap,
   expectNoSidewaysScroll,
@@ -13,10 +13,9 @@ import {
   expectLook,
 } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { signIn } from "./support/flows.ts";
+import { openAppearance, setSwitch } from "./support/appearance.ts";
 import { inOrder } from "./support/sequence.ts";
 import { variants } from "../../packages/ui/src/tokens.ts";
-import { paths } from "../src/shared/paths.ts";
 
 test.use({
   preparation: {
@@ -29,22 +28,6 @@ test.use({
 test.beforeEach(async ({ server }) => {
   await forgetChoices(server);
 });
-
-/** Signs in and opens *My settings › Appearance*. */
-async function openAppearance(page: Page): Promise<void> {
-  await signIn(page, ada);
-  await page.goto(paths.appearance);
-  await expect(page.getByRole("heading", { level: 1, name: t("appearance.title") })).toBeVisible();
-}
-
-/** Turns a switch on or off by pressing its words, as a person does. */
-async function setSwitch(page: Page, name: string, on: boolean): Promise<void> {
-  const field = page.getByRole("switch", { name, exact: true });
-  if ((await field.isChecked()) !== on) {
-    await page.getByText(name, { exact: true }).click();
-  }
-  await (on ? expect(field).toBeChecked() : expect(field).not.toBeChecked());
-}
 
 /** The font size of the heading of the page, in pixels. */
 function headingSize(page: Page): Promise<number> {

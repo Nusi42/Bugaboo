@@ -246,6 +246,21 @@ impl Database {
         Ok(self.execute(&delete).await? > 0)
     }
 
+    /// Deletes a secret inside a change, so it goes or stays with the rest of the change.
+    ///
+    /// # Errors
+    /// Fails when the database fails.
+    pub async fn delete_secret_in(
+        transaction: &mut Transaction,
+        name: &TechnicalName,
+    ) -> Result<bool, StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(Columns::Table)
+            .and_where(Expr::col(Columns::Name).eq(name.as_str()));
+        Ok(transaction.execute(&delete).await? > 0)
+    }
+
     /// The names of all secrets, in order.
     ///
     /// # Errors

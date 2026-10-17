@@ -104,11 +104,6 @@ pub(crate) mod notifications {
     pub(crate) const READ: &str = "notifications-read";
 }
 
-/// The member of the event of a person reading their *Mentions*.
-pub(crate) mod mentions {
-    pub(crate) const READ: &str = "mentions-read";
-}
-
 /// The members of a tag.
 pub(crate) mod tag {
     pub(crate) const NAME: &str = "name";

@@ -58,36 +58,6 @@ impl WorkflowDirectory {
         }
     }
 
-    /// The same places and workflows, copied.
-    fn copied(&self) -> Self {
-        Self {
-            uses: self.uses.clone(),
-            workflows: self
-                .workflows
-                .iter()
-                .map(|(id, stored)| {
-                    (
-                        *id,
-                        Stored {
-                            workflow: stored.workflow.clone(),
-                            content: Arc::clone(&stored.content),
-                        },
-                    )
-                })
-                .collect(),
-            starting: Arc::clone(&self.starting),
-        }
-    }
-
-    /// The same places with one workflow changed to this content: what counts after *Publish*.
-    pub(crate) fn with_content(&self, id: WorkflowId, content: WorkflowContent) -> Self {
-        let mut changed = self.copied();
-        if let Some(stored) = changed.workflows.get_mut(&id) {
-            stored.content = Arc::new(content);
-        }
-        changed
-    }
-
     /// The workflow that counts in a place whose projects from the top down are `chain`, for an
     /// issue of this type (`None`: all types), and where it is set.
     pub(crate) fn detail(&self, chain: &[ProjectId], issue_type: Option<IssueTypeId>) -> InForce {
@@ -192,16 +162,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Arc::clone(&directory));
         Ok(directory)
-    }
-
-    /// Makes the rest of the request see these places and workflows instead of the stored ones:
-    /// what the judge answers once a change that is planned has been made.
-    pub(crate) fn see_directory(&self, directory: WorkflowDirectory) {
-        *self
-            .known
-            .workflows
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Arc::new(directory));
     }
 
     /// Forgets what this request read about workflows: a change was made, and the next question

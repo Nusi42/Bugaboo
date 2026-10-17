@@ -12,9 +12,10 @@ use bb_auth::{CsrfKey, Device, LinkKey, Passkeys, PasswordHasher, SecretToken};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange};
 use bb_core::id::{EventId, IdSource, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
+use bb_core::notification::mail_batch;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::{Evaluation, Place};
-use jiff::Timestamp;
+use jiff::{SignedDuration, Timestamp};
 
 use super::error::{AppError, internal};
 use super::limit::FailureLimit;
@@ -35,6 +36,9 @@ pub struct RequestInfo {
     pub network: Option<NetworkPrefix>,
     /// The browser and the system.
     pub device: Device,
+    /// A read nobody asked for, such as a count that refreshes itself: it does not keep a
+    /// session alive (SEC-12).
+    pub background: bool,
 }
 
 /// Everything the sign-in use cases share. Built once at start-up (`bb-server`).
@@ -57,6 +61,8 @@ pub struct AuthServices<S> {
     pub(crate) server_log: Option<Arc<dyn ServerLogFile>>,
     /// The address people reach the server at, which the links in e-mails start with.
     pub(crate) public_url: String,
+    /// How long changes to one issue are collected into one e-mail.
+    pub(crate) mail_batch: SignedDuration,
     /// When each person last sent a test e-mail, so they cannot send a stream of them.
     pub(crate) test_mail_at: Mutex<HashMap<UserId, Timestamp>>,
 }
@@ -91,6 +97,7 @@ impl<S> AuthServices<S> {
             mailer: Arc::new(NoMailer),
             server_log: None,
             public_url: String::new(),
+            mail_batch: mail_batch(),
             test_mail_at: Mutex::default(),
         }
     }
@@ -131,6 +138,14 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_public_url(mut self, public_url: impl Into<String>) -> Self {
         self.public_url = public_url.into();
+        self
+    }
+
+    /// How long changes to one issue wait for each other before one e-mail goes (M4-Q6); five
+    /// minutes unless the server is started with another time.
+    #[must_use]
+    pub fn with_mail_batch(mut self, wait: SignedDuration) -> Self {
+        self.mail_batch = wait;
         self
     }
 
@@ -314,7 +329,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// `Limited` with the seconds to wait.
     pub(crate) fn reserve_test_email(&self, person: UserId) -> Result<(), AppError> {
         let now = self.now();
-        let every = jiff::SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
+        let every = SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
         let mut sent = self
             .services
             .test_mail_at

@@ -26,6 +26,7 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::{EntityRef, FieldChange, RecordKind};
 use bb_core::id::ProjectId;
+use bb_core::mail::{PASSWORD_FIELD, password_belongs_to};
 use bb_core::settings::{
     ChangedBy, Format, Layers, Level, OrganizationValue, Scope, SettingDefinition, SettingValue,
     Source, changed_only_on_its_own_screen, find, list_items, registry,
@@ -40,7 +41,9 @@ pub use image_hosts::{
 pub use store::SettingsStore;
 
 use crate::access::{Actor, ProjectLabel};
-use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, fixed_entity, internal};
+use crate::auth::{
+    AppError, AuthStore, Ctx, Stops, by, change_failed, changed, fixed_entity, internal,
+};
 use crate::issues::{ModeChange, plan_renewals_in, renew_or_queue_in};
 
 /// Where the settings of a request are: the organization, a project, or the person who asks.
@@ -473,15 +476,16 @@ pub async fn change_setting<S: AuthStore>(
         return Err(ErrorCode::SettingLocked.into());
     }
     let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
-    let event = ctx.event(
-        by(actor.person.id),
-        entity.clone(),
-        vec![FieldChange {
-            field: field_of(definition.key()),
-            before: own_value(&layers, scope, definition),
-            after: Some(json_of(&input.value)),
-        }],
-    )?;
+    let forgets = moves_the_mail_server(scope, &layers, definition, &input.value);
+    let mut changes = vec![FieldChange {
+        field: field_of(definition.key()),
+        before: own_value(&layers, scope, definition),
+        after: Some(json_of(&input.value)),
+    }];
+    if forgets {
+        changes.push(changed(PASSWORD_FIELD));
+    }
+    let event = ctx.event(by(actor.person.id), entity.clone(), changes)?;
     // The issues of a project get new IDs in the same change when its mode of issue IDs changes.
     let (store_key, value, now, person) =
         (definition.key(), input.value, ctx.now(), actor.person.id);
@@ -493,6 +497,9 @@ pub async fn change_setting<S: AuthStore>(
                 let renewals =
                     plan_renewals_in::<S>(transaction, scope, store_key, &mode_change).await?;
                 S::put_setting_value(transaction, scope, store_key, &value, now).await?;
+                if forgets {
+                    S::forget_mail_password(transaction).await?;
+                }
                 for renewal in &renewals {
                     renew_or_queue_in::<S>(transaction, renewal, &mut source, &events, person, now)
                         .await?;
@@ -506,6 +513,20 @@ pub async fn change_setting<S: AuthStore>(
         .await;
     let view = ctx.view_after(&actor, scope, definition).await?;
     Ok(evaluation.authorize(view))
+}
+
+/// Whether setting `definition` to `new` on `scope` moves the organization to another mail server:
+/// the host, the port or the user name changes. The stored password belongs to the old server and
+/// goes in the same change, so it is never given to the new one (SEC-16).
+fn moves_the_mail_server(
+    scope: Scope,
+    layers: &Layers,
+    definition: &SettingDefinition,
+    new: &SettingValue,
+) -> bool {
+    scope == Scope::Organization
+        && password_belongs_to(definition.key())
+        && layers.resolve(definition).value != *new
 }
 
 /// *Reset to default*: takes the value of a setting on one scope away. A scope that has no value
@@ -532,15 +553,16 @@ pub async fn reset_setting<S: AuthStore>(
     let keeps_the_lock = scope == Scope::Organization && view.locked;
     let standard = definition.default().to_value();
     let entity = fixed_entity(RecordKind::Setting, &record_of(scope, definition.key()))?;
-    let event = ctx.event(
-        by(actor.person.id),
-        entity.clone(),
-        vec![FieldChange {
-            field: field_of(definition.key()),
-            before: own_value(&layers, scope, definition),
-            after: keeps_the_lock.then(|| json_of(&standard)),
-        }],
-    )?;
+    let forgets = moves_the_mail_server(scope, &layers, definition, &standard);
+    let mut changes = vec![FieldChange {
+        field: field_of(definition.key()),
+        before: own_value(&layers, scope, definition),
+        after: keeps_the_lock.then(|| json_of(&standard)),
+    }];
+    if forgets {
+        changes.push(changed(PASSWORD_FIELD));
+    }
+    let event = ctx.event(by(actor.person.id), entity.clone(), changes)?;
     let (store_key, now, person) = (definition.key(), ctx.now(), actor.person.id);
     let (mut source, events) = (ctx.owned_ids(), ctx.event_maker(by(actor.person.id)));
     ctx.store()
@@ -553,6 +575,9 @@ pub async fn reset_setting<S: AuthStore>(
                     S::put_setting_value(transaction, scope, store_key, &standard, now).await?;
                 } else {
                     S::clear_setting_value(transaction, scope, store_key).await?;
+                }
+                if forgets {
+                    S::forget_mail_password(transaction).await?;
                 }
                 for renewal in &renewals {
                     renew_or_queue_in::<S>(transaction, renewal, &mut source, &events, person, now)

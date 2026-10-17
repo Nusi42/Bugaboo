@@ -5,13 +5,13 @@
 //! the one transaction that checks the version, so a reader never sees half a workflow.
 
 use bb_app::workflows::{DirectoryRows, StatusFilter, WorkflowStore};
-use bb_core::id::{IssueTypeId, ProjectId, WorkflowId};
+use bb_core::id::{IssueId, IssueTypeId, ProjectId, WorkflowId};
 use bb_core::issue::{Issue, StatusGroup};
 use bb_core::workflow::{
     StatusKey, StatusRules, StoredChange, StoredStatus, StoredWorkflow, Workflow, WorkflowContent,
     WorkflowPlace, WorkflowUse,
 };
-use sea_query::{Expr, ExprTrait as _, Order, Query};
+use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{LockClass, Row, StoredId, Transaction};
@@ -23,7 +23,7 @@ fn read_key(text: &str) -> Result<StatusKey, StoreError> {
     StatusKey::new(text).map_err(|_| StoreError::Corrupt("a status key"))
 }
 
-fn header_select() -> sea_query::SelectStatement {
+fn header_select() -> SelectStatement {
     let mut select = Query::select();
     select
         .columns([WorkflowRow::Id, WorkflowRow::Name, WorkflowRow::Version])
@@ -149,7 +149,7 @@ impl sea_query::Iden for HeaderOf {
     }
 }
 
-fn statuses_select(wanted: Vec<Vec<u8>>) -> sea_query::SelectStatement {
+fn statuses_select(wanted: Vec<Vec<u8>>) -> SelectStatement {
     let mut statuses = Query::select();
     statuses
         .columns([
@@ -476,46 +476,28 @@ impl WorkflowStore for AuthStorage {
         issue_types: Option<Vec<IssueTypeId>>,
         statuses: StatusFilter,
     ) -> Result<Vec<Issue>, StoreError> {
-        if projects.as_ref().is_some_and(Vec::is_empty)
-            || issue_types.as_ref().is_some_and(Vec::is_empty)
-            || matches!(&statuses, StatusFilter::In(keys) if keys.is_empty())
-        {
+        match live_select(projects, issue_types, &statuses) {
+            Some(select) => read_all(transaction, &select).await,
+            None => Ok(Vec::new()),
+        }
+    }
+
+    async fn live_issues_after_in(
+        transaction: &mut Transaction,
+        projects: Option<Vec<ProjectId>>,
+        issue_types: Option<Vec<IssueTypeId>>,
+        statuses: StatusFilter,
+        after: Option<IssueId>,
+        limit: usize,
+    ) -> Result<Vec<Issue>, StoreError> {
+        let Some(mut select) = live_select(projects, issue_types, &statuses) else {
             return Ok(Vec::new());
+        };
+        if let Some(after) = after {
+            select.and_where(Expr::col(IssueRow::Id).gt(after.stored()));
         }
-        let mut select = issue_select();
-        select
-            .and_where(Expr::col(IssueRow::DeletedAt).is_null())
-            .order_by(IssueRow::Id, Order::Asc);
-        if let Some(projects) = projects {
-            select.and_where(
-                Expr::col(IssueRow::Project).is_in(projects.iter().map(|each| each.stored())),
-            );
-        }
-        if let Some(issue_types) = issue_types {
-            select.and_where(
-                Expr::col(IssueRow::IssueType).is_in(issue_types.iter().map(|each| each.stored())),
-            );
-        }
-        match &statuses {
-            StatusFilter::Any => {}
-            StatusFilter::In(keys) => {
-                select.and_where(
-                    Expr::col(IssueRow::Status).is_in(keys.iter().map(StatusKey::as_str)),
-                );
-            }
-            StatusFilter::NotIn(keys) if keys.is_empty() => {}
-            StatusFilter::NotIn(keys) => {
-                select.and_where(
-                    Expr::col(IssueRow::Status).is_not_in(keys.iter().map(StatusKey::as_str)),
-                );
-            }
-        }
-        transaction
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_issue)
-            .collect()
+        select.limit(limit as u64);
+        read_all(transaction, &select).await
     }
 
     async fn insert_workflow(
@@ -622,3 +604,58 @@ impl WorkflowStore for AuthStorage {
 #[cfg(test)]
 #[path = "tests/workflows.rs"]
 mod tests;
+
+/// The select of the live issues in these projects, of these issue types and in these statuses, by
+/// ID; none when a filter names nothing, so no issue can match.
+fn live_select(
+    projects: Option<Vec<ProjectId>>,
+    issue_types: Option<Vec<IssueTypeId>>,
+    statuses: &StatusFilter,
+) -> Option<SelectStatement> {
+    if projects.as_ref().is_some_and(Vec::is_empty)
+        || issue_types.as_ref().is_some_and(Vec::is_empty)
+        || matches!(statuses, StatusFilter::In(keys) if keys.is_empty())
+    {
+        return None;
+    }
+    let mut select = issue_select();
+    select
+        .and_where(Expr::col(IssueRow::DeletedAt).is_null())
+        .order_by(IssueRow::Id, Order::Asc);
+    if let Some(projects) = projects {
+        select.and_where(
+            Expr::col(IssueRow::Project).is_in(projects.iter().map(|each| each.stored())),
+        );
+    }
+    if let Some(issue_types) = issue_types {
+        select.and_where(
+            Expr::col(IssueRow::IssueType).is_in(issue_types.iter().map(|each| each.stored())),
+        );
+    }
+    match statuses {
+        StatusFilter::Any => {}
+        StatusFilter::In(keys) => {
+            select.and_where(Expr::col(IssueRow::Status).is_in(keys.iter().map(StatusKey::as_str)));
+        }
+        StatusFilter::NotIn(keys) if keys.is_empty() => {}
+        StatusFilter::NotIn(keys) => {
+            select.and_where(
+                Expr::col(IssueRow::Status).is_not_in(keys.iter().map(StatusKey::as_str)),
+            );
+        }
+    }
+    Some(select)
+}
+
+/// The issues a select finds.
+async fn read_all(
+    transaction: &mut Transaction,
+    select: &SelectStatement,
+) -> Result<Vec<Issue>, StoreError> {
+    transaction
+        .fetch_all(select)
+        .await?
+        .iter()
+        .map(read_issue)
+        .collect()
+}

@@ -30,6 +30,10 @@ pub const KEEP_DAYS: i64 = 90;
 /// e-mail.
 pub const MAIL_BATCH_SECONDS: i64 = 300;
 
+/// The longest wait `mail_batch_seconds` may name: one day. A longer one would hold changes back
+/// for ever in practice, and a huge number would overflow the time arithmetic.
+pub const MAIL_BATCH_SECONDS_MAX: u64 = 24 * 60 * 60;
+
 /// The most changed fields a notification keeps, so a change to a hundred fields of an issue does
 /// not make a row a page long.
 pub const FIELDS_MAX: usize = 25;

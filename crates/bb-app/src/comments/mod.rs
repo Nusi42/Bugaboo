@@ -15,7 +15,7 @@ mod store;
 mod types;
 mod write;
 
-pub use read::{comment_versions, mention_choices, mentions, read_mentions};
+pub use read::{comment_versions, mention_choices};
 // The limits of one text, for the tests of the server that count what a text names.
 pub use bb_markdown::{MAX_RESOLVED_ISSUE_IDS, MAX_RESOLVED_MENTIONS};
 pub(crate) use resolve::Named;

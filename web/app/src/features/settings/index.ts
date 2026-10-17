@@ -11,3 +11,4 @@ export { SecurityPage } from "./SecurityPage.tsx";
 export { SignInRulesPage } from "./SignInRulesPage.tsx";
 export { ThemesPage } from "./ThemesPage.tsx";
 export { sourceInWords, wordsOf } from "./texts.ts";
+export { useOrganizationSettings } from "./organization.ts";

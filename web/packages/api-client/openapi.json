@@ -14593,6 +14593,94 @@
         "x-permission": "manage-issue-types"
       }
     },
+    "/api/v1/mail": {
+      "get": {
+        "tags": ["notifications"],
+        "summary": "What the page of the mail server needs to know that the settings do not hold: whether a\npassword is entered, never what it is.",
+        "operationId": "getMailServer",
+        "responses": {
+          "200": {
+            "description": "Whether it is entered.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailServerStatusBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/mail/password": {
       "put": {
         "tags": ["notifications"],
@@ -15285,206 +15373,6 @@
           },
           "429": {
             "description": "Too soon after the last time (rate_limit.exceeded, handle.changed_lately).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "error.server.internal (server.internal)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "error.server.unavailable (server.unavailable)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-permission": "signed-in"
-      }
-    },
-    "/api/v1/me/mentions": {
-      "get": {
-        "tags": ["comments"],
-        "summary": "The comments that mention the person, unread first and then the newest: the *Mentions* block of\nthe start page. Only comments under issues the person may see.",
-        "operationId": "listMentions",
-        "parameters": [
-          {
-            "name": "fields",
-            "in": "query",
-            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "description": "Where the page starts: the `next_cursor` of the page before.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The comments.",
-            "headers": {
-              "etag": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_MentionedComment"
-                }
-              }
-            }
-          },
-          "304": {
-            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
-            "headers": {
-              "etag": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
-              }
-            }
-          },
-          "401": {
-            "description": "Not signed in (auth.not_signed_in).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "error.server.internal (server.internal)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "error.server.unavailable (server.unavailable)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-never-stored": true,
-        "x-permission": "signed-in"
-      }
-    },
-    "/api/v1/me/mentions/read": {
-      "post": {
-        "tags": ["comments"],
-        "summary": "Marks the mentions of the person in these comments as read.",
-        "operationId": "readMentions",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReadMentionsBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "They are marked."
-          },
-          "400": {
-            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not signed in (auth.not_signed_in).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23366,6 +23254,125 @@
         },
         "x-permission": "manage-workflows"
       }
+    },
+    "/api/v1/workflows/{workflow}/publish-preview": {
+      "post": {
+        "tags": ["workflows"],
+        "summary": "Says which statuses publishing a workflow would drop and which issues are in them, so the editor\ncan ask where those issues go. The issues the person sees are named; the others are only\ncounted. Needs the permission *Manage workflows* wherever the workflow is used.",
+        "operationId": "previewPublishWorkflow",
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPreviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The dropped statuses and their issues.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPreviewAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-workflows"
+      }
     }
   },
   "components": {
@@ -24977,6 +24984,39 @@
           "text": {
             "type": "string",
             "description": "The text as it stands now."
+          }
+        }
+      },
+      "DroppedStatusBody": {
+        "type": "object",
+        "description": "A status that publishing would drop, and the issues that are in it.",
+        "required": ["status", "issues", "named", "unseen", "blocked"],
+        "properties": {
+          "blocked": {
+            "type": "integer",
+            "description": "How many of the issues the person could not move: those they do not see, and those they may\nnot change. A publish that has to move them is refused.",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "integer",
+            "description": "How many live issues the workflow governs that are in it, also the ones the person does not\nsee.",
+            "minimum": 0
+          },
+          "named": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueRef"
+            },
+            "description": "Some of the issues the person sees, as a list shows them."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status, as the stored workflow names it."
+          },
+          "unseen": {
+            "type": "integer",
+            "description": "How many of the issues the person does not see. They are counted, never named.",
+            "minimum": 0
           }
         }
       },
@@ -27445,6 +27485,26 @@
           }
         }
       },
+      "MailServerReadiness": {
+        "type": "string",
+        "description": "What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).",
+        "enum": ["ready", "incomplete", "insecure"]
+      },
+      "MailServerStatusBody": {
+        "type": "object",
+        "description": "What the mail server has that is no setting.",
+        "required": ["credential_set", "readiness"],
+        "properties": {
+          "credential_set": {
+            "type": "boolean",
+            "description": "A password is stored. The password itself is never sent."
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/MailServerReadiness",
+            "description": "What the server judges of the mail server as entered: `ready`, `incomplete` (the host or\nthe sender is missing) or `insecure` (a secret would go without encryption to another\nmachine)."
+          }
+        }
+      },
       "ManyChangeActionBody": {
         "oneOf": [
           {
@@ -27562,6 +27622,10 @@
           "status": {
             "type": ["string", "null"],
             "description": "The key of a new status. Each issue is judged by its own workflow, and an issue whose\nworkflow does not allow the change is skipped."
+          },
+          "status_button": {
+            "type": ["string", "null"],
+            "description": "The words of the status change that was chosen to get to `status` (*Start working*). An\nissue whose workflow has no such change from its status is skipped, also when it has\nanother change to that status."
           }
         }
       },
@@ -27963,38 +28027,6 @@
         "description": "What a mention names: a person, a group or a role.",
         "enum": ["person", "group", "role"]
       },
-      "MentionedComment": {
-        "type": "object",
-        "description": "A comment that mentions the person.",
-        "required": ["comment", "issue", "author", "html", "at", "unread"],
-        "properties": {
-          "at": {
-            "type": "string",
-            "description": "When it was written."
-          },
-          "author": {
-            "$ref": "#/components/schemas/PersonRef",
-            "description": "Who wrote it, as the person may see people of the kind *Authors*."
-          },
-          "comment": {
-            "type": "string",
-            "description": "The ID of the comment."
-          },
-          "html": {
-            "type": "string",
-            "description": "The text as safe HTML, made on the server for this reader.",
-            "x-safe-html": true
-          },
-          "issue": {
-            "$ref": "#/components/schemas/IssueRef",
-            "description": "The issue it is under."
-          },
-          "unread": {
-            "type": "boolean",
-            "description": "Whether the person has not looked at it under *Mentions* yet."
-          }
-        }
-      },
       "MoveBody": {
         "type": "object",
         "description": "Where a project goes, and the version of the preview that was looked at.",
@@ -28108,6 +28140,26 @@
           "name": {
             "type": "string",
             "description": "The name."
+          }
+        }
+      },
+      "NeedKind": {
+        "type": "string",
+        "description": "What kind of input a field of a status change is asked for with.",
+        "enum": ["description", "assigned-to", "own"]
+      },
+      "NeededFieldBody": {
+        "type": "object",
+        "description": "A field a status change still needs.",
+        "required": ["field", "kind"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The key of the field: the word of a built-in field or the ID of an own field."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NeedKind",
+            "description": "What kind of input it needs."
           }
         }
       },
@@ -28710,7 +28762,8 @@
           },
           "html": {
             "type": ["string", "null"],
-            "description": "A comment: the text as safe HTML, made on the server for this person."
+            "description": "A comment: the text as safe HTML, made on the server for this person.",
+            "x-safe-html": true
           },
           "id": {
             "type": "string",
@@ -28763,6 +28816,11 @@
             "description": "A comment: the text, in Markdown."
           }
         }
+      },
+      "NotificationFilter": {
+        "type": "string",
+        "description": "Which notifications a list shows: all, the unread ones, or the ones that mention the person.",
+        "enum": ["all", "unread", "mentions"]
       },
       "NotificationKind": {
         "type": "string",
@@ -30054,53 +30112,6 @@
           }
         }
       },
-      "Page_MentionedComment": {
-        "type": "object",
-        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
-        "required": ["items", "next_cursor"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "A comment that mentions the person.",
-              "required": ["comment", "issue", "author", "html", "at", "unread"],
-              "properties": {
-                "at": {
-                  "type": "string",
-                  "description": "When it was written."
-                },
-                "author": {
-                  "$ref": "#/components/schemas/PersonRef",
-                  "description": "Who wrote it, as the person may see people of the kind *Authors*."
-                },
-                "comment": {
-                  "type": "string",
-                  "description": "The ID of the comment."
-                },
-                "html": {
-                  "type": "string",
-                  "description": "The text as safe HTML, made on the server for this reader.",
-                  "x-safe-html": true
-                },
-                "issue": {
-                  "$ref": "#/components/schemas/IssueRef",
-                  "description": "The issue it is under."
-                },
-                "unread": {
-                  "type": "boolean",
-                  "description": "Whether the person has not looked at it under *Mentions* yet."
-                }
-              }
-            },
-            "description": "The items of this page."
-          },
-          "next_cursor": {
-            "type": ["string", "null"],
-            "description": "The cursor of the next page; `null` on the last page."
-          }
-        }
-      },
       "Page_NotificationEntry": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -30239,7 +30250,8 @@
                 },
                 "html": {
                   "type": ["string", "null"],
-                  "description": "A comment: the text as safe HTML, made on the server for this person."
+                  "description": "A comment: the text as safe HTML, made on the server for this person.",
+                  "x-safe-html": true
                 },
                 "id": {
                   "type": "string",
@@ -31552,17 +31564,76 @@
         "description": "Whether the owner may know the project.",
         "enum": ["visible", "hidden"]
       },
+      "ProjectStatusChangeBody": {
+        "type": "object",
+        "description": "A status change of some workflow of the project.",
+        "required": ["to", "button"],
+        "properties": {
+          "button": {
+            "type": "string",
+            "description": "The text of the button."
+          },
+          "to": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status it ends in."
+          }
+        }
+      },
       "ProjectStatusesBody": {
         "type": "object",
-        "description": "The statuses the issues of a project can have: one list for all issue types. A status with the\nsame key, name and group in several workflows is listed once; one with the same key and another\nname or group is listed for each.",
-        "required": ["statuses"],
+        "description": "The status changes the issues of a project can have: one list for all issue types, each status\nchange once by its words.",
+        "required": ["changes"],
         "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStatusChangeBody"
+            },
+            "description": "The status changes by their words, once for the same status and text, in the order the\nworkflows list them: what a choice of a status change for many issues offers."
+          }
+        }
+      },
+      "PublishPreviewAnswer": {
+        "type": "object",
+        "description": "What publishing a workflow would drop.",
+        "required": ["dropped", "limit", "too_many"],
+        "properties": {
+          "dropped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DroppedStatusBody"
+            },
+            "description": "The statuses the stored workflow has and the new one lacks."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The most issues one publish moves; a publish that would move more is refused.",
+            "minimum": 0
+          },
+          "too_many": {
+            "type": "boolean",
+            "description": "There are more issues than that in the statuses that would go. They are then not judged or\nnamed, and the counts are not complete."
+          }
+        }
+      },
+      "PublishPreviewBody": {
+        "type": "object",
+        "description": "What to preview: the workflow as *Publish* would send it.",
+        "required": ["statuses", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeDraftBody"
+            },
+            "description": "All the status changes."
+          },
           "statuses": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StatusRef"
+              "$ref": "#/components/schemas/StatusDraftBody"
             },
-            "description": "The statuses, in the order the workflows list them."
+            "description": "All the statuses, in order."
           }
         }
       },
@@ -31618,34 +31689,20 @@
           }
         }
       },
-      "ReadMentionsBody": {
-        "type": "object",
-        "description": "The mentions to mark as read.",
-        "required": ["comments"],
-        "properties": {
-          "comments": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The IDs of the comments."
-          }
-        }
-      },
       "ReadNotificationsBody": {
         "type": "object",
         "description": "The notifications to mark as read.",
         "properties": {
-          "all": {
-            "type": "boolean",
-            "description": "Mark every unread notification as read."
-          },
           "ids": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The IDs of the notifications, at most 100; or leave it out and set `all`."
+            "description": "The IDs of the notifications, at most 100; or leave it out and set `up_to`."
+          },
+          "up_to": {
+            "type": ["string", "null"],
+            "description": "Mark every unread notification as read up to and including this one, the newest the person\nhas seen: ones that came after it stay unread."
           }
         }
       },
@@ -32209,8 +32266,12 @@
       "RuleFieldBody": {
         "type": "object",
         "description": "A field a rule can name.",
-        "required": ["field"],
+        "required": ["field", "askable"],
         "properties": {
+          "askable": {
+            "type": "boolean",
+            "description": "Whether a rule may ask for the field in the small form of a status change; the description\ncan only be required to be filled in."
+          },
           "field": {
             "type": "string",
             "description": "The key of the field: the word of a built-in field or the ID of an own field."
@@ -32940,9 +33001,9 @@
           "needs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FieldKey"
+              "$ref": "#/components/schemas/NeededFieldBody"
             },
-            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), by their keys. Empty when it needs none."
+            "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), each with the kind of input it needs. Empty when it needs\nnone."
           },
           "to": {
             "$ref": "#/components/schemas/StatusRef",
@@ -32985,7 +33046,7 @@
           },
           "to": {
             "type": "string",
-            "description": "The key of the status of the new workflow the issues go to."
+            "description": "The status of the new workflow the issues go to: its key, or its name when it is new."
           }
         }
       },

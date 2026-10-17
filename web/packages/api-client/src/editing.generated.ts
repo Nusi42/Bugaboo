@@ -31,6 +31,9 @@ export type DraftKeptCode = (typeof draftKeptCodes)[number];
 /** The name of the part of a layout that its edit lock is about: a layout is edited as a whole. */
 export const layoutEditPart = "layout";
 
+/** The name of the part of a workflow that its edit lock is about: a workflow is edited as a whole and made to count with *Publish*. */
+export const workflowEditPart = "workflow";
+
 /** The name of the part of an issue that holds its description. */
 export const descriptionEditPart = "description";
 

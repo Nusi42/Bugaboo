@@ -115,10 +115,6 @@ routes = [
 reason = "Accepted for now (M3-F31): each route sets one single value, one setting or one level cell, from a screen that applies the change at once and does not carry the version of each row yet. Nothing else is overwritten with it, the last writer wins, and the event and the security log say who set it."
 
 [[exempt]]
-routes = ["POST /api/v1/me/mentions/read"]
-reason = "The read marks of *Mentions* belong to the one person who reads them; marking a mention read twice is the same as once, and nobody else can change them."
-
-[[exempt]]
 routes = [
   "POST /api/v1/issues/{issue}/tags",
   "DELETE /api/v1/issues/{issue}/tags/{tag}",
@@ -132,8 +128,9 @@ routes = [
   "POST /api/v1/tags/{tag}/preview",
   "POST /api/v1/labels/{label}/preview",
   "POST /api/v1/many-changes/preview",
+  "POST /api/v1/workflows/{workflow}/publish-preview",
 ]
-reason = "Changes nothing: it only says what a rename, a combine or a change to many issues would do, and the change that follows takes the versions the preview read (M3 WP-08)."
+reason = "Changes nothing: it only says what a rename, a combine or a change to many issues would do, and the change that follows takes the versions the preview read (M3 WP-08). The preview of a publish says which statuses would be dropped and which issues are in them; the publish that follows takes the version of the workflow (ADR-0031 amendment 12)."
 
 [[exempt]]
 routes = ["POST /api/v1/many-changes"]

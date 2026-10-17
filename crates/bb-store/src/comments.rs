@@ -130,34 +130,6 @@ impl CommentStore for AuthStorage {
             .collect()
     }
 
-    async fn mentions_of(
-        &self,
-        recipient: UserId,
-        unread: bool,
-        before: Option<CommentId>,
-        limit: u64,
-    ) -> Result<Vec<Mention>, StoreError> {
-        let mut select = mention_select();
-        select
-            .and_where(Expr::col(MentionRow::Recipient).eq(recipient.stored()))
-            .order_by(MentionRow::Comment, Order::Desc)
-            .limit(limit);
-        select.and_where(if unread {
-            Expr::col(MentionRow::ReadAt).is_null()
-        } else {
-            Expr::col(MentionRow::ReadAt).is_not_null()
-        });
-        if let Some(before) = before {
-            select.and_where(Expr::col(MentionRow::Comment).lt(before.stored()));
-        }
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_mention)
-            .collect()
-    }
-
     async fn mentions_in_comment(&self, comment: CommentId) -> Result<Vec<Mention>, StoreError> {
         let mut select = mention_select();
         select
@@ -315,27 +287,5 @@ impl CommentStore for AuthStorage {
             transaction.execute(&insert).await?;
         }
         Ok(())
-    }
-
-    async fn mark_mentions_read(
-        transaction: &mut Transaction,
-        recipient: UserId,
-        comments: &[CommentId],
-        at: Timestamp,
-    ) -> Result<(), StoreError> {
-        if comments.is_empty() {
-            return Ok(());
-        }
-        let mut update = Query::update();
-        update
-            .table(MentionRow::Table)
-            .value(MentionRow::ReadAt, to_micros(at))
-            .and_where(Expr::col(MentionRow::Recipient).eq(recipient.stored()))
-            .and_where(Expr::col(MentionRow::ReadAt).is_null())
-            .and_where(
-                Expr::col(MentionRow::Comment)
-                    .is_in(comments.iter().map(|id| id.stored()).collect::<Vec<_>>()),
-            );
-        transaction.execute(&update).await.map(|_| ())
     }
 }

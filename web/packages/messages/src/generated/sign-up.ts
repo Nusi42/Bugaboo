@@ -8,8 +8,16 @@ export const messages = {
   "sign-up.closed":
     "Creating your own account is switched off here. Ask an administrator to invite you.",
   "sign-up.have-account": "I already have an account",
-  "sign-up.sent":
-    "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you.",
+  "sign-up.check-title": "Check your e-mail",
+  "sign-up.check-text":
+    "If {email} can sign up here, we sent a link to it. Open the link to choose your name and your password. It works once, for {hours, plural, one {# hour} other {# hours}}.",
+  "sign-up.check-nothing":
+    "Nothing there? Look in your spam folder and check the address. You can ask for a new link.",
+  "sign-up.resend": "Send a new link",
+  "sign-up.resend-in":
+    "You can ask for a new link in {minutes, plural, one {# minute} other {# minutes}}.",
+  "sign-up.resent": "If {email} can sign up here, we sent a new link to it.",
+  "sign-up.other-address": "Use another address",
 } as const;
 
 register(messages);

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { CheckAnswer } from "./CheckAnswer.tsx";
-import { IssueTypeQuestion } from "./IssueTypeQuestion.tsx";
+import { IssueTypeChoice } from "../issue-types/index.ts";
 import { PersonPicker, PlacePicker } from "./Pickers.tsx";
 import { useCheckAccess } from "./use-check.ts";
 
@@ -39,9 +39,10 @@ export function CheckAccessView({ project }: CheckAccessViewProps) {
       ) : null}
       {answer.isError ? <Alert tone={alertTone.danger}>{messageOf(answer.error)}</Alert> : null}
       {answer.data?.differs_by_type === true ? (
-        <IssueTypeQuestion
+        <IssueTypeChoice
+          label={t("check-access.issue-type-question")}
           types={answer.data.issue_types}
-          value={issueType}
+          type={issueType}
           onChange={setIssueType}
         />
       ) : null}

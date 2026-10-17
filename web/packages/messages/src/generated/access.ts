@@ -91,13 +91,11 @@ export const messages = {
   "field-permissions.more-options": "More options",
   "field-permissions.fewer-options": "Fewer options",
   "field-permissions.type-chooser": "Levels for",
-  "field-permissions.all-types": "All issue types",
   "field-permissions.type-help":
     "These levels count for issues of every type, unless a level is set for one type below.",
   "field-permissions.type-help-chosen":
     "A level set here counts for issues of this type only, and wins over the level for all types. Where nothing is set for this type, the level for all types counts.",
   "check-access.issue-type-question": "Which issue type?",
-  "check-access.issue-type-all": "All issue types",
   "check-access.for-issue-type": "The field levels are for issues of the type {type}.",
 } as const;
 

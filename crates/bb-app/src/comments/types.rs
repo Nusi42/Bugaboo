@@ -12,8 +12,6 @@ use bb_policy::{Masked, PersonRef};
 use jiff::Timestamp;
 use serde::Serialize;
 
-use crate::relations::IssueLine;
-
 /// Write a comment under an issue.
 pub struct AddComment {
     /// The secret of the session of the request.
@@ -174,47 +172,3 @@ pub struct MentionChoices {
 }
 
 impl Masked for MentionChoices {}
-
-/// The comments that mention the person, unread first.
-pub struct MentionsQuery {
-    /// The secret of the session of the request.
-    pub session_token: String,
-    /// How many mentions at most.
-    pub limit: u32,
-}
-
-/// One comment that mentions the person.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MentionItem {
-    /// The comment.
-    pub comment: CommentId,
-    /// The issue it is under.
-    pub issue: IssueLine,
-    /// Who wrote it, as the kind *Authors* says for this viewer.
-    pub author: PersonRef,
-    /// The text as safe HTML.
-    pub html: String,
-    /// When it was written.
-    pub at: Timestamp,
-    /// Whether the person has not looked at it under *Mentions* yet.
-    pub unread: bool,
-}
-
-/// The *Mentions* block of the start page.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct Mentions {
-    /// The comments, unread first and then the newest.
-    pub items: Vec<MentionItem>,
-    /// The cursor of the next page; always none, the block shows the newest few.
-    pub next_cursor: Option<String>,
-}
-
-impl Masked for Mentions {}
-
-/// Mark the mentions of the person in these comments as read.
-pub struct ReadMentions {
-    /// The secret of the session of the request.
-    pub session_token: String,
-    /// The comments.
-    pub comments: Vec<CommentId>,
-}

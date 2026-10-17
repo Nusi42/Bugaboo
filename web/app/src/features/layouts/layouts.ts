@@ -4,7 +4,6 @@ import {
   layoutEditPart,
   layoutKindWords,
   readDraft,
-  readEditLock,
   throwAwayDraft,
   type DraftTarget,
   type EditWhat,
@@ -224,15 +223,6 @@ export function useThrowAwayKeptDraft(layout: string) {
     onSuccess: () => {
       refreshLayoutDraft(layout);
     },
-  });
-}
-
-/** Who is editing the layout now, as the person may see them; nothing when nobody is or while it is not asked. */
-export function useEditingNow(layout: string, asked: boolean) {
-  return useQuery({
-    queryKey: queryKeys.layouts.editing(layout),
-    queryFn: () => readEditLock(api.client, whatOf(layout)),
-    enabled: asked,
   });
 }
 

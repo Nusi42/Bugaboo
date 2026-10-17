@@ -7,9 +7,10 @@
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
-use bb_core::mail::PASSWORD_MAX;
+use bb_core::mail::{MailServerReadiness, PASSWORD_MAX};
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Authorized, Permission, Place};
+use bb_policy::{Authorized, Masked, Permission, Place};
+use serde::Serialize;
 
 use super::mail::send_failure;
 use crate::auth::{
@@ -26,6 +27,25 @@ pub struct SetMailPassword {
     /// The password; none (or an empty one) removes it, for a mail server that asks for none.
     pub password: Option<String>,
 }
+
+/// Ask whether the password of the mail server is entered.
+pub struct MailServerQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+}
+
+/// Whether a password is entered. The password itself is never given (SEC-16): the page of the mail
+/// server shows only that it is *set*.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct MailServerStatus {
+    /// A password is stored.
+    pub credential_set: bool,
+    /// The server's own judgement of the mail server as entered: the page shows it and judges
+    /// nothing itself.
+    pub readiness: MailServerReadiness,
+}
+
+impl Masked for MailServerStatus {}
 
 /// Send an e-mail to the person who asks, through the mail server as it is entered, to try the
 /// settings. It goes even while e-mail is still off.
@@ -88,6 +108,41 @@ pub async fn set_mail_password<S: AuthStore>(
     )
     .await;
     Ok(access.authorize(Done))
+}
+
+/// Tells whether the password of the mail server is entered.
+///
+/// # Errors
+/// `access.forbidden` without *Change organization settings*.
+pub async fn mail_server_status<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: MailServerQuery,
+) -> Result<Authorized<MailServerStatus>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(
+            &actor,
+            Permission::ChangeOrganizationSettings,
+            Place::Organization,
+        )
+        .await?;
+    let credential_set = ctx
+        .store()
+        .mail_password()
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .is_some();
+    let layers = ctx.setting_layers_of(None).await?;
+    let readiness = match ctx.mail_server(&layers).await {
+        Ok(Some(_)) => MailServerReadiness::Ready,
+        Ok(None) => MailServerReadiness::Incomplete,
+        Err(AppError::Refused(ErrorCode::MailInsecure)) => MailServerReadiness::Insecure,
+        Err(other) => return Err(other),
+    };
+    Ok(access.authorize(MailServerStatus {
+        credential_set,
+        readiness,
+    }))
 }
 
 /// Sends a test e-mail to the person who asks.

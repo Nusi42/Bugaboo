@@ -526,8 +526,6 @@ pub const ROUTES: &[Route] = &[
         Declared::Permission(Permission::SeeIssues),
         Answer::NeverStored,
     ),
-    route("listMentions", Declared::SignedIn, Answer::NeverStored),
-    route("readMentions", Declared::SignedIn, Answer::Ordinary),
     route("getMyHandle", Declared::SignedIn, Answer::NeverStored),
     route("changeMyHandle", Declared::SignedIn, Answer::Ordinary),
     route("listNotifications", Declared::SignedIn, Answer::NeverStored),
@@ -541,6 +539,11 @@ pub const ROUTES: &[Route] = &[
         "setMailPassword",
         Declared::Permission(Permission::ChangeOrganizationSettings),
         Answer::Ordinary,
+    ),
+    route(
+        "getMailServer",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+        Answer::NeverStored,
     ),
     route(
         "sendTestEmail",
@@ -593,6 +596,11 @@ pub const ROUTES: &[Route] = &[
     ),
     route(
         "publishWorkflow",
+        Declared::Permission(Permission::ManageWorkflows),
+        Answer::Ordinary,
+    ),
+    route(
+        "previewPublishWorkflow",
         Declared::Permission(Permission::ManageWorkflows),
         Answer::Ordinary,
     ),

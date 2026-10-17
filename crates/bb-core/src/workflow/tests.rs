@@ -221,6 +221,11 @@ fn wf_02_a_workflow_breaks_a_rule_when_it_cannot_work() {
         broken(|c| c.changes[0].rules.must_fill = vec![FieldKey::BuiltIn(Field::Priority)]),
         Err(Problem::FieldNotAllowed)
     );
+    // The description can be required, but not asked for: a status change cannot carry it.
+    assert_eq!(
+        broken(|c| c.changes[0].rules.ask_for = vec![FieldKey::BuiltIn(Field::Description)]),
+        Err(Problem::FieldNotAllowed)
+    );
     assert_eq!(
         broken(|c| {
             c.statuses = (0..=STATUSES_MAX)
@@ -303,6 +308,32 @@ fn wf_02_a_new_status_gets_a_key_and_a_status_change_names_it_by_its_name() {
         WorkflowContent::from_drafts(&twice, &[]),
         Err(Problem::NameTwice)
     );
+}
+
+#[test]
+fn wf_02_one_reading_names_a_new_status_for_the_editor_and_for_publishing() {
+    let statuses = [
+        WorkflowStatus {
+            key: key("open"),
+            name: "Open".to_owned(),
+            group: StatusGroup::NotStarted,
+        },
+        WorkflowStatus {
+            key: key("in-qa"),
+            name: "In QA".to_owned(),
+            group: StatusGroup::InProgress,
+        },
+    ];
+    let is_new = |status: &WorkflowStatus| status.key.as_str() == "in-qa";
+    let found = |text: &str| status_named(&statuses, text, is_new).map(|each| each.key.as_str());
+    // By key; by name with spaces at the ends and other capitals.
+    assert_eq!(found("in-qa"), Some("in-qa"));
+    assert_eq!(found("  in qa "), Some("in-qa"));
+    assert_eq!(found("IN QA"), Some("in-qa"));
+    // A status that is not new is named by its key only.
+    assert_eq!(found("open"), Some("open"));
+    assert_eq!(found("Open"), None);
+    assert_eq!(found("nowhere"), None);
 }
 
 #[test]

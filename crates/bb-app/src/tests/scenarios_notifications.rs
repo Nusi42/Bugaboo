@@ -31,7 +31,7 @@ pub(crate) async fn read_notifications_scenario(world: &World) -> Added {
             &world.ctx(),
             ReadNotifications {
                 session_token: token(world),
-                which: Which::All,
+                which: Which::UpTo(the_newest_there_can_be()),
             },
         ),
     )
@@ -132,4 +132,13 @@ pub(crate) async fn create_missing_handles_scenario(world: &World) -> Added {
         create_missing_handles(&world.ctx(), CreateMissingHandles),
     )
     .await
+}
+
+/// An ID that sorts after every notification there is: *up to* it marks all of them.
+pub(crate) fn the_newest_there_can_be() -> bb_core::id::NotificationId {
+    bb_core::id::NotificationId::from_parts(
+        jiff::Timestamp::from_second(253_402_207_200).expect("a moment in the year 9999"),
+        [0xff; 10],
+    )
+    .expect("a moment after 1970")
 }
