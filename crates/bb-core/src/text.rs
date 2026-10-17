@@ -136,9 +136,10 @@ fn plain(text: &str, longest: usize, keep_lines: bool) -> String {
             cleaned.push('…');
             break;
         }
-        if c == '\n' && keep_lines {
+        // The separators of line and paragraph end a line in many programs, as `\n` does.
+        if matches!(c, '\n' | '\u{2028}' | '\u{2029}') && keep_lines {
             cleaned.push('\n');
-        } else if c.is_control() {
+        } else if c.is_control() || matches!(c, '\u{2028}' | '\u{2029}') {
             cleaned.push(' ');
         } else {
             cleaned.push(c);
@@ -187,6 +188,15 @@ mod tests {
             "Subject Bcc: x@y.z"
         );
         // Cut to the length, with a mark that it was cut.
+        // The separators of line and paragraph are line breaks too: a new quoted line, or a space.
+        assert_eq!(
+            plain_text("one\u{2028}two\u{2029}three", 100),
+            "one\ntwo\nthree"
+        );
+        assert_eq!(
+            plain_line("one\u{2028}Bcc: x\u{2029}two", 100),
+            "one Bcc: x two"
+        );
         assert_eq!(plain_text("abcdef", 3), "abc…");
         assert_eq!(plain_text("abc", 3), "abc");
         assert_eq!(plain_line("", 3), "");
