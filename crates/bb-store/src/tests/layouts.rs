@@ -27,6 +27,7 @@ async fn changed<T: Send>(
 
 fn content(roles: &[RoleId], fields: &[Field]) -> LayoutContent {
     LayoutContent {
+        off: Vec::new(),
         sections: vec![
             SectionContent {
                 tab: "Basics".to_owned(),
@@ -107,7 +108,14 @@ async fn cfg_01_a_layout_comes_back_as_stored_and_a_save_needs_the_version_it_st
         );
 
         // A save on the version it started from replaces the sections and counts the version up.
-        let second = content(&roles[..1], &[Field::Description]);
+        // The priority was taken off the form: its role is kept, to come back with it.
+        let second = LayoutContent {
+            off: vec![PlacedField {
+                field: FieldKey::from(Field::Priority),
+                roles: roles[1..].to_vec(),
+            }],
+            ..content(&roles[..1], &[Field::Description])
+        };
         let (id, saved) = (layout.id, second.clone());
         let done = changed(storage, &mut source, move |tx| {
             Box::pin(

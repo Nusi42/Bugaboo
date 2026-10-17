@@ -41,6 +41,7 @@ mod m0014_names;
 mod m0015_workflows;
 mod m0016_files;
 mod m0017_notifications;
+mod m0019_layout_off_fields;
 
 /// A column that holds the ID of a record: 16 bytes, never empty.
 pub(super) fn id_column(name: impl sea_query::Iden + 'static) -> ColumnDef {
@@ -211,6 +212,12 @@ const ALL: &[Definition] = &[
         version: 17,
         name: "notifications",
         steps: || Ok(m0017_notifications::steps()),
+    },
+    // 18 belongs to the types and labels per project (WP-11).
+    Definition {
+        version: 19,
+        name: "layout_off_fields",
+        steps: || Ok(m0019_layout_off_fields::steps()),
     },
 ];
 

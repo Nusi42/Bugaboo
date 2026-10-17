@@ -109,9 +109,21 @@ pub enum Problem {
 pub struct LayoutContent {
     /// The sections, in order.
     pub sections: Vec<SectionContent>,
+    /// The fields that were taken off the form, each with the roles it was shown to, so that a field
+    /// put back is shown to the same roles (M3-F107). No form shows them.
+    pub off: Vec<PlacedField>,
 }
 
 impl LayoutContent {
+    /// A layout of these sections with no field taken off the form.
+    #[must_use]
+    pub const fn of_sections(sections: Vec<SectionContent>) -> Self {
+        Self {
+            sections,
+            off: Vec::new(),
+        }
+    }
+
     /// The fields in all sections, in order.
     pub fn placed(&self) -> impl Iterator<Item = &PlacedField> {
         self.sections.iter().flat_map(|section| &section.fields)
@@ -187,15 +199,13 @@ impl LayoutContent {
                 built_in(&[Field::Description, Field::Priority]),
             )],
         };
-        Self { sections }
+        Self::of_sections(sections)
     }
 
-    /// The rows to store for this layout.
+    /// The rows to store for this layout. The roles of a field taken off the form are rows of the
+    /// same kind as those of a field on it: one list of roles for a field, on the form or off it.
     #[must_use]
-    pub fn rows(
-        &self,
-        layout: LayoutId,
-    ) -> (Vec<LayoutSection>, Vec<LayoutField>, Vec<LayoutFieldRole>) {
+    pub fn rows(&self, layout: LayoutId) -> LayoutRows {
         let (mut sections, mut fields, mut roles) = (Vec::new(), Vec::new(), Vec::new());
         for (section_at, section) in (0_i64..).zip(&self.sections) {
             sections.push(LayoutSection {
@@ -218,17 +228,46 @@ impl LayoutContent {
                 }));
             }
         }
-        (sections, fields, roles)
+        let off = self
+            .off
+            .iter()
+            .map(|placed| {
+                roles.extend(placed.roles.iter().map(|role| LayoutFieldRole {
+                    layout,
+                    field: placed.field,
+                    role: *role,
+                }));
+                LayoutOffField {
+                    layout,
+                    field: placed.field,
+                }
+            })
+            .collect();
+        LayoutRows {
+            sections,
+            fields,
+            off,
+            roles,
+        }
     }
 
     /// The layout the stored rows make. Rows of one layout only; a field row whose section is gone
     /// is left out.
     #[must_use]
-    pub fn from_rows(
-        sections: &[LayoutSection],
-        fields: &[LayoutField],
-        roles: &[LayoutFieldRole],
-    ) -> Self {
+    pub fn from_rows(rows: &LayoutRows) -> Self {
+        let LayoutRows {
+            sections,
+            fields,
+            off,
+            roles,
+        } = rows;
+        let roles_of = |field: FieldKey| -> Vec<RoleId> {
+            roles
+                .iter()
+                .filter(|row| row.field == field)
+                .map(|row| row.role)
+                .collect()
+        };
         let mut ordered: Vec<&LayoutSection> = sections.iter().collect();
         ordered.sort_by_key(|section| section.position);
         let sections = ordered
@@ -246,18 +285,35 @@ impl LayoutContent {
                         .into_iter()
                         .map(|field| PlacedField {
                             field: field.field,
-                            roles: roles
-                                .iter()
-                                .filter(|row| row.field == field.field)
-                                .map(|row| row.role)
-                                .collect(),
+                            roles: roles_of(field.field),
                         })
                         .collect(),
                 }
             })
             .collect();
-        Self { sections }
+        let off = off
+            .iter()
+            .map(|row| PlacedField {
+                field: row.field,
+                roles: roles_of(row.field),
+            })
+            .collect();
+        Self { sections, off }
     }
+}
+
+/// The rows a layout is stored as: its sections, the fields in them, the fields taken off the form,
+/// and the roles of every one of those fields.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LayoutRows {
+    /// The sections.
+    pub sections: Vec<LayoutSection>,
+    /// The fields on the form.
+    pub fields: Vec<LayoutField>,
+    /// The fields taken off the form.
+    pub off: Vec<LayoutOffField>,
+    /// The roles of the fields, on the form and off it.
+    pub roles: Vec<LayoutFieldRole>,
 }
 
 /// Which place a layout is for.
@@ -365,6 +421,17 @@ pub struct LayoutField {
     pub position: i64,
 }
 
+/// A field that was taken off the form of a layout; its roles are rows of [`LayoutFieldRole`].
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct LayoutOffField {
+    /// The layout.
+    #[not_personal]
+    pub layout: LayoutId,
+    /// The field, built-in or own.
+    #[not_personal]
+    pub field: FieldKey,
+}
+
 /// A role a field of a layout is shown to.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct LayoutFieldRole {
@@ -417,6 +484,10 @@ mod tests {
     fn rows_and_content_convert_into_each_other() {
         let (layout, team, guest) = ids();
         let content = LayoutContent {
+            off: vec![PlacedField {
+                field: Field::Labels.into(),
+                roles: vec![guest],
+            }],
             sections: vec![
                 SectionContent {
                     tab: "Basics".into(),
@@ -439,11 +510,15 @@ mod tests {
                 },
             ],
         };
-        let (sections, fields, roles) = content.rows(layout);
-        assert_eq!(
-            LayoutContent::from_rows(&sections, &fields, &roles),
-            content
+        let rows = content.rows(layout);
+        // A field taken off the form keeps its roles among the same rows as the fields on it.
+        assert_eq!(rows.off.len(), 1);
+        assert!(
+            rows.roles
+                .iter()
+                .any(|row| row.field == Field::Labels.into())
         );
+        assert_eq!(LayoutContent::from_rows(&rows), content);
     }
 
     #[test]
@@ -453,12 +528,12 @@ mod tests {
             field: field.into(),
             roles: vec![team],
         };
-        let one = |fields: Vec<PlacedField>| LayoutContent {
-            sections: vec![SectionContent {
+        let one = |fields: Vec<PlacedField>| {
+            LayoutContent::of_sections(vec![SectionContent {
                 tab: String::new(),
                 title: String::new(),
                 fields,
-            }],
+            }])
         };
         assert_eq!(
             one(vec![placed(Field::Priority), placed(Field::Priority)]).check(LayoutKind::NewIssue),

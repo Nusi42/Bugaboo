@@ -8,14 +8,17 @@ use bb_app::layouts::LayoutStore;
 use bb_core::fields::FieldKey;
 use bb_core::id::{LayoutId, RoleId};
 use bb_core::layout::{
-    Layout, LayoutContent, LayoutField, LayoutFieldRole, LayoutKind, LayoutSection, StoredLayout,
+    Layout, LayoutContent, LayoutField, LayoutFieldRole, LayoutKind, LayoutOffField, LayoutRows,
+    LayoutSection, StoredLayout,
 };
 use sea_query::{Expr, ExprTrait as _, Order, Query};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction};
 use crate::error::StoreError;
-use crate::schema::{LayoutFieldRoleRow, LayoutFieldRow, LayoutRow, LayoutSectionRow};
+use crate::schema::{
+    LayoutFieldRoleRow, LayoutFieldRow, LayoutOffFieldRow, LayoutRow, LayoutSectionRow,
+};
 
 fn read_kind(code: &str) -> Result<LayoutKind, StoreError> {
     LayoutKind::from_code(code).ok_or(StoreError::Corrupt("a kind of layout"))
@@ -55,7 +58,12 @@ async fn insert_content(
     id: LayoutId,
     content: &LayoutContent,
 ) -> Result<(), StoreError> {
-    let (sections, fields, roles) = content.rows(id);
+    let LayoutRows {
+        sections,
+        fields,
+        off,
+        roles,
+    } = content.rows(id);
     for section in &sections {
         let mut insert = Query::insert();
         insert
@@ -94,6 +102,18 @@ async fn insert_content(
             .map_err(|_| StoreError::Corrupt("a field of a layout"))?;
         transaction.execute(&insert).await?;
     }
+    for field in &off {
+        let mut insert = Query::insert();
+        insert
+            .into_table(LayoutOffFieldRow::Table)
+            .columns([LayoutOffFieldRow::Layout, LayoutOffFieldRow::Field])
+            .values([
+                Expr::val(field.layout.stored()),
+                Expr::val(field.field.code().into_owned()),
+            ])
+            .map_err(|_| StoreError::Corrupt("a field taken off a layout"))?;
+        transaction.execute(&insert).await?;
+    }
     for role in &roles {
         let mut insert = Query::insert();
         insert
@@ -121,6 +141,10 @@ async fn delete_content(transaction: &mut Transaction, id: LayoutId) -> Result<(
         .from_table(LayoutFieldRoleRow::Table)
         .and_where(Expr::col(LayoutFieldRoleRow::Layout).eq(id.stored()));
     transaction.execute(&roles).await?;
+    let mut off = Query::delete();
+    off.from_table(LayoutOffFieldRow::Table)
+        .and_where(Expr::col(LayoutOffFieldRow::Layout).eq(id.stored()));
+    transaction.execute(&off).await?;
     let mut fields = Query::delete();
     fields
         .from_table(LayoutFieldRow::Table)
@@ -187,6 +211,22 @@ async fn read_content(
             })
         })
         .collect::<Result<Vec<_>, StoreError>>()?;
+    let mut off = Query::select();
+    off.columns([LayoutOffFieldRow::Layout, LayoutOffFieldRow::Field])
+        .from(LayoutOffFieldRow::Table)
+        .and_where(Expr::col(LayoutOffFieldRow::Layout).eq(id.stored()))
+        .order_by(LayoutOffFieldRow::Field, Order::Asc);
+    let off = transaction
+        .fetch_all(&off)
+        .await?
+        .iter()
+        .map(|row| {
+            Ok(LayoutOffField {
+                layout: row.id(LayoutOffFieldRow::Layout)?,
+                field: read_field(&row.get::<String>(LayoutOffFieldRow::Field)?)?,
+            })
+        })
+        .collect::<Result<Vec<_>, StoreError>>()?;
     let mut roles = Query::select();
     roles
         .columns([
@@ -209,7 +249,12 @@ async fn read_content(
             })
         })
         .collect::<Result<Vec<_>, StoreError>>()?;
-    Ok(LayoutContent::from_rows(&sections, &fields, &roles))
+    Ok(LayoutContent::from_rows(&LayoutRows {
+        sections,
+        fields,
+        off,
+        roles,
+    }))
 }
 
 impl LayoutStore for AuthStorage {

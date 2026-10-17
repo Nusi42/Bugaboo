@@ -89,13 +89,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|role| role.id)
             .collect();
         let reach: BTreeSet<FieldKey> = self.own_fields_for(at).await?.into_iter().collect();
+        // A field that was taken off the form keeps the roles it had, as one on the form does, so a
+        // field put back is shown to the same roles (M3-F107).
         let kept: HashMap<FieldKey, &Vec<RoleId>> = before
             .placed()
+            .chain(&before.off)
             .map(|placed| (placed.field, &placed.roles))
             .collect();
-        let mut sent = LayoutContent {
-            sections: Vec::with_capacity(sections.len()),
-        };
+        let mut sent = LayoutContent::of_sections(Vec::with_capacity(sections.len()));
         let mut full = sent.clone();
         for section in sections {
             let mut fields = Vec::with_capacity(section.fields.len());
@@ -163,6 +164,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         let mut stored = full;
         keep_unknown_fields(&mut stored, before, known);
+        stored.off = fields_taken_off(&stored, before);
         stored
             .check(at.kind)
             .map_err(|_| AppError::from(ErrorCode::InvalidRequest))?;
@@ -182,6 +184,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .into_keys()
             .collect())
     }
+}
+
+/// The fields of `before` that `content` does not place any more, and the ones that were off the
+/// form already, each with the roles it had: what a field put back is shown to (M3-F107).
+fn fields_taken_off(content: &LayoutContent, before: &LayoutContent) -> Vec<PlacedField> {
+    let placed: BTreeSet<FieldKey> = content.placed().map(|each| each.field).collect();
+    let mut off: Vec<PlacedField> = Vec::new();
+    for each in before.placed().chain(&before.off) {
+        if !placed.contains(&each.field) && off.iter().all(|seen| seen.field != each.field) {
+            off.push(each.clone());
+        }
+    }
+    off
 }
 
 /// Puts the own fields of `before` that the editor does not know into `content` again, each in the

@@ -217,3 +217,23 @@ async fn cfg_04_the_theme_of_m1_becomes_the_mode_and_the_light_and_the_dark_them
     })
     .await
 }
+
+#[tokio::test]
+async fn cfg_01_a_database_of_migration_17_takes_the_table_of_fields_taken_off_a_layout()
+-> TestResult {
+    each_database("cfg_01_upgrade_19", async |db| {
+        let old = Database::connect(db.url()).await?;
+        old.migrate_up_to(17, Timestamp::UNIX_EPOCH).await?;
+        // 18 is the migration of another package; this one is applied after it, in its place.
+        assert_eq!(old.migrate(Timestamp::UNIX_EPOCH).await?, vec![19]);
+        assert_eq!(
+            old.applied_migrations()
+                .await?
+                .last()
+                .map(|record| record.version),
+            Some(19)
+        );
+        Ok(())
+    })
+    .await
+}
