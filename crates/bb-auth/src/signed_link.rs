@@ -1,8 +1,8 @@
 //! Signed links (ATT-07, ADR-0032): a few bytes that say what a link opens, for whom and until
 //! when, with a keyed hash that only this server can make.
 //!
-//! The key is derived from the CSRF key of the data folder (`keys/csrf.key`) under a name of its
-//! own, so a token of one kind is never valid as the other. The link is not a secret that grants
+//! The key is the CSRF key of the data folder (`keys/csrf.key`); every signature starts with a name
+//! of its own ([`DOMAIN`]), so a token of one kind is never valid as the other. The link is not a secret that grants
 //! access: it only names what may be asked for. Every use of a link is judged again against the
 //! issue (`bb-app`), and the link is for one person.
 
@@ -72,7 +72,8 @@ impl LinkKey {
 }
 
 impl crate::csrf::CsrfKey {
-    /// The key links are signed under, derived from this key.
+    /// The key links are signed under: the bytes of this key, kept apart from its other use by the
+    /// name that every signature starts with.
     #[must_use]
     pub fn link_key(&self) -> LinkKey {
         LinkKey::from_bytes(self.bytes())

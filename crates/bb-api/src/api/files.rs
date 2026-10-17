@@ -437,8 +437,7 @@ async fn list_issue_files(
     Ok(answer(Page::of_authorized(FILES_LIST, &list, &fields)?))
 }
 
-/// What the reader may add to the issue, and the limits of its project: how many megabytes a file
-/// may have, the types that are never accepted and the size of a part.
+/// What the reader may add to the issue, and the most bytes one file may have in its project.
 #[utoipa::path(
     get,
     path = "/api/v1/issues/{issue}/file-rules",
