@@ -3339,11 +3339,12 @@ part "bottom-bar.item[focus-visible]" {
     use "ring-inside"
 }
 
+// A word that does not fit its tab (five tabs, larger text, a small phone) breaks inside the tab and
+// never reaches into the next one.
 part "bottom-bar.label" {
     max-width "100%"
-    overflow hidden
-    text-overflow ellipsis
-    white-space nowrap
+    overflow-wrap anywhere
+    text-align center
 }
 
 part "top-bar" {
