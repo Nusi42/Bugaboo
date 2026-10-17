@@ -31,9 +31,8 @@ use crate::access::{
 };
 use crate::comments::{
     AddComment, CommentVersions, CommentVersionsQuery, CommentView, DeleteComment, MentionChoices,
-    MentionChoicesQuery, Mentions, MentionsQuery, ReadMentions, RestoreComment, SaveComment,
-    add_comment, comment_versions, delete_comment, mention_choices, mentions, read_mentions,
-    restore_comment, save_comment,
+    MentionChoicesQuery, RestoreComment, SaveComment, add_comment, comment_versions,
+    delete_comment, mention_choices, restore_comment, save_comment,
 };
 use crate::editing::{
     AskToFinish, CheckVersionsQuery, DraftSlot, DraftView, EditAnyway, HeartbeatAnswer,
@@ -470,8 +469,6 @@ use_cases! {
     comment_versions(CommentVersionsQuery) -> Authorized<CommentVersions>;
     /// Lists what a writer may name after @.
     mention_choices(MentionChoicesQuery) -> Authorized<MentionChoices>;
-    /// Lists the comments that mention the person.
-    mentions(MentionsQuery) -> Authorized<Mentions>;
     /// Lists the notifications of the person.
     notifications(NotificationsQuery) -> Authorized<NotificationPage>;
     /// How many notifications the person has not read.
@@ -488,8 +485,6 @@ use_cases! {
     send_test_email(SendTestEmail) -> Authorized<Done>;
     /// Marks notifications of the person as read.
     read_notifications(ReadNotifications) -> Done;
-    /// Marks the mentions of the person as read.
-    read_mentions(ReadMentions) -> Done;
     /// Starts an upload of a file to an issue or a comment.
     start_upload(StartUploadQuery) -> Authorized<UploadView>;
     /// Shows how far an upload is, so an interrupted one goes on.

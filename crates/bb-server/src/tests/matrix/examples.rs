@@ -367,8 +367,6 @@ pub(super) const EXAMPLES: &[Example] = &[
     ),
     Example::with("listCommentVersions", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listMentionChoices", &[Quirk::AnIssueOfTheTarget]),
-    Example::route("listMentions"),
-    Example::route("readMentions"),
     Example::with("startUpload", &[Quirk::AnIssueOfTheTarget]),
     Example::with("getUpload", &UPLOAD),
     Example::with("sendUploadPart", &UPLOAD),

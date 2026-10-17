@@ -130,7 +130,6 @@ pub(crate) const SAFE_HTML_PROPERTIES: &[(&str, &str)] = &[
     ("CommentItem", "html"),
     ("CommentTextItem", "html"),
     ("HistoryEntryItem", "html"),
-    ("MentionedComment", "html"),
     ("NotificationEntry", "html"),
     ("OwnHtmlBody", "html"),
 ];

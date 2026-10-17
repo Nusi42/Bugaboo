@@ -98,7 +98,7 @@ The screens are built. What the build decided where this record left room:
 - **The wait for the changes of one e-mail** is the start-up setting `mail_batch_seconds` (`BUGABOO_MAIL_BATCH_SECONDS`, 300 unless set), so a test or a demo can see the e-mail in seconds.
 - **The first start** has an optional step for the mail server after the second check of the account.
 - **Signing up** shows *Check your e-mail* after the form. Asking for a new link waits as long as the server does for one address (`RESEND_AFTER_MINUTES`), and the route has its own limit; a link that ran out leads to asking for a new one. While e-mail is off, the switch for signing up says so.
-- **The *Mentions* block** of the start page is gone. The routes `/api/v1/me/mentions` are no longer read by the browser.
+- **The *Mentions* block** of the start page is gone. The routes `/api/v1/me/mentions` and `/api/v1/me/mentions/read` are removed: there is one way to read mentions, the notifications.
 
 ## Enforced by
 

@@ -114,7 +114,6 @@ table! {
     "save_comment" => sr::save_comment_scenario,
     "delete_comment" => sr::delete_comment_scenario,
     "restore_comment" => sr::restore_comment_scenario,
-    "read_mentions" => sr::read_mentions_scenario,
     "read_notifications" => sn::read_notifications_scenario,
     "change_handle" => sn::change_handle_scenario,
     "create_missing_handles" => sn::create_missing_handles_scenario,

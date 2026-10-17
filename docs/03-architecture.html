@@ -3127,7 +3127,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li><strong>The wait for the changes of one e-mail</strong> is the start-up setting <code>mail_batch_seconds</code> (<code>BUGABOO_MAIL_BATCH_SECONDS</code>, 300 unless set), so a test or a demo can see the e-mail in seconds.</li>
 <li><strong>The first start</strong> has an optional step for the mail server after the second check of the account.</li>
 <li><strong>Signing up</strong> shows <em>Check your e-mail</em> after the form. Asking for a new link waits as long as the server does for one address (<code>RESEND_AFTER_MINUTES</code>), and the route has its own limit; a link that ran out leads to asking for a new one. While e-mail is off, the switch for signing up says so.</li>
-<li><strong>The <em>Mentions</em> block</strong> of the start page is gone. The routes <code>/api/v1/me/mentions</code> are no longer read by the browser.</li>
+<li><strong>The <em>Mentions</em> block</strong> of the start page is gone. The routes <code>/api/v1/me/mentions</code> and <code>/api/v1/me/mentions/read</code> are removed: there is one way to read mentions, the notifications.</li>
 </ul>
 <h4>Enforced by</h4>
 <p>SEC-MATRIX (the e-mail and notifications column), ARCH-PERSON-REF, ARCH-EVENTS, DATA-MARKS, DATA-LOGS, DEP-REGISTER (<code>lettre</code>), the permission tests of M4 WP-06, and review (no other path sends mail).</p>
