@@ -23,11 +23,15 @@ use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
 use super::rig::{PASSWORD, Rig};
 use super::status::app_with_probe;
 
-/// The addresses of every `GET` route in the API description.
+/// The download of a file by its signed link: its answer is the bytes of the file, kept apart from
+/// the records, and what it may be kept as is proven with the downloads (`files_http`).
+const SIGNED_DOWNLOAD: &str = "/api/v1/files/{file}";
+
+/// The addresses of every `GET` route in the API description, except the signed download.
 fn get_routes() -> Vec<String> {
     operations()
         .iter()
-        .filter(|operation| operation.method == Method::GET)
+        .filter(|operation| operation.method == Method::GET && operation.path != SIGNED_DOWNLOAD)
         .map(|operation| operation.path.clone())
         .collect()
 }
@@ -68,6 +72,19 @@ async fn a_run_of(rig: &Rig, person: &str) -> Result<String, Failure> {
     .await
     .map_err(|error| error.to_string())?;
     Ok(run.id.to_string())
+}
+
+/// An upload that was started on the issue, for the route that names one: its ID.
+async fn an_upload_on(ada: &mut Browser, readable_id: &str) -> Result<String, Failure> {
+    let started = ada
+        .send(
+            "POST",
+            &format!("/api/v1/issues/{readable_id}/uploads"),
+            Some(json!({"name": "notes.txt", "size": 10})),
+        )
+        .await?;
+    assert_eq!(started.status, StatusCode::OK);
+    Ok(started.body["id"].as_str().ok_or("no upload")?.to_owned())
 }
 
 /// The ID of a role, for the routes that name one.
@@ -188,6 +205,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         // A comment and an own field, for the routes that name one.
         let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &readable_id).await?;
         let run_id = a_run_of(&rig, &person_id).await?;
+        let upload_id = an_upload_on(&mut ada, &readable_id).await?;
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -209,6 +227,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
                 .replace("{run}", &run_id)
+                .replace("{upload}", &upload_id)
                 .replace("{project}", project);
             let filled = with_query(template, filled, project, &project_id);
             let path = &filled;
