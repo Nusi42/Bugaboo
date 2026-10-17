@@ -5,7 +5,7 @@ import { expect, type Locator, type Page, type Request } from "@playwright/test"
 
 import { onThisLayout } from "./layout.ts";
 import { partIn } from "./parts.ts";
-import { boxOf } from "./windows.ts";
+import { boxOf, textStartOf } from "./windows.ts";
 
 /** A file of the tests: what a person has on their device, with the type the device says. */
 export interface Pictured {
@@ -273,11 +273,7 @@ export async function expectActionsOnTileEdge(
       const tile = await boxOf(partIn(row, "files.tile"));
       const download = row.getByRole("button", { name: t("files.download-named", { name }) });
       // The text of a button starts after its own padding: that is the edge that has to line up.
-      const textStart = await download.evaluate((button) => {
-        const range = document.createRange();
-        range.selectNodeContents(button);
-        return range.getBoundingClientRect().left;
-      });
+      const textStart = await textStartOf(download);
       expect(Math.abs(textStart - tile.x)).toBeLessThanOrEqual(QUIET_BORDER_PX);
     },
   });

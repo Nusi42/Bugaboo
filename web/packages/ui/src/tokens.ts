@@ -130,6 +130,7 @@ export const tokenNames = [
   "size-code",
   "size-file-tile",
   "size-file-actions-hang",
+  "size-footer-note-hang",
   "size-target-least",
   "size-control",
   "size-control-small",

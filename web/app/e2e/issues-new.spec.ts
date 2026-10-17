@@ -40,6 +40,9 @@ test("iss_11 the dialog asks for a title in words, and the issue is made with Cr
   await expect(page.getByRole("heading", { name: /A new problem/u })).toBeVisible();
 });
 
+/** The most that may lie between the label of a field and its value. */
+const MOST_BETWEEN_LABEL_AND_VALUE_PX = 16;
+
 test("ux_4_5 R1 the name of Project stands above it, on the same edge as the name of Type", async ({
   page,
 }) => {
@@ -52,6 +55,10 @@ test("ux_4_5 R1 the name of Project stands above it, on the same edge as the nam
   expect(Math.abs(project.x - type.x)).toBeLessThanOrEqual(2);
   expect(name.y).toBeGreaterThan(project.y);
   expect(Math.abs(name.x - project.x)).toBeLessThanOrEqual(2);
+  // The name of the project stands close under its label, as the value of any field does (M3-F189).
+  expect(name.y - (project.y + project.height)).toBeLessThanOrEqual(
+    MOST_BETWEEN_LABEL_AND_VALUE_PX,
+  );
 });
 
 test("iss_11 typing the title does not move the buttons under the form", async ({ page }) => {

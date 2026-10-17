@@ -35,6 +35,7 @@
   --size-code: 220px;
   --size-file-tile: 64px;
   --size-file-actions-hang: 0px;
+  --size-footer-note-hang: 0px;
   --size-target-least: 24px;
   --size-control: 36px;
   --size-control-small: 28px;
@@ -584,6 +585,7 @@
     --fs-ui: calc(16px * var(--text-scale));
     --size-file-tile: 56px;
     --size-file-actions-hang: calc(-1 * var(--pad-control));
+    --size-footer-note-hang: calc(-1 * var(--pad-control));
     --size-name: 120px;
   }
 }

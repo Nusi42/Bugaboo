@@ -20,6 +20,7 @@ import {
   pickSizeStep,
   pressSizeKey,
   scrollFormToEnd,
+  textStartOf,
   titleBox,
   windowBox,
   windowButton,
@@ -223,6 +224,24 @@ test("ux_6_3 the footer has two rows: the buttons in one row with Create last, t
   expect(Math.abs(small.create.y - small.cancel.y)).toBeLessThanOrEqual(2);
   const window = await boxOf(windowBox(page));
   expect(window.x + window.width - (small.create.x + small.create.width)).toBeLessThan(40);
+});
+
+test("ux_6_3 on a phone the button of the note stands on the edge of the text of the note (R1)", async ({
+  page,
+}) => {
+  test.skip(layoutOf(page) !== "phone", "only a phone puts the button under the text");
+  await openIt(page);
+  const text = await textStartOf(
+    partIn(page, "window.footer-note").getByText(t("issues.draft-kept")),
+  );
+  const button = await textStartOf(
+    partIn(page, "window.footer-note").getByRole("button", {
+      name: t("layouts.customize-form"),
+      exact: true,
+    }),
+  );
+  // The quiet button has a border that is not drawn, one pixel, like every button that hangs back.
+  expect(Math.abs(button - text)).toBeLessThanOrEqual(1);
 });
 
 test("ux_6_3 a minimized window stands after the menu: Sign out stays clickable", async ({

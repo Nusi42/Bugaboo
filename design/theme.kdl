@@ -96,6 +96,8 @@ tokens {
     // padding of a button, so their text stands on the start edge of the tile above (R1). Beside the
     // name, on a computer, nothing hangs back.
     size "size-file-actions-hang" "0px" phone="calc(-1 * $pad-control)"
+    // The same for the button of the note under the buttons of a window.
+    size "size-footer-note-hang" "0px" phone="calc(-1 * $pad-control)"
     // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
     // least, so no control is smaller (a test holds the tokens to it).
     size "size-target-least" "24px"
@@ -1936,6 +1938,12 @@ part "window.footer-note" {
     justify-content space-between
     gap "$space-2" "$space-3"
     use "quiet-text"
+}
+
+// The quiet button of the note stands under its text on a phone, so it hangs back by its padding
+// and its text starts where the text of the note starts (R1); beside the note it does not.
+part "window.footer-note button[variant=quiet]" {
+    margin-inline-start "$size-footer-note-hang"
 }
 
 part "window.footer-actions" {

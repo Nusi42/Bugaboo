@@ -15,7 +15,6 @@ export type Places =
 
 /** A group of rows of the Details, and what it draws (a node with a key of its own). */
 export interface RowGroup<Node> {
-  readonly id: string;
   readonly places: Places;
   readonly node: Node;
 }

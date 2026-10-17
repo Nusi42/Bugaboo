@@ -1397,6 +1397,10 @@ body {
   font-size: var(--fs-base);
 }
 
+[data-part="window.footer-note"] [data-part="button"][data-variant~="quiet"] {
+  margin-inline-start: var(--size-footer-note-hang);
+}
+
 [data-part="window.footer-actions"] {
   display: flex;
   flex-wrap: wrap;
