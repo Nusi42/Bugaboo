@@ -481,6 +481,8 @@ impl IssueStore for AuthStorage {
         id: IssueId,
         project: ProjectId,
         code: &IssueCode,
+        status: &StatusKey,
+        closed_at: Option<Timestamp>,
         version: i64,
         now: Timestamp,
     ) -> Result<bool, StoreError> {
@@ -488,7 +490,9 @@ impl IssueStore for AuthStorage {
         update
             .table(IssueRow::Table)
             .value(IssueRow::Project, project.stored())
-            .value(IssueRow::Code, code.as_str());
+            .value(IssueRow::Code, code.as_str())
+            .value(IssueRow::Status, status.as_str())
+            .value(IssueRow::ClosedAt, closed_at.map(to_micros));
         counting_up(&mut update, now)
             .and_where(Expr::col(IssueRow::Id).eq(id.stored()))
             .and_where(Expr::col(IssueRow::Version).eq(version))

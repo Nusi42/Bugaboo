@@ -39,6 +39,7 @@ mod tags;
 mod tags_hidden;
 mod workflows;
 mod workflows_changers;
+mod workflows_outside;
 mod workflows_places;
 mod workflows_rules;
 mod world;

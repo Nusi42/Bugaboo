@@ -150,8 +150,8 @@ fn needed(rules: &StatusRules, facts: &dyn FieldFacts) -> Result<Vec<FieldKey>, 
 /// the issue.
 ///
 /// An issue whose status the workflow does not have (the status was dropped, or the issue moved to
-/// a workflow that has no such status) may go to any status of the workflow, without rules: that is
-/// how *Publish* moves the issues of a dropped status, and how a person puts such an issue right.
+/// a workflow that has no such status) may go only to the starting status of the workflow, and to
+/// no other: nothing is allowed without the rules.
 #[must_use]
 pub fn judge(
     workflow: &WorkflowContent,
@@ -167,7 +167,7 @@ pub fn judge(
         return Verdict::Allowed;
     }
     if workflow.status(from).is_none() {
-        return if workflow.status(to).is_some() {
+        return if workflow.initial() == Some(to) {
             Verdict::Allowed
         } else {
             refused(Why::NoSuchChange, None)

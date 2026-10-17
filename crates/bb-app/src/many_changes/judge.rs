@@ -265,12 +265,14 @@ impl<S: AuthStore> Ctx<'_, S> {
         if plan.already_there {
             return Ok(Judged::Skip(SkipReason::NothingToChange));
         }
+        let mut changes = vec![FieldChange {
+            field: member::PROJECT.to_owned(),
+            before: Some(json!(plan.issue.project.to_string())),
+            after: Some(json!(plan.target_id().to_string())),
+        }];
+        changes.extend(plan.status_change());
         Ok(Judged::Change(Planned::Fields(Box::new(FieldsPlan {
-            changes: vec![FieldChange {
-                field: member::PROJECT.to_owned(),
-                before: Some(json!(plan.issue.project.to_string())),
-                after: Some(json!(plan.target_id().to_string())),
-            }],
+            changes,
             issue: plan.issue,
             held,
         }))))

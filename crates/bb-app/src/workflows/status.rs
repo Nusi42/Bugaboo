@@ -153,9 +153,27 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(StatusChecked { group })
     }
 
+    /// The status an issue is in after its type or project changed and the request names none: the
+    /// one it has when the workflow that counts has it, else the starting status of that workflow.
+    pub(crate) async fn status_after_change(
+        &self,
+        chain: &[ProjectId],
+        issue_type: IssueTypeId,
+        status: &StatusKey,
+    ) -> Result<StatusKey, AppError> {
+        let workflow = self.workflow_in_force(chain, Some(issue_type)).await?;
+        if workflow.status(status).is_some() {
+            return Ok(status.clone());
+        }
+        workflow
+            .initial()
+            .cloned()
+            .ok_or(AppError::Refused(ErrorCode::WorkflowNoSuchChange))
+    }
+
     /// What the judge says about every status change from `status`, each with the status it ends in
-    /// and the text of its button. An issue in a status that its workflow does not have may go to
-    /// any status of it, and the button is the name of that status.
+    /// and the text of its button. An issue in a status that its workflow does not have may go only
+    /// to the starting status of it, and the button is the name of that status.
     pub(crate) async fn status_verdicts(
         &self,
         check: &StatusCheck<'_>,
@@ -169,9 +187,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .collect()
         } else {
             workflow
-                .statuses
-                .iter()
+                .initial()
+                .and_then(|start| workflow.status(start))
                 .map(|each| (&each.key, each.name.clone()))
+                .into_iter()
                 .collect()
         };
         let mut verdicts = Vec::with_capacity(targets.len());

@@ -342,20 +342,22 @@ fn wf_04_a_field_the_person_can_see_but_not_change_cannot_be_asked_for() {
 }
 
 #[test]
-fn wf_01_an_issue_in_a_status_the_workflow_dropped_may_go_to_any_status_of_it() {
+fn wf_03_an_issue_outside_its_workflow_may_go_only_to_the_starting_status() {
     let workflow = SIMPLE.content();
     let gone = key("testing");
     let facts = Facts::default();
-    for target in [OPEN, IN_PROGRESS, DONE] {
+    // The starting status is the only way in; the rules of the other changes are not skipped.
+    assert_eq!(
+        judge(&workflow, &gone, &key(OPEN), &anyone(), &facts),
+        Verdict::Allowed
+    );
+    for target in [IN_PROGRESS, DONE, "elsewhere"] {
         assert_eq!(
             judge(&workflow, &gone, &key(target), &anyone(), &facts),
-            Verdict::Allowed
+            refused(Why::NoSuchChange, None),
+            "{target}"
         );
     }
-    assert_eq!(
-        judge(&workflow, &gone, &key("elsewhere"), &anyone(), &facts),
-        refused(Why::NoSuchChange, None)
-    );
     // It is still not a right of its own.
     let nobody = Changer {
         may_change_status: false,

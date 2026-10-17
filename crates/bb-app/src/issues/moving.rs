@@ -12,10 +12,11 @@ use std::sync::Arc;
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::{IdSource, IssueId, IssueTypeId, ProjectId, UserId};
-use bb_core::issue::{Issue, IssueAlias};
+use bb_core::issue::{Issue, IssueAlias, StatusGroup};
 use bb_core::project::{Project, ShortName};
 use bb_core::readable_id::{IssueCode, ReadableId};
 use bb_core::version::{counted_up, next as next_version};
+use bb_core::workflow::StatusKey;
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
@@ -37,12 +38,24 @@ pub(crate) struct MovePlan {
     held: Arc<Evaluation>,
     /// The issue is in that project already: there is nothing to do.
     pub(crate) already_there: bool,
+    /// The status and status group the issue starts again in, when the workflow that counts in
+    /// the project it goes to lacks the status it has (ADR-0031 amendment 3).
+    restart: Option<(StatusKey, StatusGroup)>,
 }
 
 impl MovePlan {
     /// The project the issue goes to.
     pub(crate) const fn target_id(&self) -> ProjectId {
         self.target.id
+    }
+
+    /// The change of the status the move makes, before and after, when it makes one.
+    pub(crate) fn status_change(&self) -> Option<FieldChange> {
+        self.restart.as_ref().map(|(status, _)| FieldChange {
+            field: member::STATUS.to_owned(),
+            before: Some(json!(self.issue.status.as_str())),
+            after: Some(json!(status.as_str())),
+        })
     }
 }
 
@@ -106,6 +119,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             return Err(ErrorCode::Forbidden.into());
         }
         let already_there = target.id == issue.project;
+        let mut restart = None;
         if !already_there {
             if !self.offers_issue_type(target.id, issue.issue_type).await? {
                 return Err(ErrorCode::IssueTypeRetired.into());
@@ -117,12 +131,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             if !self.tags_follow(issue.id, &chain).await? {
                 return Err(ErrorCode::TagNotHere.into());
             }
+            let status = self
+                .status_after_change(&chain, issue.issue_type, &issue.status)
+                .await?;
+            if status != issue.status {
+                let workflow = self
+                    .workflow_in_force(&chain, Some(issue.issue_type))
+                    .await?;
+                let group = workflow
+                    .status(&status)
+                    .map(|each| each.group)
+                    .ok_or(AppError::Refused(ErrorCode::WorkflowNoSuchChange))?;
+                restart = Some((status, group));
+            }
         }
         Ok(MovePlan {
             issue,
             target,
             held,
             already_there,
+            restart,
         })
     }
 }
@@ -148,6 +176,7 @@ pub async fn move_issue<S: AuthStore>(
         target,
         held,
         already_there,
+        restart,
     } = plan;
     let place = Place::Project(issue.project);
     if issue.version != input.version {
@@ -161,18 +190,23 @@ pub async fn move_issue<S: AuthStore>(
     let moved = if already_there {
         issue.clone()
     } else {
-        let event = ctx.event(
-            by(actor.person.id),
-            record.clone(),
-            vec![
-                FieldChange {
-                    field: member::PROJECT.to_owned(),
-                    before: Some(json!(issue.project.to_string())),
-                    after: Some(json!(target.id.to_string())),
-                },
-                counted_up(issue.version),
-            ],
-        )?;
+        let mut changes = vec![FieldChange {
+            field: member::PROJECT.to_owned(),
+            before: Some(json!(issue.project.to_string())),
+            after: Some(json!(target.id.to_string())),
+        }];
+        changes.extend(restart.as_ref().map(|(status, _)| FieldChange {
+            field: member::STATUS.to_owned(),
+            before: Some(json!(issue.status.as_str())),
+            after: Some(json!(status.as_str())),
+        }));
+        changes.push(counted_up(issue.version));
+        let event = ctx.event(by(actor.person.id), record.clone(), changes)?;
+        let now = ctx.now();
+        let (status, closed_at) = match &restart {
+            Some((status, group)) => (status.clone(), group.closed_after(issue.closed_at, now)),
+            None => (issue.status.clone(), issue.closed_at),
+        };
         let writer = MoveWrite {
             id: issue.id,
             issue_type: issue.issue_type,
@@ -180,12 +214,13 @@ pub async fn move_issue<S: AuthStore>(
             from_code: issue.code.clone(),
             to: target.id,
             to_short_name: target.short_name.clone(),
+            status: status.clone(),
+            closed_at,
             version: issue.version,
         };
-        let (events, mut ids, now, why) = (
+        let (events, mut ids, why) = (
             ctx.event_maker(by(actor.person.id)),
             ctx.owned_ids(),
-            ctx.now(),
             Why::default(),
         );
         let stopped = why.clone();
@@ -209,6 +244,8 @@ pub async fn move_issue<S: AuthStore>(
         Issue {
             project: target.id,
             code,
+            status,
+            closed_at,
             version: next_version(issue.version),
             updated_at: now,
             ..issue.clone()
@@ -235,6 +272,8 @@ struct MoveWrite {
     from_code: IssueCode,
     to: ProjectId,
     to_short_name: ShortName,
+    status: StatusKey,
+    closed_at: Option<Timestamp>,
     version: i64,
 }
 
@@ -262,7 +301,18 @@ impl MoveWrite {
         }
         let plan = code_plan_in::<S>(transaction, self.to).await?;
         let code = new_code_in::<S>(transaction, self.to, plan, ids).await?;
-        if !S::move_issue(transaction, self.id, self.to, &code, self.version, now).await? {
+        if !S::move_issue(
+            transaction,
+            self.id,
+            self.to,
+            &code,
+            &self.status,
+            self.closed_at,
+            self.version,
+            now,
+        )
+        .await?
+        {
             return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
         }
         S::insert_issue_alias(

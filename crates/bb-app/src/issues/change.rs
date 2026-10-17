@@ -224,18 +224,25 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some(title) = &input.title {
             next.title = clean_title(title)?;
         }
-        next.status = input
-            .status
-            .clone()
-            .unwrap_or_else(|| current.status.clone());
         next.priority = input.priority.unwrap_or(current.priority);
         if let Some(issue_type) = input.issue_type {
             next.issue_type = self.writable_type(issue_type, &current).await?;
         }
+        let chain = self.chain_of(current.project).await?;
+        // The status of the request is judged in the workflow that counts afterwards, from the
+        // status the issue is in. An issue whose status that workflow lacks starts again in its
+        // starting status when the request names none (ADR-0031 amendment 3).
+        next.status = match &input.status {
+            Some(status) => status.clone(),
+            None => {
+                self.status_after_change(&chain, next.issue_type, &current.status)
+                    .await?
+            }
+        };
         let item = Item {
             kind: RecordKind::Issue,
             id: Some(current.id.into()),
-            chain: self.chain_of(current.project).await?,
+            chain,
             issue_type: Some(next.issue_type),
             reported_by: Some(current.reported_by),
         };
