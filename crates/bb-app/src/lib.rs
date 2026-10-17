@@ -15,6 +15,7 @@ mod input;
 pub mod issues;
 pub mod jobs;
 pub mod layouts;
+pub mod mailer;
 pub mod many_changes;
 pub mod member;
 pub mod people;

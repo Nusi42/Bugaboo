@@ -22,6 +22,7 @@ use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::access::Actor as ActingPerson;
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
+use crate::mailer::{Mailer, NoMailer};
 use crate::ports::SetupCodeFile;
 use crate::status::LogWrites;
 
@@ -46,6 +47,9 @@ pub struct AuthServices<S> {
     pub(crate) log_writes: Arc<LogWrites>,
     pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
     pub(crate) records: Arc<dyn EditableRecords>,
+    pub(crate) mailer: Arc<dyn Mailer>,
+    /// The address people reach the server at, which the links in e-mails start with.
+    pub(crate) public_url: String,
 }
 
 impl<S> AuthServices<S> {
@@ -72,6 +76,8 @@ impl<S> AuthServices<S> {
             log_writes: Arc::new(LogWrites::default()),
             setup_code_file: None,
             records: Arc::new(NoRecords),
+            mailer: Arc::new(NoMailer),
+            public_url: String::new(),
         }
     }
 
@@ -80,6 +86,21 @@ impl<S> AuthServices<S> {
     #[must_use]
     pub fn with_records(mut self, records: Arc<dyn EditableRecords>) -> Self {
         self.records = records;
+        self
+    }
+
+    /// The adapter that sends e-mail (ADR-0033 §3). Without one, every e-mail is turned away.
+    #[must_use]
+    pub fn with_mailer(mut self, mailer: Arc<dyn Mailer>) -> Self {
+        self.mailer = mailer;
+        self
+    }
+
+    /// The address people reach the server at (`https://bugaboo.example.com`): the links in
+    /// e-mails start with it.
+    #[must_use]
+    pub fn with_public_url(mut self, public_url: impl Into<String>) -> Self {
+        self.public_url = public_url.into();
         self
     }
 
