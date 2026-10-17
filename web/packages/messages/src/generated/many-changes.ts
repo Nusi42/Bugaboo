@@ -16,7 +16,7 @@ export const messages = {
   "many-changes.project-list": "Projects to move the issues to",
   "many-changes.project-nothing": "No project has that name.",
   "many-changes.project-more": "Show more projects",
-  "many-changes.project-picked": "Move to {name}",
+  "many-changes.project-picked": "Chosen project: {name}",
   "many-changes.field-label": "Label",
   "many-changes.delete-text": "The issues go to the trash. You can undo this for a short while.",
   "many-changes.show-changes": "Show what changes",
@@ -27,6 +27,7 @@ export const messages = {
   "many-changes.line-changes": "{field}: {after}",
   "many-changes.line-relation": "This issue · {name} · {issue}",
   "many-changes.line-delete": "Is deleted",
+  "many-changes.note-type-not-used": "{type} is not used in {project}. The issue keeps it.",
   "many-changes.background-note":
     "These are many issues, so Bugaboo makes the change in the background. You can go on working.",
   "many-changes.result-done":

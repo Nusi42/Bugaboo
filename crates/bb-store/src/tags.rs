@@ -26,6 +26,38 @@ fn read_color(row: &Row, column: impl sea_query::Iden + Copy) -> Result<ChoiceCo
         .ok_or(StoreError::Corrupt("the color of a tag or a label"))
 }
 
+/// The condition that an issue (table `issue`) is one the person reads (SEC-06): in a project where
+/// they see every issue, or one they reported where they see only their own; not in the trash unless
+/// asked; and not of a type the sight hides in its project.
+pub(crate) fn sight_condition(sight: &IssueSight) -> Cond {
+    let readable = Cond::any()
+        .add(
+            Expr::col((IssueRow::Table, IssueRow::Project))
+                .is_in(sight.all.iter().map(|project| project.stored())),
+        )
+        .add(
+            Expr::col((IssueRow::Table, IssueRow::Project))
+                .is_in(sight.own.iter().map(|project| project.stored()))
+                .and(Expr::col((IssueRow::Table, IssueRow::ReportedBy)).eq(sight.person.stored())),
+        );
+    let visible = sight
+        .hidden
+        .iter()
+        .fold(Cond::all(), |cond, (project, issue_type)| {
+            cond.add(
+                Expr::col((IssueRow::Table, IssueRow::Project))
+                    .ne(project.stored())
+                    .or(Expr::col((IssueRow::Table, IssueRow::IssueType)).ne(issue_type.stored())),
+            )
+        });
+    let kept = if sight.with_trashed {
+        Cond::all()
+    } else {
+        Cond::all().add(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
+    };
+    Cond::all().add(kept).add(readable).add(visible)
+}
+
 fn tag_columns() -> [TagRow; 6] {
     [
         TagRow::Id,
@@ -82,6 +114,7 @@ fn group_select() -> SelectStatement {
             LabelGroupRow::Id,
             LabelGroupRow::Name,
             LabelGroupRow::PickOne,
+            LabelGroupRow::Project,
             LabelGroupRow::Position,
             LabelGroupRow::RetiredAt,
             LabelGroupRow::Version,
@@ -95,6 +128,7 @@ fn read_group(row: &Row) -> Result<LabelGroup, StoreError> {
         id: row.id::<LabelGroupId>(LabelGroupRow::Id)?,
         name: row.get(LabelGroupRow::Name)?,
         pick_one: row.get(LabelGroupRow::PickOne)?,
+        project: row.optional_id(LabelGroupRow::Project)?,
         position: row.get(LabelGroupRow::Position)?,
         retired_at: row.optional_time(LabelGroupRow::RetiredAt)?,
         version: row.get(LabelGroupRow::Version)?,
@@ -385,39 +419,7 @@ impl TagStore for AuthStorage {
                 Expr::col((IssueRow::Table, IssueRow::Id))
                     .equals((IssueTagRow::Table, IssueTagRow::Issue)),
             )
-            .cond_where(if sight.with_trashed {
-                Cond::all()
-            } else {
-                Cond::all().add(Expr::col((IssueRow::Table, IssueRow::DeletedAt)).is_null())
-            })
-            .cond_where(
-                Cond::any()
-                    .add(
-                        Expr::col((IssueRow::Table, IssueRow::Project))
-                            .is_in(sight.all.iter().map(|project| project.stored())),
-                    )
-                    .add(
-                        Expr::col((IssueRow::Table, IssueRow::Project))
-                            .is_in(sight.own.iter().map(|project| project.stored()))
-                            .and(
-                                Expr::col((IssueRow::Table, IssueRow::ReportedBy))
-                                    .eq(sight.person.stored()),
-                            ),
-                    ),
-            )
-            .cond_where(
-                sight
-                    .hidden
-                    .iter()
-                    .fold(Cond::all(), |cond, (project, issue_type)| {
-                        cond.add(
-                            Expr::col((IssueRow::Table, IssueRow::Project))
-                                .ne(project.stored())
-                                .or(Expr::col((IssueRow::Table, IssueRow::IssueType))
-                                    .ne(issue_type.stored())),
-                        )
-                    }),
-            )
+            .cond_where(sight_condition(sight))
             .and_where(
                 Expr::col((TagRow::Table, TagRow::NameKey))
                     .like(LikeExpr::new(contains_pattern(&name_key(part))).escape('\\')),
@@ -598,6 +600,7 @@ impl TagStore for AuthStorage {
                 LabelGroupRow::Name,
                 LabelGroupRow::NameKey,
                 LabelGroupRow::PickOne,
+                LabelGroupRow::Project,
                 LabelGroupRow::Position,
                 LabelGroupRow::RetiredAt,
                 LabelGroupRow::Version,
@@ -607,6 +610,7 @@ impl TagStore for AuthStorage {
                 Expr::val(group.name.as_str()),
                 Expr::val(name_key(&group.name)),
                 Expr::val(group.pick_one),
+                Expr::val(group.project.map(StoredId::stored)),
                 Expr::val(group.position),
                 Expr::val(group.retired_at.map(to_micros)),
                 Expr::val(group.version),

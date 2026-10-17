@@ -448,6 +448,7 @@ impl Later for CheckingAccess {
                 let answer = check_access(
                     &world.services.ctx(world.request()),
                     CheckAccessQuery {
+                        issue_type: None,
                         session_token: world.administrator_session.to_owned(),
                         person: made.id,
                         place: *place,

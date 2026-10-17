@@ -13,11 +13,12 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::cursor_error;
+use super::access_bodies::{PlaceRef, cursor_error};
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
 };
+use super::offers::OfferProject;
 use super::path_id;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -27,12 +28,17 @@ const ISSUE_TYPES_LIST: &str = "issue-types";
 
 /// The fields of an issue type in a list that can be asked for: all of them are by default, a type
 /// is small.
-const ISSUE_TYPE_FIELDS: [FieldSpec; 5] = [
+const ISSUE_TYPE_FIELDS: [FieldSpec; 10] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("name"),
     FieldSpec::by_default("icon"),
     FieldSpec::by_default("retired"),
+    FieldSpec::by_default("created_in"),
+    FieldSpec::by_default("may_manage"),
     FieldSpec::by_default("version"),
+    FieldSpec::on_request("offered_here"),
+    FieldSpec::on_request("own_offer"),
+    FieldSpec::on_request("may_change_offer"),
 ];
 
 /// An issue type: the fields that can be asked for.
@@ -54,10 +60,33 @@ pub(crate) struct IssueTypeItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
     retired: Option<bool>,
+    /// Where it was made: the whole organization or a project. It is looked after where it was
+    /// made.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(nested)]
+    created_in: Option<PlaceRef>,
+    /// Whether the person who asks looks after it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(open)]
+    may_manage: Option<bool>,
     /// Counts up with every change. A change is made on the version that was looked at.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(open)]
     version: Option<i64>,
+    /// Whether the project the list is asked about offers it. Only when the request names a
+    /// `project` and asks for the field.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(open)]
+    offered_here: Option<bool>,
+    /// The row that says so at exactly that project; left out while the project follows the place
+    /// above it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(open)]
+    own_offer: Option<bool>,
+    /// Whether the person who asks may change that for the project.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(open)]
+    may_change_offer: Option<bool>,
 }
 
 impl From<&IssueTypeView> for IssueTypeItem {
@@ -67,7 +96,12 @@ impl From<&IssueTypeView> for IssueTypeItem {
             name: Some(issue_type.name.clone()),
             icon: Some(issue_type.icon),
             retired: Some(issue_type.retired),
+            created_in: Some(PlaceRef::from(issue_type.created_in.as_ref())),
+            may_manage: Some(issue_type.may_manage),
             version: Some(issue_type.version),
+            offered_here: issue_type.here.as_ref().map(|here| here.offered),
+            own_offer: issue_type.here.as_ref().and_then(|here| here.own),
+            may_change_offer: issue_type.here.as_ref().map(|here| here.may_change),
         }
     }
 }
@@ -79,6 +113,8 @@ pub(crate) struct NewIssueTypeBody {
     name: String,
     /// Its icon.
     icon: IssueIcon,
+    /// The project it is made in, by its ID or short name; left out for the whole organization.
+    project: Option<String>,
 }
 
 /// What to change about an issue type: what is left out stays as it is.
@@ -95,20 +131,21 @@ pub(crate) struct ChangeIssueTypeBody {
 }
 
 /// The issue types in the order they are offered in, a page at a time, retired ones too. Open to
-/// everybody who is signed in.
+/// everybody who is signed in. With `project`, each type can say whether that project offers it.
 #[utoipa::path(
     get,
     path = "/api/v1/issue-types",
     operation_id = "listIssueTypes",
     tag = "issue-types",
-    params(ListParams),
-    responses((status = 200, description = "The issue types.", body = Page<IssueTypeItem>), NotSignedInAnswer)
+    params(ListParams, OfferProject),
+    responses((status = 200, description = "The issue types.", body = Page<IssueTypeItem>), NotSignedInAnswer, NotFoundAnswer)
 )]
 async fn list_issue_types(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
     ApiQuery(params): ApiQuery<ListParams>,
+    ApiQuery(asked): ApiQuery<OfferProject>,
 ) -> Result<Response, ApiError> {
     let (cursor, bad_cursor) = params.start(ISSUE_TYPES_LIST);
     let page = auth
@@ -119,6 +156,7 @@ async fn list_issue_types(
                 session_token,
                 cursor,
                 limit: params.limit(),
+                project: asked.project,
             },
         )
         .await
@@ -136,7 +174,8 @@ async fn list_issue_types(
     )?))
 }
 
-/// Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.
+/// Creates an issue type for the whole organization or in a project. Needs the permission *Manage
+/// issue types, kinds of relation and layouts* where it is made.
 #[utoipa::path(
     post,
     path = "/api/v1/issue-types",
@@ -163,6 +202,7 @@ async fn create_issue_type(
             info,
             CreateIssueType {
                 session_token,
+                project: body.project,
                 name: body.name,
                 icon: body.icon,
             },
@@ -172,7 +212,7 @@ async fn create_issue_type(
 }
 
 /// Changes the name or the icon of an issue type, or retires it (or offers it again). Needs the
-/// permission *Manage issue types, kinds of relation and layouts*.
+/// permission *Manage issue types, kinds of relation and layouts* where the type was made.
 #[utoipa::path(
     patch,
     path = "/api/v1/issue-types/{issue_type}",

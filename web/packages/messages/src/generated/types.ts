@@ -79,6 +79,7 @@ export interface MessageArguments {
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
+  "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
   "check-access.level.role-project": {
@@ -227,6 +228,7 @@ export interface MessageArguments {
   "invitations.take-back-name": { email: string | number };
   "invitations.take-back-title": { email: string | number };
   "issue-types.created": { name: string | number };
+  "issue-types.project-title": { project: string | number };
   "issues.ask-for-intro": { to: string | number };
   "issues.asked-to-finish": { name: string | number };
   "issues.assign-name": { name: string | number };
@@ -258,6 +260,7 @@ export interface MessageArguments {
   "labels.label-created": { name: string | number };
   "labels.label-taken-off": { name: string | number };
   "labels.preview-line": { after: string | number; before: string | number };
+  "labels.project-title": { project: string | number };
   "labels.tag-added": { name: string | number };
   "labels.tag-in-projects": { count: number };
   "labels.tag-taken-off": { name: string | number };
@@ -293,6 +296,7 @@ export interface MessageArguments {
   "many-changes.change-and-status": { button: string | number; status: string | number };
   "many-changes.line-changes": { after: string | number; field: string | number };
   "many-changes.line-relation": { issue: string | number; name: string | number };
+  "many-changes.note-type-not-used": { project: string | number; type: string | number };
   "many-changes.progress": { done: string | number; total: string | number };
   "many-changes.project-picked": { name: string | number };
   "many-changes.result-done": { changed: number; skipped: number };
@@ -373,6 +377,11 @@ export interface MessageArguments {
   "projects.move-dialog-title": { name: string | number };
   "projects.move-text": { name: string | number };
   "projects.moved": { name: string | number };
+  "projects.offer-follow-button-for": { name: string | number };
+  "projects.offer-line": { name: string | number; state: string | number };
+  "projects.offered-in-created-project": { project: string | number };
+  "projects.offered-in-picked": { place: string | number };
+  "projects.offered-in-take-away-for": { place: string | number };
   "projects.preview-summary": { changed: number };
   "projects.settings-title": { name: string | number };
   "projects.toggle-name": { name: string | number };

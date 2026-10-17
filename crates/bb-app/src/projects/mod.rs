@@ -28,7 +28,7 @@ use bb_core::ErrorCode;
 use bb_core::id::ProjectId;
 use bb_policy::Tree;
 
-use crate::auth::{AppError, AuthStore, Stops, change_failed};
+use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, internal};
 
 pub use change::change_project;
 pub use create::create_project;
@@ -37,6 +37,47 @@ pub use read::{project, projects};
 pub(crate) use shown::Shown;
 pub use store::{Found, ProjectStore};
 pub use types::*;
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The tree of the projects as it is stored now, read once for a request.
+    pub(crate) async fn project_tree_now(&self) -> Result<Tree, AppError> {
+        Ok(Tree::of(
+            &self
+                .store()
+                .project_tree()
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        ))
+    }
+}
+
+/// The tree of the projects as it is stored in this transaction.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn tree_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+) -> Result<Tree, S::Error> {
+    Ok(Tree::of(&S::project_tree_in(transaction).await?))
+}
+
+/// Inside the transaction that writes an issue (or a label on one) in a project: takes the lock of
+/// the workflows shared, before any lock on the codes of a project (the one order of the locks,
+/// see `LockClass`), and reads the projects from the top down to the project, which the offers and
+/// the workflow are judged on.
+///
+/// # Errors
+/// The error of the store.
+pub(crate) async fn lock_chain_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    project: ProjectId,
+) -> Result<Vec<ProjectId>, S::Error> {
+    S::lock_workflows_shared(transaction).await?;
+    Ok(tree_in::<S>(transaction)
+        .await?
+        .chain(project)
+        .unwrap_or_default())
+}
 
 /// Every project below `project`, at any depth, as the tree is stored now (inside a change, after
 /// the policy lock).

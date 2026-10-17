@@ -13,12 +13,28 @@ import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { NO_GROUP, groupChoices, refreshLabels, type LabelGroup } from "./labels.ts";
+import {
+  NO_GROUP,
+  groupChoices,
+  managedGroupChoices,
+  refreshLabels,
+  type LabelGroup,
+} from "./labels.ts";
+
+export interface CreateLabelFormProps {
+  readonly groups: readonly LabelGroup[];
+  /** The form of a project: a label goes into a group the person looks after, never into none. */
+  readonly inGroupsOnly?: boolean;
+}
 
 /** *Create a label*: a name and a group; its color is the next in turn, and it can be changed after. */
-export function CreateLabelForm({ groups }: { readonly groups: readonly LabelGroup[] }) {
+export function CreateLabelForm({ groups, inGroupsOnly = false }: CreateLabelFormProps) {
+  const choices = inGroupsOnly ? managedGroupChoices(groups) : groupChoices(groups);
   const [name, setName] = useState("");
-  const [group, setGroup] = useState(NO_GROUP);
+  const [picked, setGroup] = useState(NO_GROUP);
+  const group = choices.some((choice) => choice.value === picked)
+    ? picked
+    : (choices[0]?.value ?? NO_GROUP);
   const [made, setMade] = useState<string | null>(null);
   const create = api.query.useMutation("post", "/api/v1/labels", {
     onSuccess: (label) => {
@@ -42,7 +58,7 @@ export function CreateLabelForm({ groups }: { readonly groups: readonly LabelGro
       />
       <SelectField
         label={t("labels.field-label-group")}
-        choices={groupChoices(groups)}
+        choices={choices}
         value={group}
         onChange={setGroup}
       />

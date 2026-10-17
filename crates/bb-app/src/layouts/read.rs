@@ -18,7 +18,7 @@ use super::types::{
     LayoutEditor, LayoutEditorQuery, LayoutSlot,
 };
 use crate::access::{Actor, ROLES_MAX};
-use crate::auth::{AppError, AuthStore, Ctx, internal};
+use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 use crate::fields::{Definition, Item, must_be_asked_for};
 use crate::issues::IssueTypeRef;
 use crate::projects::ProjectRef;
@@ -161,6 +161,7 @@ pub async fn form_layout<S: AuthStore>(
     input: FormLayoutQuery,
 ) -> Result<Authorized<FormLayout>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .layout_where(Some(&input.project), input.issue_type, input.kind)
         .await?;
@@ -350,7 +351,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             kind: at.kind,
             project: at.project.clone(),
             issue_type: match at.issue_type {
-                Some(id) => self.issue_type_ref(id).await?,
+                Some(id) => self.issue_type_ref(actor, id).await?,
                 None => None,
             },
             layout: exact.map(|found| LayoutSlot {
@@ -368,15 +369,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         })
     }
 
+    /// The issue type a screen names, if the viewer may know it (`offers/known.rs`).
     pub(crate) async fn issue_type_ref(
         &self,
+        actor: &Actor,
         id: IssueTypeId,
     ) -> Result<Option<IssueTypeRef>, AppError> {
-        Ok(self
-            .store()
-            .issue_type(id)
-            .await
-            .map_err(|error| internal::<S>(&error))?
+        Ok(if_there(self.known_type(actor, id).await)?
             .as_ref()
             .map(IssueTypeRef::from))
     }
@@ -419,7 +418,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             whole_organization: set_for.is_none(),
             project,
             issue_type: match issue_type {
-                Some(id) => self.issue_type_ref(id).await?,
+                Some(id) => self.issue_type_ref(actor, id).await?,
                 None => None,
             },
         })
@@ -438,6 +437,7 @@ pub async fn layout_editor<S: AuthStore>(
     input: LayoutEditorQuery,
 ) -> Result<Authorized<LayoutEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .layout_where(input.project.as_deref(), input.issue_type, input.kind)
         .await?;

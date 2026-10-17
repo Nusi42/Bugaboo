@@ -3,6 +3,7 @@
 //! so the answer of the preview and the result of the change cannot differ (ISS-09, TAG-01,
 //! TAG-02).
 
+use crate::offers::GroupOffers;
 use bb_core::ErrorCode;
 use bb_core::id::{LabelId, ProjectId, TagId};
 use bb_core::tags::{
@@ -87,12 +88,14 @@ pub(super) struct LabelAddition {
 ///
 /// # Errors
 /// `resource.not_found` for a label that is not there, `request.invalid` for a retired label or a
-/// label of a retired group, `limit.reached` for an issue that has as many labels as it may.
+/// label of a retired group, `label.not_offered` for a label of a group that the project of the
+/// issue does not offer, `limit.reached` for an issue that has as many labels as it may.
 pub(super) fn judge_label(
     wanted: LabelId,
     labels: &[Label],
     groups: &[LabelGroup],
     held: &[IssueLabel],
+    offers: &GroupOffers,
 ) -> Result<LabelAddition, ErrorCode> {
     let label = labels
         .iter()
@@ -110,6 +113,9 @@ pub(super) fn judge_label(
     }
     if label.retired_at.is_some() || group.is_some_and(|group| group.retired_at.is_some()) {
         return Err(ErrorCode::InvalidRequest);
+    }
+    if group.is_some_and(|group| !offers.offers(group)) {
+        return Err(ErrorCode::LabelNotOffered);
     }
     let replaces: Vec<LabelId> = match group.filter(|group| group.pick_one) {
         Some(group) => held
@@ -159,6 +165,7 @@ mod tests {
 
     fn group(ids: &mut impl IdSource, pick_one: bool) -> LabelGroup {
         LabelGroup {
+            project: None,
             id: LabelGroupId::generate(ids).unwrap(),
             name: "Area".to_owned(),
             pick_one,
@@ -189,7 +196,14 @@ mod tests {
         );
         let labels = [login.clone(), billing.clone(), loose.clone()];
         let held = [on(issue, &login), on(issue, &loose)];
-        let judged = judge_label(billing.id, &labels, std::slice::from_ref(&area), &held).unwrap();
+        let judged = judge_label(
+            billing.id,
+            &labels,
+            std::slice::from_ref(&area),
+            &held,
+            &everywhere(),
+        )
+        .unwrap();
         assert_eq!(judged.replaces, vec![login.id]);
         assert!(!judged.already);
         // A label that sits in no group, and a group that is not *Pick one*, replace nothing.
@@ -197,21 +211,67 @@ mod tests {
         let mut labels = labels.to_vec();
         labels.push(more.clone());
         assert!(
-            judge_label(more.id, &labels, std::slice::from_ref(&area), &held)
-                .unwrap()
-                .replaces
-                .is_empty()
+            judge_label(
+                more.id,
+                &labels,
+                std::slice::from_ref(&area),
+                &held,
+                &everywhere(),
+            )
+            .unwrap()
+            .replaces
+            .is_empty()
         );
         let several = LabelGroup {
+            project: None,
             pick_one: false,
             ..area.clone()
         };
         assert!(
-            judge_label(billing.id, &labels, &[several], &held)
+            judge_label(billing.id, &labels, &[several], &held, &everywhere())
                 .unwrap()
                 .replaces
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn tag_02_a_label_of_a_group_the_project_does_not_offer_is_not_put_on_an_issue() {
+        let mut ids = SequentialIds::default();
+        let issue = IssueId::generate(&mut ids).unwrap();
+        let (here, elsewhere) = (
+            ProjectId::generate(&mut ids).unwrap(),
+            ProjectId::generate(&mut ids).unwrap(),
+        );
+        let mut area = group(&mut ids, false);
+        area.project = Some(elsewhere);
+        let kept = label(&mut ids, Some(area.id), "login");
+        let labels = [kept.clone()];
+        let offers = GroupOffers::new(Vec::new(), vec![here]);
+        assert_eq!(
+            judge_label(kept.id, &labels, std::slice::from_ref(&area), &[], &offers),
+            Err(ErrorCode::LabelNotOffered)
+        );
+        // A label the issue has stays on it, shown like a retired one.
+        let held = [on(issue, &kept)];
+        assert!(
+            judge_label(
+                kept.id,
+                &labels,
+                std::slice::from_ref(&area),
+                &held,
+                &offers
+            )
+            .unwrap()
+            .already
+        );
+        // Made in the project itself, the group is offered there.
+        area.project = Some(here);
+        assert!(judge_label(kept.id, &labels, &[area], &[], &offers).is_ok());
+    }
+
+    fn everywhere() -> GroupOffers {
+        GroupOffers::new(Vec::new(), Vec::new())
     }
 
     #[test]
@@ -222,11 +282,15 @@ mod tests {
         old.retired_at = Some(at());
         let labels = [old.clone()];
         assert_eq!(
-            judge_label(old.id, &labels, &[], &[]),
+            judge_label(old.id, &labels, &[], &[], &everywhere()),
             Err(ErrorCode::InvalidRequest)
         );
         let held = [on(issue, &old)];
-        assert!(judge_label(old.id, &labels, &[], &held).unwrap().already);
+        assert!(
+            judge_label(old.id, &labels, &[], &held, &everywhere())
+                .unwrap()
+                .already
+        );
     }
 
     #[test]

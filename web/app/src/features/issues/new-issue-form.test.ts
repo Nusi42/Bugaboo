@@ -8,6 +8,8 @@ import {
   encodeDraft,
   forForm,
   hasWriting,
+  offersNoType,
+  withType,
   type NewIssueValues,
 } from "./new-issue-form.ts";
 
@@ -19,6 +21,32 @@ const filled: NewIssueValues = {
   assignedTo: [{ id: "u1", name: "Ada" }],
   fields: { f1: "Acme" },
 };
+
+describe("iss_02 the type of a new issue is one the project offers", () => {
+  const offered = [{ id: "t1" }, { id: "t2" }];
+
+  it("starts with the first type the project offers", () => {
+    expect(withType(emptyForm, offered).issueType).toBe("t1");
+  });
+
+  it("keeps the type that was picked while the project offers it", () => {
+    expect(withType({ ...emptyForm, issueType: "t2" }, offered).issueType).toBe("t2");
+  });
+
+  it("falls back to the first when the picked type is not offered by the project any more", () => {
+    // A project switch or a draft from another project leaves a type behind.
+    expect(withType({ ...emptyForm, issueType: "gone" }, offered).issueType).toBe("t1");
+    expect(withType({ ...emptyForm, issueType: "t2" }, [{ id: "t3" }]).issueType).toBe("t3");
+  });
+
+  it("has no type when the project offers none, and then says so", () => {
+    expect(withType({ ...emptyForm, issueType: "t2" }, []).issueType).toBe("");
+    expect(offersNoType(true, [])).toBe(true);
+    expect(offersNoType(true, offered)).toBe(false);
+    // While the types are still being read nothing is said.
+    expect(offersNoType(false, [])).toBe(false);
+  });
+});
 
 describe("iss_11 the form of a new issue", () => {
   it("needs a title and a type before it can be sent", () => {

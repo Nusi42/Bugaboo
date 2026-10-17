@@ -60,7 +60,12 @@ export function TagsRow({
 }
 
 /** The row *Labels* of the Details: the labels of the issue, and the way to add one. */
-export function LabelsRow({ body, changes, problem }: LabelsAndTagsRowProps) {
+export function LabelsRow({
+  body,
+  changes,
+  problem,
+  project,
+}: LabelsAndTagsRowProps & { readonly project: string | undefined }) {
   const labels = body.labels ?? [];
   return (
     <NameValueRow name={t("labels.labels-heading")} {...statusOf(changes, "labels")}>
@@ -71,7 +76,12 @@ export function LabelsRow({ body, changes, problem }: LabelsAndTagsRowProps) {
         onTakeOff={body.may_change_labels ? changes.takeLabelOff : undefined}
       />
       {body.may_change_labels ? (
-        <AddLabel has={labels} onAdd={changes.addLabel} pending={changes.pending} />
+        <AddLabel
+          has={labels}
+          project={project}
+          onAdd={changes.addLabel}
+          pending={changes.pending}
+        />
       ) : null}
       <Problem problem={problem} />
     </NameValueRow>

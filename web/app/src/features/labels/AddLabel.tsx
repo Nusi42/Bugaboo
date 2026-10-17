@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonType, Form, SelectField, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
-import { useLabels, type Chip } from "./labels.ts";
+import { useLabelsToAdd, type Chip } from "./labels.ts";
 import type { Named } from "./use-label-changes.ts";
 
 /** The choice that stands for no label picked yet. */
@@ -11,6 +11,8 @@ const NONE = "";
 export interface AddLabelProps {
   /** The labels the issue has. */
   readonly has: readonly Chip[];
+  /** The project of the issue (a short name): only the labels of the groups it offers are chosen from. */
+  readonly project?: string | undefined;
   /** Puts the label on the issue; says whether it was put there. */
   readonly onAdd: (label: Named) => Promise<boolean>;
   /** A change is on its way. */
@@ -18,12 +20,9 @@ export interface AddLabelProps {
 }
 
 /** *Add a label*: one of the labels of the organization that the issue does not have yet. */
-export function AddLabel({ has, onAdd, pending }: AddLabelProps) {
+export function AddLabel({ has, project, onAdd, pending }: AddLabelProps) {
   const [picked, setPicked] = useState(NONE);
-  const labels = useLabels();
-  const offered = (labels.data?.labels ?? []).filter(
-    (label) => !label.retired && !has.some((each) => each.id === label.id),
-  );
+  const offered = useLabelsToAdd(project, has);
   if (offered.length === 0) {
     return <p {...partOf(part.muted)}>{t("labels.nothing-to-add")}</p>;
   }

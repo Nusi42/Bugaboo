@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { CheckAnswer } from "./CheckAnswer.tsx";
+import { IssueTypeChoice } from "../issue-types/index.ts";
 import { PersonPicker, PlacePicker } from "./Pickers.tsx";
 import { useCheckAccess } from "./use-check.ts";
 
@@ -19,16 +20,32 @@ export interface CheckAccessViewProps {
 export function CheckAccessView({ project }: CheckAccessViewProps) {
   const [person, setPerson] = useState<string>();
   const [place, setPlace] = useState<string | null>(null);
+  const [issueType, setIssueType] = useState<string>();
   const where = project ?? place ?? undefined;
-  const answer = useCheckAccess(person, where);
+  const answer = useCheckAccess(person, where, issueType);
   return (
     <div {...partOf(part.stack)}>
       {project === undefined ? <PlacePicker value={place} onChange={setPlace} /> : null}
-      <PersonPicker project={where} value={person} onChange={setPerson} />
+      <PersonPicker
+        project={where}
+        value={person}
+        onChange={(next) => {
+          setPerson(next);
+          setIssueType(undefined);
+        }}
+      />
       {person === undefined ? (
         <p {...partOf(part.muted)}>{t("check-access.pick-a-person")}</p>
       ) : null}
       {answer.isError ? <Alert tone={alertTone.danger}>{messageOf(answer.error)}</Alert> : null}
+      {answer.data?.differs_by_type === true ? (
+        <IssueTypeChoice
+          label={t("check-access.issue-type-question")}
+          types={answer.data.issue_types ?? []}
+          type={issueType}
+          onChange={setIssueType}
+        />
+      ) : null}
       {answer.data === undefined ? null : <CheckAnswer answer={answer.data} />}
     </div>
   );

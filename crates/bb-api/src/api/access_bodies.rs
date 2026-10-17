@@ -9,6 +9,7 @@ use bb_app::people::{GroupView, HeldRole};
 use bb_app::roles::RoleRef as AppRoleRef;
 use bb_core::ErrorCode;
 use bb_core::access::AppliesTo;
+use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -69,6 +70,8 @@ pub(crate) enum PlaceRef {
     /// A project the person cannot see: it is not named.
     Hidden,
 }
+
+impl Masked for PlaceRef {}
 
 impl From<Option<&ProjectLabel>> for PlaceRef {
     fn from(label: Option<&ProjectLabel>) -> Self {

@@ -4184,7 +4184,7 @@
     "/api/v1/check-access/people/{person}": {
       "get": {
         "tags": ["access"],
-        "summary": "What a person can do in a project, or in the whole organization when no project is named:\nevery permission with *yes* or *no*, every field with its level and how the person sees\npeople, each with the reasons. Needs the permission *Check what other people can do, and why*\nin the place.",
+        "summary": "What a person can do in a project, or in the whole organization when no project is named:\nevery permission with *yes* or *no*, every field with its level and how the person sees\npeople, each with the reasons. With an issue type, the field levels are those for issues of that\ntype; `differs_by_type` says whether they differ by type at all. Needs the permission *Check what other people can do, and why*\nin the place.",
         "operationId": "checkAccess",
         "parameters": [
           {
@@ -4200,6 +4200,15 @@
             "name": "project",
             "in": "query",
             "description": "The ID of the project. Without it the answer is about the whole organization: the level\neach role has of its own.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issue_type",
+            "in": "query",
+            "description": "The ID of an issue type: the levels that count for issues of this type (ADR-0027).\nWithout it the answer is about all issue types.",
             "required": false,
             "schema": {
               "type": "string"
@@ -8631,7 +8640,7 @@
     "/api/v1/issue-types": {
       "get": {
         "tags": ["issue-types"],
-        "summary": "The issue types in the order they are offered in, a page at a time, retired ones too. Open to\neverybody who is signed in.",
+        "summary": "The issue types in the order they are offered in, a page at a time, retired ones too. Open to\neverybody who is signed in. With `project`, each type can say whether that project offers it.",
         "operationId": "listIssueTypes",
         "parameters": [
           {
@@ -8661,6 +8670,15 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID or short name of a project.",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -8696,6 +8714,16 @@
           },
           "401": {
             "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8747,7 +8775,7 @@
       },
       "post": {
         "tags": ["issue-types"],
-        "summary": "Creates an issue type. Needs the permission *Manage issue types, kinds of relation and layouts*.",
+        "summary": "Creates an issue type for the whole organization or in a project. Needs the permission *Manage\nissue types, kinds of relation and layouts* where it is made.",
         "operationId": "createIssueType",
         "requestBody": {
           "content": {
@@ -8855,7 +8883,7 @@
     "/api/v1/issue-types/{issue_type}": {
       "patch": {
         "tags": ["issue-types"],
-        "summary": "Changes the name or the icon of an issue type, or retires it (or offers it again). Needs the\npermission *Manage issue types, kinds of relation and layouts*.",
+        "summary": "Changes the name or the icon of an issue type, or retires it (or offers it again). Needs the\npermission *Manage issue types, kinds of relation and layouts* where the type was made.",
         "operationId": "changeIssueType",
         "parameters": [
           {
@@ -8885,6 +8913,270 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IssueTypeItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-issue-types"
+      }
+    },
+    "/api/v1/issue-types/{issue_type}/offers": {
+      "get": {
+        "tags": ["issue-types"],
+        "summary": "Where an issue type is offered: the rows that say so, a page at a time. Open to everybody who is\nsigned in.",
+        "operationId": "listIssueTypeOffers",
+        "parameters": [
+          {
+            "name": "issue_type",
+            "in": "path",
+            "description": "The ID of the issue type.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rows.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_OfferRowItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "put": {
+        "tags": ["issue-types"],
+        "summary": "Changes where an issue type is offered: all the places together or none. Each place is judged on\nits own: it needs the permission *Manage issue types, kinds of relation and layouts* there.",
+        "operationId": "changeIssueTypeOffers",
+        "parameters": [
+          {
+            "name": "issue_type",
+            "in": "path",
+            "description": "The ID of the issue type.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeOffersBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Every row, and the version of the type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffersBody"
                 }
               }
             }
@@ -12395,9 +12687,144 @@
       }
     },
     "/api/v1/label-groups": {
+      "get": {
+        "tags": ["tags"],
+        "summary": "The groups of labels of the organization the person may know, a page at a time. Open to\neverybody who is signed in. With `project`, only the groups that can reach that project, each\nsaying whether that project offers it.",
+        "operationId": "listLabelGroups",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID or short name of a project.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The groups of labels.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_LabelGroupItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
       "post": {
         "tags": ["tags"],
-        "summary": "Creates a group of labels. Needs *Manage labels and tags*.",
+        "summary": "Creates a group of labels for the whole organization or in a project. Needs *Manage labels and\ntags* where it is made.",
         "operationId": "createLabelGroup",
         "requestBody": {
           "content": {
@@ -12505,7 +12932,7 @@
     "/api/v1/label-groups/{group}": {
       "patch": {
         "tags": ["tags"],
-        "summary": "Changes a group of labels. Needs *Manage labels and tags*.",
+        "summary": "Changes a group of labels. Needs *Manage labels and tags* where the group was made.",
         "operationId": "changeLabelGroup",
         "parameters": [
           {
@@ -12631,14 +13058,54 @@
         "x-permission": "manage-labels"
       }
     },
-    "/api/v1/labels": {
+    "/api/v1/label-groups/{group}/offers": {
       "get": {
         "tags": ["tags"],
-        "summary": "The labels of the organization with their groups. Open to everybody who is signed in: the\npeople who put labels on issues choose from them.",
-        "operationId": "listLabels",
+        "summary": "Where a group of labels is offered: the rows that say so, a page at a time. Open to everybody who\nis signed in.",
+        "operationId": "listLabelGroupOffers",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "description": "The ID of the group.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "The groups and the labels.",
+            "description": "The rows.",
             "headers": {
               "etag": {
                 "schema": {
@@ -12650,7 +13117,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LabelsBody"
+                  "$ref": "#/components/schemas/Page_OfferRowItem"
                 }
               }
             }
@@ -12668,6 +13135,280 @@
           },
           "401": {
             "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "put": {
+        "tags": ["tags"],
+        "summary": "Changes where a group of labels is offered: all the places together or none. Each place is\njudged on its own: it needs the permission *Manage labels and tags* there.",
+        "operationId": "changeLabelGroupOffers",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "path",
+            "description": "The ID of the group.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeOffersBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Every row, and the version of the group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OffersBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-permission": "manage-labels"
+      }
+    },
+    "/api/v1/labels": {
+      "get": {
+        "tags": ["tags"],
+        "summary": "The labels of the organization, a page at a time: those in a group the person may know and\nthose in no group. Open to everybody who is signed in: the people who put labels on issues\nchoose from them. With `project`, only the labels of groups that can reach that project.",
+        "operationId": "listLabels",
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Where the page starts: the `next_cursor` of the page before.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50, at most 100).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "The ID or short name of a project.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The labels.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_LabelItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -23380,6 +24121,25 @@
           }
         }
       },
+      "ChangeOffersBody": {
+        "type": "object",
+        "description": "The places to change together, on the version that was looked at.",
+        "required": ["version", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferChangeBody"
+            },
+            "description": "The places. A place may be named once."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        }
+      },
       "ChangePreviewBody": {
         "type": "object",
         "description": "What renaming or combining a tag or a label would do to the issues the person sees.",
@@ -23666,14 +24426,36 @@
       "CheckAccessBody": {
         "type": "object",
         "description": "What a person can do in a place, and why.",
-        "required": ["person", "permissions", "fields", "kinds"],
+        "required": ["person", "permissions", "fields", "kinds", "differs_by_type"],
         "properties": {
+          "differs_by_type": {
+            "type": "boolean",
+            "description": "Whether the field levels differ by issue type, so the screen asks which type is meant. A\nperson whose levels are the same for every type is asked nothing."
+          },
           "fields": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LevelAnswerBody_FieldKey_FieldLevel"
             },
             "description": "Every field of the catalogue."
+          },
+          "issue_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/IssueTypeRef",
+                "description": "The issue type the field levels are for; left out for all types."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueTypeRef"
+            },
+            "description": "The issue types the question may ask about: those the place offers and that are not\nretired. The screen lists exactly these. Only there when `differs_by_type` is true."
           },
           "kinds": {
             "type": "array",
@@ -24411,6 +25193,8 @@
           "project.too_deep",
           "project.preview_changed",
           "issue.type_retired",
+          "issue.type_not_offered",
+          "label.not_offered",
           "workflow.no_such_change",
           "workflow.not_for_you",
           "workflow.only_if",
@@ -25784,6 +26568,17 @@
         "type": "object",
         "description": "An issue type: the fields that can be asked for.",
         "properties": {
+          "created_in": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRef",
+                "description": "Where it was made: the whole organization or a project. It is looked after where it was\nmade."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "icon": {
             "oneOf": [
               {
@@ -25799,9 +26594,25 @@
             "type": ["string", "null"],
             "description": "The ID of the type."
           },
+          "may_change_offer": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks may change that for the project."
+          },
+          "may_manage": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks looks after it."
+          },
           "name": {
             "type": ["string", "null"],
             "description": "What it is called."
+          },
+          "offered_here": {
+            "type": ["boolean", "null"],
+            "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project` and asks for the field."
+          },
+          "own_offer": {
+            "type": ["boolean", "null"],
+            "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
           },
           "retired": {
             "type": ["boolean", "null"],
@@ -25896,15 +26707,35 @@
       "LabelGroupBody": {
         "type": "object",
         "description": "A group of labels.",
-        "required": ["id", "name", "pick_one", "retired", "version"],
+        "required": ["id", "name", "pick_one", "retired", "created_in", "may_manage", "version"],
         "properties": {
+          "created_in": {
+            "$ref": "#/components/schemas/PlaceRef",
+            "description": "Where it was made: the whole organization or a project. It is looked after where it was\nmade."
+          },
           "id": {
             "type": "string",
             "description": "The ID of the group."
           },
+          "may_change_offer": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks may change that for the project."
+          },
+          "may_manage": {
+            "type": "boolean",
+            "description": "Whether the person who asks looks after it."
+          },
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "offered_here": {
+            "type": ["boolean", "null"],
+            "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project`."
+          },
+          "own_offer": {
+            "type": ["boolean", "null"],
+            "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
           },
           "pick_one": {
             "type": "boolean",
@@ -25916,6 +26747,98 @@
           },
           "version": {
             "type": "integer",
+            "format": "int64",
+            "description": "Counts up with every change."
+          }
+        }
+      },
+      "LabelGroupItem": {
+        "type": "object",
+        "description": "A group of labels in a list: the fields that can be asked for.",
+        "properties": {
+          "created_in": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRef",
+                "description": "Where it was created: the whole organization or a project. It is looked after where it was\ncreated."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the group."
+          },
+          "may_change_offer": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks may change that for the project."
+          },
+          "may_manage": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks looks after it."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "offered_here": {
+            "type": ["boolean", "null"],
+            "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project` and asks for the field."
+          },
+          "own_offer": {
+            "type": ["boolean", "null"],
+            "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
+          },
+          "pick_one": {
+            "type": ["boolean", "null"],
+            "description": "Whether an issue has at most one label of the group."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is retired: old issues keep its labels, new ones are not offered them."
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change."
+          }
+        }
+      },
+      "LabelItem": {
+        "type": "object",
+        "description": "A label in a list: the fields that can be asked for.",
+        "properties": {
+          "color": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChoiceColor",
+                "description": "Its color, as a category token of the theme."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group": {
+            "type": ["string", "null"],
+            "description": "The group it is in, if any."
+          },
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the label."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "retired": {
+            "type": ["boolean", "null"],
+            "description": "Whether it is retired: old issues keep it, new ones are not offered it."
+          },
+          "version": {
+            "type": ["integer", "null"],
             "format": "int64",
             "description": "Counts up with every change."
           }
@@ -25941,31 +26864,6 @@
           "name": {
             "type": "string",
             "description": "What it is called."
-          }
-        }
-      },
-      "LabelsBody": {
-        "type": "object",
-        "description": "The labels of the organization with their groups.",
-        "required": ["groups", "labels", "may_manage"],
-        "properties": {
-          "groups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LabelGroupBody"
-            },
-            "description": "The groups, in the order they are offered in."
-          },
-          "labels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LabelBody"
-            },
-            "description": "The labels, those in a group and those in none."
-          },
-          "may_manage": {
-            "type": "boolean",
-            "description": "Whether the person looks after labels and tags."
           }
         }
       },
@@ -26778,7 +27676,7 @@
           {
             "type": "object",
             "description": "The fields that would change.",
-            "required": ["fields", "kind"],
+            "required": ["fields", "notes", "kind"],
             "properties": {
               "fields": {
                 "type": "array",
@@ -26790,6 +27688,13 @@
               "kind": {
                 "type": "string",
                 "enum": ["changes"]
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ManyChangeNoteBody"
+                },
+                "description": "What else the person should know about this change."
               }
             }
           },
@@ -26814,6 +27719,30 @@
           }
         ],
         "description": "What a row of the preview says will happen to the issue."
+      },
+      "ManyChangeNoteBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "The issue moves to a project that does not use its issue type. It keeps the type.",
+            "required": ["issue_type", "project", "kind"],
+            "properties": {
+              "issue_type": {
+                "type": "string",
+                "description": "The name of the issue type."
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["type_not_used"]
+              },
+              "project": {
+                "type": "string",
+                "description": "The name of the project the issue moves to."
+              }
+            }
+          }
+        ],
+        "description": "Something a person should know about a change that will be made, beside what changes."
       },
       "ManyChangeOutcomeBody": {
         "type": "object",
@@ -27491,6 +28420,10 @@
           "name": {
             "type": "string",
             "description": "What it is called."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project it is made in, by its ID or short name; left out for the whole organization."
           }
         }
       },
@@ -27532,6 +28465,10 @@
           "pick_one": {
             "type": "boolean",
             "description": "Whether an issue has at most one label of the group."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project it is made in, by its ID or short name; left out for the whole organization."
           }
         }
       },
@@ -27938,6 +28875,64 @@
           "run_ended",
           "edit_notice"
         ]
+      },
+      "OfferChangeBody": {
+        "type": "object",
+        "description": "One place to change.",
+        "properties": {
+          "offered": {
+            "type": ["boolean", "null"],
+            "description": "`true` offers the subject there, `false` does not; left out takes the row away, so the place\nfollows the place above it again."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The ID or short name of the project; left out for the whole organization."
+          }
+        }
+      },
+      "OfferRowItem": {
+        "type": "object",
+        "description": "One row of where a subject is offered.",
+        "properties": {
+          "may_change": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks may change the row."
+          },
+          "offered": {
+            "type": ["boolean", "null"],
+            "description": "Whether the subject is offered there."
+          },
+          "place": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRef",
+                "description": "The project (and its sub-projects) or the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "OffersBody": {
+        "type": "object",
+        "description": "Where a subject is offered after a change.",
+        "required": ["rows", "version"],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferRowItem"
+            },
+            "description": "Every row there is."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the subject has now."
+          }
+        }
       },
       "OnlyIfRuleBody": {
         "type": "object",
@@ -28928,6 +29923,17 @@
               "type": "object",
               "description": "An issue type: the fields that can be asked for.",
               "properties": {
+                "created_in": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlaceRef",
+                      "description": "Where it was made: the whole organization or a project. It is looked after where it was\nmade."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "icon": {
                   "oneOf": [
                     {
@@ -28943,9 +29949,25 @@
                   "type": ["string", "null"],
                   "description": "The ID of the type."
                 },
+                "may_change_offer": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks may change that for the project."
+                },
+                "may_manage": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks looks after it."
+                },
                 "name": {
                   "type": ["string", "null"],
                   "description": "What it is called."
+                },
+                "offered_here": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project` and asks for the field."
+                },
+                "own_offer": {
+                  "type": ["boolean", "null"],
+                  "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
                 },
                 "retired": {
                   "type": ["boolean", "null"],
@@ -28955,6 +29977,128 @@
                   "type": ["integer", "null"],
                   "format": "int64",
                   "description": "Counts up with every change. A change is made on the version that was looked at."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_LabelGroupItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A group of labels in a list: the fields that can be asked for.",
+              "properties": {
+                "created_in": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlaceRef",
+                      "description": "Where it was created: the whole organization or a project. It is looked after where it was\ncreated."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the group."
+                },
+                "may_change_offer": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks may change that for the project."
+                },
+                "may_manage": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks looks after it."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "offered_here": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the project the list is asked about offers it. Only when the request names a\n`project` and asks for the field."
+                },
+                "own_offer": {
+                  "type": ["boolean", "null"],
+                  "description": "The row that says so at exactly that project; left out while the project follows the place\nabove it."
+                },
+                "pick_one": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether an issue has at most one label of the group."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it is retired: old issues keep its labels, new ones are not offered them."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_LabelItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A label in a list: the fields that can be asked for.",
+              "properties": {
+                "color": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChoiceColor",
+                      "description": "Its color, as a category token of the theme."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "group": {
+                  "type": ["string", "null"],
+                  "description": "The group it is in, if any."
+                },
+                "id": {
+                  "type": ["string", "null"],
+                  "description": "The ID of the label."
+                },
+                "name": {
+                  "type": ["string", "null"],
+                  "description": "What it is called."
+                },
+                "retired": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether it is retired: old issues keep it, new ones are not offered it."
+                },
+                "version": {
+                  "type": ["integer", "null"],
+                  "format": "int64",
+                  "description": "Counts up with every change."
                 }
               }
             },
@@ -29226,6 +30370,46 @@
                 "text": {
                   "type": ["string", "null"],
                   "description": "A comment: the text, in Markdown."
+                }
+              }
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
+      "Page_OfferRowItem": {
+        "type": "object",
+        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One row of where a subject is offered.",
+              "properties": {
+                "may_change": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the person who asks may change the row."
+                },
+                "offered": {
+                  "type": ["boolean", "null"],
+                  "description": "Whether the subject is offered there."
+                },
+                "place": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlaceRef",
+                      "description": "The project (and its sub-projects) or the whole organization."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             },
@@ -31794,6 +32978,7 @@
           "type-missing",
           "field-missing",
           "tag-not-here",
+          "label-not-here",
           "relation-exists",
           "same-issue",
           "limit-reached",

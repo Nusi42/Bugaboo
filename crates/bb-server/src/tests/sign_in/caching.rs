@@ -157,6 +157,26 @@ async fn a_comment_and_a_field(
     Ok((a_comment_on(ada, readable_id).await?, a_field(ada).await?))
 }
 
+/// An issue type and a group of labels, for the routes that name one: their IDs.
+async fn a_type_and_a_label_group(ada: &mut Browser) -> Result<(String, String), Failure> {
+    let types = ada.send("GET", "/api/v1/issue-types", None).await?;
+    let group = ada
+        .send(
+            "POST",
+            "/api/v1/label-groups",
+            Some(json!({"name": "Area", "pick_one": false})),
+        )
+        .await?;
+    assert_eq!(group.status, StatusCode::OK, "{}", group.body);
+    Ok((
+        types.body["items"][0]["id"]
+            .as_str()
+            .ok_or("no issue type")?
+            .to_owned(),
+        group.body["id"].as_str().ok_or("no group")?.to_owned(),
+    ))
+}
+
 /// The address of a route that is about something named in its query: the draft and lock routes
 /// name a record (the example project), the layout routes the project and a kind of form.
 fn with_query(template: &str, filled: String, project: &str, project_id: &str) -> String {
@@ -205,6 +225,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         let readable_id = an_issue_in_example(&mut ada).await?;
         // A comment and an own field, for the routes that name one.
         let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &readable_id).await?;
+        let (issue_type_id, label_group_id) = a_type_and_a_label_group(&mut ada).await?;
         let run_id = a_run_of(&rig, &person_id).await?;
         let upload_id = an_upload_on(&mut ada, &readable_id).await?;
         let routes = get_routes();
@@ -227,6 +248,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{issue}", &readable_id)
                 .replace("{comment}", &comment_id)
                 .replace("{field}", &field_id)
+                .replace("{issue_type}", &issue_type_id)
+                .replace("{group}", &label_group_id)
                 .replace("{run}", &run_id)
                 .replace("{upload}", &upload_id)
                 .replace("{project}", project);

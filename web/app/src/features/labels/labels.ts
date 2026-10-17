@@ -7,18 +7,12 @@ import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts"
 import { queryClient } from "../../shared/query-client.ts";
 import { queryKeys, refreshLabelReads } from "../../shared/query-keys.ts";
 import { versionCounted } from "../issues/index.ts";
+import { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
 
-/** A group of labels, as the list of the organization shows it. */
-export type LabelGroup = Schema<"LabelGroupBody">;
-/** A label of the organization's list. */
-export type Label = Schema<"LabelBody">;
+export { useLabels, type Label, type LabelGroup } from "./label-lists.ts";
+
 /** A tag or a label on an issue, as the chip needs it. */
 export type Chip = Pick<Schema<"TagRefBody">, "id" | "name" | "color">;
-
-/** The labels of the organization with their groups: anybody who is signed in may read them. */
-export function useLabels() {
-  return api.query.useQuery("get", "/api/v1/labels");
-}
 
 /** A tag that has what a line of the list and its editor need. */
 export interface TagLine {
@@ -163,6 +157,15 @@ export function afterLabelsAndTags(issue: string, { version }: Counted): void {
 /** The choice that stands for a label in no group. */
 export const NO_GROUP = "";
 
+/** The groups the person looks after and may put a label in: those not retired. */
+export function managedGroupChoices(
+  groups: readonly LabelGroup[],
+): readonly { readonly value: string; readonly label: string }[] {
+  return groups
+    .filter((group) => !group.retired && group.may_manage)
+    .map((group) => ({ value: group.id, label: group.name }));
+}
+
 /** The groups to choose from in a label's form: *No group*, then the groups that are not retired. */
 export function groupChoices(
   groups: readonly LabelGroup[],
@@ -173,6 +176,27 @@ export function groupChoices(
       .filter((group) => !group.retired)
       .map((group) => ({ value: group.id, label: group.name })),
   ];
+}
+
+/**
+ * The labels to choose from for an issue of a project: not retired, not on the issue, and not in a
+ * group the project switched off. The labels the issue has stay on it either way.
+ */
+export function useLabelsToAdd(
+  project: string | undefined,
+  has: readonly Chip[],
+): readonly Label[] {
+  const labels = useLabels(project);
+  const closed = new Set(
+    labels.groups.filter((group) => group.offered_here === false).map((group) => group.id),
+  );
+  const held = new Set(has.map((each) => each.id));
+  return labels.labels.filter(
+    (label) =>
+      !label.retired &&
+      !held.has(label.id) &&
+      (label.group === undefined || label.group === null || !closed.has(label.group)),
+  );
 }
 
 /** The look of a tag or label on an issue: a small colored label. */

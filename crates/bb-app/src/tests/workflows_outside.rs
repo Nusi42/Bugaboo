@@ -28,6 +28,7 @@ async fn bug_type(world: &World) -> Result<IssueTypeId, String> {
     let page = issue_types(
         &world.ctx(),
         IssueTypesQuery {
+            project: None,
             session_token: world.admin.session_token.clone(),
             cursor: None,
             limit: 50,

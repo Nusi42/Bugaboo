@@ -73,6 +73,13 @@ export const messages = {
   "labels.add-label": "Add a label",
   "labels.add-label-button": "Add label",
   "labels.nothing-to-add": "Every label is on this issue already.",
+  "labels.project-intro":
+    "Switch off the groups of labels this project does not use. Labels already on an issue stay on it.",
+  "labels.project-list": "Groups of labels of the project",
+  "labels.project-create-title": "Create a group of labels for this project",
+  "labels.project-create-intro": "A group created here is offered in this project and below.",
+  "labels.project-create-label-title": "Create a label for this project",
+  "labels.project-create-label-intro": "A label goes into one of the label groups of this project.",
 } as const;
 
 register(messages);

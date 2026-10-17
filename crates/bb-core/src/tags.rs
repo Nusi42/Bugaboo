@@ -24,10 +24,12 @@ pub const LABELS_PER_ISSUE_MAX: usize = 30;
 /// The most tags in one list of suggestions.
 pub const TAG_SUGGESTIONS_MAX: usize = 10;
 
-/// The most groups of labels the organization has.
+/// The most groups of labels one place has: the whole organization, and each project, counted on
+/// its own (the groups created there).
 pub const LABEL_GROUPS_MAX: usize = 100;
 
-/// The most labels the organization has.
+/// The most labels one place has: the labels of the groups created in a project count against that
+/// project, all the others against the whole organization.
 pub const LABELS_MAX: usize = 1000;
 
 /// The most projects one tag is limited to.
@@ -129,6 +131,10 @@ pub struct LabelGroup {
     /// Whether an issue has at most one label of the group.
     #[not_personal]
     pub pick_one: bool,
+    /// The project it was made in (offered there and below until a place says otherwise, and
+    /// looked after by whoever manages labels there); none for the whole organization.
+    #[not_personal]
+    pub project: Option<ProjectId>,
     /// The place in the order the groups are offered in.
     #[not_personal]
     pub position: i64,

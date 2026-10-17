@@ -283,7 +283,7 @@ async fn tag_03_combining_two_labels_changes_every_issue_once_and_records_it() -
         );
         // The label that went away is not in the list any more.
         let list = ada.send("GET", LABELS, None).await?;
-        assert_eq!(names(ok(&list)?, "labels"), vec!["sign-in".to_owned()]);
+        assert_eq!(names(ok(&list)?, "items"), vec!["sign-in".to_owned()]);
         Ok(())
     })
     .await

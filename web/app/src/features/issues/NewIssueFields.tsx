@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { SelectField, TextField } from "@bugaboo/ui";
+import { Alert, alertTone, SelectField, TextField } from "@bugaboo/ui";
 
 import { FormNotice, FormSections, onlyFields, type FormView } from "../layouts/index.ts";
 import type { NewIssueValues } from "./new-issue-form.ts";
@@ -60,6 +60,7 @@ export function NewIssueFields({ form, refusal }: NewIssueFieldsProps) {
       <ProjectChoice name={project?.name} shortName={form.address} onPick={form.pick} />
       {project === undefined ? null : (
         <>
+          {form.noType ? <Alert tone={alertTone.danger}>{t("issues.no-issue-type")}</Alert> : null}
           <SelectField
             label={t("issues.type")}
             choices={form.types.map((type) => ({ value: type.id, label: type.name }))}

@@ -228,6 +228,14 @@ pub(crate) struct Known {
     pub(crate) role_names: NamesRead<bb_core::id::RoleId>,
     /// Where workflows are used and the workflows, read once for the request.
     pub(crate) workflows: Mutex<Option<Arc<crate::workflows::WorkflowDirectory>>>,
+    /// The name of an issue type that a project does not use, for the notes of a preview of many
+    /// moves: read once for each type and project, not for each issue.
+    pub(crate) types_not_used:
+        Mutex<HashMap<(bb_core::id::IssueTypeId, bb_core::id::ProjectId), Option<String>>>,
+    /// The issue types and the groups of labels in use on the issues the person reads, for the rule
+    /// of what they may know (`offers/known.rs`), read once for the request.
+    pub(crate) used_types: Mutex<Option<Arc<Vec<bb_core::id::IssueTypeId>>>>,
+    pub(crate) used_groups: Mutex<Option<Arc<Vec<bb_core::id::LabelGroupId>>>>,
     /// The groups people are in, for the rule *Who can do it* of a status change.
     pub(crate) person_groups: Mutex<HashMap<UserId, Arc<Vec<bb_core::id::GroupId>>>>,
 }

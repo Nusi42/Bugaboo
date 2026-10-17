@@ -276,7 +276,7 @@ fn text_of(value: Option<&ChangeValue>) -> Option<&str> {
 
 fn changed_field<'a>(row: &'a ManyChangeRow, field: &str) -> Option<&'a FieldChangeView> {
     match &row.detail {
-        Some(ManyChangeDetail::Changes { fields }) => {
+        Some(ManyChangeDetail::Changes { fields, .. }) => {
             fields.iter().find(|each| each.field == field)
         }
         _ => None,

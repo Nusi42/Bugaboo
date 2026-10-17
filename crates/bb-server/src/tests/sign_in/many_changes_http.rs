@@ -188,8 +188,8 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
 }
 
 #[tokio::test]
-async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult {
-    each_database("iss_09_move_skips_type", async |db| {
+async fn iss_02_a_retired_type_is_not_missing_on_a_move() -> TestResult {
+    each_database("iss_02_move_keeps_retired_type", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let other = ada
@@ -232,10 +232,14 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult 
             )
             .await?;
         let preview = ok(&preview)?.clone();
+        // A retired type is not missing: nothing is skipped, and the row says INTO does not use it.
+        assert_eq!(skips(&preview, "rows"), vec![None, None]);
         assert_eq!(
-            skips(&preview, "rows"),
-            vec![None, Some("type-missing".to_owned())]
+            preview["rows"][1]["detail"]["notes"][0]["kind"],
+            "type_not_used"
         );
+        assert_eq!(preview["rows"][1]["detail"]["notes"][0]["project"], "Into");
+        assert_eq!(preview["rows"][0]["detail"]["notes"], json!([]));
         let moved = ada
             .send(
                 "POST",
@@ -243,10 +247,12 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> TestResult 
                 Some(json!({"issues": targets(&preview), "action": action})),
             )
             .await?;
-        assert_eq!(
-            skips(ok(&moved)?, "outcomes"),
-            vec![None, Some("type-missing".to_owned())]
-        );
+        assert_eq!(skips(ok(&moved)?, "outcomes"), vec![None, None]);
+        // The moved issue keeps its retired type.
+        let kept = ada
+            .send("GET", &format!("{ISSUES}/{task_issue}"), None)
+            .await?;
+        assert_eq!(ok(&kept)?["issue"]["issue_type"]["id"], task);
         // The bug has an ID of the new project, and the old one still finds it.
         let by_old = ada.send("GET", &format!("{ISSUES}/{bug}"), None).await?;
         assert!(

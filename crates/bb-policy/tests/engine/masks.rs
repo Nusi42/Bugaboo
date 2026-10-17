@@ -423,13 +423,23 @@ fn sec_04_the_derive_lists_the_fields_a_view_holds_and_nothing_else() {
     assert_eq!(shown.hidden_properties(), ["cost_center", "assigned_to"]);
 }
 
-#[test]
-fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
+/// The world of the tests of levels per issue type: a role that changes a field for every type,
+/// except that it sees nothing of it for bugs, and sees it only in ACME for tasks.
+struct TypedWorld {
+    world: World,
+    severity: FieldKey,
+    bug: bb_core::id::IssueTypeId,
+    task: bb_core::id::IssueTypeId,
+    feature: bb_core::id::IssueTypeId,
+}
+
+fn typed_world() -> TypedWorld {
     use bb_core::id::{FieldId, IssueTypeId, SequentialIds};
     use bb_policy::{FieldRule, TypedFieldRule};
 
     let mut ids = SequentialIds::default();
-    let (bug, task) = (
+    let (bug, task, feature) = (
+        IssueTypeId::generate(&mut ids).unwrap(),
         IssueTypeId::generate(&mut ids).unwrap(),
         IssueTypeId::generate(&mut ids).unwrap(),
     );
@@ -460,6 +470,24 @@ fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
         subject: severity,
         level: FieldLevel::CanSee,
     });
+    TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        feature,
+    }
+}
+
+#[test]
+fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
+    let TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        ..
+    } = typed_world();
     let at_web = world.at(world.web);
     assert_eq!(
         at_web.field_level_for(Some(bug), severity),
@@ -481,4 +509,45 @@ fn cf_06_a_level_for_an_issue_type_wins_over_the_level_for_all_types() {
     assert!(!at_web.field_mask_for(Some(bug)).can_see(severity));
     assert!(at_web.field_mask_for(Some(task)).can_see(severity));
     assert!(at_web.can_see_somewhere(severity));
+}
+
+#[test]
+fn sec_03_check_access_explains_a_field_level_for_one_issue_type() {
+    use bb_policy::LevelSource;
+
+    let TypedWorld {
+        world,
+        severity,
+        bug,
+        task,
+        feature,
+    } = typed_world();
+    let at_web = world.at(world.web);
+    let for_bug = at_web.explain_level_for(severity, Some(bug));
+    assert_eq!(for_bug.level, FieldLevel::Hidden);
+    assert_eq!(for_bug.level, at_web.field_level_for(Some(bug), severity));
+    assert_eq!(
+        (for_bug.roles[0].level, for_bug.roles[0].source),
+        (FieldLevel::Hidden, LevelSource::RoleOwn)
+    );
+    // The row of the project for tasks is found, and says where it was set.
+    let for_task = at_web.explain_level_for(severity, Some(task));
+    assert_eq!(for_task.level, FieldLevel::CanSee);
+    assert_eq!(for_task.roles[0].source, LevelSource::Project(world.acme));
+    // A type nobody set a level for has the level for all types.
+    let for_feature = at_web.explain_level_for(severity, Some(feature));
+    assert_eq!(for_feature.level, FieldLevel::CanChange);
+    assert_eq!(for_feature, at_web.explain_level_for(severity, None));
+    // The report holds the level of every field for the type that is asked about.
+    let level_in = |issue_type| {
+        at_web
+            .report_for(issue_type)
+            .fields
+            .iter()
+            .find(|each| each.subject == severity)
+            .map(|each| each.level)
+    };
+    assert_eq!(level_in(Some(bug)), Some(FieldLevel::Hidden));
+    assert_eq!(level_in(None), Some(FieldLevel::CanChange));
+    assert_eq!(at_web.report(), at_web.report_for(None));
 }

@@ -180,8 +180,8 @@ mod tests {
 
     use super::super::Database;
     use crate::db::StoredId as _;
-    use crate::schema::{IssueRow, IssueTypeRow, ProjectRow, WorkflowUseRow};
-    use crate::test_support::at;
+    use crate::schema::{IssueRow, ProjectRow, WorkflowUseRow};
+    use crate::test_support::{at, insert_old_issue_type};
 
     /// A database as M3 left it: migrations 1 to 14, a project, an issue type, and one issue in
     /// each of the three statuses, written the way the program of M3 wrote them.
@@ -207,24 +207,7 @@ mod tests {
                 Expr::val(1_i64),
             ])?;
         database.execute(&insert).await?;
-        let mut insert = Query::insert();
-        insert
-            .into_table(IssueTypeRow::Table)
-            .columns([
-                IssueTypeRow::Id,
-                IssueTypeRow::Name,
-                IssueTypeRow::Icon,
-                IssueTypeRow::Position,
-                IssueTypeRow::Version,
-            ])
-            .values([
-                Expr::val(issue_type.stored()),
-                Expr::val("Task"),
-                Expr::val("square-check"),
-                Expr::val(0_i64),
-                Expr::val(1_i64),
-            ])?;
-        database.execute(&insert).await?;
+        insert_old_issue_type(database, issue_type, "Task").await?;
         let mut issues = Vec::new();
         for (number, (status, closed)) in [("open", false), ("in-progress", false), ("done", true)]
             .into_iter()

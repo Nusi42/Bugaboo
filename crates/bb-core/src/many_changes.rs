@@ -34,12 +34,16 @@ words! {
         NothingToChange => "nothing-to-change",
         /// The issue changed after the preview.
         ChangedSince => "changed-since",
-        /// The project it would move to does not offer the issue's type.
+        /// The project it would move to did not offer the issue's type. Only runs from before a
+        /// move kept the type of the issue have it; no run ends with it any more, and a stored one
+        /// is shown as it was.
         TypeMissing => "type-missing",
         /// The project it would move to does not use an own field the issue has a value in.
         FieldMissing => "field-missing",
         /// The issue has a tag that is not for the project it would move to.
         TagNotHere => "tag-not-here",
+        /// The label is in a group that the project of the issue does not offer.
+        LabelNotHere => "label-not-here",
         /// The relation is there already.
         RelationExists => "relation-exists",
         /// An issue cannot be related to itself.

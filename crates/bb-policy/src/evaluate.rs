@@ -25,7 +25,7 @@ use bb_core::id::{AssignmentId, GroupId, IssueTypeId, ProjectId, RoleId, UserId}
 use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::{Counts, Permission};
-use crate::levels::{LevelRules, LevelSubject, Levels, chain_depth};
+use crate::levels::{LevelRules, LevelSource, LevelSubject, Levels, RoleLevel, chain_depth};
 
 /// Where something is decided: for the whole organization, or in a project.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -459,6 +459,13 @@ impl Evaluation {
         self.level(field.into())
     }
 
+    /// Whether any role set a field level for one issue type: while none did, the level of a field
+    /// is the same for every type.
+    #[must_use]
+    pub fn has_levels_per_issue_type(&self) -> bool {
+        !self.type_rules.typed.is_empty()
+    }
+
     /// The level of a field on an item of one issue type (ADR-0027): for each role that counts, the
     /// nearest place with a level wins, and at one place a level for the issue type wins over a
     /// level for all types; the level is the highest of the roles. Without an issue type, or while
@@ -470,22 +477,53 @@ impl Evaluation {
         field: impl Into<FieldKey>,
     ) -> FieldLevel {
         let key = field.into();
-        let Some(issue_type) = issue_type.filter(|_| !self.type_rules.typed.is_empty()) else {
+        let Some(issue_type) = issue_type.filter(|_| self.has_levels_per_issue_type()) else {
             return self.field_level(key);
         };
-        let mut top = FieldLevel::Hidden;
-        for role in &self.roles {
-            if let Some((_, _, level)) = FieldKey::level_for(
-                &self.type_rules,
-                &self.chain,
-                role.id,
-                key,
-                Some(issue_type),
-            ) {
-                top = top.max(level);
-            }
-        }
-        top.min(self.field_limit)
+        self.field_level_from(&self.role_levels_for(key, issue_type))
+    }
+
+    /// What each role that counts says about a field for items of one issue type (ADR-0027): the
+    /// nearest place with a level wins, and at one place a level for the issue type wins over a
+    /// level for all types. A role that sets none says nothing (`LevelSource::Unset`, closed). The
+    /// one list that the level of a field for a type (`field_level_for`) and its explanation
+    /// (`explain_level_for`) are both taken from, so they cannot disagree.
+    pub(crate) fn role_levels_for(
+        &self,
+        field: FieldKey,
+        issue_type: IssueTypeId,
+    ) -> Vec<RoleLevel<FieldLevel>> {
+        self.roles
+            .iter()
+            .map(|role| {
+                let (source, level) = FieldKey::level_for(
+                    &self.type_rules,
+                    &self.chain,
+                    role.id,
+                    field,
+                    Some(issue_type),
+                )
+                .map_or(
+                    (LevelSource::Unset, FieldKey::CLOSED),
+                    |(source, _, level)| (source, level),
+                );
+                RoleLevel {
+                    role: role.id,
+                    level,
+                    source,
+                }
+            })
+            .collect()
+    }
+
+    /// The level of a field from what the roles say: the highest, at most what the key allows.
+    pub(crate) fn field_level_from(&self, roles: &[RoleLevel<FieldLevel>]) -> FieldLevel {
+        roles
+            .iter()
+            .map(|says| says.level)
+            .max()
+            .unwrap_or(FieldKey::CLOSED)
+            .min(self.field_limit)
     }
     /// The raw level for a kind of people information (see [`Self::level`]).
     #[must_use]

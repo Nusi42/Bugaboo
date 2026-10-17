@@ -89,6 +89,10 @@ pub(super) enum Quirk {
     /// holds the permission but does not read the issues there is told `resource.not_found`, as
     /// for a tag that is not there (SEC-06).
     NamesATagOfTheTarget,
+    /// The route names an issue type or a group of labels that the example creates in the target
+    /// project: a person who may not know that project is told `resource.not_found`, as for one
+    /// that is not there (SEC-03, ADR-0027 amendment).
+    NamesASubjectOfTheTarget,
     /// The route belongs to an open editor, a tab of a signed-in person: an access key is turned
     /// away from it, whatever the key may do (ADR-0019).
     SessionOnly,
@@ -319,8 +323,18 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::route("throwAwayDraft"),
     Example::route("checkVersions"),
     Example::with("listIssueTypes", &[Quirk::KeysActAsThePerson]),
-    Example::route("createIssueType"),
-    Example::route("changeIssueType"),
+    Example::with("createIssueType", &[Quirk::AtTheTargetProject]),
+    Example::with("changeIssueType", &[Quirk::AtTheTargetProject]),
+    Example::with(
+        "listIssueTypeOffers",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesASubjectOfTheTarget],
+    ),
+    Example::with("changeIssueTypeOffers", &[Quirk::AtTheTargetProject]),
+    Example::with(
+        "listLabelGroupOffers",
+        &[Quirk::KeysActAsThePerson, Quirk::NamesASubjectOfTheTarget],
+    ),
+    Example::with("changeLabelGroupOffers", &[Quirk::AtTheTargetProject]),
     Example::with(
         "getFormLayout",
         &[Quirk::AtTheTargetProject, Quirk::HidesUnseen],
@@ -442,12 +456,13 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("changeTag", &[Quirk::NamesATagOfTheTarget]),
     Example::with("combineTags", &[Quirk::NamesATagOfTheTarget]),
     Example::with("listLabels", &[Quirk::KeysActAsThePerson]),
-    Example::route("createLabelGroup"),
-    Example::route("changeLabelGroup"),
-    Example::route("createLabel"),
-    Example::route("previewLabelChange"),
-    Example::route("changeLabel"),
-    Example::route("combineLabels"),
+    Example::with("listLabelGroups", &[Quirk::KeysActAsThePerson]),
+    Example::with("createLabelGroup", &[Quirk::AtTheTargetProject]),
+    Example::with("changeLabelGroup", &[Quirk::AtTheTargetProject]),
+    Example::with("createLabel", &[Quirk::AtTheTargetProject]),
+    Example::with("previewLabelChange", &[Quirk::AtTheTargetProject]),
+    Example::with("changeLabel", &[Quirk::AtTheTargetProject]),
+    Example::with("combineLabels", &[Quirk::AtTheTargetProject]),
     Example::with("moveIssue", &[Quirk::AnIssueOfTheTarget]),
     Example::with("previewManyChanges", &[Quirk::SkipsWhatItMayNotChange]),
     Example::with("applyManyChanges", &[Quirk::SkipsWhatItMayNotChange]),

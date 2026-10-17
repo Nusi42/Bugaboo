@@ -77,10 +77,17 @@ export function peopleOf(
   return linesFrom(pages, namedPerson);
 }
 
-/** What a person can do in a place and why: asked once a person is chosen. */
-export function useCheckAccess(person: string | undefined, project: string | undefined) {
+/**
+ * What a person can do in a place and why: asked once a person is chosen. With an issue type (an
+ * ID), the field levels are those for issues of that type.
+ */
+export function useCheckAccess(
+  person: string | undefined,
+  project: string | undefined,
+  issueType: string | undefined,
+) {
   return useQuery({
-    queryKey: queryKeys.checkAccess.answer(person, project),
+    queryKey: queryKeys.checkAccess.answer(person, project, issueType),
     // A check is a question about now: it is never kept for later.
     gcTime: 0,
     queryFn:
@@ -89,7 +96,13 @@ export function useCheckAccess(person: string | undefined, project: string | und
         : async () =>
             dataOf(
               await api.client.GET("/api/v1/check-access/people/{person}", {
-                params: { path: { person }, query: project === undefined ? {} : { project } },
+                params: {
+                  path: { person },
+                  query: {
+                    ...(project === undefined ? {} : { project }),
+                    ...(issueType === undefined ? {} : { issue_type: issueType }),
+                  },
+                },
               }),
             ),
   });

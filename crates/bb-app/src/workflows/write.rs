@@ -80,6 +80,7 @@ pub async fn create_workflow<S: AuthStore>(
     input: CreateWorkflow,
 ) -> Result<Authorized<WorkflowEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .workflow_where(input.project.as_deref(), input.issue_type)
         .await?;
@@ -152,6 +153,7 @@ pub async fn use_workflow<S: AuthStore>(
     input: UseWorkflow,
 ) -> Result<Authorized<WorkflowEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .workflow_where(input.project.as_deref(), input.issue_type)
         .await?;

@@ -19,9 +19,9 @@ use crate::issues::{
     ChangeIssue, CreateIssue, IssueTypesQuery, change_issue, create_issue, issue_types,
 };
 use crate::many_changes::{
-    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangePreview, ManyChangePreviewQuery,
-    ManyChangeResult, ManyChangeRunQuery, ManyChangeTarget, apply_many_changes, many_changes_run,
-    preview_many_changes,
+    ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeDetail, ManyChangeNote,
+    ManyChangePreview, ManyChangePreviewQuery, ManyChangeResult, ManyChangeRunQuery,
+    ManyChangeTarget, apply_many_changes, many_changes_run, preview_many_changes,
 };
 use crate::roles::{AssignRole, CreateRole, Given, Subject, assign_role, create_role};
 
@@ -200,7 +200,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
 }
 
 #[tokio::test]
-async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
+async fn iss_02_a_move_keeps_a_retired_type_and_names_it_in_memory() -> Outcome {
     let world = World::new().await?;
     let admin = token(&world);
     let (from, to) = (
@@ -210,6 +210,7 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
     let types = issue_types(
         &world.ctx(),
         IssueTypesQuery {
+            project: None,
             session_token: admin.clone(),
             cursor: None,
             limit: 50,
@@ -240,7 +241,7 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
             .id,
         );
     }
-    // The second type is retired: no project offers it.
+    // The second type is retired: no project offers it to new issues, and the issue keeps it.
     crate::issues::change_issue_type(
         &world.ctx(),
         crate::issues::ChangeIssueType {
@@ -257,15 +258,40 @@ async fn iss_09_a_move_skips_issues_whose_type_the_target_lacks() -> Outcome {
         project: to.to_string(),
     };
     let asked = preview(&world, &admin, &made, &action).await?;
+    // Neither is skipped: a retired type is not missing. The preview says that INTO does not use it.
     let reasons: Vec<Option<SkipReason>> = asked.rows.iter().map(|row| row.skipped).collect();
-    assert_eq!(reasons, vec![None, Some(SkipReason::TypeMissing)]);
-    let result = apply(&world, &admin, targets(&asked), &action).await?;
-    let moved: Vec<Option<String>> = result
-        .outcomes
+    assert_eq!(reasons, vec![None, None]);
+    let notes: Vec<Vec<ManyChangeNote>> = asked
+        .rows
         .iter()
-        .map(|each| each.skipped.map(|reason| reason.code().to_owned()))
+        .map(|row| match &row.detail {
+            Some(ManyChangeDetail::Changes { notes, .. }) => notes.clone(),
+            _ => Vec::new(),
+        })
         .collect();
-    assert_eq!(moved, vec![None, Some("type-missing".to_owned())]);
+    assert_eq!(
+        notes,
+        vec![
+            Vec::new(),
+            vec![ManyChangeNote::TypeNotUsed {
+                issue_type: types.items[1].name.clone(),
+                project: "A project".to_owned(),
+            }],
+        ]
+    );
+    let result = apply(&world, &admin, targets(&asked), &action).await?;
+    assert!(result.outcomes.iter().all(|each| each.skipped.is_none()));
+    // The moved issue keeps its retired type.
+    let kept = crate::issues::issue(
+        &world.ctx(),
+        crate::issues::IssueQuery {
+            session_token: admin.clone(),
+            issue: made[1].to_string(),
+        },
+    )
+    .await?
+    .into_value();
+    assert_eq!(kept.issue.issue_type.id, retired);
     Ok(())
 }
 

@@ -29,6 +29,7 @@ mod layouts;
 mod many_changes;
 mod migrations;
 mod notifications;
+mod offers;
 mod paging;
 mod policy;
 mod projects;
@@ -85,6 +86,39 @@ mod test_support {
     /// A moment `seconds` after 2026-01-01.
     pub(crate) fn at(seconds: i64) -> Timestamp {
         Timestamp::from_second(1_767_225_600 + seconds).unwrap()
+    }
+
+    /// A row of an issue type, written the way the program wrote it before issue types had a project
+    /// (the columns of migration 7): what a test of a migration starts from.
+    #[cfg(test)]
+    pub(crate) async fn insert_old_issue_type(
+        database: &Database,
+        id: IssueTypeId,
+        name: &str,
+    ) -> Result<(), crate::StoreError> {
+        use crate::db::StoredId as _;
+        use crate::schema::IssueTypeRow;
+        use sea_query::{Expr, Query};
+
+        let mut insert = Query::insert();
+        insert
+            .into_table(IssueTypeRow::Table)
+            .columns([
+                IssueTypeRow::Id,
+                IssueTypeRow::Name,
+                IssueTypeRow::Icon,
+                IssueTypeRow::Position,
+                IssueTypeRow::Version,
+            ])
+            .values([
+                Expr::val(id.stored()),
+                Expr::val(name),
+                Expr::val("square-check"),
+                Expr::val(0_i64),
+                Expr::val(1_i64),
+            ])
+            .map_err(|_| crate::StoreError::Corrupt("an issue type"))?;
+        database.execute(&insert).await.map(|_| ())
     }
 
     /// A predictable ID source for the test.
@@ -173,6 +207,7 @@ mod test_support {
                 version: FIRST_VERSION,
             },
             IssueType {
+                project: None,
                 id: issue_type,
                 name: "Bug".to_owned(),
                 icon: IssueIcon::Bug,

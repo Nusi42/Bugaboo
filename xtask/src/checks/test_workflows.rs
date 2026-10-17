@@ -6,13 +6,15 @@
 //! through `each_database`, which runs it on SQLite and on PostgreSQL (ARCH-DB-PARITY holds the
 //! record of what ran). A test that is renamed or deleted without the list changing fails here, so
 //! the judge of a status change, the choice of the workflow of a place and the publishing of a
-//! workflow cannot lose their tests without anybody noticing.
+//! workflow cannot lose their tests without anybody noticing. The tests of where issue types and
+//! groups of labels are offered are held here too: they are found by the same walk (ADR-0027
+//! amendment, ISS-02, TAG-02, SEC-03).
 
 use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-const REQUIRED: [Required; 16] = [
+const REQUIRED: [Required; 43] = [
     Required {
         name: "wf_01_an_m3_database_keeps_every_status_after_the_upgrade",
         both_databases: true,
@@ -76,6 +78,117 @@ const REQUIRED: [Required; 16] = [
     Required {
         name: "m3_f53_who_may_change_names_the_roles_held_in_the_project_over_http",
         both_databases: true,
+    },
+    // Where an issue type or a group of labels is offered is found by the same walk as a workflow
+    // (docs/milestones/M4/WP-11-types-and-labels-per-project.md).
+    Required {
+        name: "iss_02_a_project_offers_only_its_issue_types",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_an_upgraded_database_offers_every_type_everywhere",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_a_retired_type_is_not_missing_on_a_move",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_03_a_project_lead_manages_the_types_of_their_project_only",
+        both_databases: true,
+    },
+    Required {
+        name: "tag_02_a_label_group_of_a_project_is_offered_there_and_below",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_03_check_access_names_the_level_per_issue_type",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_a_sub_project_follows_its_parent_until_it_has_its_own_row",
+        both_databases: false,
+    },
+    // Who may know a subject, the names, the limits and the upgrade (review of WP-11).
+    Required {
+        name: "sec_03_a_subject_created_in_a_project_is_unknown_outside_it",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_check_access_does_not_name_a_type_the_checker_may_not_know",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_name_is_unique_among_the_subjects_that_can_meet_in_a_project",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_the_rows_of_a_subject_leave_out_a_place_the_reader_may_not_know",
+        both_databases: false,
+    },
+    Required {
+        name: "iss_02_each_place_has_its_own_limit_of_issue_types",
+        both_databases: false,
+    },
+    Required {
+        name: "tag_02_each_place_has_its_own_limit_of_groups_and_of_labels",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_label_of_a_project_is_not_rewritten_in_projects_its_lead_does_not_manage",
+        both_databases: false,
+    },
+    Required {
+        name: "tag_02_a_list_about_a_project_holds_only_the_subjects_that_can_reach_it",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_subject_created_in_a_project_is_not_there_for_a_guest_a_sibling_lead_or_a_key",
+        both_databases: true,
+    },
+    Required {
+        name: "perf_05_types_and_label_groups_of_a_project_run_as_many_statements_for_forty_as_for_five",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_09_a_stored_run_that_skipped_for_a_missing_type_is_still_read",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_a_subject_refers_to_its_project_and_a_group_name_may_repeat",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_the_rows_of_a_subject_are_found_by_the_subject",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_03_a_visible_sub_project_under_a_hidden_parent_knows_what_reaches_it",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_an_issue_of_a_type_the_writer_does_not_know_is_not_found",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_no_screen_names_a_type_of_a_project_the_reader_does_not_know",
+        both_databases: true,
+    },
+    Required {
+        name: "sec_06_a_group_in_use_is_unknown_to_a_reader_whose_role_hides_the_labels",
+        both_databases: false,
+    },
+    Required {
+        name: "sec_03_a_lead_who_knows_a_project_they_cannot_see_is_told_the_same_by_the_list_and_the_put",
+        both_databases: false,
     },
 ];
 

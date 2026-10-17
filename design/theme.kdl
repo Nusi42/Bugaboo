@@ -2178,6 +2178,23 @@ part "item.text" {
     use "column-wrap"
 }
 
+// The words of an item that has a button beside them: they take the room that is left and break
+// inside their own box, so the button stays beside them on every line of a list.
+part "item.main" {
+    use "column-wrap"
+    flex "1 1 $size-name"
+}
+
+// The buttons of an item whose words are `item.main`: on a phone they stand under the words, so a
+// quiet one hangs back by its own padding and its text starts where the words start (R1).
+part "item.actions" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2"
+    margin-inline-start "$size-phone-hang"
+}
+
 part "item.title" {
     font-weight "$weight-bold"
 }

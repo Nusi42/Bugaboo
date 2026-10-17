@@ -13,9 +13,9 @@ use axum::response::Response;
 use bb_app::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, ChangedIssue, CombineLabels,
     CombineTags, CreateLabel, CreateLabelGroup, IssueLabelsAndTags, IssueLabelsAndTagsQuery,
-    LabelChangePreviewQuery, LabelGroupView, LabelRef, LabelView, Labels, LabelsQuery, RemoveLabel,
-    RemoveTag, TagChangePreview, TagChangePreviewQuery, TagRef, TagSuggestionsQuery, TagView,
-    TagsQuery,
+    LabelChangePreviewQuery, LabelGroupView, LabelGroupsQuery, LabelRef, LabelView, LabelsQuery,
+    RemoveLabel, RemoveTag, TagChangePreview, TagChangePreviewQuery, TagRef, TagSuggestionsQuery,
+    TagView, TagsQuery,
 };
 use bb_core::id::{LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::{ChoiceColor, Edit};
@@ -25,12 +25,13 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use super::access_bodies::cursor_error;
+use super::access_bodies::{PlaceRef, cursor_error};
 use super::auth::{
     AuthHandle, ConflictAnswer, ForbiddenAnswer, Info, InvalidAnswer, NotFoundAnswer,
     NotSignedInAnswer, Session, answer, answer_authorized,
 };
 use super::issues::IssueTypeRef;
+use super::offers::OfferProject;
 use super::previews::PreviewSummaryBody;
 use super::projects::ProjectRef;
 use super::relations::IssueRef;
@@ -51,9 +52,9 @@ use issue::{
 };
 use label_admin::{
     __path_change_label, __path_change_label_group, __path_combine_labels, __path_create_label,
-    __path_create_label_group, __path_list_labels, __path_preview_label_change, change_label,
-    change_label_group, combine_labels, create_label, create_label_group, list_labels,
-    preview_label_change,
+    __path_create_label_group, __path_list_label_groups, __path_list_labels,
+    __path_preview_label_change, change_label, change_label_group, combine_labels, create_label,
+    create_label_group, list_label_groups, list_labels, preview_label_change,
 };
 use tag_admin::{
     __path_change_tag, __path_combine_tags, __path_list_tags, __path_preview_tag_change,
@@ -71,6 +72,32 @@ const TAG_FIELDS: [FieldSpec; 6] = [
     FieldSpec::by_default("version"),
 ];
 const TAGS_LIST: &str = "tags";
+
+/// The fields of a label in a list that can be asked for: all of them are by default.
+const LABEL_FIELDS: [FieldSpec; 6] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("group"),
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("color"),
+    FieldSpec::by_default("retired"),
+    FieldSpec::by_default("version"),
+];
+const LABELS_LIST: &str = "labels";
+
+/// The fields of a group of labels in a list that can be asked for.
+const LABEL_GROUP_FIELDS: [FieldSpec; 10] = [
+    FieldSpec::by_default("id"),
+    FieldSpec::by_default("name"),
+    FieldSpec::by_default("pick_one"),
+    FieldSpec::by_default("retired"),
+    FieldSpec::by_default("created_in"),
+    FieldSpec::by_default("may_manage"),
+    FieldSpec::by_default("version"),
+    FieldSpec::on_request("offered_here"),
+    FieldSpec::on_request("own_offer"),
+    FieldSpec::on_request("may_change_offer"),
+];
+const LABEL_GROUPS_LIST: &str = "label-groups";
 
 /// The routes of tags and labels.
 pub(crate) fn routes<S>() -> OpenApiRouter<S>
@@ -90,7 +117,7 @@ where
         .routes(routes!(change_tag))
         .routes(routes!(combine_tags))
         .routes(routes!(list_labels, create_label))
-        .routes(routes!(create_label_group))
+        .routes(routes!(list_label_groups, create_label_group))
         .routes(routes!(change_label_group))
         .routes(routes!(preview_label_change))
         .routes(routes!(change_label))

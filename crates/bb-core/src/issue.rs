@@ -139,8 +139,12 @@ pub const STARTING_ISSUE_TYPES: [StartingIssueType; 4] = [
     },
 ];
 
-/// A kind of issue (ISS-02): *Bug*, *Task*, *Feature*, *Goal*, or one the organization made. It
-/// is the same in every project. Its fields and layout come with WP-05 and WP-09.
+/// The most issue types one place has: the whole organization, and each project, counted on its
+/// own (the types created there).
+pub const ISSUE_TYPES_MAX: usize = 100;
+
+/// A kind of issue (ISS-02): *Bug*, *Task*, *Feature*, *Goal*, or one the organization or a project
+/// made. Where it is offered is data (`offer`).
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct IssueType {
     /// The ID of the type.
@@ -152,6 +156,10 @@ pub struct IssueType {
     /// Its icon.
     #[not_personal]
     pub icon: IssueIcon,
+    /// The project it was made in (offered there and below until a place says otherwise, and
+    /// looked after by whoever manages issue types there); none for the whole organization.
+    #[not_personal]
+    pub project: Option<ProjectId>,
     /// The place in the order the types are offered in.
     #[not_personal]
     pub position: i64,

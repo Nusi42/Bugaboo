@@ -130,6 +130,7 @@ pub(crate) struct State {
     pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,
     pub(crate) workflows: Vec<bb_core::workflow::StoredWorkflow>,
     pub(crate) workflow_uses: Vec<bb_core::workflow::WorkflowUse>,
+    pub(crate) offers: Vec<bb_core::offer::Offer>,
 }
 
 /// The state, what was recorded, and the failures a test asked for.

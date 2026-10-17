@@ -33,6 +33,7 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::input::clean_tag_name;
 use crate::issues::{InTrash, IssueTypeRef, member};
+use crate::offers::group_offers_in;
 use crate::projects::Why;
 
 /// What a change of the tags or the labels says in the event of the issue.
@@ -76,6 +77,8 @@ impl<S: AuthStore> Ctx<'_, S> {
         let held_tags = store.issue_tags(issue.id).await.map_err(internal)?;
         let labels = store.labels().await.map_err(internal)?;
         let held_labels = store.issue_labels(issue.id).await.map_err(internal)?;
+        // The issue is one the viewer reads, so its type and its labels are known to them by use
+        // (`offers/known.rs`).
         let issue_type = store
             .issue_type(issue.issue_type)
             .await
@@ -151,7 +154,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<LabelPlan, AppError> {
         let Kept { issue, .. } = self.issue_to_sort(actor, issue, Field::Labels).await?;
         let state = self.label_state(issue.id).await?;
-        let addition = judge_label(label, &state.labels, &state.groups, &state.held)?;
+        let offers = self.group_offers(issue.project).await?;
+        let addition = judge_label(label, &state.labels, &state.groups, &state.held, &offers)?;
         let before = label_names(&state.labels, &state.held);
         let mut after = label_names(
             &state.labels,
@@ -439,7 +443,11 @@ pub async fn add_label<S: AuthStore>(
                     let labels = S::labels_in(transaction).await?;
                     let groups = S::label_groups_in(transaction).await?;
                     let held = S::issue_labels_in(transaction, id).await?;
-                    let judged = match judge_label(label, &labels, &groups, &held) {
+                    let Some(stored) = S::issue_in(transaction, id).await? else {
+                        return Err(stopped.stop::<S>(ErrorCode::NotFound));
+                    };
+                    let offers = group_offers_in::<S>(transaction, stored.project).await?;
+                    let judged = match judge_label(label, &labels, &groups, &held, &offers) {
                         Ok(judged) => judged,
                         Err(code) => return Err(stopped.stop::<S>(code)),
                     };

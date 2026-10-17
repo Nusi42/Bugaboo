@@ -2,8 +2,8 @@
 
 use super::{
     ChangedIssue, ChoiceColor, Deserialize, Edit, IssueLabelsAndTags, IssueRef, IssueTypeRef,
-    LabelGroupView, LabelRef, LabelView, Labels, Masked, PreviewSummaryBody, ProjectRef, Serialize,
-    TagChangePreview, TagRef, TagView, ToSchema,
+    LabelGroupView, LabelRef, LabelView, Masked, PlaceRef, PreviewSummaryBody, ProjectRef,
+    Serialize, TagChangePreview, TagRef, TagView, ToSchema,
 };
 
 /// A tag as a small reference: what a chip needs.
@@ -203,8 +203,24 @@ pub(crate) struct LabelGroupBody {
     pub(super) pick_one: bool,
     /// Whether it is retired: old issues keep its labels, new ones are not offered them.
     pub(super) retired: bool,
+    /// Where it was made: the whole organization or a project. It is looked after where it was
+    /// made.
+    pub(super) created_in: PlaceRef,
+    /// Whether the person who asks looks after it.
+    pub(super) may_manage: bool,
     /// Counts up with every change.
     pub(super) version: i64,
+    /// Whether the project the list is asked about offers it. Only when the request names a
+    /// `project`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) offered_here: Option<bool>,
+    /// The row that says so at exactly that project; left out while the project follows the place
+    /// above it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) own_offer: Option<bool>,
+    /// Whether the person who asks may change that for the project.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) may_change_offer: Option<bool>,
 }
 
 impl Masked for LabelGroupBody {}
@@ -216,7 +232,12 @@ impl From<&LabelGroupView> for LabelGroupBody {
             name: group.name.clone(),
             pick_one: group.pick_one,
             retired: group.retired,
+            created_in: PlaceRef::from(group.created_in.as_ref()),
+            may_manage: group.may_manage,
             version: group.version,
+            offered_here: group.here.as_ref().map(|here| here.offered),
+            own_offer: group.here.as_ref().and_then(|here| here.own),
+            may_change_offer: group.here.as_ref().map(|here| here.may_change),
         }
     }
 }
@@ -254,25 +275,97 @@ impl From<&LabelView> for LabelBody {
     }
 }
 
-/// The labels of the organization with their groups.
+/// A label in a list: the fields that can be asked for.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct LabelsBody {
-    /// The groups, in the order they are offered in.
-    pub(super) groups: Vec<LabelGroupBody>,
-    /// The labels, those in a group and those in none.
-    pub(super) labels: Vec<LabelBody>,
-    /// Whether the person looks after labels and tags.
-    pub(super) may_manage: bool,
+pub(crate) struct LabelItem {
+    /// The ID of the label.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) id: Option<String>,
+    /// The group it is in, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) group: Option<String>,
+    /// What it is called.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) name: Option<String>,
+    /// Its color, as a category token of the theme.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) color: Option<ChoiceColor>,
+    /// Whether it is retired: old issues keep it, new ones are not offered it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) retired: Option<bool>,
+    /// Counts up with every change.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) version: Option<i64>,
 }
 
-impl Masked for LabelsBody {}
+impl Masked for LabelItem {}
 
-impl From<Labels> for LabelsBody {
-    fn from(labels: Labels) -> Self {
+impl From<&LabelView> for LabelItem {
+    fn from(label: &LabelView) -> Self {
         Self {
-            groups: labels.groups.iter().map(LabelGroupBody::from).collect(),
-            labels: labels.labels.iter().map(LabelBody::from).collect(),
-            may_manage: labels.may_manage,
+            id: Some(label.id.to_string()),
+            group: label.group.map(|group| group.to_string()),
+            name: Some(label.name.clone()),
+            color: Some(label.color),
+            retired: Some(label.retired),
+            version: Some(label.version),
+        }
+    }
+}
+
+/// A group of labels in a list: the fields that can be asked for.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct LabelGroupItem {
+    /// The ID of the group.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) id: Option<String>,
+    /// What it is called.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) name: Option<String>,
+    /// Whether an issue has at most one label of the group.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) pick_one: Option<bool>,
+    /// Whether it is retired: old issues keep its labels, new ones are not offered them.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) retired: Option<bool>,
+    /// Where it was created: the whole organization or a project. It is looked after where it was
+    /// created.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) created_in: Option<PlaceRef>,
+    /// Whether the person who asks looks after it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) may_manage: Option<bool>,
+    /// Counts up with every change.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) version: Option<i64>,
+    /// Whether the project the list is asked about offers it. Only when the request names a
+    /// `project` and asks for the field.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) offered_here: Option<bool>,
+    /// The row that says so at exactly that project; left out while the project follows the place
+    /// above it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) own_offer: Option<bool>,
+    /// Whether the person who asks may change that for the project.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) may_change_offer: Option<bool>,
+}
+
+impl Masked for LabelGroupItem {}
+
+impl From<&LabelGroupView> for LabelGroupItem {
+    fn from(group: &LabelGroupView) -> Self {
+        Self {
+            id: Some(group.id.to_string()),
+            name: Some(group.name.clone()),
+            pick_one: Some(group.pick_one),
+            retired: Some(group.retired),
+            created_in: Some(PlaceRef::from(group.created_in.as_ref())),
+            may_manage: Some(group.may_manage),
+            version: Some(group.version),
+            offered_here: group.here.as_ref().map(|here| here.offered),
+            own_offer: group.here.as_ref().and_then(|here| here.own),
+            may_change_offer: group.here.as_ref().map(|here| here.may_change),
         }
     }
 }
@@ -328,6 +421,8 @@ pub(crate) struct PreviewChangeBody {
 /// A group of labels to make.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct NewLabelGroupBody {
+    /// The project it is made in, by its ID or short name; left out for the whole organization.
+    pub(super) project: Option<String>,
     /// What it is called.
     pub(super) name: String,
     /// Whether an issue has at most one label of the group.

@@ -49,7 +49,8 @@ function missingForCreate(form: NewIssue) {
   if (form.values.title.trim() === "") {
     return "issues.missing-title";
   }
-  return canCreate(form.values) ? undefined : "issues.missing-type";
+  // A project that offers no type says so by the type; the footer does not ask for one as well.
+  return form.noType || canCreate(form.values) ? undefined : "issues.missing-type";
 }
 
 /**

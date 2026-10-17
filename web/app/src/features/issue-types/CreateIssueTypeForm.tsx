@@ -16,8 +16,16 @@ import { messageOf } from "../../shared/errors.ts";
 import { refreshIssueTypes } from "../../shared/query-keys.ts";
 import { IconField } from "./IconField.tsx";
 
-/** *Create an issue type*: a name and an icon; the type goes to the end of the list. */
-export function CreateIssueTypeForm() {
+export interface CreateIssueTypeFormProps {
+  /** The project the type is created in (a short name); the whole organization when left out. */
+  readonly project?: string;
+}
+
+/**
+ * *Create an issue type*: a name and an icon; the type goes to the end of the list. For a project
+ * it is offered there and below.
+ */
+export function CreateIssueTypeForm({ project }: CreateIssueTypeFormProps) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<IssueTypeIconName>("star");
   const [made, setMade] = useState<string | null>(null);
@@ -32,7 +40,9 @@ export function CreateIssueTypeForm() {
     <Form
       onSubmit={() => {
         setMade(null);
-        create.mutate({ body: { name: name.trim(), icon } });
+        create.mutate({
+          body: { name: name.trim(), icon, ...(project === undefined ? {} : { project }) },
+        });
       }}
     >
       <TextField

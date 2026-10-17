@@ -47,7 +47,7 @@ export function IssueTagsBlock({ issue, readableId, form }: IssueBlockProps) {
 }
 
 /** *Labels* as a name-and-value row of the Details (TAG-02): as `IssueTagsBlock`, for the labels. */
-export function IssueLabelsBlock({ readableId, form }: IssueBlockProps) {
+export function IssueLabelsBlock({ issue, readableId, form }: IssueBlockProps) {
   const labelsAndTags = useIssueLabelsAndTags(readableId);
   const changes = useLabelChanges(readableId);
   const body = labelsAndTags.data;
@@ -60,5 +60,12 @@ export function IssueLabelsBlock({ readableId, form }: IssueBlockProps) {
   if (body === undefined) {
     return null;
   }
-  return <LabelsRow body={body} changes={changes} problem={changes.error} />;
+  return (
+    <LabelsRow
+      body={body}
+      changes={changes}
+      project={issue.project?.short_name}
+      problem={changes.error}
+    />
+  );
 }

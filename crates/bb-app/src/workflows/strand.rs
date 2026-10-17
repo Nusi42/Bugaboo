@@ -82,7 +82,7 @@ pub(crate) async fn reach_of_workflow_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     workflow: WorkflowId,
 ) -> Result<Reach, S::Error> {
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
+    let tree = crate::projects::tree_in::<S>(transaction).await?;
     let uses = S::workflow_uses_in(transaction).await?;
     Ok(Reach::of(&places_of(&uses, workflow), &tree))
 }
@@ -95,7 +95,7 @@ pub(crate) async fn reach_of_place_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     place: WorkflowPlace,
 ) -> Result<Reach, S::Error> {
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
+    let tree = crate::projects::tree_in::<S>(transaction).await?;
     Ok(Reach::of(&[place], &tree))
 }
 
@@ -108,7 +108,7 @@ pub(crate) async fn count_stranded_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     reach: &Reach,
 ) -> Result<usize, S::Error> {
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
+    let tree = crate::projects::tree_in::<S>(transaction).await?;
     let rows = S::workflow_directory_in(transaction).await?;
     let directory = WorkflowDirectory::build(rows.uses, rows.workflows);
     // Only the issues in a status that not every workflow has can be stranded.
@@ -138,32 +138,30 @@ pub(crate) async fn count_stranded_in<S: AuthStore>(
 /// The error of the store.
 pub(crate) async fn content_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    project: ProjectId,
+    chain: &[ProjectId],
     issue_type: IssueTypeId,
 ) -> Result<Arc<WorkflowContent>, S::Error> {
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
     let rows = S::workflow_directory_in(transaction).await?;
     let directory = WorkflowDirectory::build(rows.uses, rows.workflows);
-    let chain = tree.chain(project).unwrap_or_default();
-    Ok(directory.in_force(&chain, Some(issue_type)))
+    Ok(directory.in_force(chain, Some(issue_type)))
 }
 
-/// Inside the transaction that writes an issue with this status: takes the lock of the workflows
-/// shared and checks that the workflow that counts now still has the status, which the request was
-/// judged on. If a workflow was published meanwhile and dropped it, the write is stopped with
+/// Inside the transaction that writes an issue with this status, in the project whose chain from
+/// the top down is given (after `projects::lock_chain_in`, which takes the shared lock of the
+/// workflows): checks that the workflow that counts now still has the status, which the request
+/// was judged on. If a workflow was published meanwhile and dropped it, the write is stopped with
 /// `edit.version_changed`, and the person looks again.
 ///
 /// # Errors
 /// The error of the store, or the stop of the change.
 pub(crate) async fn ensure_status_in_force_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    project: ProjectId,
+    chain: &[ProjectId],
     issue_type: IssueTypeId,
     status: &StatusKey,
     stopped: &Why,
 ) -> Result<(), S::Error> {
-    S::lock_workflows_shared(transaction).await?;
-    let content = content_in::<S>(transaction, project, issue_type).await?;
+    let content = content_in::<S>(transaction, chain, issue_type).await?;
     if content.status(status).is_none() {
         return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
     }
@@ -177,6 +175,7 @@ pub(crate) async fn ensure_status_in_force_in<S: AuthStore>(
 /// The error of the store, or the stop of the change.
 pub(crate) async fn ensure_written_status_in<S: AuthStore>(
     transaction: &mut S::Transaction,
+    chain: &[ProjectId],
     written: &Issue,
     stored: Option<&Issue>,
     stopped: &Why,
@@ -188,7 +187,7 @@ pub(crate) async fn ensure_written_status_in<S: AuthStore>(
     }
     ensure_status_in_force_in::<S>(
         transaction,
-        written.project,
+        chain,
         written.issue_type,
         &written.status,
         stopped,
@@ -209,7 +208,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         cap: usize,
     ) -> Result<Vec<Issue>, AppError> {
         let failed = |error| internal::<S>(&error);
-        let tree = Tree::of(&self.store().project_tree().await.map_err(failed)?);
+        let tree = self.project_tree_now().await?;
         let reach = Reach::of(&places_of(directory.uses(), workflow), &tree);
         let mut governed: Vec<Issue> = Vec::new();
         let mut after = None;
@@ -288,7 +287,7 @@ async fn stored_places_in<S: AuthStore>(
     transaction: &mut S::Transaction,
 ) -> Result<(WorkflowDirectory, Tree), S::Error> {
     S::lock_workflows_shared(transaction).await?;
-    let tree = Tree::of(&S::project_tree_in(transaction).await?);
+    let tree = crate::projects::tree_in::<S>(transaction).await?;
     let rows = S::workflow_directory_in(transaction).await?;
     Ok((WorkflowDirectory::build(rows.uses, rows.workflows), tree))
 }

@@ -6,8 +6,13 @@ import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
 import { refreshLabels } from "./labels.ts";
 
+export interface CreateLabelGroupFormProps {
+  /** The project the group is created in (a short name); the whole organization when left out. */
+  readonly project?: string;
+}
+
 /** *Create a group of labels*: a name, and whether an issue gets at most one label of it. */
-export function CreateLabelGroupForm() {
+export function CreateLabelGroupForm({ project }: CreateLabelGroupFormProps) {
   const [name, setName] = useState("");
   const [pickOne, setPickOne] = useState(false);
   const [made, setMade] = useState<string | null>(null);
@@ -23,7 +28,13 @@ export function CreateLabelGroupForm() {
     <Form
       onSubmit={() => {
         setMade(null);
-        create.mutate({ body: { name: name.trim(), pick_one: pickOne } });
+        create.mutate({
+          body: {
+            name: name.trim(),
+            pick_one: pickOne,
+            ...(project === undefined ? {} : { project }),
+          },
+        });
       }}
     >
       <TextField

@@ -41,6 +41,7 @@ crate::entities! {
     crate::issue::AssignedPerson,
     crate::issue::IssueCounter,
     crate::issue::IssueType,
+    crate::offer::Offer,
     crate::job::Job,
     crate::layout::Layout,
     crate::layout::LayoutField,

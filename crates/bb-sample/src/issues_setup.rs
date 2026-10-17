@@ -83,6 +83,7 @@ impl Setup {
             issue_types(
                 &ctx,
                 IssueTypesQuery {
+                    project: None,
                     session_token: token.to_owned(),
                     cursor: None,
                     limit: PAGE_SIZE_MAX,
@@ -243,6 +244,7 @@ async fn create_labels(
         create_label_group(
             &ctx,
             CreateLabelGroup {
+                project: None,
                 session_token: token.to_owned(),
                 name: group.name.clone(),
                 pick_one: group.pick_one,

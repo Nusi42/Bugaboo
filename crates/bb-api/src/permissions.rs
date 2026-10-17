@@ -406,6 +406,7 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route("listLabels", Declared::SignedIn, Answer::Ordinary),
+    route("listLabelGroups", Declared::SignedIn, Answer::Ordinary),
     route(
         "createLabelGroup",
         Declared::Permission(Permission::ManageLabels),
@@ -646,6 +647,18 @@ pub const ROUTES: &[Route] = &[
     route(
         "changeIssueType",
         Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route("listIssueTypeOffers", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "changeIssueTypeOffers",
+        Declared::Permission(Permission::ManageIssueTypes),
+        Answer::Ordinary,
+    ),
+    route("listLabelGroupOffers", Declared::SignedIn, Answer::Ordinary),
+    route(
+        "changeLabelGroupOffers",
+        Declared::Permission(Permission::ManageLabels),
         Answer::Ordinary,
     ),
     route(

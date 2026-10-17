@@ -115,6 +115,7 @@ pub(super) async fn check(
         .check_access(
             Rig::info(),
             CheckAccessQuery {
+                issue_type: None,
                 session_token: credential.to_owned(),
                 person,
                 place,

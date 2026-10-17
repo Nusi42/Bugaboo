@@ -24,7 +24,9 @@ use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
 use crate::fields::{Item, PlannedValues};
 use crate::follow::started_following;
 use crate::input::clean_long_text;
+use crate::offers::ensure_type_takes_issues_in;
 use crate::projects::Why;
+use crate::projects::lock_chain_in;
 use crate::workflows::{StatusCheck, ensure_written_status_in};
 
 /// How often a change is tried again when two writers drew the same random code at the same
@@ -151,22 +153,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             None => Vec::new(),
         };
+        let chain = self.chain_of(project.id).await?;
         let issue_type = self
-            .store()
-            .issue_type(input.issue_type)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        if issue_type.retired_at.is_some() {
-            return Err(ErrorCode::IssueTypeRetired.into());
-        }
+            .writable_issue_type(actor, input.issue_type, &chain)
+            .await?;
         let now = self.now();
         let id = IssueId::generate(&mut self.ids())
             .map_err(|error| AppError::Internal(error.to_string()))?;
         let item = Item {
             kind: RecordKind::Issue,
             id: Some(id.into()),
-            chain: self.chain_of(project.id).await?,
+            chain,
             issue_type: Some(issue_type.id),
             reported_by: Some(actor.person.id),
         };
@@ -265,17 +262,19 @@ pub async fn create_issue<S: AuthStore>(
             .store()
             .record_change(&event, move |transaction| {
                 Box::pin(async move {
-                    // The type may have been retired since the request began.
-                    let retired = S::issue_types_in(transaction)
-                        .await?
-                        .iter()
-                        .find(|found| found.id == issue.issue_type)
-                        .is_none_or(|found| found.retired_at.is_some());
-                    if retired {
-                        return Err(stopped.stop::<S>(ErrorCode::IssueTypeRetired));
-                    }
+                    // The type may have been retired, or the project may have stopped offering
+                    // it, since the request began.
+                    let chain = lock_chain_in::<S>(transaction, issue.project).await?;
+                    ensure_type_takes_issues_in::<S>(
+                        transaction,
+                        &chain,
+                        issue.issue_type,
+                        &stopped,
+                    )
+                    .await?;
                     // The workflow the status was judged on is still the one that counts.
-                    ensure_written_status_in::<S>(transaction, &issue, None, &stopped).await?;
+                    ensure_written_status_in::<S>(transaction, &chain, &issue, None, &stopped)
+                        .await?;
                     // The mode and the code are judged after the lock on the codes of the
                     // project, so a change of the mode meanwhile is seen whole or not at all.
                     S::lock_issue_codes(transaction, issue.project).await?;

@@ -65,12 +65,15 @@ export function ProjectsToUse({ picked, onPick, words: said }: ProjectsToUseProp
     nothing: t("fields.projects-nothing"),
     more: t("fields.projects-more"),
   };
-  const projects = linesFrom(found.data?.pages, (item): ProjectChoice | undefined => {
+  const everyFound = linesFrom(found.data?.pages, (item): ProjectChoice | undefined => {
     const { id, short_name: shortName, name } = item;
     return id === undefined || id === null || shortName === undefined || shortName === null
       ? undefined
       : { id, shortName, name: name ?? shortName };
-  }).filter((project) => !picked.includes(project.id));
+  });
+  // A project that was picked is left out of the list, but it was found: the picker says that
+  // nothing was found only when the search found nothing.
+  const projects = everyFound.filter((project) => !picked.includes(project.id));
   return (
     <SearchPicker
       look={pickerLook.boxed}
@@ -78,7 +81,7 @@ export function ProjectsToUse({ picked, onPick, words: said }: ProjectsToUseProp
       searchLabel={text.search}
       listLabel={text.list}
       {...frame}
-      {...pickerStatus(found, projects.length, {
+      {...pickerStatus(found, everyFound.length, {
         nothing: text.nothing,
         more: text.more,
       })}

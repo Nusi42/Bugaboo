@@ -17,10 +17,11 @@ use bb_core::tags::IssueSight;
 use bb_policy::{LevelRules, Narrowing, Permission, Place, Policy, Tree};
 
 use super::types::{ProjectItem, ProjectRef, TRAIL_MAX};
-use crate::access::Actor;
+use crate::access::{Actor, ProjectLabel};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 /// The projects, and which of them one person sees.
+#[derive(Clone)]
 pub(crate) struct Shown {
     person: UserId,
     /// What the access key behind the request narrows the person to, if one is in use: it counts
@@ -147,17 +148,74 @@ impl Shown {
     /// Whether the person holds the permission in the project, from the same rows and the same
     /// engine as every other decision.
     pub(crate) fn allows(&self, project: ProjectId, permission: Permission) -> bool {
-        self.held_in(project)
+        self.holds(Place::Project(project), permission)
+    }
+
+    /// Whether the person holds the permission at the place, the whole organization included.
+    pub(crate) fn holds(&self, place: Place, permission: Permission) -> bool {
+        self.held_at(place)
             .is_some_and(|held| held.allows(permission))
     }
 
     fn held_in(&self, project: ProjectId) -> Option<std::sync::Arc<bb_policy::Evaluation>> {
-        self.policy.evaluate_as(
-            self.person,
-            self.key.as_ref(),
-            &self.tree,
-            Place::Project(project),
-        )
+        self.held_at(Place::Project(project))
+    }
+
+    fn held_at(&self, place: Place) -> Option<std::sync::Arc<bb_policy::Evaluation>> {
+        self.policy
+            .evaluate_as(self.person, self.key.as_ref(), &self.tree, place)
+    }
+
+    /// The projects from the top down to the place, the stored ones (empty for the whole
+    /// organization): only for comparing places, never to be named.
+    pub(crate) fn chain(&self, place: Place) -> Vec<ProjectId> {
+        place
+            .project()
+            .and_then(|project| self.tree.chain(project))
+            .unwrap_or_default()
+    }
+
+    /// Whether the person may know the project: the one definition of the policy
+    /// (`Evaluation::knows_project`), they see it or decide who has which role there.
+    pub(crate) fn knows(&self, project: ProjectId) -> bool {
+        self.held_in(project)
+            .is_some_and(|held| held.knows_project())
+    }
+
+    /// Whether the person sees a project that is `outside` or inside it, at any depth: a subject
+    /// created in `outside` reaches a project they work in, also when they know nothing above it.
+    pub(crate) fn sees_inside(&self, outside: ProjectId) -> bool {
+        self.visible
+            .iter()
+            .any(|project| self.tree.is_within(*project, outside))
+    }
+
+    /// Every project, known or not, where the person holds the permission.
+    pub(crate) fn holding(&self, permission: Permission) -> Vec<ProjectId> {
+        self.projects
+            .keys()
+            .copied()
+            .filter(|project| self.allows(*project, permission))
+            .collect()
+    }
+
+    /// The place as a name the person may use: the project if they may know it, else *a project
+    /// you can't see*; none for the whole organization.
+    pub(crate) fn label(&self, place: Place) -> Option<ProjectLabel> {
+        place.project().map(|project| {
+            self.projects
+                .get(&project)
+                .filter(|found| self.knows(found.id))
+                .map_or(ProjectLabel::Hidden, ProjectLabel::of)
+        })
+    }
+
+    /// Which issues the person reads where their role lets them see the labels (SEC-06), judged in
+    /// memory on a copy of the policy that holds `rules`; for the groups of labels in use.
+    pub(crate) fn label_sight(&self, rules: LevelRules, types: &[IssueTypeId]) -> IssueSight {
+        self.clone()
+            .with_levels(rules)
+            .issue_sight_with(Field::Labels, types)
     }
 
     /// The parent a stored project has, whether the person sees it or not: only for comparing

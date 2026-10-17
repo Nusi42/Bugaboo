@@ -96,6 +96,24 @@ export function decodeDraft(text: string): NewIssueValues | undefined {
   }
 }
 
+/**
+ * The values with the type that counts: the one picked while the project still offers it, else the
+ * first type the project offers (a project switch or a draft from another project leaves a type
+ * behind that this project does not offer); none while the project offers none.
+ */
+export function withType(
+  typed: NewIssueValues,
+  types: readonly { readonly id: string }[],
+): NewIssueValues {
+  const offered = types.some((type) => type.id === typed.issueType);
+  return offered ? typed : { ...typed, issueType: types[0]?.id ?? "" };
+}
+
+/** Whether the project offers no issue type to create an issue of, once its types are read. */
+export function offersNoType(read: boolean, types: readonly unknown[]): boolean {
+  return read && types.length === 0;
+}
+
 /** Whether the form can be sent: it has a title and a type. */
 export function canCreate(values: NewIssueValues): boolean {
   return values.title.trim() !== "" && values.issueType !== "";

@@ -81,6 +81,7 @@ use crate::notifications::{
     change_handle, mail_server_status, my_handle, notifications, read_notifications,
     send_test_email, set_mail_password, unread_notifications,
 };
+use crate::offers::{ChangeOffers, OfferRowPage, Offers, OffersQuery, change_offers, offers};
 use crate::people::{
     AddGroupMember, AssignmentChoicesQuery, ChoicePage, CreateGroup, DeleteGroup, GroupDetail,
     GroupList, GroupMembers, GroupMembersQuery, GroupQuery, GroupView, GroupsQuery,
@@ -116,12 +117,12 @@ use crate::settings::{
 use crate::tags::{
     AddLabel, AddTag, ChangeLabel, ChangeLabelGroup, ChangeTag, CombineLabels, CombineTags,
     CreateLabel, CreateLabelGroup, IssueLabelsAndTags, IssueLabelsAndTagsQuery,
-    LabelChangePreviewQuery, LabelGroupView, LabelView, Labels, LabelsQuery, RemoveLabel,
-    RemoveTag, TagChangePreview, TagChangePreviewQuery, TagPage, TagSuggestions,
-    TagSuggestionsQuery, TagView, TagsQuery, add_label, add_tag, change_label, change_label_group,
-    change_tag, combine_labels, combine_tags, create_label, create_label_group,
-    issue_labels_and_tags, label_change_preview, labels, remove_label, remove_tag,
-    tag_change_preview, tag_suggestions, tags,
+    LabelChangePreviewQuery, LabelGroupPage, LabelGroupView, LabelGroupsQuery, LabelPage,
+    LabelView, LabelsQuery, RemoveLabel, RemoveTag, TagChangePreview, TagChangePreviewQuery,
+    TagPage, TagSuggestions, TagSuggestionsQuery, TagView, TagsQuery, add_label, add_tag,
+    change_label, change_label_group, change_tag, combine_labels, combine_tags, create_label,
+    create_label_group, issue_labels_and_tags, label_change_preview, label_groups, labels,
+    remove_label, remove_tag, tag_change_preview, tag_suggestions, tags,
 };
 use crate::workflows::{
     CreateWorkflow, DeleteWorkflow, ProjectStatuses, ProjectStatusesQuery, PublishPreview,
@@ -418,6 +419,10 @@ use_cases! {
     create_issue_type(CreateIssueType) -> Authorized<IssueTypeView>;
     /// Changes the name, icon or retired state of an issue type.
     change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
+    /// Shows where an issue type or a group of labels is offered.
+    offers(OffersQuery) -> Authorized<OfferRowPage>;
+    /// Changes where an issue type or a group of labels is offered.
+    change_offers(ChangeOffers) -> Authorized<Offers>;
     /// Lists the issues of a project a person sees.
     issues(IssuesQuery) -> Authorized<IssuePage>;
     /// Lists the people an issue of a project can be assigned to.
@@ -566,8 +571,10 @@ use_cases! {
     change_tag(ChangeTag) -> Authorized<TagView>;
     /// Moves every issue from a tag to another and takes the first away.
     combine_tags(CombineTags) -> Authorized<TagView>;
-    /// Lists the labels of the organization with their groups.
-    labels(LabelsQuery) -> Authorized<Labels>;
+    /// Lists the labels of the organization a page at a time.
+    labels(LabelsQuery) -> Authorized<LabelPage>;
+    /// Lists the groups of labels of the organization a page at a time.
+    label_groups(LabelGroupsQuery) -> Authorized<LabelGroupPage>;
     /// Creates a group of labels.
     create_label_group(CreateLabelGroup) -> Authorized<LabelGroupView>;
     /// Changes a group of labels.

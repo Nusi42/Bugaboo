@@ -4,11 +4,13 @@
 
 use bb_core::id::{IssueId, IssueTypeId, LabelGroupId, LabelId, ProjectId, TagId};
 use bb_core::own_fields::{ChoiceColor, Edit};
-use bb_core::tags::{Label, LabelGroup, Tag};
+use bb_core::tags::{Label, Tag};
 use bb_policy::Masked;
 use serde::Serialize;
 
+use crate::access::ProjectLabel;
 use crate::issues::IssueTypeRef;
+use crate::offers::OfferedHere;
 use crate::preview::PreviewSummary;
 use crate::projects::ProjectRef;
 use crate::relations::IssueLine;
@@ -279,20 +281,14 @@ pub struct LabelGroupView {
     pub pick_one: bool,
     /// Whether it is retired: old issues keep its labels, new ones are not offered them.
     pub retired: bool,
+    /// The project it was made in, as the viewer may name it; none for the whole organization.
+    pub created_in: Option<ProjectLabel>,
+    /// Whether the viewer looks after it: they hold *Manage labels and tags* where it was made.
+    pub may_manage: bool,
+    /// Whether the project the list is asked about offers it; only when a project is asked about.
+    pub here: Option<OfferedHere>,
     /// Counts up with every change.
     pub version: i64,
-}
-
-impl From<&LabelGroup> for LabelGroupView {
-    fn from(group: &LabelGroup) -> Self {
-        Self {
-            id: group.id,
-            name: group.name.clone(),
-            pick_one: group.pick_one,
-            retired: group.retired_at.is_some(),
-            version: group.version,
-        }
-    }
 }
 
 /// A label as the list of the organization shows it.
@@ -327,27 +323,57 @@ impl From<&Label> for LabelView {
 
 /// The labels of the organization with their groups, in the order they are offered in.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct Labels {
-    /// The groups.
-    pub groups: Vec<LabelGroupView>,
-    /// The labels, those in a group and those that are in none.
-    pub labels: Vec<LabelView>,
-    /// Whether the person looks after labels and tags.
-    pub may_manage: bool,
+pub struct LabelPage {
+    /// The labels, those in a group and those that are in none, in the order they are offered in.
+    pub items: Vec<LabelView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
 }
 
-impl Masked for Labels {}
+impl Masked for LabelPage {}
 
-/// The labels of the organization.
+/// A page of the groups of labels the person may know.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct LabelGroupPage {
+    /// The groups, in the order they are offered in.
+    pub items: Vec<LabelGroupView>,
+    /// The cursor of the next page, if there is one.
+    pub next_cursor: Option<String>,
+}
+
+impl Masked for LabelGroupPage {}
+
+/// The labels of the organization, a page at a time.
 pub struct LabelsQuery {
     /// The secret of the session of the request.
     pub session_token: String,
+    /// A project, by its ID or short name: only the labels of groups that can reach it.
+    pub project: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many labels the page holds at most.
+    pub limit: u32,
+}
+
+/// The groups of labels of the organization, a page at a time.
+pub struct LabelGroupsQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// A project, by its ID or short name: each group then says whether the project offers it, and
+    /// only the groups that can reach it are listed.
+    pub project: Option<String>,
+    /// Where the page starts: the `next_cursor` of the page before.
+    pub cursor: Option<String>,
+    /// How many groups the page holds at most.
+    pub limit: u32,
 }
 
 /// Make a group of labels, at the end of the order.
 pub struct CreateLabelGroup {
     /// The secret of the session of the request.
     pub session_token: String,
+    /// The project it is made in, by its ID or short name; none for the whole organization.
+    pub project: Option<String>,
     /// What it is called.
     pub name: String,
     /// Whether an issue has at most one label of the group.

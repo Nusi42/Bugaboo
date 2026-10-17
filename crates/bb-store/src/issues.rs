@@ -27,6 +27,7 @@ fn type_select() -> SelectStatement {
             IssueTypeRow::Id,
             IssueTypeRow::Name,
             IssueTypeRow::Icon,
+            IssueTypeRow::Project,
             IssueTypeRow::Position,
             IssueTypeRow::RetiredAt,
             IssueTypeRow::Version,
@@ -41,6 +42,7 @@ fn read_type(row: &Row) -> Result<IssueType, StoreError> {
         name: row.get(IssueTypeRow::Name)?,
         icon: IssueIcon::from_code(&row.get::<String>(IssueTypeRow::Icon)?)
             .ok_or(StoreError::Corrupt("an issue icon"))?,
+        project: row.optional_id(IssueTypeRow::Project)?,
         position: row.get(IssueTypeRow::Position)?,
         retired_at: row.optional_time(IssueTypeRow::RetiredAt)?,
         version: row.get(IssueTypeRow::Version)?,
@@ -123,6 +125,25 @@ impl Database {
     #[cfg(any(test, feature = "testing"))]
     pub async fn stored_issue(&self, id: IssueId) -> Result<Option<Issue>, StoreError> {
         issue_in(&mut &*self, id).await
+    }
+
+    /// The issue type row with this ID: what a test of a migration compares.
+    ///
+    /// # Errors
+    /// Fails when the database fails or the row is unreadable.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn stored_issue_type(
+        &self,
+        id: IssueTypeId,
+    ) -> Result<Option<IssueType>, StoreError> {
+        let mut select = type_select();
+        select.and_where(Expr::col(IssueTypeRow::Id).eq(id.stored()));
+        (&mut &*self)
+            .fetch_optional(&select)
+            .await?
+            .as_ref()
+            .map(read_type)
+            .transpose()
     }
 }
 
@@ -372,6 +393,7 @@ impl IssueStore for AuthStorage {
                 IssueTypeRow::Id,
                 IssueTypeRow::Name,
                 IssueTypeRow::Icon,
+                IssueTypeRow::Project,
                 IssueTypeRow::Position,
                 IssueTypeRow::RetiredAt,
                 IssueTypeRow::Version,
@@ -380,6 +402,7 @@ impl IssueStore for AuthStorage {
                 Expr::val(issue_type.id.stored()),
                 Expr::val(issue_type.name.as_str()),
                 Expr::val(issue_type.icon.code()),
+                Expr::val(issue_type.project.map(StoredId::stored)),
                 Expr::val(issue_type.position),
                 Expr::val(issue_type.retired_at.map(to_micros)),
                 Expr::val(issue_type.version),

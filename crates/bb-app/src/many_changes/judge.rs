@@ -16,7 +16,7 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use super::types::{ManyChange, ManyChangeAction};
+use super::types::{ManyChange, ManyChangeAction, ManyChangeNote};
 use crate::access::Actor;
 use crate::auth::AppError;
 use crate::auth::{AuthStore, Ctx};
@@ -36,6 +36,8 @@ pub(super) struct FieldsPlan {
     pub(super) issue: Issue,
     pub(super) held: Arc<Evaluation>,
     pub(super) changes: Vec<FieldChange>,
+    /// What the preview says besides the fields.
+    pub(super) notes: Vec<ManyChangeNote>,
 }
 
 /// What a change to an issue would do, before it is shown or made.
@@ -126,13 +128,13 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             ErrorCode::VersionChanged => SkipReason::ChangedSince,
             ErrorCode::NotFound => SkipReason::NotFound,
             ErrorCode::Forbidden => SkipReason::NotAllowed,
-            ErrorCode::IssueTypeRetired => SkipReason::TypeMissing,
             ErrorCode::FieldNotHere => SkipReason::FieldMissing,
             ErrorCode::WorkflowNoSuchChange
             | ErrorCode::WorkflowNotForYou
             | ErrorCode::WorkflowOnlyIf
             | ErrorCode::WorkflowCannotFill => SkipReason::Workflow,
             ErrorCode::TagNotHere => SkipReason::TagNotHere,
+            ErrorCode::LabelNotOffered => SkipReason::LabelNotHere,
             ErrorCode::RelationExists => SkipReason::RelationExists,
             ErrorCode::LimitReached => SkipReason::LimitReached,
             code if code.is_field_rule() => SkipReason::FieldRule,
@@ -167,6 +169,8 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::ProjectTooDeep
             | ErrorCode::MovePreviewChanged
             | ErrorCode::ParentCircle
+            | ErrorCode::IssueTypeRetired
+            | ErrorCode::IssueTypeNotOffered
             | ErrorCode::PickOneConflict
             | ErrorCode::WorkflowStatusInUse
             | ErrorCode::WorkflowInvalid
@@ -315,6 +319,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 issue: plan.current,
                 held,
                 changes,
+                notes: Vec::new(),
             })))
         })
     }
@@ -338,10 +343,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             after: Some(json!(plan.target_id().to_string())),
         }];
         changes.extend(plan.status_change());
+        let notes = plan.type_note().into_iter().collect();
         Ok(Judged::Change(Planned::Fields(Box::new(FieldsPlan {
             changes,
             issue: plan.issue,
             held,
+            notes,
         }))))
     }
 
@@ -364,6 +371,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }],
             issue: plan.issue,
             held,
+            notes: Vec::new(),
         }))))
     }
 

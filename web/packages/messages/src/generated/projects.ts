@@ -79,6 +79,34 @@ export const messages = {
   "issues.of-project": "Issues of this project",
   "projects.preview-summary":
     "{changed, plural, =0 {Nobody} one {# person} other {# people}} will gain or lose access or change role in the projects you can see.",
+  "projects.offer-state-offered": "Offered",
+  "projects.offer-state-not": "Not offered",
+  "projects.offer-line": "{name} · {state}",
+  "projects.offer-follows": "Follows the project above",
+  "projects.offer-follow-button": "Follow the project above",
+  "projects.offer-follow-button-for": "Follow the project above for {name}",
+  "projects.offer-whole-organization": "The whole organization",
+  "projects.offer-hidden-project": "A project you can't see",
+  "projects.offered-in-title": "Offered in",
+  "projects.offered-in-everywhere": "Offered in every project.",
+  "projects.offered-in-rows":
+    "Offered where the lines say so. A project follows the project above it until it has a line of its own.",
+  "projects.offered-in-list": "Where it is offered",
+  "projects.offered-in-take-away": "Take away",
+  "projects.offered-in-take-away-for": "Take away the line for {place}",
+  "projects.offered-in-add": "Add a line",
+  "projects.offered-in-pick-legend": "Pick a project",
+  "projects.offered-in-pick-search": "Search projects",
+  "projects.offered-in-pick-list": "Projects",
+  "projects.offered-in-pick-nothing": "No project found.",
+  "projects.offered-in-pick-more": "Show more projects",
+  "projects.offered-in-pick-first": "Pick a project, or the whole organization, to add a line.",
+  "projects.offered-in-picked": "Line for {place}",
+  "projects.offered-in-state": "Offered there?",
+  "projects.offered-in-save": "Save the line",
+  "projects.offered-in-created-organization": "Created for the whole organization.",
+  "projects.offered-in-created-project":
+    "Created in {project}. Offered there and below until a line says otherwise.",
 } as const;
 
 register(messages);

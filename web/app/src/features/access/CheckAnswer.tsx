@@ -1,12 +1,12 @@
 import { isMessageKey, t } from "@bugaboo/messages";
 import { Button, buttonLook, Card, partOf, part } from "@bugaboo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { fieldNameOf } from "../../shared/field-names.ts";
 import { listText } from "../../shared/list-text.ts";
 import { personName } from "../../shared/person.ts";
 import { levelSentences, reasonSentences } from "./check-sentences.ts";
-import { groupLevels, type LevelEntry } from "./group-levels.ts";
+import { groupLevels, type LevelEntry, type LevelGroup } from "./group-levels.ts";
 import { projectText } from "./origin-text.ts";
 import type { CheckAnswerBody } from "./use-check.ts";
 
@@ -97,6 +97,8 @@ interface LevelSectionProps {
     readonly cappedByKey: boolean;
   })[];
   readonly levelName: (level: string) => string;
+  /** What stands under the heading before the levels, like the issue type they are for. */
+  readonly note?: ReactNode;
   /** The words for the group of everything, the group of the rest, and the two ways to look. */
   readonly words: {
     readonly all: string;
@@ -105,11 +107,56 @@ interface LevelSectionProps {
   };
 }
 
+/** The levels of a section, each with its reasons: every one on its own, or told together. */
+function LevelList({
+  told,
+  groups,
+  every,
+  levelName,
+  words,
+}: {
+  readonly told: readonly LevelEntry[];
+  readonly groups: readonly LevelGroup[];
+  readonly every: boolean;
+  readonly levelName: (level: string) => string;
+  readonly words: LevelSectionProps["words"];
+}) {
+  return (
+    <ul {...partOf(part.list)}>
+      {every
+        ? told.map((entry) => (
+            <li key={entry.name} {...partOf(part.accessAnswer)}>
+              <div {...partOf(part.accessAnswerHead)}>
+                <p {...partOf(part.accessSubheading)}>{entry.name}</p>
+                <span {...partOf(part.strong)}>{levelName(entry.level)}</span>
+              </div>
+              <p {...partOf(part.accessReasons)}>{entry.sentences.join(" ")}</p>
+            </li>
+          ))
+        : groups.map((group, at) => (
+            <li key={group.names.join()} {...partOf(part.accessAnswer)}>
+              <div {...partOf(part.accessAnswerHead)}>
+                <p {...partOf(part.accessSubheading)}>
+                  {groups.length === 1
+                    ? words.all
+                    : at === 0
+                      ? words.allOther
+                      : listText(group.names)}
+                </p>
+                <span {...partOf(part.strong)}>{levelName(group.level)}</span>
+              </div>
+              <p {...partOf(part.accessReasons)}>{group.sentences.join(" ")}</p>
+            </li>
+          ))}
+    </ul>
+  );
+}
+
 /**
  * The fields (or kinds) with their level and the reasons. Fields that have the same level for the
  * same reason are told together, so each reason is read once; every one can be shown on its own.
  */
-function LevelSection({ answer, heading, entries, levelName, words }: LevelSectionProps) {
+function LevelSection({ answer, heading, entries, levelName, words, note }: LevelSectionProps) {
   const [every, setEvery] = useState(false);
   const told: readonly LevelEntry[] = entries.map((entry) => ({
     name: entry.name,
@@ -119,6 +166,7 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
   const groups = groupLevels(told);
   return (
     <Card heading={heading}>
+      {note}
       <div {...partOf(part.row)}>
         <Button
           look={buttonLook.quiet}
@@ -129,34 +177,17 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
           {every ? t("check-access.group-the-same") : words.every}
         </Button>
       </div>
-      <ul {...partOf(part.list)}>
-        {every
-          ? told.map((entry) => (
-              <li key={entry.name} {...partOf(part.accessAnswer)}>
-                <div {...partOf(part.accessAnswerHead)}>
-                  <p {...partOf(part.accessSubheading)}>{entry.name}</p>
-                  <span {...partOf(part.strong)}>{levelName(entry.level)}</span>
-                </div>
-                <p {...partOf(part.accessReasons)}>{entry.sentences.join(" ")}</p>
-              </li>
-            ))
-          : groups.map((group, at) => (
-              <li key={group.names.join()} {...partOf(part.accessAnswer)}>
-                <div {...partOf(part.accessAnswerHead)}>
-                  <p {...partOf(part.accessSubheading)}>
-                    {groups.length === 1
-                      ? words.all
-                      : at === 0
-                        ? words.allOther
-                        : listText(group.names)}
-                  </p>
-                  <span {...partOf(part.strong)}>{levelName(group.level)}</span>
-                </div>
-                <p {...partOf(part.accessReasons)}>{group.sentences.join(" ")}</p>
-              </li>
-            ))}
-      </ul>
+      <LevelList told={told} groups={groups} every={every} levelName={levelName} words={words} />
     </Card>
+  );
+}
+
+/** Which issue type the field levels are for, when the person asked about one. */
+function IssueTypeNote({ answer }: { readonly answer: CheckAnswerBody }) {
+  return answer.issue_type === undefined || answer.issue_type === null ? null : (
+    <p {...partOf(part.muted)}>
+      {t("check-access.for-issue-type", { type: answer.issue_type.name })}
+    </p>
   );
 }
 
@@ -175,6 +206,7 @@ export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
       <LevelSection
         answer={answer}
         heading={t("check-access.fields-heading")}
+        note={<IssueTypeNote answer={answer} />}
         entries={answer.fields.map((field) => ({
           name: fieldNameOf({ code: field.subject, name: field.name }),
           level: field.level,

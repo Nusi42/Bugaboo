@@ -10,7 +10,7 @@
 
 use bb_core::access::AppliesTo;
 use bb_core::fields::FieldKey;
-use bb_core::id::{AssignmentId, ProjectId, RoleId};
+use bb_core::id::{AssignmentId, IssueTypeId, ProjectId, RoleId};
 use bb_core::people_kinds::PeopleKind;
 
 use crate::catalogue::Permission;
@@ -203,7 +203,8 @@ impl Evaluation {
         }
     }
 
-    /// The level of a field or of a kind of people information with what each role said.
+    /// The level of a field or of a kind of people information with what each role said, for the
+    /// items of all types.
     #[must_use]
     pub fn explain_level<K: LevelSubject>(&self, subject: K) -> LevelDecision<K> {
         let roles = K::levels_in(self).roles(subject);
@@ -221,11 +222,45 @@ impl Evaluation {
         }
     }
 
+    /// [`Self::explain_level`] for an item of one issue type (ADR-0027): what each role says is the
+    /// level it sets for that type, found the way the evaluation finds it, so the answer and its
+    /// reasons cannot disagree with [`Self::field_level_for`]. Without an issue type, or while no
+    /// role set a level for one, it is [`Self::explain_level`].
+    #[must_use]
+    pub fn explain_level_for(
+        &self,
+        subject: FieldKey,
+        issue_type: Option<IssueTypeId>,
+    ) -> LevelDecision<FieldKey> {
+        let Some(issue_type) = issue_type.filter(|_| self.has_levels_per_issue_type()) else {
+            return self.explain_level(subject);
+        };
+        let roles = self.role_levels_for(subject, issue_type);
+        let from_roles = roles
+            .iter()
+            .map(|role| role.level)
+            .max()
+            .unwrap_or(FieldKey::CLOSED);
+        let level = self.field_level_from(&roles);
+        LevelDecision {
+            subject,
+            level,
+            roles,
+            capped_by_key: level < from_roles,
+        }
+    }
+
     /// Everything *Check access* shows for the place: at a project only the permissions that
     /// count in a project (the others count nowhere there, architecture §7), at the whole
     /// organization all of them.
     #[must_use]
     pub fn report(&self) -> AccessReport {
+        self.report_for(None)
+    }
+
+    /// [`Self::report`] with the field levels of items of one issue type.
+    #[must_use]
+    pub fn report_for(&self, issue_type: Option<IssueTypeId>) -> AccessReport {
         AccessReport {
             place: self.place,
             permissions: Permission::ALL
@@ -237,7 +272,7 @@ impl Evaluation {
                 .fields
                 .all()
                 .keys()
-                .map(|field| self.explain_level(*field))
+                .map(|field| self.explain_level_for(*field, issue_type))
                 .collect(),
             kinds: PeopleKind::ALL
                 .iter()

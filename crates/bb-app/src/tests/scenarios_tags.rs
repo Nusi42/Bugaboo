@@ -24,6 +24,7 @@ pub(crate) async fn a_label_group(
     Ok(create_label_group(
         &world.ctx(),
         CreateLabelGroup {
+            project: None,
             session_token: token(world),
             name: name.to_owned(),
             pick_one,
@@ -193,6 +194,7 @@ pub(crate) async fn create_label_group_scenario(world: &World) -> Added {
         create_label_group(
             &world.ctx(),
             CreateLabelGroup {
+                project: None,
                 session_token: token(world),
                 name: "Area".to_owned(),
                 pick_one: true,

@@ -29,7 +29,8 @@ use super::auth::{
     AuthHandle, ForbiddenAnswer, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer,
     answer_authorized,
 };
-use super::field_permissions::{PlaceParams, RoleRefBody};
+use super::field_permissions::{PlaceParams, RoleRefBody, TypeParams};
+use super::issues::IssueTypeRef;
 use super::path_id;
 use crate::errors::{ApiError, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -282,6 +283,16 @@ pub(crate) struct CheckAccessBody {
     fields: Vec<LevelAnswerBody<FieldKey, FieldLevel>>,
     /// Every kind of people information.
     kinds: Vec<LevelAnswerBody<PeopleKind, PeopleLevel>>,
+    /// The issue type the field levels are for; left out for all types.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    issue_type: Option<IssueTypeRef>,
+    /// Whether the field levels differ by issue type, so the screen asks which type is meant. A
+    /// person whose levels are the same for every type is asked nothing.
+    differs_by_type: bool,
+    /// The issue types the question may ask about: those the place offers and that are not
+    /// retired. The screen lists exactly these. Only there when `differs_by_type` is true.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    issue_types: Vec<IssueTypeRef>,
 }
 
 impl Masked for CheckAccessBody {}
@@ -294,6 +305,9 @@ impl From<AccessAnswer> for CheckAccessBody {
             permissions: checked.permissions.iter().map(Into::into).collect(),
             fields: checked.fields.iter().map(level_body).collect(),
             kinds: checked.kinds.iter().map(level_body).collect(),
+            issue_type: checked.issue_type.as_ref().map(IssueTypeRef::from),
+            differs_by_type: checked.differs_by_type,
+            issue_types: checked.issue_types.iter().map(IssueTypeRef::from).collect(),
         }
     }
 }
@@ -323,14 +337,15 @@ pub(crate) struct PeopleSearch {
 
 /// What a person can do in a project, or in the whole organization when no project is named:
 /// every permission with *yes* or *no*, every field with its level and how the person sees
-/// people, each with the reasons. Needs the permission *Check what other people can do, and why*
+/// people, each with the reasons. With an issue type, the field levels are those for issues of that
+/// type; `differs_by_type` says whether they differ by type at all. Needs the permission *Check what other people can do, and why*
 /// in the place.
 #[utoipa::path(
     get,
     path = "/api/v1/check-access/people/{person}",
     operation_id = "checkAccess",
     tag = "access",
-    params(("person" = String, Path, description = "The ID of the person to check."), PlaceParams),
+    params(("person" = String, Path, description = "The ID of the person to check."), TypeParams),
     responses((status = 200, description = "What the person can do, and why.", body = CheckAccessBody), NotSignedInAnswer, ForbiddenAnswer, NotFoundAnswer)
 )]
 async fn check_access(
@@ -338,10 +353,10 @@ async fn check_access(
     Info(info): Info,
     Session(session_token): Session,
     ApiPath(who): ApiPath<PersonPath>,
-    ApiQuery(place): ApiQuery<PlaceParams>,
+    ApiQuery(asked): ApiQuery<TypeParams>,
 ) -> Result<Response, ApiError> {
     let person: UserId = path_id(&who.person)?;
-    let project = place.project()?;
+    let project = asked.project()?;
     let found = auth
         .api()?
         .check_access(
@@ -350,6 +365,7 @@ async fn check_access(
                 session_token,
                 person,
                 place: project,
+                issue_type: asked.issue_type()?,
             },
         )
         .await?;

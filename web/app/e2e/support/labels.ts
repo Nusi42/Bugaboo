@@ -14,10 +14,10 @@ export async function createLabel(admin: ApiSession, name: string): Promise<stri
 
 /** The ID of the label with this name. */
 export async function labelIdOf(admin: ApiSession, name: string): Promise<string> {
-  const found = dataOf(await admin.client.GET("/api/v1/labels")).labels.find(
+  const found = dataOf(await admin.client.GET("/api/v1/labels")).items.find(
     (label) => label.name === name,
   );
-  if (found === undefined) {
+  if (found?.id === undefined || found.id === null) {
     throw new TypeError(`The server has no label ${name}.`);
   }
   return found.id;

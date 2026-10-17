@@ -2,6 +2,7 @@
 //! store (`fake`, `fake_policy`) has the same ports as the database adapter; `world` makes a small
 //! server on it; the files below are the tests.
 
+mod check_access_types;
 mod editing;
 mod events;
 mod failures;
@@ -15,6 +16,7 @@ mod fake_issues;
 mod fake_layouts;
 mod fake_many_changes;
 mod fake_notifications;
+mod fake_offers;
 mod fake_policy;
 mod fake_projects;
 mod fake_relations;
@@ -35,6 +37,8 @@ mod many_changes;
 mod many_changes_property;
 mod moving;
 mod notifications;
+mod offers;
+mod offers_secrecy;
 mod recurring_jobs;
 mod runs_end;
 mod scenarios;

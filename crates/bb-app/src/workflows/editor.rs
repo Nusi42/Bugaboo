@@ -162,7 +162,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(WorkflowEditor {
             project: at.project.clone(),
             issue_type: match at.issue_type {
-                Some(id) => self.issue_type_ref(id).await?,
+                Some(id) => self.issue_type_ref(actor, id).await?,
                 None => None,
             },
             workflow: slot,
@@ -219,6 +219,7 @@ pub async fn workflow_editor<S: AuthStore>(
     input: WorkflowEditorQuery,
 ) -> Result<Authorized<WorkflowEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .workflow_where(input.project.as_deref(), input.issue_type)
         .await?;

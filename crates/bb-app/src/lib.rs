@@ -21,6 +21,7 @@ pub mod mailer;
 pub mod many_changes;
 pub mod member;
 pub mod notifications;
+pub mod offers;
 pub mod people;
 pub mod ports;
 pub mod preview;

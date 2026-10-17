@@ -252,6 +252,7 @@ pub async fn create_layout<S: AuthStore>(
     input: CreateLayout,
 ) -> Result<Authorized<LayoutEditor>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
+    ctx.ensure_type_known(&actor, input.issue_type).await?;
     let at = ctx
         .layout_where(input.project.as_deref(), input.issue_type, input.kind)
         .await?;

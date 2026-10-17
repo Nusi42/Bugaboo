@@ -19,6 +19,8 @@ use jiff::Timestamp;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::access::ProjectLabel;
+use crate::offers::OfferedHere;
 use crate::projects::ProjectRef;
 use crate::workflows::{StatusChangeView, StatusView};
 
@@ -270,6 +272,8 @@ pub struct IssuePage {
 pub struct CreateIssueType {
     /// The secret of the session of the request.
     pub session_token: String,
+    /// The project it is made in, by its ID or short name; none for the whole organization.
+    pub project: Option<String>,
     /// What it is called, as typed.
     pub name: String,
     /// Its icon.
@@ -300,6 +304,8 @@ pub struct IssueTypesQuery {
     pub cursor: Option<String>,
     /// How many types the page holds at most.
     pub limit: u32,
+    /// A project, by its ID or short name: each type then says whether the project offers it.
+    pub project: Option<String>,
 }
 
 /// An issue type as the list and the screen of issue types show it.
@@ -317,21 +323,19 @@ pub struct IssueTypeView {
     /// Whether it is retired.
     #[masked(open)]
     pub retired: bool,
+    /// The project it was made in, as the viewer may name it; none for the whole organization.
+    #[masked(nested)]
+    pub created_in: Option<ProjectLabel>,
+    /// Whether the viewer looks after it: they hold *Manage issue types, kinds of relation and
+    /// layouts* where it was made.
+    #[masked(open)]
+    pub may_manage: bool,
+    /// Whether the project the list is asked about offers it; only when a project is asked about.
+    #[masked(nested)]
+    pub here: Option<OfferedHere>,
     /// Counts up with every change.
     #[masked(open)]
     pub version: i64,
-}
-
-impl From<&IssueType> for IssueTypeView {
-    fn from(issue_type: &IssueType) -> Self {
-        Self {
-            id: issue_type.id,
-            name: issue_type.name.clone(),
-            icon: issue_type.icon,
-            retired: issue_type.retired_at.is_some(),
-            version: issue_type.version,
-        }
-    }
 }
 
 /// A page of issue types, in the order they are offered in.

@@ -57,9 +57,19 @@ export const queryKeys = {
     /** Who is editing a thing now (a layout, a workflow): what its edit lock is about. */
     now: (what: EditWhat) => ["editing", "now", what.record.kind, what.record.id, what.part],
   },
+  labels: {
+    all: ["labels"],
+    /** The groups of labels; with a project, each says whether the project offers it. */
+    groups: (project?: string) => ["labels", "groups", project ?? null],
+    /** The labels; with a project, those of groups that can reach it. */
+    list: (project?: string) => ["labels", "list", project ?? null],
+  },
   issueTypes: {
     all: ["issue-types"],
-    list: () => ["issue-types", "list"],
+    /** The types; with a project, each says whether the project offers it. */
+    list: (project?: string) => ["issue-types", "list", project ?? null],
+    /** The lines that say where one type is offered. */
+    offers: (issueType: string) => ["issue-types", "offers", issueType],
   },
   relationKinds: {
     all: ["relation-kinds"],
@@ -130,12 +140,11 @@ export const queryKeys = {
       search,
     ],
     projects: (search: string) => ["check-access", "projects", search],
-    answer: (person: string | undefined, project: string | undefined) => [
-      "check-access",
-      "answer",
-      person ?? null,
-      project ?? null,
-    ],
+    answer: (
+      person: string | undefined,
+      project: string | undefined,
+      issueType: string | undefined,
+    ) => ["check-access", "answer", person ?? null, project ?? null, issueType ?? null],
   },
 } as const;
 
@@ -189,7 +198,6 @@ export function refreshFields(): void {
 
 /** The answers that show the tags and labels of an issue or the lists of them. */
 const LABEL_READS = [
-  "/api/v1/labels",
   "/api/v1/issues/{issue}/labels-and-tags",
   "/api/v1/projects/{project}/tag-suggestions",
   "/api/v1/issues/{issue}/history",
@@ -197,6 +205,7 @@ const LABEL_READS = [
 
 /** A label or tag changed: the answers that show them are read again. */
 export function refreshLabelReads(): void {
+  reread({ queryKey: queryKeys.labels.all });
   refreshReads(LABEL_READS);
 }
 

@@ -15,6 +15,7 @@ import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
 import { OnlyWith } from "./OnlyWith.tsx";
 import { loadsScreen } from "./preload.ts";
 
+export { projectIssueTypesRoute, projectLabelsRoute } from "./project-offer-pages.tsx";
 export { projectWorkflowsRoute, workflowsRoute } from "./workflow-pages.tsx";
 
 // The screens of work (issue types) are loaded when they are first opened, so the first page stays

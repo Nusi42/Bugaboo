@@ -63,6 +63,13 @@ pub(super) fn expectation(actor: Actor, route: &Operation, example: &Example) ->
     if route.needs == Declared::Public {
         return Expect::Allowed;
     }
+    // A subject created in the target project is not there for a person who may not know it.
+    if example.has(Quirk::NamesASubjectOfTheTarget)
+        && actor.signed_in()
+        && !standing(actor, Where::Target).knows
+    {
+        return Expect::NotFound;
+    }
     // A key never reaches its owner's own sign-in data (ADR-0025, decision 8); `signed-in` is about
     // the session of a browser: who is signed in, signing out.
     if actor.has_a_key() && matches!(route.needs, Declared::SignedIn | Declared::OwnAccount) {

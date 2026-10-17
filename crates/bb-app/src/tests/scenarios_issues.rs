@@ -6,6 +6,7 @@ use bb_core::event::{EntityRef, RecordKind};
 use bb_core::id::{EditorId, EntityId, IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::IssueIcon;
 use bb_core::message::{self, Message};
+use bb_core::offer::OfferSubject;
 use bb_core::technical::TechnicalName;
 use bb_core::workflow::starter;
 
@@ -22,6 +23,7 @@ use crate::issues::{
 use crate::many_changes::{
     ApplyManyChanges, ManyChange, ManyChangeAction, ManyChangeTarget, apply_many_changes,
 };
+use crate::offers::{ChangeOffers, OfferChange, change_offers};
 
 /// An issue type of the first start: *Task*, which uses the workflow *Simple*, where any status can
 /// follow any other.
@@ -29,6 +31,7 @@ pub(crate) async fn a_type(world: &World) -> Result<IssueTypeId, String> {
     let page = issue_types(
         &world.ctx(),
         IssueTypesQuery {
+            project: None,
             session_token: token(world),
             cursor: None,
             limit: 50,
@@ -197,6 +200,7 @@ pub(crate) async fn create_issue_type_scenario(world: &World) -> Added {
         create_issue_type(
             &world.ctx(),
             CreateIssueType {
+                project: None,
                 session_token: token(world),
                 name: "Question".to_owned(),
                 icon: IssueIcon::CircleHelp,
@@ -219,6 +223,27 @@ pub(crate) async fn change_issue_type_scenario(world: &World) -> Added {
                 name: Some("Defect".to_owned()),
                 icon: None,
                 retired: Some(true),
+            },
+        ),
+    )
+    .await
+}
+
+pub(crate) async fn change_offers_scenario(world: &World) -> Added {
+    let issue_type = a_type(world).await?;
+    let acme = a_project(world, "ACME").await?;
+    measured(
+        &world.store,
+        change_offers(
+            &world.ctx(),
+            ChangeOffers {
+                session_token: token(world),
+                subject: OfferSubject::IssueType(issue_type),
+                version: 1,
+                changes: vec![OfferChange {
+                    project: Some(acme.to_string()),
+                    offered: Some(false),
+                }],
             },
         ),
     )
