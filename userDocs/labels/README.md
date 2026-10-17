@@ -27,6 +27,12 @@ A tag can be limited to some projects. In another project it is not offered whil
 
 Colors are the twelve colors of the theme, so a label is readable in every theme.
 
+### Label groups per project
+
+A label group is created for the whole organization, or in a project. On the tab **Labels** of a project's settings, a **Project lead** creates a label group for the project and the labels in it, and switches groups on and off for the project with a switch each. A group created in a project is offered there and in the projects inside it. A group of the whole organization is offered everywhere until a line says otherwise: on the panel of a group, **Offered in** lists the lines, and **Add a line** adds one, the same way as for issue types (see [issue types](../issues/issue-types.md)). A person looks after a group where it was created: the permission "Manage labels and tags" is judged there.
+
+A project that does not offer a group does not offer its labels in **Add a label**. Labels that an issue has stay on it, also after the issue moves to another project, and they are shown the way a retired label is shown.
+
 ### Rename and combine show what changes first
 
 Renaming a tag or label changes it on every issue that has it. Before you save, **Show what the new name changes** lists the issues that change, a sentence on top (*118 issues will change*) and then each issue, ten at a time with **Show all**. You only see the issues you may see.

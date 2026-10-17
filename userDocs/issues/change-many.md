@@ -17,7 +17,8 @@ Bugaboo judges every issue again, with your own rights, in the preview and when 
 - it is not there for you, or you may not change it this way;
 - it is like that already;
 - it changed after the preview (somebody else was faster; nothing is overwritten);
-- the other project does not offer its issue type, or does not use a field it has a value in (when moving);
+- the other project does not use a field it has a value in (when moving);
+- the project of the issue does not offer the group of the label (when adding a label);
 - the relation is there already, or would relate an issue to itself.
 
 A skipped issue never stops the others. After that a line says how many issues were changed and how many were skipped, and lists the skipped ones with the reason.
@@ -32,6 +33,6 @@ More than 1,000 issues are changed in the background, a hundred at a time. The p
 
 ## What happens to moved issues
 
-An issue that moves gets an ID of the new project, and the old ID keeps working. It moves only into a project that offers its issue type and uses every own field it has a value in; tags it has stay only where the project allows them. You need the permission "Move issues" in both projects.
+An issue that moves gets an ID of the new project, and the old ID keeps working. It moves only into a project that uses every own field it has a value in; tags it has stay only where the project allows them. The issue keeps its issue type and its labels, also when the project does not offer them; the preview names an issue type the project does not use. You need the permission "Move issues" in both projects.
 
 Each issue changed this way has **one entry in its history**, as if you had changed it by hand.
