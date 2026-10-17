@@ -471,6 +471,55 @@ async fn sec_16_the_test_e_mail_goes_to_the_person_who_asks_even_while_mail_is_o
 }
 
 #[tokio::test]
+async fn sec_16_the_page_learns_that_a_mail_password_is_entered_but_never_what_it_is() -> Outcome {
+    use crate::notifications::{MailPasswordQuery, mail_password_status};
+    let crew = Crew::new().await?;
+    let ctx = crew.world.ctx();
+    let ask =
+        |session_token: String| mail_password_status(&ctx, MailPasswordQuery { session_token });
+    assert!(
+        !ask(token(&crew.world))
+            .await
+            .map_err(text)?
+            .into_value()
+            .set
+    );
+    mail_is_on(&crew).await?;
+    assert!(
+        ask(token(&crew.world))
+            .await
+            .map_err(text)?
+            .into_value()
+            .set
+    );
+    set_mail_password(
+        &ctx,
+        SetMailPassword {
+            session_token: token(&crew.world),
+            password: None,
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert!(
+        !ask(token(&crew.world))
+            .await
+            .map_err(text)?
+            .into_value()
+            .set
+    );
+    // Somebody who may not change the settings does not learn even that.
+    let denied = ask(crew.bob.session_token.clone()).await.err();
+    assert_eq!(
+        denied,
+        Some(crate::auth::AppError::Refused(
+            bb_core::ErrorCode::Forbidden
+        ))
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn sec_16_a_person_sends_a_test_e_mail_only_every_few_seconds() -> Outcome {
     use crate::notifications::{SendTestEmail, send_test_email};
     let crew = Crew::new().await?;

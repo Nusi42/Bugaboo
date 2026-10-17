@@ -11,8 +11,8 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::notifications::{
-    NotificationItem, NotificationWhat, NotificationsQuery, ReadNotifications, SendTestEmail,
-    SetMailPassword, UnreadQuery, Which,
+    MailPasswordQuery, NotificationItem, NotificationWhat, NotificationsQuery, ReadNotifications,
+    SendTestEmail, SetMailPassword, UnreadQuery, Which,
 };
 use bb_core::edit::NoticeKind;
 use bb_core::id::NotificationId;
@@ -281,6 +281,15 @@ pub(crate) struct MailPasswordBody {
     password: Option<String>,
 }
 
+/// Whether the password of the mail server is entered.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct MailPasswordStatusBody {
+    /// A password is stored. The password itself is never sent.
+    set: bool,
+}
+
+impl Masked for MailPasswordStatusBody {}
+
 /// The notifications of the person, newest first, a page at a time. A notification about an issue
 /// the person cannot see any more is not in the list.
 #[utoipa::path(
@@ -412,6 +421,26 @@ async fn set_mail_password(
     Ok(done())
 }
 
+/// Tells whether the password of the mail server is entered, never what it is.
+#[utoipa::path(
+    get,
+    path = "/api/v1/mail/password",
+    operation_id = "getMailPassword",
+    tag = "notifications",
+    responses((status = 200, description = "Whether it is entered.", body = MailPasswordStatusBody), NotSignedInAnswer)
+)]
+async fn get_mail_password(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+) -> Result<Response, ApiError> {
+    let state = auth
+        .api()?
+        .mail_password_status(info, MailPasswordQuery { session_token })
+        .await?;
+    answer_authorized(&state.map(|state| MailPasswordStatusBody { set: state.set }))
+}
+
 /// Sends a test e-mail to the person who asks, through the mail server as it is entered, even
 /// while e-mail is still off.
 #[utoipa::path(
@@ -442,7 +471,7 @@ where
         .routes(routes!(list_notifications))
         .routes(routes!(get_unread_notifications))
         .routes(routes!(read_notifications))
-        .routes(routes!(set_mail_password))
+        .routes(routes!(set_mail_password, get_mail_password))
         .routes(routes!(send_test_email))
 }
 

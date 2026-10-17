@@ -9,7 +9,8 @@ use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::mail::PASSWORD_MAX;
 use bb_core::sign_in::SecurityAction;
-use bb_policy::{Authorized, Permission, Place};
+use bb_policy::{Authorized, Masked, Permission, Place};
+use serde::Serialize;
 
 use super::mail::send_failure;
 use crate::auth::{
@@ -26,6 +27,22 @@ pub struct SetMailPassword {
     /// The password; none (or an empty one) removes it, for a mail server that asks for none.
     pub password: Option<String>,
 }
+
+/// Ask whether the password of the mail server is entered.
+pub struct MailPasswordQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+}
+
+/// Whether a password is entered. The password itself is never given (SEC-16): the page of the mail
+/// server shows only that it is *set*.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct MailPasswordStatus {
+    /// A password is stored.
+    pub set: bool,
+}
+
+impl Masked for MailPasswordStatus {}
 
 /// Send an e-mail to the person who asks, through the mail server as it is entered, to try the
 /// settings. It goes even while e-mail is still off.
@@ -88,6 +105,31 @@ pub async fn set_mail_password<S: AuthStore>(
     )
     .await;
     Ok(access.authorize(Done))
+}
+
+/// Tells whether the password of the mail server is entered.
+///
+/// # Errors
+/// `access.forbidden` without *Change organization settings*.
+pub async fn mail_password_status<S: AuthStore>(
+    ctx: &Ctx<'_, S>,
+    input: MailPasswordQuery,
+) -> Result<Authorized<MailPasswordStatus>, AppError> {
+    let actor = ctx.actor(&input.session_token).await?;
+    let access = ctx
+        .require(
+            &actor,
+            Permission::ChangeOrganizationSettings,
+            Place::Organization,
+        )
+        .await?;
+    let set = ctx
+        .store()
+        .mail_password()
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .is_some();
+    Ok(access.authorize(MailPasswordStatus { set }))
 }
 
 /// Sends a test e-mail to the person who asks.

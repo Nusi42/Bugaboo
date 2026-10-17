@@ -492,6 +492,11 @@ pub const ROUTES: &[Route] = &[
         Answer::Ordinary,
     ),
     route(
+        "getMailPassword",
+        Declared::Permission(Permission::ChangeOrganizationSettings),
+        Answer::NeverStored,
+    ),
+    route(
         "sendTestEmail",
         Declared::Permission(Permission::ChangeOrganizationSettings),
         Answer::Ordinary,

@@ -13157,6 +13157,92 @@
       }
     },
     "/api/v1/mail/password": {
+      "get": {
+        "tags": ["notifications"],
+        "summary": "Tells whether the password of the mail server is entered, never what it is.",
+        "operationId": "getMailPassword",
+        "responses": {
+          "200": {
+            "description": "Whether it is entered.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailPasswordStatusBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      },
       "put": {
         "tags": ["notifications"],
         "summary": "Enters, changes or removes the password of the mail server. It is stored encrypted like other\nsecrets and never sent back.",
@@ -25256,6 +25342,17 @@
           "password": {
             "type": ["string", "null"],
             "description": "The password. Leave it out, or leave it empty, to remove it (a mail server that asks for\nnone). It is stored encrypted and never sent back."
+          }
+        }
+      },
+      "MailPasswordStatusBody": {
+        "type": "object",
+        "description": "Whether the password of the mail server is entered.",
+        "required": ["set"],
+        "properties": {
+          "set": {
+            "type": "boolean",
+            "description": "A password is stored. The password itself is never sent."
           }
         }
       },
