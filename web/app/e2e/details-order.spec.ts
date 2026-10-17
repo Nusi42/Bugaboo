@@ -23,12 +23,12 @@ async function prepareDetailsOrder(server: Instance): Promise<void> {
   await prepareWeb(server);
   const admin = await signedInAdmin(server);
   const query = { kind: "issue-page", project: "WEB" } as const;
-  const made = dataOf(await admin.client.POST("/api/v1/layouts", { body: query }));
-  const slot = made.layout;
+  const created = dataOf(await admin.client.POST("/api/v1/layouts", { body: query }));
+  const slot = created.layout;
   if (slot === undefined || slot === null) {
-    throw new TypeError("The layout was not made.");
+    throw new TypeError("The layout was not created.");
   }
-  const roles = made.roles.map((role) => role.id);
+  const roles = created.roles.map((role) => role.id);
   const what = { record: { kind: "layout", id: slot.id }, part: layoutEditPart };
   const taken = dataOf(
     await admin.client.POST("/api/v1/edit-locks", {

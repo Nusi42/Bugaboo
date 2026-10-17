@@ -108,7 +108,7 @@ export function refreshLabels(): void {
 /** The tags and labels of an issue as the answer of a change says them. */
 export type IssueLabelsAndTags = Schema<"IssueLabelsAndTagsBody">;
 
-/** Puts a tag on an issue by its name; a tag that does not exist yet is made by it (TAG-01). */
+/** Puts a tag on an issue by its name; a tag that does not exist yet is created by it (TAG-01). */
 export async function putTag(issue: string, name: string): Promise<IssueLabelsAndTags> {
   return dataOf(
     await api.client.POST("/api/v1/issues/{issue}/tags", {

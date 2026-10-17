@@ -1,6 +1,6 @@
 import { Icon, type IconName, partOf, part } from "@bugaboo/ui";
 import type { ReactNode } from "react";
-import { Button, Link, Tooltip, TooltipTrigger, VisuallyHidden } from "react-aria-components";
+import { Button, Link, Tooltip, TooltipTrigger } from "react-aria-components";
 
 /** Words of the ARIA standard and of React Aria Components, not text for people. */
 const currentPage = "page";
@@ -20,7 +20,7 @@ function Content({ icon, label, narrow, hint }: ItemProps & { readonly hint?: Re
     <>
       <Icon name={icon} />
       {narrow === true ? (
-        <VisuallyHidden>{label}</VisuallyHidden>
+        <span {...partOf(part.visuallyHidden)}>{label}</span>
       ) : (
         <span {...partOf(part.navItemLabel)}>{label}</span>
       )}

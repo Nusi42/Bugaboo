@@ -1,6 +1,6 @@
 import { api } from "../../shared/api.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
-import { refreshLabels } from "../labels/index.ts";
+import { refreshLabels, takeLabelOff } from "../labels/index.ts";
 import { manyChangeKind, type ManyChangeAction, type ManyChangeResult } from "./many-changes.ts";
 import { refreshIssues } from "../../shared/query-keys.ts";
 
@@ -18,9 +18,7 @@ export function changedIssues(result: ManyChangeResult): string[] {
 /** Takes the change back for one issue, for the two things that can be taken back at once. */
 async function takeBack(action: ManyChangeAction, issue: string): Promise<void> {
   if (action.kind === manyChangeKind.label) {
-    await api.client.DELETE("/api/v1/issues/{issue}/labels/{label}", {
-      params: { path: { issue, label: action.label } },
-    });
+    await takeLabelOff(issue, action.label);
   } else if (action.kind === manyChangeKind.delete) {
     await api.client.POST("/api/v1/issues/{issue}/restore", { params: { path: { issue } } });
   }
