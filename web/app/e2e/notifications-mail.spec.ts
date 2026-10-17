@@ -85,7 +85,7 @@ test("ntf_02 Customize turns e-mail on and off for what Ana follows, and the nex
 
   await page.goto(paths.notificationSettings);
   await flip(followedRow(page), t("notifications.by-mail"));
-  await expect(page.getByText(t("save.saved"))).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
   await page.reload();
   await expect(
     followedRow(page).getByRole("switch", { name: t("notifications.by-mail") }),
@@ -100,7 +100,7 @@ test("ntf_02 Customize turns e-mail on and off for what Ana follows, and the nex
   await expect(
     followedRow(page).getByRole("switch", { name: t("notifications.by-mail") }),
   ).not.toBeChecked();
-  await expect(page.getByText(t("save.saved"))).toBeVisible();
+  await expect(page.getByText(t("save.saved"), { exact: true })).toBeVisible();
 
   // The next comment sends nothing. The e-mail about a mention goes at the same moment and takes
   // along every note of the issue that waits, so when it has come without the note, the note was

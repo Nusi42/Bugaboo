@@ -122,6 +122,15 @@ const organizationTopics: readonly Place[] = [
   ...labelPlaces,
   ...layoutPlaces,
   {
+    path: paths.mailServer,
+    name: "nav.mail-server",
+    icon: iconName.mail,
+    parent: paths.organizationSettings,
+    anyOf: ["change-organization-settings"],
+    group: "nav.group.connections",
+    listed: true,
+  },
+  {
     path: paths.organizationSecurity,
     name: "nav.organization-security",
     icon: iconName.security,

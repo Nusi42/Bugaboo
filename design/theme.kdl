@@ -11231,6 +11231,13 @@ part "customize-row.ways" {
     gap "$space-2 $space-5"
 }
 
+// The mail server: the fields in a row that wraps, and the answer to the test e-mail.
+part "mail-server.fields" {
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax(min(100%, $size-menu), 1fr))"
+    gap "$gap-fields"
+}
+
 // The entry of the history that *Open* of a notification came to: the same soft color and edge as an
 // unread notification, so the person finds it at once.
 part "history.entry[state=highlighted]" {

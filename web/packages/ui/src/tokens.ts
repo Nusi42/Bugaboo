@@ -601,6 +601,7 @@ export const part = {
   customizeRow: "customize-row",
   customizeRowKind: "customize-row.kind",
   customizeRowWays: "customize-row.ways",
+  mailServerFields: "mail-server.fields",
   customizeActions: "customize-actions",
 } as const;
 export type PartName = (typeof part)[keyof typeof part];
@@ -1026,5 +1027,6 @@ export const partWords = {
   "customize-row": { variant: [], state: [] },
   "customize-row.kind": { variant: [], state: [] },
   "customize-row.ways": { variant: [], state: [] },
+  "mail-server.fields": { variant: [], state: [] },
   "customize-actions": { variant: [], state: [] },
 } as const;

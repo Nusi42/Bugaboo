@@ -41,6 +41,30 @@ export const messages = {
   "notifications.in-app": "In the app",
   "notifications.by-mail": "By e-mail",
   "notifications.customize-reset": "Use the standard choices",
+  "mail-server.title": "E-mail & notifications",
+  "mail-server.intro":
+    "Bugaboo sends e-mail through your organization's mail server. E-mail stays off until you have entered the mail server, tried it with a test e-mail and switched it on.",
+  "mail-server.connection": "Connection",
+  "mail-server.password-new": "New password",
+  "mail-server.password-set": "A password is set.",
+  "mail-server.password-none": "No password is set.",
+  "mail-server.password-help":
+    "It is stored encrypted and never shown again. Leave the box empty to keep the password you have.",
+  "mail-server.password-remove": "Remove the password",
+  "mail-server.no-encryption-note":
+    "Without encryption, a user name or a password is only accepted when the mail server is on this machine.",
+  "mail-server.save": "Save the mail server",
+  "mail-server.test-title": "Try it",
+  "mail-server.test-intro":
+    "Bugaboo sends one e-mail to your address, {email}, through the mail server as you saved it.",
+  "mail-server.test-send": "Send me a test e-mail",
+  "mail-server.test-done": "The test e-mail was sent to {email}. Check your e-mail.",
+  "mail-server.test-wait":
+    "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
+  "mail-server.sending-title": "Sending",
+  "mail-server.sign-up-note":
+    "Signing up without an invitation needs e-mail. While e-mail is off it is closed.",
+  "mail-server.short-title": "What e-mails say",
   "notifications.locked-way": "{way}: {value} · Set by your organization",
 } as const;
 

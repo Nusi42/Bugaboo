@@ -69,6 +69,8 @@ export const messages = {
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+  "setting.ui.between": "A whole number between {least} and {most}.",
+  "setting.ui.whole-number": "Enter a whole number.",
   "nav.region": "Region",
   "nav.start-page": "Start page",
   "nav.sign-in-rules": "Sign-in rules",
@@ -661,7 +663,7 @@ export const messages = {
   "setting.mail.short.help":
     "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
   "error.mail.rejected":
-    "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+    "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
     "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
   "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
@@ -682,7 +684,9 @@ export const messages = {
   "nav.notifications": "Notifications",
   "nav.notification-settings": "Notification settings",
   "nav.handle": "Handle",
+  "nav.mail-server": "E-mail & notifications",
   "nav.group.hearing": "Notifications and mentions",
+  "nav.group.connections": "Connections",
   "shortcut.go-notifications": "Go to Notifications",
   "notifications.count-capped": "{max}+",
 } as const;

@@ -19,10 +19,12 @@ const reports: string[] = [];
 
 /**
  * The browser writes a line for every refused request. Tests of refusals expect those, so a
- * line about a 4xx status does not count. Any other line about a request (a 5xx status, a
+ * line about a 4xx status does not count, nor does 502: it is how Bugaboo says that the mail
+ * server turned an e-mail away (`mail.rejected`), and no proxy stands in front of the servers of
+ * the tests that could say it otherwise. Any other line about a request (another 5xx status, a
  * `net::ERR_*`) is a real failure and counts.
  */
-const REFUSED = /^Failed to load resource: the server responded with a status of 4\d\d/u;
+const REFUSED = /^Failed to load resource: the server responded with a status of (4\d\d|502)/u;
 
 /** The console lines a test expects of a browser that it cuts off the network (see `tolerate`). */
 const tolerances = new Tolerances();

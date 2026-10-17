@@ -40,6 +40,7 @@ export const paths = {
   organizationSecurity: "/settings/security",
   themes: "/settings/themes",
   status: "/settings/status",
+  mailServer: "/settings/email",
   projects: "/settings/projects",
   fieldPermissions: "/settings/field-permissions",
   peopleVisibility: "/settings/people-visibility",

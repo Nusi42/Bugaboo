@@ -190,6 +190,10 @@ const CustomizeScreen = lazyRouteComponent(
   () => import("../features/notifications/index.ts"),
   "CustomizePage",
 );
+const MailServerScreen = lazyRouteComponent(
+  () => import("../features/notifications/index.ts"),
+  "MailServerPage",
+);
 const HandleScreen = lazyRouteComponent(
   () => import("../features/my-settings/index.ts"),
   "HandlePage",
@@ -217,4 +221,18 @@ export const handleRoute = createRoute({
   path: paths.handle,
   loader: loadsScreen(HandleScreen),
   component: HandleScreen,
+});
+
+/** *Organization settings › Connections › E-mail & notifications*: the mail server. */
+export const mailServerRoute = createRoute({
+  getParentRoute: () => organizationSettingsRoute,
+  path: paths.mailServer,
+  loader: loadsScreen(MailServerScreen),
+  component: function MailServer() {
+    return (
+      <OnlyWith path={paths.mailServer}>
+        <MailServerScreen />
+      </OnlyWith>
+    );
+  },
 });

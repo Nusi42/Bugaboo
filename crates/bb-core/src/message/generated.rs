@@ -1398,6 +1398,12 @@ pub const FIRST_RUN_DONE_TEXT: MessageKey = MessageKey::new("first-run.done.text
 /// The message `first-run.done.title`.
 pub const FIRST_RUN_DONE_TITLE: MessageKey = MessageKey::new("first-run.done.title");
 
+/// The message `first-run.mail.intro`.
+pub const FIRST_RUN_MAIL_INTRO: MessageKey = MessageKey::new("first-run.mail.intro");
+
+/// The message `first-run.mail.title`.
+pub const FIRST_RUN_MAIL_TITLE: MessageKey = MessageKey::new("first-run.mail.title");
+
 /// The message `first-run.safer.finish`.
 pub const FIRST_RUN_SAFER_FINISH: MessageKey = MessageKey::new("first-run.safer.finish");
 
@@ -1415,6 +1421,9 @@ pub const FIRST_RUN_STEP_CODE: MessageKey = MessageKey::new("first-run.step.code
 
 /// The message `first-run.step.done`.
 pub const FIRST_RUN_STEP_DONE: MessageKey = MessageKey::new("first-run.step.done");
+
+/// The message `first-run.step.mail`.
+pub const FIRST_RUN_STEP_MAIL: MessageKey = MessageKey::new("first-run.step.mail");
 
 /// The message `first-run.step.safer`.
 pub const FIRST_RUN_STEP_SAFER: MessageKey = MessageKey::new("first-run.step.safer");
@@ -2282,6 +2291,52 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
 
+/// The message `mail-server.connection`.
+pub const MAIL_SERVER_CONNECTION: MessageKey = MessageKey::new("mail-server.connection");
+
+/// The message `mail-server.intro`.
+pub const MAIL_SERVER_INTRO: MessageKey = MessageKey::new("mail-server.intro");
+
+/// The message `mail-server.no-encryption-note`.
+pub const MAIL_SERVER_NO_ENCRYPTION_NOTE: MessageKey =
+    MessageKey::new("mail-server.no-encryption-note");
+
+/// The message `mail-server.password-help`.
+pub const MAIL_SERVER_PASSWORD_HELP: MessageKey = MessageKey::new("mail-server.password-help");
+
+/// The message `mail-server.password-new`.
+pub const MAIL_SERVER_PASSWORD_NEW: MessageKey = MessageKey::new("mail-server.password-new");
+
+/// The message `mail-server.password-none`.
+pub const MAIL_SERVER_PASSWORD_NONE: MessageKey = MessageKey::new("mail-server.password-none");
+
+/// The message `mail-server.password-remove`.
+pub const MAIL_SERVER_PASSWORD_REMOVE: MessageKey = MessageKey::new("mail-server.password-remove");
+
+/// The message `mail-server.password-set`.
+pub const MAIL_SERVER_PASSWORD_SET: MessageKey = MessageKey::new("mail-server.password-set");
+
+/// The message `mail-server.save`.
+pub const MAIL_SERVER_SAVE: MessageKey = MessageKey::new("mail-server.save");
+
+/// The message `mail-server.sending-title`.
+pub const MAIL_SERVER_SENDING_TITLE: MessageKey = MessageKey::new("mail-server.sending-title");
+
+/// The message `mail-server.short-title`.
+pub const MAIL_SERVER_SHORT_TITLE: MessageKey = MessageKey::new("mail-server.short-title");
+
+/// The message `mail-server.sign-up-note`.
+pub const MAIL_SERVER_SIGN_UP_NOTE: MessageKey = MessageKey::new("mail-server.sign-up-note");
+
+/// The message `mail-server.test-send`.
+pub const MAIL_SERVER_TEST_SEND: MessageKey = MessageKey::new("mail-server.test-send");
+
+/// The message `mail-server.test-title`.
+pub const MAIL_SERVER_TEST_TITLE: MessageKey = MessageKey::new("mail-server.test-title");
+
+/// The message `mail-server.title`.
+pub const MAIL_SERVER_TITLE: MessageKey = MessageKey::new("mail-server.title");
+
 /// The message `mail.footer`.
 pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
 
@@ -2496,6 +2551,9 @@ pub const NAV_FIELD_PERMISSIONS: MessageKey = MessageKey::new("nav.field-permiss
 /// The message `nav.fields`.
 pub const NAV_FIELDS: MessageKey = MessageKey::new("nav.fields");
 
+/// The message `nav.group.connections`.
+pub const NAV_GROUP_CONNECTIONS: MessageKey = MessageKey::new("nav.group.connections");
+
 /// The message `nav.group.hearing`.
 pub const NAV_GROUP_HEARING: MessageKey = MessageKey::new("nav.group.hearing");
 
@@ -2531,6 +2589,9 @@ pub const NAV_ISSUE_TYPES: MessageKey = MessageKey::new("nav.issue-types");
 
 /// The message `nav.labels`.
 pub const NAV_LABELS: MessageKey = MessageKey::new("nav.labels");
+
+/// The message `nav.mail-server`.
+pub const NAV_MAIL_SERVER: MessageKey = MessageKey::new("nav.mail-server");
 
 /// The message `nav.my-settings`.
 pub const NAV_MY_SETTINGS: MessageKey = MessageKey::new("nav.my-settings");
@@ -4392,6 +4453,12 @@ pub const SIGN_UP_POLICY_DOMAINS_HELP: MessageKey = MessageKey::new("sign-up-pol
 
 /// The message `sign-up-policy.intro`.
 pub const SIGN_UP_POLICY_INTRO: MessageKey = MessageKey::new("sign-up-policy.intro");
+
+/// The message `sign-up-policy.mail-link`.
+pub const SIGN_UP_POLICY_MAIL_LINK: MessageKey = MessageKey::new("sign-up-policy.mail-link");
+
+/// The message `sign-up-policy.mail-off`.
+pub const SIGN_UP_POLICY_MAIL_OFF: MessageKey = MessageKey::new("sign-up-policy.mail-off");
 
 /// The message `sign-up-policy.switch`.
 pub const SIGN_UP_POLICY_SWITCH: MessageKey = MessageKey::new("sign-up-policy.switch");
@@ -6582,6 +6649,33 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("layouts.section-up"),
         vec![("number", Value::Text(number.to_string()))],
+    )
+}
+
+/// The message `mail-server.test-done`.
+#[must_use]
+pub fn mail_server_test_done(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail-server.test-done"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `mail-server.test-intro`.
+#[must_use]
+pub fn mail_server_test_intro(email: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail-server.test-intro"),
+        vec![("email", Value::Text(email.to_string()))],
+    )
+}
+
+/// The message `mail-server.test-wait`.
+#[must_use]
+pub fn mail_server_test_wait(seconds: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail-server.test-wait"),
+        vec![("seconds", Value::Number(seconds))],
     )
 }
 
@@ -9126,7 +9220,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.mail.rejected",
-        "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+        "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
     ),
     (
         "error.mail.unavailable",
@@ -9519,6 +9613,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Your account is ready and you are signed in.",
     ),
     ("first-run.done.title", "You are all set"),
+    (
+        "first-run.mail.intro",
+        "Bugaboo can tell people by e-mail when something happens on issues they follow, and can let people sign up with their e-mail address. For that it needs your organization's mail server. You can skip this and do it later under Organization settings.",
+    ),
+    (
+        "first-run.mail.title",
+        "Set up e-mail (you can do this later)",
+    ),
     ("first-run.safer.finish", "Finish"),
     (
         "first-run.safer.intro",
@@ -9529,6 +9631,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("first-run.step.account", "Your account"),
     ("first-run.step.code", "Setup code"),
     ("first-run.step.done", "Done"),
+    ("first-run.step.mail", "E-mail"),
     ("first-run.step.safer", "Keep it safe"),
     ("first-run.title", "Welcome to Bugaboo"),
     ("focus.back", "Back to list"),
@@ -10166,6 +10269,45 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("layouts.use-inherited-title", "Reset to default?"),
     ("list.next", "Next"),
     ("list.previous", "Previous"),
+    ("mail-server.connection", "Connection"),
+    (
+        "mail-server.intro",
+        "Bugaboo sends e-mail through your organization's mail server. E-mail stays off until you have entered the mail server, tried it with a test e-mail and switched it on.",
+    ),
+    (
+        "mail-server.no-encryption-note",
+        "Without encryption, a user name or a password is only accepted when the mail server is on this machine.",
+    ),
+    (
+        "mail-server.password-help",
+        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have.",
+    ),
+    ("mail-server.password-new", "New password"),
+    ("mail-server.password-none", "No password is set."),
+    ("mail-server.password-remove", "Remove the password"),
+    ("mail-server.password-set", "A password is set."),
+    ("mail-server.save", "Save the mail server"),
+    ("mail-server.sending-title", "Sending"),
+    ("mail-server.short-title", "What e-mails say"),
+    (
+        "mail-server.sign-up-note",
+        "Signing up without an invitation needs e-mail. While e-mail is off it is closed.",
+    ),
+    (
+        "mail-server.test-done",
+        "The test e-mail was sent to {email}. Check your e-mail.",
+    ),
+    (
+        "mail-server.test-intro",
+        "Bugaboo sends one e-mail to your address, {email}, through the mail server as you saved it.",
+    ),
+    ("mail-server.test-send", "Send me a test e-mail"),
+    ("mail-server.test-title", "Try it"),
+    (
+        "mail-server.test-wait",
+        "You can send another test e-mail in {seconds, plural, one {# second} other {# seconds}}.",
+    ),
+    ("mail-server.title", "E-mail & notifications"),
     (
         "mail.footer",
         "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
@@ -10359,6 +10501,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.check-access", "Check access"),
     ("nav.field-permissions", "Field permissions"),
     ("nav.fields", "Fields"),
+    ("nav.group.connections", "Connections"),
     ("nav.group.hearing", "Notifications and mentions"),
     ("nav.group.look", "Look and feel"),
     ("nav.group.look-org", "Look"),
@@ -10371,6 +10514,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.home", "Home"),
     ("nav.issue-types", "Issue types"),
     ("nav.labels", "Labels and tags"),
+    ("nav.mail-server", "E-mail & notifications"),
     ("nav.my-settings", "My settings"),
     ("nav.notification-settings", "Notification settings"),
     ("nav.notifications", "Notifications"),
@@ -11997,6 +12141,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "sign-up-policy.intro",
         "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
+    ),
+    ("sign-up-policy.mail-link", "Set up e-mail"),
+    (
+        "sign-up-policy.mail-off",
+        "E-mail is off, so signing up without an invitation is closed. Set up e-mail first.",
     ),
     (
         "sign-up-policy.switch",

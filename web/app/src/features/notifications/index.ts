@@ -10,3 +10,5 @@ export const NotificationsBlock = lazyRouteComponent(
 
 export { NotificationsPage } from "./NotificationsPage.tsx";
 export { CustomizePage } from "./CustomizePage.tsx";
+export { MailServerPage } from "./mail-server/MailServerPage.tsx";
+export { MailServerPanel } from "./mail-server/MailServerPanel.tsx";

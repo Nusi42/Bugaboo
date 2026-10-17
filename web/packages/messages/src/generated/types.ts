@@ -254,6 +254,9 @@ export interface MessageArguments {
   "layouts.section-named": { number: string | number; title: string | number };
   "layouts.section-remove": { number: string | number };
   "layouts.section-up": { number: string | number };
+  "mail-server.test-done": { email: string | number };
+  "mail-server.test-intro": { email: string | number };
+  "mail-server.test-wait": { seconds: number };
   "many-changes.apply": { count: number };
   "many-changes.apply-delete": { count: number };
   "many-changes.line-changes": { after: string | number; field: string | number };

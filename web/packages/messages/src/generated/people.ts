@@ -93,6 +93,9 @@ export const messages = {
   "groups.delete-title": "Delete the group {name}?",
   "groups.delete-text":
     "This deletes the group and takes away every role and every No access it was given. {members, plural, one {The # person in it stays} other {The # people in it stay}} and keep the roles they have in other ways. This cannot be taken back.",
+  "sign-up-policy.mail-off":
+    "E-mail is off, so signing up without an invitation is closed. Set up e-mail first.",
+  "sign-up-policy.mail-link": "Set up e-mail",
 } as const;
 
 register(messages);
