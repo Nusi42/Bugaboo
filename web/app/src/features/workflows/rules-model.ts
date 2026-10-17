@@ -1,6 +1,6 @@
 import type { components, Schema } from "@bugaboo/api-client";
 
-import { newId } from "./new-ids.ts";
+import { newId } from "../../shared/new-ids.ts";
 
 /** One condition of *Only if …*: a field and what it must be like. */
 export interface RuleCondition {

@@ -93,11 +93,16 @@ export function usePublishFlow(args: PublishArgs): PublishFlow {
     setAsking(null);
   });
   const slot = args.editor.workflow;
+  // Without the lock the question is closed, and forgotten: when the lock is back it would else
+  // open again with answers about a workflow that may have changed. The note of the lost lock says
+  // what happened.
+  if (args.lock.state.phase !== "mine" && asking !== null) {
+    setAsking(null);
+  }
   return {
     pending: preview.isPending || pending,
     error: preview.error ?? error,
-    // Without the lock the question is closed: the note of the lost lock says what happened.
-    asking: args.lock.state.phase === "mine" ? asking : null,
+    asking,
     start: () => {
       if (slot === null || slot === undefined) {
         return;

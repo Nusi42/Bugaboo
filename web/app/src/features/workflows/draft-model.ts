@@ -1,6 +1,6 @@
 import type { components, Schema } from "@bugaboo/api-client";
 
-import { newId } from "./new-ids.ts";
+import { newId } from "../../shared/new-ids.ts";
 import { noRules, rulesBodyOf, rulesOf, sameRules, type ChangeRules } from "./rules-model.ts";
 
 /** The status group of a status. */
