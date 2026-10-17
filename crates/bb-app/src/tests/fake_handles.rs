@@ -33,6 +33,32 @@ impl HandleStore for FakeStore {
         }))
     }
 
+    async fn person_with_current_handle(&self, handle: &str) -> Result<Option<UserId>, FakeError> {
+        Ok(self.read(|state| {
+            state
+                .handles
+                .iter()
+                .find(|known| known.handle == handle && known.current)
+                .map(|known| known.person)
+        }))
+    }
+
+    async fn handle_changed_at(&self, person: UserId) -> Result<Option<Timestamp>, FakeError> {
+        Ok(self.read(|state| {
+            let own: Vec<_> = state
+                .handles
+                .iter()
+                .filter(|known| known.person == person)
+                .collect();
+            if own.len() < 2 {
+                return None;
+            }
+            own.iter()
+                .find(|known| known.current)
+                .map(|known| known.changed_at)
+        }))
+    }
+
     async fn people_without_handle(&self, limit: u64) -> Result<Vec<Person>, FakeError> {
         Ok(self.read(|state| {
             let mut found: Vec<Person> = state

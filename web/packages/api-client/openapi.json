@@ -13663,7 +13663,7 @@
       },
       "put": {
         "tags": ["people"],
-        "summary": "Changes the handle of the person who asks. The one they had stays theirs, so the texts that\nname it still name them.",
+        "summary": "Changes the handle of the person who asks, once in a while (`handle.changed_lately` otherwise).\nThe one they had stays theirs: nobody else can take it, and the texts written before still name\nthem, but a new text that uses it names nobody.",
         "operationId": "changeMyHandle",
         "requestBody": {
           "content": {
@@ -13717,17 +13717,9 @@
             }
           },
           "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
+            "description": "The handle was changed a short time ago (handle.changed_lately).",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }
@@ -21983,6 +21975,7 @@
           "mail.rejected",
           "mail.unavailable",
           "mail.off",
+          "handle.changed_lately",
           "request.wrong_origin",
           "request.wrong_token",
           "request.method_not_allowed",
@@ -24898,7 +24891,7 @@
         "properties": {
           "handle": {
             "type": "string",
-            "description": "The handle, without the `@`. Nobody else has it, and nobody had it."
+            "description": "The handle, without the `@`: the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. Nobody\nelse has it, nobody had it, and no group or role has it."
           }
         }
       },

@@ -3,8 +3,10 @@
 
 use bb_core::ErrorCode;
 use bb_core::access::PeopleLevel;
+use bb_core::handle::CHANGE_EVERY_DAYS;
 use bb_core::notification::NotificationKind;
 use bb_core::people_kinds::PeopleKind;
+use bb_core::time::SECONDS_PER_DAY;
 
 use super::notifications::Crew;
 use super::scenarios::{text, token};
@@ -15,6 +17,7 @@ use crate::notifications::{
     ChangeHandle, CreateMissingHandles, MyHandleQuery, change_handle, create_missing_handles,
     my_handle,
 };
+use crate::people::{CreateGroup, create_group};
 use crate::roles::{SetPeopleLevel, set_level};
 
 async fn handle_of(crew: &Crew, session: &str) -> Result<String, String> {
@@ -28,6 +31,17 @@ async fn handle_of(crew: &Crew, session: &str) -> Result<String, String> {
     .map_err(text)?
     .into_value()
     .handle)
+}
+
+/// Lets `seconds` pass for the changes of handles: a session would not last the days between two
+/// changes, so the moment of each change is moved back instead of the clock forward.
+fn let_pass(crew: &Crew, seconds: i64) {
+    for handle in &mut crew.world.store.lock().state.handles {
+        handle.changed_at = handle
+            .changed_at
+            .checked_sub(jiff::SignedDuration::from_secs(seconds))
+            .unwrap_or(handle.changed_at);
+    }
 }
 
 async fn change(crew: &Crew, session: &str, handle: &str) -> Result<String, AppError> {
@@ -80,10 +94,20 @@ async fn m3_f70_a_handle_is_changed_and_nobody_can_take_one_that_was_somebodys()
         change(&crew, &carol, "bobby").await.err(),
         Some(AppError::Refused(ErrorCode::NameTaken))
     );
-    // He can take his old one back.
+    // He can take his old one back, once the time between two changes has passed.
+    let_pass(&crew, CHANGE_EVERY_DAYS * SECONDS_PER_DAY + 1);
     assert_eq!(change(&crew, &bob, "bob.baker").await?, "bob.baker");
     // A text that is no handle is refused.
-    for bad in ["", "Bob", "bob baker", "@bob", ".bob", &"a".repeat(65)] {
+    for bad in [
+        "",
+        "Bob",
+        "bob baker",
+        "@bob",
+        ".bob",
+        "böb",
+        "ボブ",
+        &"a".repeat(65),
+    ] {
         assert_eq!(
             change(&crew, &bob, bad).await.err(),
             Some(AppError::Refused(ErrorCode::InvalidRequest)),
@@ -94,7 +118,8 @@ async fn m3_f70_a_handle_is_changed_and_nobody_can_take_one_that_was_somebodys()
 }
 
 #[tokio::test]
-async fn m3_f70_a_mention_names_the_person_and_an_old_handle_still_names_them() -> Outcome {
+async fn m3_f70_a_mention_names_the_person_with_that_handle_now_and_an_old_text_keeps_the_person()
+-> Outcome {
     let crew = Crew::new().await?;
     let (ada, bob) = (token(&crew.world), crew.bob.session_token.clone());
     crew.comment(&ada, "Please look, @bob.baker.").await?;
@@ -104,8 +129,23 @@ async fn m3_f70_a_mention_names_the_person_and_an_old_handle_still_names_them() 
         "the handle of the name names him"
     );
     change(&crew, &bob, "bobby").await?;
-    // The old text still shows him: the old handle is his, and the chip of the old text stays.
+    // The text of before stores the person, so it still shows him.
+    assert_eq!(crew.heard(&bob).await?.len(), 1);
+    // The handle he gave up names nobody in a new text, and nobody else can take it.
     crew.comment(&ada, "And again, @bob.baker.").await?;
+    assert_eq!(
+        crew.heard(&bob).await?.len(),
+        1,
+        "a former handle names nobody"
+    );
+    assert_eq!(
+        change(&crew, &crew.carol.session_token, "bob.baker")
+            .await
+            .err(),
+        Some(AppError::Refused(ErrorCode::NameTaken))
+    );
+    // The new one names him.
+    crew.comment(&ada, "Last time, @bobby.").await?;
     let kinds: Vec<_> = crew
         .heard(&bob)
         .await?
@@ -116,9 +156,87 @@ async fn m3_f70_a_mention_names_the_person_and_an_old_handle_still_names_them() 
         kinds,
         [NotificationKind::Mentioned, NotificationKind::Mentioned]
     );
-    // The new one names him too.
-    crew.comment(&ada, "Last time, @bobby.").await?;
-    assert_eq!(crew.heard(&bob).await?.len(), 3);
+    Ok(())
+}
+
+#[tokio::test]
+async fn m3_f70_a_name_with_letters_outside_ascii_gets_an_ascii_handle_or_the_fallback() -> Outcome
+{
+    let crew = Crew::new().await?;
+    let german = crew
+        .world
+        .person_named("juergen@example.test", "Jürgen Groß")
+        .await?;
+    assert_eq!(
+        handle_of(&crew, &german.session_token).await?,
+        "juergen.gross"
+    );
+    let russian = crew
+        .world
+        .person_named("ivan@example.test", "Иван Петров")
+        .await?;
+    assert_eq!(handle_of(&crew, &russian.session_token).await?, "person");
+    let another = crew
+        .world
+        .person_named("pyotr@example.test", "Пётр")
+        .await?;
+    assert_eq!(handle_of(&crew, &another.session_token).await?, "person.2");
+    Ok(())
+}
+
+#[tokio::test]
+async fn m3_f70_nobody_takes_the_handle_of_a_group_or_a_role() -> Outcome {
+    let crew = Crew::new().await?;
+    let ada = token(&crew.world);
+    create_group(
+        &crew.world.ctx(),
+        CreateGroup {
+            session_token: ada.clone(),
+            name: "Night Shift".to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?;
+    let bob = crew.bob.session_token.clone();
+    for taken in ["night.shift", "project.lead"] {
+        assert_eq!(
+            change(&crew, &bob, taken).await.err(),
+            Some(AppError::Refused(ErrorCode::NameTaken)),
+            "{taken}"
+        );
+    }
+    // A person named like the group gets a number, as when two people share a name.
+    let person = crew
+        .world
+        .person_named("night@example.test", "Night Shift")
+        .await?;
+    assert_eq!(
+        handle_of(&crew, &person.session_token).await?,
+        "night.shift.2"
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn m3_f70_a_handle_is_changed_once_in_a_period_and_the_first_one_does_not_count() -> Outcome {
+    let crew = Crew::new().await?;
+    let bob = crew.bob.session_token.clone();
+    // The first change comes right after the account was made.
+    change(&crew, &bob, "bobby").await?;
+    assert_eq!(
+        change(&crew, &bob, "robert").await.err(),
+        Some(AppError::Refused(ErrorCode::HandleChangedLately))
+    );
+    let_pass(&crew, CHANGE_EVERY_DAYS * SECONDS_PER_DAY - 60);
+    assert_eq!(
+        change(&crew, &bob, "robert").await.err(),
+        Some(AppError::Refused(ErrorCode::HandleChangedLately)),
+        "not yet"
+    );
+    let_pass(&crew, 120);
+    assert_eq!(change(&crew, &bob, "robert").await?, "robert");
+    // Asking for the handle one has is no change.
+    assert_eq!(change(&crew, &bob, "robert").await?, "robert");
     Ok(())
 }
 

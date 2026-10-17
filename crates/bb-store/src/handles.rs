@@ -56,6 +56,39 @@ impl HandleStore for AuthStorage {
             .transpose()
     }
 
+    async fn person_with_current_handle(&self, handle: &str) -> Result<Option<UserId>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(PersonHandleRow::Person)
+            .from(PersonHandleRow::Table)
+            .and_where(Expr::col(PersonHandleRow::Handle).eq(handle))
+            .and_where(Expr::col(PersonHandleRow::Current).eq(true));
+        self.database()
+            .fetch_optional(&select)
+            .await?
+            .map(|row| row.id::<UserId>(PersonHandleRow::Person))
+            .transpose()
+    }
+
+    async fn handle_changed_at(&self, person: UserId) -> Result<Option<Timestamp>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns([PersonHandleRow::ChangedAt, PersonHandleRow::Current])
+            .from(PersonHandleRow::Table)
+            .and_where(Expr::col(PersonHandleRow::Person).eq(person.stored()));
+        let rows = self.database().fetch_all(&select).await?;
+        // One row is the handle the account was given; a second one is a change.
+        if rows.len() < 2 {
+            return Ok(None);
+        }
+        for row in &rows {
+            if row.get::<bool>(PersonHandleRow::Current)? {
+                return row.time(PersonHandleRow::ChangedAt).map(Some);
+            }
+        }
+        Ok(None)
+    }
+
     async fn people_without_handle(&self, limit: u64) -> Result<Vec<Person>, StoreError> {
         let mut select = Query::select();
         select

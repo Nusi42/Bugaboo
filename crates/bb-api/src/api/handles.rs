@@ -38,7 +38,8 @@ impl From<MyHandle> for HandleBody {
 /// The new handle.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct NewHandleBody {
-    /// The handle, without the `@`. Nobody else has it, and nobody had it.
+    /// The handle, without the `@`: the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. Nobody
+    /// else has it, nobody had it, and no group or role has it.
     handle: String,
 }
 
@@ -62,15 +63,16 @@ async fn get_my_handle(
     answer_authorized(&found.map(HandleBody::from))
 }
 
-/// Changes the handle of the person who asks. The one they had stays theirs, so the texts that
-/// name it still name them.
+/// Changes the handle of the person who asks, once in a while (`handle.changed_lately` otherwise).
+/// The one they had stays theirs: nobody else can take it, and the texts written before still name
+/// them, but a new text that uses it names nobody.
 #[utoipa::path(
     put,
     path = "/api/v1/me/handle",
     operation_id = "changeMyHandle",
     tag = "people",
     request_body = NewHandleBody,
-    responses((status = 200, description = "The handle now.", body = HandleBody), InvalidAnswer, ConflictAnswer, NotSignedInAnswer)
+    responses((status = 200, description = "The handle now.", body = HandleBody), InvalidAnswer, ConflictAnswer, NotSignedInAnswer, (status = 429, description = "The handle was changed a short time ago (handle.changed_lately).", body = bb_core::Problem))
 )]
 async fn change_my_handle(
     State(auth): State<AuthHandle>,

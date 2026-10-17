@@ -10,7 +10,7 @@ use std::future::Future;
 
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
-use bb_core::handle::{CANDIDATES_MAX, base_of, candidate, is_handle};
+use bb_core::handle::{CANDIDATES_MAX, base_of, candidate, change_every, is_handle};
 use bb_core::id::UserId;
 use bb_core::person::Person;
 use bb_policy::{Authorized, Masked, Place};
@@ -32,8 +32,14 @@ pub trait HandleStore: AccountStore + 'static {
     reads! {
         /// The handle a person has now.
         fn handle_of_person(person: UserId) -> Option<String>;
-        /// The person who has this handle, or had it.
+        /// The person who has this handle, or had it: a handle nobody else can take.
         fn person_with_handle(handle: &str) -> Option<UserId>;
+        /// The person who has this handle now. A handle a person gave up names nobody in a new
+        /// text.
+        fn person_with_current_handle(handle: &str) -> Option<UserId>;
+        /// When the person last changed their handle; none while they still have the one they were
+        /// given with the account.
+        fn handle_changed_at(person: UserId) -> Option<Timestamp>;
         /// People who have no handle yet, at most `limit`: the people made before handles existed.
         fn people_without_handle(limit: u64) -> Vec<Person>;
         /// The people whose handle now starts with `start`, with it, by handle, at most `limit`.
@@ -78,7 +84,8 @@ impl Masked for MyHandle {}
 
 /// Gives a person the first free handle made from their name, inside the change that needs it.
 /// Called inside the change that makes the account (the person is stored first), and by the making
-/// of the handles of the people who have none.
+/// of the handles of the people who have none. `reserved` are the handles of the groups and the
+/// roles, which a person does not get.
 ///
 /// # Errors
 /// The error of the store, or its "aborted" error when no free handle was found.
@@ -86,11 +93,12 @@ pub(crate) async fn give_handle<S: AuthStore>(
     transaction: &mut S::Transaction,
     person: &Person,
     at: Timestamp,
+    reserved: &[String],
 ) -> Result<(), S::Error> {
     let base = base_of(&person.display_name);
     for number in 1..=CANDIDATES_MAX {
         let found = candidate(&base, number);
-        if !S::handle_taken_in(transaction, &found).await? {
+        if !reserved.contains(&found) && !S::handle_taken_in(transaction, &found).await? {
             return S::put_handle(transaction, person.id, &found, at).await;
         }
     }
@@ -116,12 +124,15 @@ pub async fn my_handle<S: AuthStore>(
     Ok(held.authorize(MyHandle { handle }))
 }
 
-/// Changes the handle of the person who asks. The one they had stays theirs for the old texts that
-/// name it.
+/// Changes the handle of the person who asks. The one they had stays theirs: nobody else can take
+/// it, and the old texts keep naming them, but a new text that uses it names nobody. A person
+/// changes their handle once in `CHANGE_EVERY_DAYS` days.
 ///
 /// # Errors
-/// `request.invalid` for a text that is no handle (it has a capital, a space, an `@` or is too
-/// long), `name.taken` when somebody has it or had it.
+/// `request.invalid` for a text that is no handle (it has a capital, a space, an `@`, a letter
+/// that is not ASCII, or is too long), `name.taken` when somebody has it or had it, or when it is
+/// the handle of a group or a role, `handle.changed_lately` when the person changed it a short
+/// time ago.
 pub async fn change_handle<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: ChangeHandle,
@@ -138,13 +149,24 @@ pub async fn change_handle<S: AuthStore>(
         .person_with_handle(&handle)
         .await
         .map_err(failed)?;
-    if owner.is_some_and(|owner| owner != person) {
+    if owner.is_some_and(|owner| owner != person) || ctx.reserved_handles().await?.contains(&handle)
+    {
         return Err(ErrorCode::NameTaken.into());
     }
     let before = ctx.store().handle_of_person(person).await.map_err(failed)?;
     let held = ctx.evaluation_of(&actor, Place::Organization).await?;
     if before.as_deref() == Some(handle.as_str()) {
         return Ok(held.authorize(MyHandle { handle }));
+    }
+    let lately = ctx
+        .store()
+        .handle_changed_at(person)
+        .await
+        .map_err(failed)?
+        .and_then(|changed| changed.checked_add(change_every()).ok())
+        .is_some_and(|again| again > ctx.now());
+    if lately {
+        return Err(ErrorCode::HandleChangedLately.into());
     }
     let event = ctx.event(
         by(person),
@@ -180,6 +202,7 @@ pub async fn create_missing_handles<S: AuthStore>(
     _input: CreateMissingHandles,
 ) -> Result<u64, AppError> {
     let mut made = 0_u64;
+    let reserved = ctx.reserved_handles().await?;
     loop {
         let people = ctx
             .store()
@@ -199,10 +222,12 @@ pub async fn create_missing_handles<S: AuthStore>(
                     after: None,
                 }],
             )?;
-            let now = ctx.now();
+            let (now, reserved) = (ctx.now(), reserved.clone());
             ctx.store()
                 .record_change(&event, move |transaction| {
-                    Box::pin(async move { give_handle::<S>(transaction, &person, now).await })
+                    Box::pin(
+                        async move { give_handle::<S>(transaction, &person, now, &reserved).await },
+                    )
                 })
                 .await
                 .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;

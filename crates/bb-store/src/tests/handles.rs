@@ -68,6 +68,16 @@ async fn m3_f70_a_handle_names_one_person_for_good_and_a_former_one_stays_with_t
             Some("ben.baker")
         );
 
+        // Only the handle a person has now names them in a new text; the one given up is reserved.
+        assert_eq!(storage.person_with_current_handle("ana").await?, Some(ana));
+        assert_eq!(
+            storage.person_with_current_handle("ana.brandt").await?,
+            None
+        );
+        // The handle the account was given is no change; the second one is.
+        assert_eq!(storage.handle_changed_at(ben).await?, None);
+        assert_eq!(storage.handle_changed_at(ana).await?, Some(at(2)));
+
         // She takes the old one back.
         give(&storage, &mut source, ana, "ana.brandt").await?;
         assert_eq!(

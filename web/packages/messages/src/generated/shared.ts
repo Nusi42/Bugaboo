@@ -643,6 +643,8 @@ export const messages = {
   "setting.logs.server-log-files.name": "Old server log files to keep",
   "setting.logs.server-log-files.help":
     "How many old files of the server log are kept next to the current one. Older ones are deleted.",
+  "error.handle.changed-lately":
+    "You changed your handle only a short time ago. You can change it again later.",
 } as const;
 
 register(messages);

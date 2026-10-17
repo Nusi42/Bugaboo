@@ -145,6 +145,8 @@ error_codes! {
     MailUnavailable => ("mail.unavailable", 503),
     /// E-mail is off, or the mail server is not entered (PRIV-08).
     MailOff => ("mail.off", 409),
+    /// A person changed their handle a short time ago and cannot change it again yet (M3-F70).
+    HandleChangedLately => ("handle.changed_lately", 429),
     /// A change request that does not come from one of Bugaboo's own pages.
     WrongOrigin => ("request.wrong_origin", 403),
     /// A change request without the right token of the session (CSRF).

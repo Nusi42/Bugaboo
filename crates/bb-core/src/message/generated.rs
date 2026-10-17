@@ -824,6 +824,9 @@ pub const ERROR_FIELD_UNKNOWN_REFERENCE: MessageKey =
 /// The message `error.field.wrong-value`.
 pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
 
+/// The message `error.handle.changed-lately`.
+pub const ERROR_HANDLE_CHANGED_LATELY: MessageKey = MessageKey::new("error.handle.changed-lately");
+
 /// The message `error.issue.parent-circle`.
 pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
 
@@ -8805,6 +8808,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.field.wrong-value",
         "That is not a value this field can hold.",
+    ),
+    (
+        "error.handle.changed-lately",
+        "You changed your handle only a short time ago. You can change it again later.",
     ),
     (
         "error.issue.parent-circle",

@@ -1994,8 +1994,9 @@ export interface paths {
     /** The handle of the person who asks. */
     get: operations["getMyHandle"];
     /**
-     * Changes the handle of the person who asks. The one they had stays theirs, so the texts that
-     *     name it still name them.
+     * Changes the handle of the person who asks, once in a while (`handle.changed_lately` otherwise).
+     *     The one they had stays theirs: nobody else can take it, and the texts written before still name
+     *     them, but a new text that uses it names nobody.
      */
     put: operations["changeMyHandle"];
     post?: never;
@@ -3680,6 +3681,7 @@ export interface components {
       | "mail.rejected"
       | "mail.unavailable"
       | "mail.off"
+      | "handle.changed_lately"
       | "request.wrong_origin"
       | "request.wrong_token"
       | "request.method_not_allowed"
@@ -4974,7 +4976,10 @@ export interface components {
     };
     /** @description The new handle. */
     NewHandleBody: {
-      /** @description The handle, without the `@`. Nobody else has it, and nobody had it. */
+      /**
+       * @description The handle, without the `@`: the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. Nobody
+       *     else has it, nobody had it, and no group or role has it.
+       */
       handle: string;
     };
     /** @description An issue to make. */
@@ -17581,15 +17586,13 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description The handle was changed a short time ago (handle.changed_lately). */
       429: {
         headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
           [name: string]: unknown;
         };
         content: {
-          "application/problem+json": components["schemas"]["Problem"];
+          "application/json": components["schemas"]["Problem"];
         };
       };
       /** @description error.server.internal (server.internal) */

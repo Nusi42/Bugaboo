@@ -201,6 +201,7 @@ pub async fn complete_setup<S: AuthStore>(
             set_to("role", json!(administrator.map(|role| role.to_string()))),
         ],
     )?;
+    let reserved = ctx.reserved_handles().await?;
     let (store, stored_person, session, now) =
         (ctx.store(), person.clone(), new.session.clone(), ctx.now());
     store
@@ -214,7 +215,7 @@ pub async fn complete_setup<S: AuthStore>(
                 }
                 S::lock_policy(transaction).await?;
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
-                give_handle::<S>(transaction, &stored_person, now).await?;
+                give_handle::<S>(transaction, &stored_person, now, &reserved).await?;
                 S::insert_assignment(transaction, &assignment).await?;
                 S::insert_session(transaction, &session).await
             })
@@ -290,6 +291,7 @@ pub async fn accept_invitation<S: AuthStore>(
         entity(RecordKind::Person, person.id),
         vec![changed("account")],
     )?;
+    let reserved = ctx.reserved_handles().await?;
     let (store, stored_person, session, invitation_id) = (
         ctx.store(),
         person.clone(),
@@ -306,7 +308,7 @@ pub async fn accept_invitation<S: AuthStore>(
                     S::delete_session(transaction, old).await?;
                 }
                 S::insert_person(transaction, &stored_person, &hash, now).await?;
-                give_handle::<S>(transaction, &stored_person, now).await?;
+                give_handle::<S>(transaction, &stored_person, now, &reserved).await?;
                 S::insert_session(transaction, &session).await
             })
         })
