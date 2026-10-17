@@ -15,7 +15,7 @@ use super::scenarios::a_project;
 use super::scenarios_issues::an_issue;
 use super::scenarios_workflows::{a_workflow, publish_of, published_with};
 use super::workflows::change;
-use super::workflows_rules::{key, starting_role, status_of};
+use super::workflows_rules::{issue_in_progress, key, starting_role, status_of};
 use super::world::{Outcome, World};
 use crate::auth::{AppError, Started};
 use crate::issues::change_issue;
@@ -71,12 +71,7 @@ async fn wf_02_publishing_moves_the_issues_of_a_dropped_status_to_any_status_of_
     let world = World::new().await?;
     let project = a_project(&world, "ACME").await?;
     let admin = world.admin.session_token.clone();
-    let id = an_issue(&world, project).await?;
-    change_issue(
-        &world.ctx(),
-        change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
-    )
-    .await?;
+    let id = issue_in_progress(&world, project).await?;
     let editor = a_workflow(&world, "ACME").await?;
     // A status the new workflow lacks is no place to go to.
     let refused = published_with(&world, &editor, |sent| {

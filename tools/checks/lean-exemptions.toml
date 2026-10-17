@@ -239,6 +239,12 @@ whole_value = true
 reason = "The statuses of the workflows of one project: a workflow has at most 30 (STATUSES_MAX) and a project has as many workflows as it has issue types, each checked when published; the choice of a status for many issues needs them all at once. (M3-F106)"
 
 [[exempt]]
+route = "GET /api/v1/projects/{project}/statuses"
+property = "changes"
+whole_value = true
+reason = "The status changes of the workflows of one project, each once by its words: a workflow has at most 300 (CHANGES_MAX) and a project has as many workflows as it has issue types; the choice of a status change for many issues needs them all at once. (M3-F106)"
+
+[[exempt]]
 route = "GET /api/v1/projects/{project}/who-may-change/{field}"
 property = "roles"
 whole_value = true

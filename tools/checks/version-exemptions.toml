@@ -132,8 +132,9 @@ routes = [
   "POST /api/v1/tags/{tag}/preview",
   "POST /api/v1/labels/{label}/preview",
   "POST /api/v1/many-changes/preview",
+  "POST /api/v1/workflows/{workflow}/publish-preview",
 ]
-reason = "Changes nothing: it only says what a rename, a combine or a change to many issues would do, and the change that follows takes the versions the preview read (M3 WP-08)."
+reason = "Changes nothing: it only says what a rename, a combine or a change to many issues would do, and the change that follows takes the versions the preview read (M3 WP-08). The preview of a publish says which statuses would be dropped and which issues are in them; the publish that follows takes the version of the workflow (ADR-0031 amendment 12)."
 
 [[exempt]]
 routes = ["POST /api/v1/many-changes"]

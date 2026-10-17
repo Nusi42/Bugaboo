@@ -15,7 +15,7 @@ use super::scenarios::a_project;
 use super::scenarios_issues::an_issue;
 use super::scenarios_workflows::{a_workflow, published_with};
 use super::workflows::change;
-use super::workflows_rules::{assign, key, member, starting_role, status_of};
+use super::workflows_rules::{assign, issue_in_progress, key, member, starting_role, status_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::history::{HistoryQuery, HistoryWhat, history};
@@ -139,12 +139,7 @@ async fn wf_02_publishing_whose_moves_would_be_skipped_publishes_nothing() -> Ou
     let world = World::new().await?;
     let project = a_project(&world, "ACME").await?;
     let admin = world.admin.session_token.clone();
-    let id = an_issue(&world, project).await?;
-    change_issue(
-        &world.ctx(),
-        change(&admin, &id.to_string(), 1, IN_PROGRESS)?,
-    )
-    .await?;
+    let id = issue_in_progress(&world, project).await?;
     let editor = a_workflow(&world, "ACME").await?;
     let without_progress = |sent: &mut PublishWorkflow, to: &str| {
         sent.statuses

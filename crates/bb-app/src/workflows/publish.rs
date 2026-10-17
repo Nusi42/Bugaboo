@@ -9,6 +9,8 @@
 //! does is to check that no live issue is left in a status its workflow does not have
 //! (`strand.rs`). So *Publish* either does all of it or none.
 
+use std::sync::Arc;
+
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
@@ -21,7 +23,7 @@ use bb_core::version::counted_up;
 use bb_core::workflow::{
     ChangeDraft, StatusDraft, StatusKey, StoredWorkflow, WorkflowContent, check_name,
 };
-use bb_policy::{Authorized, Evaluation, Permission};
+use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
 use serde_json::json;
 
@@ -126,6 +128,26 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         }
         Ok(content)
+    }
+
+    /// The stored workflow, what the person holds where it is used and that place, when they may
+    /// manage it there: the first step of *Publish* and of its preview.
+    pub(super) async fn workflow_to_manage(
+        &self,
+        actor: &Actor,
+        id: WorkflowId,
+    ) -> Result<(StoredWorkflow, Arc<Evaluation>, Place), AppError> {
+        let stored = self
+            .store()
+            .stored_workflow(id)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        let place = self.place_of_workflow(id).await?;
+        let held = self
+            .require(actor, Permission::ManageWorkflows, place)
+            .await?;
+        Ok((stored, held, place))
     }
 
     /// The live issues in the statuses that `content` drops, found from the places the stored
@@ -271,16 +293,7 @@ pub async fn publish_workflow<S: AuthStore>(
     input: PublishWorkflow,
 ) -> Result<Authorized<Published>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let stored = ctx
-        .store()
-        .stored_workflow(input.workflow)
-        .await
-        .map_err(|error| internal::<S>(&error))?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let place = ctx.place_of_workflow(input.workflow).await?;
-    let held = ctx
-        .require(&actor, Permission::ManageWorkflows, place)
-        .await?;
+    let (stored, held, place) = ctx.workflow_to_manage(&actor, input.workflow).await?;
     let content = ctx
         .publishable(&actor, &held, &stored, Drafts::from(&input))
         .await?;
