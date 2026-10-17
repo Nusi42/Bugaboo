@@ -172,6 +172,7 @@ pub async fn move_issue<S: AuthStore>(
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
     let plan = ctx.plan_move(&actor, &input.issue, &input.project).await?;
+    let status_change = plan.status_change();
     let MovePlan {
         issue,
         target,
@@ -196,11 +197,7 @@ pub async fn move_issue<S: AuthStore>(
             before: Some(json!(issue.project.to_string())),
             after: Some(json!(target.id.to_string())),
         }];
-        changes.extend(restart.as_ref().map(|(status, _)| FieldChange {
-            field: member::STATUS.to_owned(),
-            before: Some(json!(issue.status.as_str())),
-            after: Some(json!(status.as_str())),
-        }));
+        changes.extend(status_change);
         changes.push(counted_up(issue.version));
         let event = ctx.event(by(actor.person.id), record.clone(), changes)?;
         let now = ctx.now();

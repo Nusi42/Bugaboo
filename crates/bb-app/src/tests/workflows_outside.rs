@@ -49,6 +49,21 @@ fn as_type(mut asked: ChangeIssue, issue_type: IssueTypeId) -> ChangeIssue {
     asked
 }
 
+/// The version the issue has now.
+async fn version_of(world: &World, token: &str, address: &str) -> Result<i64, AppError> {
+    Ok(crate::issues::issue(
+        &world.ctx(),
+        crate::issues::IssueQuery {
+            session_token: token.to_owned(),
+            issue: address.to_owned(),
+        },
+    )
+    .await?
+    .into_value()
+    .issue
+    .version)
+}
+
 #[tokio::test]
 async fn wf_03_changing_the_type_does_not_skip_the_rules() -> Outcome {
     let world = World::new().await?;
@@ -89,6 +104,21 @@ async fn wf_03_changing_the_type_does_not_skip_the_rules() -> Outcome {
         change_issue(&world.ctx(), skipping).await.err(),
         Some(AppError::Refused(ErrorCode::WorkflowNoSuchChange))
     );
+    // Naming the status it has already is no way around it either: Simple lacks Testing, and the
+    // issue is not left in it.
+    let named = as_type(change(&admin, &address, version, TESTING)?, task_type);
+    change_issue(&world.ctx(), named).await?;
+    assert_eq!(status_of(&world, &admin, task).await?, OPEN);
+    // Back to a bug in testing, for the case where the request names no status.
+    let version = version_of(&world, &admin, &address).await?;
+    let mut bug_again = as_type(change(&admin, &address, version, OPEN)?, bug);
+    bug_again.status = None;
+    change_issue(&world.ctx(), bug_again).await?;
+    for (step, status) in [IN_PROGRESS, TESTING].into_iter().enumerate() {
+        let next = version + 1 + i64::try_from(step)?;
+        change_issue(&world.ctx(), change(&admin, &address, next, status)?).await?;
+    }
+    let version = version + 3;
     // Without a status in the request, the issue is put into the starting status.
     let mut back = as_type(change(&admin, &address, version, OPEN)?, task_type);
     back.status = None;

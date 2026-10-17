@@ -222,7 +222,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         // The status of the request is judged in the workflow that counts afterwards, from the
         // status the issue is in. An issue whose status that workflow lacks starts again in its
         // starting status when the request names none (ADR-0031 amendment 3).
-        next.status = match &input.status {
+        // Naming the status the issue has already is no status change: with a new type it is the
+        // same as naming none.
+        let named = input
+            .status
+            .as_ref()
+            .filter(|status| **status != current.status || next.issue_type == current.issue_type);
+        next.status = match named {
             Some(status) => status.clone(),
             None => {
                 self.status_after_change(&chain, next.issue_type, &current.status)
