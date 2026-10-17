@@ -38,6 +38,11 @@ impl CsrfKey {
         Self(bytes)
     }
 
+    /// The bytes of the key, for the key of signed links that is derived from it.
+    pub(crate) fn bytes(&self) -> Zeroizing<[u8; KEY_LENGTH]> {
+        self.0.clone()
+    }
+
     fn mac(&self, session: &SecretToken) -> Result<HmacSha256, AuthError> {
         let mut mac =
             HmacSha256::new_from_slice(self.0.as_slice()).map_err(|_| AuthError::Hashing)?;

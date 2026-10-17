@@ -17,6 +17,7 @@ mod email;
 mod error;
 mod passkeys;
 mod password;
+mod signed_link;
 mod token;
 mod totp;
 
@@ -34,6 +35,7 @@ pub use password::{
     ARGON2_ITERATIONS, ARGON2_LANES, ARGON2_MEMORY_KIB, MAX_LENGTH, MIN_LENGTH, PasswordHasher,
     PasswordProblem, Verdict, check_policy,
 };
+pub use signed_link::LinkKey;
 pub use token::{Purpose, SecretToken, same_digest, stable_id};
 pub use totp::{Enrolment, STEP_SECONDS, TotpSecret};
 

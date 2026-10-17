@@ -8,6 +8,7 @@ pub mod comments;
 pub mod context;
 pub mod editing;
 pub mod fields;
+pub mod files;
 pub mod first_start;
 pub mod follow;
 pub mod history;

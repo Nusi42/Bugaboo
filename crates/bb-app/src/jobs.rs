@@ -34,8 +34,14 @@ pub mod kind {
     /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`. It comes back
     /// every day.
     pub const CATCH_UP_HISTORY: &str = "history.catch-up";
+    /// The preview of a new file, made in a process of its own (`files::jobs`, ADR-0032); the
+    /// payload names the file.
+    pub const PREVIEW_FILE: &str = "files.preview";
+    /// Clearing old uploads, attachments that stayed in the trash and files nothing points to
+    /// (`files::jobs`). It comes back every day.
+    pub const CLEAN_UP_FILES: &str = "files.clean-up";
     /// The kinds that come back every day, see [`super::DAILY`].
-    pub const DAILY_JOBS: [&str; 2] = [CATCH_UP_HISTORY, PURGE_DRAFTS];
+    pub const DAILY_JOBS: [&str; 3] = [CATCH_UP_HISTORY, CLEAN_UP_FILES, PURGE_DRAFTS];
 }
 
 /// How long after a daily job its next round is due.
@@ -177,6 +183,27 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
+            kind::PREVIEW_FILE => Box::pin(self.run_preview_step(&job.payload)).await.map_err(
+                |error| {
+                    tracing::warn!(cause = %error, "the preview of a file could not be created");
+                    JobFailure::of(&error, FAILED, job)
+                },
+            ),
+            kind::CLEAN_UP_FILES => Box::pin(self.run_daily(kind::CLEAN_UP_FILES, async {
+                self.clean_up_files().await.map(|cleaned| {
+                    tracing::info!(
+                        uploads = cleaned.uploads,
+                        attachments = cleaned.attachments,
+                        files = cleaned.files,
+                        "old files were cleared"
+                    );
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "old files could not be cleared");
+                JobFailure::of(&error, FAILED, job)
+            }),
             other => {
                 tracing::error!(kind = other, "a job of a kind nobody knows");
                 Err(JobFailure::unknown_kind(job))
@@ -194,6 +221,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::error!("renewing issue IDs gave up; the job is on the dead-letter list");
                 Ok(())
             }
+            kind::PREVIEW_FILE => self.preview_gave_up(&job.payload).await,
             _ => Ok(()),
         };
         if let Err(error) = ended {

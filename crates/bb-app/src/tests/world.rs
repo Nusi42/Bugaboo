@@ -9,6 +9,7 @@ use bb_core::id::UserId;
 use jiff::Timestamp;
 
 use super::fake::FakeStore;
+use super::fake_files::FakeFiles;
 use crate::access::{CreateStartingRoles, create_starting_roles};
 use crate::auth::{
     AcceptInvitation, AppError, AuthServices, CompleteSetup, CreateInvitation, Ctx, IssueSetupCode,
@@ -44,6 +45,8 @@ pub(crate) struct World {
     pub(crate) store: FakeStore,
     pub(crate) services: AuthServices<FakeStore>,
     pub(crate) clock: Arc<TestClock>,
+    /// The bytes of files.
+    pub(crate) files: FakeFiles,
     pub(crate) admin: Started,
 }
 
@@ -60,6 +63,7 @@ impl World {
         let store = FakeStore::default();
         let clock = Arc::new(TestClock(AtomicI64::new(START)));
         let party = RelyingParty::from_public_url(PUBLIC_URL, "Bugaboo").map_err(text)?;
+        let files = FakeFiles::default();
         let services = AuthServices::new(
             store.clone(),
             clock.clone(),
@@ -68,11 +72,13 @@ impl World {
             CsrfKey::from_bytes(zeroize::Zeroizing::new([7; CSRF_KEY_LENGTH])),
             Arc::new(NoFailureLimit),
             "Bugaboo".to_owned(),
-        );
+        )
+        .with_files(Arc::new(files.clone()));
         Ok(Self {
             store,
             services,
             clock,
+            files,
             // Replaced by `new`; a bare world has nobody.
             admin: Started {
                 session_token: String::new(),

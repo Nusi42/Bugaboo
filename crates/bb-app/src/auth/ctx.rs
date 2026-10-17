@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use bb_auth::{CsrfKey, Device, Passkeys, PasswordHasher, SecretToken};
+use bb_auth::{CsrfKey, Device, LinkKey, Passkeys, PasswordHasher, SecretToken};
 use bb_core::event::{Actor, Channel, DomainEvent, EntityRef, FieldChange};
 use bb_core::id::{EventId, IdSource, SessionId, UserId};
 use bb_core::network::NetworkPrefix;
@@ -22,6 +22,7 @@ use super::store::{AuthSettings, AuthStore, SecurityEvent};
 use crate::access::Actor as ActingPerson;
 use crate::context::{Clock, SystemIds};
 use crate::editing::{EditableRecords, NoRecords};
+use crate::files::{FileStore, NoFileStore};
 use crate::ports::SetupCodeFile;
 use crate::status::LogWrites;
 
@@ -46,6 +47,10 @@ pub struct AuthServices<S> {
     pub(crate) log_writes: Arc<LogWrites>,
     pub(crate) setup_code_file: Option<Arc<dyn SetupCodeFile>>,
     pub(crate) records: Arc<dyn EditableRecords>,
+    /// The bytes of files (ADR-0032).
+    pub(crate) files: Arc<dyn FileStore>,
+    /// The key the links of downloads are signed under (ATT-07).
+    pub(crate) links: LinkKey,
 }
 
 impl<S> AuthServices<S> {
@@ -61,6 +66,7 @@ impl<S> AuthServices<S> {
         limiter: Arc<dyn FailureLimit>,
         product_name: String,
     ) -> Self {
+        let links = csrf.link_key();
         Self {
             store,
             clock,
@@ -72,7 +78,17 @@ impl<S> AuthServices<S> {
             log_writes: Arc::new(LogWrites::default()),
             setup_code_file: None,
             records: Arc::new(NoRecords),
+            files: Arc::new(NoFileStore),
+            links,
         }
+    }
+
+    /// The store of the bytes of files (ADR-0032). Without one, every call that touches a file
+    /// fails.
+    #[must_use]
+    pub fn with_files(mut self, files: Arc<dyn FileStore>) -> Self {
+        self.files = files;
+        self
     }
 
     /// The kinds of record that can be locked, drafted and watched besides the ones `bb-app`
@@ -246,6 +262,11 @@ impl EventMaker {
 impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) const fn store(&self) -> &S {
         &self.services.store
+    }
+
+    /// The store of the bytes of files.
+    pub(crate) fn files(&self) -> &dyn FileStore {
+        self.services.files.as_ref()
     }
 
     pub(crate) fn now(&self) -> Timestamp {

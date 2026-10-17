@@ -1,0 +1,212 @@
+//! Files, attachments and uploads on both databases (ATT-01, ATT-02): a file is one row whatever
+//! the number of attachments, the row of a file that an attachment points to is never deleted, the
+//! trash keeps an attachment until its days are over, and old uploads are found by their last part.
+
+use bb_app::files::AttachmentStore as _;
+use bb_app::ports::{BoxFuture, ChangeStore};
+use bb_core::files::{
+    Attachment, MediaType, PreviewState, StoredFile, TRASH_KEPT, UNFINISHED_KEPT, Upload,
+};
+use bb_core::id::{AttachmentId, IdSource, UploadId};
+use bb_core::security_log::Digest;
+use bb_core::version::FIRST_VERSION;
+use bb_testing::{TestResult, each_database};
+
+use super::*;
+use crate::test_support::{World, at, event, fixture, ids, world};
+
+async fn changed<T: Send>(
+    storage: &AuthStorage,
+    source: &mut impl IdSource,
+    write: impl for<'t> FnOnce(&'t mut Transaction) -> BoxFuture<'t, Result<T, StoreError>> + Send,
+) -> Result<T, StoreError> {
+    ChangeStore::record_change(storage, &event(source, 5), write).await
+}
+
+fn file(byte: u8) -> StoredFile {
+    StoredFile {
+        hash: Digest::new([byte; 32]),
+        size: 1000,
+        media_type: MediaType::new("image/png").unwrap(),
+        preview: PreviewState::Pending,
+        created_at: at(1),
+    }
+}
+
+fn attachment(
+    source: &mut impl IdSource,
+    world: &World,
+    at_issue: usize,
+    file: &StoredFile,
+) -> Attachment {
+    Attachment {
+        id: AttachmentId::generate(source).unwrap(),
+        issue: world.issues[at_issue].id,
+        comment: None,
+        file: file.hash,
+        name: "screenshot.png".to_owned(),
+        added_by: world.person,
+        added_at: at(2),
+        deleted_at: None,
+        version: FIRST_VERSION,
+    }
+}
+
+async fn add(
+    storage: &AuthStorage,
+    source: &mut impl IdSource,
+    file: &StoredFile,
+    attachment: &Attachment,
+) -> Result<bool, StoreError> {
+    let (file, attachment) = (file.clone(), attachment.clone());
+    changed(storage, source, move |tx| {
+        Box::pin(async move {
+            let new = AuthStorage::insert_stored_file(tx, &file).await?;
+            AuthStorage::insert_attachment(tx, &attachment).await?;
+            Ok(new)
+        })
+    })
+    .await
+}
+
+async fn trash(
+    storage: &AuthStorage,
+    source: &mut impl IdSource,
+    id: AttachmentId,
+    at: Option<Timestamp>,
+) -> Result<bool, StoreError> {
+    changed(storage, source, move |tx| {
+        Box::pin(async move { AuthStorage::set_attachment_deleted(tx, id, at).await })
+    })
+    .await
+}
+
+#[tokio::test]
+async fn att_02_the_store_keeps_one_row_for_a_file_and_deletes_it_only_when_nothing_points_to_it()
+-> TestResult {
+    each_database("att_02_one_row_per_file", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 2).await;
+        let png = file(7);
+        let first = attachment(&mut source, &world, 0, &png);
+        let second = attachment(&mut source, &world, 1, &png);
+
+        assert!(
+            add(storage, &mut source, &png, &first).await?,
+            "the first is new"
+        );
+        assert!(
+            !add(storage, &mut source, &png, &second).await?,
+            "the second is the same file"
+        );
+        assert_eq!(storage.stored_files(&[png.hash]).await?, vec![png.clone()]);
+        assert!(storage.unreferenced_files(10).await?.is_empty());
+        // The row of a file that something points to is not deleted.
+        assert!(!storage.delete_unreferenced_file(png.hash).await?);
+
+        // In the trash an attachment still points to its file, and is not listed.
+        assert!(trash(storage, &mut source, first.id, Some(at(10))).await?);
+        assert!(
+            !trash(storage, &mut source, first.id, Some(at(11))).await?,
+            "only once"
+        );
+        assert_eq!(
+            storage.attachments_of_issue(world.issues[0].id).await?,
+            vec![]
+        );
+        assert!(storage.unreferenced_files(10).await?.is_empty());
+        // *Undo* puts it back, with the version counted up twice.
+        assert!(trash(storage, &mut source, first.id, None).await?);
+        let back = storage.attachments_of_issue(world.issues[0].id).await?;
+        assert_eq!(back.len(), 1);
+        assert_eq!(back[0].version, FIRST_VERSION + 2);
+
+        // Both go into the trash; only an attachment that stayed there for its days is purged.
+        assert!(trash(storage, &mut source, first.id, Some(at(10))).await?);
+        assert!(trash(storage, &mut source, second.id, Some(at(10_000_000))).await?);
+        let enough = at(10).checked_add(TRASH_KEPT)?;
+        assert_eq!(storage.purge_trashed_attachments(enough, 10).await?, 1);
+        assert!(storage.attachment(first.id).await?.is_none());
+        assert!(
+            storage.unreferenced_files(10).await?.is_empty(),
+            "the second still points"
+        );
+        let later = at(10_000_000).checked_add(TRASH_KEPT)?;
+        assert_eq!(storage.purge_trashed_attachments(later, 10).await?, 1);
+
+        // Now nothing points to the file.
+        assert_eq!(storage.unreferenced_files(10).await?, vec![png.clone()]);
+        assert!(storage.delete_unreferenced_file(png.hash).await?);
+        assert!(storage.stored_files(&[png.hash]).await?.is_empty());
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn att_04_the_state_of_a_preview_is_kept_with_the_file() -> TestResult {
+    each_database("att_04_preview_state", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let png = file(8);
+        let row = attachment(&mut source, &world, 0, &png);
+        add(storage, &mut source, &png, &row).await?;
+        assert!(
+            storage
+                .set_preview_state(png.hash, PreviewState::Ready)
+                .await?
+        );
+        let stored = storage.stored_files(&[png.hash]).await?;
+        assert_eq!(stored[0].preview, PreviewState::Ready);
+        assert!(
+            !storage
+                .set_preview_state(Digest::new([9; 32]), PreviewState::Ready)
+                .await?
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn att_01_open_uploads_are_counted_and_old_ones_are_found_by_their_last_part() -> TestResult {
+    each_database("att_01_uploads", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let mut upload = || Upload {
+            id: UploadId::generate(&mut source).unwrap(),
+            issue: world.issues[0].id,
+            comment: None,
+            person: world.person,
+            name: "big.zip".to_owned(),
+            size: 5000,
+            created_at: at(0),
+            updated_at: at(0),
+        };
+        let (old, fresh) = (upload(), upload());
+        storage.insert_upload(&old).await?;
+        storage.insert_upload(&fresh).await?;
+        assert_eq!(storage.open_uploads_of(world.person).await?, 2);
+        let day_later = at(0)
+            .checked_add(UNFINISHED_KEPT)?
+            .checked_add(jiff::SignedDuration::from_secs(1))?;
+        // A part of the fresh one came after the day started.
+        storage.touch_upload(fresh.id, day_later).await?;
+        let stale = storage.uploads_untouched_since(day_later, 10).await?;
+        assert_eq!(
+            stale.iter().map(|upload| upload.id).collect::<Vec<_>>(),
+            vec![old.id]
+        );
+        assert!(storage.delete_upload_row(old.id).await?);
+        assert!(!storage.delete_upload_row(old.id).await?);
+        assert_eq!(storage.open_uploads_of(world.person).await?, 1);
+        Ok(())
+    })
+    .await
+}

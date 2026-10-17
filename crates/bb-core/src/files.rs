@@ -30,11 +30,23 @@ pub const OPEN_UPLOADS_MAX: usize = 20;
 /// How long an unfinished upload is kept after its last part (ADR-0032): then it is deleted.
 pub const UNFINISHED_KEPT: SignedDuration = SignedDuration::from_hours(24);
 
+/// How many files one issue holds at most, so the list of its files stays short enough to send at
+/// once and a full issue answers with a clear refusal (`limit.reached`).
+pub const ATTACHMENTS_PER_ISSUE_MAX: usize = 200;
+
+/// How long a deleted attachment can still be taken out of the trash (ADR-0032 §5); after that it
+/// is gone for good, and its file with it when nothing else points to it.
+pub const TRASH_KEPT: SignedDuration = SignedDuration::from_hours(30 * 24);
+
 /// How long a signed link works (ADR-0032, ATT-07).
 pub const LINK_LIFETIME: SignedDuration = SignedDuration::from_mins(5);
 
 /// The type a file has when its content says nothing more: the bytes are some data.
 pub const UNKNOWN_MEDIA_TYPE: &str = "application/octet-stream";
+
+/// The type of every preview: a small PNG, the one safe image type the preview process writes
+/// (ADR-0032 §4).
+pub const PREVIEW_MEDIA_TYPE: &str = "image/png";
 
 /// The type of a file, `type/subtype` in lower case (`image/png`): the real one, read from the
 /// content, never the one the browser or the name claims (ATT-03).

@@ -13,12 +13,14 @@ use sea_query::{Iden, IdenStatic};
 
 mod access;
 mod comments;
+mod files;
 mod sign_in;
 mod system;
 mod work;
 
 pub(crate) use access::*;
 pub(crate) use comments::*;
+pub(crate) use files::*;
 pub(crate) use sign_in::*;
 pub(crate) use system::*;
 pub(crate) use work::*;
@@ -369,6 +371,34 @@ stored_tables! {
         Recipient => recipient,
         Via => via,
         ReadAt => read_at,
+    },
+    StoredFileRow => bb_core::files::StoredFile {
+        Hash => hash,
+        Size => size,
+        MediaType => media_type,
+        Preview => preview,
+        CreatedAt => created_at,
+    },
+    AttachmentRow => bb_core::files::Attachment {
+        Id => id,
+        Issue => issue,
+        Comment => comment,
+        File => file,
+        Name => name,
+        AddedBy => added_by,
+        AddedAt => added_at,
+        DeletedAt => deleted_at,
+        Version => version,
+    },
+    UploadRow => bb_core::files::Upload {
+        Id => id,
+        Issue => issue,
+        Comment => comment,
+        Person => person,
+        Name => name,
+        Size => size,
+        CreatedAt => created_at,
+        UpdatedAt => updated_at,
     },
     FollowerRow => bb_core::follow::Follower {
         Issue => issue,

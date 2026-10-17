@@ -14,10 +14,10 @@ use std::time::Duration;
 
 use bb_core::event::DomainEvent;
 use bb_core::id::{
-    AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
-    IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
-    ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId, TagId,
-    UserId,
+    AccessKeyId, AssignmentId, AttachmentId, ChoiceId, CommentId, EditorId, EntityId, EventId,
+    FieldId, GroupId, IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId,
+    LayoutId, LockToken, ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId,
+    SessionId, TagId, UploadId, UserId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -663,6 +663,8 @@ macro_rules! stored_ids {
 stored_ids!(
     AccessKeyId => "an access key ID",
     AssignmentId => "an assignment ID",
+    AttachmentId => "an attachment ID",
+    UploadId => "an upload ID",
     ManyChangeRunId => "a run ID",
     CommentId => "a comment ID",
     EditorId => "an editor ID",
