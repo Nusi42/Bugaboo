@@ -10582,7 +10582,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "mail-server.password-help",
-        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have.",
+        "It is stored encrypted and never shown again. Leave the box empty to keep the password you have. If you change the host, the port or the user name, the password is removed: a new mail server needs its password again.",
     ),
     ("mail-server.password-new", "New password"),
     ("mail-server.password-none", "No password is set."),

@@ -173,6 +173,11 @@ impl NotificationStore for FakeStore {
         Ok(())
     }
 
+    async fn forget_mail_password(tx: &mut Tx) -> Result<(), FakeError> {
+        tx.state.mail_password = None;
+        Ok(())
+    }
+
     async fn delete_mail_password(&self) -> Result<(), FakeError> {
         self.lock().state.mail_password = None;
         Ok(())

@@ -21,7 +21,7 @@ use sea_query::{Expr, ExprTrait as _, OnConflict, Order, Query};
 use zeroize::Zeroizing;
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction, to_micros};
+use crate::db::{Database, Row, StoredId, Transaction, to_micros};
 use crate::error::{SecretProblem, StoreError};
 use crate::events::outbox_move;
 use crate::jobs::{NewJob, enqueue};
@@ -291,6 +291,12 @@ impl NotificationStore for AuthStorage {
         self.database()
             .put_secret(self.key_ring(), &password_name()?, secret, at)
             .await
+    }
+
+    async fn forget_mail_password(transaction: &mut Transaction) -> Result<(), StoreError> {
+        Database::delete_secret_in(transaction, &password_name()?)
+            .await
+            .map(|_| ())
     }
 
     async fn delete_mail_password(&self) -> Result<(), StoreError> {

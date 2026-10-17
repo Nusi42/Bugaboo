@@ -74,6 +74,9 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
     }
 
     writes! {
+        /// Deletes the password of the mail server inside a change: the settings that name the mail
+        /// server changed, so the password of the old one goes with them.
+        fn forget_mail_password() -> ();
         /// Marks these notifications of a person as read; the ones read already keep their date.
         /// Returns how many it marked.
         fn mark_notifications_read(

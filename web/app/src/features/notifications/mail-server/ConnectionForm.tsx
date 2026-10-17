@@ -13,16 +13,13 @@ import {
   type ButtonLook,
 } from "@bugaboo/ui";
 
-import { messageOf } from "../../../shared/errors.ts";
 import { type MySettings } from "../../../shared/my-settings.ts";
 import { saveLabels } from "../../../shared/save-labels.ts";
 import { PasswordField, Protection, SettingText } from "./ConnectionFields.tsx";
-import type { SettingEdits } from "./connection-draft.ts";
 import { useConnectionDraft } from "./use-connection-draft.ts";
 
 export interface ConnectionFormProps {
   readonly settings: MySettings;
-  readonly edits: SettingEdits;
   /** How the button that saves looks: the main button of the screen, or a plain one where another is. */
   readonly saveLook: ButtonLook;
 }
@@ -32,8 +29,8 @@ export interface ConnectionFormProps {
  * and the address e-mails come from. They are saved together; the password goes on its own and is
  * never read back, only whether it is set (SEC-16).
  */
-export function ConnectionForm({ settings, edits, saveLook }: ConnectionFormProps) {
-  const { draft, field, problem, save, passwordProblem } = useConnectionDraft(settings, edits);
+export function ConnectionForm({ settings, saveLook }: ConnectionFormProps) {
+  const { draft, field, problem, save, saveState, saveProblem } = useConnectionDraft(settings);
   const text = { settings };
   return (
     <Form onSubmit={save}>
@@ -71,12 +68,9 @@ export function ConnectionForm({ settings, edits, saveLook }: ConnectionFormProp
         <Button type={buttonType.submit} look={saveLook}>
           {t("mail-server.save")}
         </Button>
-        <SaveStatus state={edits.saveState} labels={saveLabels()} />
+        <SaveStatus state={saveState} labels={saveLabels()} />
       </div>
-      {edits.problem === null ? null : <Alert tone={alertTone.danger}>{edits.problem}</Alert>}
-      {passwordProblem === undefined ? null : (
-        <Alert tone={alertTone.danger}>{messageOf(passwordProblem)}</Alert>
-      )}
+      {saveProblem === null ? null : <Alert tone={alertTone.danger}>{saveProblem}</Alert>}
     </Form>
   );
 }

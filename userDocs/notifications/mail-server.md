@@ -6,7 +6,7 @@ Bugaboo sends e-mail through your organization's mail server. E-mail is **off** 
 
 - **Mail server** and **Mail server port**: where the mail server is, as its provider tells you.
 - **Protect the connection**: *Switch to encryption (usual)*, *Encrypted from the start* or *No encryption*. A user name or a password is sent without encryption only to a mail server on the same machine as Bugaboo; for any other machine it is refused (`mail.insecure`).
-- **Mail server user name** and **Password**: leave the user name empty for a mail server that asks for none. The password is stored encrypted and never shown again; the page says only whether one is set. **Remove the password** takes it away.
+- **Mail server user name** and **Password**: leave the user name empty for a mail server that asks for none. The password is stored encrypted and never shown again; the page says only whether one is set. **Remove the password** takes it away. If you change the mail server, its port or the user name, the password is removed too: a new mail server needs its password again.
 - **Send e-mail from**: the address e-mails come from.
 
 **Save the mail server** saves all of it. Bugaboo trusts the certificate authorities that are built into it; a mail server with a certificate of your own company cannot use encryption yet.

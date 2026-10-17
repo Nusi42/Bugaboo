@@ -81,7 +81,7 @@ export function MailServerPanel({ saveLook = buttonLook.primary }: MailServerPan
             <p {...partOf(part.muted)}>{t("mail-server.sign-up-note")}</p>
           </Section>
           <Section title={t("mail-server.connection")}>
-            <ConnectionForm settings={shown} edits={edits} saveLook={saveLook} />
+            <ConnectionForm settings={shown} saveLook={saveLook} />
           </Section>
           <Section title={t("mail-server.test-title")}>
             <TestEmail />

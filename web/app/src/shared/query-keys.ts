@@ -241,6 +241,11 @@ export function refreshNotifications(): void {
   refreshRoutes(["/api/v1/notifications"]);
 }
 
+/** The mail server changed (its settings or its password): the answers about it are read again. */
+export function refreshMailServer(): void {
+  refreshRoutes(["/api/v1/mail", "/api/v1/settings"]);
+}
+
 /** A comment was written, changed or deleted, or a follower came or went: the history is read again. */
 export function refreshHistory(): void {
   reread({ queryKey: queryKeys.history.all });
