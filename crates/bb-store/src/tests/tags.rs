@@ -340,7 +340,6 @@ async fn adr_0017_more_issues_than_a_statement_can_bind_are_read_in_chunks() -> 
 #[tokio::test]
 async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers() -> TestResult {
     use bb_app::offers::OfferStore as _;
-    use bb_core::offer::{Offer, OfferSubject};
 
     each_database("sec_06_used_subjects", async |db| {
         let fixture = fixture(db).await?;
@@ -364,24 +363,6 @@ async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offe
             [on(0, login.id), on(1, ops.id)],
         );
         let trashed = world.issues[1].id;
-        let bug = OfferSubject::IssueType(world.issues[0].issue_type);
-        let rows = [
-            Offer {
-                subject: bug,
-                project: None,
-                offered: false,
-            },
-            Offer {
-                subject: bug,
-                project: Some(world.project),
-                offered: true,
-            },
-            Offer {
-                subject: OfferSubject::LabelGroup(area.id),
-                project: None,
-                offered: false,
-            },
-        ];
         changed(storage, &mut source, move |tx| {
             Box::pin(async move {
                 for row in &groups {
@@ -394,9 +375,6 @@ async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offe
                     AuthStorage::insert_issue_label(tx, link).await?;
                 }
                 AuthStorage::set_issue_deleted(tx, trashed, Some(at(3)), at(3)).await?;
-                for row in &rows {
-                    AuthStorage::put_offer(tx, row).await?;
-                }
                 Ok(())
             })
         })
@@ -444,15 +422,61 @@ async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offe
                 .await?
                 .is_empty()
         );
-        // The rows are found by their subject.
+        Ok(())
+    })
+    .await
+}
+
+/// The ID of a label nobody made.
+fn a_label_nobody_made(source: &mut impl IdSource) -> LabelId {
+    LabelId::generate(source).unwrap()
+}
+
+#[tokio::test]
+async fn iss_02_the_rows_of_a_subject_are_found_by_the_subject() -> TestResult {
+    use bb_app::offers::OfferStore as _;
+    use bb_core::offer::{Offer, OfferSubject};
+
+    each_database("iss_02_rows_by_subject", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let world = world(storage, &mut source, 1).await;
+        let (area, kind) = (group(&mut source, "Area"), group(&mut source, "Kind"));
+        let bug = OfferSubject::IssueType(world.issues[0].issue_type);
+        let of_area = OfferSubject::LabelGroup(area.id);
+        let rows = [
+            Offer {
+                subject: bug,
+                project: None,
+                offered: false,
+            },
+            Offer {
+                subject: bug,
+                project: Some(world.project),
+                offered: true,
+            },
+            Offer {
+                subject: of_area,
+                project: None,
+                offered: false,
+            },
+        ];
+        let groups = [area.clone(), kind.clone()];
+        changed(storage, &mut source, move |tx| {
+            Box::pin(async move {
+                for row in &groups {
+                    AuthStorage::insert_label_group(tx, row).await?;
+                }
+                for row in &rows {
+                    AuthStorage::put_offer(tx, row).await?;
+                }
+                Ok(())
+            })
+        })
+        .await?;
         assert_eq!(storage.subject_offers(bug).await?.len(), 2);
-        assert_eq!(
-            storage
-                .subject_offers(OfferSubject::LabelGroup(area.id))
-                .await?
-                .len(),
-            1
-        );
+        assert_eq!(storage.subject_offers(of_area).await?.len(), 1);
         assert!(
             storage
                 .subject_offers(OfferSubject::LabelGroup(kind.id))
@@ -462,9 +486,4 @@ async fn sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offe
         Ok(())
     })
     .await
-}
-
-/// The ID of a label nobody made.
-fn a_label_nobody_made(source: &mut impl IdSource) -> LabelId {
-    LabelId::generate(source).unwrap()
 }

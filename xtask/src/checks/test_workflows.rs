@@ -14,7 +14,7 @@ use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
-const REQUIRED: [Required; 37] = [
+const REQUIRED: [Required; 38] = [
     Required {
         name: "wf_01_an_m3_database_keeps_every_status_after_the_upgrade",
         both_databases: true,
@@ -164,6 +164,10 @@ const REQUIRED: [Required; 37] = [
     },
     Required {
         name: "sec_06_the_subjects_of_the_issues_a_person_reads_are_found_for_the_offers",
+        both_databases: true,
+    },
+    Required {
+        name: "iss_02_the_rows_of_a_subject_are_found_by_the_subject",
         both_databases: true,
     },
 ];
