@@ -26,7 +26,7 @@ mod upload;
 pub use attachments::{delete_attachment, file_rules, issue_files, restore_attachment};
 pub use download::download;
 pub use file_store::{
-    ChunkReader, FileBody, FileStore, Inspected, NoFileStore, PartError, Sniffed,
+    ChunkReader, FileBody, FileHold, FileStore, Inspected, NoFileStore, PartError, Sniffed,
 };
 pub use store::AttachmentStore;
 pub use types::*;

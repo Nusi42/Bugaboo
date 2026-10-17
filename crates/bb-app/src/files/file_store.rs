@@ -65,10 +65,19 @@ pub struct FileBody {
     pub reader: Box<dyn ChunkReader>,
 }
 
+/// What keeps other calls that work on the same file out: they wait until it is dropped.
+pub type FileHold = Box<dyn Send>;
+
 /// The store of the bytes of files.
 pub trait FileStore: Send + Sync {
     /// What the first bytes of a file say it is. Reads nothing from disk.
     fn sniff(&self, head: &[u8]) -> Sniffed;
+
+    /// Waits until nobody else holds the file with this hash, and holds it until the answer is
+    /// dropped. Whoever puts a file into the store and adds the attachment that points to it, and
+    /// whoever deletes the bytes of a file that nothing points to, hold it for the whole of that,
+    /// so the one cannot take the bytes away between the other's two steps.
+    fn hold(&self, hash: Digest) -> BoxFuture<'_, FileHold>;
 
     /// Starts the place an upload is put together in.
     fn begin_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>>;
@@ -128,6 +137,10 @@ impl FileStore for NoFileStore {
             media_type: MediaType::unknown(),
             extension: None,
         }
+    }
+
+    fn hold(&self, _hash: Digest) -> BoxFuture<'_, FileHold> {
+        Box::pin(async { Box::new(()) as FileHold })
     }
 
     fn begin_upload(&self, _upload: UploadId) -> BoxFuture<'_, io::Result<()>> {

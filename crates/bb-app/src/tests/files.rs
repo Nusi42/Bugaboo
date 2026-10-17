@@ -17,9 +17,10 @@ use super::scenarios_issues::an_issue;
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::files::{
-    CancelUploadQuery, DeleteAttachment, DownloadQuery, FileDownload, FileStore as _, FinishUpload,
-    IssueFiles, IssueFilesQuery, SendPartQuery, StartUploadQuery, UploadStateQuery, cancel_upload,
-    delete_attachment, download, finish_upload, issue_files, send_part, start_upload, upload_state,
+    AttachmentStore as _, CancelUploadQuery, DeleteAttachment, DownloadQuery, FileDownload,
+    FileStore as _, FinishUpload, IssueFiles, IssueFilesQuery, SendPartQuery, StartUploadQuery,
+    UploadStateQuery, cancel_upload, delete_attachment, download, finish_upload, issue_files,
+    send_part, start_upload, upload_state,
 };
 use crate::settings::{ChangeSetting, SettingsScope, change_setting};
 
@@ -457,5 +458,60 @@ async fn att_03_files_in_the_trash_count_toward_the_limit_of_an_issue() -> Outco
         .await,
         ErrorCode::LimitReached,
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn att_02_the_clean_up_does_not_take_the_bytes_of_a_file_that_is_being_added() -> Outcome {
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let issue = an_issue(&world, project).await?;
+    // A file that nothing points to any more, and that the clean-up has not removed yet.
+    let first = an_attachment(&world, issue, "jam.txt", A_FILE).await?;
+    remove(&world, first).await?;
+    // It went into the trash long ago (a session does not last that long, so the day is written
+    // into the row), and the trash was emptied.
+    let long_ago = world.ctx().now() - TRASH_KEPT - jiff::SignedDuration::from_secs(1);
+    for attachment in &mut world.store.lock().state.attachments {
+        attachment.deleted_at = Some(long_ago);
+    }
+    let purged = world
+        .store
+        .purge_trashed_attachments(world.ctx().now() - TRASH_KEPT, 10)
+        .await
+        .map_err(text)?;
+    assert_eq!(purged, 1);
+    assert_eq!(world.store.lock().state.stored_files.len(), 1);
+    assert_eq!(world.files.file_count(), 1);
+
+    // The same content is added again. While that is going on, after the bytes are in the store and
+    // before the attachment is, the clean-up runs.
+    let upload = an_upload(&world, issue, "again.txt", A_FILE).await?;
+    let gate = world.files.stop_after_keeping();
+    let (for_finishing, for_cleaning) = (world.ctx(), world.ctx());
+    let finishing = finish_upload(
+        &for_finishing,
+        FinishUpload {
+            session_token: token(&world),
+            upload,
+        },
+    );
+    let cleaning = async {
+        gate.entered.notified().await;
+        let cleaning = for_cleaning.clean_up_files();
+        let letting_go = async {
+            for _ in 0..50 {
+                tokio::task::yield_now().await;
+            }
+            gate.release.notify_one();
+        };
+        tokio::join!(cleaning, letting_go).0
+    };
+    let (finished, cleaned) = tokio::join!(finishing, cleaning);
+    let attachment = finished?.into_value();
+    assert_eq!(cleaned?.files, 0, "the file is being added: it is kept");
+    assert_eq!(world.files.file_count(), 1, "the bytes are still there");
+    let link = list(&world, issue).await?.items[0].download_link.clone();
+    assert_eq!(open(&world, link).await?.name, attachment.name);
     Ok(())
 }

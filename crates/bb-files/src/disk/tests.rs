@@ -175,3 +175,21 @@ fn walk(folder: &std::path::Path) -> Vec<PathBuf> {
     }
     found
 }
+
+#[tokio::test]
+async fn att_02_whoever_holds_a_file_keeps_the_others_of_that_file_waiting() {
+    let (_folder, files) = files();
+    let hash = digest_of(b"held");
+    let other = digest_of(b"another");
+    let first = files.hold(hash).await;
+    // The same file waits; a file of another first byte does not.
+    assert!(
+        tokio::time::timeout(std::time::Duration::from_millis(50), files.hold(hash))
+            .await
+            .is_err()
+    );
+    assert_ne!(hash.as_bytes()[0], other.as_bytes()[0]);
+    drop(files.hold(other).await);
+    drop(first);
+    drop(files.hold(hash).await);
+}

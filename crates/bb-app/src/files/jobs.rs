@@ -61,6 +61,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if file.preview != PreviewState::Pending {
             return Ok(());
         }
+        let _hold = self.files().hold(hash).await;
         let state = match PreviewKind::of_media_type(&file.media_type) {
             Some(kind) => self
                 .files()
@@ -131,6 +132,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             for file in &loose {
+                // The row and the bytes go while the file is held, so a file that is being added
+                // at this moment keeps its bytes.
+                let _hold = self.files().hold(file.hash).await;
                 let gone = self
                     .store()
                     .delete_unreferenced_file(file.hash)

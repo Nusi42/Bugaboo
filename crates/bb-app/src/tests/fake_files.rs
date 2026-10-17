@@ -15,7 +15,7 @@ use sha2::{Digest as _, Sha256};
 
 use super::fake::{FakeError, FakeStore, Tx};
 use crate::files::{
-    AttachmentStore, ChunkReader, FileBody, FileStore, Inspected, PartError, Sniffed,
+    AttachmentStore, ChunkReader, FileBody, FileHold, FileStore, Inspected, PartError, Sniffed,
 };
 use crate::ports::BoxFuture;
 
@@ -245,6 +245,16 @@ impl AttachmentStore for FakeStore {
     }
 }
 
+/// A stop the tests put into `keep_upload`: the bytes are in the store, and the call waits until the
+/// test lets it go, so another call can come in between.
+#[derive(Clone, Default)]
+pub(crate) struct Gate {
+    /// Told when `keep_upload` has put the bytes in the store and waits.
+    pub(crate) entered: Arc<tokio::sync::Notify>,
+    /// Lets `keep_upload` go on.
+    pub(crate) release: Arc<tokio::sync::Notify>,
+}
+
 /// What the in-memory file store holds.
 #[derive(Default)]
 struct Held {
@@ -262,6 +272,8 @@ const PROGRAM_START: &[u8] = b"MZ";
 #[derive(Clone, Default)]
 pub(crate) struct FakeFiles {
     held: Arc<Mutex<Held>>,
+    turn: Arc<tokio::sync::Mutex<()>>,
+    gate: Arc<Mutex<Option<Gate>>>,
 }
 
 impl FakeFiles {
@@ -274,6 +286,17 @@ impl FakeFiles {
     /// How many different files are stored.
     pub(crate) fn file_count(&self) -> usize {
         self.held().files.len()
+    }
+
+    /// Makes the next `keep_upload` stop after the bytes are in the store, until the gate lets it
+    /// go.
+    pub(crate) fn stop_after_keeping(&self) -> Gate {
+        let gate = Gate::default();
+        *self
+            .gate
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(gate.clone());
+        gate
     }
 
     /// How many uploads are on their way.
@@ -304,6 +327,11 @@ impl FileStore for FakeFiles {
             media_type: MediaType::unknown(),
             extension: None,
         }
+    }
+
+    fn hold(&self, _hash: Digest) -> BoxFuture<'_, FileHold> {
+        let turn = Arc::clone(&self.turn);
+        Box::pin(async move { Box::new(turn.lock_owned().await) as FileHold })
     }
 
     fn begin_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>> {
@@ -351,15 +379,28 @@ impl FileStore for FakeFiles {
     }
 
     fn keep_upload(&self, upload: UploadId, hash: Digest) -> BoxFuture<'_, io::Result<()>> {
-        let mut held = self.held();
-        let result = match held.uploads.remove(&upload) {
-            Some(bytes) => {
-                held.files.entry(hash).or_insert(bytes);
-                Ok(())
+        let result = {
+            let mut held = self.held();
+            match held.uploads.remove(&upload) {
+                Some(bytes) => {
+                    held.files.entry(hash).or_insert(bytes);
+                    Ok(())
+                }
+                None => Err(io::Error::from(io::ErrorKind::NotFound)),
             }
-            None => Err(io::Error::from(io::ErrorKind::NotFound)),
         };
-        Box::pin(async move { result })
+        let gate = self
+            .gate
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+        Box::pin(async move {
+            if let Some(gate) = gate {
+                gate.entered.notify_one();
+                gate.release.notified().await;
+            }
+            result
+        })
     }
 
     fn discard_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>> {

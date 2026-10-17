@@ -332,6 +332,9 @@ pub async fn finish_upload<S: AuthStore>(
         .await?;
     ctx.room_for_one_more_file(issue.id).await?;
     let inspected = ctx.inspect_to_finish(&upload, issue.project).await?;
+    // The file is held from the moment its bytes are put into the store until its attachment is
+    // there, so the daily clean-up cannot take the bytes of a file that nothing points to yet.
+    let _hold = ctx.files().hold(inspected.hash).await;
     // The bytes go into the store first: an attachment always has its file.
     ctx.files()
         .keep_upload(upload.id, inspected.hash)

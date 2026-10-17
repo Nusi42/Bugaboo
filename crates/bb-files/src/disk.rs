@@ -13,7 +13,7 @@ use std::io;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use bb_app::files::{ChunkReader, FileBody, FileStore, Inspected, PartError, Sniffed};
+use bb_app::files::{ChunkReader, FileBody, FileHold, FileStore, Inspected, PartError, Sniffed};
 use bb_app::ports::BoxFuture;
 use bb_core::files::{LinkTarget, PreviewKind, PreviewState};
 use bb_core::hex;
@@ -31,6 +31,9 @@ const PREVIEWS: &str = "previews";
 const PREVIEW_WORK: &str = "work";
 const PREVIEW_EXTENSION: &str = "png";
 
+/// How many locks hold files apart: a hash is told by its first byte.
+const HOLDS: usize = 256;
+
 /// How many bytes a piece of a file holds when it is read.
 const CHUNK_BYTES: usize = 64 * 1024;
 
@@ -41,6 +44,10 @@ pub struct DiskFiles {
     /// One lock for each upload that gets parts, so two parts of one upload are put one after the
     /// other.
     locks: Mutex<HashMap<UploadId, Arc<tokio::sync::Mutex<()>>>>,
+    /// The locks of [`FileStore::hold`]: one for each first byte of a hash, so there are never
+    /// more than [`HOLDS`] of them and files with the same first byte only wait for each other
+    /// for the moment a clean-up or a finished upload takes.
+    holds: Vec<Arc<tokio::sync::Mutex<()>>>,
 }
 
 impl DiskFiles {
@@ -52,6 +59,7 @@ impl DiskFiles {
             root: root.into(),
             command,
             locks: Mutex::default(),
+            holds: (0..HOLDS).map(|_| Arc::default()).collect(),
         }
     }
 
@@ -141,6 +149,11 @@ impl ChunkReader for DiskReader {
 impl FileStore for DiskFiles {
     fn sniff(&self, head: &[u8]) -> Sniffed {
         sniff(head)
+    }
+
+    fn hold(&self, hash: Digest) -> BoxFuture<'_, FileHold> {
+        let lock = Arc::clone(&self.holds[usize::from(hash.as_bytes()[0])]);
+        Box::pin(async move { Box::new(lock.lock_owned().await) as FileHold })
     }
 
     fn begin_upload(&self, upload: UploadId) -> BoxFuture<'_, io::Result<()>> {
