@@ -8,16 +8,8 @@
 //! the judge of a status change, the choice of the workflow of a place and the publishing of a
 //! workflow cannot lose their tests without anybody noticing.
 
+use super::required_tests::{Required, crate_sources, evaluate};
 use super::{Check, Context, Finding};
-use crate::docs::text::has_extension;
-use crate::rust_source::strip_comments;
-use crate::source::{Source, read_text};
-
-/// A test that has to exist, and whether it has to run on both databases.
-struct Required {
-    name: &'static str,
-    both_databases: bool,
-}
 
 /// The tests of the rules of a status change (docs/milestones/M4/WP-04-workflows-on-the-server.md).
 const REQUIRED: [Required; 16] = [
@@ -87,9 +79,6 @@ const REQUIRED: [Required; 16] = [
     },
 ];
 
-/// What runs a test on both databases.
-const BOTH_DATABASES: &str = "each_database(";
-
 pub(crate) struct TestWorkflows;
 
 impl Check for TestWorkflows {
@@ -98,105 +87,31 @@ impl Check for TestWorkflows {
     }
 
     fn run(&self, context: &Context<'_>) -> anyhow::Result<Vec<Finding>> {
-        // Whatever changed, every Rust file of the crates is read, the folders of tests too: the
-        // tests are there.
-        let mut sources = Vec::new();
-        for file in context.repo.all_files()? {
-            if file.starts_with("crates/") && has_extension(&file, "rs") {
-                let text = read_text(context.repo, &file)?;
-                sources.push((file, text));
-            }
-        }
-        Ok(evaluate(&sources))
+        Ok(evaluate(
+            &crate_sources(context)?,
+            &REQUIRED,
+            "The rules of a status change (ADR-0031) are held by it;",
+        ))
     }
-}
-
-/// The body of the function `name`: from its `fn` up to the next function at the same level.
-fn body_of<'a>(text: &'a str, name: &str) -> Option<&'a str> {
-    let start = text.find(&format!("fn {name}("))?;
-    let rest = &text[start..];
-    let end = rest[1..]
-        .find("\n#[")
-        .or_else(|| rest[1..].find("\nfn "))
-        .map_or(rest.len(), |at| at + 1);
-    Some(&rest[..end])
-}
-
-fn evaluate(sources: &[Source]) -> Vec<Finding> {
-    let code: Vec<(&str, String)> = sources
-        .iter()
-        .map(|(path, text)| (path.as_str(), strip_comments(text)))
-        .collect();
-    let mut findings = Vec::new();
-    for required in REQUIRED {
-        let found = code
-            .iter()
-            .find_map(|(path, text)| body_of(text, required.name).map(|body| (*path, body)));
-        match found {
-            None => findings.push(Finding::general(format!(
-                "The test `{}` is missing. The rules of a status change (ADR-0031) are held by it; \
-                 write it again or, if the rule changed, change this list.",
-                required.name
-            ))),
-            Some((path, body)) if required.both_databases && !body.contains(BOTH_DATABASES) => {
-                findings.push(Finding::at(
-                    path,
-                    format!(
-                        "The test `{}` has to run on both databases: wrap it in `each_database` \
-                         (ARCH-DB-PARITY).",
-                        required.name
-                    ),
-                ));
-            }
-            Some(_) => {}
-        }
-    }
-    findings
 }
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Write as _;
-
+    use super::super::required_tests::examples;
     use super::*;
-
-    fn all_tests(wrapper: &str) -> Vec<Source> {
-        let mut text = String::new();
-        for required in REQUIRED {
-            let _ = write!(
-                text,
-                "#[tokio::test]\nasync fn {}() {{\n    {wrapper}\n}}\n\n",
-                required.name
-            );
-        }
-        vec![("crates/x/src/tests.rs".to_owned(), text)]
-    }
 
     #[test]
     fn good_example_every_test_exists_and_runs_on_both_databases() {
-        assert!(evaluate(&all_tests("each_database(\"x\", body).await")).is_empty());
+        examples::every_test_is_there(&REQUIRED);
     }
 
     #[test]
     fn bad_example_a_missing_test_or_one_that_runs_on_one_database() {
-        let missing = evaluate(&[("crates/x/src/tests.rs".to_owned(), String::new())]);
-        assert_eq!(missing.len(), REQUIRED.len());
-        let single = evaluate(&all_tests("body().await"));
-        assert_eq!(
-            single.len(),
-            REQUIRED.iter().filter(|r| r.both_databases).count()
-        );
+        examples::a_missing_or_single_test_is_found(&REQUIRED);
     }
 
     #[test]
     fn a_name_in_a_comment_is_not_a_test() {
-        let mut sources = all_tests("each_database(\"x\", body).await");
-        for (_, text) in &mut sources {
-            *text = text.replace(
-                "async fn wf_01_an_m3_database_keeps",
-                "// async fn wf_01_an_m3_database_keeps",
-            );
-        }
-        assert_eq!(evaluate(&sources).len(), 1);
+        examples::a_name_in_a_comment_is_no_test(&REQUIRED, "wf_01_an_m3_database_keeps");
     }
 }

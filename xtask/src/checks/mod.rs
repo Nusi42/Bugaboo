@@ -63,6 +63,7 @@ pub(crate) mod meta_wiring;
 mod node_tool;
 mod perf_bundle;
 mod plan_trace;
+mod required_tests;
 mod sec_cookies;
 mod sec_headers;
 mod sec_matrix;
