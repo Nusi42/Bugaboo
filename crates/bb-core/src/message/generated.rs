@@ -332,6 +332,13 @@ pub const CHECK_ACCESS_IN_ORGANIZATION: MessageKey =
 /// The message `check-access.intro`.
 pub const CHECK_ACCESS_INTRO: MessageKey = MessageKey::new("check-access.intro");
 
+/// The message `check-access.issue-type-all`.
+pub const CHECK_ACCESS_ISSUE_TYPE_ALL: MessageKey = MessageKey::new("check-access.issue-type-all");
+
+/// The message `check-access.issue-type-question`.
+pub const CHECK_ACCESS_ISSUE_TYPE_QUESTION: MessageKey =
+    MessageKey::new("check-access.issue-type-question");
+
 /// The message `check-access.level.capped`.
 pub const CHECK_ACCESS_LEVEL_CAPPED: MessageKey = MessageKey::new("check-access.level.capped");
 
@@ -4828,6 +4835,15 @@ pub fn backup_left(count: i64) -> Message {
     )
 }
 
+/// The message `check-access.for-issue-type`.
+#[must_use]
+pub fn check_access_for_issue_type(type_: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("check-access.for-issue-type"),
+        vec![("type", Value::Text(type_.to_string()))],
+    )
+}
+
 /// The message `check-access.level.no-role`.
 #[must_use]
 pub fn check_access_level_no_role(person: impl std::fmt::Display) -> Message {
@@ -8696,6 +8712,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("check-access.fields-heading", "Fields"),
     (
+        "check-access.for-issue-type",
+        "The field levels are for issues of the type {type}.",
+    ),
+    (
         "check-access.group-the-same",
         "Group those with the same reason",
     ),
@@ -8704,6 +8724,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "check-access.intro",
         "Choose a person and where to look. You read what they can do there, every field and how they see people, each with the reason.",
     ),
+    ("check-access.issue-type-all", "All issue types"),
+    ("check-access.issue-type-question", "Which issue type?"),
     (
         "check-access.level.capped",
         "The access key lowers it to Can see.",

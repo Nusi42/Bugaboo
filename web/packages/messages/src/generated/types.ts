@@ -77,6 +77,7 @@ export interface MessageArguments {
   "assignments.title-project": { name: string | number };
   "assignments.who-group": { name: string | number };
   "backup.left": { count: number };
+  "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
   "check-access.level.role-project": {

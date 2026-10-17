@@ -3,25 +3,36 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { projectIssuesAddress } from "../../src/shared/paths.ts";
-import { giveRole, roleName } from "./access.ts";
-import { cleo, createAdmin, createPerson, ownId } from "./accounts.ts";
+import { giveRole, roleIds, roleName } from "./access.ts";
+import { bob, cleo, createAdmin, createPerson, ownId } from "./accounts.ts";
 import { type Instance } from "./server.ts";
 import { countIssueIds, newIssueDialog, openNewIssueDialog } from "./issues.ts";
 import { createProject } from "./projects.ts";
 
 /**
  * A server for the tests of issue types and labels per project (M4 WP-11): the projects Website
- * and Lab, Cleo as Project lead of Website, and a bug in Website.
+ * and Lab, Cleo as Project lead of Website, and Bob with a role that sees the cost center of bugs
+ * less than that of the other types.
  */
 export async function prepareOffers(server: Instance): Promise<void> {
   const admin = await createAdmin(server);
   const lead = await createPerson(server, admin, cleo);
   const cleoId = await ownId(lead);
   await lead.dispose();
+  const careful = await createPerson(server, admin, bob);
+  const bobId = await ownId(careful);
+  await careful.dispose();
   await countIssueIds(admin);
   await createProject(admin, "WEB", "Website");
   await createProject(admin, "LAB", "Lab");
   await giveRole(admin, cleoId, roleName.projectLead, "WEB");
+  const viewer = (await roleIds(admin)).get(roleName.viewer) ?? "";
+  const copy = dataOf(
+    await admin.client.POST("/api/v1/roles/{role_id}/copy", {
+      params: { path: { role_id: viewer } },
+      body: { name: "Careful" },
+    }),
+  );
   const types = dataOf(await admin.client.GET("/api/v1/issue-types"));
   const bug = types.items.find((each) => each.name === "Bug")?.id ?? "";
   // WEB-1 is a bug: the move test shows what happens to its type in a project that does not offer it.
@@ -29,6 +40,11 @@ export async function prepareOffers(server: Instance): Promise<void> {
     params: { path: { project: "WEB" } },
     body: { issue_type: bug, title: "A bug in Website" },
   });
+  await admin.client.PUT("/api/v1/field-permissions/{role}/{field}", {
+    params: { path: { role: copy.id, field: "cost-center" }, query: { issue_type: bug } },
+    body: { level: "hidden" },
+  });
+  await giveRole(admin, bobId, "Careful", "WEB");
   await admin.dispose();
 }
 

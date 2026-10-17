@@ -160,6 +160,15 @@ function LevelSection({ answer, heading, entries, levelName, words }: LevelSecti
   );
 }
 
+/** Which issue type the field levels are for, when the person asked about one. */
+function IssueTypeNote({ answer }: { readonly answer: CheckAnswerBody }) {
+  return answer.issue_type === undefined || answer.issue_type === null ? null : (
+    <p {...partOf(part.muted)}>
+      {t("check-access.for-issue-type", { type: answer.issue_type.name })}
+    </p>
+  );
+}
+
 /** The answer of *Check access*: what the person can do, every field, and how they see people. */
 export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
   const place =
@@ -172,6 +181,7 @@ export function CheckAnswer({ answer }: { readonly answer: CheckAnswerBody }) {
         answer={answer}
         heading={t("check-access.result-heading", { person: personName(answer.person), place })}
       />
+      <IssueTypeNote answer={answer} />
       <LevelSection
         answer={answer}
         heading={t("check-access.fields-heading")}

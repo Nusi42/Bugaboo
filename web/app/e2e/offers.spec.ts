@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 
 import { addressInProject, paths } from "../src/shared/paths.ts";
-import { ada, cleo } from "./support/accounts.ts";
+import { check } from "./support/access.ts";
+import { ada, bob, cleo } from "./support/accounts.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openFromMenu, signIn, signOut } from "./support/flows.ts";
@@ -126,4 +127,25 @@ test("tag_02 a Project lead creates a group of labels for Website, and Lab does 
       t("projects.offer-line", { name: "Area", state: t("projects.offer-state-not") }),
     ),
   ).toBeVisible();
+});
+
+test("sec_03 Check access asks which issue type only when the levels differ by type", async ({
+  page,
+}) => {
+  await signIn(page, ada);
+  await openFromMenu(page, t("nav.check-access"));
+  await check(page, "WEB", bob);
+  const question = page.getByLabel(t("check-access.issue-type-question"), { exact: true });
+  await expect(question).toBeVisible();
+  await question.selectOption({ label: "Bug" });
+  await expect(page.getByText(t("check-access.for-issue-type", { type: "Bug" }))).toBeVisible();
+  await expectGoodInEveryLook(page);
+  // A person whose levels are the same for every type is asked nothing more.
+  await check(page, "WEB", cleo);
+  const heading = t("check-access.result-heading", {
+    person: cleo.name,
+    place: "Website",
+  });
+  await expect(page.getByText(heading)).toBeVisible();
+  await expect(question).toHaveCount(0);
 });
