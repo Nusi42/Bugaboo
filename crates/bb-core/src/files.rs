@@ -138,16 +138,32 @@ impl PreviewKind {
     }
 }
 
+/// Whether a character is of the Unicode category *Format* (Cf): it draws nothing and can turn the
+/// order of the letters around (U+202E) or hide in a name (U+200B), so a name that has one could
+/// show another extension than the one it has.
+fn is_format_character(c: char) -> bool {
+    matches!(c,
+        '\u{00AD}' | '\u{0600}'..='\u{0605}' | '\u{061C}' | '\u{06DD}' | '\u{070F}' | '\u{08E2}'
+        | '\u{180E}' | '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}'
+        | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206F}' | '\u{FEFF}' | '\u{FFF9}'..='\u{FFFB}'
+        | '\u{110BD}' | '\u{110CD}' | '\u{1BCA0}'..='\u{1BCA3}' | '\u{1D173}'..='\u{1D17A}'
+        | '\u{E0001}' | '\u{E0020}'..='\u{E007F}')
+}
+
 /// The name of a file as it is kept: the last part of what the browser sent (a path is cut off,
-/// both `/` and `\` count), without control characters, at most [`NAME_MAX_CHARS`] long. `None`
-/// when nothing is left.
+/// both `/` and `\` count), without control or format characters, without the dots and spaces at
+/// its end (Windows drops them, so `run.bat.` is `run.bat` there), at most [`NAME_MAX_CHARS`]
+/// long. `None` when nothing is left.
 #[must_use]
 pub fn clean_file_name(sent: &str) -> Option<String> {
     let last = sent.rsplit(['/', '\\']).next().unwrap_or(sent);
-    if last.chars().any(char::is_control) {
+    if last
+        .chars()
+        .any(|c| c.is_control() || is_format_character(c))
+    {
         return None;
     }
-    let name = last.trim();
+    let name = last.trim().trim_end_matches(['.', ' ', '\t']);
     if name.is_empty() || name == "." || name == ".." || name.chars().count() > NAME_MAX_CHARS {
         return None;
     }
@@ -348,6 +364,22 @@ mod tests {
         assert_eq!(clean_file_name(""), None);
         assert_eq!(clean_file_name(&"x".repeat(NAME_MAX_CHARS + 1)), None);
         assert!(clean_file_name(&"x".repeat(NAME_MAX_CHARS)).is_some());
+    }
+
+    #[test]
+    fn att_03_a_name_cannot_hide_its_extension_behind_dots_spaces_or_format_characters() {
+        // Windows drops trailing dots and spaces, so these are `run.bat` there.
+        assert_eq!(clean_file_name("run.bat.").as_deref(), Some("run.bat"));
+        assert_eq!(clean_file_name("run.bat ").as_deref(), Some("run.bat"));
+        assert_eq!(clean_file_name("run.bat. . ").as_deref(), Some("run.bat"));
+        assert_eq!(clean_file_name("..."), None);
+        // A right-to-left override turns `gpj.exe` into `exe.jpg` on the screen.
+        assert_eq!(clean_file_name("photo\u{202E}gpj.exe"), None);
+        assert_eq!(clean_file_name("zero\u{200B}width.txt"), None);
+        assert_eq!(clean_file_name("\u{FEFF}bom.txt"), None);
+        // Letters of other scripts are fine.
+        let german = "Bericht \u{00FC}ber \u{65E5}\u{672C}.pdf";
+        assert_eq!(clean_file_name(german).as_deref(), Some(german));
     }
 
     #[test]
