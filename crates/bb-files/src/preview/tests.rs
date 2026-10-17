@@ -115,23 +115,40 @@ fn att_04_the_input_limit_is_the_biggest_file_the_settings_allow() {
     assert_eq!(MAX_INPUT_BYTES, 100 * MEGABYTE);
 }
 
+/// A standard input that cannot be read.
+struct Broken;
+
+impl Read for Broken {
+    fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+        Err(std::io::Error::other("no"))
+    }
+}
+
 #[test]
 fn att_04_the_child_writes_a_png_or_answers_with_the_code_of_its_refusal() {
-    let folder = tempfile::tempdir().unwrap();
-    let (input, output) = (folder.path().join("in"), folder.path().join("out.png"));
-    std::fs::write(&input, picture(50, 50, ImageFormat::Png)).unwrap();
-    assert_eq!(run(PreviewKind::Image, &input, &output), 0);
-    assert_eq!(size_of(&std::fs::read(&output).unwrap()), (50, 50));
+    let run = |kind, bytes: &[u8]| {
+        let mut sent = Vec::new();
+        (run_streams(kind, bytes, &mut sent), sent)
+    };
+    let (code, sent) = run(PreviewKind::Image, &picture(50, 50, ImageFormat::Png));
+    assert_eq!(code, 0);
+    assert_eq!(size_of(&sent), (50, 50));
 
-    std::fs::remove_file(&output).unwrap();
-    std::fs::write(&input, pretending_png(100_000, 100_000)).unwrap();
-    assert_eq!(
-        run(PreviewKind::Image, &input, &output),
-        PreviewRefusal::TooManyPixels.exit_code()
-    );
-    assert!(!output.exists(), "a refused file leaves nothing behind");
-    assert_eq!(
-        run(PreviewKind::Pdf, &folder.path().join("missing"), &output),
-        1
-    );
+    let (code, sent) = run(PreviewKind::Image, &pretending_png(100_000, 100_000));
+    assert_eq!(code, PreviewRefusal::TooManyPixels.exit_code());
+    assert!(sent.is_empty(), "a refused file sends nothing");
+    // A file the child cannot read at all is an error of the file system, not a refusal.
+    assert_eq!(run_streams(PreviewKind::Pdf, Broken, Vec::new()), 1);
+}
+
+#[test]
+fn att_04_a_pdf_bomb_is_small_and_says_it_unpacks_to_a_gigabyte() {
+    use crate::fixtures::pdf_bomb;
+    let bomb = pdf_bomb(1024 * MEGABYTE);
+    assert!(bomb.len() < 10 * 1024 * 1024, "{} bytes", bomb.len());
+    assert!(bomb.starts_with(b"%PDF-"));
+    // A small one of the same make is read as the library reads any PDF: it is not what breaks
+    // the reader, only how much it unpacks.
+    let small = pdf_bomb(MEGABYTE);
+    assert!(small.len() < 100_000);
 }

@@ -2,31 +2,38 @@
 //!
 //! A preview is made by `bugaboo preview`, a child process of the server ([`spawn`]), because the
 //! libraries that read pictures and PDFs are the most likely place for a crafted file to find a
-//! bug. The child reads one file and writes one small PNG, the one safe image type the page shows
-//! ([`bb_core::files::PREVIEW_MEDIA_TYPE`]). It is held to limits that are named here and nowhere
-//! else:
+//! bug. The child is started with nothing of the server's: an empty environment, the folder where
+//! previews are made as its working folder, the bytes of the file on its standard input and one
+//! small PNG, the one safe image type the page shows ([`bb_core::files::PREVIEW_MEDIA_TYPE`]), on
+//! its standard output. It is held to limits that are named here and nowhere else:
 //!
 //! - **pixels** ([`MAX_IMAGE_PIXELS`]): a picture that says it has more is refused before a single
 //!   pixel is decoded, so a small file that unpacks to gigabytes (a decompression bomb) costs
 //!   nothing;
-//! - **memory** ([`MAX_DECODER_BYTES`]): what the decoder may allocate; the page of a PDF is drawn
-//!   into a picture of at most [`PREVIEW_EDGE_PIXELS`] on its longest side;
+//! - **memory**: what the decoder of pictures may allocate ([`MAX_DECODER_BYTES`]), and what the
+//!   child may use altogether ([`MAX_CHILD_MEMORY_BYTES`] on the heap, and on Linux
+//!   [`MAX_CHILD_ADDRESS_SPACE_BYTES`] of address space, see [`limits`]), so a PDF whose picture
+//!   unpacks to gigabytes ends the child and nothing else; the page of a PDF is drawn into a picture
+//!   of at most [`PREVIEW_EDGE_PIXELS`] on its longest side;
 //! - **time** ([`TIME_LIMIT`]): the server stops the child when it takes longer;
 //! - **size** ([`MAX_INPUT_BYTES`]): a bigger input is not read.
 //!
 //! A file that is refused, broken, too slow or that crashes the child gets no preview, and the
 //! server goes on.
 
+mod limits;
 mod pdf;
 mod raster;
 mod spawn;
 
-use std::io::Write as _;
-use std::path::Path;
+use std::io::{Read, Write};
 use std::time::Duration;
 
 use bb_core::files::{BIGGEST_FILE_BYTES, MEGABYTE, PreviewKind};
 
+pub use limits::{
+    ChildAllocator, MAX_CHILD_ADDRESS_SPACE_BYTES, MAX_CHILD_MEMORY_BYTES, child_allocator,
+};
 pub(crate) use spawn::create;
 pub use spawn::{PreviewCommand, PreviewOutcome};
 
@@ -91,31 +98,36 @@ pub fn render(kind: PreviewKind, bytes: &[u8]) -> Result<Vec<u8>, PreviewRefusal
     made.unwrap_or(Err(PreviewRefusal::Unreadable))
 }
 
-/// What `bugaboo preview` does: reads `input`, writes the preview to `output`, and answers the exit
-/// code of the process (see [`PreviewRefusal::exit_code`]).
+/// What `bugaboo preview` does: limits its own memory (the child must not go on without that), reads
+/// the file from its standard input, writes the preview to its standard output, and answers the
+/// exit code of the process (see [`PreviewRefusal::exit_code`]).
 #[must_use]
-pub fn run(kind: PreviewKind, input: &Path, output: &Path) -> i32 {
-    let Ok(file) = std::fs::File::open(input) else {
+pub fn run(kind: PreviewKind, allocator: &ChildAllocator) -> i32 {
+    if limits::apply(allocator).is_err() {
         return 1;
-    };
+    }
+    run_streams(kind, std::io::stdin().lock(), std::io::stdout().lock())
+}
+
+/// Reads the file from `input`, writes the preview to `output`, and answers the exit code.
+#[must_use]
+pub fn run_streams(kind: PreviewKind, input: impl Read, mut output: impl Write) -> i32 {
     let mut bytes = Vec::new();
     // One byte more than the limit is read, so a bigger file is seen as bigger.
-    if std::io::Read::read_to_end(
-        &mut std::io::Read::take(file, MAX_INPUT_BYTES + 1),
-        &mut bytes,
-    )
-    .is_err()
+    if input
+        .take(MAX_INPUT_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .is_err()
     {
         return 1;
     }
     match render(kind, &bytes) {
-        Ok(png) => {
-            let written = std::fs::File::create(output).and_then(|mut file| {
-                file.write_all(&png)?;
-                file.sync_all()
-            });
-            i32::from(written.is_err())
-        }
+        Ok(png) => i32::from(
+            output
+                .write_all(&png)
+                .and_then(|()| output.flush())
+                .is_err(),
+        ),
         Err(refusal) => refusal.exit_code(),
     }
 }

@@ -1,5 +1,7 @@
-//! The server's side of a preview: runs `bugaboo preview` as a child process, waits for it for at
-//! most [`TIME_LIMIT`], and accepts only a small PNG from it (ADR-0032 §4).
+//! The server's side of a preview: runs `bugaboo preview` as a child process, gives it the bytes of
+//! the file on its standard input, waits for it for at most [`TIME_LIMIT`], and accepts only a small
+//! PNG on its standard output (ADR-0032 §4). The child gets nothing else: no environment, no path
+//! of the file, the folder of the previews as its working folder.
 
 use std::ffi::OsString;
 use std::io;
@@ -8,7 +10,7 @@ use std::process::Stdio;
 use std::time::Duration;
 
 use bb_core::files::PreviewKind;
-use tokio::io::AsyncReadExt as _;
+use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 use tokio::process::Command;
 
 use super::{MAX_OUTPUT_BYTES, TIME_LIMIT};
@@ -93,89 +95,114 @@ pub enum PreviewOutcome {
     TimedOut,
 }
 
-/// Runs the child on `input` and leaves the preview in `output`. The output is removed again
-/// unless it is a small PNG.
+/// Runs the child on the file at `input` and leaves the preview in `output`, which is written here
+/// and not by the child, and only when what the child sent is a small PNG.
 ///
 /// # Errors
-/// The error of the system when the child cannot be started.
+/// The error of the system when the child cannot be started or the preview cannot be written.
 pub(crate) async fn create(
     command: &PreviewCommand,
     kind: PreviewKind,
     input: &Path,
     output: &Path,
 ) -> io::Result<PreviewOutcome> {
-    let outcome = match &command.runner {
+    let (outcome, sent) = match &command.runner {
         Runner::Child { program, arguments } => {
-            run_child(program, arguments, command.time_limit, kind, input, output).await?
+            let work = output.parent().unwrap_or_else(|| Path::new("."));
+            run_child(program, arguments, command.time_limit, kind, input, work).await?
         }
         #[cfg(any(test, feature = "testing"))]
         Runner::InProcess => {
-            let (input, output) = (input.to_owned(), output.to_owned());
-            let code = tokio::task::spawn_blocking(move || super::run(kind, &input, &output))
-                .await
-                .map_err(io::Error::other)?;
+            let bytes = tokio::fs::read(input).await?;
+            let (code, sent) = tokio::task::spawn_blocking(move || {
+                let mut sent = Vec::new();
+                let code = super::run_streams(kind, &bytes[..], &mut sent);
+                (code, sent)
+            })
+            .await
+            .map_err(io::Error::other)?;
             if code == 0 {
-                PreviewOutcome::Created
+                (PreviewOutcome::Created, sent)
             } else {
-                PreviewOutcome::Without(Some(code))
+                (PreviewOutcome::Without(Some(code)), sent)
             }
         }
     };
-    if outcome == PreviewOutcome::Created && !is_small_png(output).await {
-        tokio::fs::remove_file(output).await.ok();
+    if outcome != PreviewOutcome::Created {
+        return Ok(outcome);
+    }
+    if !is_small_png(&sent) {
         return Ok(PreviewOutcome::Without(Some(0)));
     }
-    if outcome != PreviewOutcome::Created {
-        tokio::fs::remove_file(output).await.ok();
-    }
-    Ok(outcome)
+    tokio::fs::write(output, &sent).await?;
+    Ok(PreviewOutcome::Created)
 }
 
-/// Starts the child and waits for it, for at most `time_limit`.
+/// Starts the child with nothing of the server's, feeds it the file, collects what it sends (never
+/// more than [`MAX_OUTPUT_BYTES`] and one byte), and waits for it, for at most `time_limit`.
 async fn run_child(
     program: &Path,
     arguments: &[OsString],
     time_limit: Duration,
     kind: PreviewKind,
     input: &Path,
-    output: &Path,
-) -> io::Result<PreviewOutcome> {
+    work: &Path,
+) -> io::Result<(PreviewOutcome, Vec<u8>)> {
     let mut process = Command::new(program);
     process
         .args(arguments)
         .arg(kind.code())
-        .arg(input)
-        .arg(output)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
+        .env_clear()
+        .current_dir(work)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .kill_on_drop(true);
     #[cfg(windows)]
     process.creation_flags(CREATE_NO_WINDOW);
     let mut child = process.spawn()?;
-    if let Ok(status) = tokio::time::timeout(time_limit, child.wait()).await {
-        return Ok(match status?.code() {
-            Some(0) => PreviewOutcome::Created,
-            code => PreviewOutcome::Without(code),
-        });
+    let (stdin, stdout) = (child.stdin.take(), child.stdout.take());
+    // The file goes to the child piece by piece, and the pipe is closed after it. A child that
+    // ends before it has read everything makes this fail, which is not worth knowing.
+    let feed = async {
+        if let (Some(mut stdin), Ok(mut file)) = (stdin, tokio::fs::File::open(input).await) {
+            tokio::io::copy(&mut file, &mut stdin).await.ok();
+            stdin.shutdown().await.ok();
+        }
+    };
+    // One byte more than a preview may have is read, so one that is bigger is seen as bigger; the
+    // pipe is closed after that, so a child that goes on writing ends.
+    let collect = async {
+        let mut sent = Vec::new();
+        if let Some(stdout) = stdout {
+            stdout
+                .take(MAX_OUTPUT_BYTES + 1)
+                .read_to_end(&mut sent)
+                .await
+                .ok();
+        }
+        sent
+    };
+    let run = async {
+        let ((), sent) = tokio::join!(feed, collect);
+        (child.wait().await, sent)
+    };
+    if let Ok((status, sent)) = tokio::time::timeout(time_limit, run).await {
+        return Ok((
+            match status?.code() {
+                Some(0) => PreviewOutcome::Created,
+                code => PreviewOutcome::Without(code),
+            },
+            sent,
+        ));
     }
     // Stopping a child that is already gone is no error worth knowing.
     child.kill().await.ok();
-    Ok(PreviewOutcome::TimedOut)
+    Ok((PreviewOutcome::TimedOut, Vec::new()))
 }
 
-/// Whether the file is a PNG no bigger than [`MAX_OUTPUT_BYTES`].
-async fn is_small_png(path: &Path) -> bool {
-    let Ok(file) = tokio::fs::File::open(path).await else {
-        return false;
-    };
-    let Ok(metadata) = file.metadata().await else {
-        return false;
-    };
-    if metadata.len() > MAX_OUTPUT_BYTES {
-        return false;
-    }
-    let mut signature = [0_u8; PNG_SIGNATURE.len()];
-    let mut file = file;
-    file.read_exact(&mut signature).await.is_ok() && signature == PNG_SIGNATURE
+/// Whether the bytes are a PNG no bigger than [`MAX_OUTPUT_BYTES`].
+fn is_small_png(bytes: &[u8]) -> bool {
+    u64::try_from(bytes.len()).is_ok_and(|length| length <= MAX_OUTPUT_BYTES)
+        && bytes.starts_with(PNG_SIGNATURE)
 }

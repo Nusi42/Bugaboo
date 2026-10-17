@@ -63,21 +63,18 @@ enum Command {
         command: KeysCommand,
     },
     /// Started by the server, never by a person: creates the preview of one file in a process of
-    /// its own, with limits on pixels, time and size (ADR-0032 §4).
+    /// its own, with limits on pixels, time, size and memory (ADR-0032 §4). The file comes on the
+    /// standard input and the preview leaves on the standard output.
     #[command(name = "preview", hide = true)]
     Preview(PreviewArgs),
 }
 
-/// What `bugaboo preview` reads and writes.
+/// What `bugaboo preview` is told: the kind of preview. The rest comes on its standard streams.
 #[derive(Args)]
 pub(crate) struct PreviewArgs {
     /// `image` or `pdf`.
     #[arg(value_parser = preview_kind)]
     kind: PreviewKind,
-    /// The file.
-    input: PathBuf,
-    /// Where the preview, a small PNG, is written.
-    output: PathBuf,
 }
 
 /// The kind of a preview, as the server names it on the command line.
@@ -214,7 +211,7 @@ pub(crate) async fn run() -> ExitCode {
         } => secrets::export_keys(&store, &folder).await,
         // The child process of a preview: its exit code is its answer (`PreviewRefusal`).
         Command::Preview(args) => {
-            let code = bb_files::preview::run(args.kind, &args.input, &args.output);
+            let code = bb_files::preview::run(args.kind, &crate::ALLOCATOR);
             return u8::try_from(code).map_or(ExitCode::FAILURE, ExitCode::from);
         }
     };

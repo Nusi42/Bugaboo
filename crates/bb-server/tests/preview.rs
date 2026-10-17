@@ -36,7 +36,6 @@ use zeroize as _;
 
 #[cfg(test)] // Clippy lets tests unwrap only inside test modules (clippy.toml).
 mod preview {
-    use std::path::PathBuf;
     use std::time::Duration;
 
     use bb_app::context::SystemIds;
@@ -44,7 +43,8 @@ mod preview {
     use bb_core::files::{LinkTarget, PreviewKind, PreviewStatus};
     use bb_core::id::UploadId;
     use bb_core::security_log::Digest;
-    use bb_files::fixtures::{Format, PDF, picture, pretending_png};
+    use bb_files::fixtures::{Format, PDF, pdf_bomb, picture, pretending_png};
+    use bb_files::preview::{MAX_CHILD_MEMORY_BYTES, TIME_LIMIT};
     use bb_files::{DiskFiles, PreviewCommand, PreviewRefusal};
 
     /// The program the server starts for a preview.
@@ -123,6 +123,36 @@ mod preview {
     }
 
     #[tokio::test]
+    async fn att_04_a_pdf_bomb_costs_the_child_its_memory_limit_and_the_preview_only() {
+        let (folder, files) = files();
+        // A PDF of a few megabytes whose picture unpacks to one and a half times what the child
+        // may use: the child cannot get the memory, ends, and the server reads that as no preview.
+        let bomb = stored(
+            &files,
+            &pdf_bomb(MAX_CHILD_MEMORY_BYTES + MAX_CHILD_MEMORY_BYTES / 2),
+        )
+        .await;
+        let started = std::time::Instant::now();
+        assert_eq!(
+            files.create_preview(bomb, PreviewKind::Pdf).await.unwrap(),
+            PreviewStatus::Without
+        );
+        assert!(
+            started.elapsed() < TIME_LIMIT,
+            "it ended by its limit, not by the clock"
+        );
+        assert!(preview_png(&files, bomb).await.is_none());
+        let work = folder.path().join("previews").join("work");
+        assert_eq!(std::fs::read_dir(&work).map_or(0, Iterator::count), 0);
+        // The server goes on: the next file is previewed as usual.
+        let next = stored(&files, PDF).await;
+        assert_eq!(
+            files.create_preview(next, PreviewKind::Pdf).await.unwrap(),
+            PreviewStatus::Ready
+        );
+    }
+
+    #[tokio::test]
     async fn att_04_a_broken_pdf_gets_no_preview() {
         let (_folder, files) = files();
         let cut = stored(&files, &PDF[..PDF.len() / 2]).await;
@@ -177,29 +207,30 @@ mod preview {
     }
 
     #[test]
-    fn att_04_the_program_answers_with_the_code_of_the_refusal() {
-        let folder = tempfile::tempdir().unwrap();
-        let (input, output): (PathBuf, PathBuf) =
-            (folder.path().join("in"), folder.path().join("out.png"));
-        let run = |kind: &str| {
-            std::process::Command::new(PROGRAM)
+    fn att_04_the_program_takes_the_file_on_stdin_and_answers_with_the_preview_or_a_code() {
+        use std::io::Write as _;
+        let run = |kind: &str, bytes: &[u8]| {
+            let mut child = std::process::Command::new(PROGRAM)
                 .args(["preview", kind])
-                .arg(&input)
-                .arg(&output)
-                .status()
-                .unwrap()
-                .code()
+                .env_clear()
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .unwrap();
+            // A child that refuses early may not read it all.
+            child.stdin.take().unwrap().write_all(bytes).ok();
+            let done = child.wait_with_output().unwrap();
+            (done.status.code(), done.stdout)
         };
-        std::fs::write(&input, pretending_png(100_000, 100_000)).unwrap();
-        assert_eq!(
-            run("image"),
-            Some(PreviewRefusal::TooManyPixels.exit_code())
-        );
-        assert!(!output.exists());
-        std::fs::write(&input, b"not a pdf").unwrap();
-        assert_eq!(run("pdf"), Some(PreviewRefusal::Unreadable.exit_code()));
-        std::fs::write(&input, picture(20, 20, Format::Png)).unwrap();
-        assert_eq!(run("image"), Some(0));
-        assert!(std::fs::metadata(&output).unwrap().len() > 0);
+        let (code, sent) = run("image", &pretending_png(100_000, 100_000));
+        assert_eq!(code, Some(PreviewRefusal::TooManyPixels.exit_code()));
+        assert!(sent.is_empty());
+        let (code, sent) = run("pdf", b"not a pdf");
+        assert_eq!(code, Some(PreviewRefusal::Unreadable.exit_code()));
+        assert!(sent.is_empty());
+        let (code, sent) = run("image", &picture(20, 20, Format::Png));
+        assert_eq!(code, Some(0));
+        assert!(sent.starts_with(&[0x89, b'P', b'N', b'G']));
     }
 }

@@ -73,3 +73,89 @@ trailer\n<< /Root 1 0 R /Size 5 >>\n%%EOF\n";
 
 /// The format of a picture, so a test names it without the `image` library.
 pub use image::ImageFormat as Format;
+
+/// Writes bits into bytes, least significant bit first, the way deflate packs them.
+#[derive(Default)]
+struct Bits {
+    bytes: Vec<u8>,
+    used: u32,
+}
+
+impl Bits {
+    /// The lowest `count` bits of `value`, the lowest first.
+    fn push(&mut self, value: u32, count: u32) {
+        for at in 0..count {
+            if self.used == 0 {
+                self.bytes.push(0);
+            }
+            let bit = u8::from((value >> at) & 1 == 1);
+            if let Some(last) = self.bytes.last_mut() {
+                *last |= bit << self.used;
+            }
+            self.used = (self.used + 1) % 8;
+        }
+    }
+
+    /// A Huffman code of `count` bits: its highest bit goes first.
+    fn push_code(&mut self, code: u32, count: u32) {
+        for at in (0..count).rev() {
+            self.push((code >> at) & 1, 1);
+        }
+    }
+}
+
+/// The longest run one match of deflate repeats.
+const LONGEST_RUN: u64 = 258;
+
+/// What a zlib stream of `bytes` zeros looks like: about 13 bits for every 258 bytes, so a
+/// gigabyte of zeros is a few megabytes. The count is rounded down to what whole runs make.
+fn zeros_deflated(bytes: u64) -> (Vec<u8>, u64) {
+    const ZLIB_HEADER: [u8; 2] = [0x78, 0x01];
+    let runs = bytes.saturating_sub(1) / LONGEST_RUN;
+    let unpacked = 1 + runs * LONGEST_RUN;
+    let mut bits = Bits::default();
+    // The only block, with the fixed codes.
+    bits.push(1, 1);
+    bits.push(1, 2);
+    // A zero, then runs of 258 that copy the byte before; the length 258 is the code 285 and the
+    // distance 1 is the code 0.
+    bits.push_code(0x30, 8);
+    for _ in 0..runs {
+        bits.push_code(0xC5, 8);
+        bits.push_code(0, 5);
+    }
+    // The end of the block.
+    bits.push_code(0, 7);
+    // The check of zlib: Adler-32 of zeros, whose first sum stays 1 and whose second counts them.
+    let adler = (u32::try_from(unpacked % 65_521).unwrap_or(0) << 16) | 1;
+    let mut stream = ZLIB_HEADER.to_vec();
+    stream.extend_from_slice(&bits.bytes);
+    stream.extend_from_slice(&adler.to_be_bytes());
+    (stream, unpacked)
+}
+
+/// A PDF of a few megabytes whose picture unpacks to about `unpacked_bytes` bytes of zeros: a
+/// decompression bomb of the kind a PDF can hold. A reader that unpacks it whole needs that much
+/// memory.
+#[must_use]
+pub fn pdf_bomb(unpacked_bytes: u64) -> Vec<u8> {
+    let (stream, unpacked) = zeros_deflated(unpacked_bytes);
+    let edge = 32_768_u64;
+    let mut pdf = format!(
+        "%PDF-1.4\n\
+         1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\
+         2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n\
+         3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R \
+         /Resources << /XObject << /Im0 5 0 R >> >> >>\nendobj\n\
+         4 0 obj\n<< /Length 28 >>\nstream\nq 200 0 0 100 0 0 cm /Im0 Do Q\nendstream\nendobj\n\
+         5 0 obj\n<< /Type /XObject /Subtype /Image /Width {edge} /Height {height} \
+         /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length {length} >>\n\
+         stream\n",
+        height = unpacked.div_ceil(edge),
+        length = stream.len()
+    )
+    .into_bytes();
+    pdf.extend_from_slice(&stream);
+    pdf.extend_from_slice(b"\nendstream\nendobj\ntrailer\n<< /Root 1 0 R /Size 6 >>\n%%EOF\n");
+    pdf
+}
