@@ -1,11 +1,17 @@
 import { t } from "@bugaboo/messages";
 import { Card, partOf, part } from "@bugaboo/ui";
+import { lazyRouteComponent } from "@tanstack/react-router";
 
 import { paths } from "../../shared/paths.ts";
 import { useMe, usePermissions } from "../../shared/use-me.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { NotificationsBlock } from "../notifications/index.ts";
 import { mayOpen } from "../shell/index.ts";
+
+/** *Notifications* of the start page, loaded when the start page is first shown, so the first page stays small. */
+const NotificationsBlock = lazyRouteComponent(
+  () => import("../notifications/index.ts"),
+  "NotificationsBlock",
+);
 
 /** The start page of somebody who is signed in. The rest of Bugaboo arrives with later versions. */
 export function HomePage() {
