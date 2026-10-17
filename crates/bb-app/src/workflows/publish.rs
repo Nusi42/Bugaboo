@@ -9,8 +9,6 @@
 //! does is to check that no live issue is left in a status its workflow does not have
 //! (`strand.rs`). So *Publish* either does all of it or none.
 
-use std::collections::BTreeMap;
-
 use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::event::{FieldChange, RecordKind};
@@ -20,19 +18,59 @@ use bb_core::issue::{Issue, StatusGroup};
 use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
 use bb_core::own_fields::FieldFor;
 use bb_core::version::counted_up;
-use bb_core::workflow::{StatusKey, StoredWorkflow, WorkflowContent, check_name};
+use bb_core::workflow::{
+    ChangeDraft, StatusDraft, StatusKey, StoredWorkflow, WorkflowContent, check_name,
+};
 use bb_policy::{Authorized, Evaluation, Permission};
 use jiff::Timestamp;
 use serde_json::json;
 
+use super::status::StatusCheck;
 use super::strand::{count_stranded_in, reach_of_workflow_in};
 use super::types::{PublishWorkflow, Published, StatusMoveInput, WorkflowSlot};
 use super::write::{summary, what_of};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal};
 use crate::editing::{TextSave, Written};
-use crate::issues::{ChangeIssue, member as issue_member};
+use crate::issues::{Where, member as issue_member};
 use crate::member::workflow as member;
+
+/// What the editor sends of a workflow: what *Publish* and its preview both judge.
+#[derive(Clone, Copy)]
+pub(super) struct Drafts<'a> {
+    pub(super) name: &'a str,
+    pub(super) statuses: &'a [StatusDraft],
+    pub(super) changes: &'a [ChangeDraft],
+}
+
+impl<'a> From<&'a PublishWorkflow> for Drafts<'a> {
+    fn from(input: &'a PublishWorkflow) -> Self {
+        Self {
+            name: &input.name,
+            statuses: &input.statuses,
+            changes: &input.changes,
+        }
+    }
+}
+
+/// What the person who publishes can do about one issue of a dropped status.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Mover {
+    /// They do not see the issue.
+    Unseen,
+    /// They see it and may not change its status.
+    Blocked,
+    /// They may move it.
+    Can,
+}
+
+/// The live issues that are in the statuses a publish drops, in the workflow as it is stored.
+pub(super) struct Dropping {
+    /// The statuses that are dropped.
+    pub(super) statuses: Vec<StatusKey>,
+    /// The issues in them.
+    pub(super) issues: Vec<Issue>,
+}
 
 /// An issue that goes to another status because the status it was in is dropped.
 struct Moving {
@@ -47,15 +85,15 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// fields its rules name are fields of issues, and every rule that is new or changed names only
     /// fields the person may see at the place and groups they may know. Rules that are there
     /// already stay as they are, whatever they name.
-    async fn publishable(
+    pub(super) async fn publishable(
         &self,
         actor: &Actor,
         held: &Evaluation,
         stored: &StoredWorkflow,
-        input: &PublishWorkflow,
+        drafts: Drafts<'_>,
     ) -> Result<WorkflowContent, AppError> {
-        check_name(&input.name).map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
-        let content = WorkflowContent::from_drafts(&input.statuses, &input.changes)
+        check_name(drafts.name).map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
+        let content = WorkflowContent::from_drafts(drafts.statuses, drafts.changes)
             .map_err(|_| AppError::from(ErrorCode::WorkflowInvalid))?;
         let definitions = self.field_catalogue().await?;
         let known_groups: Vec<GroupId> = self
@@ -90,11 +128,42 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(content)
     }
 
+    /// The live issues in the statuses that `content` drops, found from the places the stored
+    /// workflow is used at. The one walk that *Publish* and its preview share.
+    pub(super) async fn dropping(
+        &self,
+        stored: &StoredWorkflow,
+        content: &WorkflowContent,
+    ) -> Result<Dropping, AppError> {
+        let statuses = stored.content.dropped_by(content);
+        if statuses.is_empty() {
+            return Ok(Dropping {
+                statuses,
+                issues: Vec::new(),
+            });
+        }
+        let directory = self.workflow_directory().await?;
+        let issues = self
+            .governed_issues(&directory, stored.workflow.id, &statuses)
+            .await?;
+        Ok(Dropping { statuses, issues })
+    }
+
+    /// Whether the person who publishes may move an issue: they see it, may change it, and may
+    /// change its status. The one judge of a move, with no rule of a status change: the issue has
+    /// no status change into the new workflow, and the person chose where it goes.
+    pub(super) async fn mover_of(&self, actor: &Actor, issue: &Issue) -> Result<Mover, AppError> {
+        let Some(held) = self.seen_in(actor, issue, Where::Live).await? else {
+            return Ok(Mover::Unseen);
+        };
+        let may = held.may_change_issue(issue.reported_by)
+            && StatusCheck::may_change_status(&held, issue.issue_type, issue.reported_by);
+        Ok(if may { Mover::Can } else { Mover::Blocked })
+    }
+
     /// Where the issues of the dropped statuses go: for each live issue the workflow governs that
     /// is in a dropped status, the status it is sent to. Each move is judged as a change by the
-    /// person who publishes, in the workflow as it will be; one that would be skipped (they may not
-    /// change the issue, the status is not allowed, or the issue changed since) refuses the whole
-    /// publish.
+    /// person who publishes (`mover_of`); one they could not make refuses the whole publish.
     async fn plan_moves(
         &self,
         actor: &Actor,
@@ -102,24 +171,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         content: &WorkflowContent,
         asked: &[StatusMoveInput],
     ) -> Result<Vec<Moving>, AppError> {
-        let dropped = stored.content.dropped_by(content);
-        // A move goes only to the starting status of the workflow: nothing else is allowed to an
-        // issue outside its workflow (ADR-0031 amendment 3).
-        let sensible = asked.iter().all(|each| {
-            dropped.contains(&each.from)
-                && content.status(&each.to).is_some()
-                && content.initial() == Some(&each.to)
-        });
+        let Dropping {
+            statuses: dropped,
+            issues,
+        } = self.dropping(stored, content).await?;
+        // A move goes to a status the new workflow has, from a status it drops.
+        let sensible = asked
+            .iter()
+            .all(|each| dropped.contains(&each.from) && content.status(&each.to).is_some());
         if !sensible {
             return Err(ErrorCode::InvalidRequest.into());
         }
-        if dropped.is_empty() {
-            return Ok(Vec::new());
-        }
-        let directory = self.workflow_directory().await?;
-        let issues = self
-            .governed_issues(&directory, stored.workflow.id, &dropped)
-            .await?;
         // One publish moves no more issues than one change to many issues takes (the job route of
         // a bigger move is a follow-up).
         if issues.len() > MANY_CHANGES_ISSUES_MAX {
@@ -136,40 +198,14 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .status(&target)
                 .map(|each| each.group)
                 .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+            if self.mover_of(actor, &issue).await? != Mover::Can {
+                return Err(ErrorCode::WorkflowStatusInUse.into());
+            }
             planned.push(Moving {
                 issue,
                 target,
                 group,
             });
-        }
-        // From here on the request sees the workflow as it will be.
-        self.see_directory(directory.with_content(stored.workflow.id, content.clone()));
-        let mut skipped = 0_usize;
-        for each in &planned {
-            let asked = ChangeIssue {
-                session_token: String::new(),
-                issue: each.issue.id.to_string(),
-                version: each.issue.version,
-                issue_type: None,
-                title: None,
-                status: Some(each.target.clone()),
-                priority: None,
-                assigned_to: None,
-                fields: BTreeMap::new(),
-            };
-            match self.plan_issue_change(actor, &asked).await {
-                Ok(_) => {}
-                // A failure of the server is not a skipped issue.
-                Err(error @ AppError::Internal(_)) => {
-                    self.forget_workflows();
-                    return Err(error);
-                }
-                Err(_) => skipped += 1,
-            }
-        }
-        self.forget_workflows();
-        if skipped > 0 {
-            return Err(ErrorCode::WorkflowStatusInUse.into());
         }
         Ok(planned)
     }
@@ -245,7 +281,9 @@ pub async fn publish_workflow<S: AuthStore>(
     let held = ctx
         .require(&actor, Permission::ManageWorkflows, place)
         .await?;
-    let content = ctx.publishable(&actor, &held, &stored, &input).await?;
+    let content = ctx
+        .publishable(&actor, &held, &stored, Drafts::from(&input))
+        .await?;
     let moving = ctx
         .plan_moves(&actor, &stored, &content, &input.moves)
         .await?;

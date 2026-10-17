@@ -323,6 +323,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("createWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("useWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("publishWorkflow", &[Quirk::AtTheTargetProject]),
+    Example::with("previewPublishWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("deleteWorkflow", &[Quirk::AtTheTargetProject]),
     Example::with("tryWorkflow", &[Quirk::AnIssueOfTheTarget]),
     Example::with("listIssues", &[Quirk::ListsTheIssuesSeen]),

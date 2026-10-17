@@ -3054,6 +3054,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/workflows/{workflow}/publish-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Says which statuses publishing a workflow would drop and which issues are in them, so the editor
+     *     can ask where those issues go. The issues the person sees are named; the others are only
+     *     counted. Needs the permission *Manage workflows* wherever the workflow is used.
+     */
+    post: operations["previewPublishWorkflow"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3751,6 +3772,25 @@ export interface components {
       base_version?: number | null;
       /** @description The text as it stands now. */
       text: string;
+    };
+    /** @description A status that publishing would drop, and the issues that are in it. */
+    DroppedStatusBody: {
+      /**
+       * @description How many of the issues the person could not move: those they do not see, and those they may
+       *     not change. A publish that has to move them is refused.
+       */
+      blocked: number;
+      /**
+       * @description All the live issues the workflow governs that are in it, also the ones the person does not
+       *     see.
+       */
+      issues: number;
+      /** @description Some of the issues the person sees, as a list shows them. */
+      named: components["schemas"]["IssueRef"][];
+      /** @description The status, as the stored workflow names it. */
+      status: components["schemas"]["StatusRef"];
+      /** @description How many of the issues the person does not see. They are counted, never named. */
+      unseen: number;
     };
     /** @description Take the editing over from the person who is editing. */
     EditAnywayBody: {
@@ -6520,6 +6560,20 @@ export interface components {
     ProjectStatusesBody: {
       /** @description The statuses, in the order the workflows list them. */
       statuses: components["schemas"]["StatusRef"][];
+    };
+    /** @description What publishing a workflow would drop. */
+    PublishPreviewAnswer: {
+      /** @description The statuses the stored workflow has and the new one lacks. */
+      dropped: components["schemas"]["DroppedStatusBody"][];
+      /** @description The most issues one publish moves; a publish that would move more is refused. */
+      limit: number;
+    };
+    /** @description What to preview: the workflow as *Publish* would send it. */
+    PublishPreviewBody: {
+      /** @description All the status changes. */
+      changes: components["schemas"]["ChangeDraftBody"][];
+      /** @description All the statuses, in order. */
+      statuses: components["schemas"]["StatusDraftBody"][];
     };
     /** @description The workflow to publish. */
     PublishWorkflowBody: {
@@ -23836,6 +23890,98 @@ export interface operations {
       };
       /** @description Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed). */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  previewPublishWorkflow: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workflow. */
+        workflow: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PublishPreviewBody"];
+      };
+    };
+    responses: {
+      /** @description The dropped statuses and their issues. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublishPreviewAnswer"];
+        };
+      };
+      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description There is no such thing (resource.not_found). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

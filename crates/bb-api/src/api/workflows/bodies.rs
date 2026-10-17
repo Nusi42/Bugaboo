@@ -2,8 +2,8 @@
 //! change, the statuses and status changes an editor sends, and what the editor shows.
 
 use bb_app::workflows::{
-    EditorChange, EditorGroup, EditorRole, RuleField, Tried, TriedChange, TriedVerdict,
-    WorkflowEditor, WorkflowList, WorkflowListItem, WorkflowSlot,
+    EditorChange, EditorGroup, EditorRole, PublishPreview, RuleField, Tried, TriedChange,
+    TriedVerdict, WorkflowEditor, WorkflowList, WorkflowListItem, WorkflowSlot,
 };
 use bb_core::ErrorCode;
 use bb_core::fields::FieldKey;
@@ -21,6 +21,7 @@ use super::{StatusRef, status_in};
 use crate::api::issues::IssueTypeRef;
 use crate::api::layouts::InheritedFromBody;
 use crate::api::projects::ProjectRef;
+use crate::api::relations::IssueRef;
 use crate::api::{body_id, path_id};
 use crate::errors::ApiError;
 
@@ -236,6 +237,62 @@ pub(crate) struct PublishWorkflowBody {
     /// still in; nothing is published without it.
     #[serde(default)]
     pub(super) moves: Vec<StatusMoveBody>,
+}
+
+/// What to preview: the workflow as *Publish* would send it.
+#[derive(Deserialize, ToSchema)]
+pub(crate) struct PublishPreviewBody {
+    /// All the statuses, in order.
+    pub(super) statuses: Vec<StatusDraftBody>,
+    /// All the status changes.
+    pub(super) changes: Vec<ChangeDraftBody>,
+}
+
+/// A status that publishing would drop, and the issues that are in it.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct DroppedStatusBody {
+    /// The status, as the stored workflow names it.
+    status: StatusRef,
+    /// All the live issues the workflow governs that are in it, also the ones the person does not
+    /// see.
+    issues: usize,
+    /// Some of the issues the person sees, as a list shows them.
+    named: Vec<IssueRef>,
+    /// How many of the issues the person does not see. They are counted, never named.
+    unseen: usize,
+    /// How many of the issues the person could not move: those they do not see, and those they may
+    /// not change. A publish that has to move them is refused.
+    blocked: usize,
+}
+
+/// What publishing a workflow would drop.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct PublishPreviewAnswer {
+    /// The statuses the stored workflow has and the new one lacks.
+    dropped: Vec<DroppedStatusBody>,
+    /// The most issues one publish moves; a publish that would move more is refused.
+    limit: usize,
+}
+
+impl Masked for PublishPreviewAnswer {}
+
+impl From<&PublishPreview> for PublishPreviewAnswer {
+    fn from(preview: &PublishPreview) -> Self {
+        Self {
+            limit: preview.limit,
+            dropped: preview
+                .dropped
+                .iter()
+                .map(|each| DroppedStatusBody {
+                    status: StatusRef::from(&each.status),
+                    issues: each.issues,
+                    named: each.named.iter().map(IssueRef::from).collect(),
+                    unseen: each.unseen,
+                    blocked: each.blocked,
+                })
+                .collect(),
+        }
+    }
 }
 
 /// The workflow set at exactly the place that was asked about.

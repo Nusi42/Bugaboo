@@ -7,7 +7,7 @@ use bb_core::access::FieldLevel;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{IssueId, ProjectId};
 use bb_core::issue::StatusGroup;
-use bb_core::workflow::starter::{DONE, IN_PROGRESS, OPEN};
+use bb_core::workflow::starter::{IN_PROGRESS, OPEN};
 use bb_core::workflow::{ChangeDraft, Condition, StatusDraft, StatusRules, Test};
 use bb_policy::StartingRole;
 
@@ -156,9 +156,8 @@ async fn wf_02_publishing_whose_moves_would_be_skipped_publishes_nothing() -> Ou
             to: key(to),
         }];
     };
-    // An issue only starts again in the starting status: a move to Done is not a way around the
-    // rules, and nothing is published for it.
-    let refused = published_with(&world, &editor, |sent| without_progress(sent, DONE))
+    // A move to a status the new workflow lacks makes no sense, and nothing is published for it.
+    let refused = published_with(&world, &editor, |sent| without_progress(sent, "nowhere"))
         .await
         .err();
     assert_eq!(refused, Some(AppError::Refused(ErrorCode::InvalidRequest)));

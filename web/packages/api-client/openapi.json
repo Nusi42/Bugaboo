@@ -21433,6 +21433,126 @@
         },
         "x-permission": "manage-workflows"
       }
+    },
+    "/api/v1/workflows/{workflow}/publish-preview": {
+      "post": {
+        "tags": ["workflows"],
+        "summary": "Says which statuses publishing a workflow would drop and which issues are in them, so the editor\ncan ask where those issues go. The issues the person sees are named; the others are only\ncounted. Needs the permission *Manage workflows* wherever the workflow is used.",
+        "operationId": "previewPublishWorkflow",
+        "parameters": [
+          {
+            "name": "workflow",
+            "in": "path",
+            "description": "The ID of the workflow.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPreviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The dropped statuses and their issues.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPreviewAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed (access.forbidden, request.wrong_token, auth.second_step_required, auth.access_key_not_allowed).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such thing (resource.not_found).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "manage-workflows"
+      }
     }
   },
   "components": {
@@ -22929,6 +23049,39 @@
           "text": {
             "type": "string",
             "description": "The text as it stands now."
+          }
+        }
+      },
+      "DroppedStatusBody": {
+        "type": "object",
+        "description": "A status that publishing would drop, and the issues that are in it.",
+        "required": ["status", "issues", "named", "unseen", "blocked"],
+        "properties": {
+          "blocked": {
+            "type": "integer",
+            "description": "How many of the issues the person could not move: those they do not see, and those they may\nnot change. A publish that has to move them is refused.",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "integer",
+            "description": "All the live issues the workflow governs that are in it, also the ones the person does not\nsee.",
+            "minimum": 0
+          },
+          "named": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueRef"
+            },
+            "description": "Some of the issues the person sees, as a list shows them."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusRef",
+            "description": "The status, as the stored workflow names it."
+          },
+          "unseen": {
+            "type": "integer",
+            "description": "How many of the issues the person does not see. They are counted, never named.",
+            "minimum": 0
           }
         }
       },
@@ -28993,6 +29146,46 @@
               "$ref": "#/components/schemas/StatusRef"
             },
             "description": "The statuses, in the order the workflows list them."
+          }
+        }
+      },
+      "PublishPreviewAnswer": {
+        "type": "object",
+        "description": "What publishing a workflow would drop.",
+        "required": ["dropped", "limit"],
+        "properties": {
+          "dropped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DroppedStatusBody"
+            },
+            "description": "The statuses the stored workflow has and the new one lacks."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The most issues one publish moves; a publish that would move more is refused.",
+            "minimum": 0
+          }
+        }
+      },
+      "PublishPreviewBody": {
+        "type": "object",
+        "description": "What to preview: the workflow as *Publish* would send it.",
+        "required": ["statuses", "changes"],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeDraftBody"
+            },
+            "description": "All the status changes."
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatusDraftBody"
+            },
+            "description": "All the statuses, in order."
           }
         }
       },

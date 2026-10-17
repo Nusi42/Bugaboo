@@ -159,3 +159,13 @@ reason = "Counts only the people in the projects the person sees: the answer say
 route = "GET /api/v1/notifications/unread"
 property = "unread"
 reason = "Counts only the notifications the person may still see: each of the newest hundred unread ones is checked again against the issue and the fields the person sees now, and a hidden one is not counted (ADR-0033 §2, `unread_notifications`)."
+
+[[exempt]]
+route = "POST /api/v1/workflows/{workflow}/publish-preview"
+property = "unseen"
+reason = "Counts issues the viewer may not see on purpose, and only counts them: they are in a status that publishing would drop, and the publish is refused for them with the same fact (workflow.status_in_use). The answer needs Manage workflows wherever the workflow is used, and no issue is named or described (ADR-0031 amendment 12, decided with the lead)."
+
+[[exempt]]
+route = "POST /api/v1/workflows/{workflow}/publish-preview"
+property = "blocked"
+reason = "Counts the issues the publisher could not move, among them ones they may not see; only the number is told, for the same reason as `unseen` (ADR-0031 amendment 12)."

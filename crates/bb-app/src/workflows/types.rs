@@ -14,6 +14,7 @@ use super::resolve::WorkflowDirectory;
 use crate::issues::IssueTypeRef;
 use crate::layouts::InheritedFrom;
 use crate::projects::ProjectRef;
+use crate::relations::IssueLine;
 
 /// A status as it is shown: its key, what it is called, and its status group.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -145,6 +146,49 @@ pub struct PublishWorkflow {
     /// Where the issues of a dropped status go.
     pub moves: Vec<StatusMoveInput>,
 }
+
+/// Ask what publishing a workflow would drop, and which issues are in what it drops.
+pub struct PublishPreviewQuery {
+    /// The secret of the session of the request.
+    pub session_token: String,
+    /// The workflow.
+    pub workflow: WorkflowId,
+    /// All the statuses, in order, as *Publish* would send them.
+    pub statuses: Vec<StatusDraft>,
+    /// All the status changes, as *Publish* would send them.
+    pub changes: Vec<ChangeDraft>,
+}
+
+/// The most issues a preview names for one dropped status; the others are only counted.
+pub const PREVIEW_NAMED_MAX: usize = 5;
+
+/// A status that publishing would drop, and the issues that are in it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct DroppedStatus {
+    /// The status, as the stored workflow names it.
+    pub status: StatusView,
+    /// All the live issues the workflow governs that are in it, also the ones the person does not
+    /// see.
+    pub issues: usize,
+    /// Some of the issues the person sees, as a list shows them.
+    pub named: Vec<IssueLine>,
+    /// How many of the issues the person does not see. They are counted, never named.
+    pub unseen: usize,
+    /// How many of the issues the person could not move: those they do not see, and those they may
+    /// not change. A publish that has to move them is refused.
+    pub blocked: usize,
+}
+
+/// What publishing a workflow would drop.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PublishPreview {
+    /// The statuses the stored workflow has and the new one lacks, in the order of the stored one.
+    pub dropped: Vec<DroppedStatus>,
+    /// The most issues one publish moves; a publish that would move more is refused.
+    pub limit: usize,
+}
+
+impl Masked for PublishPreview {}
 
 /// Take a workflow away, together with the places it was used at.
 pub struct DeleteWorkflow {
