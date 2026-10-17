@@ -152,3 +152,25 @@ fn att_04_a_pdf_bomb_is_small_and_says_it_unpacks_to_a_gigabyte() {
     let small = pdf_bomb(MEGABYTE);
     assert!(small.len() < 100_000);
 }
+
+#[test]
+fn att_04_the_pictures_and_pages_of_a_sample_differ_and_all_get_a_preview() {
+    use crate::fixtures::{varied_pdf, varied_picture};
+    let mut seen = std::collections::BTreeSet::new();
+    for number in 0..40 {
+        for (kind, bytes) in [
+            (
+                PreviewKind::Image,
+                varied_picture(number, 160, 120, ImageFormat::Png),
+            ),
+            (
+                PreviewKind::Image,
+                varied_picture(number, 160, 120, ImageFormat::Jpeg),
+            ),
+            (PreviewKind::Pdf, varied_pdf(number)),
+        ] {
+            assert!(render(kind, &bytes).is_ok(), "{number} {kind:?}");
+            assert!(seen.insert(bytes), "number {number} is a file seen before");
+        }
+    }
+}
