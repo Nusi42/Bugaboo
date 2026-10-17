@@ -9,15 +9,15 @@ export interface NotificationGroupsProps {
   readonly rows: readonly NotificationRow[];
   /** *Mark as read* for one notification. */
   readonly onRead: (id: string) => void;
-  /** Reading is on its way. */
-  readonly isReading: boolean;
+  /** The notification that is being marked as read now, if one is: only its button waits. */
+  readonly readingId: string | undefined;
 }
 
 /**
  * The notifications grouped by issue, newest first (UX §4.11): the issue is the heading of its
  * group, a link to the issue, and the notifications about it are the list below.
  */
-export function NotificationGroups({ rows, onRead, isReading }: NotificationGroupsProps) {
+export function NotificationGroups({ rows, onRead, readingId }: NotificationGroupsProps) {
   return groupsOf(rows).map((group) => (
     <section
       key={group.key}
@@ -36,7 +36,12 @@ export function NotificationGroups({ rows, onRead, isReading }: NotificationGrou
       )}
       <ul {...partOf(part.list)}>
         {group.rows.map((row) => (
-          <NotificationView key={row.id} row={row} onRead={onRead} isReading={isReading} />
+          <NotificationView
+            key={row.id}
+            row={row}
+            onRead={onRead}
+            isReading={readingId === row.id}
+          />
         ))}
       </ul>
     </section>

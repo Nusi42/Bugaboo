@@ -265,12 +265,13 @@ impl Masked for UnreadBody {}
 /// The notifications to mark as read.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ReadNotificationsBody {
-    /// The IDs of the notifications, at most 100; or leave it out and set `all`.
+    /// The IDs of the notifications, at most 100; or leave it out and set `up_to`.
     #[serde(default)]
     ids: Vec<String>,
-    /// Mark every unread notification as read.
+    /// Mark every unread notification as read up to and including this one, the newest the person
+    /// has seen: ones that came after it stay unread.
     #[serde(default)]
-    all: bool,
+    up_to: Option<String>,
 }
 
 /// The password of the mail server.
@@ -376,8 +377,8 @@ async fn read_notifications(
     Session(session_token): Session,
     ApiJson(body): ApiJson<ReadNotificationsBody>,
 ) -> Result<Response, ApiError> {
-    let which = if body.all {
-        Which::All
+    let which = if let Some(up_to) = &body.up_to {
+        Which::UpTo(body_id::<NotificationId>(up_to)?)
     } else {
         Which::These(
             body.ids

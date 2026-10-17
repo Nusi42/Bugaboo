@@ -30274,16 +30274,16 @@
         "type": "object",
         "description": "The notifications to mark as read.",
         "properties": {
-          "all": {
-            "type": "boolean",
-            "description": "Mark every unread notification as read."
-          },
           "ids": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The IDs of the notifications, at most 100; or leave it out and set `all`."
+            "description": "The IDs of the notifications, at most 100; or leave it out and set `up_to`."
+          },
+          "up_to": {
+            "type": ["string", "null"],
+            "description": "Mark every unread notification as read up to and including this one, the newest the person\nhas seen: ones that came after it stay unread."
           }
         }
       },

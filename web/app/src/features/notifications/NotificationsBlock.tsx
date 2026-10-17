@@ -27,7 +27,7 @@ export function NotificationsBlock() {
       ) : null}
       <NotificationGroups
         rows={rows}
-        isReading={read.isPending}
+        readingId={read.readingId}
         onRead={(id) => {
           read.mutate({ body: { ids: [id] } });
         }}

@@ -113,7 +113,12 @@ export async function changeStatus(
 
 /** Marks every notification of the person of the session as read, so a test starts from none. */
 export async function readEverything(session: ApiSession): Promise<void> {
-  await session.client.POST("/api/v1/notifications/read", { body: { all: true } });
+  const newest = dataOf(
+    await session.client.GET("/api/v1/notifications", { params: { query: { limit: 1 } } }),
+  ).items[0]?.id;
+  if (newest !== undefined) {
+    await session.client.POST("/api/v1/notifications/read", { body: { up_to: newest } });
+  }
 }
 
 /** The ID of the person of the session. */

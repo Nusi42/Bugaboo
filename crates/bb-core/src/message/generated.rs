@@ -2732,14 +2732,6 @@ pub const NOTIFICATIONS_CUSTOMIZE: MessageKey = MessageKey::new("notifications.c
 pub const NOTIFICATIONS_CUSTOMIZE_INTRO: MessageKey =
     MessageKey::new("notifications.customize-intro");
 
-/// The message `notifications.customize-reset`.
-pub const NOTIFICATIONS_CUSTOMIZE_RESET: MessageKey =
-    MessageKey::new("notifications.customize-reset");
-
-/// The message `notifications.customize-title`.
-pub const NOTIFICATIONS_CUSTOMIZE_TITLE: MessageKey =
-    MessageKey::new("notifications.customize-title");
-
 /// The message `notifications.filter.all`.
 pub const NOTIFICATIONS_FILTER_ALL: MessageKey = MessageKey::new("notifications.filter.all");
 
@@ -10862,8 +10854,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "notifications.customize-intro",
         "Choose for each kind of event whether you hear of it in the app, by e-mail, in both or not at all. You never hear of your own changes. E-mail goes only when your organization has switched it on.",
     ),
-    ("notifications.customize-reset", "Use the standard choices"),
-    ("notifications.customize-title", "Customize notifications"),
     ("notifications.filter.all", "All"),
     ("notifications.filter.mentions", "Mentions"),
     ("notifications.filter.unread", "Unread"),

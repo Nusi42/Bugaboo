@@ -333,9 +333,10 @@ impl NotificationStore for AuthStorage {
         transaction.execute(&update).await
     }
 
-    async fn mark_all_notifications_read(
+    async fn mark_notifications_read_up_to(
         transaction: &mut Transaction,
         recipient: UserId,
+        up_to: NotificationId,
         at: Timestamp,
     ) -> Result<u64, StoreError> {
         let mut update = Query::update();
@@ -343,6 +344,7 @@ impl NotificationStore for AuthStorage {
             .table(NotificationRow::Table)
             .value(NotificationRow::ReadAt, to_micros(at))
             .and_where(Expr::col(NotificationRow::Recipient).eq(recipient.stored()))
+            .and_where(Expr::col(NotificationRow::Id).lte(up_to.stored()))
             .and_where(Expr::col(NotificationRow::InApp).eq(true))
             .and_where(Expr::col(NotificationRow::ReadAt).is_null());
         transaction.execute(&update).await

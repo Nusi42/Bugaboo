@@ -6792,10 +6792,13 @@ export interface components {
     };
     /** @description The notifications to mark as read. */
     ReadNotificationsBody: {
-      /** @description Mark every unread notification as read. */
-      all?: boolean;
-      /** @description The IDs of the notifications, at most 100; or leave it out and set `all`. */
+      /** @description The IDs of the notifications, at most 100; or leave it out and set `up_to`. */
       ids?: string[];
+      /**
+       * @description Mark every unread notification as read up to and including this one, the newest the person
+       *     has seen: ones that came after it stay unread.
+       */
+      up_to?: string | null;
     };
     /** @description Why a permission is given or not. */
     ReasonBody:

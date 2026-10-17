@@ -92,7 +92,7 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         "readNotifications" => (
             "POST",
             "/api/v1/notifications/read".into(),
-            Some(json!({"all": true})),
+            Some(json!({"up_to": "01900000-0000-7000-8000-000000000000"})),
         ),
         "signOut" => ("POST", "/api/v1/auth/sign-out".into(), None),
         _ => return Ok(None),

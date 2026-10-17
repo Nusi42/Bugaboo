@@ -8,7 +8,7 @@ import { paths } from "../../shared/paths.ts";
 import { useUnreadNotifications } from "../../shared/unread-notifications.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { NotificationEntries } from "./NotificationEntries.tsx";
-import { useReadNotifications } from "./use-notifications.ts";
+import { useNewestNotification, useReadNotifications } from "./use-notifications.ts";
 
 /** The name of each filter. */
 const filterName = {
@@ -27,15 +27,17 @@ export function NotificationsPage() {
   const [filter, setFilter] = useState<Schema<"NotificationFilter">>("all");
   const unread = useUnreadNotifications() ?? 0;
   const readAll = useReadNotifications();
+  // *Mark all as read* goes up to the newest one on the screen: a later one stays unread.
+  const newest = useNewestNotification();
   return (
     <Card heading={t("notifications.title")} level={1}>
       <div {...partOf(part.notificationsBar)}>
-        {unread === 0 ? null : (
+        {unread === 0 || newest === undefined ? null : (
           <Button
             look={buttonLook.quiet}
             isPending={readAll.isPending}
             onPress={() => {
-              readAll.mutate({ body: { all: true } });
+              readAll.mutate({ body: { up_to: newest } });
             }}
           >
             {t("notifications.mark-all-read")}

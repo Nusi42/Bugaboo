@@ -89,6 +89,10 @@ export const queryKeys = {
     state: (issue: string) => ["followers", "state", issue],
     list: (issue: string) => ["followers", "list", issue],
   },
+  notifications: {
+    /** A page-by-page list of notifications; it starts with the route like `api.query` keys do. */
+    list: (filter: string, size: number) => ["get", "/api/v1/notifications", "list", filter, size],
+  },
   mentions: {
     all: ["mentions"],
     choices: (issue: string, search: string) => ["mentions", "choices", issue, search],
