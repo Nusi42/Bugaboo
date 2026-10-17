@@ -6,6 +6,7 @@ use bb_core::access::{AppliesTo, FieldLevel};
 use bb_core::fields::Field;
 use bb_core::issue::Status;
 use bb_core::job::JobState;
+use bb_core::mail::TEST_EMAIL_EVERY_SECONDS;
 use bb_core::notification::{
     MAIL_BATCH_SECONDS, MAIL_ENTRIES_MAX, MailState, NotificationKind, Via,
 };
@@ -451,6 +452,7 @@ async fn sec_16_the_test_e_mail_goes_to_the_person_who_asks_even_while_mail_is_o
             bb_core::ErrorCode::Forbidden
         ))
     );
+    crew.world.clock.advance(TEST_EMAIL_EVERY_SECONDS + 1);
     crew.world.mailer.fail_next(MailFailure::Rejected);
     let failed = send_test_email(
         &crew.world.ctx(),
@@ -467,4 +469,109 @@ async fn sec_16_the_test_e_mail_goes_to_the_person_who_asks_even_while_mail_is_o
         ))
     );
     Ok(())
+}
+
+#[tokio::test]
+async fn sec_16_a_person_sends_a_test_e_mail_only_every_few_seconds() -> Outcome {
+    use crate::notifications::{SendTestEmail, send_test_email};
+    let crew = Crew::new().await?;
+    enter_the_mail_server(&crew.world).await?;
+    let (ada, bob) = (token(&crew.world), crew.bob.session_token.clone());
+    let send = |session: String| {
+        let world = &crew.world;
+        async move {
+            send_test_email(
+                &world.ctx(),
+                SendTestEmail {
+                    session_token: session,
+                },
+            )
+            .await
+        }
+    };
+    send(ada.clone()).await.map_err(text)?;
+    // Right after, the same person waits; they are told for how long.
+    let again = send(ada.clone()).await.err();
+    assert_eq!(
+        again,
+        Some(crate::auth::AppError::Limited {
+            retry_after: u64::try_from(TEST_EMAIL_EVERY_SECONDS)?
+        })
+    );
+    crew.world.clock.advance(TEST_EMAIL_EVERY_SECONDS - 3);
+    assert_eq!(
+        send(ada.clone()).await.err(),
+        Some(crate::auth::AppError::Limited { retry_after: 3 })
+    );
+    crew.world.clock.advance(3);
+    send(ada).await.map_err(text)?;
+    assert_eq!(crew.world.mailer.messages().len(), 2);
+    // A refused try (somebody who may not send one) does not use up the allowance of anybody.
+    assert!(send(bob).await.is_err());
+    Ok(())
+}
+
+#[tokio::test]
+async fn sec_16_the_mail_server_gets_no_secret_in_the_clear_unless_it_is_this_machine() -> Outcome {
+    let mut crew = Crew::new().await?;
+    mail_is_on(&crew).await?;
+    crew.switch_on_by(NotificationKind::FollowedActivity, Via::Mail)
+        .await?;
+    set_setting(&crew, "mail.security", SettingValue::Text("off".to_owned())).await?;
+    set_setting(
+        &crew,
+        "mail.username",
+        SettingValue::Text("mailer".to_owned()),
+    )
+    .await?;
+    // A user name (and the password mail_is_on stored) over a connection nobody encrypted, to
+    // another machine: refused, and no e-mail of a notification goes either.
+    assert_eq!(
+        test_e_mail(&crew.world).await.err(),
+        Some(crate::auth::AppError::Refused(
+            bb_core::ErrorCode::MailInsecure
+        ))
+    );
+    let bob = crew.bob.session_token.clone();
+    crew.change(&bob, Change::Status(Status::Done)).await?;
+    after_five_minutes(&crew).await?;
+    assert!(crew.world.mailer.messages().is_empty());
+    // The mail server on this machine may take them in the clear.
+    set_setting(
+        &crew,
+        "mail.host",
+        SettingValue::Text("localhost".to_owned()),
+    )
+    .await?;
+    test_e_mail(&crew.world).await.map_err(text)?;
+    assert_eq!(crew.world.mailer.messages().len(), 1);
+    // And encryption makes any host fine.
+    crew.world.clock.advance(TEST_EMAIL_EVERY_SECONDS + 1);
+    set_setting(
+        &crew,
+        "mail.host",
+        SettingValue::Text("mail.example.test".to_owned()),
+    )
+    .await?;
+    set_setting(
+        &crew,
+        "mail.security",
+        SettingValue::Text("starttls".to_owned()),
+    )
+    .await?;
+    test_e_mail(&crew.world).await.map_err(text)?;
+    Ok(())
+}
+
+/// The administrator sends a test e-mail.
+async fn test_e_mail(
+    world: &super::world::World,
+) -> Result<bb_policy::Authorized<crate::auth::Done>, crate::auth::AppError> {
+    crate::notifications::send_test_email(
+        &world.ctx(),
+        crate::notifications::SendTestEmail {
+            session_token: token(world),
+        },
+    )
+    .await
 }

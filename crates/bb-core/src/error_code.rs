@@ -145,6 +145,9 @@ error_codes! {
     MailUnavailable => ("mail.unavailable", 503),
     /// E-mail is off, or the mail server is not entered (PRIV-08).
     MailOff => ("mail.off", 409),
+    /// The mail server is set to send a user name or a password without encryption to another
+    /// machine (NTF-02).
+    MailInsecure => ("mail.insecure", 409),
     /// A person changed their handle a short time ago and cannot change it again yet (M3-F70).
     HandleChangedLately => ("handle.changed_lately", 429),
     /// A change request that does not come from one of Bugaboo's own pages.

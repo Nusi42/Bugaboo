@@ -94,8 +94,10 @@ pub async fn set_mail_password<S: AuthStore>(
 ///
 /// # Errors
 /// `access.forbidden` without *Change organization settings*, `mail.off` while the host or the
-/// sender is not entered, `mail.rejected` when the mail server turns the e-mail away for good,
-/// `mail.unavailable` when it cannot be reached.
+/// sender is not entered, `mail.insecure` when the settings would send a user name or a password
+/// without encryption to another machine, `rate_limit.exceeded` (with the seconds to wait) when
+/// the person sent one a moment ago, `mail.rejected` when the mail server turns the e-mail away
+/// for good, `mail.unavailable` when it cannot be reached.
 pub async fn send_test_email<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: SendTestEmail,
@@ -112,6 +114,7 @@ pub async fn send_test_email<S: AuthStore>(
     let Some(server) = ctx.mail_server(&layers).await? else {
         return Err(AppError::Refused(ErrorCode::MailOff));
     };
+    ctx.reserve_test_email(actor.person.id)?;
     let message = MailMessage {
         to: actor.person.email.clone(),
         subject: Message::from(message::MAIL_TEST_SUBJECT).render(),

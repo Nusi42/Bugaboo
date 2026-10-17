@@ -9,7 +9,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::id::{InvitationId, IssueId, UserId};
-use bb_core::mail::MailSecurity;
+use bb_core::mail::{MailSecurity, would_send_secrets_in_the_clear};
 use bb_core::notification::Notification;
 use bb_core::notification::{MAIL_ENTRIES_MAX, MailState, Via};
 use bb_core::person::Person;
@@ -96,15 +96,20 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         layers: &Layers,
     ) -> Result<Option<MailServer>, AppError> {
-        if layers.yes(&MAIL_ENABLED) {
-            self.mail_server(layers).await
-        } else {
-            Ok(None)
+        if !layers.yes(&MAIL_ENABLED) {
+            return Ok(None);
+        }
+        match self.mail_server(layers).await {
+            // The settings would send a secret in the clear: nothing goes, and the test e-mail
+            // tells the administrator why.
+            Err(AppError::Refused(ErrorCode::MailInsecure)) => Ok(None),
+            other => other,
         }
     }
 
     /// The mail server as the settings and the stored password say now, whether or not e-mail is
-    /// switched on. `None` while the host or the sender is not entered.
+    /// switched on, and a refusal (`mail.insecure`) for settings that would send a secret in the
+    /// clear. `None` while the host or the sender is not entered.
     pub(crate) async fn mail_server(
         &self,
         layers: &Layers,
@@ -126,11 +131,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?
             .and_then(|bytes| String::from_utf8(bytes.to_vec()).ok())
             .unwrap_or_default();
+        let username = layers.text(&MAIL_USERNAME).trim().to_owned();
+        if would_send_secrets_in_the_clear(
+            security,
+            &host,
+            !username.is_empty() || !password.is_empty(),
+        ) {
+            return Err(AppError::Refused(ErrorCode::MailInsecure));
+        }
         Ok(Some(MailServer {
             host,
             port,
             security,
-            username: layers.text(&MAIL_USERNAME).trim().to_owned(),
+            username,
             password: Zeroizing::new(password),
             from,
         }))

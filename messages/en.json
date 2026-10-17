@@ -1732,5 +1732,6 @@
   "mail.sign-up-exists-text": "Somebody, probably you, tried to sign up with this address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
   "sign-up.sent": "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you.",
   "error.handle.changed-lately": "You changed your handle only a short time ago. You can change it again later.",
-  "mail.line-more": "There is more than this e-mail holds. Open it in Bugaboo to read it all."
+  "mail.line-more": "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
+  "error.mail.insecure": "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine."
 }

@@ -52,6 +52,8 @@ pub struct AuthServices<S> {
     pub(crate) server_log: Option<Arc<dyn ServerLogFile>>,
     /// The address people reach the server at, which the links in e-mails start with.
     pub(crate) public_url: String,
+    /// When each person last sent a test e-mail, so they cannot send a stream of them.
+    pub(crate) test_mail_at: Mutex<HashMap<UserId, Timestamp>>,
 }
 
 impl<S> AuthServices<S> {
@@ -81,6 +83,7 @@ impl<S> AuthServices<S> {
             mailer: Arc::new(NoMailer),
             server_log: None,
             public_url: String::new(),
+            test_mail_at: Mutex::default(),
         }
     }
 
@@ -276,6 +279,33 @@ impl EventMaker {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// Lets a person send a test e-mail if they did not send one in the last
+    /// `TEST_EMAIL_EVERY_SECONDS` seconds, and notes the moment.
+    ///
+    /// # Errors
+    /// `Limited` with the seconds to wait.
+    pub(crate) fn reserve_test_email(&self, person: UserId) -> Result<(), AppError> {
+        let now = self.now();
+        let every = jiff::SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
+        let mut sent = self
+            .services
+            .test_mail_at
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // Only the last few seconds matter: the others are forgotten, so the map stays small.
+        sent.retain(|_, at| at.checked_add(every).is_ok_and(|until| until > now));
+        if let Some(at) = sent.get(&person)
+            && let Ok(until) = at.checked_add(every)
+        {
+            let wait = until.as_second().saturating_sub(now.as_second());
+            return Err(AppError::Limited {
+                retry_after: u64::try_from(wait).unwrap_or(1).max(1),
+            });
+        }
+        sent.insert(person, now);
+        Ok(())
+    }
+
     pub(crate) const fn store(&self) -> &S {
         &self.services.store
     }

@@ -836,6 +836,9 @@ pub const ERROR_LABEL_PICK_ONE_CONFLICT: MessageKey =
 /// The message `error.limit.reached`.
 pub const ERROR_LIMIT_REACHED: MessageKey = MessageKey::new("error.limit.reached");
 
+/// The message `error.mail.insecure`.
+pub const ERROR_MAIL_INSECURE: MessageKey = MessageKey::new("error.mail.insecure");
+
 /// The message `error.mail.off`.
 pub const ERROR_MAIL_OFF: MessageKey = MessageKey::new("error.mail.off");
 
@@ -8806,6 +8809,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.limit.reached",
         "There is no room for more of these. Take some away first.",
+    ),
+    (
+        "error.mail.insecure",
+        "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
     ),
     (
         "error.mail.off",

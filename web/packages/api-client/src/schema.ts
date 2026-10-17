@@ -3681,6 +3681,7 @@ export interface components {
       | "mail.rejected"
       | "mail.unavailable"
       | "mail.off"
+      | "mail.insecure"
       | "handle.changed_lately"
       | "request.wrong_origin"
       | "request.wrong_token"

@@ -646,6 +646,8 @@ export const messages = {
     "How many old files of the server log are kept next to the current one. Older ones are deleted.",
   "error.handle.changed-lately":
     "You changed your handle only a short time ago. You can change it again later.",
+  "error.mail.insecure":
+    "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
 } as const;
 
 register(messages);

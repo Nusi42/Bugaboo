@@ -113,6 +113,7 @@ pub(super) fn skip_of(error: AppError) -> Result<SkipReason, AppError> {
             | ErrorCode::MailRejected
             | ErrorCode::MailUnavailable
             | ErrorCode::MailOff
+            | ErrorCode::MailInsecure
             | ErrorCode::HandleChangedLately
             | ErrorCode::SignUpRefused
             | ErrorCode::PasskeyRejected
