@@ -87,7 +87,7 @@ export async function untilKept(page: Page, pressed = 0): Promise<number> {
 }
 
 /** The note that says the text was not saved and is kept (*Not saved yet …*). */
-export function lostNote(page: Page) {
+export function lostEditNotice(page: Page) {
   return page.getByText(new RegExp(`^${t("save.not-saved")}`, "u")).first();
 }
 

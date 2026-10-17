@@ -8,7 +8,7 @@ import { useNow } from "../use-now.ts";
 import type { EditedThing } from "./edited-thing.ts";
 import type { HeldBySomebody } from "./long-text-model.ts";
 
-export interface HeldNoteProps {
+export interface HeldEditNoticeProps {
   readonly held: HeldBySomebody;
   readonly thing: EditedThing;
   /** *Ask … to finish*, offered when somebody else holds the lock; left out where the screen has none. */
@@ -24,7 +24,13 @@ export interface HeldNoteProps {
  * (ISS-17, UX §9). One note for the description, a comment and a layout; a lock the person holds
  * in another window of their own says so and offers no asking.
  */
-export function HeldNote({ held, thing, onAskToFinish, onEditAnyway, children }: HeldNoteProps) {
+export function HeldEditNotice({
+  held,
+  thing,
+  onAskToFinish,
+  onEditAnyway,
+  children,
+}: HeldEditNoticeProps) {
   const now = useNow();
   const what = t(thing);
   return (

@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { editedThing } from "../../shared/editing/edited-thing.ts";
-import { HeldNote } from "../../shared/editing/HeldNote.tsx";
+import { HeldEditNotice } from "../../shared/editing/HeldEditNotice.tsx";
 import type { LayoutLock } from "./use-layout-lock.ts";
 
 /** What the person needs to know about the lock on the layout: somebody else holds it, or it was lost. */
@@ -10,14 +10,14 @@ export function EditNotices({ lock }: { readonly lock: LayoutLock }) {
   const { state } = lock;
   if (state.phase === "held") {
     return (
-      <HeldNote
+      <HeldEditNotice
         held={state.held}
         thing={editedThing.layout}
         onAskToFinish={lock.askToFinish}
         onEditAnyway={lock.editAnyway}
       >
         <Button onPress={lock.retry}>{t("common.try-again")}</Button>
-      </HeldNote>
+      </HeldEditNotice>
     );
   }
   if (state.phase === "lost") {

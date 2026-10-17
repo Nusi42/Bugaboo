@@ -6,7 +6,7 @@ import { personNameInside, someoneName } from "../person.ts";
 import type { EditedThing } from "./edited-thing.ts";
 import type { LostReason, Who } from "./long-text-model.ts";
 
-export interface LostNoteProps {
+export interface LostEditNoticeProps {
   readonly reason: LostReason;
   /** Who took over or changed the text, if the screen can tell. */
   readonly by?: Who | undefined;
@@ -19,7 +19,7 @@ export interface LostNoteProps {
  * The note that tells why a text is *Not saved yet* and that it is kept (ISS-17, UX §9): the same
  * words for the description and a comment, with the way on that each screen has.
  */
-export function LostNote({ reason, by, thing, children }: LostNoteProps) {
+export function LostEditNotice({ reason, by, thing, children }: LostEditNoticeProps) {
   const name = by === undefined ? someoneName("inside") : personNameInside(by);
   const what = t(thing);
   const why = {

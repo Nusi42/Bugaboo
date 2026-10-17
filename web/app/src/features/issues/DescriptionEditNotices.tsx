@@ -3,8 +3,8 @@ import { Alert, alertTone, Button, partOf, part } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { editedThing } from "../../shared/editing/edited-thing.ts";
-import { LostNote } from "../../shared/editing/LostNote.tsx";
-import { HeldNote } from "../../shared/editing/HeldNote.tsx";
+import { LostEditNotice } from "../../shared/editing/LostEditNotice.tsx";
+import { HeldEditNotice } from "../../shared/editing/HeldEditNotice.tsx";
 import { personName } from "../../shared/person.ts";
 import { Offered } from "./DescriptionDraft.tsx";
 import type { Description } from "./use-description.ts";
@@ -27,9 +27,9 @@ function Lost({ description, onCompare }: DescriptionEditNoticesProps) {
     return null;
   }
   return (
-    <LostNote reason={phase.reason} by={phase.by} thing={editedThing.description}>
+    <LostEditNotice reason={phase.reason} by={phase.by} thing={editedThing.description}>
       <Button onPress={onCompare}>{t("issues.compare-and-save")}</Button>
-    </LostNote>
+    </LostEditNotice>
   );
 }
 
@@ -40,7 +40,7 @@ function Held({ description }: Pick<DescriptionEditNoticesProps, "description">)
     return null;
   }
   return (
-    <HeldNote
+    <HeldEditNotice
       held={phase.lock}
       thing={editedThing.description}
       onAskToFinish={description.askToFinish}

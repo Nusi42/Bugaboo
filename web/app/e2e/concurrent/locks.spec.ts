@@ -9,7 +9,7 @@ import { t } from "@bugaboo/messages";
 
 import { ada, type Person, signInThroughApi } from "../support/accounts.ts";
 import { signedInAdmin } from "../support/access.ts";
-import { lostNote, signedInPage } from "../support/crowd-pages.ts";
+import { lostEditNotice, signedInPage } from "../support/crowd-pages.ts";
 import { ben, cleo, crowdIssues, prepareCrowd } from "../support/crowd.ts";
 import {
   descriptionBox,
@@ -86,7 +86,7 @@ test("iss_17_three_people_edit_one_description_and_the_first_text_is_kept", asyn
   await expect(taker.getByText("Ada's text, taken over").first()).toBeVisible();
   // Ben's time is over, but his text is still in his box, and he keeps it by comparing.
   await saveButton(holder).click();
-  await expect(lostNote(holder)).toBeVisible();
+  await expect(lostEditNotice(holder)).toBeVisible();
   // After Edit anyway the note says who took over, not that Ben's time ran out (M3 review).
   await expect(holder.getByText(t("editing.lost-taken-over", { name: ada.name }))).toBeVisible();
   await expect(holder.getByText(t("editing.lost-ran-out"))).toHaveCount(0);
@@ -136,7 +136,7 @@ test("iss_17_a_lock_holders_network_drops_and_the_text_comes_back_with_compare_a
   // The network is back: Ben's text is still in his box and he can compare and save it.
   await network.end();
   await saveButton(holder).click();
-  await expect(lostNote(holder)).toBeVisible();
+  await expect(lostEditNotice(holder)).toBeVisible();
   await expect(descriptionBox(holder)).toHaveValue("Ben's words, typed before the network went");
   await holder.getByRole("button", { name: t("issues.compare-and-save"), exact: true }).click();
   await expect(holder.getByText("Cleo's text, written while Ben was away").first()).toBeVisible();

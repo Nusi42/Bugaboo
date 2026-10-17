@@ -18,7 +18,7 @@ import {
   type LostReason,
   type Who,
 } from "../../shared/editing/index.ts";
-import { LostNote } from "../../shared/editing/LostNote.tsx";
+import { LostEditNotice } from "../../shared/editing/LostEditNotice.tsx";
 import { messageOf } from "../../shared/errors.ts";
 import { markdownLabels } from "../../shared/markdown-labels.ts";
 
@@ -46,9 +46,9 @@ function Lost({
   readonly onRetry: () => void;
 }) {
   return (
-    <LostNote reason={reason} by={by} thing={editedThing.comment}>
+    <LostEditNotice reason={reason} by={by} thing={editedThing.comment}>
       {lockCanBeRetaken(reason) ? <Button onPress={onRetry}>{t("common.try-again")}</Button> : null}
-    </LostNote>
+    </LostEditNotice>
   );
 }
 
