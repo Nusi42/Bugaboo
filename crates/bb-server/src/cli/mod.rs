@@ -9,6 +9,7 @@
 //!
 //! Every text a person reads, the help of each option included, comes from the message catalog.
 
+mod preview;
 mod renewal;
 mod secrets;
 mod serve;
@@ -187,9 +188,27 @@ fn given<const N: usize>(
         .collect()
 }
 
-/// Runs the command line and says how it went.
-pub(crate) async fn run() -> ExitCode {
+/// Reads the command line and runs it. The child process of a preview runs at once, with no
+/// runtime; every other command runs in the runtime of the server.
+pub(crate) fn start() -> ExitCode {
     let cli = Cli::parse();
+    if let Command::Preview(args) = cli.command {
+        return preview::run(args.kind);
+    }
+    match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime.block_on(run(cli)),
+        Err(error) => {
+            output::error(&format!("{error:#}"));
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Runs a command of the command line and says how it went.
+async fn run(cli: Cli) -> ExitCode {
     let result = match cli.command {
         Command::Serve(args) => serve::serve(args).await,
         Command::Openapi => {
@@ -209,11 +228,8 @@ pub(crate) async fn run() -> ExitCode {
         Command::Keys {
             command: KeysCommand::Export { store, folder },
         } => secrets::export_keys(&store, &folder).await,
-        // The child process of a preview: its exit code is its answer (`PreviewRefusal`).
-        Command::Preview(args) => {
-            let code = bb_files::preview::run(args.kind, &crate::ALLOCATOR);
-            return u8::try_from(code).map_or(ExitCode::FAILURE, ExitCode::from);
-        }
+        // Taken before the runtime is built (`start`), never here.
+        Command::Preview(_) => return ExitCode::FAILURE,
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

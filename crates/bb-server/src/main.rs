@@ -12,14 +12,11 @@ mod wiring;
 
 use std::process::ExitCode;
 
-/// The allocator of the program: the one of the system, wrapped so that the child process of a
-/// preview can limit its own memory (ADR-0032 §4). Without a limit it only counts.
-#[global_allocator]
-static ALLOCATOR: bb_files::preview::ChildAllocator = bb_files::preview::child_allocator();
-
-#[tokio::main]
-async fn main() -> ExitCode {
-    cli::run().await
+/// Not async: the child process of a preview runs with no runtime at all (its memory limit would
+/// count the stacks of every worker), so the command line is read first and the runtime is built
+/// only for the commands that need one.
+fn main() -> ExitCode {
+    cli::start()
 }
 
 #[cfg(test)]

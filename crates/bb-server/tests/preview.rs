@@ -153,6 +153,104 @@ mod preview {
     }
 
     #[tokio::test]
+    async fn att_04_a_big_picture_and_a_page_still_get_their_preview_under_the_limits() {
+        // A picture of 24 megapixels (a good camera) is decoded in about 100 MB: far under the
+        // limit of the heap and, on Linux, of the address space (`RLIMIT_AS`), which the child
+        // sets before it reads a byte and which counts one thread, not a pool of workers.
+        let (_folder, files) = files();
+        let big = stored(&files, &picture(6000, 4000, Format::Png)).await;
+        assert_eq!(
+            files.create_preview(big, PreviewKind::Image).await.unwrap(),
+            PreviewStatus::Ready
+        );
+        let page = stored(&files, PDF).await;
+        assert_eq!(
+            files.create_preview(page, PreviewKind::Pdf).await.unwrap(),
+            PreviewStatus::Ready
+        );
+    }
+
+    /// The program that plays a child for the tests below: this test program itself, started with
+    /// one of its ignored tests, which only run so.
+    fn this_test_as_a_child(test: &str) -> PreviewCommand {
+        let program = std::env::current_exe().unwrap();
+        PreviewCommand::new(
+            program,
+            &[
+                "--ignored",
+                "--exact",
+                &format!("preview::{test}"),
+                "--nocapture",
+            ],
+        )
+    }
+
+    /// A child that never reads what it is sent and goes on for half a minute.
+    #[test]
+    #[ignore = "plays a child of the tests that start it, never run by itself"]
+    fn child_that_never_reads() {
+        std::thread::sleep(Duration::from_secs(30));
+    }
+
+    /// A child that writes without end, as far as the other side reads.
+    #[test]
+    #[ignore = "plays a child of the tests that start it, never run by itself"]
+    fn child_that_floods() {
+        use std::io::Write as _;
+        let chunk = vec![b'x'; 64 * 1024];
+        let mut out = std::io::stdout().lock();
+        // Never more than a gigabyte, so a child that is not stopped ends by itself.
+        for _ in 0..16_384 {
+            if out.write_all(&chunk).is_err() {
+                return;
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn att_04_a_child_that_never_reads_its_input_is_stopped_by_the_time_and_costs_the_preview_only()
+     {
+        // Six megabytes do not fit in a pipe, so the server is still writing when time runs out.
+        let command = this_test_as_a_child("child_that_never_reads").within(Duration::from_secs(1));
+        let (folder, files) = files_with(command);
+        let big = stored(&files, &vec![7_u8; 6 * 1024 * 1024]).await;
+        let started = std::time::Instant::now();
+        assert_eq!(
+            files.create_preview(big, PreviewKind::Image).await.unwrap(),
+            PreviewStatus::Without
+        );
+        assert!(
+            started.elapsed() < Duration::from_secs(10),
+            "it was stopped, not waited for"
+        );
+        assert!(preview_png(&files, big).await.is_none());
+        let work = folder.path().join("previews").join("work");
+        assert_eq!(std::fs::read_dir(&work).map_or(0, Iterator::count), 0);
+    }
+
+    #[tokio::test]
+    async fn att_04_a_child_that_floods_its_output_is_cut_off_and_costs_the_preview_only() {
+        let (folder, files) = files_with(this_test_as_a_child("child_that_floods"));
+        let small = stored(&files, &picture(20, 20, Format::Png)).await;
+        let started = std::time::Instant::now();
+        assert_eq!(
+            files
+                .create_preview(small, PreviewKind::Image)
+                .await
+                .unwrap(),
+            PreviewStatus::Without
+        );
+        // The server read a few megabytes and closed the pipe: it did not take a gigabyte.
+        assert!(
+            started.elapsed() < Duration::from_secs(10),
+            "it was cut off, not waited for"
+        );
+        assert!(preview_png(&files, small).await.is_none());
+        let work = folder.path().join("previews").join("work");
+        assert_eq!(std::fs::read_dir(&work).map_or(0, Iterator::count), 0);
+    }
+
+    #[tokio::test]
     async fn att_04_a_broken_pdf_gets_no_preview() {
         let (_folder, files) = files();
         let cut = stored(&files, &PDF[..PDF.len() / 2]).await;
