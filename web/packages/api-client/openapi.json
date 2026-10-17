@@ -25654,6 +25654,17 @@
             "type": "string",
             "description": "The readable ID now (`WEB-142`)."
           },
+          "priority": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Priority",
+                "description": "How important it is."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "project": {
             "$ref": "#/components/schemas/ProjectRef",
             "description": "The project it is in."
@@ -28788,6 +28799,17 @@
                 "key": {
                   "type": "string",
                   "description": "The readable ID now (`WEB-142`)."
+                },
+                "priority": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Priority",
+                      "description": "How important it is."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "project": {
                   "$ref": "#/components/schemas/ProjectRef",

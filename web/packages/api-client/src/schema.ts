@@ -4666,6 +4666,7 @@ export interface components {
       issue_type: components["schemas"]["IssueTypeRef"];
       /** @description The readable ID now (`WEB-142`). */
       key: string;
+      priority?: components["schemas"]["Priority"] | null;
       /** @description The project it is in. */
       project: components["schemas"]["ProjectRef"];
       status?: components["schemas"]["StatusRef"] | null;
@@ -6021,6 +6022,7 @@ export interface components {
         issue_type: components["schemas"]["IssueTypeRef"];
         /** @description The readable ID now (`WEB-142`). */
         key: string;
+        priority?: components["schemas"]["Priority"] | null;
         /** @description The project it is in. */
         project: components["schemas"]["ProjectRef"];
         status?: components["schemas"]["StatusRef"] | null;

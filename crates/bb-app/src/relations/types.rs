@@ -7,6 +7,7 @@
 //! sub-issue can lie in another project, whose roles can see other fields.
 
 use bb_core::id::{IssueId, RelationId, RelationKindId};
+use bb_core::issue::Priority;
 use bb_core::relation::{Direction, RelationKind};
 use bb_policy::Masked;
 use serde::Serialize;
@@ -31,6 +32,9 @@ pub struct IssueLine {
     /// Where it stands, with its name and status group; left out where the viewer's role hides the
     /// field in that project.
     pub status: Option<StatusView>,
+    /// How important it is, for the edge of its row; left out where the viewer's role hides the
+    /// field in that project.
+    pub priority: Option<Priority>,
 }
 
 // The members are dropped by the line's own project, which can differ from the place of the

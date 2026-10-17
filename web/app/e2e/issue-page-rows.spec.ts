@@ -27,6 +27,8 @@ test("ux_4_4 a sub-issue is a row like those of the list, tinted by its status g
   const row = partIn(parts, "list-row").filter({ hasText: "WEB-2" });
   // The same state as the list: WEB-2 is done.
   await expect(row).toHaveAttribute("data-state", /group-done/u);
+  // And its priority edge: WEB-2 is high (M3-F173).
+  await expect(row).toHaveAttribute("data-state", /priority-high/u);
   await expect(row.getByRole("img", { name: t("status.done"), exact: true })).toBeVisible();
   // The whole row opens the issue, and the button to take it out is in a cell of its own.
   await expect(row.getByRole("link")).toHaveAttribute("href", issueAddress("WEB-2"));

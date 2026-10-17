@@ -67,6 +67,7 @@ mod projects_agree;
 mod projects_http;
 mod projects_review;
 mod relations_http;
+mod relations_priority;
 pub(crate) mod rig;
 mod roles_http;
 mod second_step;
