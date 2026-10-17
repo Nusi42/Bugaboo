@@ -603,9 +603,25 @@ async fn run(rig: &Rig, actors: &[Actor]) -> Result<Record, Failure> {
 
 #[tokio::test]
 async fn sec_01_every_route_answers_every_actor_as_the_permission_table_says() -> TestResult {
+    // What the server sends on its own has a database of its own: the routes make a mess of theirs.
+    let delivered = std::sync::Mutex::new(Vec::new());
+    each_database("sec_matrix_delivery", async |db| {
+        let told = super::delivery::run_and_compare(db).await?;
+        *delivered
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = told;
+        Ok(())
+    })
+    .await?;
     each_database("sec_matrix_every_route_every_actor", async |db| {
         let rig = Rig::start_with(db, Tries::Unreached).await?;
-        let record = run(&rig, &actors()).await?;
+        let mut record = run(&rig, &actors()).await?;
+        record.delivered(
+            delivered
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone(),
+        );
         record.matches_the_repository()?;
         Ok(())
     })

@@ -15,6 +15,9 @@
 //! - every route of the description has a line in the record with the permission it declares, and
 //!   was run by every actor of the record;
 //! - every route has a row in the table of example requests;
+//! - for what the server sends on its own (the app list of notifications and the e-mail), every
+//!   starting role as the recipient has a `delivery` line, and what it says they were told is what
+//!   the tables of the starting roles say they may see (the field *Status*, the kind *Authors*);
 //! - no line names a route that does not exist, and the answers are well formed: nobody signed in is
 //!   `not-signed-in` for every route that is not public.
 
@@ -22,6 +25,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bb_api_words::sec_matrix::{self as words, RECORD_PATH};
 use bb_api_words::{marks, needs};
+use bb_core::access::FieldLevel;
+use bb_core::fields::Field;
+use bb_core::people_kinds::PeopleKind;
 use bb_policy::StartingRole;
 use serde_json::Value;
 
@@ -100,13 +106,28 @@ struct Line {
     answers: BTreeMap<String, String>,
 }
 
-/// The actors and the routes of a record.
-fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>) {
+/// What a `delivery` line says after the colon, by name (`heard`, `status`, `author`).
+type Said = BTreeMap<String, String>;
+
+/// The actors, the routes and the deliveries of a record. A delivery is keyed by its entry point
+/// and its recipient, written as `entry recipient`.
+fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>, BTreeMap<String, Said>) {
     let mut actors = Vec::new();
     let mut lines = BTreeMap::new();
+    let mut deliveries = BTreeMap::new();
     for line in record.lines().filter(|line| !line.starts_with('#')) {
         if let Some(rest) = line.strip_prefix("actors ") {
             actors = rest.split_whitespace().map(str::to_owned).collect();
+        } else if let Some(rest) = line.strip_prefix("delivery ")
+            && let Some((head, said)) = rest.split_once(" : ")
+        {
+            deliveries.insert(
+                head.split_whitespace().collect::<Vec<_>>().join(" "),
+                said.split_whitespace()
+                    .filter_map(|pair| pair.split_once('='))
+                    .map(|(name, word)| (name.to_owned(), word.to_owned()))
+                    .collect(),
+            );
         } else if let Some(rest) = line.strip_prefix("route ")
             && let Some((head, answers)) = rest.split_once(" : ")
         {
@@ -136,7 +157,7 @@ fn parse(record: &str) -> (Vec<String>, BTreeMap<String, Line>) {
             );
         }
     }
-    (actors, lines)
+    (actors, lines, deliveries)
 }
 
 /// The operations that have a row in the table of examples.
@@ -181,6 +202,53 @@ fn actor_findings(actors: &[String], routes: &[Route]) -> Vec<Finding> {
         }
     }
     findings
+}
+
+/// What a recipient with this starting role may be told, in the words of the record: the tables
+/// of the starting roles are the one place that says it.
+fn delivery_words(role: StartingRole) -> [(&'static str, &'static str); 3] {
+    let status = if role.field_level(Field::Status) == FieldLevel::Hidden {
+        words::LEFT_OUT
+    } else {
+        words::SHOWN
+    };
+    [
+        ("heard", words::YES),
+        ("status", status),
+        ("author", role.people_level(PeopleKind::Authors).code()),
+    ]
+}
+
+/// Every starting role as the recipient has a line for each entry point of what the server sends
+/// on its own, and it says what the tables of the starting roles say.
+fn delivery_findings(deliveries: &BTreeMap<String, Said>) -> Vec<Finding> {
+    let mut found = Vec::new();
+    for entry in words::DELIVERY_POINTS {
+        for role in StartingRole::ALL {
+            let actor = words::role_actor(role.code());
+            let place = format!("What `{entry}` tells `{actor}`");
+            let Some(said) = deliveries.get(&format!("{entry} {actor}")) else {
+                found.push(Finding::at(
+                    RECORD_PATH,
+                    format!("{place} is missing from the record: run the matrix."),
+                ));
+                continue;
+            };
+            for (name, wanted) in delivery_words(*role) {
+                if said.get(name).map(String::as_str) != Some(wanted) {
+                    found.push(Finding::at(
+                        RECORD_PATH,
+                        format!(
+                            "{place} must have `{name}={wanted}` as the tables of the starting \
+                             roles say, not `{}`.",
+                            said.get(name).map_or("nothing", String::as_str)
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+    found
 }
 
 /// What the record and the table say about one route.
@@ -271,8 +339,9 @@ fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> 
             ),
         )];
     };
-    let (actors, lines) = parse(record);
+    let (actors, lines, deliveries) = parse(record);
     let mut findings = actor_findings(&actors, &routes);
+    findings.extend(delivery_findings(&deliveries));
     let rows = rows(examples);
     for route in &routes {
         findings.extend(route_findings(route, &rows, &lines, &actors));
@@ -305,6 +374,8 @@ fn evaluate(spec: &Value, record: Option<&str>, examples: &str) -> Vec<Finding> 
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
+
     use serde_json::json;
 
     use super::*;
@@ -371,10 +442,31 @@ mod tests {
         )
     }
 
+    /// The `delivery` lines of a record: what each starting role is told through each entry point.
+    fn delivery_lines() -> String {
+        let mut text = String::new();
+        for entry in words::DELIVERY_POINTS {
+            for role in StartingRole::ALL {
+                let said: Vec<String> = delivery_words(*role)
+                    .iter()
+                    .map(|(name, word)| format!("{name}={word}"))
+                    .collect();
+                let _ = writeln!(
+                    text,
+                    "delivery {entry} {} : {}",
+                    words::role_actor(role.code()),
+                    said.join(" ")
+                );
+            }
+        }
+        text
+    }
+
     fn record(extra: &[&str]) -> String {
         format!(
-            "# written by the matrix\n{}{}{}",
+            "# written by the matrix\n{}{}{}{}",
             actors_line(extra),
+            delivery_lines(),
             route_line("getStatus", "GET", "/api/v1/status", needs::PUBLIC, extra),
             route_line(
                 "listProjects",
@@ -544,6 +636,30 @@ mod tests {
         );
         let found = messages(&with_keys, Some(&with), &examples);
         assert!(found.is_empty(), "{found:?}");
+    }
+
+    #[test]
+    fn bad_example_a_delivery_that_is_missing_or_tells_more_than_the_tables_allow() {
+        let missing = record(&[])
+            .lines()
+            .filter(|line| !line.starts_with("delivery e-mail role-guest "))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let found = messages(&spec(), Some(&missing), EXAMPLES);
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert!(
+            found[0].contains("`e-mail` tells `role-guest`"),
+            "{found:?}"
+        );
+        // A guest is shown the author by the label of the role only.
+        let more = record(&[]).replace("author=role-only", "author=names");
+        let found = messages(&spec(), Some(&more), EXAMPLES);
+        assert!(
+            found
+                .iter()
+                .any(|m| m.contains("must have `author=role-only`")),
+            "{found:?}"
+        );
     }
 
     #[test]

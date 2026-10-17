@@ -109,8 +109,26 @@ pub mod sec_matrix {
     /// the record: the API is the only one today; e-mail, search, the assistant and exports add
     /// theirs with their milestones (M2-F65).
     pub const ENTRY_API: &str = "api";
-    /// Every entry point the record may name.
+    /// The list of notifications a person is shown in the app: what the server tells them on its
+    /// own, shaped for them when they ask (NTF-01, SEC-06).
+    pub const ENTRY_NOTIFICATIONS: &str = "notifications";
+    /// The e-mail the server sends to a person on its own, shaped for them when it is sent
+    /// (NTF-02, SEC-06).
+    pub const ENTRY_MAIL: &str = "e-mail";
+    /// Every entry point the record may name for a route of the API.
     pub const ENTRY_POINTS: [&str; 1] = [ENTRY_API];
+    /// A `delivery` line says `heard=` [`YES`] or [`NO`]: whether anything reached the recipient.
+    pub const YES: &str = "yes";
+    /// See [`YES`].
+    pub const NO: &str = "no";
+    /// A `delivery` line says `status=` [`SHOWN`] or [`LEFT_OUT`]: whether the changed field was in
+    /// what the recipient was told.
+    pub const SHOWN: &str = "shown";
+    /// See [`SHOWN`].
+    pub const LEFT_OUT: &str = "hidden";
+    /// Every entry point the record may name for what the server sends on its own: each has a
+    /// `delivery` line for every starting role as the recipient.
+    pub const DELIVERY_POINTS: [&str; 2] = [ENTRY_NOTIFICATIONS, ENTRY_MAIL];
 
     /// Nobody is signed in.
     pub const NOBODY: &str = "nobody";
