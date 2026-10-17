@@ -141,6 +141,101 @@ async fn ntf_01_the_people_of_a_change_stay_people_as_the_reader_may_see_them() 
 }
 
 #[tokio::test]
+async fn sec_06_a_notification_and_an_e_mail_leave_out_a_field_the_role_of_the_reader_hides()
+-> TestResult {
+    use bb_app::access::Permission;
+    use bb_core::access::FieldLevel;
+    use bb_core::fields::{Field, FieldKey};
+
+    use super::exit_masks::person_with_levels;
+
+    each_database("sec_06_delivery_hidden_field_http", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        rig.turn_mail_on().await?;
+        for key in [
+            "notifications.followed-fields-in-app",
+            "notifications.followed-fields-by-mail",
+            "notifications.followed-activity-by-mail",
+        ] {
+            rig.set_organization_switch(key, true).await?;
+        }
+        // A reader with a role of their own: the title and the status are shown, the priority is
+        // hidden.
+        let (mut reader, _) = person_with_levels(
+            &site,
+            &rig,
+            "reader",
+            &[Permission::SeeProjects, Permission::SeeIssues],
+            &[
+                (FieldKey::BuiltIn(Field::Title), None, FieldLevel::CanSee),
+                (FieldKey::BuiltIn(Field::Status), None, FieldLevel::CanSee),
+            ],
+        )
+        .await?;
+        let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
+        let followed = reader
+            .send("PUT", &format!("{ISSUES}/{issue}/follow"), None)
+            .await?;
+        assert!(followed.status.is_success(), "{}", followed.body);
+        rig.clock.advance(5);
+        let version = version_of(&mut ada, &issue).await?;
+        let changed = ada
+            .send(
+                "PATCH",
+                &format!("{ISSUES}/{issue}"),
+                Some(json!({
+                    "version": version,
+                    "title": "Printer jams twice",
+                    "status": "in-progress",
+                    "priority": "critical"
+                })),
+            )
+            .await?;
+        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+
+        // In the app: the title and the status, and nothing of the priority.
+        let heard = items(&reader.send("GET", NOTIFICATIONS, None).await?);
+        let fields: Vec<&str> = heard
+            .iter()
+            .filter_map(|item| item["field"].as_str())
+            .collect();
+        assert!(
+            fields.contains(&"title") || fields.contains(&"status"),
+            "{fields:?}"
+        );
+        assert!(!fields.contains(&"priority"), "{fields:?}");
+        assert!(
+            !Value::Array(heard.clone())
+                .to_string()
+                .to_lowercase()
+                .contains("critical")
+        );
+
+        // By e-mail: the same.
+        rig.clock
+            .advance(bb_core::notification::MAIL_BATCH_SECONDS + 1);
+        rig.run_jobs().await?;
+        let mails = rig.mailer.messages();
+        let mail = mails
+            .iter()
+            .find(|mail| mail.to == "reader@example.test")
+            .ok_or("no e-mail for the reader")?;
+        let text = mail.text.to_lowercase();
+        assert!(
+            text.contains("printer jams twice") || text.contains("in progress"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("priority") && !text.contains("critical"),
+            "{text}"
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn ntf_01_the_reader_resumes_after_a_restart_without_doubles() -> TestResult {
     each_database("ntf_01_restart", async |db| {
         let (rig, app) = rig_and_app(db).await?;
