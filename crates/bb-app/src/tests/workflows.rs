@@ -172,7 +172,11 @@ async fn wf_06_a_new_organization_has_the_three_starter_workflows() -> Outcome {
     )
     .await?
     .into_value();
-    let names: Vec<&str> = listed.items.iter().map(|each| each.name.as_str()).collect();
+    let names: Vec<&str> = listed
+        .workflows
+        .iter()
+        .map(|each| each.name.as_str())
+        .collect();
     assert_eq!(names, ["Bug", "Development", "Simple"]);
     // Task and Goal use Simple, Bug uses Bug, Feature uses Development.
     for (issue_type, workflow) in [
@@ -218,7 +222,7 @@ async fn wf_06_a_new_organization_has_the_three_starter_workflows() -> Outcome {
     )
     .await?
     .into_value();
-    assert_eq!(again.items.len(), 3);
+    assert_eq!(again.workflows.len(), 3);
     Ok(())
 }
 
@@ -238,7 +242,7 @@ async fn wf_06_an_organization_that_has_issues_keeps_simple_for_every_type() -> 
     )
     .await?
     .into_value();
-    assert!(listed.items.is_empty());
+    assert!(listed.workflows.is_empty());
     for issue_type in ["Task", "Bug", "Feature", "Goal"] {
         assert_eq!(workflow_of_type(&world, issue_type).await?, "Simple");
     }

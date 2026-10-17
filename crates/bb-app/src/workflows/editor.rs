@@ -13,8 +13,9 @@ use bb_policy::{Authorized, Evaluation, Permission, Place};
 
 use super::resolve::InForce;
 use super::types::{
-    EditorChange, EditorGroup, EditorRole, RuleField, StatusView, WorkflowEditor,
-    WorkflowEditorQuery, WorkflowList, WorkflowListItem, WorkflowSlot, WorkflowsQuery,
+    EditorChange, EditorGroup, EditorRole, RuleField, StatusView, WORKFLOWS_LISTED_MAX,
+    WorkflowEditor, WorkflowEditorQuery, WorkflowList, WorkflowListItem, WorkflowSlot,
+    WorkflowsQuery,
 };
 use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -243,13 +244,19 @@ pub async fn workflows<S: AuthStore>(
     let held = ctx
         .require(&actor, Permission::ManageWorkflows, at.place())
         .await?;
-    let items = ctx
+    let headers = ctx
         .store()
         .workflow_headers()
         .await
-        .map_err(|error| internal::<S>(&error))?
+        .map_err(|error| internal::<S>(&error))?;
+    let truncated = headers.len() > WORKFLOWS_LISTED_MAX;
+    let workflows = headers
         .into_iter()
+        .take(WORKFLOWS_LISTED_MAX)
         .map(|Workflow { id, name, version }| WorkflowListItem { id, name, version })
         .collect();
-    Ok(held.authorize(WorkflowList { items }))
+    Ok(held.authorize(WorkflowList {
+        workflows,
+        truncated,
+    }))
 }

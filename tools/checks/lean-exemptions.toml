@@ -225,3 +225,56 @@ route = "GET /api/v1/layouts/form"
 property = "sections"
 whole_value = true
 reason = "The sections of one layout for one person: at most SECTIONS_MAX (20); the form draws all of them. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/issues/{issue}/status-changes"
+property = "changes"
+whole_value = true
+reason = "The status changes from one status of one workflow: a workflow has at most 300 (CHANGES_MAX), checked when it is published, and Try it needs all of them at once (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/statuses"
+property = "statuses"
+whole_value = true
+reason = "The statuses of the workflows of one project: a workflow has at most 30 (STATUSES_MAX) and a project has as many workflows as it has issue types, each checked when published; the choice of a status for many issues needs them all at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/projects/{project}/who-may-change/{field}"
+property = "roles"
+whole_value = true
+reason = "The roles of the organization that may change one field: at most as many as roles exist (ROLES_MAX caps them), and a sentence or the editor needs them all at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/workflows"
+property = "workflows"
+reason = "An organization has a handful of workflows; the list has a hard cap (WORKFLOWS_LISTED_MAX), says when it was cut, and a choice of one needs them all at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/workflows/editor"
+property = "statuses"
+whole_value = true
+reason = "The statuses of one workflow: at most STATUSES_MAX (30), checked when it is published; the editor needs all of them at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/workflows/editor"
+property = "changes"
+whole_value = true
+reason = "The status changes of one workflow: at most CHANGES_MAX (300), checked when it is published; the editor needs all of them at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/workflows/editor"
+property = "roles"
+whole_value = true
+reason = "The roles of the organization, which *Who can do it* names; at most ROLES_MAX (100); the editor needs all of them at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/workflows/editor"
+property = "groups"
+whole_value = true
+reason = "The groups *Who can do it* can name: all for a person who manages groups, the named ones otherwise; bounded like the groups of the organization, and the editor needs all of them at once. (M3-F106)"
+
+[[exempt]]
+route = "GET /api/v1/workflows/editor"
+property = "fields"
+whole_value = true
+reason = "The fields a rule can name: the description, Assigned to and the own fields of the organization (at most 200, own_fields::FIELDS_MAX); the editor lists them all. (M3-F106)"

@@ -34,7 +34,7 @@ use super::auth::{
 use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
 use super::projects::ProjectRef;
-use super::workflows::{StatusBody, StatusChangeBody, status_in};
+use super::workflows::{StatusChangeRef, StatusRef, status_in};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
@@ -124,12 +124,12 @@ pub(crate) struct IssueItem {
     /// Where it stands in its workflow: the key, the name and the status group.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "status")]
-    status: Option<StatusBody>,
+    status: Option<StatusRef>,
     /// The status changes the person may make now, with the text of each button and the fields it
     /// still needs. Empty when they may not change the issue. Hidden with the status.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "status")]
-    status_changes: Option<Vec<StatusChangeBody>>,
+    status_changes: Option<Vec<StatusChangeRef>>,
     /// How important it is.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "priority")]
@@ -174,12 +174,12 @@ impl From<&IssueView> for IssueItem {
             issue_type: Some(IssueTypeRef::from(&issue.issue_type)),
             title: Some(issue.title.clone()),
             description: Some(issue.description.clone()),
-            status: Some(StatusBody::from(&issue.status)),
+            status: Some(StatusRef::from(&issue.status)),
             status_changes: Some(
                 issue
                     .status_changes
                     .iter()
-                    .map(StatusChangeBody::from)
+                    .map(StatusChangeRef::from)
                     .collect(),
             ),
             priority: Some(issue.priority),
@@ -754,7 +754,7 @@ mod tests {
             }),
             title: Some(String::new()),
             description: Some(String::new()),
-            status: Some(StatusBody::blank()),
+            status: Some(StatusRef::blank()),
             status_changes: Some(Vec::new()),
             priority: Some(Priority::Normal),
             reported_by: Some(PersonRef::Someone),

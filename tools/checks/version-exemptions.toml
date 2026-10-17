@@ -150,3 +150,15 @@ reason = "Makes the layout of a place as a copy of the one in force (a new recor
 [[exempt]]
 routes = ["DELETE /api/v1/layouts/{layout}"]
 reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a layout that changed since is refused with edit.version_changed."
+
+[[exempt]]
+routes = ["POST /api/v1/workflows"]
+reason = "Makes the workflow of a place as a copy of the one in force (a new record); two people who make it at the same moment get one (the second is told version_changed)."
+
+[[exempt]]
+routes = ["PUT /api/v1/workflows/uses"]
+reason = "Says which workflow a place uses: one row for the place, replaced as a whole, with no state of its own to overwrite unseen. The workflows themselves are changed only by Publish, which takes the version."
+
+[[exempt]]
+routes = ["DELETE /api/v1/workflows/{workflow}"]
+reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a workflow that changed since is refused with edit.version_changed."

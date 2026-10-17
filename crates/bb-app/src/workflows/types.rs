@@ -249,9 +249,15 @@ pub struct WorkflowListItem {
 /// The workflows there are.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WorkflowList {
-    /// The workflows, by name.
-    pub items: Vec<WorkflowListItem>,
+    /// The workflows, by name, at most [`WORKFLOWS_LISTED_MAX`].
+    pub workflows: Vec<WorkflowListItem>,
+    /// The list was cut off at the cap.
+    pub truncated: bool,
 }
+
+/// The most workflows one answer lists: an organization has a handful, and a choice of one needs
+/// them all at once.
+pub const WORKFLOWS_LISTED_MAX: usize = 200;
 
 impl Masked for WorkflowList {}
 

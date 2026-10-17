@@ -10,7 +10,7 @@ import type { IssueDetail } from "./slots.ts";
 export interface IssueValues {
   readonly title?: string;
   /** The status it goes to, with its name: the request names it by its key. */
-  readonly status?: Schema<"StatusBody">;
+  readonly status?: Schema<"StatusRef">;
   readonly priority?: Schema<"Priority">;
   /** The people it is assigned to from now on: all of them. */
   readonly assignedTo?: readonly NamedPerson[];
@@ -155,7 +155,7 @@ export function changeSentence(values: IssueValues): string {
 }
 
 /** A status in a change a block asks for: a key, a name and a group, as the server shows one. */
-function statusOf(value: unknown): Schema<"StatusBody"> | undefined {
+function statusOf(value: unknown): Schema<"StatusRef"> | undefined {
   if (
     typeof value !== "object" ||
     value === null ||

@@ -26,7 +26,7 @@ mod who_may_change;
 
 /// A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.
 #[derive(Clone, Serialize, ToSchema)]
-pub(crate) struct StatusBody {
+pub(crate) struct StatusRef {
     /// The key, which never changes: it is what a request names a status by.
     key: String,
     /// What it is called.
@@ -35,7 +35,7 @@ pub(crate) struct StatusBody {
     group: StatusGroup,
 }
 
-impl From<&StatusView> for StatusBody {
+impl From<&StatusView> for StatusRef {
     fn from(status: &StatusView) -> Self {
         Self {
             key: status.key.to_string(),
@@ -46,7 +46,7 @@ impl From<&StatusView> for StatusBody {
 }
 
 #[cfg(test)]
-impl StatusBody {
+impl StatusRef {
     /// A status with nothing in it, for the tests that fill every member of an answer.
     pub(crate) fn blank() -> Self {
         Self {
@@ -59,9 +59,9 @@ impl StatusBody {
 
 /// A status change the reader may make on an issue now.
 #[derive(Serialize, ToSchema)]
-pub(crate) struct StatusChangeBody {
+pub(crate) struct StatusChangeRef {
     /// The status it ends in.
-    to: StatusBody,
+    to: StatusRef,
     /// The text of the button.
     button: String,
     /// The fields the change still needs before it can be made (*Must be filled in* fields that
@@ -69,10 +69,10 @@ pub(crate) struct StatusChangeBody {
     needs: Vec<FieldKey>,
 }
 
-impl From<&StatusChangeView> for StatusChangeBody {
+impl From<&StatusChangeView> for StatusChangeRef {
     fn from(change: &StatusChangeView) -> Self {
         Self {
-            to: StatusBody::from(&change.to),
+            to: StatusRef::from(&change.to),
             button: change.button.clone(),
             needs: change.needs.clone(),
         }
@@ -88,7 +88,7 @@ pub(crate) fn status_in(text: Option<&str>) -> Result<Option<StatusKey>, ApiErro
 #[derive(Serialize, ToSchema)]
 pub(crate) struct ProjectStatusesBody {
     /// The statuses, in the order the workflows list them.
-    statuses: Vec<StatusBody>,
+    statuses: Vec<StatusRef>,
 }
 
 impl Masked for ProjectStatusesBody {}
@@ -96,7 +96,7 @@ impl Masked for ProjectStatusesBody {}
 impl From<&ProjectStatuses> for ProjectStatusesBody {
     fn from(list: &ProjectStatuses) -> Self {
         Self {
-            statuses: list.statuses.iter().map(StatusBody::from).collect(),
+            statuses: list.statuses.iter().map(StatusRef::from).collect(),
         }
     }
 }

@@ -42,7 +42,7 @@ async fn wf_06_a_new_organization_offers_the_three_starter_workflows_over_http()
         let (rig, app) = rig_and_app(db).await?;
         let (_, mut ada) = Site::start(&rig, &app).await?;
         let listed = ada.send("GET", WORKFLOWS, None).await?;
-        let names: Vec<&str> = ok(&listed)?["items"]
+        let names: Vec<&str> = ok(&listed)?["workflows"]
             .as_array()
             .ok_or("no workflows")?
             .iter()

@@ -4261,12 +4261,12 @@ export interface components {
       priority?: components["schemas"]["Priority"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
       reported_by?: components["schemas"]["PersonRef"] | null;
-      status?: components["schemas"]["StatusBody"] | null;
+      status?: components["schemas"]["StatusRef"] | null;
       /**
        * @description The status changes the person may make now, with the text of each button and the fields it
        *     still needs. Empty when they may not change the issue. Hidden with the status.
        */
-      status_changes?: components["schemas"]["StatusChangeBody"][] | null;
+      status_changes?: components["schemas"]["StatusChangeRef"][] | null;
       /** @description What it is about. */
       title?: string | null;
       /** @description When it was last changed. */
@@ -4313,7 +4313,7 @@ export interface components {
       key: string;
       /** @description The project it is in. */
       project: components["schemas"]["ProjectRef"];
-      status?: components["schemas"]["StatusBody"] | null;
+      status?: components["schemas"]["StatusRef"] | null;
       /** @description What it is about. */
       title?: string | null;
     };
@@ -5499,12 +5499,12 @@ export interface components {
         priority?: components["schemas"]["Priority"] | null;
         project?: components["schemas"]["ProjectRef"] | null;
         reported_by?: components["schemas"]["PersonRef"] | null;
-        status?: components["schemas"]["StatusBody"] | null;
+        status?: components["schemas"]["StatusRef"] | null;
         /**
          * @description The status changes the person may make now, with the text of each button and the fields it
          *     still needs. Empty when they may not change the issue. Hidden with the status.
          */
-        status_changes?: components["schemas"]["StatusChangeBody"][] | null;
+        status_changes?: components["schemas"]["StatusChangeRef"][] | null;
         /** @description What it is about. */
         title?: string | null;
         /** @description When it was last changed. */
@@ -5533,7 +5533,7 @@ export interface components {
         key: string;
         /** @description The project it is in. */
         project: components["schemas"]["ProjectRef"];
-        status?: components["schemas"]["StatusBody"] | null;
+        status?: components["schemas"]["StatusRef"] | null;
         /** @description What it is about. */
         title?: string | null;
       }[];
@@ -6242,7 +6242,7 @@ export interface components {
     /** @description The statuses the issues of a project can have: one list for all issue types, each key once. */
     ProjectStatusesBody: {
       /** @description The statuses, in the order the workflows list them. */
-      statuses: components["schemas"]["StatusBody"][];
+      statuses: components["schemas"]["StatusRef"][];
     };
     /** @description The workflow to publish. */
     PublishWorkflowBody: {
@@ -6908,17 +6908,8 @@ export interface components {
       /** @description The person sees the project. */
       sees: boolean;
     };
-    /** @description A status as it is shown: the browser keeps no list of statuses, it shows what the server sends. */
-    StatusBody: {
-      /** @description The status group it belongs to. */
-      group: components["schemas"]["StatusGroup"];
-      /** @description The key, which never changes: it is what a request names a status by. */
-      key: string;
-      /** @description What it is called. */
-      name: string;
-    };
     /** @description A status change the reader may make on an issue now. */
-    StatusChangeBody: {
+    StatusChangeRef: {
       /** @description The text of the button. */
       button: string;
       /**
@@ -6927,7 +6918,7 @@ export interface components {
        */
       needs: components["schemas"]["FieldKey"][];
       /** @description The status it ends in. */
-      to: components["schemas"]["StatusBody"];
+      to: components["schemas"]["StatusRef"];
     };
     /** @description A status as the editor sends it. */
     StatusDraftBody: {
@@ -6952,6 +6943,15 @@ export interface components {
       from: string;
       /** @description The key of the status of the new workflow the issues go to. */
       to: string;
+    };
+    /** @description A status as it is shown: the browser keeps no list of statuses, it shows what the server sends. */
+    StatusRef: {
+      /** @description The status group it belongs to. */
+      group: components["schemas"]["StatusGroup"];
+      /** @description The key, which never changes: it is what a request names a status by. */
+      key: string;
+      /** @description What it is called. */
+      name: string;
     };
     /** @description The rules of a status change. */
     StatusRulesBody: {
@@ -7039,14 +7039,14 @@ export interface components {
       /** @description The status changes from there, each with the answer for the person. */
       changes: components["schemas"]["TriedChangeBody"][];
       /** @description The status the issue is in. */
-      status: components["schemas"]["StatusBody"];
+      status: components["schemas"]["StatusRef"];
     };
     /** @description One status change *Try it* looked at. */
     TriedChangeBody: components["schemas"]["TriedVerdictBody"] & {
       /** @description The text of the button. */
       button: string;
       /** @description The status it ends in. */
-      to: components["schemas"]["StatusBody"];
+      to: components["schemas"]["StatusRef"];
     };
     /** @description What the judge says about one status change. */
     TriedVerdictBody:
@@ -7180,13 +7180,15 @@ export interface components {
       /** @description The roles *Who can do it* can name. */
       roles: components["schemas"]["NamedBody"][];
       /** @description Its statuses, in order. */
-      statuses: components["schemas"]["StatusBody"][];
+      statuses: components["schemas"]["StatusRef"][];
       workflow?: components["schemas"]["WorkflowSlotBody"] | null;
     };
     /** @description The workflows there are. */
     WorkflowListBody: {
+      /** @description The list was cut off at its cap. */
+      truncated: boolean;
       /** @description The workflows, by name. */
-      items: components["schemas"]["WorkflowChoiceBody"][];
+      workflows: components["schemas"]["WorkflowChoiceBody"][];
     };
     /** @description The workflow set at exactly the place that was asked about. */
     WorkflowSlotBody: {

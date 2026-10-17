@@ -29,7 +29,7 @@ export interface IssueLine {
   readonly key: string;
   readonly title: string;
   /** The status with its name: the group in it gives the tint of the row and the icon (UX §4.2). */
-  readonly status: Schema<"StatusBody">;
+  readonly status: Schema<"StatusRef">;
   /** The group of the status. */
   readonly group: Schema<"StatusGroup">;
   readonly priority: Schema<"Priority">;

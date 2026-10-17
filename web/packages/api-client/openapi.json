@@ -23623,7 +23623,7 @@
           "status": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/StatusBody",
+                "$ref": "#/components/schemas/StatusRef",
                 "description": "Where it stands in its workflow: the key, the name and the status group."
               },
               {
@@ -23634,7 +23634,7 @@
           "status_changes": {
             "type": ["array", "null"],
             "items": {
-              "$ref": "#/components/schemas/StatusChangeBody"
+              "$ref": "#/components/schemas/StatusChangeRef"
             },
             "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
           },
@@ -23719,7 +23719,7 @@
           "status": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/StatusBody",
+                "$ref": "#/components/schemas/StatusRef",
                 "description": "Where it stands in its workflow: the key, the name and the status group."
               },
               {
@@ -26470,7 +26470,7 @@
                 "status": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/StatusBody",
+                      "$ref": "#/components/schemas/StatusRef",
                       "description": "Where it stands in its workflow: the key, the name and the status group."
                     },
                     {
@@ -26481,7 +26481,7 @@
                 "status_changes": {
                   "type": ["array", "null"],
                   "items": {
-                    "$ref": "#/components/schemas/StatusChangeBody"
+                    "$ref": "#/components/schemas/StatusChangeRef"
                   },
                   "description": "The status changes the person may make now, with the text of each button and the fields it\nstill needs. Empty when they may not change the issue. Hidden with the status."
                 },
@@ -26539,7 +26539,7 @@
                 "status": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/StatusBody",
+                      "$ref": "#/components/schemas/StatusRef",
                       "description": "Where it stands in its workflow: the key, the name and the status group."
                     },
                     {
@@ -27937,7 +27937,7 @@
           "statuses": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StatusBody"
+              "$ref": "#/components/schemas/StatusRef"
             },
             "description": "The statuses, in the order the workflows list them."
           }
@@ -29263,26 +29263,7 @@
           }
         }
       },
-      "StatusBody": {
-        "type": "object",
-        "description": "A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.",
-        "required": ["key", "name", "group"],
-        "properties": {
-          "group": {
-            "$ref": "#/components/schemas/StatusGroup",
-            "description": "The status group it belongs to."
-          },
-          "key": {
-            "type": "string",
-            "description": "The key, which never changes: it is what a request names a status by."
-          },
-          "name": {
-            "type": "string",
-            "description": "What it is called."
-          }
-        }
-      },
-      "StatusChangeBody": {
+      "StatusChangeRef": {
         "type": "object",
         "description": "A status change the reader may make on an issue now.",
         "required": ["to", "button", "needs"],
@@ -29299,7 +29280,7 @@
             "description": "The fields the change still needs before it can be made (*Must be filled in* fields that\nare empty, and *Ask for* fields), by their keys. Empty when it needs none."
           },
           "to": {
-            "$ref": "#/components/schemas/StatusBody",
+            "$ref": "#/components/schemas/StatusRef",
             "description": "The status it ends in."
           }
         }
@@ -29340,6 +29321,25 @@
           "to": {
             "type": "string",
             "description": "The key of the status of the new workflow the issues go to."
+          }
+        }
+      },
+      "StatusRef": {
+        "type": "object",
+        "description": "A status as it is shown: the browser keeps no list of statuses, it shows what the server sends.",
+        "required": ["key", "name", "group"],
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/StatusGroup",
+            "description": "The status group it belongs to."
+          },
+          "key": {
+            "type": "string",
+            "description": "The key, which never changes: it is what a request names a status by."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
           }
         }
       },
@@ -29516,7 +29516,7 @@
             "description": "The status changes from there, each with the answer for the person."
           },
           "status": {
-            "$ref": "#/components/schemas/StatusBody",
+            "$ref": "#/components/schemas/StatusRef",
             "description": "The status the issue is in."
           }
         }
@@ -29536,7 +29536,7 @@
                 "description": "The text of the button."
               },
               "to": {
-                "$ref": "#/components/schemas/StatusBody",
+                "$ref": "#/components/schemas/StatusRef",
                 "description": "The status it ends in."
               }
             }
@@ -29857,7 +29857,7 @@
           "statuses": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StatusBody"
+              "$ref": "#/components/schemas/StatusRef"
             },
             "description": "Its statuses, in order."
           },
@@ -29877,9 +29877,13 @@
       "WorkflowListBody": {
         "type": "object",
         "description": "The workflows there are.",
-        "required": ["items"],
+        "required": ["workflows", "truncated"],
         "properties": {
-          "items": {
+          "truncated": {
+            "type": "boolean",
+            "description": "The list was cut off at its cap."
+          },
+          "workflows": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/WorkflowChoiceBody"

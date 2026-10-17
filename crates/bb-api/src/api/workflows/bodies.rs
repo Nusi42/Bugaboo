@@ -17,7 +17,7 @@ use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::{StatusBody, status_in};
+use super::{StatusRef, status_in};
 use crate::api::issues::IssueTypeRef;
 use crate::api::layouts::InheritedFromBody;
 use crate::api::projects::ProjectRef;
@@ -340,7 +340,7 @@ pub(crate) struct WorkflowEditorBody {
     /// What the workflow is called.
     name: String,
     /// Its statuses, in order.
-    statuses: Vec<StatusBody>,
+    statuses: Vec<StatusRef>,
     /// Its status changes.
     changes: Vec<EditorChangeBody>,
     /// The roles *Who can do it* can name.
@@ -361,7 +361,7 @@ impl From<&WorkflowEditor> for WorkflowEditorBody {
             workflow: editor.workflow.as_ref().map(WorkflowSlotBody::from),
             inherited_from: editor.inherited_from.as_ref().map(InheritedFromBody::from),
             name: editor.name.clone(),
-            statuses: editor.statuses.iter().map(StatusBody::from).collect(),
+            statuses: editor.statuses.iter().map(StatusRef::from).collect(),
             changes: editor.changes.iter().map(EditorChangeBody::from).collect(),
             roles: editor.roles.iter().map(NamedBody::from).collect(),
             groups: editor.groups.iter().map(NamedBody::from).collect(),
@@ -385,7 +385,9 @@ pub(crate) struct WorkflowChoiceBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct WorkflowListBody {
     /// The workflows, by name.
-    items: Vec<WorkflowChoiceBody>,
+    workflows: Vec<WorkflowChoiceBody>,
+    /// The list was cut off at its cap.
+    truncated: bool,
 }
 
 impl Masked for WorkflowListBody {}
@@ -393,8 +395,9 @@ impl Masked for WorkflowListBody {}
 impl From<&WorkflowList> for WorkflowListBody {
     fn from(list: &WorkflowList) -> Self {
         Self {
-            items: list
-                .items
+            truncated: list.truncated,
+            workflows: list
+                .workflows
                 .iter()
                 .map(
                     |WorkflowListItem { id, name, version }| WorkflowChoiceBody {
@@ -464,7 +467,7 @@ impl From<&TriedVerdict> for TriedVerdictBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct TriedChangeBody {
     /// The status it ends in.
-    to: StatusBody,
+    to: StatusRef,
     /// The text of the button.
     button: String,
     /// What the judge says.
@@ -475,7 +478,7 @@ pub(crate) struct TriedChangeBody {
 impl From<&TriedChange> for TriedChangeBody {
     fn from(change: &TriedChange) -> Self {
         Self {
-            to: StatusBody::from(&change.to),
+            to: StatusRef::from(&change.to),
             button: change.button.clone(),
             verdict: TriedVerdictBody::from(&change.verdict),
         }
@@ -486,7 +489,7 @@ impl From<&TriedChange> for TriedChangeBody {
 #[derive(Serialize, ToSchema)]
 pub(crate) struct TriedBody {
     /// The status the issue is in.
-    status: StatusBody,
+    status: StatusRef,
     /// The status changes from there, each with the answer for the person.
     changes: Vec<TriedChangeBody>,
 }
@@ -496,7 +499,7 @@ impl Masked for TriedBody {}
 impl From<&Tried> for TriedBody {
     fn from(tried: &Tried) -> Self {
         Self {
-            status: StatusBody::from(&tried.status),
+            status: StatusRef::from(&tried.status),
             changes: tried.changes.iter().map(TriedChangeBody::from).collect(),
         }
     }

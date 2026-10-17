@@ -6,7 +6,7 @@ import { api } from "../../shared/api.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A status as the server sends it: its key, its name and its status group. */
-export type StatusOption = Schema<"StatusBody">;
+export type StatusOption = Schema<"StatusRef">;
 
 /**
  * The statuses the issues of a project can have, each once: what a choice of a status for many

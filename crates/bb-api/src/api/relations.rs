@@ -27,7 +27,7 @@ use super::auth::{
 };
 use super::issues::IssueTypeRef;
 use super::projects::ProjectRef;
-use super::workflows::StatusBody;
+use super::workflows::StatusRef;
 use super::{body_id, path_id};
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
 use crate::lean::{FieldSpec, ListParams, Listed, Page};
@@ -81,7 +81,7 @@ pub(crate) struct IssueRef {
     pub(crate) title: Option<String>,
     /// Where it stands in its workflow: the key, the name and the status group.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) status: Option<StatusBody>,
+    pub(crate) status: Option<StatusRef>,
 }
 
 // The members were dropped for the viewer in the project of the issue, which can differ from the
@@ -96,7 +96,7 @@ impl From<&IssueLine> for IssueRef {
             project: ProjectRef::from(&line.project),
             issue_type: IssueTypeRef::from(&line.issue_type),
             title: line.title.clone(),
-            status: line.status.as_ref().map(StatusBody::from),
+            status: line.status.as_ref().map(StatusRef::from),
         }
     }
 }
@@ -635,7 +635,7 @@ mod tests {
                 retired: false,
             },
             title: Some(String::new()),
-            status: Some(StatusBody::blank()),
+            status: Some(StatusRef::blank()),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_REF_FIELDS, &line);
         let kind = RelationKindItem {
