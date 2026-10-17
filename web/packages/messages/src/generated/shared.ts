@@ -69,6 +69,7 @@ export const messages = {
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+  "setting.ui.reset": "Reset to default",
   "setting.ui.between": "A whole number between {least} and {most}.",
   "setting.ui.whole-number": "Enter a whole number.",
   "nav.region": "Region",

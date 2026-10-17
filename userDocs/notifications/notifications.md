@@ -4,7 +4,7 @@
 
 ## What you are told about
 
-Standard choices, which you change under [Customize](customize.md):
+Standard choices, which you change under [Notification settings](customize.md):
 
 | What happens | In the app | By e-mail |
 |---|---|---|

@@ -99,14 +99,14 @@ function KindRow({
  * e-mail*. A choice shows at once and is saved in the background; an organization may lock one.
  */
 export function CustomizePage() {
-  usePageTitle(t("notifications.customize-title"));
+  usePageTitle(t("nav.notification-settings"));
   const settings = useMySettings()?.settings ?? [];
   const progress = useSaveProgress();
   const ownChoices = notificationKindWords
     .flatMap((kind) => [notificationSettings[kind].app, notificationSettings[kind].mail])
     .filter((key) => settings.some((each) => each.key === key && each.own && !each.locked));
   return (
-    <Card heading={t("notifications.customize-title")} level={1}>
+    <Card heading={t("nav.notification-settings")} level={1}>
       <p {...partOf(part.text)}>{t("notifications.customize-intro")}</p>
       <SaveStatus state={progress.state} labels={saveLabels()} />
       {progress.problem === null ? null : <Alert tone={alertTone.danger}>{progress.problem}</Alert>}
@@ -123,7 +123,7 @@ export function CustomizePage() {
               void changeMySettings(ownChoices.map((key) => ({ key, value: null })));
             }}
           >
-            {t("notifications.customize-reset")}
+            {t("setting.ui.reset")}
           </Button>
         </div>
       )}

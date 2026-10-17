@@ -35,7 +35,7 @@ export async function shootNotifications(page: Page, server: Instance): Promise<
   await inEveryTheme(page, "04-notifications-mentions");
   await page.goto(paths.notificationSettings);
   await expect(
-    page.getByRole("heading", { level: 1, name: t("notifications.customize-title") }),
+    page.getByRole("heading", { level: 1, name: t("nav.notification-settings") }),
   ).toBeVisible();
   await inEveryTheme(page, "05-customize");
   await page.goto(paths.handle);

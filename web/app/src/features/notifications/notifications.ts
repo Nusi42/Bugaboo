@@ -1,9 +1,8 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
-import { changeSentence } from "../../shared/change-sentence.ts";
+import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
 import type { IssueTarget } from "../../shared/paths.ts";
-import { personName } from "../../shared/person.ts";
 
 /** One item of the list of notifications; a change has one for each field it changed. */
 export type NotificationItem = Schema<"NotificationEntry">;
@@ -93,11 +92,6 @@ export function targetOf(row: NotificationRow): IssueTarget | undefined {
     return { kind: "comment", comment };
   }
   return isChange(row) ? { kind: "change", at: row.at } : undefined;
-}
-
-/** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
-function whoOf(row: NotificationRow): string {
-  return row.by === undefined || row.by === null ? t("history.system") : personName(row.by);
 }
 
 /** What happened, in words: one sentence, or one for each field a change touched. */

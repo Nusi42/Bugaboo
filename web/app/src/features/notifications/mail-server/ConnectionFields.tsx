@@ -1,4 +1,4 @@
-import { settingKeys, type SettingKey } from "@bugaboo/api-client";
+import { settingChoices, settingKeys, type SettingKey } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import {
   Alert,
@@ -17,6 +17,9 @@ import { messageOf } from "../../../shared/errors.ts";
 import { type MySettings } from "../../../shared/my-settings.ts";
 import { wordsOf } from "../../settings/index.ts";
 import { useMailServerStatus, useSetMailPassword } from "./use-mail-server.ts";
+
+/** The last choice of the protection, the one that sends nothing encrypted (the list is the registry's). */
+const [, , noEncryption] = settingChoices.mailSecurity;
 
 export interface SettingTextProps {
   readonly settings: MySettings;
@@ -115,7 +118,7 @@ export function Protection({
         onChange={onChange}
       />
       <p {...partOf(part.muted)}>{wordsOf(found?.help_key ?? "")}</p>
-      {value === "off" ? (
+      {value === noEncryption ? (
         <Alert tone={alertTone.warning}>{t("mail-server.no-encryption-note")}</Alert>
       ) : null}
     </div>

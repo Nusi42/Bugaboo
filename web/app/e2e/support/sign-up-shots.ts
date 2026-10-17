@@ -8,7 +8,7 @@ import { type Instance } from "./server.ts";
 import { inEveryTheme } from "./shots-themes.ts";
 import { paths } from "../../src/shared/paths.ts";
 
-/** Makes a second administrator, and lets people of example.test sign up (e-mail is still off). */
+/** Creates a second administrator, and lets people of example.test sign up (e-mail is still off). */
 export async function prepareShots(server: Instance): Promise<void> {
   const admin = await signedInAdmin(server);
   const second = await createPerson(server, admin, cleo);

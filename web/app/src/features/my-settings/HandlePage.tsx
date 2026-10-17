@@ -47,7 +47,9 @@ function HandleForm({ handle }: { readonly handle: string }) {
   const [value, setValue] = useState(handle);
   const change = api.query.useMutation("put", "/api/v1/me/handle", {
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["get", "/api/v1/me/handle"] });
+      void queryClient.invalidateQueries({
+        queryKey: api.query.queryOptions("get", "/api/v1/me/handle").queryKey,
+      });
     },
   });
   return (

@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 
 import { formatDateTime } from "../../shared/format.ts";
+import { listText } from "../../shared/list-text.ts";
 import { issueAddress, issueTargetAddress } from "../../shared/paths.ts";
 import { RunProgress } from "../many-changes/index.ts";
 import { sentencesOf, targetOf, type NotificationRow } from "./notifications.ts";
@@ -57,7 +58,7 @@ function RunResult({ row }: { readonly row: NotificationRow }) {
 export function NotificationView({ row, onRead, isReading }: NotificationViewProps) {
   const navigate = useNavigate();
   const sentences = sentencesOf(row);
-  const what = sentences.join(". ");
+  const what = listText(sentences);
   const key = row.issue?.key;
   const target = targetOf(row);
   return (

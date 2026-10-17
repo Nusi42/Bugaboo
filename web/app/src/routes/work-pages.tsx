@@ -8,6 +8,7 @@ import {
   paths,
   projectIssuesAddress,
   routeParam,
+  targetParam,
 } from "../shared/paths.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute, organizationSettingsRoute } from "./layouts.tsx";
@@ -248,10 +249,11 @@ export const issueRoute = createRoute({
   validateSearch: (
     search: Readonly<Record<string, unknown>>,
   ): { comment?: string | undefined; change?: string | undefined } => {
-    const { comment, change } = search;
+    const comment = search[targetParam.comment];
+    const change = search[targetParam.change];
     return {
-      comment: typeof comment === "string" ? comment : undefined,
-      change: typeof change === "string" ? change : undefined,
+      [targetParam.comment]: typeof comment === "string" ? comment : undefined,
+      [targetParam.change]: typeof change === "string" ? change : undefined,
     };
   },
   loader: loadsScreen(IssueScreen),

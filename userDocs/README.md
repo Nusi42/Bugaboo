@@ -14,7 +14,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [People, groups and roles](people/README.md): the list of people and the invitations, groups, roles and permissions, and who has which role
 - [What roles see](permissions/README.md): field permissions, who sees people, and check access
 - [Files](files/README.md): adding files to issues and comments, previews, downloads, limits
-- [Notifications](notifications/README.md): the page, Customize, your handle, and the mail server
+- [Notifications](notifications/README.md): the page, Notification settings, your handle, and the mail server
 - [Writing text](writing/README.md): the marks, the buttons and the preview for descriptions and comments
 - [Your first sign-in](sign-in/first-sign-in.md)
 - [Signing in](sign-in/sign-in.md): password, passkey, second step, where you're signed in, invitations

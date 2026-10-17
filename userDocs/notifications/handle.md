@@ -1,6 +1,6 @@
 # Your handle
 
-Your handle is the short name people type after `@` to mention you, like `@ana.brandt`. Bugaboo makes it from your name when your account is created. You see and change it under *My settings › Handle*.
+Your handle is the short name people type after `@` to mention you, like `@ana.brandt`. Bugaboo creates it from your name when your account is created. You see and change it under *My settings › Handle*.
 
 ## The rules
 

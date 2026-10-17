@@ -30,7 +30,7 @@ export type ChangeWords = Pick<
 >;
 
 /** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
-export function whoOf(entry: Pick<ChangeWords, "by">): string {
+export function whoOf(entry: { readonly by?: ChangeWords["by"] | undefined }): string {
   return entry.by === undefined || entry.by === null ? t("history.system") : personName(entry.by);
 }
 

@@ -60,7 +60,7 @@ test("ntf_02 Customize has a row for each kind of event, with the standard choic
   await openNotifications(page);
   await page.getByRole("link", { name: t("notifications.customize"), exact: true }).click();
   await expect(
-    page.getByRole("heading", { level: 1, name: t("notifications.customize-title") }),
+    page.getByRole("heading", { level: 1, name: t("nav.notification-settings") }),
   ).toBeVisible();
   const mentioned = page.getByRole("group", { name: t("notification.kind.mentioned") });
   await expect(mentioned.getByRole("switch", { name: t("notifications.in-app") })).toBeChecked();
