@@ -59,6 +59,16 @@ M4 lets people add files to issues and comments (ATT-01). A file is the most dan
 - **Previews in the server process:** a crafted file could take the server down. Rejected.
 - **Files in the database:** backups grow with every screenshot, and PostgreSQL large objects are awkward. Rejected; the database holds only the attachment rows.
 
+## Built in M4 WP-05
+
+What the build decided where this record left a choice:
+
+- The upload protocol says `offset`: a part names where it starts, and the server answers with the offset of its copy (no counter that grows, ARCH-NO-COUNTERS).
+- A download is the bytes of the file, always sent as `application/octet-stream`; a preview is always `image/png`. The type found in the content is only shown to people.
+- Two daily jobs carry the rest (ADR-0017): `files.preview` makes the missing previews, and `files.clean-up` deletes unfinished uploads after one day, trashed attachments after 30 days, and files nothing points to. The row of a file is deleted first by one conditional statement, then its bytes.
+- The preview child has a limit on pixels (40 million), on what the decoder may allocate (512 MiB), on input size (the biggest file the settings allow) and on time (20 seconds). A limit on the memory of the whole child process, enforced by the operating system, is not built: the standard library has no safe way, and it is a follow-up.
+- The attachment routes answer for the download only through a signed claim (attachment, file or preview, person, expiry); the key is derived from the CSRF key.
+
 ## Enforced by
 
 TEST-UPLOADS (new), SEC-MATRIX (attachment routes and downloads), SEC-HEADERS (download headers), ARCH-DEPS (the port), DATA-MARKS, DEP-LICENSES and DEP-REGISTER (`infer`, `image`, `hayro`), and review (no route serves `files/` directly).
