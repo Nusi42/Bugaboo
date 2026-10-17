@@ -145,7 +145,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         if age > absolute || idle > idle_limit {
             return Err(ended());
         }
-        if idle >= TOUCH_EVERY_SECONDS {
+        // A read nobody asked for does not count as use, so a tab left open cannot keep a session
+        // alive (SEC-12).
+        if idle >= TOUCH_EVERY_SECONDS && !self.request.background {
             self.store()
                 .touch_session(record.session.id, now)
                 .await

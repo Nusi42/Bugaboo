@@ -92,7 +92,7 @@ pub(super) fn open_request(operation: &str) -> Result<Option<Request>, Failure> 
         "readNotifications" => (
             "POST",
             "/api/v1/notifications/read".into(),
-            Some(json!({"all": true})),
+            Some(json!({"up_to": "01900000-0000-7000-8000-000000000000"})),
         ),
         "signOut" => ("POST", "/api/v1/auth/sign-out".into(), None),
         _ => return Ok(None),
@@ -241,6 +241,7 @@ pub(super) async fn organization_request(
             "/api/v1/mail/password".into(),
             Some(json!({"password": "a made-up mail password"})),
         ),
+        "getMailServer" => ("GET", "/api/v1/mail".into(), None),
         // No mail server is entered in the matrix, so the test e-mail is turned away for that.
         "sendTestEmail" => ("POST", "/api/v1/mail/test".into(), None),
         "changeOrganizationSetting" => (

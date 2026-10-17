@@ -1999,6 +1999,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/mail": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What the page of the mail server needs to know that the settings do not hold: whether a
+     *     password is entered, never what it is.
+     */
+    get: operations["getMailServer"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/mail/password": {
     parameters: {
       query?: never;
@@ -2138,43 +2158,6 @@ export interface paths {
      */
     put: operations["changeMyHandle"];
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/me/mentions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The comments that mention the person, unread first and then the newest: the *Mentions* block of
-     *     the start page. Only comments under issues the person may see.
-     */
-    get: operations["listMentions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/me/mentions/read": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Marks the mentions of the person in these comments as read. */
-    post: operations["readMentions"];
     delete?: never;
     options?: never;
     head?: never;
@@ -5128,6 +5111,22 @@ export interface components {
        */
       password?: string | null;
     };
+    /**
+     * @description What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).
+     * @enum {string}
+     */
+    MailServerReadiness: "ready" | "incomplete" | "insecure";
+    /** @description What the mail server has that is no setting. */
+    MailServerStatusBody: {
+      /** @description A password is stored. The password itself is never sent. */
+      credential_set: boolean;
+      /**
+       * @description What the server judges of the mail server as entered: `ready`, `incomplete` (the host or
+       *     the sender is missing) or `insecure` (a secret would go without encryption to another
+       *     machine).
+       */
+      readiness: components["schemas"]["MailServerReadiness"];
+    };
     /** @description What is done to every issue of the selection. */
     ManyChangeActionBody:
       | {
@@ -5340,21 +5339,6 @@ export interface components {
      * @enum {string}
      */
     MentionTarget: "person" | "group" | "role";
-    /** @description A comment that mentions the person. */
-    MentionedComment: {
-      /** @description When it was written. */
-      at: string;
-      /** @description Who wrote it, as the person may see people of the kind *Authors*. */
-      author: components["schemas"]["PersonRef"];
-      /** @description The ID of the comment. */
-      comment: string;
-      /** @description The text as safe HTML, made on the server for this reader. */
-      html: SafeHtml;
-      /** @description The issue it is under. */
-      issue: components["schemas"]["IssueRef"];
-      /** @description Whether the person has not looked at it under *Mentions* yet. */
-      unread: boolean;
-    };
     /** @description Where a project goes, and the version of the preview that was looked at. */
     MoveBody: {
       /** @description The `preview` of the answer to the preview that was looked at. */
@@ -5660,7 +5644,7 @@ export interface components {
       /** @description A change of an own field: its name. */
       field_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this person. */
-      html?: string | null;
+      html?: SafeHtml;
       /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
       id: string;
       issue?: components["schemas"]["IssueRef"] | null;
@@ -5678,6 +5662,11 @@ export interface components {
       /** @description A comment: the text, in Markdown. */
       text?: string | null;
     };
+    /**
+     * @description Which notifications a list shows: all, the unread ones, or the ones that mention the person.
+     * @enum {string}
+     */
+    NotificationFilter: "all" | "unread" | "mentions";
     /**
      * @description What a notification is about: a mention, an assignment, activity on an issue the person follows, other changes to what they follow, the end of a run of many changes, or a note about their editing.
      * @enum {string}
@@ -6137,29 +6126,6 @@ export interface components {
      * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
      *     items cut to the chosen fields ([`Page::of_authorized`]).
      */
-    Page_MentionedComment: {
-      /** @description The items of this page. */
-      items: {
-        /** @description When it was written. */
-        at: string;
-        /** @description Who wrote it, as the person may see people of the kind *Authors*. */
-        author: components["schemas"]["PersonRef"];
-        /** @description The ID of the comment. */
-        comment: string;
-        /** @description The text as safe HTML, made on the server for this reader. */
-        html: SafeHtml;
-        /** @description The issue it is under. */
-        issue: components["schemas"]["IssueRef"];
-        /** @description Whether the person has not looked at it under *Mentions* yet. */
-        unread: boolean;
-      }[];
-      /** @description The cursor of the next page; `null` on the last page. */
-      next_cursor: string | null;
-    };
-    /**
-     * @description One page of a list. `T` is the view of an item for the API description; an answer holds the
-     *     items cut to the chosen fields ([`Page::of_authorized`]).
-     */
     Page_NotificationEntry: {
       /** @description The items of this page. */
       items: {
@@ -6197,7 +6163,7 @@ export interface components {
         /** @description A change of an own field: its name. */
         field_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this person. */
-        html?: string | null;
+        html?: SafeHtml;
         /** @description The ID of the notification; the items of one notification share it. *Mark as read* names it. */
         id: string;
         issue?: components["schemas"]["IssueRef"] | null;
@@ -6910,17 +6876,15 @@ export interface components {
       /** @description The workflow, with its new version. */
       workflow: components["schemas"]["WorkflowSlotBody"];
     };
-    /** @description The mentions to mark as read. */
-    ReadMentionsBody: {
-      /** @description The IDs of the comments. */
-      comments: string[];
-    };
     /** @description The notifications to mark as read. */
     ReadNotificationsBody: {
-      /** @description Mark every unread notification as read. */
-      all?: boolean;
-      /** @description The IDs of the notifications, at most 100; or leave it out and set `all`. */
+      /** @description The IDs of the notifications, at most 100; or leave it out and set `up_to`. */
       ids?: string[];
+      /**
+       * @description Mark every unread notification as read up to and including this one, the newest the person
+       *     has seen: ones that came after it stay unread.
+       */
+      up_to?: string | null;
     };
     /** @description Why a permission is given or not. */
     ReasonBody:
@@ -18511,6 +18475,75 @@ export interface operations {
       };
     };
   };
+  getMailServer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Whether it is entered. */
+      200: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MailServerStatusBody"];
+        };
+      };
+      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
+      304: {
+        headers: {
+          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
+          etag?: string;
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not signed in (auth.not_signed_in). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      429: {
+        headers: {
+          /** @description Seconds to wait before trying again. */
+          "retry-after"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.internal (server.internal) */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description error.server.unavailable (server.unavailable) */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   setMailPassword: {
     parameters: {
       query?: never;
@@ -19084,151 +19117,6 @@ export interface operations {
       /** @description Too soon after the last time (rate_limit.exceeded, handle.changed_lately). */
       429: {
         headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  listMentions: {
-    parameters: {
-      query?: {
-        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
-        fields?: string;
-        /** @description Where the page starts: the `next_cursor` of the page before. */
-        cursor?: string;
-        /** @description How many items a page holds at most (default 50, at most 100). */
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The comments. */
-      200: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Page_MentionedComment"];
-        };
-      };
-      /** @description Nothing changed since the `ETag` that `If-None-Match` named. No body. */
-      304: {
-        headers: {
-          /** @description A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed. */
-          etag?: string;
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.internal (server.internal) */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.server.unavailable (server.unavailable) */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-    };
-  };
-  readMentions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ReadMentionsBody"];
-      };
-    };
-    responses: {
-      /** @description They are marked. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected). */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description Not signed in (auth.not_signed_in). */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["Problem"];
-        };
-      };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
-      429: {
-        headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
           [name: string]: unknown;
         };
         content: {

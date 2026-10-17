@@ -471,6 +471,115 @@ async fn sec_16_the_test_e_mail_goes_to_the_person_who_asks_even_while_mail_is_o
 }
 
 #[tokio::test]
+async fn sec_16_the_page_learns_that_a_mail_password_is_entered_but_never_what_it_is() -> Outcome {
+    use crate::notifications::{MailServerQuery, mail_server_status};
+    let crew = Crew::new().await?;
+    let ctx = crew.world.ctx();
+    let ask = |session_token: String| mail_server_status(&ctx, MailServerQuery { session_token });
+    assert!(
+        !ask(token(&crew.world))
+            .await
+            .map_err(text)?
+            .into_value()
+            .credential_set
+    );
+    mail_is_on(&crew).await?;
+    assert!(
+        ask(token(&crew.world))
+            .await
+            .map_err(text)?
+            .into_value()
+            .credential_set
+    );
+    set_mail_password(
+        &ctx,
+        SetMailPassword {
+            session_token: token(&crew.world),
+            password: None,
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert!(
+        !ask(token(&crew.world))
+            .await
+            .map_err(text)?
+            .into_value()
+            .credential_set
+    );
+    // Somebody who may not change the settings does not learn even that.
+    let denied = ask(crew.bob.session_token.clone()).await.err();
+    assert_eq!(
+        denied,
+        Some(crate::auth::AppError::Refused(
+            bb_core::ErrorCode::Forbidden
+        ))
+    );
+    Ok(())
+}
+
+/// What the page of the mail server learns: whether a password is entered.
+async fn password_is_entered(crew: &Crew) -> Result<bool, String> {
+    use crate::notifications::{MailServerQuery, mail_server_status};
+    let status = mail_server_status(
+        &crew.world.ctx(),
+        MailServerQuery {
+            session_token: token(&crew.world),
+        },
+    )
+    .await
+    .map_err(text)?;
+    Ok(status.into_value().credential_set)
+}
+
+#[tokio::test]
+async fn sec_16_a_new_mail_server_needs_its_password_again() -> Outcome {
+    use crate::notifications::{SendTestEmail, send_test_email};
+    for (key, value) in [
+        (
+            "mail.host",
+            SettingValue::Text("other.example.test".to_owned()),
+        ),
+        ("mail.port", SettingValue::Integer(2525)),
+        (
+            "mail.username",
+            SettingValue::Text("somebody-else".to_owned()),
+        ),
+    ] {
+        let crew = Crew::new().await?;
+        set_setting(
+            &crew,
+            "mail.username",
+            SettingValue::Text("mailer".to_owned()),
+        )
+        .await?;
+        mail_is_on(&crew).await?;
+        assert!(password_is_entered(&crew).await?, "the password is entered");
+        // A setting that names the same value again keeps it.
+        set_setting(&crew, "mail.port", SettingValue::Integer(587)).await?;
+        assert!(password_is_entered(&crew).await?, "the same port keeps it");
+        // A new host, port or user name takes it away in the same change.
+        set_setting(&crew, key, value).await?;
+        assert!(!password_is_entered(&crew).await?, "{key} was changed");
+        assert!(crew.world.store.lock().state.mail_password.is_none());
+        // The test e-mail to the new server carries no secret.
+        crew.world.clock.advance(TEST_EMAIL_EVERY_SECONDS + 1);
+        send_test_email(
+            &crew.world.ctx(),
+            SendTestEmail {
+                session_token: token(&crew.world),
+            },
+        )
+        .await
+        .map_err(text)?;
+        let sent = crew.world.mailer.sent();
+        let (server, _) = sent.last().ok_or("no e-mail went")?;
+        assert!(server.password.is_empty(), "no password went to {key}");
+    }
+    Ok(())
+}
+
+#[tokio::test]
 async fn sec_16_a_person_sends_a_test_e_mail_only_every_few_seconds() -> Outcome {
     use crate::notifications::{SendTestEmail, send_test_email};
     let crew = Crew::new().await?;
@@ -573,4 +682,37 @@ async fn test_e_mail(
         },
     )
     .await
+}
+
+/// What the server judges of the mail server as entered.
+async fn readiness_of(crew: &Crew) -> Result<bb_core::mail::MailServerReadiness, String> {
+    use crate::notifications::{MailServerQuery, mail_server_status};
+    let status = mail_server_status(
+        &crew.world.ctx(),
+        MailServerQuery {
+            session_token: token(&crew.world),
+        },
+    )
+    .await
+    .map_err(text)?;
+    Ok(status.into_value().readiness)
+}
+
+#[tokio::test]
+async fn ntf_02_the_server_judges_the_mail_server_and_the_page_only_shows_it() -> Outcome {
+    use bb_core::mail::MailServerReadiness;
+    let crew = Crew::new().await?;
+    assert_eq!(readiness_of(&crew).await?, MailServerReadiness::Incomplete);
+    enter_the_mail_server(&crew.world).await?;
+    assert_eq!(readiness_of(&crew).await?, MailServerReadiness::Ready);
+    // A password without encryption to another machine would go in the clear.
+    set_setting(&crew, "mail.security", SettingValue::Text("off".to_owned())).await?;
+    set_setting(
+        &crew,
+        "mail.username",
+        SettingValue::Text("mailer".to_owned()),
+    )
+    .await?;
+    assert_eq!(readiness_of(&crew).await?, MailServerReadiness::Insecure);
+    Ok(())
 }

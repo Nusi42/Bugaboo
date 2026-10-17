@@ -5,7 +5,13 @@ import { ada } from "./support/accounts.ts";
 import { addVirtualAuthenticator } from "./support/authenticator.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
-import { addPasskey, addressEndingAt, enterSetupCode, sendSetupAccount } from "./support/flows.ts";
+import {
+  addPasskey,
+  addressEndingAt,
+  enterSetupCode,
+  sendSetupAccount,
+  skipMailStep,
+} from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
 test.describe.configure({ mode: "serial" });
@@ -28,7 +34,7 @@ test("auth_09 a fresh server opens the setup and says where the code is", async 
   await expect(page.getByRole("heading", { level: 1, name: t("first-run.title") })).toBeVisible();
   await expect(page.getByText(t("first-run.code.where"))).toBeVisible();
   await expect(
-    page.getByText(t("first-run.step-of", { step: 1, total: 4, name: t("first-run.step.code") })),
+    page.getByText(t("first-run.step-of", { step: 1, total: 5, name: t("first-run.step.code") })),
   ).toBeVisible();
   await expectGoodInEveryLook(page);
 });
@@ -66,6 +72,11 @@ test("auth_09 the setup code makes the first administrator, who can add a passke
   await addTheFirstPasskey(page);
 
   await page.getByRole("button", { name: t("first-run.safer.finish") }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("first-run.mail.title") }),
+  ).toBeVisible();
+  await expectGoodInEveryLook(page);
+  await skipMailStep(page);
   await expect(
     page.getByRole("heading", { level: 1, name: t("first-run.done.title") }),
   ).toBeVisible();

@@ -5,7 +5,6 @@ import { register } from "../registry.ts";
 export const messages = {
   "setting.ui.search": "Search settings",
   "setting.ui.nothing": "No setting matches your search.",
-  "setting.ui.reset": "Reset to default",
   "setting.ui.reset-name": "Reset to default: {name}",
   "setting.ui.locked": "Set by your organization",
   "setting.ui.locked-why":
@@ -18,15 +17,11 @@ export const messages = {
   "setting.ui.source-hidden-project": "From a project you cannot see",
   "setting.ui.source-person": "Your own choice",
   "setting.ui.device-zone": "Match my device ({zone})",
-  "setting.ui.between": "A whole number between {least} and {most}.",
-  "setting.ui.whole-number": "Enter a whole number.",
   "setting.page.sign-in-rules-intro":
     "How long people stay signed in, and the rules for signing in. They apply to everybody.",
   "setting.page.security-intro": "What the text that people write may show.",
   "setting.page.themes-intro":
     "The organization's choice of look. People can choose their own, unless you lock a setting.",
-  "common.on": "On",
-  "common.off": "Off",
 } as const;
 
 register(messages);

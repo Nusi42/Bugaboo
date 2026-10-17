@@ -71,6 +71,7 @@ async fn sec_12_people_list_their_sessions_and_end_any_of_them() -> TestResult {
         let from_firefox = RequestInfo {
             network: Some(NetworkPrefix::from_address("203.0.113.9".parse()?)),
             device: Device::from_user_agent(FIREFOX),
+            ..RequestInfo::default()
         };
         let ada_second = rig
             .api()
@@ -192,6 +193,38 @@ async fn sec_12_a_session_ends_after_it_was_idle_too_long_and_use_keeps_it_alive
         assert!(!signed_in(&rig, &left.session_token).await);
         rig.clock.advance(31 * 60);
         assert!(!signed_in(&rig, &kept.session_token).await);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn sec_12_a_background_count_does_not_keep_a_session_alive() -> TestResult {
+    each_database("sec_12_background_read", async |db| {
+        let rig = Rig::start(db).await?;
+        let left_open = rig.admin(ADA_EMAIL).await?;
+        let background = RequestInfo {
+            background: true,
+            ..Rig::info()
+        };
+        // A tab left open asks for its count every half minute. Twenty minutes in, the session
+        // still stands (the idle time is 30 minutes) and the count is answered ...
+        rig.clock.advance(20 * 60);
+        assert!(
+            rig.api()
+                .authenticate(
+                    background.clone(),
+                    AuthenticateQuery {
+                        session_token: left_open.session_token.clone(),
+                    },
+                )
+                .await
+                .is_ok()
+        );
+        // ... but that read was no use: twenty minutes later the session has been idle for more
+        // than 30 minutes and is gone.
+        rig.clock.advance(20 * 60);
+        assert!(!signed_in(&rig, &left_open.session_token).await);
         Ok(())
     })
     .await

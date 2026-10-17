@@ -13852,6 +13852,94 @@
         "x-permission": "manage-issue-types"
       }
     },
+    "/api/v1/mail": {
+      "get": {
+        "tags": ["notifications"],
+        "summary": "What the page of the mail server needs to know that the settings do not hold: whether a\npassword is entered, never what it is.",
+        "operationId": "getMailServer",
+        "responses": {
+          "200": {
+            "description": "Whether it is entered.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailServerStatusBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
+            "headers": {
+              "etag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in (auth.not_signed_in).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
+            "headers": {
+              "retry-after": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Seconds to wait before trying again."
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "error.server.internal (server.internal)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "error.server.unavailable (server.unavailable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "change-organization-settings"
+      }
+    },
     "/api/v1/mail/password": {
       "put": {
         "tags": ["notifications"],
@@ -14544,206 +14632,6 @@
           },
           "429": {
             "description": "Too soon after the last time (rate_limit.exceeded, handle.changed_lately).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "error.server.internal (server.internal)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "error.server.unavailable (server.unavailable)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-permission": "signed-in"
-      }
-    },
-    "/api/v1/me/mentions": {
-      "get": {
-        "tags": ["comments"],
-        "summary": "The comments that mention the person, unread first and then the newest: the *Mentions* block of\nthe start page. Only comments under issues the person may see.",
-        "operationId": "listMentions",
-        "parameters": [
-          {
-            "name": "fields",
-            "in": "query",
-            "description": "The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "description": "Where the page starts: the `next_cursor` of the page before.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "How many items a page holds at most (default 50, at most 100).",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The comments.",
-            "headers": {
-              "etag": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Page_MentionedComment"
-                }
-              }
-            }
-          },
-          "304": {
-            "description": "Nothing changed since the `ETag` that `If-None-Match` named. No body.",
-            "headers": {
-              "etag": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "A tag for this answer. Send it back as `If-None-Match` to get `304` when nothing changed."
-              }
-            }
-          },
-          "401": {
-            "description": "Not signed in (auth.not_signed_in).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "error.server.internal (server.internal)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "error.server.unavailable (server.unavailable)",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "x-never-stored": true,
-        "x-permission": "signed-in"
-      }
-    },
-    "/api/v1/me/mentions/read": {
-      "post": {
-        "tags": ["comments"],
-        "summary": "Marks the mentions of the person in these comments as read.",
-        "operationId": "readMentions",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReadMentionsBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "They are marked."
-          },
-          "400": {
-            "description": "The request is not valid (request.invalid, auth.password_too_short, auth.password_breached, auth.invitation_invalid, auth.passkey_rejected).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not signed in (auth.not_signed_in).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -26699,6 +26587,26 @@
           }
         }
       },
+      "MailServerReadiness": {
+        "type": "string",
+        "description": "What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine).",
+        "enum": ["ready", "incomplete", "insecure"]
+      },
+      "MailServerStatusBody": {
+        "type": "object",
+        "description": "What the mail server has that is no setting.",
+        "required": ["credential_set", "readiness"],
+        "properties": {
+          "credential_set": {
+            "type": "boolean",
+            "description": "A password is stored. The password itself is never sent."
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/MailServerReadiness",
+            "description": "What the server judges of the mail server as entered: `ready`, `incomplete` (the host or\nthe sender is missing) or `insecure` (a secret would go without encryption to another\nmachine)."
+          }
+        }
+      },
       "ManyChangeActionBody": {
         "oneOf": [
           {
@@ -27189,38 +27097,6 @@
         "type": "string",
         "description": "What a mention names: a person, a group or a role.",
         "enum": ["person", "group", "role"]
-      },
-      "MentionedComment": {
-        "type": "object",
-        "description": "A comment that mentions the person.",
-        "required": ["comment", "issue", "author", "html", "at", "unread"],
-        "properties": {
-          "at": {
-            "type": "string",
-            "description": "When it was written."
-          },
-          "author": {
-            "$ref": "#/components/schemas/PersonRef",
-            "description": "Who wrote it, as the person may see people of the kind *Authors*."
-          },
-          "comment": {
-            "type": "string",
-            "description": "The ID of the comment."
-          },
-          "html": {
-            "type": "string",
-            "description": "The text as safe HTML, made on the server for this reader.",
-            "x-safe-html": true
-          },
-          "issue": {
-            "$ref": "#/components/schemas/IssueRef",
-            "description": "The issue it is under."
-          },
-          "unread": {
-            "type": "boolean",
-            "description": "Whether the person has not looked at it under *Mentions* yet."
-          }
-        }
       },
       "MoveBody": {
         "type": "object",
@@ -27949,7 +27825,8 @@
           },
           "html": {
             "type": ["string", "null"],
-            "description": "A comment: the text as safe HTML, made on the server for this person."
+            "description": "A comment: the text as safe HTML, made on the server for this person.",
+            "x-safe-html": true
           },
           "id": {
             "type": "string",
@@ -28002,6 +27879,11 @@
             "description": "A comment: the text, in Markdown."
           }
         }
+      },
+      "NotificationFilter": {
+        "type": "string",
+        "description": "Which notifications a list shows: all, the unread ones, or the ones that mention the person.",
+        "enum": ["all", "unread", "mentions"]
       },
       "NotificationKind": {
         "type": "string",
@@ -29086,53 +28968,6 @@
           }
         }
       },
-      "Page_MentionedComment": {
-        "type": "object",
-        "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
-        "required": ["items", "next_cursor"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "A comment that mentions the person.",
-              "required": ["comment", "issue", "author", "html", "at", "unread"],
-              "properties": {
-                "at": {
-                  "type": "string",
-                  "description": "When it was written."
-                },
-                "author": {
-                  "$ref": "#/components/schemas/PersonRef",
-                  "description": "Who wrote it, as the person may see people of the kind *Authors*."
-                },
-                "comment": {
-                  "type": "string",
-                  "description": "The ID of the comment."
-                },
-                "html": {
-                  "type": "string",
-                  "description": "The text as safe HTML, made on the server for this reader.",
-                  "x-safe-html": true
-                },
-                "issue": {
-                  "$ref": "#/components/schemas/IssueRef",
-                  "description": "The issue it is under."
-                },
-                "unread": {
-                  "type": "boolean",
-                  "description": "Whether the person has not looked at it under *Mentions* yet."
-                }
-              }
-            },
-            "description": "The items of this page."
-          },
-          "next_cursor": {
-            "type": ["string", "null"],
-            "description": "The cursor of the next page; `null` on the last page."
-          }
-        }
-      },
       "Page_NotificationEntry": {
         "type": "object",
         "description": "One page of a list. `T` is the view of an item for the API description; an answer holds the\nitems cut to the chosen fields ([`Page::of_authorized`]).",
@@ -29271,7 +29106,8 @@
                 },
                 "html": {
                   "type": ["string", "null"],
-                  "description": "A comment: the text as safe HTML, made on the server for this person."
+                  "description": "A comment: the text as safe HTML, made on the server for this person.",
+                  "x-safe-html": true
                 },
                 "id": {
                   "type": "string",
@@ -30669,34 +30505,20 @@
           }
         }
       },
-      "ReadMentionsBody": {
-        "type": "object",
-        "description": "The mentions to mark as read.",
-        "required": ["comments"],
-        "properties": {
-          "comments": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The IDs of the comments."
-          }
-        }
-      },
       "ReadNotificationsBody": {
         "type": "object",
         "description": "The notifications to mark as read.",
         "properties": {
-          "all": {
-            "type": "boolean",
-            "description": "Mark every unread notification as read."
-          },
           "ids": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The IDs of the notifications, at most 100; or leave it out and set `all`."
+            "description": "The IDs of the notifications, at most 100; or leave it out and set `up_to`."
+          },
+          "up_to": {
+            "type": ["string", "null"],
+            "description": "Mark every unread notification as read up to and including this one, the newest the person\nhas seen: ones that came after it stay unread."
           }
         }
       },

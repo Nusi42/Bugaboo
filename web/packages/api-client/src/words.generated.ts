@@ -93,6 +93,19 @@ export const layoutKindWords = ["new-issue", "issue-page"] as const;
 /** Every word of `HistoryTab`, in the order the server lists them. */
 export const historyTabWords = ["everything", "comments", "changes"] as const;
 
+/** Every word of `NotificationKind`, in the order the server lists them. */
+export const notificationKindWords = [
+  "mentioned",
+  "assigned",
+  "followed_activity",
+  "followed_fields",
+  "run_ended",
+  "edit_notice",
+] as const;
+
+/** Every word of `NotificationFilter`, in the order the server lists them. */
+export const notificationFilterWords = ["all", "unread", "mentions"] as const;
+
 /** Every word of `Test`, in the order the server lists them. */
 export const testWords = ["filled", "empty"] as const;
 

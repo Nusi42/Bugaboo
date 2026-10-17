@@ -738,6 +738,35 @@ async fn ntf_01_asking_to_finish_and_taking_over_tell_the_person_who_was_editing
 }
 
 #[tokio::test]
+async fn ntf_01_mark_all_as_read_leaves_what_came_after_the_newest_shown_unread() -> Outcome {
+    let mut crew = Crew::new().await?;
+    let bob = crew.bob.session_token.clone();
+    crew.change(&bob, Change::Status(Status::Done)).await?;
+    crew.change(&bob, Change::Status(Status::InProgress))
+        .await?;
+    // The person saw the list with the older one; the newer one came after.
+    let page = page_of(&crew).await?;
+    assert_eq!(page.items.len(), 2);
+    let shown_newest = page.items[1].id;
+    read_notifications(
+        &crew.world.ctx(),
+        ReadNotifications {
+            session_token: token(&crew.world),
+            which: Which::UpTo(shown_newest),
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert_eq!(unread_of(&crew).await?, 1);
+    let unread = crew
+        .heard_under(&token(&crew.world), NotificationFilter::Unread)
+        .await?;
+    assert_eq!(unread.len(), 1);
+    assert_eq!(unread[0].id, page.items[0].id);
+    Ok(())
+}
+
+#[tokio::test]
 async fn ntf_01_mark_as_read_marks_what_is_named_and_the_count_follows() -> Outcome {
     let mut crew = Crew::new().await?;
     let (ada, bob) = (token(&crew.world), crew.bob.session_token.clone());
@@ -762,7 +791,7 @@ async fn ntf_01_mark_as_read_marks_what_is_named_and_the_count_follows() -> Outc
         &crew.world.ctx(),
         ReadNotifications {
             session_token: ada.clone(),
-            which: Which::All,
+            which: Which::UpTo(super::scenarios_notifications::the_newest_there_can_be()),
         },
     )
     .await

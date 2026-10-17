@@ -11,11 +11,12 @@
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::notifications::{
-    NotificationItem, NotificationWhat, NotificationsQuery, ReadNotifications, SendTestEmail,
-    SetMailPassword, UnreadQuery, Which,
+    MailServerQuery, NotificationItem, NotificationWhat, NotificationsQuery, ReadNotifications,
+    SendTestEmail, SetMailPassword, UnreadQuery, Which,
 };
 use bb_core::edit::NoticeKind;
 use bb_core::id::NotificationId;
+use bb_core::mail::MailServerReadiness;
 use bb_core::notification::{NotificationFilter, NotificationKind};
 use bb_core::own_fields::FieldType;
 use bb_policy::{Masked, PersonRef};
@@ -264,12 +265,13 @@ impl Masked for UnreadBody {}
 /// The notifications to mark as read.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ReadNotificationsBody {
-    /// The IDs of the notifications, at most 100; or leave it out and set `all`.
+    /// The IDs of the notifications, at most 100; or leave it out and set `up_to`.
     #[serde(default)]
     ids: Vec<String>,
-    /// Mark every unread notification as read.
+    /// Mark every unread notification as read up to and including this one, the newest the person
+    /// has seen: ones that came after it stay unread.
     #[serde(default)]
-    all: bool,
+    up_to: Option<String>,
 }
 
 /// The password of the mail server.
@@ -280,6 +282,19 @@ pub(crate) struct MailPasswordBody {
     #[serde(default)]
     password: Option<String>,
 }
+
+/// What the mail server has that is no setting.
+#[derive(Serialize, ToSchema)]
+pub(crate) struct MailServerStatusBody {
+    /// A password is stored. The password itself is never sent.
+    credential_set: bool,
+    /// What the server judges of the mail server as entered: `ready`, `incomplete` (the host or
+    /// the sender is missing) or `insecure` (a secret would go without encryption to another
+    /// machine).
+    readiness: MailServerReadiness,
+}
+
+impl Masked for MailServerStatusBody {}
 
 /// The notifications of the person, newest first, a page at a time. A notification about an issue
 /// the person cannot see any more is not in the list.
@@ -362,8 +377,8 @@ async fn read_notifications(
     Session(session_token): Session,
     ApiJson(body): ApiJson<ReadNotificationsBody>,
 ) -> Result<Response, ApiError> {
-    let which = if body.all {
-        Which::All
+    let which = if let Some(up_to) = &body.up_to {
+        Which::UpTo(body_id::<NotificationId>(up_to)?)
     } else {
         Which::These(
             body.ids
@@ -412,6 +427,30 @@ async fn set_mail_password(
     Ok(done())
 }
 
+/// What the page of the mail server needs to know that the settings do not hold: whether a
+/// password is entered, never what it is.
+#[utoipa::path(
+    get,
+    path = "/api/v1/mail",
+    operation_id = "getMailServer",
+    tag = "notifications",
+    responses((status = 200, description = "Whether it is entered.", body = MailServerStatusBody), NotSignedInAnswer)
+)]
+async fn get_mail_password(
+    State(auth): State<AuthHandle>,
+    Info(info): Info,
+    Session(session_token): Session,
+) -> Result<Response, ApiError> {
+    let state = auth
+        .api()?
+        .mail_server_status(info, MailServerQuery { session_token })
+        .await?;
+    answer_authorized(&state.map(|state| MailServerStatusBody {
+        credential_set: state.credential_set,
+        readiness: state.readiness,
+    }))
+}
+
 /// Sends a test e-mail to the person who asks, through the mail server as it is entered, even
 /// while e-mail is still off.
 #[utoipa::path(
@@ -442,7 +481,7 @@ where
         .routes(routes!(list_notifications))
         .routes(routes!(get_unread_notifications))
         .routes(routes!(read_notifications))
-        .routes(routes!(set_mail_password))
+        .routes(routes!(set_mail_password, get_mail_password))
         .routes(routes!(send_test_email))
 }
 

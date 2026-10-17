@@ -198,30 +198,6 @@ impl CommentStore for FakeStore {
         }))
     }
 
-    async fn mentions_of(
-        &self,
-        recipient: UserId,
-        unread: bool,
-        before: Option<CommentId>,
-        limit: u64,
-    ) -> Result<Vec<Mention>, FakeError> {
-        Ok(self.read(|state| {
-            let mut found: Vec<Mention> = state
-                .mentions
-                .iter()
-                .filter(|mention| {
-                    mention.recipient == recipient
-                        && mention.read_at.is_none() == unread
-                        && before.is_none_or(|before| mention.comment < before)
-                })
-                .cloned()
-                .collect();
-            found.sort_by_key(|mention| std::cmp::Reverse(mention.comment));
-            found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            found
-        }))
-    }
-
     async fn mentions_in_comment(&self, comment: CommentId) -> Result<Vec<Mention>, FakeError> {
         Ok(self.read(|state| {
             state
@@ -306,23 +282,6 @@ impl CommentStore for FakeStore {
         for mention in mentions {
             if !known.iter().any(|old| old.recipient == mention.recipient) {
                 tx.state.mentions.push(mention.clone());
-            }
-        }
-        Ok(())
-    }
-
-    async fn mark_mentions_read(
-        tx: &mut Tx,
-        recipient: UserId,
-        comments: &[CommentId],
-        at: Timestamp,
-    ) -> Result<(), FakeError> {
-        for mention in &mut tx.state.mentions {
-            if mention.recipient == recipient
-                && comments.contains(&mention.comment)
-                && mention.read_at.is_none()
-            {
-                mention.read_at = Some(at);
             }
         }
         Ok(())

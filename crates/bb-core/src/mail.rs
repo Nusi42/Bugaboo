@@ -3,6 +3,23 @@
 //! The settings themselves (`mail.*`) are in the registry; the password is a stored secret
 //! (SEC-16) and is no setting.
 
+words! {
+    /// What the server itself judges of the mail server as entered.
+    pub enum MailServerReadiness {
+        /// Host and sender are entered, and the settings send no secret in the clear.
+        Ready => "ready",
+        /// The host or the sender is not entered yet.
+        Incomplete => "incomplete",
+        /// The settings would send a user name or a password without encryption to another machine.
+        Insecure => "insecure",
+    }
+}
+
+words_in_api!(
+    MailServerReadiness,
+    "What the server judges of the mail server as entered: ready, incomplete (the host or the sender is missing), or insecure (a secret would go without encryption to another machine)."
+);
+
 /// The name the mail password is stored under (SEC-16).
 pub const PASSWORD_SECRET: &str = "mail.password";
 
@@ -12,6 +29,23 @@ pub const PASSWORD_MAX: usize = 1024;
 /// How many seconds one person waits between two test e-mails, so the button cannot be used to send
 /// a stream of e-mail through the mail server.
 pub const TEST_EMAIL_EVERY_SECONDS: i64 = 10;
+
+/// Whether the stored mail password belongs to the mail server that this setting names: a new host,
+/// a new port or a new user name is a new mail server, and the password of the old one must not be
+/// given to it (SEC-16). A change to one of them takes the password away in the same change.
+#[must_use]
+pub fn password_belongs_to(key: &str) -> bool {
+    use crate::settings::{MAIL_HOST, MAIL_PORT, MAIL_USERNAME};
+    [
+        MAIL_HOST.definition().key(),
+        MAIL_PORT.definition().key(),
+        MAIL_USERNAME.definition().key(),
+    ]
+    .contains(&key)
+}
+
+/// The field of an event that says the mail password was taken away.
+pub const PASSWORD_FIELD: &str = "mail.password";
 
 /// Whether a host name is this machine: `localhost`, an address of `127.0.0.0/8`, or `::1`.
 #[must_use]

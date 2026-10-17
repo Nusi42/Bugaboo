@@ -69,6 +69,23 @@ export const messages = {
   "access-keys.deleted": "The access key was deleted.",
   "access-keys.pick-one": "Tick at least one permission, or switch single permissions off.",
   "access-keys.project-label": "{short_name}: {name}",
+  "handle.title": "Handle",
+  "handle.intro":
+    "Your handle is the short name people type after @ to mention you, like @ana.brandt.",
+  "handle.label": "Your handle",
+  "handle.save": "Change my handle",
+  "handle.changed": "Your handle is now @{handle}.",
+  "handle.invalid":
+    "That is not a handle. Use only the letters a to z, digits, dots, dashes and underscores.",
+  "handle.taken":
+    "Somebody has this handle, or had it, or a group or a role has it. Choose another one.",
+  "handle.rules": "How a handle works",
+  "handle.rule-characters":
+    "A handle has only the letters a to z (no accents), digits, dots, dashes and underscores, and at most {max} characters.",
+  "handle.rule-own": "Nobody else may have it, and it cannot be the handle of a group or a role.",
+  "handle.rule-weekly": "You can change it once in {days, plural, one {# day} other {# days}}.",
+  "handle.rule-kept":
+    "A handle you give up stays reserved for you. Comments written before still name you, but a new comment that uses it names nobody.",
 } as const;
 
 register(messages);

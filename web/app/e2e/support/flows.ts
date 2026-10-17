@@ -49,6 +49,14 @@ export async function sendSetupAccount(
   await page.getByRole("button", { name: t("first-run.account.submit") }).click();
 }
 
+/** The fourth step of the first start, the mail server, which can be left for later: goes on. */
+export async function skipMailStep(page: Page): Promise<void> {
+  await expect(
+    page.getByRole("heading", { level: 1, name: t("first-run.mail.title") }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: t("common.continue"), exact: true }).click();
+}
+
 /** Types a code on the second step of signing in and sends it. */
 export async function sendSecondStepCode(page: Page, code: string): Promise<void> {
   await page.getByLabel(t("second-step.code")).fill(code);

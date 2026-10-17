@@ -15,6 +15,7 @@ import {
   sendSetupAccount,
   setUpCodeApp,
   signOut,
+  skipMailStep,
 } from "./support/flows.ts";
 import { paths } from "../src/shared/paths.ts";
 
@@ -57,6 +58,7 @@ test("the exit demo: setup, passkey, code app, sign out, sign in, and the log sh
   await sendSetupAccount(page, ada);
   await addPasskey(page, "Demo laptop", ada.password);
   await page.getByRole("button", { name: t("first-run.safer.finish") }).click();
+  await skipMailStep(page);
   await page.getByRole("button", { name: t("first-run.done.go") }).click();
   await expectHome(page, ada);
   await expectLogIntact(page, entriesAfter.setupWithPasskey);

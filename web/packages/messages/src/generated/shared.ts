@@ -69,6 +69,9 @@ export const messages = {
     "The hosts that may show images in descriptions and comments, as a list separated by commas, like images.example.com. Write only the host name, without https:// and without a path. Leave the list empty to show no image from other hosts.",
   "setting.auth.sign-up-domains.help":
     "The e-mail domains that may sign up on their own, as a list separated by commas, like example.com. Leave the list empty to let every address sign up while signing up is on, so write your domains in first.",
+  "setting.ui.reset": "Reset to default",
+  "setting.ui.between": "A whole number between {least} and {most}.",
+  "setting.ui.whole-number": "Enter a whole number.",
   "nav.region": "Region",
   "nav.start-page": "Start page",
   "nav.sign-in-rules": "Sign-in rules",
@@ -158,6 +161,8 @@ export const messages = {
   "common.loading": "Loading…",
   "common.try-again": "Try again",
   "common.save": "Save",
+  "common.on": "On",
+  "common.off": "Off",
   "validation.email": "Type an e-mail address like name@example.com.",
   "field.email": "E-mail address",
   "field.password": "Password",
@@ -401,6 +406,12 @@ export const messages = {
   "related-issues.kind-field": "What the relation means",
   "history.title": "History",
   "history.tabs": "What to show",
+  "history.system": "Bugaboo",
+  "history.changed": "{who} changed {field} from {before} to {after}",
+  "history.set": "{who} set {field} to {after}",
+  "history.set-people": "{who} set {field}: {after}",
+  "history.cleared": "{who} cleared {field}",
+  "history.changed-long-text": "{who} changed {field}",
   "history.people-none": "nobody",
   "error.issue.parent-circle":
     "That would create a circle of issues or a chain that is too long. Choose another issue.",
@@ -597,6 +608,14 @@ export const messages = {
   "layouts.project-title": "Layouts of {project}",
   "workflows.nav": "Workflows",
   "workflows.project-title": "Workflows of {project}",
+  "notification.kind.mentioned": "You are mentioned",
+  "notification.kind.assigned": "An issue is assigned to you",
+  "notification.kind.followed-activity":
+    "A status change, a comment or a file on an issue you follow",
+  "notification.kind.followed-fields": "Other changes to fields of an issue you follow",
+  "notification.kind.run-ended": "Your run of many changes has ended",
+  "notification.kind.edit-notice":
+    "Somebody asks you to finish editing, or takes your editing over",
   "setting.notifications.mentioned-in-app.name": "You are mentioned: in the app",
   "setting.notifications.mentioned-in-app.help":
     "Tells you under Notifications when a comment mentions you, or a group or role you are in.",
@@ -664,7 +683,7 @@ export const messages = {
   "setting.mail.short.help":
     "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
   "error.mail.rejected":
-    "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+    "The mail server did not accept the e-mail. Check the user name and the password, and the address e-mails are sent from.",
   "error.mail.unavailable":
     "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
   "error.mail.off": "E-mail is not set up. Enter the mail server and switch e-mail on first.",
@@ -682,6 +701,14 @@ export const messages = {
     "You changed your handle only a short time ago. You can change it again later.",
   "error.mail.insecure":
     "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
+  "nav.notifications": "Notifications",
+  "nav.notification-settings": "Notification settings",
+  "nav.handle": "Handle",
+  "nav.mail-server": "E-mail & notifications",
+  "nav.group.hearing": "Notifications and mentions",
+  "nav.group.connections": "Connections",
+  "shortcut.go-notifications": "Go to Notifications",
+  "notifications.count-capped": "{max}+",
 } as const;
 
 register(messages);

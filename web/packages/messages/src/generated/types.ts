@@ -14,8 +14,8 @@ import type { messages as issues } from "./issues.ts";
 import type { messages as labels } from "./labels.ts";
 import type { messages as layouts } from "./layouts.ts";
 import type { messages as manyChanges } from "./many-changes.ts";
-import type { messages as mentions } from "./mentions.ts";
 import type { messages as mySettings } from "./my-settings.ts";
+import type { messages as notifications } from "./notifications.ts";
 import type { messages as people } from "./people.ts";
 import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
@@ -44,8 +44,8 @@ export type MessageKey =
   | keyof typeof labels
   | keyof typeof layouts
   | keyof typeof manyChanges
-  | keyof typeof mentions
   | keyof typeof mySettings
+  | keyof typeof notifications
   | keyof typeof people
   | keyof typeof projects
   | keyof typeof relationKinds
@@ -190,6 +190,9 @@ export interface MessageArguments {
   "groups.removed": { group: string | number; name: string | number };
   "groups.used": { places: string | number };
   "groups.used-projects": { count: number };
+  "handle.changed": { handle: string | number };
+  "handle.rule-characters": { max: string | number };
+  "handle.rule-weekly": { days: number };
   "history.by": { when: string | number; who: string | number };
   "history.changed": {
     after: string | number;
@@ -270,6 +273,9 @@ export interface MessageArguments {
   "layouts.section-named": { number: string | number; title: string | number };
   "layouts.section-remove": { number: string | number };
   "layouts.section-up": { number: string | number };
+  "mail-server.test-done": { email: string | number };
+  "mail-server.test-intro": { email: string | number };
+  "mail-server.test-wait": { seconds: number };
   "many-changes.apply": { count: number };
   "many-changes.apply-delete": { count: number };
   "many-changes.change-and-status": { button: string | number; status: string | number };
@@ -280,8 +286,17 @@ export interface MessageArguments {
   "many-changes.result-done": { changed: number; skipped: number };
   "many-changes.skipped-line": { issue: string | number; reason: string | number };
   "many-changes.title": { action: string | number; count: number };
-  "mentions.in": { issue: string | number; who: string | number };
-  "mentions.unread": { count: number };
+  "notifications.assigned": { who: string | number };
+  "notifications.commented": { who: string | number };
+  "notifications.count-capped": { max: string | number };
+  "notifications.finish-asked": { who: string | number };
+  "notifications.group-name": { issue: string | number };
+  "notifications.locked-way": { value: string | number; way: string | number };
+  "notifications.mark-read-name": { what: string | number };
+  "notifications.mentioned": { who: string | number };
+  "notifications.open-name": { what: string | number };
+  "notifications.released": { who: string | number };
+  "notifications.taken-over": { who: string | number };
   "own.ask-text": { lost: string | number };
   "passkeys.added": { name: string | number };
   "passkeys.added-on": { when: string | number };
@@ -395,6 +410,9 @@ export interface MessageArguments {
   "setup.saved": { path: string | number };
   "shell.signed-in-as": { name: string | number };
   "shortcuts.conflict": { action: string | number; keys: string | number };
+  "sign-up.check-text": { email: string | number; hours: number };
+  "sign-up.resend-in": { minutes: number };
+  "sign-up.resent": { email: string | number };
   "sub-issues.added": { key: string | number };
   "sub-issues.not-part-of": { key: string | number };
   "sub-issues.progress": { done: string | number; total: string | number };

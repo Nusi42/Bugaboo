@@ -1,12 +1,15 @@
 import { historyTabWords, type Schema } from "@bugaboo/api-client";
+import { useEffect, useRef, type RefObject } from "react";
 import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
-import { changeValueText } from "../../shared/change-value.ts";
-import { fieldNameOf } from "../../shared/field-names.ts";
-import { personName } from "../../shared/person.ts";
+import { whoOf } from "../../shared/change-sentence.ts";
+import { useIssueTarget } from "../../shared/issue-target.ts";
+import type { IssueTarget } from "../../shared/paths.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
+
+export { changeSentence, sideOf, whoOf } from "../../shared/change-sentence.ts";
 
 /** One item of the history of an issue: a comment, one field that changed, or a relation. */
 export type HistoryEntry = Schema<"HistoryEntryItem">;
@@ -40,66 +43,108 @@ export function groupByEvent(items: readonly HistoryEntry[]): readonly (readonly
   return groups;
 }
 
-/** Who did it, at the start of a sentence; Bugaboo itself when nobody is named. */
-export function whoOf(entry: Schema<"HistoryEntryItem">): string {
-  return entry.by === undefined || entry.by === null ? t("history.system") : personName(entry.by);
+/**
+ * Whether an entry of the history (the items of one event) is where *Open* of a notification goes:
+ * the comment with that ID, or the change that happened at that moment (compared to the
+ * millisecond, however many digits the moment is written with).
+ */
+export function isTarget(entry: readonly HistoryEntry[], target?: IssueTarget): boolean {
+  const first = entry[0];
+  if (first === undefined || target === undefined) {
+    return false;
+  }
+  if (target.kind === "comment") {
+    return first.kind === "comment" && first.comment === target.comment;
+  }
+  return first.kind !== "comment" && Date.parse(first.at) === Date.parse(target.at);
 }
 
-/** The value of one side of a history entry in the one shape of a change's value, if it has any. */
-function valueOf(entry: HistoryEntry, side: "before" | "after"): Schema<"ChangeValueBody"> | null {
-  const before = side === "before";
-  const text = before ? entry.before_text : entry.after_text;
-  const value = before ? entry.before_value : entry.after_value;
-  const names = before ? entry.before_names : entry.after_names;
-  const people = before ? entry.before_people : entry.after_people;
-  const issue = before ? entry.before_issue : entry.after_issue;
-  const project = before ? entry.before_project : entry.after_project;
-  if (text !== undefined && text !== null) {
-    return { shown: "text", text };
-  }
-  if (
-    value !== undefined &&
-    value !== null &&
-    entry.field_kind !== undefined &&
-    entry.field_kind !== null
-  ) {
-    return { shown: "typed", kind: entry.field_kind, value };
-  }
-  if (names !== undefined && names !== null) {
-    return { shown: "names", names };
-  }
-  if (people !== undefined && people !== null) {
-    return { shown: "people", people };
-  }
-  if (project !== undefined && project !== null) {
-    return { shown: "project", project };
-  }
-  return issue === undefined || issue === null ? null : { shown: "issue", issue };
+/**
+ * How many pages *Open* of a notification reads at most while it looks for its entry. An entry
+ * further back than this is not brought to the screen: the person finds it with *Show earlier*.
+ */
+export const openedPagesMax = 10;
+
+/** Whether the tab can hold the entry: a comment is in *Everything* and *Comments*, a change in *Everything* and *Changes*. */
+function tabCanHold(tab: HistoryTabName, target: IssueTarget): boolean {
+  return tab === "everything" || tab === (target.kind === "comment" ? "comments" : "changes");
 }
 
-/** What one side of a change shows: a word, the people, or the issue; nothing for no value. */
-export function sideOf(entry: HistoryEntry, side: "before" | "after"): string | undefined {
-  return changeValueText(entry.field ?? "", valueOf(entry, side));
+/** What decides whether *Open* of a notification reads one more page. */
+export interface OpenedSearch {
+  readonly target?: IssueTarget | undefined;
+  readonly tab: HistoryTabName;
+  readonly found: boolean;
+  readonly pagesRead: number;
+  readonly hasNextPage: boolean;
+  readonly isFetchingNextPage: boolean;
 }
 
-/** The sentence of a change of one field: *Ben changed Priority from Normal to High*. */
-export function changeSentence(entry: HistoryEntry): string {
-  const who = whoOf(entry);
-  const field = fieldNameOf({ code: entry.field ?? "", name: entry.field_name });
-  const before = sideOf(entry, "before");
-  const after = sideOf(entry, "after");
-  if (before !== undefined && after !== undefined) {
-    return t("history.changed", { who, field, before, after });
+/**
+ * Whether the next page is read for *Open* of a notification: only in a tab that can hold the
+ * entry, only for a target that can be told from others (a moment that does not parse matches
+ * nothing), only while it is not found and there are earlier pages, and not past
+ * {@link openedPagesMax} pages.
+ */
+export function readsEarlierForTarget(search: OpenedSearch): boolean {
+  const { target } = search;
+  if (target === undefined || search.found || !search.hasNextPage || search.isFetchingNextPage) {
+    return false;
   }
-  if (after !== undefined) {
-    // People are told after a colon: a field such as *Assigned to* ends in the word that *set … to* needs.
-    return entry.after_people === undefined || entry.after_people === null
-      ? t("history.set", { who, field, after })
-      : t("history.set-people", { who, field, after });
+  if (target.kind === "change" && Number.isNaN(Date.parse(target.at))) {
+    return false;
   }
-  return before === undefined
-    ? t("history.changed-long-text", { who, field })
-    : t("history.cleared", { who, field });
+  return tabCanHold(search.tab, target) && search.pagesRead < openedPagesMax;
+}
+
+/**
+ * The index of the entry *Open* of a notification came to, among the entries of the tab, or -1.
+ * While it is not among them and there are earlier pages (up to {@link openedPagesMax}), the next
+ * page is read: the entry may be further back than the first page goes.
+ */
+export function useOpenedEntry(
+  groups: readonly (readonly HistoryEntry[])[],
+  tab: HistoryTabName,
+  list: Readonly<{
+    pagesRead: number;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+    fetchNextPage: () => Promise<unknown>;
+  }>,
+): number {
+  const target = useIssueTarget();
+  const found = groups.findIndex((group) => isTarget(group, target));
+  const { pagesRead, hasNextPage, isFetchingNextPage, fetchNextPage } = list;
+  const more = readsEarlierForTarget({
+    target,
+    tab,
+    found: found >= 0,
+    pagesRead,
+    hasNextPage,
+    isFetchingNextPage,
+  });
+  useEffect(() => {
+    if (more) {
+      void fetchNextPage();
+    }
+  }, [more, fetchNextPage]);
+  return found;
+}
+
+/**
+ * Brings the element into view once, when `wanted` becomes true: the entry *Open* of a
+ * notification came to. Gives back the ref to put on the element.
+ */
+export function useScrollTo<Element extends HTMLElement>(
+  wanted: boolean,
+): RefObject<Element | null> {
+  const element = useRef<Element>(null);
+  useEffect(() => {
+    if (wanted) {
+      element.current?.scrollIntoView({ block: "center" });
+    }
+  }, [wanted]);
+  return element;
 }
 
 /** The sentence of a relation that was added or taken away. */

@@ -74,6 +74,9 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
     }
 
     writes! {
+        /// Deletes the password of the mail server inside a change: the settings that name the mail
+        /// server changed, so the password of the old one goes with them.
+        fn forget_mail_password() -> ();
         /// Marks these notifications of a person as read; the ones read already keep their date.
         /// Returns how many it marked.
         fn mark_notifications_read(
@@ -81,7 +84,12 @@ pub trait NotificationStore: FollowStore + CommentStore + 'static {
             ids: &[NotificationId],
             at: Timestamp
         ) -> u64;
-        /// Marks every unread notification of a person as read. Returns how many.
-        fn mark_all_notifications_read(recipient: UserId, at: Timestamp) -> u64;
+        /// Marks every unread notification of a person as read, up to and including this one (the
+        /// IDs grow with time, so the later ones are left alone). Returns how many.
+        fn mark_notifications_read_up_to(
+            recipient: UserId,
+            up_to: NotificationId,
+            at: Timestamp
+        ) -> u64;
     }
 }

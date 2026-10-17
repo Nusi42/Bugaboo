@@ -17,10 +17,12 @@ export interface PlaceLinkProps {
   readonly path: Place["path"];
   readonly narrow: boolean;
   readonly onNavigate: (() => void) | undefined;
+  /** A number after the words, such as the notifications not read yet. */
+  readonly count?: string | undefined;
 }
 
 /** The link to a screen of the app, as a list item. */
-export function PlaceLink({ path, narrow, onNavigate }: PlaceLinkProps) {
+export function PlaceLink({ path, narrow, onNavigate, count }: PlaceLinkProps) {
   const { pathname } = useLocation();
   const place = placeAt(path);
   if (place === undefined) {
@@ -33,6 +35,7 @@ export function PlaceLink({ path, narrow, onNavigate }: PlaceLinkProps) {
         icon={place.icon}
         label={t(place.name)}
         narrow={narrow}
+        count={count}
         current={isCurrent(place.path, pathname)}
         {...(onNavigate === undefined ? {} : { onNavigate })}
       />
