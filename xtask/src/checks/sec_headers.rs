@@ -70,6 +70,11 @@ const CSP_FORBIDDEN: [&str; 6] = [
 ];
 /// `data:` and `blob:` can carry script. Only images may use `data:` (architecture §7).
 const CSP_DATA_ONLY_IN: &str = "img-src";
+/// The constant that holds the policy of a download (ADR-0032 §3): a file is sent with a policy that
+/// allows the content nothing, and that makes even a page it would make of itself a sandbox.
+const DOWNLOAD_POLICY: &str = "DOWNLOAD_POLICY";
+/// The directives of that policy, and no other.
+const DOWNLOAD_DIRECTIVES: [&str; 2] = ["default-src 'none'", "sandbox"];
 
 pub(crate) struct SecHeaders;
 
@@ -163,6 +168,7 @@ fn evaluate(code: &str) -> Vec<Finding> {
     }
     findings.extend(check_values(&code_values));
     findings.extend(check_lifetimes(code));
+    findings.extend(check_download_policy(code));
     if let Some(policy) = code_values.get("content-security-policy") {
         findings.extend(check_policy(policy));
     }
@@ -199,6 +205,39 @@ fn check_values(values: &BTreeMap<String, String>) -> Vec<Finding> {
         }
     }
     findings
+}
+
+/// The policy of a download allows nothing: `default-src 'none'` and `sandbox`, no other directive.
+fn check_download_policy(code: &str) -> Vec<Finding> {
+    let Some((_, after)) = code.split_once(&format!("const {DOWNLOAD_POLICY}")) else {
+        return vec![Finding::at(
+            SOURCE,
+            format!(
+                "`{DOWNLOAD_POLICY}` is missing: a file is sent with a policy that allows nothing (ADR-0032)."
+            ),
+        )];
+    };
+    let policy = string_literals(after)
+        .into_iter()
+        .next()
+        .unwrap_or_default();
+    let mut directives: Vec<String> = policy
+        .split(';')
+        .map(|directive| directive.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|directive| !directive.is_empty())
+        .collect();
+    directives.sort();
+    if directives == DOWNLOAD_DIRECTIVES {
+        Vec::new()
+    } else {
+        vec![Finding::at(
+            SOURCE,
+            format!(
+                "`{DOWNLOAD_POLICY}` must be exactly `{}`: a download is allowed nothing (ADR-0032).",
+                DOWNLOAD_DIRECTIVES.join("; ")
+            ),
+        )]
+    }
 }
 
 /// The number a constant of the table is set to, from its line `const NAME: u64 = 86_400;`.
@@ -292,6 +331,7 @@ mod tests {
         permissions: &'static str,
         own: &'static str,
         trusted: &'static str,
+        download: &'static str,
     }
 
     impl Table {
@@ -304,6 +344,7 @@ mod tests {
             permissions: "camera=(), microphone=(), geolocation=(), payment=()",
             own: "86_400",
             trusted: "31_536_000",
+            download: "default-src 'none'; sandbox",
         };
 
         fn code(&self) -> String {
@@ -322,6 +363,7 @@ const T: [(&str, &str); 6] = [
 const H: &str = "strict-transport-security";
 pub const HSTS_MAX_AGE_SELF_SIGNED: u64 = {};
 pub const HSTS_MAX_AGE_TRUSTED: u64 = {};
+pub const DOWNLOAD_POLICY: &str = "{}";
 "#,
                 self.nosniff,
                 self.referrer,
@@ -329,7 +371,8 @@ pub const HSTS_MAX_AGE_TRUSTED: u64 = {};
                 self.resource,
                 self.permissions,
                 self.own,
-                self.trusted
+                self.trusted,
+                self.download
             )
         }
     }
@@ -378,6 +421,26 @@ pub const HSTS_MAX_AGE_TRUSTED: u64 = {};
         }
         .code();
         assert_eq!(evaluate(&lax_code).len(), 1);
+    }
+
+    #[test]
+    fn bad_example_a_download_policy_that_allows_something_or_is_missing() {
+        for weak in [
+            "default-src 'none'",
+            "sandbox",
+            "default-src 'self'; sandbox",
+            "default-src 'none'; sandbox; img-src 'self'",
+            "",
+        ] {
+            let code = Table {
+                download: weak,
+                ..Table::GOOD
+            }
+            .code();
+            assert_eq!(evaluate(&code).len(), 1, "{weak}");
+        }
+        let code = Table::GOOD.code().replace("DOWNLOAD_POLICY", "OTHER");
+        assert_eq!(evaluate(&code).len(), 1);
     }
 
     #[test]

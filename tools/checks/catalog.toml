@@ -492,10 +492,10 @@ status = "planned"
 id = "TEST-UPLOADS"
 title = "Uploads are checked from their content and limited; downloads re-check access; previews never take the server down"
 rule = "ADR-0032"
-tool = "xtask (the upload security tests exist by name: wrong type, SVG, HTML, too large, a decompression bomb, a broken PDF, a link after access ended)"
+tool = "xtask (the upload security tests exist by name and are not switched off: wrong type, SVG, HTML, too large, blocked type, a decompression bomb, a broken PDF, a huge picture, a link after access ended, a link for one person and five minutes; the suites are crates/bb-server/src/tests/sign_in/files_http.rs on both databases, crates/bb-server/tests/preview.rs with the real child process, and crates/bb-files)"
 when = ["ci"]
-files = ["crates/**"]
-status = "planned"
+files = ["crates/bb-server/**", "crates/bb-files/**", "crates/bb-app/src/files/**"]
+status = "active"
 
 # ───────────── Security ─────────────
 [[check]]
