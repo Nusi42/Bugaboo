@@ -206,7 +206,9 @@ tokens {
     // Opacity. The scrim is the dimmed page behind a sheet; forced colors make it fainter.
     opacity "opacity-faint" 0.5
     opacity "opacity-disabled" 0.6
-    opacity "opacity-busy" 0.7
+    // A control that waits for an answer is seen by people while it waits, so its text keeps AA (4.5:1)
+    // on its own fill; a disabled control is exempt, a busy one is not. Held by the test of the busy Save.
+    opacity "opacity-busy" 0.85
     opacity "opacity-scrim" 0.8 forced=0.6
 
     // Easing, for the animations
