@@ -572,6 +572,11 @@ stored_tables! {
         ChangedAt => changed_at,
         Current => current,
     },
+    SignUpMailRow => bb_core::sign_up_invitation::SignUpMail {
+        Address => address,
+        Invitation => invitation,
+        SentAt => sent_at,
+    },
     SignUpInvitationRow => bb_core::sign_up_invitation::SignUpInvitation {
         Id => id,
         TokenHash => token_hash,

@@ -271,3 +271,102 @@ async fn auth_the_job_that_clears_sessions_removes_the_links_that_are_done() -> 
     world.ctx().purge_dead_sessions().await.map_err(text)?;
     Ok(())
 }
+
+/// Changes the rule of signing up, from the version it has (`world` makes version 1).
+async fn set_the_rule(
+    world: &World,
+    version: i64,
+    enabled: bool,
+    domains: &[&str],
+) -> Result<(), String> {
+    change_sign_up_policy(
+        &world.ctx(),
+        ChangeSignUpPolicy {
+            session_token: token(world),
+            policy: SignUpPolicy {
+                enabled,
+                domains: domains.iter().map(|domain| (*domain).to_owned()).collect(),
+                version,
+            },
+        },
+    )
+    .await
+    .map(|_| ())
+    .map_err(text)
+}
+
+#[tokio::test]
+async fn auth_switching_signing_up_off_stops_the_links_that_are_out() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    run_jobs(&world).await?;
+    let secret = secret_in_the_last_e_mail(&world)?;
+    set_the_rule(&world, 1, false, &["example.test"]).await?;
+    assert_eq!(
+        follow(&world, &secret).await.err(),
+        Some(AppError::Refused(ErrorCode::InvitationInvalid))
+    );
+    assert_eq!(people_with(&world, EVE), 0);
+    // So does taking the domain off the list.
+    set_the_rule(&world, 2, true, &["other.test"]).await?;
+    assert!(follow(&world, &secret).await.is_err());
+    let lookup = crate::auth::invitation_lookup(
+        &world.ctx(),
+        crate::auth::InvitationLookupQuery {
+            secret: secret.clone(),
+        },
+    )
+    .await;
+    assert!(lookup.is_err(), "the page does not show the address either");
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_switching_signing_up_off_stops_the_e_mail_that_waits() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    sign_up_for(&world, "ada@example.test").await?;
+    set_the_rule(&world, 1, false, &["example.test"]).await?;
+    run_jobs(&world).await?;
+    assert!(
+        world.mailer.messages().is_empty(),
+        "neither a link nor the word that there is an account"
+    );
+    assert!(world.store.lock().state.sign_up_invitations.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_an_address_with_an_account_signed_up_twice_gets_one_e_mail() -> Outcome {
+    let world = world(true).await?;
+    let known = "ada@example.test";
+    sign_up_for(&world, known).await?;
+    sign_up_for(&world, known).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), 1);
+    // After the pause one more may go.
+    world.clock.advance(RESEND_AFTER_MINUTES * 60 + 1);
+    sign_up_for(&world, known).await?;
+    run_jobs(&world).await?;
+    assert_eq!(world.mailer.messages().len(), 2);
+    Ok(())
+}
+
+#[tokio::test]
+async fn auth_a_job_that_is_tried_again_after_the_mail_server_was_down_still_sends() -> Outcome {
+    let world = world(true).await?;
+    sign_up_for(&world, EVE).await?;
+    world
+        .mailer
+        .fail_next(crate::mailer::MailFailure::Unavailable);
+    run_jobs(&world).await?;
+    assert!(world.mailer.messages().is_empty());
+    world.clock.advance(60);
+    run_jobs(&world).await?;
+    assert_eq!(
+        world.mailer.messages().len(),
+        1,
+        "the same sign-up may send"
+    );
+    Ok(())
+}

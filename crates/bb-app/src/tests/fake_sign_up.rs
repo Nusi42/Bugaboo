@@ -1,7 +1,9 @@
 //! The links of sign-ups, in the in-memory store.
 
+use bb_core::id::InvitationId;
+use bb_core::security_log::Digest;
 use bb_core::sign_in::Invitation;
-use bb_core::sign_up_invitation::SignUpInvitation;
+use bb_core::sign_up_invitation::{SignUpInvitation, SignUpMail};
 use jiff::Timestamp;
 
 use super::fake::{FakeError, FakeStore, Tx};
@@ -9,10 +11,7 @@ use crate::auth::SignUpStore;
 
 impl FakeStore {
     /// The link with the secret that has this hash, as an invitation.
-    pub(super) fn sign_up_link_by_hash(
-        &self,
-        hash: &bb_core::security_log::Digest,
-    ) -> Option<Invitation> {
+    pub(super) fn sign_up_link_by_hash(&self, hash: &Digest) -> Option<Invitation> {
         self.read(|state| {
             state
                 .sign_up_invitations
@@ -25,21 +24,30 @@ impl FakeStore {
 }
 
 impl SignUpStore for FakeStore {
-    async fn open_sign_up_for(
-        &self,
-        email: &str,
+    async fn claim_sign_up_mail(
+        tx: &mut Tx,
+        address: &Digest,
+        invitation: InvitationId,
+        since: Timestamp,
         now: Timestamp,
-    ) -> Result<Option<SignUpInvitation>, FakeError> {
-        Ok(self.read(|state| {
-            state
-                .sign_up_invitations
-                .iter()
-                .filter(|known| {
-                    known.email == email && known.used_at.is_none() && known.expires_at > now
-                })
-                .max_by_key(|known| known.created_at)
-                .cloned()
-        }))
+    ) -> Result<bool, FakeError> {
+        let rows = &mut tx.state.sign_up_mail;
+        match rows.iter_mut().find(|known| known.address == *address) {
+            Some(known) if known.sent_at <= since || known.invitation == invitation => {
+                known.invitation = invitation;
+                known.sent_at = now;
+                Ok(true)
+            }
+            Some(_) => Ok(false),
+            None => {
+                rows.push(SignUpMail {
+                    address: *address,
+                    invitation,
+                    sent_at: now,
+                });
+                Ok(true)
+            }
+        }
     }
 
     async fn put_sign_up_invitation(
@@ -62,6 +70,9 @@ impl SignUpStore for FakeStore {
         tx.state.sign_up_invitations.retain(|known| {
             !(known.created_at < before && (known.used_at.is_some() || known.expires_at <= now))
         });
+        tx.state
+            .sign_up_mail
+            .retain(|known| known.sent_at >= before);
         Ok(u64::try_from(count - tx.state.sign_up_invitations.len()).unwrap_or(u64::MAX))
     }
 }

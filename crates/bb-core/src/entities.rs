@@ -23,6 +23,7 @@ crate::entities! {
     crate::many_changes::ManyChangeRun,
     crate::comment::Comment,
     crate::sign_up_invitation::SignUpInvitation,
+    crate::sign_up_invitation::SignUpMail,
     crate::comment::CommentVersion,
     crate::comment::Mention,
     crate::edit::Draft,

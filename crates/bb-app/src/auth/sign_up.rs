@@ -12,12 +12,13 @@
 //! signing up cannot fill somebody's inbox). With e-mail off nothing can be sent, so signing up is
 //! refused.
 
-use bb_auth::{EmailAddress, Purpose, SecretToken, domain_is_listed};
+use bb_auth::{EmailAddress, Purpose, SecretToken, address_digest, domain_is_listed};
 use bb_core::ErrorCode;
 use bb_core::app_paths;
 use bb_core::event::{Actor as EventActor, RecordKind};
 use bb_core::id::{InvitationId, JobId};
 use bb_core::message::{self, Message};
+use bb_core::security_log::Digest;
 use bb_core::sign_in::SecurityAction;
 use bb_core::sign_up_invitation::{KEEP_HOURS, RESEND_AFTER_MINUTES, SignUpInvitation, lasts};
 use jiff::{SignedDuration, Timestamp};
@@ -31,16 +32,21 @@ use crate::jobs::{kind, kind_name};
 use crate::mailer::MailMessage;
 use crate::notifications::{MailJob, send_failure_for_job};
 use crate::ports::ChangeStore;
-use crate::store_macros::{reads, writes};
+use crate::store_macros::writes;
 
 /// What signing up needs from storage.
 pub trait SignUpStore: ChangeStore + 'static {
-    reads! {
-        /// The newest link made for this address that has not been used and has not run out.
-        fn open_sign_up_for(email: &str, now: Timestamp) -> Option<SignUpInvitation>;
-    }
-
     writes! {
+        /// Says that an e-mail goes to the address with this digest for the sign-up `invitation`:
+        /// `true` when none went since `since` (or the one that went was for this very sign-up, a
+        /// second try of the same job). It is one statement, so two jobs for one address cannot
+        /// both get `true`.
+        fn claim_sign_up_mail(
+            address: &Digest,
+            invitation: InvitationId,
+            since: Timestamp,
+            now: Timestamp
+        ) -> bool;
         /// Stores a link, replacing the one with the same ID.
         fn put_sign_up_invitation(invitation: &SignUpInvitation) -> ();
         /// Deletes the links that were made before `before` and are used up or have run out;
@@ -57,11 +63,8 @@ pub trait SignUpStore: ChangeStore + 'static {
 /// cannot be one. Whether the address has an account is never told.
 pub async fn sign_up<S: AuthStore>(ctx: &Ctx<'_, S>, input: SignUp) -> Result<Done, AppError> {
     let refused = || AppError::Refused(ErrorCode::SignUpRefused);
-    let settings = ctx.settings().await?;
     let email = EmailAddress::parse(&input.email).ok_or(ErrorCode::InvalidRequest)?;
-    let listed = settings.sign_up_domains.trim().is_empty()
-        || domain_is_listed(&email, &settings.sign_up_domains);
-    if !settings.sign_up_enabled || !listed || !ctx.can_send_mail().await? {
+    if !ctx.sign_up_allows(&email).await? || !ctx.can_send_mail().await? {
         ctx.note(SecurityAction::SignUpRefused, None, None).await;
         return Err(refused());
     }
@@ -102,6 +105,43 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(self.mail_server_if_on(&layers).await?.is_some())
     }
 
+    /// Whether signing up is on for this address: the switch is on and its domain is on the list.
+    /// A link that is out is judged by this again when it is used and when its e-mail is made, so
+    /// switching signing up off stops the links that are out.
+    pub(crate) async fn sign_up_allows(&self, email: &EmailAddress) -> Result<bool, AppError> {
+        let settings = self.settings().await?;
+        let listed = settings.sign_up_domains.trim().is_empty()
+            || domain_is_listed(email, &settings.sign_up_domains);
+        Ok(settings.sign_up_enabled && listed)
+    }
+
+    /// Takes the one e-mail an address gets in `RESEND_AFTER_MINUTES` minutes, for the sign-up
+    /// `invitation`. `false` when one went already.
+    async fn claim_sign_up_mail(
+        &self,
+        address: &str,
+        invitation: InvitationId,
+    ) -> Result<bool, AppError> {
+        let now = self.now();
+        let since = now
+            .checked_sub(SignedDuration::from_mins(RESEND_AFTER_MINUTES))
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        let digest = address_digest(address);
+        let event = self.event(
+            EventActor::System,
+            entity(RecordKind::Invitation, invitation),
+            vec![changed("sign-up-mail")],
+        )?;
+        self.store()
+            .record_change(&event, move |transaction| {
+                Box::pin(async move {
+                    S::claim_sign_up_mail(transaction, &digest, invitation, since, now).await
+                })
+            })
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))
+    }
+
     /// Sends the e-mail of a sign-up (the work of a job of the kind `mail.send`): the link that
     /// makes the account, or, for an address that has an account, the word that it has one. The
     /// link is made now and works for 24 hours from now.
@@ -116,6 +156,17 @@ impl<S: AuthStore> Ctx<'_, S> {
             // E-mail was switched off meanwhile: nothing goes (PRIV-08).
             return Ok(());
         };
+        // Signing up was switched off (or the domain taken off the list) meanwhile: nothing goes.
+        let Some(email) = EmailAddress::parse(address) else {
+            return Ok(());
+        };
+        if !self.sign_up_allows(&email).await? {
+            return Ok(());
+        }
+        if !self.claim_sign_up_mail(address, invitation).await? {
+            // An e-mail went to this address a moment ago: signing up cannot fill the inbox.
+            return Ok(());
+        }
         let has_account = self
             .store()
             .account_by_email(address)
@@ -131,22 +182,6 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         } else {
             let now = self.now();
-            let recent = SignedDuration::from_mins(RESEND_AFTER_MINUTES);
-            let sent_lately = self
-                .store()
-                .open_sign_up_for(address, now)
-                .await
-                .map_err(failed)?
-                .is_some_and(|open| {
-                    open.id != invitation
-                        && open
-                            .created_at
-                            .checked_add(recent)
-                            .is_ok_and(|until| until > now)
-                });
-            if sent_lately {
-                return Ok(());
-            }
             let secret = SecretToken::generate()?;
             let made = SignUpInvitation {
                 id: invitation,

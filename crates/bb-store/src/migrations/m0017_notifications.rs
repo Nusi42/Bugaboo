@@ -7,12 +7,15 @@
 //! has no cascade: the rows of a person who is removed are deleted by the removal (M9, PRIV-04),
 //! and all of them go after 90 days anyway. `person_handle` has one row for each handle a person has or
 //! had, and a handle names one person for good. `sign_up_invitation` has one row for each link a
-//! sign-up on one's own made: an invitation with nobody who invited.
+//! sign-up on one's own made: an invitation with nobody who invited. `sign_up_mail` has one row for
+//! each address (as a digest) that a sign-up e-mail went to, so signing up again soon sends nothing.
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
 
 use super::Step;
-use crate::schema::{NotificationRow, PersonHandleRow, PersonRow, SignUpInvitationRow};
+use crate::schema::{
+    NotificationRow, PersonHandleRow, PersonRow, SignUpInvitationRow, SignUpMailRow,
+};
 
 pub(super) fn steps() -> Vec<Step> {
     let mut steps = notifications();
@@ -168,6 +171,24 @@ fn sign_up_invitations() -> Vec<Step> {
                 .table(SignUpInvitationRow::Table)
                 .col(SignUpInvitationRow::Email)
                 .col(SignUpInvitationRow::CreatedAt)
+                .to_owned(),
+        ),
+        // One row for each address: the last e-mail that went to it for a sign-up.
+        Step::Table(
+            Table::create()
+                .table(SignUpMailRow::Table)
+                .col(
+                    ColumnDef::new(SignUpMailRow::Address)
+                        .blob()
+                        .not_null()
+                        .primary_key(),
+                )
+                .col(ColumnDef::new(SignUpMailRow::Invitation).blob().not_null())
+                .col(
+                    ColumnDef::new(SignUpMailRow::SentAt)
+                        .big_integer()
+                        .not_null(),
+                )
                 .to_owned(),
         ),
         // The job that clears sessions finds the finished links by this.

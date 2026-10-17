@@ -95,32 +95,81 @@ async fn auth_a_link_is_used_once_and_only_in_time() -> TestResult {
     .await
 }
 
+async fn claim(
+    storage: &AuthStorage,
+    source: &mut SequentialIds,
+    address: &Digest,
+    invitation: InvitationId,
+    since: i64,
+    now: i64,
+) -> Result<bool, StoreError> {
+    let change = event(source, 3);
+    let address = *address;
+    ChangeStore::record_change(storage, &change, move |tx| {
+        Box::pin(async move {
+            AuthStorage::claim_sign_up_mail(tx, &address, invitation, at(since), at(now)).await
+        })
+    })
+    .await
+}
+
 #[tokio::test]
-async fn auth_the_newest_open_link_of_an_address_is_found_and_a_used_one_is_not() -> TestResult {
-    each_database("auth_open_link", async |db| {
+async fn auth_one_e_mail_goes_to_an_address_in_a_period_and_a_second_try_of_the_job_may_send()
+-> TestResult {
+    each_database("auth_claim_mail", async |db| {
         let fixture = fixture(db).await?;
         let storage = fixture.storage.clone();
         let mut source = ids();
-        let older = link(&mut source, "eve@example.test", 1, 10, 500);
-        let newer = link(&mut source, "eve@example.test", 2, 20, 500);
-        let other = link(&mut source, "zed@example.test", 3, 30, 500);
-        for each in [&older, &newer, &other] {
-            put(&storage, &mut source, each).await?;
+        let (first, second) = (
+            InvitationId::generate(&mut source),
+            InvitationId::generate(&mut source),
+        );
+        let eve = Digest::new([1; 32]);
+        let zed = Digest::new([2; 32]);
+        // The first e-mail to an address goes; the next soon after does not, from another sign-up.
+        assert!(claim(&storage, &mut source, &eve, first, 0, 100).await?);
+        assert!(!claim(&storage, &mut source, &eve, second, 50, 120).await?);
+        // The same sign-up tries again (the mail server was down): it may send.
+        assert!(claim(&storage, &mut source, &eve, first, 50, 130).await?);
+        // Another address is no concern of it.
+        assert!(claim(&storage, &mut source, &zed, second, 50, 130).await?);
+        // After the period a new one goes.
+        assert!(claim(&storage, &mut source, &eve, second, 700, 800).await?);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn auth_two_jobs_for_one_address_at_the_same_moment_send_one_e_mail() -> TestResult {
+    each_database("auth_claim_mail_parallel", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = fixture.storage.clone();
+        let mut source = ids();
+        let eve = Digest::new([1; 32]);
+        for round in 0_i64..10 {
+            let (since, now) = (round * 1000, round * 1000 + 900);
+            let (one, two) = (
+                InvitationId::generate(&mut source),
+                InvitationId::generate(&mut source),
+            );
+            let (change_one, change_two) = (event(&mut source, 3), event(&mut source, 3));
+            let claim_for = |storage: AuthStorage, change, invitation| async move {
+                ChangeStore::record_change(&storage, &change, move |tx| {
+                    Box::pin(async move {
+                        AuthStorage::claim_sign_up_mail(tx, &eve, invitation, at(since), at(now))
+                            .await
+                    })
+                })
+                .await
+            };
+            let (a, b) = tokio::join!(
+                claim_for(storage.clone(), change_one, one),
+                claim_for(storage.clone(), change_two, two)
+            );
+            let won = [a?, b?].iter().filter(|won| **won).count();
+            assert_eq!(won, 1, "round {round}");
         }
-        let open = storage.open_sign_up_for("eve@example.test", at(40)).await?;
-        assert_eq!(open.map(|found| found.id), Some(newer.id));
-        assert!(
-            storage
-                .open_sign_up_for("eve@example.test", at(501))
-                .await?
-                .is_none()
-        );
-        assert!(
-            storage
-                .open_sign_up_for("nobody@example.test", at(40))
-                .await?
-                .is_none()
-        );
         Ok(())
     })
     .await

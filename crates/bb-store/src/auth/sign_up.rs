@@ -8,13 +8,14 @@ use bb_core::security_log::Digest;
 use bb_core::sign_in::Invitation;
 use bb_core::sign_up_invitation::SignUpInvitation;
 use jiff::Timestamp;
-use sea_query::{Cond, Expr, ExprTrait as _, Order, Query};
+use sea_query::{Cond, Expr, ExprTrait as _, OnConflict, Query};
 
 use super::AuthStorage;
 use super::digest;
 use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::schema::SignUpInvitationRow as Columns;
+use crate::schema::SignUpMailRow as Mail;
 
 fn columns() -> [Columns; 6] {
     [
@@ -77,26 +78,44 @@ impl AuthStorage {
 }
 
 impl SignUpStore for AuthStorage {
-    async fn open_sign_up_for(
-        &self,
-        email: &str,
+    async fn claim_sign_up_mail(
+        transaction: &mut Transaction,
+        address: &Digest,
+        invitation: InvitationId,
+        since: Timestamp,
         now: Timestamp,
-    ) -> Result<Option<SignUpInvitation>, StoreError> {
-        let mut select = Query::select();
-        select
-            .columns(columns())
-            .from(Columns::Table)
-            .and_where(Expr::col(Columns::Email).eq(email))
-            .and_where(Expr::col(Columns::UsedAt).is_null())
-            .and_where(Expr::col(Columns::ExpiresAt).gt(to_micros(now)))
-            .order_by(Columns::CreatedAt, Order::Desc)
-            .limit(1);
-        self.database
-            .fetch_optional(&select)
-            .await?
-            .as_ref()
-            .map(read)
-            .transpose()
+    ) -> Result<bool, StoreError> {
+        // One statement decides, so two jobs for one address cannot both pass: the update takes
+        // the row only when the last e-mail is old enough (or is this very sign-up's), and the
+        // insert takes the address only when no row has it.
+        let key = address.as_bytes().to_vec();
+        let mut update = Query::update();
+        update
+            .table(Mail::Table)
+            .value(Mail::Invitation, invitation.stored())
+            .value(Mail::SentAt, to_micros(now))
+            .and_where(Expr::col(Mail::Address).eq(key.clone()))
+            .and_where(
+                Cond::any()
+                    .add(Expr::col(Mail::SentAt).lte(to_micros(since)))
+                    .add(Expr::col(Mail::Invitation).eq(invitation.stored()))
+                    .into(),
+            );
+        if transaction.execute(&update).await? > 0 {
+            return Ok(true);
+        }
+        let mut insert = Query::insert();
+        insert
+            .into_table(Mail::Table)
+            .columns([Mail::Address, Mail::Invitation, Mail::SentAt])
+            .values([
+                Expr::val(key),
+                Expr::val(invitation.stored()),
+                Expr::val(to_micros(now)),
+            ])
+            .map_err(|_| StoreError::Corrupt("a sign-up e-mail"))?
+            .on_conflict(OnConflict::column(Mail::Address).do_nothing().to_owned());
+        Ok(transaction.execute(&insert).await? > 0)
     }
 
     async fn put_sign_up_invitation(
@@ -137,7 +156,14 @@ impl SignUpStore for AuthStorage {
             .from_table(Columns::Table)
             .and_where(Expr::col(Columns::CreatedAt).lt(to_micros(before)))
             .cond_where(finished);
-        transaction.execute(&delete).await
+        let removed = transaction.execute(&delete).await?;
+        // The memory of an e-mail that went is as old as the link: after that, a new one may go.
+        let mut forget = Query::delete();
+        forget
+            .from_table(Mail::Table)
+            .and_where(Expr::col(Mail::SentAt).lt(to_micros(before)));
+        transaction.execute(&forget).await?;
+        Ok(removed)
     }
 }
 

@@ -33,6 +33,16 @@ pub(crate) enum PersonHandleRow {
     Current,
 }
 
+/// The last e-mail that went to an address for a sign-up (M1-F38).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum SignUpMailRow {
+    #[iden = "sign_up_mail"]
+    Table,
+    Address,
+    Invitation,
+    SentAt,
+}
+
 /// The link a sign-up on one's own makes (M1-F38): an invitation with nobody who invited.
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum SignUpInvitationRow {

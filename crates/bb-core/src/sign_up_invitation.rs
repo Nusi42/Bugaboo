@@ -28,6 +28,22 @@ pub const RESEND_AFTER_MINUTES: i64 = 10;
 /// hours.
 pub const KEEP_HOURS: i64 = 24;
 
+/// The last e-mail that went to an address for a sign-up, the one fact kept so that signing up
+/// again and again cannot fill the inbox of the address, whether it has an account or not. The
+/// address itself is not kept, only its digest.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct SignUpMail {
+    /// The digest of the address.
+    #[personal(category = "identity", basis = "contract")]
+    pub address: Digest,
+    /// The sign-up the e-mail was for, so a second try of the same job is not a second e-mail.
+    #[not_personal]
+    pub invitation: InvitationId,
+    /// When it went.
+    #[personal(category = "activity", basis = "contract")]
+    pub sent_at: Timestamp,
+}
+
 /// The invitation a sign-up makes. It is read as an [`crate::sign_in::Invitation`] with no person
 /// who invited.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]

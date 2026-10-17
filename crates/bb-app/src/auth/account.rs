@@ -272,6 +272,13 @@ pub async fn accept_invitation<S: AuthStore>(
         return Err(invalid());
     };
     let email = EmailAddress::parse(&invitation.email).ok_or_else(invalid)?;
+    // The link of a sign-up (nobody invited) is judged by the rule of signing up again: switching
+    // signing up off, or taking the domain off the list, stops the links that are out.
+    if invitation.invited_by.is_none() && !ctx.sign_up_allows(&email).await? {
+        ctx.note(SecurityAction::InvitationRefused, None, None)
+            .await;
+        return Err(invalid());
+    }
     let NewAccount {
         person,
         hash,
