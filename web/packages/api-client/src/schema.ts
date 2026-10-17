@@ -3958,8 +3958,6 @@ export interface components {
     };
     /** @description What the reader may add to an issue and the limits of its project. */
     FileRulesItem: {
-      /** @description The extensions the organization never accepts, in lower case. */
-      blocked_types: string[];
       /**
        * Format: int64
        * @description The most bytes one file may have in the project of the issue.

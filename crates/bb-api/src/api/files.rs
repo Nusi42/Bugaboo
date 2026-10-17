@@ -158,8 +158,6 @@ pub(crate) struct FileRulesItem {
     may_add: bool,
     /// The most bytes one file may have in the project of the issue.
     limit_bytes: u64,
-    /// The extensions the organization never accepts, in lower case.
-    blocked_types: Vec<String>,
     /// The most bytes one part of an upload may have.
     part_bytes: u64,
 }
@@ -171,7 +169,6 @@ impl From<&FileRules> for FileRulesItem {
         Self {
             may_add: rules.may_add,
             limit_bytes: rules.limit_bytes,
-            blocked_types: rules.blocked_types.clone(),
             part_bytes: rules.part_bytes,
         }
     }

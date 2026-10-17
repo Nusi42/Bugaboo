@@ -22992,15 +22992,8 @@
       "FileRulesItem": {
         "type": "object",
         "description": "What the reader may add to an issue and the limits of its project.",
-        "required": ["may_add", "limit_bytes", "blocked_types", "part_bytes"],
+        "required": ["may_add", "limit_bytes", "part_bytes"],
         "properties": {
-          "blocked_types": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The extensions the organization never accepts, in lower case."
-          },
           "limit_bytes": {
             "type": "integer",
             "format": "int64",
