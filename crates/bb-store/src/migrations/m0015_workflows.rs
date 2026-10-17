@@ -280,7 +280,7 @@ mod tests {
         each_database("wf_01_m3_upgrade", async |db| {
             let database = Database::connect(db.url()).await?;
             let (issues, _) = m3_database(&database).await?;
-            assert_eq!(database.migrate(at(1)).await?, [15]);
+            assert_eq!(database.migrate_until(15, at(1)).await?, [15]);
             // Every issue is as it was: its key, its closed date, its version.
             for (id, status, closed) in &issues {
                 let stored = database

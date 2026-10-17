@@ -67,6 +67,10 @@ pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 600;
 /// (`crate::failures`, [`DEFAULT_SIGN_IN_FAILURES_PER_MINUTE`]).
 pub const DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE: u32 = 60;
 
+/// Tries to sign up per client network and minute. Signing up sends an e-mail to any address that
+/// is typed, so it has a small limit of its own besides the cap of the sign-in family.
+pub const SIGN_UP_REQUESTS_PER_MINUTE: u32 = 5;
+
 /// Requests that come with one access key, per minute, when nothing else is set. A script that
 /// needs more asks for fewer, bigger answers (`limit`, `fields`) or sets the limit higher.
 pub const DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE: u32 = 300;
@@ -205,6 +209,7 @@ fn create_room<K>(table: &mut Table<K>, now: Instant) {
 pub struct Limits {
     requests: Window<IpAddr>,
     sign_in_networks: Window<NetworkPrefix>,
+    sign_up_networks: Window<NetworkPrefix>,
     access_keys: Window<Digest>,
 }
 
@@ -215,6 +220,7 @@ impl Limits {
         Arc::new(Self {
             requests: Window::new(config.requests_per_minute, Overflow::Share(OVERFLOW_CLIENT)),
             sign_in_networks: Window::new(config.sign_in_attempts_per_minute, Overflow::Refuse),
+            sign_up_networks: Window::new(SIGN_UP_REQUESTS_PER_MINUTE, Overflow::Refuse),
             // Keys that do not fit in a full table share one counter: a flood of invented keys
             // limits itself and not the keys that are counted already.
             access_keys: Window::new(
@@ -259,6 +265,22 @@ impl Limits {
 
     fn check_sign_in_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
         self.sign_in_networks
+            .hit(NetworkPrefix::from_address(client), now)
+            .map_err(too_many)
+    }
+}
+
+impl Limits {
+    /// Counts one try to sign up of `client`.
+    ///
+    /// # Errors
+    /// `429` with `Retry-After` when the client network is over its limit.
+    pub fn check_sign_up(&self, client: IpAddr) -> Result<(), ApiError> {
+        self.check_sign_up_at(client, Instant::now())
+    }
+
+    fn check_sign_up_at(&self, client: IpAddr, now: Instant) -> Result<(), ApiError> {
+        self.sign_up_networks
             .hit(NetworkPrefix::from_address(client), now)
             .map_err(too_many)
     }
@@ -349,6 +371,19 @@ pub async fn limit_sign_in(
     next.run(request).await
 }
 
+/// The middleware of the sign-up route: counts the try against the client network, with the small
+/// limit for signing up.
+pub async fn limit_sign_up(
+    State(limits): State<Arc<Limits>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    if let Err(error) = limits.check_sign_up(client_of(&request)) {
+        return error.into_response();
+    }
+    next.run(request).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -417,6 +452,20 @@ mod tests {
             .check_request_at(ip("::ffff:203.0.113.7"), now)
             .unwrap();
         assert!(limits.check_request_at(ip("203.0.113.7"), now).is_err());
+    }
+
+    #[test]
+    fn sec_14_signing_up_has_a_small_limit_of_its_own_per_network() {
+        let limits = limits(1000, 1000);
+        let (now, client) = (Instant::now(), ip("203.0.113.7"));
+        for _ in 0..SIGN_UP_REQUESTS_PER_MINUTE {
+            limits.check_sign_up_at(client, now).unwrap();
+        }
+        let error = limits.check_sign_up_at(client, now).unwrap_err();
+        assert_eq!(error.code(), ErrorCode::TooManyRequests);
+        // Another network, and the sign-in cap, are not touched by it.
+        limits.check_sign_up_at(ip("198.51.100.1"), now).unwrap();
+        limits.check_sign_in_at(client, now).unwrap();
     }
 
     #[test]

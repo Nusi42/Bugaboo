@@ -9,6 +9,7 @@ use bb_core::fields::Field;
 use bb_core::issue::{IssueIcon, Priority, StatusGroup};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::message::MessageKey;
+use bb_core::notification::NotificationKind;
 use bb_core::own_fields::{ChoiceColor, FieldFor, FieldType, Look};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::readable_id::IdMode;
@@ -100,6 +101,9 @@ pub(crate) fn made_keys() -> Vec<Made> {
             status.code(),
             status.name(),
         ));
+    }
+    for kind in NotificationKind::ALL {
+        keys.push(made("the kind of notification", kind.code(), kind.label()));
     }
     keys
 }

@@ -47,6 +47,7 @@ export type {
   RecordRef,
   Timers,
 } from "./editing.ts";
+export { appPaths } from "./app-paths.generated.ts";
 export { trustedTypesPolicyName } from "./browser.generated.ts";
 export { isSafeHtml, markSafeHtml, type SafeHtml } from "./safe-html.ts";
 export { decimalDigits, decimalParts, ownFieldPartPrefix } from "./fields.generated.ts";

@@ -10,6 +10,8 @@ extend-exclude = [
 [default.extend-words]
 # Feature-ID group prefix THM (themes), e.g. THM-03: an ID, not a misspelling of "them".
 THM = "THM"
+# The ASCII spelling of the German umlaut u, in the table of handle letters (bb-core comment.rs).
+ue = "ue"
 
 [default.extend-identifiers]
 # The crate name flate2 (docs/third-party/README.md), not a misspelling of "flat".

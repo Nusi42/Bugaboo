@@ -82,6 +82,7 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// A new custom role, not stored yet, put last in the order of the roles.
     pub(super) async fn new_role(&self, name: String, two_step: bool) -> Result<Role, AppError> {
+        self.refuse_a_persons_handle(&name).await?;
         let position = self
             .store()
             .roles()
@@ -124,7 +125,7 @@ fn set_of(permissions: &[Permission]) -> BTreeSet<Permission> {
 ///
 /// # Errors
 /// `access.forbidden` without *Manage roles*, `request.invalid` for a name that cannot be one,
-/// `name.taken` when another role has the name, `access.too_much` when the role holds a
+/// `name.taken` when another role has the name or a person has or had it as a handle, `access.too_much` when the role holds a
 /// permission the person who makes it does not hold.
 pub async fn create_role<S: AuthStore>(
     ctx: &Ctx<'_, S>,
@@ -205,6 +206,9 @@ pub async fn change_role<S: AuthStore>(
         Some(name) => clean_name(name)?,
         None => before.role.name.clone(),
     };
+    if name != before.role.name {
+        ctx.refuse_a_persons_handle(&name).await?;
+    }
     let permissions = input
         .permissions
         .as_deref()

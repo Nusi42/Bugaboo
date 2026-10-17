@@ -3,3 +3,8 @@
 # and a reason that names the follow-up that removes the copy. An entry covers that block and no
 # other one the two files may come to share. An entry that no copy needs any more fails, so the file
 # shrinks as the copies go.
+
+[[exempt]]
+files = ["crates/bb-api/src/api/history.rs", "crates/bb-api/src/api/notifications.rs"]
+block = "277528791695410"
+reason = "The history and the list of notifications say a changed field with the same members. Both are filled by the one function that words a side of a change, so the words are written once; only the declaration of the members is twice, because one shared type (serde flatten) changes the shape of the API description in a way the safe-HTML marks and the generated client types do not follow yet. The follow-up M4-F65 gives the members one type and moves the marks with it."

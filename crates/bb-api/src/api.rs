@@ -48,6 +48,7 @@ mod auth;
 mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
+mod change_side;
 mod check_access;
 mod comments;
 mod editing;
@@ -55,11 +56,13 @@ mod field_permissions;
 mod fields;
 mod follow;
 mod groups;
+mod handles;
 mod history;
 mod issue_types;
 mod issues;
 mod layouts;
 mod many_changes;
+mod notifications;
 mod own_access;
 mod people;
 mod people_visibility;
@@ -166,6 +169,8 @@ where
         .merge(comments::routes())
         .merge(history::routes())
         .merge(follow::routes())
+        .merge(notifications::routes())
+        .merge(handles::routes())
         .merge(people::routes())
         .merge(groups::routes())
         .merge(roles::routes())

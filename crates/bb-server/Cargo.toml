@@ -17,6 +17,7 @@ bb-app = { path = "../bb-app" }
 bb-auth = { path = "../bb-auth" }
 bb-core = { path = "../bb-core" }
 bb-jobs = { path = "../bb-jobs" }
+bb-notify = { path = "../bb-notify" }
 bb-store = { path = "../bb-store" }
 clap = { workspace = true }
 getrandom = { workspace = true }

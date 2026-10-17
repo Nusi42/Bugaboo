@@ -170,6 +170,9 @@ pub(crate) mod member {
     pub(crate) const PARENT: &str = "parent";
     /// The project says its issues got the IDs of the mode it has now, in the event of the project.
     pub(crate) const ISSUE_IDS: &str = "issue-ids";
+    /// The renewal of the issue IDs of the project gave up; the value is the person who asked for
+    /// it, who is told (M3-F150), in the event of the project.
+    pub(crate) const ISSUE_IDS_FAILED: &str = "issue-ids-failed";
     /// A sub-issue that was added or taken away, in the event of the parent as History writes it.
     pub(crate) const SUB_ISSUE: &str = "sub-issue";
 

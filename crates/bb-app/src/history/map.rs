@@ -21,7 +21,7 @@ use crate::issues::member as issue_member;
 use crate::member::{comment, relation};
 
 /// The ID an event names in the member `field` (before or after), if it names an issue.
-fn issue_in(changes: &[FieldChange], field: &str, after: bool) -> Option<IssueId> {
+pub(crate) fn issue_in(changes: &[FieldChange], field: &str, after: bool) -> Option<IssueId> {
     let change = changes.iter().find(|change| change.field == field)?;
     let value = if after { &change.after } else { &change.before };
     value.as_ref()?.as_str()?.parse().ok()

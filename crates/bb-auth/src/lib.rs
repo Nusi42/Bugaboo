@@ -34,7 +34,7 @@ pub use password::{
     ARGON2_ITERATIONS, ARGON2_LANES, ARGON2_MEMORY_KIB, MAX_LENGTH, MIN_LENGTH, PasswordHasher,
     PasswordProblem, Verdict, check_policy,
 };
-pub use token::{Purpose, SecretToken, same_digest, stable_id};
+pub use token::{Purpose, SecretToken, address_digest, same_digest, stable_id};
 pub use totp::{Enrolment, STEP_SECONDS, TotpSecret};
 
 // Used by the integration tests in `tests/` only (`unused_crate_dependencies`).

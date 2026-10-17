@@ -143,10 +143,6 @@ pub const ACCESS_ORIGIN_HERE: MessageKey = MessageKey::new("access.origin-here")
 /// The message `access.origin-unset`.
 pub const ACCESS_ORIGIN_UNSET: MessageKey = MessageKey::new("access.origin-unset");
 
-/// The message `access.person-someone-inside`.
-pub const ACCESS_PERSON_SOMEONE_INSIDE: MessageKey =
-    MessageKey::new("access.person-someone-inside");
-
 /// The message `access.reset`.
 pub const ACCESS_RESET: MessageKey = MessageKey::new("access.reset");
 
@@ -824,6 +820,9 @@ pub const ERROR_FIELD_UNKNOWN_REFERENCE: MessageKey =
 /// The message `error.field.wrong-value`.
 pub const ERROR_FIELD_WRONG_VALUE: MessageKey = MessageKey::new("error.field.wrong-value");
 
+/// The message `error.handle.changed-lately`.
+pub const ERROR_HANDLE_CHANGED_LATELY: MessageKey = MessageKey::new("error.handle.changed-lately");
+
 /// The message `error.issue.parent-circle`.
 pub const ERROR_ISSUE_PARENT_CIRCLE: MessageKey = MessageKey::new("error.issue.parent-circle");
 
@@ -836,6 +835,18 @@ pub const ERROR_LABEL_PICK_ONE_CONFLICT: MessageKey =
 
 /// The message `error.limit.reached`.
 pub const ERROR_LIMIT_REACHED: MessageKey = MessageKey::new("error.limit.reached");
+
+/// The message `error.mail.insecure`.
+pub const ERROR_MAIL_INSECURE: MessageKey = MessageKey::new("error.mail.insecure");
+
+/// The message `error.mail.off`.
+pub const ERROR_MAIL_OFF: MessageKey = MessageKey::new("error.mail.off");
+
+/// The message `error.mail.rejected`.
+pub const ERROR_MAIL_REJECTED: MessageKey = MessageKey::new("error.mail.rejected");
+
+/// The message `error.mail.unavailable`.
+pub const ERROR_MAIL_UNAVAILABLE: MessageKey = MessageKey::new("error.mail.unavailable");
 
 /// The message `error.name.taken`.
 pub const ERROR_NAME_TAKEN: MessageKey = MessageKey::new("error.name.taken");
@@ -2244,6 +2255,36 @@ pub const LIST_NEXT: MessageKey = MessageKey::new("list.next");
 /// The message `list.previous`.
 pub const LIST_PREVIOUS: MessageKey = MessageKey::new("list.previous");
 
+/// The message `mail.footer`.
+pub const MAIL_FOOTER: MessageKey = MessageKey::new("mail.footer");
+
+/// The message `mail.line-more`.
+pub const MAIL_LINE_MORE: MessageKey = MessageKey::new("mail.line-more");
+
+/// The message `mail.line-news`.
+pub const MAIL_LINE_NEWS: MessageKey = MessageKey::new("mail.line-news");
+
+/// The message `mail.line-run-done`.
+pub const MAIL_LINE_RUN_DONE: MessageKey = MessageKey::new("mail.line-run-done");
+
+/// The message `mail.line-run-failed`.
+pub const MAIL_LINE_RUN_FAILED: MessageKey = MessageKey::new("mail.line-run-failed");
+
+/// The message `mail.sign-up-exists-subject`.
+pub const MAIL_SIGN_UP_EXISTS_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-exists-subject");
+
+/// The message `mail.sign-up-subject`.
+pub const MAIL_SIGN_UP_SUBJECT: MessageKey = MessageKey::new("mail.sign-up-subject");
+
+/// The message `mail.subject-run`.
+pub const MAIL_SUBJECT_RUN: MessageKey = MessageKey::new("mail.subject-run");
+
+/// The message `mail.test-subject`.
+pub const MAIL_TEST_SUBJECT: MessageKey = MessageKey::new("mail.test-subject");
+
+/// The message `mail.test-text`.
+pub const MAIL_TEST_TEXT: MessageKey = MessageKey::new("mail.test-text");
+
 /// The message `many-changes-skip.changed-since`.
 pub const MANY_CHANGES_SKIP_CHANGED_SINCE: MessageKey =
     MessageKey::new("many-changes-skip.changed-since");
@@ -2518,6 +2559,27 @@ pub const NAV_STATUS: MessageKey = MessageKey::new("nav.status");
 /// The message `nav.themes`.
 pub const NAV_THEMES: MessageKey = MessageKey::new("nav.themes");
 
+/// The message `notification.kind.assigned`.
+pub const NOTIFICATION_KIND_ASSIGNED: MessageKey = MessageKey::new("notification.kind.assigned");
+
+/// The message `notification.kind.edit-notice`.
+pub const NOTIFICATION_KIND_EDIT_NOTICE: MessageKey =
+    MessageKey::new("notification.kind.edit-notice");
+
+/// The message `notification.kind.followed-activity`.
+pub const NOTIFICATION_KIND_FOLLOWED_ACTIVITY: MessageKey =
+    MessageKey::new("notification.kind.followed-activity");
+
+/// The message `notification.kind.followed-fields`.
+pub const NOTIFICATION_KIND_FOLLOWED_FIELDS: MessageKey =
+    MessageKey::new("notification.kind.followed-fields");
+
+/// The message `notification.kind.mentioned`.
+pub const NOTIFICATION_KIND_MENTIONED: MessageKey = MessageKey::new("notification.kind.mentioned");
+
+/// The message `notification.kind.run-ended`.
+pub const NOTIFICATION_KIND_RUN_ENDED: MessageKey = MessageKey::new("notification.kind.run-ended");
+
 /// The message `own.ask-keep`.
 pub const OWN_ASK_KEEP: MessageKey = MessageKey::new("own.ask-keep");
 
@@ -2765,6 +2827,9 @@ pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-st
 /// The message `person.back`.
 pub const PERSON_BACK: MessageKey = MessageKey::new("person.back");
 
+/// The message `person.bugaboo`.
+pub const PERSON_BUGABOO: MessageKey = MessageKey::new("person.bugaboo");
+
 /// The message `person.email`.
 pub const PERSON_EMAIL: MessageKey = MessageKey::new("person.email");
 
@@ -2779,6 +2844,12 @@ pub const PERSON_ROLES_WHERE: MessageKey = MessageKey::new("person.roles-where")
 
 /// The message `person.since`.
 pub const PERSON_SINCE: MessageKey = MessageKey::new("person.since");
+
+/// The message `person.someone`.
+pub const PERSON_SOMEONE: MessageKey = MessageKey::new("person.someone");
+
+/// The message `person.someone-inside`.
+pub const PERSON_SOMEONE_INSIDE: MessageKey = MessageKey::new("person.someone-inside");
 
 /// The message `preview.label`.
 pub const PREVIEW_LABEL: MessageKey = MessageKey::new("preview.label");
@@ -2874,9 +2945,6 @@ pub const PROJECTS_OVERVIEW_SHORT_NAME: MessageKey =
 
 /// The message `projects.overview-top`.
 pub const PROJECTS_OVERVIEW_TOP: MessageKey = MessageKey::new("projects.overview-top");
-
-/// The message `projects.person-someone`.
-pub const PROJECTS_PERSON_SOMEONE: MessageKey = MessageKey::new("projects.person-someone");
 
 /// The message `projects.picker-legend`.
 pub const PROJECTS_PICKER_LEGEND: MessageKey = MessageKey::new("projects.picker-legend");
@@ -3648,6 +3716,170 @@ pub const SETTING_ISSUES_ID_MODE_HELP: MessageKey = MessageKey::new("setting.iss
 /// The message `setting.issues.id-mode.name`.
 pub const SETTING_ISSUES_ID_MODE_NAME: MessageKey = MessageKey::new("setting.issues.id-mode.name");
 
+/// The message `setting.logs.server-log-files.help`.
+pub const SETTING_LOGS_SERVER_LOG_FILES_HELP: MessageKey =
+    MessageKey::new("setting.logs.server-log-files.help");
+
+/// The message `setting.logs.server-log-files.name`.
+pub const SETTING_LOGS_SERVER_LOG_FILES_NAME: MessageKey =
+    MessageKey::new("setting.logs.server-log-files.name");
+
+/// The message `setting.logs.server-log-megabytes.help`.
+pub const SETTING_LOGS_SERVER_LOG_MEGABYTES_HELP: MessageKey =
+    MessageKey::new("setting.logs.server-log-megabytes.help");
+
+/// The message `setting.logs.server-log-megabytes.name`.
+pub const SETTING_LOGS_SERVER_LOG_MEGABYTES_NAME: MessageKey =
+    MessageKey::new("setting.logs.server-log-megabytes.name");
+
+/// The message `setting.mail.enabled.help`.
+pub const SETTING_MAIL_ENABLED_HELP: MessageKey = MessageKey::new("setting.mail.enabled.help");
+
+/// The message `setting.mail.enabled.name`.
+pub const SETTING_MAIL_ENABLED_NAME: MessageKey = MessageKey::new("setting.mail.enabled.name");
+
+/// The message `setting.mail.from.help`.
+pub const SETTING_MAIL_FROM_HELP: MessageKey = MessageKey::new("setting.mail.from.help");
+
+/// The message `setting.mail.from.name`.
+pub const SETTING_MAIL_FROM_NAME: MessageKey = MessageKey::new("setting.mail.from.name");
+
+/// The message `setting.mail.host.help`.
+pub const SETTING_MAIL_HOST_HELP: MessageKey = MessageKey::new("setting.mail.host.help");
+
+/// The message `setting.mail.host.name`.
+pub const SETTING_MAIL_HOST_NAME: MessageKey = MessageKey::new("setting.mail.host.name");
+
+/// The message `setting.mail.port.help`.
+pub const SETTING_MAIL_PORT_HELP: MessageKey = MessageKey::new("setting.mail.port.help");
+
+/// The message `setting.mail.port.name`.
+pub const SETTING_MAIL_PORT_NAME: MessageKey = MessageKey::new("setting.mail.port.name");
+
+/// The message `setting.mail.security.help`.
+pub const SETTING_MAIL_SECURITY_HELP: MessageKey = MessageKey::new("setting.mail.security.help");
+
+/// The message `setting.mail.security.name`.
+pub const SETTING_MAIL_SECURITY_NAME: MessageKey = MessageKey::new("setting.mail.security.name");
+
+/// The message `setting.mail.security.off`.
+pub const SETTING_MAIL_SECURITY_OFF: MessageKey = MessageKey::new("setting.mail.security.off");
+
+/// The message `setting.mail.security.starttls`.
+pub const SETTING_MAIL_SECURITY_STARTTLS: MessageKey =
+    MessageKey::new("setting.mail.security.starttls");
+
+/// The message `setting.mail.security.tls`.
+pub const SETTING_MAIL_SECURITY_TLS: MessageKey = MessageKey::new("setting.mail.security.tls");
+
+/// The message `setting.mail.short.help`.
+pub const SETTING_MAIL_SHORT_HELP: MessageKey = MessageKey::new("setting.mail.short.help");
+
+/// The message `setting.mail.short.name`.
+pub const SETTING_MAIL_SHORT_NAME: MessageKey = MessageKey::new("setting.mail.short.name");
+
+/// The message `setting.mail.username.help`.
+pub const SETTING_MAIL_USERNAME_HELP: MessageKey = MessageKey::new("setting.mail.username.help");
+
+/// The message `setting.mail.username.name`.
+pub const SETTING_MAIL_USERNAME_NAME: MessageKey = MessageKey::new("setting.mail.username.name");
+
+/// The message `setting.notifications.assigned-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.assigned-by-mail.help");
+
+/// The message `setting.notifications.assigned-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.assigned-by-mail.name");
+
+/// The message `setting.notifications.assigned-in-app.help`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.assigned-in-app.help");
+
+/// The message `setting.notifications.assigned-in-app.name`.
+pub const SETTING_NOTIFICATIONS_ASSIGNED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.assigned-in-app.name");
+
+/// The message `setting.notifications.edit-notice-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-by-mail.help");
+
+/// The message `setting.notifications.edit-notice-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-by-mail.name");
+
+/// The message `setting.notifications.edit-notice-in-app.help`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-in-app.help");
+
+/// The message `setting.notifications.edit-notice-in-app.name`.
+pub const SETTING_NOTIFICATIONS_EDIT_NOTICE_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.edit-notice-in-app.name");
+
+/// The message `setting.notifications.followed-activity-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-by-mail.help");
+
+/// The message `setting.notifications.followed-activity-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-by-mail.name");
+
+/// The message `setting.notifications.followed-activity-in-app.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-in-app.help");
+
+/// The message `setting.notifications.followed-activity-in-app.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_ACTIVITY_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-activity-in-app.name");
+
+/// The message `setting.notifications.followed-fields-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-by-mail.help");
+
+/// The message `setting.notifications.followed-fields-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-by-mail.name");
+
+/// The message `setting.notifications.followed-fields-in-app.help`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-in-app.help");
+
+/// The message `setting.notifications.followed-fields-in-app.name`.
+pub const SETTING_NOTIFICATIONS_FOLLOWED_FIELDS_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.followed-fields-in-app.name");
+
+/// The message `setting.notifications.mentioned-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-by-mail.help");
+
+/// The message `setting.notifications.mentioned-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-by-mail.name");
+
+/// The message `setting.notifications.mentioned-in-app.help`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-in-app.help");
+
+/// The message `setting.notifications.mentioned-in-app.name`.
+pub const SETTING_NOTIFICATIONS_MENTIONED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.mentioned-in-app.name");
+
+/// The message `setting.notifications.run-ended-by-mail.help`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_HELP: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-by-mail.help");
+
+/// The message `setting.notifications.run-ended-by-mail.name`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_BY_MAIL_NAME: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-by-mail.name");
+
+/// The message `setting.notifications.run-ended-in-app.help`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_HELP: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-in-app.help");
+
+/// The message `setting.notifications.run-ended-in-app.name`.
+pub const SETTING_NOTIFICATIONS_RUN_ENDED_IN_APP_NAME: MessageKey =
+    MessageKey::new("setting.notifications.run-ended-in-app.name");
+
 /// The message `setting.page.region-intro`.
 pub const SETTING_PAGE_REGION_INTRO: MessageKey = MessageKey::new("setting.page.region-intro");
 
@@ -3732,6 +3964,14 @@ pub const SETTING_REGION_TIME_ZONE_HELP: MessageKey =
 /// The message `setting.region.time-zone.name`.
 pub const SETTING_REGION_TIME_ZONE_NAME: MessageKey =
     MessageKey::new("setting.region.time-zone.name");
+
+/// The message `setting.security.log-keep-days.help`.
+pub const SETTING_SECURITY_LOG_KEEP_DAYS_HELP: MessageKey =
+    MessageKey::new("setting.security.log-keep-days.help");
+
+/// The message `setting.security.log-keep-days.name`.
+pub const SETTING_SECURITY_LOG_KEEP_DAYS_NAME: MessageKey =
+    MessageKey::new("setting.security.log-keep-days.name");
 
 /// The message `setting.security.session-absolute-hours.help`.
 pub const SETTING_SECURITY_SESSION_ABSOLUTE_HOURS_HELP: MessageKey =
@@ -4051,6 +4291,9 @@ pub const SIGN_UP_CLOSED: MessageKey = MessageKey::new("sign-up.closed");
 /// The message `sign-up.have-account`.
 pub const SIGN_UP_HAVE_ACCOUNT: MessageKey = MessageKey::new("sign-up.have-account");
 
+/// The message `sign-up.sent`.
+pub const SIGN_UP_SENT: MessageKey = MessageKey::new("sign-up.sent");
+
 /// The message `sign-up.submit`.
 pub const SIGN_UP_SUBMIT: MessageKey = MessageKey::new("sign-up.submit");
 
@@ -4319,24 +4562,6 @@ pub fn access_origin_from(project: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("access.origin-from"),
         vec![("project", Value::Text(project.to_string()))],
-    )
-}
-
-/// The message `access.person-former-inside`.
-#[must_use]
-pub fn access_person_former_inside(label: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("access.person-former-inside"),
-        vec![("label", Value::Text(label.to_string()))],
-    )
-}
-
-/// The message `access.person-role-inside`.
-#[must_use]
-pub fn access_person_role_inside(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("access.person-role-inside"),
-        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -6216,6 +6441,131 @@ pub fn layouts_section_up(number: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `mail.line-assigned`.
+#[must_use]
+pub fn mail_line_assigned(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-assigned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-changed`.
+#[must_use]
+pub fn mail_line_changed(
+    field: impl std::fmt::Display,
+    value: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-changed"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("value", Value::Text(value.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.line-cleared`.
+#[must_use]
+pub fn mail_line_cleared(field: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-cleared"),
+        vec![
+            ("field", Value::Text(field.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.line-commented`.
+#[must_use]
+pub fn mail_line_commented(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-commented"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-finish-asked`.
+#[must_use]
+pub fn mail_line_finish_asked(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-finish-asked"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-mentioned`.
+#[must_use]
+pub fn mail_line_mentioned(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-mentioned"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.line-taken-over`.
+#[must_use]
+pub fn mail_line_taken_over(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.line-taken-over"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `mail.open`.
+#[must_use]
+pub fn mail_open(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.open"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.sign-up-exists-text`.
+#[must_use]
+pub fn mail_sign_up_exists_text(address: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.sign-up-exists-text"),
+        vec![("address", Value::Text(address.to_string()))],
+    )
+}
+
+/// The message `mail.sign-up-text`.
+#[must_use]
+pub fn mail_sign_up_text(address: impl std::fmt::Display, hours: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.sign-up-text"),
+        vec![
+            ("address", Value::Text(address.to_string())),
+            ("hours", Value::Number(hours)),
+        ],
+    )
+}
+
+/// The message `mail.subject`.
+#[must_use]
+pub fn mail_subject(issue: impl std::fmt::Display, title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.subject"),
+        vec![
+            ("issue", Value::Text(issue.to_string())),
+            ("title", Value::Text(title.to_string())),
+        ],
+    )
+}
+
+/// The message `mail.subject-short`.
+#[must_use]
+pub fn mail_subject_short(issue: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("mail.subject-short"),
+        vec![("issue", Value::Text(issue.to_string()))],
+    )
+}
+
 /// The message `many-changes.apply`.
 #[must_use]
 pub fn many_changes_apply(count: i64) -> Message {
@@ -6465,12 +6815,48 @@ pub fn people_in_groups(groups: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `person.former`.
+#[must_use]
+pub fn person_former(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.former"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
+/// The message `person.former-inside`.
+#[must_use]
+pub fn person_former_inside(label: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.former-inside"),
+        vec![("label", Value::Text(label.to_string()))],
+    )
+}
+
 /// The message `person.groups-none`.
 #[must_use]
 pub fn person_groups_none(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.groups-none"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `person.role`.
+#[must_use]
+pub fn person_role(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.role"),
+        vec![("role", Value::Text(role.to_string()))],
+    )
+}
+
+/// The message `person.role-inside`.
+#[must_use]
+pub fn person_role_inside(role: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("person.role-inside"),
+        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -6709,24 +7095,6 @@ pub fn projects_moved(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("projects.moved"),
         vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `projects.person-former`.
-#[must_use]
-pub fn projects_person_former(label: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.person-former"),
-        vec![("label", Value::Text(label.to_string()))],
-    )
-}
-
-/// The message `projects.person-role`.
-#[must_use]
-pub fn projects_person_role(role: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("projects.person-role"),
-        vec![("role", Value::Text(role.to_string()))],
     )
 }
 
@@ -7822,9 +8190,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("access.origin-from", "From {project}"),
     ("access.origin-here", "Set for this project"),
     ("access.origin-unset", "Nothing set, so it is hidden"),
-    ("access.person-former-inside", "former user {label}"),
-    ("access.person-role-inside", "a {role}"),
-    ("access.person-someone-inside", "someone"),
     ("access.reset", "Reset"),
     ("access.reset-label", "Reset {subject} for {role}"),
     ("access.role-chooser", "Show the levels of the role"),
@@ -8504,6 +8869,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "That is not a value this field can hold.",
     ),
     (
+        "error.handle.changed-lately",
+        "You changed your handle only a short time ago. You can change it again later.",
+    ),
+    (
         "error.issue.parent-circle",
         "That would create a circle of issues or a chain that is too long. Choose another issue.",
     ),
@@ -8518,6 +8887,22 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.limit.reached",
         "There is no room for more of these. Take some away first.",
+    ),
+    (
+        "error.mail.insecure",
+        "The mail server is set to send its user name or password without encryption to another machine. Switch encryption on, or use a mail server on this machine.",
+    ),
+    (
+        "error.mail.off",
+        "E-mail is not set up. Enter the mail server and switch e-mail on first.",
+    ),
+    (
+        "error.mail.rejected",
+        "The mail server did not accept the e-mail. Check the address e-mails are sent from and the settings of the mail server.",
+    ),
+    (
+        "error.mail.unavailable",
+        "Bugaboo could not reach the mail server. Check the host name, the port and the connection, then try again.",
     ),
     (
         "error.name.taken",
@@ -9521,6 +9906,61 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("list.next", "Next"),
     ("list.previous", "Previous"),
     (
+        "mail.footer",
+        "You get this e-mail because of your notification settings in Bugaboo. You can change them under Customize.",
+    ),
+    ("mail.line-assigned", "{who} assigned this issue to you."),
+    ("mail.line-changed", "{who} changed {field} to {value}."),
+    ("mail.line-cleared", "{who} cleared {field}."),
+    ("mail.line-commented", "{who} wrote a comment:"),
+    (
+        "mail.line-finish-asked",
+        "{who} asks you to finish editing.",
+    ),
+    ("mail.line-mentioned", "{who} mentioned you in a comment:"),
+    (
+        "mail.line-more",
+        "There is more than this e-mail holds. Open it in Bugaboo to read it all.",
+    ),
+    ("mail.line-news", "There is news on this issue."),
+    ("mail.line-run-done", "Your change to many issues is done."),
+    (
+        "mail.line-run-failed",
+        "Your change to many issues stopped before it was done.",
+    ),
+    (
+        "mail.line-taken-over",
+        "{who} took over the editing. What you wrote is kept as your draft.",
+    ),
+    ("mail.open", "Open it in Bugaboo: {address}"),
+    (
+        "mail.sign-up-exists-subject",
+        "Bugaboo: you already have an account",
+    ),
+    (
+        "mail.sign-up-exists-text",
+        "Somebody, probably you, tried to sign up with this address, but it has an account already. Sign in here:\n\n{address}\n\nIf you did not do this, you do not need to do anything.",
+    ),
+    (
+        "mail.sign-up-subject",
+        "Bugaboo: finish creating your account",
+    ),
+    (
+        "mail.sign-up-text",
+        "Open this address to choose your name and your password and finish creating your account. It works once, for {hours, plural, one {# hour} other {# hours}}.\n\n{address}\n\nIf you did not sign up, you do not need to do anything.",
+    ),
+    ("mail.subject", "Bugaboo: {issue} {title}"),
+    (
+        "mail.subject-run",
+        "Bugaboo: your change to many issues has ended",
+    ),
+    ("mail.subject-short", "Bugaboo: news on {issue}"),
+    ("mail.test-subject", "Bugaboo: test e-mail"),
+    (
+        "mail.test-text",
+        "This is a test e-mail from Bugaboo. If you can read it, Bugaboo can send e-mail.",
+    ),
+    (
         "many-changes-skip.changed-since",
         "It changed after the preview",
     ),
@@ -9693,6 +10133,24 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("nav.start-page", "Start page"),
     ("nav.status", "Server status"),
     ("nav.themes", "Themes"),
+    ("notification.kind.assigned", "An issue is assigned to you"),
+    (
+        "notification.kind.edit-notice",
+        "Somebody asks you to finish editing, or takes your editing over",
+    ),
+    (
+        "notification.kind.followed-activity",
+        "A status change, a comment or a file on an issue you follow",
+    ),
+    (
+        "notification.kind.followed-fields",
+        "Other changes to fields of an issue you follow",
+    ),
+    ("notification.kind.mentioned", "You are mentioned"),
+    (
+        "notification.kind.run-ended",
+        "Your run of many changes has ended",
+    ),
     ("own.ask-keep", "Keep what I have"),
     (
         "own.ask-text",
@@ -9902,9 +10360,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("permission.see-status", "See how the server is doing"),
     ("person.back", "All people"),
+    ("person.bugaboo", "Bugaboo"),
     ("person.email", "E-mail address"),
+    ("person.former", "Former user {label}"),
+    ("person.former-inside", "former user {label}"),
     ("person.groups", "Groups"),
     ("person.groups-none", "{name} is in no group."),
+    ("person.role", "A person with the role {role}"),
+    ("person.role-inside", "a person with the role {role}"),
     ("person.roles", "Roles"),
     (
         "person.roles-none",
@@ -9915,6 +10378,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "You see the roles in the whole organization and in the projects where you decide who has which role. Change them in Roles & permissions and in the settings of a project.",
     ),
     ("person.since", "Account created"),
+    ("person.someone", "Someone"),
+    ("person.someone-inside", "someone"),
     ("preview.label", "Issues in this change"),
     ("preview.nothing", "None of the issues would change."),
     (
@@ -10010,9 +10475,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("projects.overview-inside", "Inside"),
     ("projects.overview-short-name", "Short name"),
     ("projects.overview-top", "At the top level"),
-    ("projects.person-former", "Former user {label}"),
-    ("projects.person-role", "A {role}"),
-    ("projects.person-someone", "Someone"),
     ("projects.picker-legend", "Where should it go?"),
     ("projects.picker-list", "Projects it can go into"),
     ("projects.picker-more", "Show more projects"),
@@ -10740,7 +11202,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "setting.auth.sign-up-enabled.help",
-        "Let people create an account on their own, without an invitation. Bugaboo cannot check that an address belongs to the person until e-mail is available, so use this only on a network you trust.",
+        "Let people ask for an account on their own, without an invitation. Bugaboo sends an e-mail to the address they give, and the account is created only when they open the address in it, so this works only while e-mail is on.",
     ),
     (
         "setting.auth.sign-up-enabled.name",
@@ -10767,6 +11229,159 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Random IDs (like WEB-K7Q2X) hide how many issues there are and how fast they come. Counting IDs (like WEB-142) are easy to say aloud. When you change this, every issue of the project gets a new ID; the old IDs keep working.",
     ),
     ("setting.issues.id-mode.name", "Issue IDs"),
+    (
+        "setting.logs.server-log-files.help",
+        "How many old files of the server log are kept next to the current one. Older ones are deleted.",
+    ),
+    (
+        "setting.logs.server-log-files.name",
+        "Old server log files to keep",
+    ),
+    (
+        "setting.logs.server-log-megabytes.help",
+        "A server that runs as a service writes its log to a file. When the file is bigger than this many megabytes, Bugaboo starts a new one and keeps the old one next to it.",
+    ),
+    (
+        "setting.logs.server-log-megabytes.name",
+        "Size of the server log file",
+    ),
+    (
+        "setting.mail.enabled.help",
+        "Bugaboo sends e-mail only when this is on. Enter the mail server first and try it with Send me a test e-mail.",
+    ),
+    ("setting.mail.enabled.name", "Send e-mail"),
+    (
+        "setting.mail.from.help",
+        "The e-mail address that e-mails from Bugaboo come from, like bugaboo@example.com.",
+    ),
+    ("setting.mail.from.name", "Send e-mail from"),
+    (
+        "setting.mail.host.help",
+        "The host name of the mail server Bugaboo sends e-mail through, like mail.example.com. Write only the host name, without a path.",
+    ),
+    ("setting.mail.host.name", "Mail server"),
+    (
+        "setting.mail.port.help",
+        "The port of the mail server, as the provider of your mail server tells you. It depends on how the connection is protected.",
+    ),
+    ("setting.mail.port.name", "Mail server port"),
+    (
+        "setting.mail.security.help",
+        "How the connection to the mail server is protected. Choose no encryption only for a mail server on the same machine or in a place you trust: the password and the e-mails would travel in the clear.",
+    ),
+    ("setting.mail.security.name", "Protect the connection"),
+    ("setting.mail.security.off", "No encryption"),
+    (
+        "setting.mail.security.starttls",
+        "Switch to encryption (usual)",
+    ),
+    ("setting.mail.security.tls", "Encrypted from the start"),
+    (
+        "setting.mail.short.help",
+        "E-mails leave out all issue text (titles and comments) and only say that something happened, with a way to open it in Bugaboo. Use this where e-mail leaves the company.",
+    ),
+    ("setting.mail.short.name", "Short e-mails"),
+    (
+        "setting.mail.username.help",
+        "The user name Bugaboo signs in to the mail server with. Leave it empty for a mail server that asks for none. The password is entered separately and is stored encrypted.",
+    ),
+    ("setting.mail.username.name", "Mail server user name"),
+    (
+        "setting.notifications.assigned-by-mail.help",
+        "Sends you an e-mail when an issue is assigned to you. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.assigned-by-mail.name",
+        "An issue is assigned to you: by e-mail",
+    ),
+    (
+        "setting.notifications.assigned-in-app.help",
+        "Tells you under Notifications when an issue is assigned to you.",
+    ),
+    (
+        "setting.notifications.assigned-in-app.name",
+        "An issue is assigned to you: in the app",
+    ),
+    (
+        "setting.notifications.edit-notice-by-mail.help",
+        "Sends you an e-mail when somebody asks you to finish editing a text, or takes the editing over. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.edit-notice-by-mail.name",
+        "Somebody asks you to finish editing: by e-mail",
+    ),
+    (
+        "setting.notifications.edit-notice-in-app.help",
+        "Tells you under Notifications when somebody asks you to finish editing a text, or takes the editing over.",
+    ),
+    (
+        "setting.notifications.edit-notice-in-app.name",
+        "Somebody asks you to finish editing: in the app",
+    ),
+    (
+        "setting.notifications.followed-activity-by-mail.help",
+        "Sends you an e-mail when somebody else changes the status of an issue you follow, or comments on it or adds a file to it. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.followed-activity-by-mail.name",
+        "Status changes, comments and files on issues you follow: by e-mail",
+    ),
+    (
+        "setting.notifications.followed-activity-in-app.help",
+        "Tells you under Notifications when somebody else changes the status of an issue you follow, or comments on it or adds a file to it.",
+    ),
+    (
+        "setting.notifications.followed-activity-in-app.name",
+        "Status changes, comments and files on issues you follow: in the app",
+    ),
+    (
+        "setting.notifications.followed-fields-by-mail.help",
+        "Sends you an e-mail when somebody else changes other fields of an issue you follow. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.followed-fields-by-mail.name",
+        "Other changes to issues you follow: by e-mail",
+    ),
+    (
+        "setting.notifications.followed-fields-in-app.help",
+        "Tells you under Notifications when somebody else changes other fields of an issue you follow.",
+    ),
+    (
+        "setting.notifications.followed-fields-in-app.name",
+        "Other changes to issues you follow: in the app",
+    ),
+    (
+        "setting.notifications.mentioned-by-mail.help",
+        "Sends you an e-mail when a comment mentions you, or a group or role you are in. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.mentioned-by-mail.name",
+        "You are mentioned: by e-mail",
+    ),
+    (
+        "setting.notifications.mentioned-in-app.help",
+        "Tells you under Notifications when a comment mentions you, or a group or role you are in.",
+    ),
+    (
+        "setting.notifications.mentioned-in-app.name",
+        "You are mentioned: in the app",
+    ),
+    (
+        "setting.notifications.run-ended-by-mail.help",
+        "Sends you an e-mail when a change to many issues that you asked for has ended, or when work you asked for gave up. E-mail goes only when your organization has switched it on.",
+    ),
+    (
+        "setting.notifications.run-ended-by-mail.name",
+        "Your run of many changes has ended: by e-mail",
+    ),
+    (
+        "setting.notifications.run-ended-in-app.help",
+        "Tells you under Notifications when a change to many issues that you asked for has ended, or when work you asked for gave up.",
+    ),
+    (
+        "setting.notifications.run-ended-in-app.name",
+        "Your run of many changes has ended: in the app",
+    ),
     (
         "setting.page.region-intro",
         "These choices are kept with you, so they follow you to every browser you sign in from.",
@@ -10822,6 +11437,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "The time zone for the times you see. Match my device uses the time zone of your device.",
     ),
     ("setting.region.time-zone.name", "Time zone"),
+    (
+        "setting.security.log-keep-days.help",
+        "How many days the security log keeps its entries. Older entries are deleted in whole blocks once a day; a checkpoint that Bugaboo signs stays, so the log still checks out.",
+    ),
+    (
+        "setting.security.log-keep-days.name",
+        "Days to keep the security log",
+    ),
     (
         "setting.security.session-absolute-hours.help",
         "How many hours a sign-in can last at most, even when someone keeps working. After that, people sign in again. Between 1 hour and 30 days (720 hours).",
@@ -11054,7 +11677,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "sign-up-policy.intro",
-        "When this is on, anyone who can open Bugaboo can create an account without being invited.",
+        "When this is on, anyone who can open Bugaboo can ask for an account without being invited. It works only while e-mail is on, because the e-mail that lets them create the account goes to their address.",
     ),
     (
         "sign-up-policy.switch",
@@ -11063,14 +11686,18 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("sign-up-policy.title", "Signing up without an invitation"),
     (
         "sign-up-policy.warning",
-        "No domain is listed, so everyone who can reach Bugaboo can create an account. Bugaboo cannot check that an address belongs to the person until it can send e-mail.",
+        "No domain is listed, so everyone who can reach Bugaboo can ask for an account. The e-mail goes to the address they give, so only a person who can read that address can create one.",
     ),
     (
         "sign-up.closed",
         "Creating your own account is switched off here. Ask an administrator to invite you.",
     ),
     ("sign-up.have-account", "I already have an account"),
-    ("sign-up.submit", "Create my account"),
+    (
+        "sign-up.sent",
+        "We sent an e-mail to that address. Open the address in it to choose your name and your password. If nothing arrives, check the address, or ask an administrator to invite you.",
+    ),
+    ("sign-up.submit", "Send me an e-mail"),
     ("sign-up.title", "Create an account"),
     ("starting-role.administrator", "Administrator"),
     ("starting-role.contributor", "Contributor"),

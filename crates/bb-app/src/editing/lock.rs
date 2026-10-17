@@ -30,10 +30,8 @@ use super::types::{
 };
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Done, Stops, by, change_failed, internal};
+use crate::member::edit_lock as member;
 use crate::projects::Why;
-
-/// The name of the field an event about a lock changes: the part is in the value.
-const EVENT_FIELD: &str = "edit_lock";
 
 /// When a lease that starts at `now` ends: an error only where time cannot be written.
 fn lease_ends(now: jiff::Timestamp) -> Result<jiff::Timestamp, AppError> {
@@ -321,9 +319,14 @@ pub async fn ask_to_finish<S: AuthStore>(
         by(actor.person.id),
         input.what.record.clone(),
         vec![FieldChange {
-            field: EVENT_FIELD.to_owned(),
+            field: member::FIELD.to_owned(),
             before: None,
-            after: Some(json!({ "asked_to_finish": input.what.part.as_str() })),
+            // The person who is asked is in the event, so the notifications reader can tell them
+            // (M3-F75).
+            after: Some(json!({
+                member::ASKED_TO_FINISH: input.what.part.as_str(),
+                member::PERSON: holder.to_string(),
+            })),
         }],
     )?;
     ctx.store()
@@ -361,13 +364,25 @@ pub async fn edit_anyway<S: AuthStore>(
     let wanted = ctx.lock_for(&actor, &input.what, input.editor)?;
     let now = wanted.taken_at;
     let me = actor.person.id;
+    // The person whose editing is taken over is in the event, so the notifications reader can tell
+    // them (M3-F75). Somebody else's lease that is still running is the one: the same rule as the
+    // note the store keeps for them.
+    let taken_from = ctx
+        .live_lock(&input.what)
+        .await?
+        .map(|lock| lock.holder)
+        .filter(|holder| *holder != me);
+    let mut taken = json!({ member::TAKEN_OVER: input.what.part.as_str() });
+    if let (Some(holder), Some(members)) = (taken_from, taken.as_object_mut()) {
+        members.insert(member::PERSON.to_owned(), json!(holder.to_string()));
+    }
     let event = ctx.event(
         by(me),
         input.what.record.clone(),
         vec![FieldChange {
-            field: EVENT_FIELD.to_owned(),
+            field: member::FIELD.to_owned(),
             before: None,
-            after: Some(json!({ "taken_over": input.what.part.as_str() })),
+            after: Some(taken),
         }],
     )?;
     let lock = Arc::new(wanted.clone());
@@ -434,7 +449,7 @@ pub async fn release_stuck_lock<S: AuthStore>(
         by(actor.person.id),
         input.what.record.clone(),
         vec![FieldChange {
-            field: EVENT_FIELD.to_owned(),
+            field: member::FIELD.to_owned(),
             before: Some(json!(input.what.part.as_str())),
             after: None,
         }],

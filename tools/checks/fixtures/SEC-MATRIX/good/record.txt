@@ -1,5 +1,17 @@
 # A record the way the matrix writes it.
 actors nobody no-role role-administrator role-project-lead role-team-member role-contributor role-viewer role-guest lead-on-parent lead-on-sibling-only no-access-on-target no-access-under-lead exactly-the-permission
+delivery notifications role-administrator : heard=yes status=shown author=names
+delivery notifications role-project-lead : heard=yes status=shown author=names
+delivery notifications role-team-member : heard=yes status=shown author=names
+delivery notifications role-contributor : heard=yes status=shown author=names
+delivery notifications role-viewer : heard=yes status=shown author=names
+delivery notifications role-guest : heard=yes status=shown author=role-only
+delivery e-mail role-administrator : heard=yes status=shown author=names
+delivery e-mail role-project-lead : heard=yes status=shown author=names
+delivery e-mail role-team-member : heard=yes status=shown author=names
+delivery e-mail role-contributor : heard=yes status=shown author=names
+delivery e-mail role-viewer : heard=yes status=shown author=names
+delivery e-mail role-guest : heard=yes status=shown author=role-only
 route changeProject api PATCH /api/v1/projects/{project} change-project-settings : nobody=not-signed-in no-role=allowed role-administrator=allowed role-project-lead=allowed role-team-member=allowed role-contributor=allowed role-viewer=allowed role-guest=allowed lead-on-parent=allowed lead-on-sibling-only=allowed no-access-on-target=allowed no-access-under-lead=allowed exactly-the-permission=allowed
 route getStatus api GET /api/v1/status public : nobody=allowed no-role=allowed role-administrator=allowed role-project-lead=allowed role-team-member=allowed role-contributor=allowed role-viewer=allowed role-guest=allowed lead-on-parent=allowed lead-on-sibling-only=allowed no-access-on-target=allowed no-access-under-lead=allowed exactly-the-permission=allowed
 route listProjects api GET /api/v1/projects see-projects : nobody=not-signed-in no-role=allowed role-administrator=allowed role-project-lead=allowed role-team-member=allowed role-contributor=allowed role-viewer=allowed role-guest=allowed lead-on-parent=allowed lead-on-sibling-only=allowed no-access-on-target=allowed no-access-under-lead=allowed exactly-the-permission=allowed

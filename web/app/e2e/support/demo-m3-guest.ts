@@ -27,7 +27,7 @@ export async function theGuestSeesSomeone(page: Page, server: Instance): Promise
   ).toBeVisible();
   await openIssueWithDetails(page, made.guestKey);
   await expect(page.getByRole("heading", { name: GUEST_BUG })).toBeVisible();
-  await expect(page.getByText(t("projects.person-someone"), { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(t("person.someone"), { exact: true }).first()).toBeVisible();
   await Promise.all(
     taken.assigned.map((name) => expect(page.getByText(name, { exact: true })).toHaveCount(0)),
   );

@@ -11,7 +11,13 @@ use super::fake::{FakeError, FakeStore, Tx};
 use crate::jobs::{JOB_ATTEMPTS_MAX, JobStore};
 use crate::many_changes::ManyChangeStore;
 
-fn job(id: JobId, kind: &TechnicalName, payload: &Value, run_at: Timestamp, now: Timestamp) -> Job {
+pub(super) fn job(
+    id: JobId,
+    kind: &TechnicalName,
+    payload: &Value,
+    run_at: Timestamp,
+    now: Timestamp,
+) -> Job {
     Job {
         id,
         kind: kind.clone(),
@@ -95,7 +101,12 @@ impl JobStore for FakeStore {
             found.state = JobState::Dead;
             Ok(Some(FailureOutcome::Dead))
         } else {
-            Ok(Some(FailureOutcome::Retry(now)))
+            // The store waits before the next start; thirty seconds is its first wait.
+            let again = now
+                .checked_add(SignedDuration::from_secs(30))
+                .unwrap_or(now);
+            found.run_at = again;
+            Ok(Some(FailureOutcome::Retry(again)))
         }
     }
 
@@ -110,6 +121,17 @@ impl JobStore for FakeStore {
             .jobs
             .iter()
             .any(|job| job.kind == *kind && job.state == JobState::Queued && job.run_at > after))
+    }
+
+    async fn clear_dead_job_payloads(&self, before: Timestamp) -> Result<u64, FakeError> {
+        let mut emptied = 0;
+        for job in &mut self.lock().state.jobs {
+            if job.state == JobState::Dead && job.run_at < before && !job.payload.is_null() {
+                job.payload = Value::Null;
+                emptied += 1;
+            }
+        }
+        Ok(emptied)
     }
 
     async fn queue_job(

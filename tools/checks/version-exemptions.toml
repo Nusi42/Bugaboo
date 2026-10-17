@@ -162,3 +162,19 @@ reason = "The last choice wins: the use of a place is one row replaced as a whol
 [[exempt]]
 routes = ["DELETE /api/v1/workflows/{workflow}"]
 reason = "A delete has no body: it takes the version the person looked at in the query (`?version=`), and a workflow that changed since is refused with edit.version_changed."
+
+[[exempt]]
+routes = ["PUT /api/v1/mail/password"]
+reason = "Sets or removes the one mail password of the organization, which no answer ever shows, so no person has read a version of it; the change is a security log entry."
+
+[[exempt]]
+routes = ["POST /api/v1/mail/test"]
+reason = "Sends one e-mail to the person who asks and changes nothing."
+
+[[exempt]]
+routes = ["PUT /api/v1/me/handle"]
+reason = "The person changes their own handle; a handle that is taken is refused with a sentence, and two changes by the same person at once are the person's own."
+
+[[exempt]]
+routes = ["POST /api/v1/notifications/read"]
+reason = "Marks notifications of the person as read; marking one again changes nothing, and nobody else edits them."

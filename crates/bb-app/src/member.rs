@@ -77,6 +77,33 @@ pub(crate) mod follower {
     pub(crate) const PERSON: &str = "follower";
 }
 
+/// The member of the event of the notes of an edit lock (*Ask … to finish*, *Edit anyway*), and
+/// the words inside it. The notifications reader reads the person who is told from it.
+pub(crate) mod edit_lock {
+    pub(crate) const FIELD: &str = "edit_lock";
+    /// The part somebody asked the holder of its lock to finish.
+    pub(crate) const ASKED_TO_FINISH: &str = "asked_to_finish";
+    /// The part whose editing somebody took over.
+    pub(crate) const TAKEN_OVER: &str = "taken_over";
+    /// The person who holds the lock and is told.
+    pub(crate) const PERSON: &str = "person";
+}
+
+/// The member of the event of a run of many changes that says where the run is.
+pub(crate) mod run {
+    pub(crate) const STATUS: &str = "status";
+}
+
+/// The member of the event of a person changing their handle.
+pub(crate) mod handle {
+    pub(crate) const FIELD: &str = "handle";
+}
+
+/// The member of the event of a person reading their notifications.
+pub(crate) mod notifications {
+    pub(crate) const READ: &str = "notifications-read";
+}
+
 /// The member of the event of a person reading their *Mentions*.
 pub(crate) mod mentions {
     pub(crate) const READ: &str = "mentions-read";

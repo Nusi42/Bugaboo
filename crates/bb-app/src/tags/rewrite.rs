@@ -16,7 +16,7 @@ use serde_json::json;
 use super::types::{CHANGE_PREVIEW_ISSUES_MAX, ChangedIssue, TagChangePreview};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, EventMaker, by, entity, internal, set_to};
-use crate::issues::{Where, member};
+use crate::issues::{InTrash, Where, member};
 use crate::member::{label as label_member, tag as tag_member};
 use crate::preview::PreviewSummary;
 use crate::projects::Why;
@@ -249,7 +249,8 @@ impl Rewrite {
         Ok(touched)
     }
 
-    /// Appends the event of every issue the change touches, inside the change.
+    /// Appends the event of every issue the change touches, inside the change, and counts the
+    /// version of each of them up.
     pub(super) async fn append_events<S: AuthStore>(
         &self,
         transaction: &mut S::Transaction,
@@ -257,6 +258,17 @@ impl Rewrite {
     ) -> Result<(), S::Error> {
         for touched in self.touched_in::<S>(transaction).await? {
             let each = self.event_of(events, &touched).map_err(|_| S::aborted())?;
+            // The version of the issue counts up too (M3-F126): a change to many issues that was
+            // previewed before the rename is told that the issue changed, and a person who looks at
+            // the issue sees the new name as a change after what they started from.
+            S::count_issue_up(
+                transaction,
+                touched.issue,
+                None,
+                InTrash::Counted,
+                each.time,
+            )
+            .await?;
             S::append_follow_up_event(transaction, &each).await?;
         }
         Ok(())

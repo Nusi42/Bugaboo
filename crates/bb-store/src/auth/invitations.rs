@@ -34,7 +34,7 @@ fn read_invitation(row: &Row) -> Result<Invitation, StoreError> {
         id: row.id::<InvitationId>(InvitationColumns::Id)?,
         token_hash: digest(&row.get::<Vec<u8>>(InvitationColumns::TokenHash)?)?,
         email: row.get(InvitationColumns::Email)?,
-        invited_by: row.id::<UserId>(InvitationColumns::InvitedBy)?,
+        invited_by: row.optional_id::<UserId>(InvitationColumns::InvitedBy)?,
         created_at: row.time(InvitationColumns::CreatedAt)?,
         expires_at: row.time(InvitationColumns::ExpiresAt)?,
         used_at: row.optional_time(InvitationColumns::UsedAt)?,
@@ -63,12 +63,18 @@ impl InvitationStore for AuthStorage {
             .columns(invitation_columns())
             .from(InvitationColumns::Table)
             .and_where(Expr::col(InvitationColumns::TokenHash).eq(hash.as_bytes().to_vec()));
-        self.database
+        let made = self
+            .database
             .fetch_optional(&select)
             .await?
             .as_ref()
             .map(read_invitation)
-            .transpose()
+            .transpose()?;
+        if made.is_some() {
+            return Ok(made);
+        }
+        // Not one an administrator made: the link of a sign-up has its own table.
+        self.sign_up_link_by_hash(hash).await
     }
 
     async fn open_invitations(
@@ -115,7 +121,7 @@ impl InvitationStore for AuthStorage {
                 Expr::val(invitation.id.stored()),
                 Expr::val(invitation.token_hash.as_bytes().to_vec()),
                 Expr::val(invitation.email.as_str()),
-                Expr::val(invitation.invited_by.stored()),
+                Expr::val(invitation.invited_by.map(StoredId::stored)),
                 Expr::val(to_micros(invitation.created_at)),
                 Expr::val(to_micros(invitation.expires_at)),
                 Expr::val(invitation.used_at.map(to_micros)),
@@ -147,7 +153,10 @@ impl InvitationStore for AuthStorage {
             .and_where(Expr::col(InvitationColumns::Id).eq(id.stored()))
             .and_where(Expr::col(InvitationColumns::UsedAt).is_null())
             .and_where(Expr::col(InvitationColumns::ExpiresAt).gt(to_micros(now)));
-        Ok(transaction.execute(&update).await? > 0)
+        if transaction.execute(&update).await? > 0 {
+            return Ok(true);
+        }
+        Self::use_sign_up_link(transaction, id, now).await
     }
 
     async fn put_setup_code(

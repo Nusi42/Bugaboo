@@ -32,6 +32,8 @@ pub enum Purpose {
     SetupCode,
     /// A backup code.
     BackupCode,
+    /// An e-mail address, to remember that one went to it without keeping the address.
+    SignUpAddress,
     /// The secret of an access key.
     AccessKey,
 }
@@ -44,6 +46,7 @@ impl Purpose {
             Self::SetupCode => b"bugaboo.setup-code.v1",
             Self::BackupCode => b"bugaboo.backup-code.v1",
             Self::AccessKey => b"bugaboo.access-key.v1",
+            Self::SignUpAddress => b"bugaboo.sign-up-address.v1",
         }
     }
 
@@ -138,6 +141,13 @@ pub fn stable_id(kind: &str, name: &str) -> [u8; 16] {
 #[must_use]
 pub fn same_digest(a: &Digest, b: &Digest) -> bool {
     a.as_bytes().ct_eq(b.as_bytes()).into()
+}
+
+/// The digest of an e-mail address (in the form [`crate::EmailAddress`] keeps it), which stands for
+/// the address where only the fact that one went to it is kept.
+#[must_use]
+pub fn address_digest(address: &str) -> Digest {
+    Purpose::SignUpAddress.hash(address.as_bytes())
 }
 
 #[cfg(test)]

@@ -34,8 +34,30 @@ pub mod kind {
     /// The history catching up with the events (M3-F71): `Ctx::catch_up_history`. It comes back
     /// every day.
     pub const CATCH_UP_HISTORY: &str = "history.catch-up";
+    /// One e-mail (`notifications`): the payload names the kind of e-mail, who gets it and about
+    /// what. Queued by the reader of notifications and by signing up.
+    pub const MAIL_SEND: &str = "mail.send";
+    /// Deleting the notifications that outlived their keep period, and the payloads of the jobs
+    /// that died before theirs ran out (PRIV-05, M1-F21). It comes back every day.
+    pub const PURGE_NOTIFICATIONS: &str = "notifications.purge";
+    /// Deleting the oldest blocks of the security log that outlived its keep period (M1-F21). It
+    /// comes back every day.
+    pub const PRUNE_SECURITY_LOG: &str = "security-log.prune";
+    /// Deleting the sessions nobody can use any more and the links of finished sign-ups (M1-F43).
+    /// It comes back every day.
+    pub const PURGE_SESSIONS: &str = "sessions.purge";
+    /// Starting a new file of the log of a server that has no console (M1-F61). It comes back
+    /// every day.
+    pub const ROTATE_SERVER_LOG: &str = "server-log.rotate";
     /// The kinds that come back every day, see [`super::DAILY`].
-    pub const DAILY_JOBS: [&str; 2] = [CATCH_UP_HISTORY, PURGE_DRAFTS];
+    pub const DAILY_JOBS: [&str; 6] = [
+        CATCH_UP_HISTORY,
+        PURGE_DRAFTS,
+        PURGE_NOTIFICATIONS,
+        PRUNE_SECURITY_LOG,
+        PURGE_SESSIONS,
+        ROTATE_SERVER_LOG,
+    ];
 }
 
 /// How long after a daily job its next round is due.
@@ -53,6 +75,20 @@ const UNKNOWN_KIND: &str = "job.unknown_kind";
 
 /// The code a job reports when its work failed.
 const FAILED: &str = "job.failed";
+
+/// A job to put in the queue together with the change that needs the work done (the notifications
+/// reader queues the e-mails with the rows they are about).
+#[derive(Clone, Debug)]
+pub struct QueuedJob {
+    /// The ID of the job.
+    pub id: JobId,
+    /// The kind of work.
+    pub kind: TechnicalName,
+    /// What the work needs to know.
+    pub payload: Value,
+    /// The earliest moment it may run.
+    pub run_at: Timestamp,
+}
 
 /// What a job needs from storage.
 pub trait JobStore: ChangeStore + 'static {
@@ -79,6 +115,10 @@ pub trait JobStore: ChangeStore + 'static {
         ) -> Option<FailureOutcome>;
         /// Whether a job of this kind waits in the queue (not dead) for a time after `after`.
         fn later_job_waits(kind: &TechnicalName, after: Timestamp) -> bool;
+        /// Empties the payload of the jobs on the dead-letter list whose last start was before
+        /// `before` (their keep period, M1-F21): it can hold the address and the text of a person.
+        /// The job stays on the list. Returns how many were emptied.
+        fn clear_dead_job_payloads(before: Timestamp) -> u64;
         /// Puts a job in the queue on its own: for the rest of a piece of work that a job did a
         /// step of (the step is bookkeeping of a run that is stored already, not a domain change).
         fn queue_job(
@@ -177,6 +217,62 @@ impl<S: AuthStore> Ctx<'_, S> {
                 tracing::warn!(cause = %error, "the history could not catch up");
                 JobFailure::of(&error, FAILED, job)
             }),
+            kind::MAIL_SEND => Box::pin(self.run_mail_job(&job.payload))
+                .await
+                .map_err(|error| {
+                    // The class only: the answer of the mail server can hold an address.
+                    tracing::warn!(
+                        refused = matches!(error, AppError::Refused(_)),
+                        "an e-mail did not go"
+                    );
+                    JobFailure::of(&error, FAILED, job)
+                }),
+            kind::PURGE_NOTIFICATIONS => {
+                Box::pin(self.run_daily(kind::PURGE_NOTIFICATIONS, async {
+                    self.purge_old_notifications().await.map(|purged| {
+                        tracing::info!(
+                            notifications = purged.notifications,
+                            payloads = purged.payloads,
+                            "old notifications and the payloads of dead jobs were deleted"
+                        );
+                    })
+                }))
+                .await
+                .map_err(|error| {
+                    tracing::warn!(cause = %error, "old notifications could not be deleted");
+                    JobFailure::of(&error, FAILED, job)
+                })
+            }
+            kind::PRUNE_SECURITY_LOG => Box::pin(self.run_daily(kind::PRUNE_SECURITY_LOG, async {
+                self.prune_old_security_log().await.map(|entries| {
+                    tracing::info!(entries, "old entries of the security log were deleted");
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "the security log could not be pruned");
+                JobFailure::of(&error, FAILED, job)
+            }),
+            kind::PURGE_SESSIONS => Box::pin(self.run_daily(kind::PURGE_SESSIONS, async {
+                self.purge_dead_sessions().await.map(|()| {
+                    tracing::info!("sessions nobody can use were deleted");
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "old sessions could not be deleted");
+                JobFailure::of(&error, FAILED, job)
+            }),
+            kind::ROTATE_SERVER_LOG => Box::pin(self.run_daily(kind::ROTATE_SERVER_LOG, async {
+                self.rotate_old_server_log().await.map(|rotated| {
+                    tracing::info!(rotated, "the server log was looked at");
+                })
+            }))
+            .await
+            .map_err(|error| {
+                tracing::warn!(cause = %error, "the server log could not be rotated");
+                JobFailure::of(&error, FAILED, job)
+            }),
             other => {
                 tracing::error!(kind = other, "a job of a kind nobody knows");
                 Err(JobFailure::unknown_kind(job))
@@ -186,14 +282,16 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// What happens when a job is on the dead-letter list: the work that people can see ends in
     /// a state they can see. A change to many issues ends as failed with what it did so far; the
-    /// renewal of issue IDs has no record of its own, so its death is only logged (M3-F150).
+    /// renewal of issue IDs has no record of its own, so its death is an event of the project that
+    /// the person who asked is told of (M3-F150).
     async fn job_gave_up(&self, job: &Job) {
         let ended = match job.kind.as_str() {
             kind::MANY_CHANGES_STEP => self.fail_many_changes_run(&job.payload).await,
             kind::RENEW_IDS => {
                 tracing::error!("renewing issue IDs gave up; the job is on the dead-letter list");
-                Ok(())
+                self.renewal_gave_up(&job.payload).await
             }
+            kind::MAIL_SEND => self.mail_job_gave_up(&job.payload).await,
             _ => Ok(()),
         };
         if let Err(error) = ended {
@@ -254,6 +352,11 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// The error of the store while jobs are taken.
     pub async fn run_due_jobs(&self) -> Result<usize, AppError> {
+        // The notifications come first, so the e-mail they make is queued before the jobs are
+        // taken.
+        if let Err(error) = self.catch_up_notifications().await {
+            tracing::warn!(cause = %error, "the notifications could not catch up");
+        }
         let worker = self.worker_name()?;
         let jobs = self
             .store()

@@ -8,7 +8,7 @@
 
 use axum::extract::State;
 use axum::response::Response;
-use bb_app::history::{ChangeValue, HistoryItem, HistoryQuery, HistoryWhat};
+use bb_app::history::{HistoryItem, HistoryQuery, HistoryWhat};
 use bb_core::history::HistoryTab;
 use bb_core::own_fields::FieldType;
 use bb_core::relation::Direction;
@@ -21,6 +21,7 @@ use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
 use super::auth::{AuthHandle, Info, NotFoundAnswer, NotSignedInAnswer, Session, answer};
+use super::change_side::sides_of;
 use super::comments::CommentItem;
 use super::projects::ProjectRef;
 use super::relations::IssueRef;
@@ -203,40 +204,6 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
     }
 }
 
-/// The places in an item where one side of a change goes.
-#[derive(Default)]
-struct Side {
-    text: Option<String>,
-    value: Option<Value>,
-    names: Option<Vec<String>>,
-    people: Option<Vec<PersonRef>>,
-    issue: Option<IssueRef>,
-    project: Option<ProjectRef>,
-    kind: Option<FieldType>,
-}
-
-impl Side {
-    /// Where a value of a change goes in an item.
-    fn of(value: Option<&ChangeValue>) -> Self {
-        let mut side = Self::default();
-        match value {
-            Some(ChangeValue::Text { text }) => side.text = Some(text.clone()),
-            Some(ChangeValue::Typed { kind, value }) => {
-                side.kind = Some(*kind);
-                side.value = Some(value.clone());
-            }
-            Some(ChangeValue::Names { names }) => side.names = Some(names.clone()),
-            Some(ChangeValue::People { people }) => side.people = Some(people.clone()),
-            Some(ChangeValue::Issue { issue }) => side.issue = Some(IssueRef::from(issue)),
-            Some(ChangeValue::Project { project }) => {
-                side.project = Some(ProjectRef::from(project));
-            }
-            None => {}
-        }
-        side
-    }
-}
-
 /// The items of one row of the history: a comment and a relation are one each, a change one for
 /// each field.
 fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
@@ -259,10 +226,7 @@ fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
                 let mut item = start(row, HistoryEntryKind::Change);
                 item.field = Some(change.field.clone());
                 item.field_name.clone_from(&change.name);
-                let (before, after) = (
-                    Side::of(change.before.as_ref()),
-                    Side::of(change.after.as_ref()),
-                );
+                let (before, after) = sides_of(change);
                 item.field_kind = before.kind.or(after.kind);
                 (item.before_text, item.before_value) = (before.text, before.value);
                 (item.before_names, item.before_people) = (before.names, before.people);

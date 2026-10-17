@@ -16,8 +16,8 @@ use bb_core::event::DomainEvent;
 use bb_core::id::{
     AccessKeyId, AssignmentId, ChoiceId, CommentId, EditorId, EntityId, EventId, FieldId, GroupId,
     IdError, InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
-    ManyChangeRunId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId, SessionId, TagId,
-    UserId, WorkflowId,
+    ManyChangeRunId, NotificationId, PasskeyId, ProjectId, RelationId, RelationKindId, RoleId,
+    SessionId, TagId, UserId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::{
@@ -417,10 +417,13 @@ pub(crate) enum LockClass {
     /// Changes of the names of tags, labels and groups of labels (key 0): two changes at the same
     /// moment cannot both take a name, and a *Pick one* group is judged on what is stored.
     TagsAndLabels = 6,
+    /// Changes of the handles of one person (key: four bytes of the person's ID): two changes at
+    /// the same moment cannot both pass the rule of how often a handle changes.
+    Handles = 7,
     /// The workflows that count (key 0): a change to workflows takes it alone, and an issue that is
     /// written with a status takes it together with the others who do, so an issue is never
     /// written into a status that a workflow being published drops.
-    Workflows = 7,
+    Workflows = 8,
 }
 
 /// A database transaction. Domain data is written only inside one, and only through
@@ -702,6 +705,7 @@ stored_ids!(
     LabelId => "a label ID",
     LayoutId => "a layout ID",
     LockToken => "an edit lock token",
+    NotificationId => "a notification ID",
     PasskeyId => "a passkey ID",
     ProjectId => "a project ID",
     TagId => "a tag ID",
