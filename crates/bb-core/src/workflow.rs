@@ -28,8 +28,8 @@ pub mod judge;
 pub mod starter;
 
 pub use content::{
-    ChangeDraft, Problem, StatusDraft, WorkflowContent, ask_may_name, check_name, rule_may_name,
-    status_named,
+    ChangeDraft, Problem, StatusDraft, WorkflowContent, ask_may_name, check_name, is_new_in,
+    rule_may_name, status_named,
 };
 
 /// The most statuses a workflow has.

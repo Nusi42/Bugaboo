@@ -274,9 +274,8 @@ impl WorkflowContent {
                 group: draft.group,
             });
         }
-        let given: Vec<&StatusKey> = statuses.iter().filter_map(|d| d.key.as_ref()).collect();
         let named = |text: &str| {
-            status_named(&made, text, |status| !given.contains(&&status.key))
+            status_named(&made, text, |status| is_new_in(statuses, status))
                 .map(|status| status.key.clone())
         };
         let mut made_changes = Vec::with_capacity(changes.len());
@@ -328,6 +327,15 @@ impl StatusRules {
         }
         Ok(())
     }
+}
+
+/// Whether a status of the content made from `drafts` is new: no draft gave it its key. The one
+/// meaning of *new* for [`status_named`], for the editor and for Publish.
+#[must_use]
+pub fn is_new_in(drafts: &[StatusDraft], status: &WorkflowStatus) -> bool {
+    !drafts
+        .iter()
+        .any(|draft| draft.key.as_ref() == Some(&status.key))
 }
 
 /// The status that a text names among `statuses`: the one with that key, else (only among the ones

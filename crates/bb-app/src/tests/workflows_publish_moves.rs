@@ -28,9 +28,8 @@ use crate::roles::{
     AssignRole, CopyRole, Given, SetFieldLevel, Subject, assign_role, copy_role, set_level,
 };
 use crate::workflows::{
-    MOVES_CAP, PublishPreview, PublishPreviewQuery, PublishWorkflow, StatusMoveInput,
-    WorkflowEditor, WorkflowEditorQuery, preview_within, publish_preview, publish_workflow,
-    workflow_editor,
+    PublishPreview, PublishPreviewQuery, PublishWorkflow, StatusMoveInput, WorkflowEditor,
+    WorkflowEditorQuery, preview_within, publish_preview, workflow_editor,
 };
 
 /// What drops *In progress*, with the way to and from it.
@@ -543,19 +542,14 @@ async fn three_in_progress_to_drop()
 #[tokio::test]
 async fn wf_02_a_publish_that_would_move_more_issues_than_the_limit_publishes_nothing() -> Outcome {
     let (world, sent) = three_in_progress_to_drop().await?;
-    MOVES_CAP.set(Some(2));
-    let refused = publish_workflow(&world.ctx(), sent).await.err();
-    MOVES_CAP.set(None);
+    let refused = world.ctx().publish_plan(&sent, 2).await.err();
     assert_eq!(
         refused,
         Some(AppError::Refused(ErrorCode::WorkflowStatusInUse))
     );
-    // At the limit it goes through.
-    let (world, sent) = three_in_progress_to_drop().await?;
-    MOVES_CAP.set(Some(3));
-    let done = publish_workflow(&world.ctx(), sent).await;
-    MOVES_CAP.set(None);
-    done?;
+    // At the limit it is planned, and the moves are the three issues.
+    let planned = world.ctx().publish_plan(&sent, 3).await?;
+    assert_eq!(planned.move_count(), 3);
     Ok(())
 }
 
@@ -582,5 +576,34 @@ async fn wf_02_the_preview_over_the_limit_says_so_and_counts_without_judging() -
         .into_value();
     assert!(!within.too_many);
     assert_eq!(within.dropped[0].issues, 3);
+    Ok(())
+}
+
+#[tokio::test]
+async fn wf_02_a_move_into_a_status_made_new_in_the_draft_when_a_status_of_that_name_was_removed()
+-> Outcome {
+    // The draft removes *In progress* and *Done* and makes a new *Done*. The new one gets the key
+    // the old one had, so it is new for the draft although the stored workflow has that key.
+    let world = World::new().await?;
+    let project = a_project(&world, "ACME").await?;
+    let admin = world.admin.session_token.clone();
+    let id = issue_in_progress(&world, project).await?;
+    let editor = a_workflow(&world, "ACME").await?;
+    published_with(&world, &editor, |sent| {
+        without_progress(sent);
+        sent.statuses
+            .retain(|each| each.key.as_ref() != Some(&key(DONE)));
+        sent.statuses.push(StatusDraft {
+            key: None,
+            name: "Done".to_owned(),
+            group: StatusGroup::Done,
+        });
+        sent.moves = vec![StatusMoveInput {
+            from: key(IN_PROGRESS),
+            to: "done".to_owned(),
+        }];
+    })
+    .await?;
+    assert_eq!(status_of(&world, &admin, id).await?, "done");
     Ok(())
 }

@@ -17,12 +17,12 @@ use serde_json::json;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, change_failed, fixed_entity, internal, set_to};
 use crate::member::workflow as member;
 
-/// Makes the starter workflows if the organization is new: it has no workflow and no issue yet. It
+/// Creates the starter workflows if the organization is new: it has no workflow and no issue yet. It
 /// runs at every start and does only what is still to do, so it can be stopped half way and run
 /// again.
 pub struct CreateStartingWorkflows;
 
-/// Makes the starter workflows once.
+/// Creates the starter workflows once.
 ///
 /// # Errors
 /// Fails when the store fails.
@@ -46,7 +46,7 @@ pub async fn create_starting_workflows<S: AuthStore>(
         .issue_types()
         .await
         .map_err(|error| internal::<S>(&error))?;
-    let mut made: Vec<(Workflow, WorkflowContent)> = Vec::with_capacity(STARTERS.len());
+    let mut created: Vec<(Workflow, WorkflowContent)> = Vec::with_capacity(STARTERS.len());
     let mut uses: Vec<WorkflowUse> = Vec::new();
     for starter in STARTERS {
         let workflow = Workflow {
@@ -75,9 +75,9 @@ pub async fn create_starting_workflows<S: AuthStore>(
                 }
             }
         }
-        made.push((workflow, starter.content()));
+        created.push((workflow, starter.content()));
     }
-    let names: Vec<serde_json::Value> = made.iter().map(|(each, _)| json!(each.name)).collect();
+    let names: Vec<serde_json::Value> = created.iter().map(|(each, _)| json!(each.name)).collect();
     let event = ctx.event(
         Actor::System,
         fixed_entity(RecordKind::Workflow, "starting")?,
@@ -93,7 +93,7 @@ pub async fn create_starting_workflows<S: AuthStore>(
                 if !S::workflow_headers_in(transaction).await?.is_empty() {
                     return Err(S::aborted());
                 }
-                for (workflow, content) in &made {
+                for (workflow, content) in &created {
                     S::insert_workflow(transaction, workflow, content).await?;
                 }
                 for used in &uses {

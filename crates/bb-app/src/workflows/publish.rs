@@ -23,7 +23,8 @@ use bb_core::many_changes::MANY_CHANGES_ISSUES_MAX;
 use bb_core::own_fields::FieldFor;
 use bb_core::version::counted_up;
 use bb_core::workflow::{
-    ChangeDraft, StatusDraft, StatusKey, StoredWorkflow, WorkflowContent, check_name, status_named,
+    ChangeDraft, StatusDraft, StatusKey, StoredWorkflow, WorkflowContent, check_name, is_new_in,
+    status_named,
 };
 use bb_policy::{Authorized, Evaluation, Permission, Place};
 use jiff::Timestamp;
@@ -86,8 +87,26 @@ impl Dropping {
     }
 }
 
+/// What a publish does, judged before anything is written (`publish_plan`).
+pub(crate) struct PublishPlan {
+    actor: Actor,
+    stored: StoredWorkflow,
+    held: Arc<Evaluation>,
+    place: Place,
+    content: WorkflowContent,
+    moving: Vec<Moving>,
+}
+
+#[cfg(test)]
+impl PublishPlan {
+    /// How many issues the plan moves.
+    pub(crate) fn move_count(&self) -> usize {
+        self.moving.len()
+    }
+}
+
 /// An issue that goes to another status because the status it was in is dropped.
-struct Moving {
+pub(crate) struct Moving {
     issue: Issue,
     target: StatusKey,
     /// The status group of the target: it decides the closed date.
@@ -200,6 +219,39 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(if may { Mover::Can } else { Mover::Blocked })
     }
 
+    /// What a publish does, judged before anything is written: who publishes, the workflow as it is
+    /// stored, the workflow that is sent, and the moves of the issues of the dropped statuses. One
+    /// publish moves at most `cap` issues (a test makes it small, as for the preview).
+    pub(crate) async fn publish_plan(
+        &self,
+        input: &PublishWorkflow,
+        cap: usize,
+    ) -> Result<PublishPlan, AppError> {
+        let actor = self.actor(&input.session_token).await?;
+        let (stored, held, place) = self.workflow_to_manage(&actor, input.workflow).await?;
+        let content = self
+            .publishable(&actor, &held, &stored, Drafts::from(input))
+            .await?;
+        let moving = self
+            .plan_moves(
+                &actor,
+                &stored,
+                &content,
+                &input.statuses,
+                &input.moves,
+                cap,
+            )
+            .await?;
+        Ok(PublishPlan {
+            actor,
+            stored,
+            held,
+            place,
+            content,
+            moving,
+        })
+    }
+
     /// Where the issues of the dropped statuses go: for each live issue the workflow governs that
     /// is in a dropped status, the status it is sent to. Each move is judged as a change by the
     /// person who publishes (`mover_of`); one they could not make refuses the whole publish.
@@ -208,6 +260,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         stored: &StoredWorkflow,
         content: &WorkflowContent,
+        drafts: &[StatusDraft],
         asked: &[StatusMoveInput],
         cap: usize,
     ) -> Result<Vec<Moving>, AppError> {
@@ -216,7 +269,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // its name, from a status it drops.
         let mut targets: Vec<(StatusKey, StatusKey)> = Vec::new();
         for each in asked {
-            match target_of(stored, content, &each.to) {
+            match target_of(drafts, content, &each.to) {
                 Some(to) if dropping.statuses.contains(&each.from) => {
                     targets.push((each.from.clone(), to));
                 }
@@ -253,12 +306,11 @@ impl<S: AuthStore> Ctx<'_, S> {
 }
 
 /// The status of the new workflow that a move names: by its key, or, for a status that is new in
-/// the draft, by its name read as the editor reads it (ADR-0031 amendment 2).
-fn target_of(stored: &StoredWorkflow, content: &WorkflowContent, named: &str) -> Option<StatusKey> {
-    status_named(&content.statuses, named, |each| {
-        stored.content.status(&each.key).is_none()
-    })
-    .map(|each| each.key.clone())
+/// the draft (no draft gave it a key), by its name read as the editor reads it (ADR-0031
+/// amendment 2).
+fn target_of(drafts: &[StatusDraft], content: &WorkflowContent, named: &str) -> Option<StatusKey> {
+    status_named(&content.statuses, named, |each| is_new_in(drafts, each))
+        .map(|each| each.key.clone())
 }
 
 /// Carries out the moves of the issues of the dropped statuses inside the change, each with its history.
@@ -303,21 +355,6 @@ async fn carry_out_moves<S: AuthStore>(
     Ok(None)
 }
 
-#[cfg(test)]
-thread_local! {
-    /// A smaller limit for one test, so that going over it needs few issues.
-    pub(crate) static MOVES_CAP: std::cell::Cell<Option<usize>> = const { std::cell::Cell::new(None) };
-}
-
-/// The most issues one publish moves: what one change to many issues takes.
-fn moves_cap() -> usize {
-    #[cfg(test)]
-    if let Some(small) = MOVES_CAP.get() {
-        return small;
-    }
-    MANY_CHANGES_ISSUES_MAX
-}
-
 /// Publishes a workflow under the edit lock the person holds: the statuses, the status changes and
 /// their rules are replaced by what was sent, and the issues of the statuses that are dropped go
 /// where the person said, in the same change.
@@ -335,14 +372,14 @@ pub async fn publish_workflow<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: PublishWorkflow,
 ) -> Result<Authorized<Published>, AppError> {
-    let actor = ctx.actor(&input.session_token).await?;
-    let (stored, held, place) = ctx.workflow_to_manage(&actor, input.workflow).await?;
-    let content = ctx
-        .publishable(&actor, &held, &stored, Drafts::from(&input))
-        .await?;
-    let moving = ctx
-        .plan_moves(&actor, &stored, &content, &input.moves, moves_cap())
-        .await?;
+    let PublishPlan {
+        actor,
+        stored,
+        held,
+        place,
+        content,
+        moving,
+    } = ctx.publish_plan(&input, MANY_CHANGES_ISSUES_MAX).await?;
     let id: WorkflowId = input.workflow;
     let record = entity(RecordKind::Workflow, id);
     let name = input.name.trim().to_owned();

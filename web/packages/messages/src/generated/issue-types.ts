@@ -3,6 +3,7 @@
 import { register } from "../registry.ts";
 
 export const messages = {
+  "issue-types.all-types": "All issue types",
   "issue-types.intro":
     "An issue type says what kind of issue it is: a bug, a task, a feature or a goal. Everybody who creates an issue picks one of these. Retire a type to stop new issues of it; the issues that have it keep it.",
   "issue-types.more": "Show more issue types",
@@ -20,7 +21,6 @@ export const messages = {
     "A retired type is not offered for new issues. The issues that have it keep it and can still be changed. You can offer it again later.",
   "issue-types.retire": "Retire the issue type",
   "issue-types.offer-again": "Offer the issue type again",
-  "issue-types.all-types": "All issue types",
 } as const;
 
 register(messages);

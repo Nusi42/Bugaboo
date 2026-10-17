@@ -123,7 +123,7 @@ pub async fn create_workflow<S: AuthStore>(
         ],
     )?;
     let why = Why::default();
-    let (stopped, made, copied) = (why.clone(), workflow.clone(), in_force.content.clone());
+    let (stopped, created, copied) = (why.clone(), workflow.clone(), in_force.content.clone());
     ctx.store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
@@ -132,7 +132,7 @@ pub async fn create_workflow<S: AuthStore>(
                 if placed.iter().any(|each| each.place() == place) {
                     return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
                 }
-                S::insert_workflow(transaction, &made, &copied).await?;
+                S::insert_workflow(transaction, &created, &copied).await?;
                 S::put_workflow_use(transaction, &used).await
             })
         })
