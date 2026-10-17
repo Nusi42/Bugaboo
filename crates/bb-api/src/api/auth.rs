@@ -336,6 +336,8 @@ problem_answers! {
     NotFoundAnswer => ("404", "There is no such thing (resource.not_found)."),
     /// Something stands in the way of a change.
     ConflictAnswer => ("409", "Something stands in the way of the change: a name that is taken, a change somebody made first, or a rule about moving projects (name.taken, edit.version_changed, project.move_lifts_no_access, project.move_into_itself, project.too_deep, project.preview_changed)."),
+    /// Too soon after the last try.
+    TooSoonAnswer => ("429", "Too soon after the last time (rate_limit.exceeded, handle.changed_lately)."),
 }
 
 /// The routes of the sign-in family, with the small per-network limit of SEC-14 on those that

@@ -27,7 +27,8 @@ use utoipa_axum::routes;
 
 use super::access_bodies::cursor_error;
 use super::auth::{
-    AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, answer, answer_authorized, done,
+    AuthHandle, Info, InvalidAnswer, NotSignedInAnswer, Session, TooSoonAnswer, answer,
+    answer_authorized, done,
 };
 use super::body_id;
 use super::change_side::sides_of;
@@ -418,7 +419,7 @@ async fn set_mail_password(
     path = "/api/v1/mail/test",
     operation_id = "sendTestEmail",
     tag = "notifications",
-    responses((status = 204, description = "The mail server took the e-mail."), NotSignedInAnswer)
+    responses((status = 204, description = "The mail server took the e-mail."), NotSignedInAnswer, TooSoonAnswer)
 )]
 async fn send_test_email(
     State(auth): State<AuthHandle>,

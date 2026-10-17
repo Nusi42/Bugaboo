@@ -13119,15 +13119,7 @@
             }
           },
           "429": {
-            "description": "error.rate-limit.exceeded (rate_limit.exceeded)",
-            "headers": {
-              "retry-after": {
-                "schema": {
-                  "type": "integer"
-                },
-                "description": "Seconds to wait before trying again."
-              }
-            },
+            "description": "Too soon after the last time (rate_limit.exceeded, handle.changed_lately).",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13717,9 +13709,9 @@
             }
           },
           "429": {
-            "description": "The handle was changed a short time ago (handle.changed_lately).",
+            "description": "Too soon after the last time (rate_limit.exceeded, handle.changed_lately).",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 }

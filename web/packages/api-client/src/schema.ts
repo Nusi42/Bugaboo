@@ -17133,11 +17133,9 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description error.rate-limit.exceeded (rate_limit.exceeded) */
+      /** @description Too soon after the last time (rate_limit.exceeded, handle.changed_lately). */
       429: {
         headers: {
-          /** @description Seconds to wait before trying again. */
-          "retry-after"?: number;
           [name: string]: unknown;
         };
         content: {
@@ -17611,13 +17609,13 @@ export interface operations {
           "application/problem+json": components["schemas"]["Problem"];
         };
       };
-      /** @description The handle was changed a short time ago (handle.changed_lately). */
+      /** @description Too soon after the last time (rate_limit.exceeded, handle.changed_lately). */
       429: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Problem"];
+          "application/problem+json": components["schemas"]["Problem"];
         };
       };
       /** @description error.server.internal (server.internal) */

@@ -14,7 +14,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use super::auth::{
-    AuthHandle, ConflictAnswer, Info, InvalidAnswer, NotSignedInAnswer, Session, answer_authorized,
+    AuthHandle, ConflictAnswer, Info, InvalidAnswer, NotSignedInAnswer, Session, TooSoonAnswer,
+    answer_authorized,
 };
 use crate::errors::{ApiError, ApiJson};
 
@@ -72,7 +73,7 @@ async fn get_my_handle(
     operation_id = "changeMyHandle",
     tag = "people",
     request_body = NewHandleBody,
-    responses((status = 200, description = "The handle now.", body = HandleBody), InvalidAnswer, ConflictAnswer, NotSignedInAnswer, (status = 429, description = "The handle was changed a short time ago (handle.changed_lately).", body = bb_core::Problem))
+    responses((status = 200, description = "The handle now.", body = HandleBody), InvalidAnswer, ConflictAnswer, NotSignedInAnswer, TooSoonAnswer)
 )]
 async fn change_my_handle(
     State(auth): State<AuthHandle>,
