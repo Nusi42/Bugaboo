@@ -30,8 +30,9 @@ export const stillHeld: Heartbeat = {
 };
 
 /** The error of a request the server refused with this code. */
-export function refusal(code: ErrorCode): ApiError {
+export function refusal(code: ErrorCode, more: Readonly<Record<string, unknown>> = {}): ApiError {
   return new ApiError(409, {
+    ...more,
     type: `urn:bugaboo:error:${code}`,
     title: code,
     status: 409,

@@ -129,6 +129,7 @@ export const tokenNames = [
   "size-qr",
   "size-code",
   "size-file-tile",
+  "size-phone-hang",
   "size-target-least",
   "size-control",
   "size-control-small",

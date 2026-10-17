@@ -38,12 +38,15 @@ function useSendOnLeave(active: boolean, send: () => void) {
  * or presses Enter, with no button; anywhere else a form with a *Save* button.
  */
 export function SaveForm({
+  name,
   isPending,
   live,
   inRow,
   onSubmit,
   children,
 }: {
+  /** The name of the field the boxes are the value of: the frame in a row is named after it ("Value of Customer"). */
+  readonly name: string;
   readonly isPending: boolean;
   readonly live: boolean;
   readonly inRow: boolean;
@@ -56,7 +59,7 @@ export function SaveForm({
   }
   if (inRow) {
     return (
-      <section ref={frame}>
+      <section ref={frame} aria-label={t("fields.value-of", { name })}>
         <Form onSubmit={onSubmit}>{children}</Form>
       </section>
     );

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { ada, bob } from "./support/accounts.ts";
 import { signedInAdmin } from "./support/access.ts";
-import { expectGoodInEveryLook } from "./support/checks.ts";
+import { expectGoodInEveryLook, expectGoodInEveryTheme } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { descriptionBox, openEditing, startEditing } from "./support/description.ts";
 import { anotherBrowser, openIssueWithDetails, signIn } from "./support/flows.ts";
@@ -27,6 +27,26 @@ test("iss_17 the description is saved, rendered by the server, and the lock is l
   await expect(page.locator("strong", { hasText: "every" })).toBeVisible();
   await page.reload();
   await expect(page.locator("strong", { hasText: "every" })).toBeVisible();
+});
+
+test("ux_04 a Save that waits for the server meets the contrast in every theme (AA)", async ({
+  page,
+}) => {
+  // The answer is held, so the button stays busy while it is looked at: a person sees it so too.
+  const slow = Promise.withResolvers<void>();
+  await page.route("**/api/v1/issues/*/description", async (route) => {
+    await slow.promise;
+    await route.continue();
+  });
+  await signIn(page, ada);
+  await startEditing(page, "WEB-1");
+  await descriptionBox(page).fill("A text that waits.");
+  const save = page.getByRole("button", { name: t("common.save"), exact: true });
+  await save.click();
+  await expect(save).toHaveAttribute("data-state", "busy");
+  await expectGoodInEveryTheme(page);
+  slow.resolve();
+  await expect(savedNote(page)).toBeVisible();
 });
 
 test("iss_17 Ana types, Ben sees who is editing and uses Edit anyway, Ana's text is kept", async ({

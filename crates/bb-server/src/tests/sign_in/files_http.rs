@@ -25,8 +25,8 @@ use super::policy_rig::Member;
 use super::rig::Rig;
 
 const UPLOADS: &str = "/api/v1/uploads";
-const ATTACHMENTS: &str = "/api/v1/attachments";
-const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
+pub(super) const ATTACHMENTS: &str = "/api/v1/attachments";
+pub(super) const DAY: i64 = bb_core::time::SECONDS_PER_DAY;
 
 /// The number of bytes of this many megabytes.
 fn megabytes(count: u64) -> usize {
@@ -104,7 +104,7 @@ async fn upload_in_parts(
 }
 
 /// A file uploaded in as few parts as there can be; the attachment, which has to be a success.
-async fn upload(
+pub(super) async fn upload(
     browser: &mut Browser,
     issue: &str,
     name: &str,
@@ -153,7 +153,7 @@ fn on_disk(rig: &Rig, folder: &str) -> Vec<std::path::PathBuf> {
 }
 
 /// Runs the jobs that are due: the previews, and the daily clean-up.
-async fn run_jobs(rig: &Rig) -> Result<(), Failure> {
+pub(super) async fn run_jobs(rig: &Rig) -> Result<(), Failure> {
     let ctx = rig.services.ctx(RequestInfo::default());
     ctx.start_daily_jobs().await?;
     while ctx.run_due_jobs().await? > 0 {}

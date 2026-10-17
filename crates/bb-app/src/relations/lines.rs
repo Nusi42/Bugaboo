@@ -104,6 +104,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             issue_type,
             title: mask.can_see(Field::Title).then(|| issue.title.clone()),
             status,
+            priority: mask.can_see(Field::Priority).then_some(issue.priority),
         }))
     }
 

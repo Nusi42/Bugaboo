@@ -16,6 +16,11 @@ import { createProject } from "./projects.ts";
 import { type Instance } from "./server.ts";
 import { serverWord } from "./server-words.ts";
 
+// The notes and rows of the issue page are found by helpers of their own; they are named here too,
+// so a test asks one place for everything of the issue page.
+export { detailRow } from "./parts.ts";
+export { issueNote, rowSaved, savedNote } from "./saved.ts";
+
 /** An issue that was made through the API. */
 export interface MadeIssue {
   /** The internal ID. */
@@ -199,11 +204,6 @@ export async function createProjectWithIssue(
   return createIssue(admin, shortName, webIssues.login);
 }
 
-/** The *Saved* note of a page. */
-export function savedNote(page: Page) {
-  return page.getByText(new RegExp(`^${t("save.saved")}`, "u")).first();
-}
-
 /** The name of the box of the title on the form of a new issue: every required field says so. */
 export function titleLabel(): string {
   return t("fields.label-required", { field: t("issue-field.title") });
@@ -269,13 +269,6 @@ export async function chooseStatus(page: Page, word: string): Promise<void> {
 /** The big status button says this status. */
 export async function expectStatus(page: Page, word: string): Promise<void> {
   await expect(statusButton(page)).toHaveText(word);
-}
-
-/** The row of a field in the Details of the issue page, found by the name of the field. */
-export function detailRow(page: Page, name: string) {
-  return page
-    .locator('[data-part="name-value"]')
-    .filter({ has: page.getByText(name, { exact: true }) });
 }
 
 /** Changes a field of the issue page the way a person does: the status with the big button, any other with its list. */

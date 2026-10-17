@@ -5,6 +5,7 @@ import { heartbeatSeconds, leaseSeconds, versionsMax } from "./editing.generated
 import {
   inGroupsOfOneCheck,
   readDraft,
+  releaseEditLock,
   sendHeartbeat,
   startHeartbeatsOn,
   versionsOf,
@@ -19,6 +20,7 @@ interface Sent {
   readonly method: string;
   readonly url: string;
   readonly body: unknown;
+  readonly keepalive: boolean;
 }
 
 /** A client whose server answers every request with `answer(body)`, and the requests it got. */
@@ -30,7 +32,7 @@ function serving(answer: (body: unknown) => unknown) {
     fetch: async (request) => {
       const text = await request.clone().text();
       const body: unknown = text === "" ? null : JSON.parse(text);
-      sent.push({ method: request.method, url: request.url, body });
+      sent.push({ method: request.method, url: request.url, body, keepalive: request.keepalive });
       return new Response(JSON.stringify(answer(body)), {
         headers: { "content-type": "application/json" },
       });
@@ -43,6 +45,15 @@ describe("iss_17 the numbers of editing come from the server code", () => {
   it("make a heartbeat four times in a lease", () => {
     expect(leaseSeconds).toBe(4 * heartbeatSeconds);
     expect(versionsMax).toBeGreaterThan(1);
+  });
+});
+
+describe("iss_05 the release of a lock", () => {
+  it("goes out with keepalive, so a window that closes or reloads at once still lets go (M3-F105)", async () => {
+    const { client, sent } = serving(() => ({}));
+    await releaseEditLock(client, what, "lock-1");
+    expect(sent[0]?.keepalive).toBe(true);
+    expect(sent[0]?.body).toEqual({ what, lock_token: "lock-1" });
   });
 });
 

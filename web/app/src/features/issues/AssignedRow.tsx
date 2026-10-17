@@ -22,7 +22,7 @@ function useAssignShortcut(canChange: boolean, open: () => void): void {
   useShortcuts(canChange ? { assign: open } : {});
 }
 
-/** The button that opens the picker: *Add Assigned to* while nobody is, *Change* after that. */
+/** The button that opens the picker: *Assign someone* while nobody is, *Change* after that. */
 export function ChangeAssigned({
   name,
   empty,
@@ -35,12 +35,10 @@ export function ChangeAssigned({
   return (
     <Button
       look={buttonLook.quiet}
-      aria-label={
-        empty ? t("issues.add-field", { field: name }) : t("issues.change-field", { field: name })
-      }
+      aria-label={empty ? t("issues.assign-someone") : t("issues.change-field", { field: name })}
       onPress={onPress}
     >
-      {empty ? t("issues.add-field", { field: name }) : t("issues.change")}
+      {empty ? t("issues.assign-someone") : t("issues.change")}
     </Button>
   );
 }

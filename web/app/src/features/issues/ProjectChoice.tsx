@@ -56,8 +56,8 @@ export function ProjectChoice({ name, shortName, onPick }: ProjectChoiceProps) {
   const [changing, setChanging] = useState(false);
   if (name !== undefined && !changing) {
     return (
-      <div>
-        <p {...partOf(part.fieldLabel)}>{t("issues.project")}</p>
+      <div {...partOf(part.field)}>
+        <span {...partOf(part.fieldLabel)}>{t("issues.project")}</span>
         <span {...partOf(part.row)}>
           <strong {...partOf(part.strong)}>{name}</strong>
           <Button

@@ -15,6 +15,7 @@ The issue page follows the approved UX concept everywhere, not only in the parts
 - `shared/editing/**` (the lock release and the refusal).
 - The history lines of empty values (`bb-app/src/history`).
 - The `edit.taken_over` answer in `bb-api`.
+- Migration `m0019` (`layout_off_fields`): the table of the fields that were taken off a layout (M3-F107). The roles of such a field stay in `layout_field_role`, like those of a field on the form. `m0018` belongs to WP-11; its checksum is pinned by the lead after review.
 
 ## Tasks
 

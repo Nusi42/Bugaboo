@@ -1,3 +1,4 @@
+import { descriptionEditPart } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
@@ -64,4 +65,44 @@ export function isEditing(page: Page, name: string) {
 export async function expectToldWhoIsEditing(page: Page, name: string): Promise<void> {
   await expect(isEditing(page, name)).toBeVisible();
   await expect(descriptionBox(page)).toHaveCount(0);
+}
+
+/**
+ * Waits until the server holds no edit lock on the description of an issue. Cancelling an editor
+ * lets the lock go with a request that is still on its way when the test ends, and a window that
+ * is closed at once (the end of a test) takes that request with it; the next test of the person
+ * would then be told that they are editing in another window.
+ */
+export async function untilTheLockIsLetGo(page: Page, key: string): Promise<void> {
+  const origin = new URL(page.url()).origin;
+  const issue: unknown = await (await page.request.get(`${origin}/api/v1/issues/${key}`)).json();
+  const id = idOfIssue(issue);
+  await expect
+    .poll(async () => {
+      const lock: unknown = await (
+        await page.request.get(
+          `${origin}/api/v1/edit-locks?kind=issue&id=${id}&part=${descriptionEditPart}`,
+        )
+      ).json();
+      return holderOf(lock);
+    })
+    .toBeNull();
+}
+
+/** The ID of the issue in the answer of the server; the answer is read as what it says it is. */
+function idOfIssue(answer: unknown): string {
+  const issue: unknown =
+    typeof answer === "object" && answer !== null ? Reflect.get(answer, "issue") : null;
+  const id: unknown = typeof issue === "object" && issue !== null ? Reflect.get(issue, "id") : null;
+  if (typeof id !== "string") {
+    throw new TypeError("The answer names no issue.");
+  }
+  return id;
+}
+
+/** Who holds the lock, in the answer of the server; nothing when nobody does. */
+function holderOf(answer: unknown): unknown {
+  return (
+    (typeof answer === "object" && answer !== null ? Reflect.get(answer, "held") : null) ?? null
+  );
 }

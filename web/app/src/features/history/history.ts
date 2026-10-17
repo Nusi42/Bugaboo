@@ -4,7 +4,7 @@ import { t } from "@bugaboo/messages";
 
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
-import { whoOf } from "../../shared/change-sentence.ts";
+import { changeSentence, whoOf } from "../../shared/change-sentence.ts";
 import { useIssueTarget } from "../../shared/issue-target.ts";
 import type { IssueTarget } from "../../shared/paths.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
@@ -145,6 +145,37 @@ export function useScrollTo<Element extends HTMLElement>(
     }
   }, [wanted]);
   return element;
+}
+
+/** The sentences of each thing that can happen to a file: with its name, and without it. */
+const fileMessages = {
+  added: ["history.file-added", "history.file-added-unnamed"],
+  deleted: ["history.file-deleted", "history.file-deleted-unnamed"],
+  restored: ["history.file-restored", "history.file-restored-unnamed"],
+} as const satisfies Record<Schema<"FileEvent">, readonly [string, string]>;
+
+/**
+ * The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*.
+ * Once the file is gone for good it has no name and the sentence says *a file*. An event this
+ * version does not know is no "added": it says only that a file changed.
+ */
+export function fileSentence(entry: HistoryEntry): string {
+  const who = whoOf(entry);
+  if (entry.file_event === undefined || entry.file_event === null) {
+    return t("history.file-changed-unnamed", { who });
+  }
+  const [named, unnamed] = fileMessages[entry.file_event];
+  return entry.file_name === undefined || entry.file_name === null
+    ? t(unnamed, { who })
+    : t(named, { who, name: entry.file_name });
+}
+
+/** The sentence of one item that is not a comment: a change of a field, a file or a relation. */
+export function sentenceOf(entry: HistoryEntry): string {
+  if (entry.kind === "relation") {
+    return relationSentence(entry);
+  }
+  return entry.kind === "file" ? fileSentence(entry) : changeSentence(entry);
 }
 
 /** The sentence of a relation that was added or taken away. */

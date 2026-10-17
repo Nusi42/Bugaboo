@@ -68,13 +68,19 @@ export async function sendHeartbeat(
   );
 }
 
-/** Lets go of a lock: the text was saved, or the editor is closed. */
+/**
+ * Lets go of a lock: the text was saved, or the editor is closed. The request is `keepalive`, so
+ * the browser finishes it when the page is closed or reloaded at once (M3-F105, M4-F26).
+ */
 export async function releaseEditLock(
   client: Client,
   what: EditWhat,
   lockToken: string,
 ): Promise<void> {
-  await client.POST("/api/v1/edit-locks/release", { body: { what, lock_token: lockToken } });
+  await client.POST("/api/v1/edit-locks/release", {
+    body: { what, lock_token: lockToken },
+    keepalive: true,
+  });
 }
 
 /** Asks the person who is editing to save and let go (*Ask Ana to finish*); they are told at their next heartbeat. */

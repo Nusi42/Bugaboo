@@ -13,6 +13,7 @@ use bb_app::relations::{
     RemoveRelation, SetParent, SubIssuesQuery,
 };
 use bb_core::id::{RelationId, RelationKindId};
+use bb_core::issue::Priority;
 use bb_core::relation::Direction;
 use bb_policy::Masked;
 use serde::{Deserialize, Serialize};
@@ -34,13 +35,14 @@ use crate::lean::{FieldSpec, ListParams, Listed, Page};
 
 /// The fields of an issue in a list of sub-issues, and which of them a list holds when the request
 /// names none.
-const ISSUE_REF_FIELDS: [FieldSpec; 6] = [
+const ISSUE_REF_FIELDS: [FieldSpec; 7] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("key"),
     FieldSpec::on_request("project"),
     FieldSpec::by_default("issue_type"),
     FieldSpec::by_default("title"),
     FieldSpec::by_default("status"),
+    FieldSpec::by_default("priority"),
 ];
 const SUB_ISSUES_LIST: &str = "sub-issues";
 
@@ -82,6 +84,9 @@ pub(crate) struct IssueRef {
     /// Where it stands in its workflow: the key, the name and the status group.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) status: Option<StatusRef>,
+    /// How important it is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) priority: Option<Priority>,
 }
 
 // The members were dropped for the viewer in the project of the issue, which can differ from the
@@ -97,6 +102,7 @@ impl From<&IssueLine> for IssueRef {
             issue_type: IssueTypeRef::from(&line.issue_type),
             title: line.title.clone(),
             status: line.status.as_ref().map(StatusRef::from),
+            priority: line.priority,
         }
     }
 }
@@ -636,6 +642,7 @@ mod tests {
             },
             title: Some(String::new()),
             status: Some(StatusRef::blank()),
+            priority: Some(Priority::Normal),
         };
         crate::lean::assert_fields_are_the_keys_of(&ISSUE_REF_FIELDS, &line);
         let kind = RelationKindItem {

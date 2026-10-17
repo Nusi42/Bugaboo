@@ -92,6 +92,11 @@ tokens {
     size "size-code" "220px"
     // The square in the row of a file: its preview, or the sign of its type (M4 WP-05).
     size "size-file-tile" "64px" phone="56px"
+    // A quiet button that stands under text on a phone (*Download* and *Delete* under a file, the
+    // button of the note under the buttons of a window) hangs back by its padding, so its text
+    // starts where the text above starts (R1, the mixin `hang-start`). Beside the text, on a
+    // computer, nothing hangs back.
+    size "size-phone-hang" "0px" phone="calc(-1 * $pad-control)"
     // How big a control is (UX §7.4): 36 with a mouse and 44 for a finger. WCAG 2.2 AA asks for 24 at
     // least, so no control is smaller (a test holds the tokens to it).
     size "size-target-least" "24px"
@@ -201,7 +206,9 @@ tokens {
     // Opacity. The scrim is the dimmed page behind a sheet; forced colors make it fainter.
     opacity "opacity-faint" 0.5
     opacity "opacity-disabled" 0.6
-    opacity "opacity-busy" 0.7
+    // A control that waits for an answer is seen by people while it waits, so its text keeps AA (4.5:1)
+    // on its own fill; a disabled control is exempt, a busy one is not. Held by the test of the busy Save.
+    opacity "opacity-busy" 0.85
     opacity "opacity-scrim" 0.8 forced=0.6
 
     // Easing, for the animations
@@ -1725,11 +1732,6 @@ part "name-value.reason" {
     use "quiet-text"
 }
 
-// The row shows the name of the field, so the label of the box inside it is only read, not seen.
-part "name-value.value field.label" "name-value.value choice-group.legend" {
-    use "hidden-text"
-}
-
 // *Saved* and *Undo* where the change happened (R7).
 part "name-value.saved" {
     display inline-flex
@@ -1919,8 +1921,8 @@ part "window.body" {
     overflow-y auto
 }
 
-// Two rows: the hint (and what belongs to the form) on its own line, then the buttons in one row
-// at the right, the main one last (R6).
+// Rows: what is missing (it comes and goes), the buttons in one row at the right, the main one last
+// (R6), then the note below them (that the draft is kept, and what belongs to the form; UX §4.5).
 part "window.footer" {
     display flex
     flex none
@@ -1937,6 +1939,12 @@ part "window.footer-note" {
     justify-content space-between
     gap "$space-2" "$space-3"
     use "quiet-text"
+}
+
+// The quiet button of the note stands under its text on a phone, so it hangs back by its padding
+// and its text starts where the text of the note starts (R1); beside the note it does not.
+part "window.footer-note button[variant=quiet]" {
+    margin-inline-start "$size-phone-hang"
 }
 
 part "window.footer-actions" {
@@ -4402,6 +4410,7 @@ part "files.actions" {
     flex-wrap wrap
     align-items center
     gap "$space-2"
+    margin-inline-start "$size-phone-hang"
 }
 
 // The larger preview: as big as it is, never wider than the window.

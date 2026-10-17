@@ -230,7 +230,7 @@ mod tests {
                 });
             }
         }
-        LayoutContent { sections }
+        LayoutContent::of_sections(sections)
     }
 
     proptest! {

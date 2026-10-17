@@ -1904,6 +1904,9 @@ pub const ISSUES_ASSIGN_ONLY_YOU: MessageKey = MessageKey::new("issues.assign-on
 /// The message `issues.assign-search`.
 pub const ISSUES_ASSIGN_SEARCH: MessageKey = MessageKey::new("issues.assign-search");
 
+/// The message `issues.assign-someone`.
+pub const ISSUES_ASSIGN_SOMEONE: MessageKey = MessageKey::new("issues.assign-someone");
+
 /// The message `issues.assign-title`.
 pub const ISSUES_ASSIGN_TITLE: MessageKey = MessageKey::new("issues.assign-title");
 
@@ -2048,6 +2051,9 @@ pub const ISSUES_SIDE_PANEL_VIEW: MessageKey = MessageKey::new("issues.side-pane
 /// The message `issues.summary-separator`.
 pub const ISSUES_SUMMARY_SEPARATOR: MessageKey = MessageKey::new("issues.summary-separator");
 
+/// The message `issues.summary-unassigned`.
+pub const ISSUES_SUMMARY_UNASSIGNED: MessageKey = MessageKey::new("issues.summary-unassigned");
+
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
 
@@ -2148,10 +2154,6 @@ pub const LABELS_GROUPS_TITLE: MessageKey = MessageKey::new("labels.groups-title
 
 /// The message `labels.intro`.
 pub const LABELS_INTRO: MessageKey = MessageKey::new("labels.intro");
-
-/// The message `labels.labels-and-tags-title`.
-pub const LABELS_LABELS_AND_TAGS_TITLE: MessageKey =
-    MessageKey::new("labels.labels-and-tags-title");
 
 /// The message `labels.labels-heading`.
 pub const LABELS_LABELS_HEADING: MessageKey = MessageKey::new("labels.labels-heading");
@@ -4597,6 +4599,9 @@ pub const STATUS_TESTING: MessageKey = MessageKey::new("status.testing");
 /// The message `status.wont-fix`.
 pub const STATUS_WONT_FIX: MessageKey = MessageKey::new("status.wont-fix");
 
+/// The message `sub-issues.add`.
+pub const SUB_ISSUES_ADD: MessageKey = MessageKey::new("sub-issues.add");
+
 /// The message `sub-issues.add-it`.
 pub const SUB_ISSUES_ADD_IT: MessageKey = MessageKey::new("sub-issues.add-it");
 
@@ -5906,6 +5911,15 @@ pub fn fields_used_types(names: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `fields.value-of`.
+#[must_use]
+pub fn fields_value_of(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("fields.value-of"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `files.added`.
 #[must_use]
 pub fn files_added(
@@ -6065,10 +6079,19 @@ pub fn first_run_step_of(
 
 /// The message `followers.count`.
 #[must_use]
-pub fn followers_count(count: impl std::fmt::Display) -> Message {
+pub fn followers_count(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("followers.count"),
-        vec![("count", Value::Text(count.to_string()))],
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `followers.count-more`.
+#[must_use]
+pub fn followers_count_more(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("followers.count-more"),
+        vec![("count", Value::Number(count))],
     )
 }
 
@@ -6253,6 +6276,78 @@ pub fn history_cleared(field: impl std::fmt::Display, who: impl std::fmt::Displa
     )
 }
 
+/// The message `history.file-added`.
+#[must_use]
+pub fn history_file_added(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-added"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.file-added-unnamed`.
+#[must_use]
+pub fn history_file_added_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-added-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `history.file-changed-unnamed`.
+#[must_use]
+pub fn history_file_changed_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-changed-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `history.file-deleted`.
+#[must_use]
+pub fn history_file_deleted(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-deleted"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.file-deleted-unnamed`.
+#[must_use]
+pub fn history_file_deleted_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-deleted-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `history.file-restored`.
+#[must_use]
+pub fn history_file_restored(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-restored"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `history.file-restored-unnamed`.
+#[must_use]
+pub fn history_file_restored_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-restored-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
 /// The message `history.relation-added`.
 #[must_use]
 pub fn history_relation_added(
@@ -6390,15 +6485,6 @@ pub fn issue_types_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issue-types.created"),
         vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `issues.add-field`.
-#[must_use]
-pub fn issues_add_field(field: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("issues.add-field"),
-        vec![("field", Value::Text(field.to_string()))],
     )
 }
 
@@ -6775,11 +6861,29 @@ pub fn labels_group_created(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `labels.label-added`.
+#[must_use]
+pub fn labels_label_added(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.label-added"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `labels.label-created`.
 #[must_use]
 pub fn labels_label_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.label-created"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `labels.label-taken-off`.
+#[must_use]
+pub fn labels_label_taken_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.label-taken-off"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -6799,12 +6903,30 @@ pub fn labels_preview_line(
     )
 }
 
+/// The message `labels.tag-added`.
+#[must_use]
+pub fn labels_tag_added(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.tag-added"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `labels.tag-in-projects`.
 #[must_use]
 pub fn labels_tag_in_projects(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.tag-in-projects"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `labels.tag-taken-off`.
+#[must_use]
+pub fn labels_tag_taken_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.tag-taken-off"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -10346,6 +10468,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "{count, plural, one {And # more project.} other {And # more projects.}}",
     ),
     ("fields.used-types", "Issue types: {names}"),
+    ("fields.value-of", "Value of {name}"),
     ("fields.yes", "Yes"),
     ("files.add-to-comment", "Add files"),
     ("files.added", "{size} · Added by {who}, {when}"),
@@ -10428,7 +10551,14 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("focus.back", "Back to list"),
     ("focus.hide-list", "Hide list"),
     ("focus.show-list", "Show list"),
-    ("followers.count", "{count} followers"),
+    (
+        "followers.count",
+        "{count, plural, one {# follower} other {# followers}}",
+    ),
+    (
+        "followers.count-more",
+        "{count, plural, other {# or more followers}}",
+    ),
     ("followers.follow", "Follow"),
     ("followers.following", "Following"),
     ("followers.more", "Show more followers"),
@@ -10533,6 +10663,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
+    ("history.file-added", "{who} added the file {name}"),
+    ("history.file-added-unnamed", "{who} added a file"),
+    ("history.file-changed-unnamed", "{who} changed a file"),
+    ("history.file-deleted", "{who} deleted the file {name}"),
+    ("history.file-deleted-unnamed", "{who} deleted a file"),
+    (
+        "history.file-restored",
+        "{who} brought back the file {name}",
+    ),
+    ("history.file-restored-unnamed", "{who} brought back a file"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),
@@ -10666,7 +10806,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("issue-types.retired", "Retired"),
     ("issue-types.search", "Search issue types"),
-    ("issues.add-field", "Add {field}"),
     ("issues.all-details", "All details"),
     (
         "issues.ask-for-description",
@@ -10693,6 +10832,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Nobody else is offered here: people you cannot see by name are not listed.",
     ),
     ("issues.assign-search", "Search the people of the project"),
+    ("issues.assign-someone", "Assign someone"),
     ("issues.assign-title", "Assigned to"),
     ("issues.assigned", "Assigned"),
     ("issues.bar", "Actions for this issue"),
@@ -10801,6 +10941,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("issues.show-changes", "Show changes"),
     ("issues.side-panel-view", "Open in the side panel"),
     ("issues.summary-separator", " · "),
+    ("issues.summary-unassigned", "Not assigned"),
     ("issues.title", "Issues"),
     ("issues.title-of", "{key} {title}"),
     ("issues.type", "Type"),
@@ -10900,8 +11041,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "labels.intro",
         "Labels sort issues by label groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
     ),
+    ("labels.label-added", "The label {name} was added."),
     ("labels.label-created", "Created the label {name}."),
-    ("labels.labels-and-tags-title", "Labels and tags"),
+    ("labels.label-taken-off", "The label {name} was taken off."),
     ("labels.labels-heading", "Labels"),
     ("labels.labels-nothing", "No label has that name."),
     ("labels.labels-search", "Search labels"),
@@ -10928,6 +11070,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.retired", "Retired"),
     ("labels.show-changes", "Show what the new name changes"),
     ("labels.show-combine", "Show what combining changes"),
+    ("labels.tag-added", "The tag {name} was added."),
     ("labels.tag-everywhere", "All projects"),
     ("labels.tag-everywhere-switch", "Use in all projects"),
     (
@@ -10940,6 +11083,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("labels.tag-projects-list", "Projects of the tag"),
     ("labels.tag-suggestions", "Tags to choose from"),
+    ("labels.tag-taken-off", "The tag {name} was taken off."),
     ("labels.tags-heading", "Tags"),
     ("labels.tags-more", "Show more tags"),
     ("labels.tags-nothing", "No tag has that name."),
@@ -13002,6 +13146,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("status.open", "Open"),
     ("status.testing", "Testing"),
     ("status.wont-fix", "Won't fix"),
+    ("sub-issues.add", "Add sub-issue"),
     ("sub-issues.add-it", "Add"),
     ("sub-issues.added", "{key} is now a sub-issue."),
     ("sub-issues.more", "Show more sub-issues"),

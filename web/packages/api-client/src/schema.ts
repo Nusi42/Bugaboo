@@ -3841,6 +3841,7 @@ export interface components {
      */
     ConflictProblem: components["schemas"]["Problem"] & {
       conflict?: components["schemas"]["ConflictBody"] | null;
+      taken_over_by?: components["schemas"]["PersonRef"] | null;
     };
     /** @description A role to make from a copy of another. */
     CopyRoleBody: {
@@ -4302,6 +4303,11 @@ export interface components {
       /** @description The field is not limited to projects. */
       whole_organization: boolean;
     };
+    /**
+     * @description What happened to a file of an issue: added, deleted or brought back.
+     * @enum {string}
+     */
+    FileEvent: "added" | "deleted" | "restored";
     /** @description What the reader may add to an issue and the limits of its project. */
     FileRulesItem: {
       /**
@@ -4493,6 +4499,9 @@ export interface components {
       field_kind?: components["schemas"]["FieldType"] | null;
       /** @description A change of an own field: its name. */
       field_name?: string | null;
+      file_event?: components["schemas"]["FileEvent"] | null;
+      /** @description A file: its name. */
+      file_name?: string | null;
       /** @description A comment: the text as safe HTML, made on the server for this reader. */
       html?: SafeHtml;
       issue?: components["schemas"]["IssueRef"] | null;
@@ -4516,7 +4525,7 @@ export interface components {
      * @description What an item of the history is.
      * @enum {string}
      */
-    HistoryEntryKind: "comment" | "change" | "relation";
+    HistoryEntryKind: "comment" | "change" | "relation" | "file";
     /**
      * @description Which rows of the history of an issue to list: everything, only the comments, or only the changes.
      * @enum {string}
@@ -4684,6 +4693,7 @@ export interface components {
       issue_type: components["schemas"]["IssueTypeRef"];
       /** @description The readable ID now (`WEB-142`). */
       key: string;
+      priority?: components["schemas"]["Priority"] | null;
       /** @description The project it is in. */
       project: components["schemas"]["ProjectRef"];
       status?: components["schemas"]["StatusRef"] | null;
@@ -5962,6 +5972,9 @@ export interface components {
         field_kind?: components["schemas"]["FieldType"] | null;
         /** @description A change of an own field: its name. */
         field_name?: string | null;
+        file_event?: components["schemas"]["FileEvent"] | null;
+        /** @description A file: its name. */
+        file_name?: string | null;
         /** @description A comment: the text as safe HTML, made on the server for this reader. */
         html?: SafeHtml;
         issue?: components["schemas"]["IssueRef"] | null;
@@ -6059,6 +6072,7 @@ export interface components {
         issue_type: components["schemas"]["IssueTypeRef"];
         /** @description The readable ID now (`WEB-142`). */
         key: string;
+        priority?: components["schemas"]["Priority"] | null;
         /** @description The project it is in. */
         project: components["schemas"]["ProjectRef"];
         status?: components["schemas"]["StatusRef"] | null;

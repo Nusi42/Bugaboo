@@ -13,6 +13,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { api } from "../api.ts";
 import { codeOf } from "../errors.ts";
 import type { SessionDeps } from "./edit-lock-session.ts";
+import { useLetGoWhenHidden } from "./let-go-when-hidden.ts";
 import { EditLockController, type LockState } from "./edit-lock-state.ts";
 import { lostReasonOf } from "./long-text-model.ts";
 
@@ -52,8 +53,10 @@ export function useEditLock(what: EditWhat): EditLock {
   const state = useSyncExternalStore(lock.subscribe, lock.snapshot);
   useEffect(() => {
     lock.start();
-    return lock.dispose;
   }, [lock]);
+  // The lock goes with a hidden page (closed, reloaded or cached) and is asked for again when the
+  // page comes back from the cache: the one path every editor of a lock uses.
+  useLetGoWhenHidden(lock.dispose, lock.start);
   return {
     state,
     retry: lock.start,

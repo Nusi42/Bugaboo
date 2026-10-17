@@ -23993,6 +23993,17 @@
                     "type": "null"
                   }
                 ]
+              },
+              "taken_over_by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PersonRef",
+                    "description": "Who took the editing over, as the person who saved may see them; only for\n`edit.taken_over`, so the browser needs no further request to name them (M3-F176)."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             }
           }
@@ -24825,6 +24836,11 @@
           }
         }
       },
+      "FileEvent": {
+        "type": "string",
+        "description": "What happened to a file of an issue: added, deleted or brought back.",
+        "enum": ["added", "deleted", "restored"]
+      },
       "FileRulesItem": {
         "type": "object",
         "description": "What the reader may add to an issue and the limits of its project.",
@@ -25270,6 +25286,21 @@
             "type": ["string", "null"],
             "description": "A change of an own field: its name."
           },
+          "file_event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FileEvent",
+                "description": "A file: what happened to it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_name": {
+            "type": ["string", "null"],
+            "description": "A file: its name."
+          },
           "html": {
             "type": ["string", "null"],
             "description": "A comment: the text as safe HTML, made on the server for this reader.",
@@ -25316,7 +25347,7 @@
       "HistoryEntryKind": {
         "type": "string",
         "description": "What an item of the history is.",
-        "enum": ["comment", "change", "relation"]
+        "enum": ["comment", "change", "relation", "file"]
       },
       "HistoryTab": {
         "type": "string",
@@ -25674,6 +25705,17 @@
           "key": {
             "type": "string",
             "description": "The readable ID now (`WEB-142`)."
+          },
+          "priority": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Priority",
+                "description": "How important it is."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project": {
             "$ref": "#/components/schemas/ProjectRef",
@@ -28574,6 +28616,21 @@
                   "type": ["string", "null"],
                   "description": "A change of an own field: its name."
                 },
+                "file_event": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FileEvent",
+                      "description": "A file: what happened to it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "file_name": {
+                  "type": ["string", "null"],
+                  "description": "A file: its name."
+                },
                 "html": {
                   "type": ["string", "null"],
                   "description": "A comment: the text as safe HTML, made on the server for this reader.",
@@ -28819,6 +28876,17 @@
                 "key": {
                   "type": "string",
                   "description": "The readable ID now (`WEB-142`)."
+                },
+                "priority": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Priority",
+                      "description": "How important it is."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "project": {
                   "$ref": "#/components/schemas/ProjectRef",

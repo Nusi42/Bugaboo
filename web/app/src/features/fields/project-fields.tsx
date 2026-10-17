@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, Card } from "@bugaboo/ui";
+import { Alert, alertTone, Card, NameValueList } from "@bugaboo/ui";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
@@ -28,21 +28,23 @@ export function OwnFieldsOfProject({ project }: { readonly project: Schema<"Proj
   return (
     <Card heading={t("fields.project-heading")}>
       {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
-      {shown.map((field) => (
-        <FieldLine
-          key={lineKey(field, values[field.id], project.project.version)}
-          field={field}
-          project={shortName}
-          value={values[field.id]}
-          editable={changeable.has(field.id)}
-          onCommit={(each, value) => {
-            change.mutate({
-              params: { path: { project: project.project.id } },
-              body: { version: project.project.version, fields: { [each.id]: value } },
-            });
-          }}
-        />
-      ))}
+      <NameValueList>
+        {shown.map((field) => (
+          <FieldLine
+            key={lineKey(field, values[field.id], project.project.version)}
+            field={field}
+            project={shortName}
+            value={values[field.id]}
+            editable={changeable.has(field.id)}
+            onCommit={(each, value) => {
+              change.mutate({
+                params: { path: { project: project.project.id } },
+                body: { version: project.project.version, fields: { [each.id]: value } },
+              });
+            }}
+          />
+        ))}
+      </NameValueList>
     </Card>
   );
 }

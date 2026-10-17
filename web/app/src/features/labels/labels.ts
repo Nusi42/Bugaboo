@@ -1,4 +1,4 @@
-import { type Schema } from "@bugaboo/api-client";
+import { dataOf, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import type { FieldLook } from "@bugaboo/ui";
 
@@ -103,6 +103,47 @@ export function refreshLabels(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.all });
   refreshLabelReads();
   void queryClient.invalidateQueries({ queryKey: queryKeys.history.all });
+}
+
+/** The tags and labels of an issue as the answer of a change says them. */
+export type IssueLabelsAndTags = Schema<"IssueLabelsAndTagsBody">;
+
+/** Puts a tag on an issue by its name; a tag that does not exist yet is created by it (TAG-01). */
+export async function putTag(issue: string, name: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.POST("/api/v1/issues/{issue}/tags", {
+      params: { path: { issue } },
+      body: { name },
+    }),
+  );
+}
+
+/** Takes a tag off an issue. */
+export async function takeTagOff(issue: string, tag: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.DELETE("/api/v1/issues/{issue}/tags/{tag}", {
+      params: { path: { issue, tag } },
+    }),
+  );
+}
+
+/** Puts a label of the organization on an issue. */
+export async function putLabel(issue: string, label: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.POST("/api/v1/issues/{issue}/labels", {
+      params: { path: { issue } },
+      body: { label },
+    }),
+  );
+}
+
+/** Takes a label off an issue. */
+export async function takeLabelOff(issue: string, label: string): Promise<IssueLabelsAndTags> {
+  return dataOf(
+    await api.client.DELETE("/api/v1/issues/{issue}/labels/{label}", {
+      params: { path: { issue, label } },
+    }),
+  );
 }
 
 /** The answer of putting a tag or a label on an issue or taking one off: the version it counted to. */

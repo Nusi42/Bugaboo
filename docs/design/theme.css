@@ -34,6 +34,7 @@
   --size-qr: 200px;
   --size-code: 220px;
   --size-file-tile: 64px;
+  --size-phone-hang: 0px;
   --size-target-least: 24px;
   --size-control: 36px;
   --size-control-small: 28px;
@@ -103,7 +104,7 @@
   --z-top: 40;
   --opacity-faint: 0.5;
   --opacity-disabled: 0.6;
-  --opacity-busy: 0.7;
+  --opacity-busy: 0.85;
   --opacity-scrim: 0.8;
   --ease-in: ease-in;
   --ease-out: ease-out;
@@ -582,6 +583,7 @@
   :root {
     --fs-ui: calc(16px * var(--text-scale));
     --size-file-tile: 56px;
+    --size-phone-hang: calc(-1 * var(--pad-control));
     --size-name: 120px;
   }
 }

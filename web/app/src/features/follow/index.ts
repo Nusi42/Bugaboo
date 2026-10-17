@@ -7,5 +7,10 @@ const FollowersBlock = lazyRouteComponent(() => import("./FollowersBlock.tsx"), 
 
 /** Puts *Followers · Follow* into the Details of the issue page, after the other fields (WP-07). */
 export function registerFollowersBlock(): void {
-  addIssueBlock(issueSlots.details, { id: "followers", order: 200, component: FollowersBlock });
+  addIssueBlock(issueSlots.details, {
+    id: "followers",
+    order: 200,
+    places: "end",
+    component: FollowersBlock,
+  });
 }

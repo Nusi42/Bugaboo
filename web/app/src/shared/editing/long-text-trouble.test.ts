@@ -48,6 +48,18 @@ describe("iss_17 a refused save tells why the lock is gone", () => {
     expect(w.editor.snapshot().phase).toEqual({ kind: "lost", reason: "taken-over", by: ben });
     expect(w.editor.snapshot().text).toBe("My words");
   });
+
+  it("names who took over from the refusal itself, with no heartbeat (M3-F176, F180)", async () => {
+    const w = world({
+      save: () => Promise.reject(refusal("edit.taken_over", { taken_over_by: ben })),
+      heartbeat: () => Promise.reject(new Error("no heartbeat is needed")),
+    });
+    w.editor.open();
+    w.editor.type("My words");
+    await settle();
+    await w.editor.save();
+    expect(w.editor.snapshot().phase).toEqual({ kind: "lost", reason: "taken-over", by: ben });
+  });
 });
 
 describe("iss_17 nothing is lost when the save is refused", () => {

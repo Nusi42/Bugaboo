@@ -1,22 +1,12 @@
-import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  NameValueList,
-  NameValueRow,
-  partOf,
-  part,
-} from "@bugaboo/ui";
+import { Alert, alertTone, Button, buttonLook, NameValueRow, partOf, part } from "@bugaboo/ui";
 import { useState } from "react";
 
 import { api } from "../../shared/api.ts";
 import { messageOf } from "../../shared/errors.ts";
-import { listText } from "../../shared/list-text.ts";
+import { followerCount } from "./follower-count.ts";
+import { FollowerNames } from "./FollowerNames.tsx";
 import { itemsOf, pageSize, usePaged } from "../../shared/paged.ts";
-import { personNameInside } from "../../shared/person.ts";
 import { queryKeys, refreshHistory } from "../../shared/query-keys.ts";
 
 const reasonMessage = {
@@ -75,19 +65,10 @@ function FollowButton({ issue }: { readonly issue: string }) {
   );
 }
 
-/** The followers by name as the kind *Followers* says for the reader; shown on request. */
-function FollowerNames({ people }: { readonly people: readonly Schema<"PersonRef">[] }) {
-  return <p {...partOf(part.text)}>{listText(people.map((person) => personNameInside(person)))}</p>;
-}
-
-/** How many followers the first pages hold; a next page shows as a plus. */
-function countOf(loaded: number, more: boolean): string {
-  return more ? [loaded, "+"].join("") : String(loaded);
-}
-
 /**
  * The *Followers* row of the Details (ISS-07, *3 followers · Follow*): the number of followers, the button, and the
- * names when asked for. A reader who may not see followers gets neither names nor a number.
+ * names when asked for. A row of the one list of the Details; each line starts with a button that hangs back
+ * by its padding, so the text of the lines stands on one edge (R1). A reader who may not see followers gets neither names nor a number.
  * People who report, are assigned or comment follow by themselves.
  */
 export function FollowersBlock({ readableId }: { readonly readableId: string }) {
@@ -95,22 +76,22 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
   const [shown, setShown] = useState(false);
   const people = itemsOf(list.data?.pages);
   return (
-    <div {...partOf(part.stack)}>
-      <NameValueList>
-        <NameValueRow name={t("followers.name")}>
-          {people.length === 0 ? null : (
-            <Button
-              look={buttonLook.quiet}
-              onPress={() => {
-                setShown(!shown);
-              }}
-            >
-              {t("followers.count", { count: countOf(people.length, list.hasNextPage) })}
-            </Button>
-          )}
-          <FollowButton issue={readableId} />
-        </NameValueRow>
-      </NameValueList>
+    <NameValueRow name={t("followers.name")}>
+      {people.length === 0 ? null : (
+        <div {...partOf(part.row)}>
+          <Button
+            look={buttonLook.quiet}
+            onPress={() => {
+              setShown(!shown);
+            }}
+          >
+            {followerCount(people.length, list.hasNextPage)}
+          </Button>
+        </div>
+      )}
+      <div {...partOf(part.row)}>
+        <FollowButton issue={readableId} />
+      </div>
       {shown ? <FollowerNames people={people} /> : null}
       {shown && list.hasNextPage ? (
         <Button
@@ -122,6 +103,6 @@ export function FollowersBlock({ readableId }: { readonly readableId: string }) 
           {t("followers.more")}
         </Button>
       ) : null}
-    </div>
+    </NameValueRow>
   );
 }

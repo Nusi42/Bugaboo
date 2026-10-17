@@ -16,6 +16,7 @@ use axum::http::{HeaderValue, StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use bb_core::{ErrorCode, Problem, error_code::PROBLEM_CONTENT_TYPE};
+use bb_policy::PersonRef;
 use serde::de::DeserializeOwned;
 
 use crate::api::is_api;
@@ -38,11 +39,20 @@ pub struct ApiError {
     conflict: Option<Arc<ConflictBody>>,
     /// The field a `field.*` refusal is about.
     field: Option<String>,
+    /// Who took the editing over, for `edit.taken_over` (M3-F176).
+    taken_over_by: Option<Arc<PersonRef>>,
 }
 
 /// Tells [`add_request_id`] which answers to rewrite, and with what.
 #[derive(Clone, Debug)]
-struct ProblemOf(ErrorCode, Option<Arc<ConflictBody>>, Option<String>);
+struct ProblemOf(ErrorCode, Extras, Option<String>);
+
+/// The members of an answer beyond the problem itself.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Extras {
+    pub(crate) conflict: Option<Arc<ConflictBody>>,
+    pub(crate) taken_over_by: Option<Arc<PersonRef>>,
+}
 
 impl ApiError {
     /// The answer for `code`.
@@ -54,6 +64,21 @@ impl ApiError {
             ends_session: false,
             conflict: None,
             field: None,
+            taken_over_by: None,
+        }
+    }
+
+    /// Names who took the editing over, on an `edit.taken_over` answer.
+    #[must_use]
+    pub(crate) fn with_taken_over_by(mut self, by: PersonRef) -> Self {
+        self.taken_over_by = Some(Arc::new(by));
+        self
+    }
+
+    fn extras(&self) -> Extras {
+        Extras {
+            conflict: self.conflict.clone(),
+            taken_over_by: self.taken_over_by.clone(),
         }
     }
 
@@ -122,11 +147,15 @@ fn problem_of(code: ErrorCode, field: Option<String>) -> Problem {
     }
 }
 
-fn problem_response(problem: &Problem, conflict: Option<&ConflictBody>) -> Response {
+fn problem_response(problem: &Problem, extras: &Extras) -> Response {
     // A `Problem` holds text and numbers only, so it always serializes; the empty body is what
     // a (impossible) failure would leave.
-    let body = serde_json::to_vec(&ConflictProblem::new(problem.clone(), conflict.cloned()))
-        .unwrap_or_default();
+    let body = serde_json::to_vec(&ConflictProblem::new(
+        problem.clone(),
+        extras.conflict.as_deref().cloned(),
+        extras.taken_over_by.as_deref().cloned(),
+    ))
+    .unwrap_or_default();
     let mut response = Response::new(Body::from(body));
     *response.status_mut() = status_of(problem.code());
     let headers = response.headers_mut();
@@ -141,10 +170,8 @@ fn problem_response(problem: &Problem, conflict: Option<&ConflictBody>) -> Respo
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let mut response = problem_response(
-            &problem_of(self.code, self.field.clone()),
-            self.conflict.as_deref(),
-        );
+        let mut response =
+            problem_response(&problem_of(self.code, self.field.clone()), &self.extras());
         if let Some(seconds) = self.retry_after {
             response
                 .headers_mut()
@@ -156,7 +183,7 @@ impl IntoResponse for ApiError {
         }
         response
             .extensions_mut()
-            .insert(ProblemOf(self.code, self.conflict, self.field));
+            .insert(ProblemOf(self.code, self.extras(), self.field));
         response
     }
 }
@@ -171,15 +198,12 @@ pub(crate) async fn add_request_id(request: Request, next: Next) -> Response {
     // Anything below /api that fails without a problem body (a rejection of an extractor, a
     // layer) is turned into one by its status; the text it came with is dropped.
     let unmarked = (api && marked.is_none() && is_failure(response.status()))
-        .then(|| ProblemOf(code_for_status(response.status()), None, None));
-    let (Some(RequestId(id)), Some(ProblemOf(code, conflict, field))) = (id, marked.or(unmarked))
+        .then(|| ProblemOf(code_for_status(response.status()), Extras::default(), None));
+    let (Some(RequestId(id)), Some(ProblemOf(code, extras, field))) = (id, marked.or(unmarked))
     else {
         return response;
     };
-    let rewritten = problem_response(
-        &problem_of(code, field).with_request_id(id),
-        conflict.as_deref(),
-    );
+    let rewritten = problem_response(&problem_of(code, field).with_request_id(id), &extras);
     let (parts, body) = rewritten.into_parts();
     *response.status_mut() = parts.status;
     // Keep what the answer already says (`Retry-After`, `Allow`); the new body replaces the old.

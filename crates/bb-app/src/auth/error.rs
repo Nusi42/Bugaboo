@@ -3,6 +3,7 @@
 use std::fmt;
 
 use bb_core::ErrorCode;
+use bb_policy::PersonRef;
 
 use super::store::AuthStore;
 use crate::editing::{Conflict, Stale};
@@ -31,6 +32,12 @@ pub enum AppError {
     Stale(Box<Stale>),
     /// A stale version, with who changed the record, when, which fields, and the values now.
     Conflict(Box<Conflict>),
+    /// A save was refused because somebody took the editing over (`edit.taken_over`), with who,
+    /// as the person who saved may see them, so the browser needs no further request to say it.
+    TakenOver {
+        /// Who holds the lock now.
+        by: PersonRef,
+    },
     /// Too many failed tries: wait this many seconds.
     Limited {
         /// Seconds until the next try may work.
@@ -49,6 +56,7 @@ impl AppError {
             Self::Refused(code) | Self::RefusedAtField { code, .. } => Some(*code),
             Self::SessionEnded => Some(ErrorCode::NotSignedIn),
             Self::Stale(_) | Self::Conflict(_) => Some(ErrorCode::VersionChanged),
+            Self::TakenOver { .. } => Some(ErrorCode::EditTakenOver),
             Self::Limited { .. } | Self::Internal(_) => None,
         }
     }
@@ -87,6 +95,7 @@ impl fmt::Display for AppError {
             Self::Stale(_) | Self::Conflict(_) => {
                 write!(formatter, "refused: {}", ErrorCode::VersionChanged)
             }
+            Self::TakenOver { .. } => write!(formatter, "refused: {}", ErrorCode::EditTakenOver),
             Self::Limited { retry_after } => {
                 write!(formatter, "limited for {retry_after} seconds")
             }

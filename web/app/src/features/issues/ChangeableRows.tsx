@@ -14,35 +14,36 @@ export interface ChangeableRowsProps {
 }
 
 /**
- * The fields of the Details that change in place (UX §4.4): *Assigned to* and *Priority*, each
- * saving at once and saying *Saved* with *Undo* in its own row. A field the person may not see, or
- * that the layout does not show them, is left out; one they may see and not change says why.
+ * The fields of the Details that change in place (UX §4.4), each saving at once and saying *Saved*
+ * with *Undo* in its own row. A field the person may not see, or that the layout does not show
+ * them, is left out; one they may see and not change says why. This is *Assigned to*.
  */
-export function ChangeableRows({ blocks, changes }: ChangeableRowsProps) {
+export function AssignedToRow({ blocks, changes }: ChangeableRowsProps) {
+  const { issue, mask, form } = blocks;
+  return known(issue.assigned_to) === undefined || !form.shows("assigned-to") ? null : (
+    <AssignedRow
+      issue={issue}
+      mask={mask}
+      status={rowStatus(changes, "assigned-to")}
+      onChange={changes.change}
+    />
+  );
+}
+
+/** *Priority*, the other field of the Details that changes in place. */
+export function PriorityRow({ blocks, changes }: ChangeableRowsProps) {
   const { issue, mask, form } = blocks;
   const priority = known(issue.priority);
-  return (
-    <>
-      {known(issue.assigned_to) === undefined || !form.shows("assigned-to") ? null : (
-        <AssignedRow
-          issue={issue}
-          mask={mask}
-          status={rowStatus(changes, "assigned-to")}
-          onChange={changes.change}
-        />
-      )}
-      {priority === undefined || !form.shows("priority") ? null : (
-        <ChoiceRow
-          name={t("issue-field.priority")}
-          choices={priorityChoices}
-          value={priority}
-          canChange={mask.changes("priority")}
-          status={rowStatus(changes, "priority")}
-          onPick={(picked) => {
-            changes.change({ priority: picked });
-          }}
-        />
-      )}
-    </>
+  return priority === undefined || !form.shows("priority") ? null : (
+    <ChoiceRow
+      name={t("issue-field.priority")}
+      choices={priorityChoices}
+      value={priority}
+      canChange={mask.changes("priority")}
+      status={rowStatus(changes, "priority")}
+      onPick={(picked) => {
+        changes.change({ priority: picked });
+      }}
+    />
   );
 }

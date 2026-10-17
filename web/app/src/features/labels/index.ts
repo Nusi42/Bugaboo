@@ -3,4 +3,4 @@ import "@bugaboo/messages/parts/labels";
 
 export { LabelsPage, type LabelsPageProps } from "./LabelsPage.tsx";
 export { registerLabelBlocks } from "./register.ts";
-export { refreshLabels, useLabels } from "./labels.ts";
+export { refreshLabels, takeLabelOff, useLabels } from "./labels.ts";
