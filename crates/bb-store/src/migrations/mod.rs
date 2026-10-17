@@ -449,7 +449,7 @@ mod tests {
     fn the_checksum_of_an_applied_migration_never_changes() {
         // By the number of the migration, not by place in the list: the numbers of other
         // migrations that are added later fall between these.
-        const APPLIED: [(i64, &str); 18] = [
+        const APPLIED: [(i64, &str); 19] = [
             (
                 1,
                 "955f17699da59d0dbebd0aa84f15d41babff5bf3493ba3e72e422dfaf8d53de5",
@@ -517,6 +517,10 @@ mod tests {
             (
                 17,
                 "d21f77afec1f2020ece56ef48d087d4f90e572a090a160a88488dac81164822a",
+            ),
+            (
+                18,
+                "c9688e8ee165a9f05d678b5d580e2ba23b46d619392a8342f9265fc31dfdefa7",
             ),
             (
                 19,
