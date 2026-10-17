@@ -45,6 +45,7 @@ crate::entities! {
     crate::layout::Layout,
     crate::layout::LayoutField,
     crate::layout::LayoutFieldRole,
+    crate::layout::LayoutOffField,
     crate::layout::LayoutSection,
     crate::own_fields::FieldChoice,
     crate::own_fields::FieldIssueType,

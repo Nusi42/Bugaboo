@@ -43,8 +43,8 @@ async fn save_fields(
 ) -> Result<Value, Failure> {
     let editor = editor_of(browser, "ACME").await?;
     let (_, version) = slot(&editor)?;
-    let taken = take_lock(browser, layout, who).await?;
-    let token = taken["lock_token"].as_str().ok_or("no token")?.to_owned();
+    let lock = take_lock(browser, layout, who).await?;
+    let token = lock["lock_token"].as_str().ok_or("no token")?.to_owned();
     let saved = save(
         browser,
         layout,
