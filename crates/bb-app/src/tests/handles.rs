@@ -17,7 +17,7 @@ use crate::notifications::{
     ChangeHandle, CreateMissingHandles, MyHandleQuery, change_handle, create_missing_handles,
     my_handle,
 };
-use crate::people::{CreateGroup, create_group};
+use crate::people::{CreateGroup, RenameGroup, create_group, rename_group};
 use crate::roles::{SetPeopleLevel, set_level};
 
 async fn handle_of(crew: &Crew, session: &str) -> Result<String, String> {
@@ -321,5 +321,91 @@ async fn m3_f70_of_two_changes_of_one_handle_at_the_same_moment_one_is_kept() ->
         result,
         Err(AppError::Refused(ErrorCode::HandleChangedLately))
     )));
+    Ok(())
+}
+
+#[tokio::test]
+async fn m3_f70_a_group_or_a_role_cannot_be_named_like_the_handle_of_a_person() -> Outcome {
+    use crate::roles::{ChangeRole, CopyRole, CreateRole, change_role, copy_role, create_role};
+
+    let crew = Crew::new().await?;
+    let ada = token(&crew.world);
+    let taken = Some(AppError::Refused(ErrorCode::NameTaken));
+    let group = |name: &'static str| {
+        let (world, token) = (&crew.world, ada.clone());
+        async move {
+            create_group(
+                &world.ctx(),
+                CreateGroup {
+                    session_token: token,
+                    name: name.to_owned(),
+                },
+            )
+            .await
+        }
+    };
+    // The name "Bob Baker" is the handle `bob.baker` of a person.
+    assert_eq!(group("Bob Baker").await.err(), taken);
+    assert_eq!(group("bob.baker").await.err(), taken, "any spelling of it");
+    let role = create_role(
+        &crew.world.ctx(),
+        CreateRole {
+            session_token: ada.clone(),
+            name: "Bob Baker".to_owned(),
+            permissions: vec![],
+            two_step: false,
+        },
+    )
+    .await;
+    assert_eq!(role.err(), taken);
+    // The same for a handle the person gave up: it is still theirs.
+    change(&crew, &crew.bob.session_token, "bobby").await?;
+    assert_eq!(group("Bob Baker").await.err(), taken);
+    // A group that is renamed to such a name, a role changed to it and a role copied to it.
+    let fine = group("Night shift").await.map_err(text)?.into_value();
+    let renamed = rename_group(
+        &crew.world.ctx(),
+        RenameGroup {
+            session_token: ada.clone(),
+            group: fine.id,
+            version: fine.version,
+            name: "bobby".to_owned(),
+        },
+    )
+    .await;
+    assert_eq!(renamed.err(), taken);
+    let role = crew.role;
+    let version = crew
+        .world
+        .store
+        .lock()
+        .state
+        .roles
+        .iter()
+        .find(|known| known.role.id == role)
+        .map_or(1, |known| known.role.version);
+    let changed = change_role(
+        &crew.world.ctx(),
+        ChangeRole {
+            session_token: ada.clone(),
+            role,
+            version,
+            name: Some("bobby".to_owned()),
+            permissions: None,
+            two_step: None,
+        },
+    )
+    .await;
+    assert_eq!(changed.err(), taken);
+    let copied = copy_role(
+        &crew.world.ctx(),
+        CopyRole {
+            session_token: ada,
+            role,
+            name: "Bob Baker".to_owned(),
+        },
+    )
+    .await;
+    assert_eq!(copied.err(), taken);
     Ok(())
 }

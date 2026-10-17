@@ -240,3 +240,26 @@ pub async fn create_missing_handles<S: AuthStore>(
         }
     }
 }
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Refuses the name of a group or a role whose handle a person has or had: a mention of the
+    /// handle would name two things. A person gets no handle that a group or a role has either
+    /// (`change_handle`, `give_handle`), so this is the other half of the same rule.
+    ///
+    /// # Errors
+    /// `name.taken` when a person holds the handle of the name.
+    pub(crate) async fn refuse_a_persons_handle(&self, name: &str) -> Result<(), AppError> {
+        let Some(handle) = bb_core::comment::handle_of(name) else {
+            return Ok(());
+        };
+        let held = self
+            .store()
+            .person_with_handle(&handle)
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        if held.is_some() {
+            return Err(ErrorCode::NameTaken.into());
+        }
+        Ok(())
+    }
+}

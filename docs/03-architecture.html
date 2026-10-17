@@ -3042,7 +3042,7 @@ value      = word | quoted | number | date | "me" | "today" | "in last" n unit</
 <li>A handle is people information and follows <em>Who sees people</em>.</li>
 <li>A handle has only the ASCII letters <code>a</code>…<code>z</code>, digits, <code>.</code>, <code>-</code> and <code>_</code>. A name is spelled with them (<code>ä</code> is <code>ae</code>); a name with none of them gets the handle <code>person</code>.</li>
 <li>A new text resolves only the handle a person has now. The handle they gave up stays reserved, so nobody else can take it, and the texts written before keep naming them because a mention stores the person.</li>
-<li>A person cannot have the handle of a group or a role. A person changes their handle once in seven days; the handle they were given with the account does not count.</li>
+<li>A person cannot have the handle of a group or a role, and a group or a role cannot be given a name whose handle a person has or had, so an <code>@handle</code> never names two things. A person changes their handle once in seven days; the handle they were given with the account does not count.</li>
 </ul>
 <h4>Consequences</h4>
 <ul>

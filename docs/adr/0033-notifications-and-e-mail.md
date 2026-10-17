@@ -60,7 +60,7 @@ Since M3, Bugaboo stores who follows an issue, who is mentioned, and the notes o
 - A handle is people information and follows *Who sees people*.
 - A handle has only the ASCII letters `a`…`z`, digits, `.`, `-` and `_`. A name is spelled with them (`ä` is `ae`); a name with none of them gets the handle `person`.
 - A new text resolves only the handle a person has now. The handle they gave up stays reserved, so nobody else can take it, and the texts written before keep naming them because a mention stores the person.
-- A person cannot have the handle of a group or a role. A person changes their handle once in seven days; the handle they were given with the account does not count.
+- A person cannot have the handle of a group or a role, and a group or a role cannot be given a name whose handle a person has or had, so an `@handle` never names two things. A person changes their handle once in seven days; the handle they were given with the account does not count.
 
 ## Consequences
 
