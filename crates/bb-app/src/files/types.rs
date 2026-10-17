@@ -162,8 +162,8 @@ impl Masked for IssueFiles {}
 pub struct FileRules {
     /// Whether the viewer may add files to the issue itself.
     pub may_add: bool,
-    /// The most megabytes one file may have in the project of the issue.
-    pub limit_megabytes: u64,
+    /// The most bytes one file may have in the project of the issue.
+    pub limit_bytes: u64,
     /// The extensions the organization never accepts, in lower case.
     pub blocked_types: Vec<String>,
     /// The most bytes one part of an upload may have.

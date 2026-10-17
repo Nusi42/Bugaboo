@@ -363,7 +363,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> TestRe
         let rules = ada
             .send("GET", &format!("{ISSUES}/{issue}/file-rules"), None)
             .await?;
-        assert_eq!(ok(&rules)?["limit_megabytes"], 25);
+        assert_eq!(ok(&rules)?["limit_bytes"], 25 * MEGABYTE);
         assert_eq!(rules.body["may_add"], true);
         // 25 MB is the limit, so the byte after it is refused when the upload starts.
         let over = start(&mut ada, &issue, "big.bin", megabytes(25) + 1, None).await?;
@@ -411,7 +411,7 @@ async fn att_03_a_file_over_the_limit_is_refused_before_it_is_stored() -> TestRe
         let rules = ada
             .send("GET", &format!("{ISSUES}/{issue}/file-rules"), None)
             .await?;
-        assert_eq!(rules.body["limit_megabytes"], 2);
+        assert_eq!(rules.body["limit_bytes"], 2 * MEGABYTE);
 
         // Nothing was stored for any of the refused ones; the two that started are only on their way.
         assert!(on_disk(&rig, "content").is_empty());

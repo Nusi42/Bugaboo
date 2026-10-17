@@ -1349,6 +1349,39 @@ pub const FIELDS_USED_LIST: MessageKey = MessageKey::new("fields.used-list");
 /// The message `fields.yes`.
 pub const FIELDS_YES: MessageKey = MessageKey::new("fields.yes");
 
+/// The message `files.add-to-comment`.
+pub const FILES_ADD_TO_COMMENT: MessageKey = MessageKey::new("files.add-to-comment");
+
+/// The message `files.delete`.
+pub const FILES_DELETE: MessageKey = MessageKey::new("files.delete");
+
+/// The message `files.download`.
+pub const FILES_DOWNLOAD: MessageKey = MessageKey::new("files.download");
+
+/// The message `files.drop`.
+pub const FILES_DROP: MessageKey = MessageKey::new("files.drop");
+
+/// The message `files.for-comment`.
+pub const FILES_FOR_COMMENT: MessageKey = MessageKey::new("files.for-comment");
+
+/// The message `files.none`.
+pub const FILES_NONE: MessageKey = MessageKey::new("files.none");
+
+/// The message `files.of-comment`.
+pub const FILES_OF_COMMENT: MessageKey = MessageKey::new("files.of-comment");
+
+/// The message `files.of-issue`.
+pub const FILES_OF_ISSUE: MessageKey = MessageKey::new("files.of-issue");
+
+/// The message `files.take-out-short`.
+pub const FILES_TAKE_OUT_SHORT: MessageKey = MessageKey::new("files.take-out-short");
+
+/// The message `files.title`.
+pub const FILES_TITLE: MessageKey = MessageKey::new("files.title");
+
+/// The message `files.upload`.
+pub const FILES_UPLOAD: MessageKey = MessageKey::new("files.upload");
+
 /// The message `first-run.account.intro`.
 pub const FIRST_RUN_ACCOUNT_INTRO: MessageKey = MessageKey::new("first-run.account.intro");
 
@@ -5206,6 +5239,146 @@ pub fn fields_used_types(names: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `files.added`.
+#[must_use]
+pub fn files_added(
+    size: impl std::fmt::Display,
+    when: impl std::fmt::Display,
+    who: impl std::fmt::Display,
+) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.added"),
+        vec![
+            ("size", Value::Text(size.to_string())),
+            ("when", Value::Text(when.to_string())),
+            ("who", Value::Text(who.to_string())),
+        ],
+    )
+}
+
+/// The message `files.delete-named`.
+#[must_use]
+pub fn files_delete_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.delete-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.deleted`.
+#[must_use]
+pub fn files_deleted(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.deleted"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.download-named`.
+#[must_use]
+pub fn files_download_named(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.download-named"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.empty`.
+#[must_use]
+pub fn files_empty(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.empty"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.lost`.
+#[must_use]
+pub fn files_lost(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.lost"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.not-added`.
+#[must_use]
+pub fn files_not_added(name: impl std::fmt::Display, reason: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.not-added"),
+        vec![
+            ("name", Value::Text(name.to_string())),
+            ("reason", Value::Text(reason.to_string())),
+        ],
+    )
+}
+
+/// The message `files.preview-of`.
+#[must_use]
+pub fn files_preview_of(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.preview-of"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.sending`.
+#[must_use]
+pub fn files_sending(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.sending"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.sent-of`.
+#[must_use]
+pub fn files_sent_of(sent: impl std::fmt::Display, size: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.sent-of"),
+        vec![
+            ("sent", Value::Text(sent.to_string())),
+            ("size", Value::Text(size.to_string())),
+        ],
+    )
+}
+
+/// The message `files.show-larger`.
+#[must_use]
+pub fn files_show_larger(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.show-larger"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.take-out`.
+#[must_use]
+pub fn files_take_out(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.take-out"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `files.too-big`.
+#[must_use]
+pub fn files_too_big(limit: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.too-big"),
+        vec![("limit", Value::Text(limit.to_string()))],
+    )
+}
+
+/// The message `files.waiting`.
+#[must_use]
+pub fn files_waiting(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("files.waiting"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `first-run.step-of`.
 #[must_use]
 pub fn first_run_step_of(
@@ -8823,6 +8996,37 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("fields.used-types", "Issue types: {names}"),
     ("fields.yes", "Yes"),
+    ("files.add-to-comment", "Add files"),
+    ("files.added", "{size} · Added by {who}, {when}"),
+    ("files.delete", "Delete"),
+    ("files.delete-named", "Delete {name}"),
+    ("files.deleted", "{name} is deleted."),
+    ("files.download", "Download"),
+    ("files.download-named", "Download {name}"),
+    (
+        "files.drop",
+        "Drop files here, paste a screenshot, or use Upload.",
+    ),
+    ("files.empty", "{name} is empty, so it was not added."),
+    ("files.for-comment", "Files that go with the comment"),
+    (
+        "files.lost",
+        "The connection was lost, and {name} was not sent.",
+    ),
+    ("files.none", "No files yet."),
+    ("files.not-added", "{name} was not added. {reason}"),
+    ("files.of-comment", "Files of this comment"),
+    ("files.of-issue", "Files of this issue"),
+    ("files.preview-of", "Preview of {name}"),
+    ("files.sending", "Sending {name}"),
+    ("files.sent-of", "{sent} of {size}"),
+    ("files.show-larger", "Show {name} larger"),
+    ("files.take-out", "Take {name} out"),
+    ("files.take-out-short", "Take out"),
+    ("files.title", "Files"),
+    ("files.too-big", "Too big: at most {limit} per file."),
+    ("files.upload", "Upload"),
+    ("files.waiting", "{name} is waiting for its turn."),
     (
         "first-run.account.intro",
         "An administrator can invite people and look after the server. This account is the first one.",

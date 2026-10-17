@@ -20324,7 +20324,7 @@
     "/api/v1/uploads/{upload}": {
       "get": {
         "tags": ["files"],
-        "summary": "How far an upload is. After a lost connection the client asks this and sends the next part from\n`received`.",
+        "summary": "How far an upload is. After a lost connection the client asks this and sends the next part from\n`offset`.",
         "operationId": "getUpload",
         "parameters": [
           {
@@ -22992,7 +22992,7 @@
       "FileRulesItem": {
         "type": "object",
         "description": "What the reader may add to an issue and the limits of its project.",
-        "required": ["may_add", "limit_megabytes", "blocked_types", "part_bytes"],
+        "required": ["may_add", "limit_bytes", "blocked_types", "part_bytes"],
         "properties": {
           "blocked_types": {
             "type": "array",
@@ -23001,10 +23001,10 @@
             },
             "description": "The extensions the organization never accepts, in lower case."
           },
-          "limit_megabytes": {
+          "limit_bytes": {
             "type": "integer",
             "format": "int64",
-            "description": "The most megabytes one file may have in the project of the issue.",
+            "description": "The most bytes one file may have in the project of the issue.",
             "minimum": 0
           },
           "may_add": {

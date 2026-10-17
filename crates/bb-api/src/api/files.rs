@@ -156,8 +156,8 @@ impl From<&UploadView> for UploadItem {
 pub(crate) struct FileRulesItem {
     /// Whether the reader may add files to the issue itself.
     may_add: bool,
-    /// The most megabytes one file may have in the project of the issue.
-    limit_megabytes: u64,
+    /// The most bytes one file may have in the project of the issue.
+    limit_bytes: u64,
     /// The extensions the organization never accepts, in lower case.
     blocked_types: Vec<String>,
     /// The most bytes one part of an upload may have.
@@ -170,7 +170,7 @@ impl From<&FileRules> for FileRulesItem {
     fn from(rules: &FileRules) -> Self {
         Self {
             may_add: rules.may_add,
-            limit_megabytes: rules.limit_megabytes,
+            limit_bytes: rules.limit_bytes,
             blocked_types: rules.blocked_types.clone(),
             part_bytes: rules.part_bytes,
         }

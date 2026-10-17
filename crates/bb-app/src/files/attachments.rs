@@ -171,7 +171,7 @@ pub async fn file_rules<S: AuthStore>(
     let limits = ctx.file_limits(issue.project).await?;
     Ok(held.authorize(FileRules {
         may_add: held.may_change_issue(issue.reported_by),
-        limit_megabytes: limits.megabytes(),
+        limit_bytes: limits.max_bytes,
         blocked_types: limits.blocked,
         part_bytes: PART_BYTES as u64,
     }))

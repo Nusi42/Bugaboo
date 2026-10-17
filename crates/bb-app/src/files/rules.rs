@@ -58,11 +58,6 @@ impl FileLimits {
         }
     }
 
-    /// The limit in whole megabytes, as the screens say it.
-    pub(crate) const fn megabytes(&self) -> u64 {
-        self.max_bytes / MEGABYTE
-    }
-
     /// Whether a file is refused for its type: the extension of its name is on the list, or its
     /// content says it is a type whose extension is on the list (a renamed file does not slip
     /// through). `sniffed` is none while the content is not known yet.
@@ -136,15 +131,24 @@ mod tests {
     #[test]
     fn att_03_the_default_is_25_megabytes() {
         let limits = FileLimits::of(&Layers::default());
-        assert_eq!(limits.megabytes(), 25);
+        assert_eq!(limits.max_bytes, 25 * MEGABYTE);
         assert!(limits.blocked.is_empty());
     }
 
     #[test]
     fn att_03_a_project_may_set_less_than_the_organization_and_never_more() {
-        assert_eq!(FileLimits::of(&layers("", 100, Some(10))).megabytes(), 10);
-        assert_eq!(FileLimits::of(&layers("", 30, Some(80))).megabytes(), 30);
-        assert_eq!(FileLimits::of(&layers("", 100, None)).megabytes(), 100);
+        assert_eq!(
+            FileLimits::of(&layers("", 100, Some(10))).max_bytes,
+            10 * MEGABYTE
+        );
+        assert_eq!(
+            FileLimits::of(&layers("", 30, Some(80))).max_bytes,
+            30 * MEGABYTE
+        );
+        assert_eq!(
+            FileLimits::of(&layers("", 100, None)).max_bytes,
+            100 * MEGABYTE
+        );
     }
 
     #[test]

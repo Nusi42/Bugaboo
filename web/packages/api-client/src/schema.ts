@@ -2890,7 +2890,7 @@ export interface paths {
     };
     /**
      * How far an upload is. After a lost connection the client asks this and sends the next part from
-     *     `received`.
+     *     `offset`.
      */
     get: operations["getUpload"];
     /**
@@ -3962,9 +3962,9 @@ export interface components {
       blocked_types: string[];
       /**
        * Format: int64
-       * @description The most megabytes one file may have in the project of the issue.
+       * @description The most bytes one file may have in the project of the issue.
        */
-      limit_megabytes: number;
+      limit_bytes: number;
       /** @description Whether the reader may add files to the issue itself. */
       may_add: boolean;
       /**
