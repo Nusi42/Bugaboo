@@ -302,7 +302,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// `Limited` with the seconds to wait.
     pub(crate) fn reserve_test_email(&self, person: UserId) -> Result<(), AppError> {
         let now = self.now();
-        let every = jiff::SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
+        let every = SignedDuration::from_secs(bb_core::mail::TEST_EMAIL_EVERY_SECONDS);
         let mut sent = self
             .services
             .test_mail_at

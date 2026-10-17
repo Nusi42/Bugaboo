@@ -356,7 +356,7 @@ fn sec_14_rate_limits_have_defaults_and_can_be_changed() {
 #[test]
 fn ntf_02_the_wait_for_the_changes_of_one_e_mail_has_a_default_and_can_be_changed() {
     let settings = resolve_with(None, &[], &[(SettingName::Port, "1")]).unwrap();
-    assert_eq!(settings.mail_batch, bb_core::notification::mail_batch());
+    assert_eq!(settings.mail_batch, mail_batch());
     let cli = [
         (SettingName::Port, "1"),
         (SettingName::MailBatchSeconds, "2"),

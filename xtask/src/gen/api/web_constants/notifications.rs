@@ -39,7 +39,7 @@ fn parsed(sources: &[Source], path: &str) -> anyhow::Result<syn::File> {
 /// `followed_activity` as `FollowedActivity`.
 fn pascal_case(word: &str) -> String {
     word.split('_')
-        .flat_map(|part| {
+        .filter_map(|part| {
             let mut letters = part.chars();
             letters
                 .next()

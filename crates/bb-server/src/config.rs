@@ -380,40 +380,9 @@ fn settings_from(
         DEFAULT_HEADER_TIMEOUT.as_secs(),
     )?;
 
-    let limits = LimitsConfig {
-        requests_per_minute: rate_limit(
-            values,
-            SettingName::RateLimitPerMinute,
-            DEFAULT_REQUESTS_PER_MINUTE,
-        )?,
-        sign_in_attempts_per_minute: rate_limit(
-            values,
-            SettingName::SignInAttemptsPerMinute,
-            DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
-        )?,
-        sign_in_failures_per_minute: rate_limit(
-            values,
-            SettingName::SignInFailuresPerMinute,
-            DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
-        )?,
-        access_key_requests_per_minute: rate_limit(
-            values,
-            SettingName::AccessKeyRequestsPerMinute,
-            DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
-        )?,
-    };
+    let limits = limits_from(values)?;
 
-    let mail_batch_seconds = whole_number(
-        values,
-        SettingName::MailBatchSeconds,
-        mail_batch().as_secs().unsigned_abs(),
-    )?;
-    let mail_batch = i64::try_from(mail_batch_seconds)
-        .map(jiff::SignedDuration::from_secs)
-        .map_err(|_| ConfigError::NumberInvalid {
-            name: SettingName::MailBatchSeconds,
-            value: mail_batch_seconds.to_string(),
-        })?;
+    let mail_batch = mail_batch_from(values)?;
 
     let database_url = get(SettingName::DatabaseUrl).map(str::to_owned);
     if let Some(url) = &database_url
@@ -501,6 +470,50 @@ fn public_url_from(
         "https"
     };
     Ok(format!("{scheme}://localhost:{port}"))
+}
+
+/// The rate limits: each a whole number of at least 1, the default when it is not given.
+fn limits_from(values: &BTreeMap<SettingName, String>) -> Result<LimitsConfig, ConfigError> {
+    Ok(LimitsConfig {
+        requests_per_minute: rate_limit(
+            values,
+            SettingName::RateLimitPerMinute,
+            DEFAULT_REQUESTS_PER_MINUTE,
+        )?,
+        sign_in_attempts_per_minute: rate_limit(
+            values,
+            SettingName::SignInAttemptsPerMinute,
+            DEFAULT_SIGN_IN_ATTEMPTS_PER_MINUTE,
+        )?,
+        sign_in_failures_per_minute: rate_limit(
+            values,
+            SettingName::SignInFailuresPerMinute,
+            DEFAULT_SIGN_IN_FAILURES_PER_MINUTE,
+        )?,
+        access_key_requests_per_minute: rate_limit(
+            values,
+            SettingName::AccessKeyRequestsPerMinute,
+            DEFAULT_ACCESS_KEY_REQUESTS_PER_MINUTE,
+        )?,
+    })
+}
+
+/// How long changes to one issue wait for each other before one e-mail goes: `mail_batch_seconds`, at
+/// least 1, five minutes when it is not given.
+fn mail_batch_from(
+    values: &BTreeMap<SettingName, String>,
+) -> Result<jiff::SignedDuration, ConfigError> {
+    let seconds = whole_number(
+        values,
+        SettingName::MailBatchSeconds,
+        mail_batch().as_secs().unsigned_abs(),
+    )?;
+    i64::try_from(seconds)
+        .map(jiff::SignedDuration::from_secs)
+        .map_err(|_| ConfigError::NumberInvalid {
+            name: SettingName::MailBatchSeconds,
+            value: seconds.to_string(),
+        })
 }
 
 /// A rate limit: a whole number of at least 1, or `default` when the setting is not given.
