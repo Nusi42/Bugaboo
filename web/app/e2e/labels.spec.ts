@@ -113,6 +113,33 @@ test("ux_4_4 Tags and Labels are rows of the one list of the Details and change 
   await expect(tags.getByText("fresh", { exact: true })).toHaveCount(0);
 });
 
+test("tag_01 a read of the tags and labels that failed says why in their rows", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/issues/*/labels-and-tags", (route) =>
+    route.fulfill({
+      status: 403,
+      contentType: "application/problem+json",
+      body: JSON.stringify({
+        type: "urn:bugaboo:error:access.forbidden",
+        title: "access.forbidden",
+        status: 403,
+        code: "access.forbidden",
+        message_key: "error.access.forbidden",
+        params: {},
+      }),
+    }),
+  );
+  await signIn(page, ada);
+  await page.goto(issueAddress("WEB-1"));
+  await showDetails(page);
+  const tags = detailRow(page, t("labels.tags-heading"));
+  await expect(tags.getByText(t("error.access.forbidden"))).toBeVisible();
+  await expect(
+    detailRow(page, t("labels.labels-heading")).getByText(t("error.access.forbidden")),
+  ).toBeVisible();
+});
+
 test("tag_03 renaming a label shows which issues change before it is saved", async ({
   page,
   server,

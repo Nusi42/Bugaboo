@@ -5903,6 +5903,24 @@ pub fn history_file_added(name: impl std::fmt::Display, who: impl std::fmt::Disp
     )
 }
 
+/// The message `history.file-added-unnamed`.
+#[must_use]
+pub fn history_file_added_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-added-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
+/// The message `history.file-changed-unnamed`.
+#[must_use]
+pub fn history_file_changed_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-changed-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
 /// The message `history.file-deleted`.
 #[must_use]
 pub fn history_file_deleted(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -5915,6 +5933,15 @@ pub fn history_file_deleted(name: impl std::fmt::Display, who: impl std::fmt::Di
     )
 }
 
+/// The message `history.file-deleted-unnamed`.
+#[must_use]
+pub fn history_file_deleted_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-deleted-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
+    )
+}
+
 /// The message `history.file-restored`.
 #[must_use]
 pub fn history_file_restored(name: impl std::fmt::Display, who: impl std::fmt::Display) -> Message {
@@ -5924,6 +5951,15 @@ pub fn history_file_restored(name: impl std::fmt::Display, who: impl std::fmt::D
             ("name", Value::Text(name.to_string())),
             ("who", Value::Text(who.to_string())),
         ],
+    )
+}
+
+/// The message `history.file-restored-unnamed`.
+#[must_use]
+pub fn history_file_restored_unnamed(who: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("history.file-restored-unnamed"),
+        vec![("who", Value::Text(who.to_string()))],
     )
 }
 
@@ -6431,11 +6467,29 @@ pub fn labels_group_created(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `labels.label-added`.
+#[must_use]
+pub fn labels_label_added(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.label-added"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `labels.label-created`.
 #[must_use]
 pub fn labels_label_created(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.label-created"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `labels.label-taken-off`.
+#[must_use]
+pub fn labels_label_taken_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.label-taken-off"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }
@@ -6455,12 +6509,30 @@ pub fn labels_preview_line(
     )
 }
 
+/// The message `labels.tag-added`.
+#[must_use]
+pub fn labels_tag_added(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.tag-added"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
 /// The message `labels.tag-in-projects`.
 #[must_use]
 pub fn labels_tag_in_projects(count: i64) -> Message {
     Message::with_arguments(
         MessageKey::new("labels.tag-in-projects"),
         vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `labels.tag-taken-off`.
+#[must_use]
+pub fn labels_tag_taken_off(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("labels.tag-taken-off"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -9696,11 +9768,15 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("history.changed-long-text", "{who} changed {field}"),
     ("history.cleared", "{who} cleared {field}"),
     ("history.file-added", "{who} added the file {name}"),
+    ("history.file-added-unnamed", "{who} added a file"),
+    ("history.file-changed-unnamed", "{who} changed a file"),
     ("history.file-deleted", "{who} deleted the file {name}"),
+    ("history.file-deleted-unnamed", "{who} deleted a file"),
     (
         "history.file-restored",
         "{who} brought back the file {name}",
     ),
+    ("history.file-restored-unnamed", "{who} brought back a file"),
     ("history.more", "Show earlier"),
     ("history.nothing", "Nothing here yet."),
     ("history.people-none", "nobody"),
@@ -10063,7 +10139,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "labels.intro",
         "Labels sort issues by label groups you choose, such as Area or Customer. Tags are free words that anybody who can change an issue can add to it.",
     ),
+    ("labels.label-added", "The label {name} was added."),
     ("labels.label-created", "Created the label {name}."),
+    ("labels.label-taken-off", "The label {name} was taken off."),
     ("labels.labels-heading", "Labels"),
     ("labels.labels-nothing", "No label has that name."),
     ("labels.labels-search", "Search labels"),
@@ -10090,6 +10168,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.retired", "Retired"),
     ("labels.show-changes", "Show what the new name changes"),
     ("labels.show-combine", "Show what combining changes"),
+    ("labels.tag-added", "The tag {name} was added."),
     ("labels.tag-everywhere", "All projects"),
     ("labels.tag-everywhere-switch", "Use in all projects"),
     (
@@ -10102,6 +10181,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     ("labels.tag-projects-list", "Projects of the tag"),
     ("labels.tag-suggestions", "Tags to choose from"),
+    ("labels.tag-taken-off", "The tag {name} was taken off."),
     ("labels.tags-heading", "Tags"),
     ("labels.tags-more", "Show more tags"),
     ("labels.tags-nothing", "No tag has that name."),

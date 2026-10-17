@@ -132,15 +132,27 @@ describe("iss_06 relations and the items of one event", () => {
 });
 
 /** The sentence of a file item of the history with this event. */
-function fileWords(file_event: string): string {
-  return sentenceOf(change({ kind: "file", file_event, file_name: "jam.txt" }));
+function fileWords(file_event: Schema<"FileEvent"> | undefined, file_name?: string): string {
+  return sentenceOf(
+    change({
+      kind: "file",
+      ...(file_event === undefined ? {} : { file_event }),
+      ...(file_name === undefined ? {} : { file_name }),
+    }),
+  );
 }
 
 describe("iss_06 files in the history (M4-F50)", () => {
   it("says who added a file, deleted it and brought it back, with its name", () => {
-    expect(fileWords("added")).toBe("Ben added the file jam.txt");
-    expect(fileWords("deleted")).toBe("Ben deleted the file jam.txt");
-    expect(fileWords("restored")).toBe("Ben brought back the file jam.txt");
+    expect(fileWords("added", "jam.txt")).toBe("Ben added the file jam.txt");
+    expect(fileWords("deleted", "jam.txt")).toBe("Ben deleted the file jam.txt");
+    expect(fileWords("restored", "jam.txt")).toBe("Ben brought back the file jam.txt");
+  });
+
+  it("says a file when the file is gone for good, and never reads an unknown event as added", () => {
+    expect(fileWords("deleted")).toBe("Ben deleted a file");
+    expect(fileWords("added")).toBe("Ben added a file");
+    expect(fileWords(undefined, "jam.txt")).toBe("Ben changed a file");
   });
 });
 

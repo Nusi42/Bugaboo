@@ -200,8 +200,12 @@ export interface MessageArguments {
   "history.changed-long-text": { field: string | number; who: string | number };
   "history.cleared": { field: string | number; who: string | number };
   "history.file-added": { name: string | number; who: string | number };
+  "history.file-added-unnamed": { who: string | number };
+  "history.file-changed-unnamed": { who: string | number };
   "history.file-deleted": { name: string | number; who: string | number };
+  "history.file-deleted-unnamed": { who: string | number };
   "history.file-restored": { name: string | number; who: string | number };
+  "history.file-restored-unnamed": { who: string | number };
   "history.relation-added": { issue: string | number; name: string | number; who: string | number };
   "history.relation-removed": {
     issue: string | number;
@@ -244,9 +248,13 @@ export interface MessageArguments {
   "labels.combine-dialog-title": { name: string | number; other: string | number };
   "labels.field-color": { name: string | number };
   "labels.group-created": { name: string | number };
+  "labels.label-added": { name: string | number };
   "labels.label-created": { name: string | number };
+  "labels.label-taken-off": { name: string | number };
   "labels.preview-line": { after: string | number; before: string | number };
+  "labels.tag-added": { name: string | number };
   "labels.tag-in-projects": { count: number };
+  "labels.tag-taken-off": { name: string | number };
   "labels.take-off": { name: string | number };
   "labels.take-project-off": { name: string | number };
   "layouts.customize-project": { project: string | number };

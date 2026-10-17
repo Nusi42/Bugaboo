@@ -12,6 +12,7 @@ export { issueCells } from "./issue-cells.tsx";
 export { priorityChoices } from "./issue-choices.ts";
 export { useProjectStatuses, type StatusOption } from "./use-project-statuses.ts";
 export { versionCounted } from "./issue-requests.ts";
+export { rowStatusOf, type RowChange } from "./row-status.ts";
 export type { SaveLongText } from "./use-description.ts";
 export {
   addIssueBlock,

@@ -102,17 +102,27 @@ export function changeSentence(entry: HistoryEntry): string {
     : t("history.cleared", { who, field });
 }
 
+/** The sentences of each thing that can happen to a file: with its name, and without it. */
 const fileMessages = {
-  added: "history.file-added",
-  deleted: "history.file-deleted",
-  restored: "history.file-restored",
-} as const;
+  added: ["history.file-added", "history.file-added-unnamed"],
+  deleted: ["history.file-deleted", "history.file-deleted-unnamed"],
+  restored: ["history.file-restored", "history.file-restored-unnamed"],
+} as const satisfies Record<Schema<"FileEvent">, readonly [string, string]>;
 
-/** The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*. */
+/**
+ * The sentence of a file that was added, deleted or brought back: *Ben added the file jam.txt*.
+ * Once the file is gone for good it has no name and the sentence says *a file*. An event this
+ * version does not know is no "added": it says only that a file changed.
+ */
 export function fileSentence(entry: HistoryEntry): string {
-  const event =
-    entry.file_event === "deleted" || entry.file_event === "restored" ? entry.file_event : "added";
-  return t(fileMessages[event], { who: whoOf(entry), name: entry.file_name ?? "" });
+  const who = whoOf(entry);
+  if (entry.file_event === undefined || entry.file_event === null) {
+    return t("history.file-changed-unnamed", { who });
+  }
+  const [named, unnamed] = fileMessages[entry.file_event];
+  return entry.file_name === undefined || entry.file_name === null
+    ? t(unnamed, { who })
+    : t(named, { who, name: entry.file_name });
 }
 
 /** The sentence of one item that is not a comment: a change of a field, a file or a relation. */

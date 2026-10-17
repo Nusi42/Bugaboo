@@ -42,6 +42,10 @@ export const messages = {
   "labels.tag-everywhere-switch": "Use in all projects",
   "labels.tag-projects-help":
     "Without this, the tag is offered only in the projects below. With no project below, it is offered in all of them.",
+  "labels.tag-added": "The tag {name} was added.",
+  "labels.tag-taken-off": "The tag {name} was taken off.",
+  "labels.label-added": "The label {name} was added.",
+  "labels.label-taken-off": "The label {name} was taken off.",
   "labels.take-off-short": "Take off",
   "labels.tag-projects-list": "Projects of the tag",
   "labels.take-project-off": "Take {name} off the list",

@@ -3,6 +3,7 @@ import { Button, buttonType, Form, SelectField, partOf, part } from "@bugaboo/ui
 import { useState } from "react";
 
 import { useLabels, type Chip } from "./labels.ts";
+import type { Named } from "./use-label-changes.ts";
 
 /** The choice that stands for no label picked yet. */
 const NONE = "";
@@ -10,8 +11,8 @@ const NONE = "";
 export interface AddLabelProps {
   /** The labels the issue has. */
   readonly has: readonly Chip[];
-  /** Puts the label with this ID on the issue; says whether it was put there. */
-  readonly onAdd: (label: string) => Promise<boolean>;
+  /** Puts the label on the issue; says whether it was put there. */
+  readonly onAdd: (label: Named) => Promise<boolean>;
   /** A change is on its way. */
   readonly pending: boolean;
 }
@@ -29,11 +30,14 @@ export function AddLabel({ has, onAdd, pending }: AddLabelProps) {
   return (
     <Form
       onSubmit={() => {
-        void onAdd(picked).then((added) => {
-          if (added) {
-            setPicked(NONE);
-          }
-        });
+        const label = offered.find((each) => each.id === picked);
+        if (label !== undefined) {
+          void onAdd(label).then((added) => {
+            if (added) {
+              setPicked(NONE);
+            }
+          });
+        }
       }}
     >
       <SelectField
